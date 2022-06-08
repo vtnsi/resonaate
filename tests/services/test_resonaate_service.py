@@ -10,6 +10,7 @@ try:
     from resonaate.data.data_interface import ManualSensorTask
     from resonaate.parallel import getRedisConnection, resetMaster
     from resonaate.physics.time.stardate import JulianDate
+    from resonaate.scenario.scenario import Scenario
     from resonaate.services.resonaate_service import (
         ResonaateService, InitMessage, TimeTargetMessage,
         DiscontinueMessage, ManualSensorTaskMessage
@@ -75,7 +76,11 @@ class TestResonaateService(BaseTestCase):
         Use real time propagation.
         """
         self.service.logger.debug("[testRealtimePropagation]")
-        init_message = InitMessage(os.path.join(datafiles, self.init_msg_realtime))
+        init_message = InitMessage(
+            Scenario.parseConfigFile(
+                os.path.join(datafiles, self.init_msg_realtime)
+            )
+        )
 
         self.service.enqueueMessage(init_message)
         self.service.waitForHandler(timeout=3)
@@ -103,7 +108,11 @@ class TestResonaateService(BaseTestCase):
             os.path.join(datafiles, 'json/rso_truth/11115-truth.json'),
             os.path.join(datafiles, 'json/rso_truth/11116-truth.json')
         )
-        init_message = InitMessage(os.path.join(datafiles, self.init_msg_importer))
+        init_message = InitMessage(
+            Scenario.parseConfigFile(
+                os.path.join(datafiles, self.init_msg_importer)
+            )
+        )
 
         self.service.enqueueMessage(init_message)
         self.service.waitForHandler(timeout=3)
@@ -120,7 +129,11 @@ class TestResonaateService(BaseTestCase):
     def testFastForward(self, datafiles):
         """Make sure sending an init message to an running service will result in a fast-froward."""
         self.service.logger.debug("[testFastForward]")
-        init_message = InitMessage(os.path.join(datafiles, self.init_msg_realtime))
+        init_message = InitMessage(
+            Scenario.parseConfigFile(
+                os.path.join(datafiles, self.init_msg_realtime)
+            )
+        )
 
         self.service.enqueueMessage(init_message)
         self.service.waitForHandler(timeout=3)
@@ -142,7 +155,11 @@ class TestResonaateService(BaseTestCase):
         time_target_message = TimeTargetMessage(target_time)
         self.service.enqueueMessage(time_target_message)
 
-        init_message = InitMessage(os.path.join(datafiles, self.init_msg_later))
+        init_message = InitMessage(
+            Scenario.parseConfigFile(
+                os.path.join(datafiles, self.init_msg_later)
+            )
+        )
 
         self.service.enqueueMessage(init_message)
         self.service.waitForHandler(timeout=3)
@@ -204,7 +221,11 @@ class TestResonaateService(BaseTestCase):
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testTimeTargetSegmentation(self, datafiles):
         """Make sure that segmenting long time targets results in successful segmentation."""
-        init_message = InitMessage(os.path.join(datafiles, self.init_msg_realtime))
+        init_message = InitMessage(
+            Scenario.parseConfigFile(
+                os.path.join(datafiles, self.init_msg_realtime)
+            )
+        )
 
         self.service.enqueueMessage(init_message)
         self.service.waitForHandler(timeout=3)
@@ -219,7 +240,11 @@ class TestResonaateService(BaseTestCase):
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testTimeTargetSegmentationInterrupt(self, datafiles):
         """Make sure that segmenting can be successfully interrupted."""
-        init_message = InitMessage(os.path.join(datafiles, self.init_msg_realtime))
+        init_message = InitMessage(
+            Scenario.parseConfigFile(
+                os.path.join(datafiles, self.init_msg_realtime)
+            )
+        )
 
         self.service.enqueueMessage(init_message)
         self.service.waitForHandler(timeout=3)

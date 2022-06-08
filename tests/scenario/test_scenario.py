@@ -39,7 +39,7 @@ class TestScenarioApp(BaseTestCase):
             elapsed_time (`timedelta`): amount of time to simulate
         """
         # Create scenario from JSON init message
-        app = Scenario.fromConfig(init_file)
+        app = Scenario.fromConfigFile(init_file)
 
         # Determine target Julian date based on elapsed time
         init_julian_date = JulianDate(app.clock.julian_date_start)
@@ -81,7 +81,7 @@ class TestScenarioApp(BaseTestCase):
     def testBuildFromConfig(self, datafiles):
         """Test building a scenario from config files."""
         init_file = os.path.join(datafiles, "json/config/init_messages/default_realtime_est_realtime_obs.json")
-        Scenario.fromConfig(init_file)
+        Scenario.fromConfigFile(init_file)
 
     @pytest.mark.realtime
     @pytest.mark.integration
@@ -161,7 +161,7 @@ class TestScenarioFactory(BaseTestCase):
         init_dir = os.path.join(datafiles, "config", "init_messages")
         for init_file in self.VALID_JSON_CONFIGS:
             init_file_path = os.path.join(init_dir, init_file)
-            Scenario.fromConfig(init_file_path)
+            Scenario.fromConfigFile(init_file_path)
 
     @pytest.mark.datafiles(JSON_DIR)
     def testInvalidInitMessages(self, datafiles, redis):  # pylint: disable=unused-argument
@@ -172,8 +172,8 @@ class TestScenarioFactory(BaseTestCase):
             if init_file in ("no_sensors_init.json", "no_targets_init.json"):
                 # Check empty target and sensor lists
                 with pytest.raises(ValueError):
-                    Scenario.fromConfig(init_file_path)
+                    Scenario.fromConfigFile(init_file_path)
             else:
                 # Check missing target_set & sensor_set fields
                 with pytest.raises(KeyError):
-                    Scenario.fromConfig(init_file_path)
+                    Scenario.fromConfigFile(init_file_path)

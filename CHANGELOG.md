@@ -1,21 +1,40 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
-
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - [Changelog](#changelog)
-  - [[Unreleased]](#unreleased)
-  - [[1.0.0] - 2021-01-14](#100---2021-01-14)
-  - [[0.9.0] - 2020-10-20](#090---2020-10-20)
-  - [[0.0.0] - 2020-01-16](#000---2020-01-16)
+    - [[Unreleased]](#unreleased)
+    - [[1.0.1] - 2021-01-21](#101---2021-01-21)
+    - [[1.0.0] - 2021-01-14](#100---2021-01-14)
+    - [[0.9.0] - 2020-10-20](#090---2020-10-20)
+    - [[0.0.0] - 2020-05-08](#000---2020-05-08)
 
-## [Unreleased]
+### [Unreleased]
 
 N/A
 
-## [1.0.0] - 2021-01-14
+### [1.0.1] - 2021-01-21
+
+Small fixes to the `ResonaateService` class and supporting API. Also updated documentation for new formats.
+
+- Added
+  - `Scenario.parseConfigFile()` static method for automatically parsing main the scenario configuration file
+  - `Scenario.fromConfigFile()` factory method for creating `Scenario` from a given filepath
+
+- Changed
+  - Added old updates to CHANGELOG for better repo tracking
+  - `Scenario.fromConfig()` factory method to accept only properly built JSON objects/dictionaries
+  - `scenario` & `services` unit tests fixed for new factory methods
+
+- Fixed
+  - Outdated scenario configuration documentation in `initialization.md`
+  - Outdated RESONAATE service ICD in `interface.md`
+
+### [1.0.0] - 2021-01-14
+
+Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard stop where main architectural changes and major features were completed and introduced bugs were fixed.
 
 - Added
   - CI/CD integration for automated testing/linting
@@ -55,10 +74,59 @@ N/A
   - Small corner-case sign errors in reference frame rotations
   - Incorrect lighting conditions
 
-## [0.9.0] - 2020-10-20
+### [0.9.0] - 2020-10-20
 
-First release to get the process going. Mostly config/refactoring updates since the initial port.
+Mostly config/refactoring updates since the initial port.
 
-## [0.0.0] - 2020-01-16
+- Added
+  - Unit tests for `resonaate_service` sub-package
+  - Empty db files for testing
 
-Initial scrubbed version ported to code.vt.edu. See Hume GitLab repository for further history.
+- Changed
+  - `UKF` and `TwoBody` perform multiple ODEs at once
+  - `SpecialPerturbations` solves multiple ODEs at once
+  - Removed "sosat" out of all files.
+  - Renamed source code folder to resonaate.
+
+- Fixed
+  - `KLDivergence` hotfix
+  - `UKF` bugs
+
+### [0.0.0] - 2020-05-08
+
+
+- Added
+  - MunkresDecision & MyopicGreedyDecision functions for optimizing the reward matrix.
+  - Multiple reward functions to combine metrics in different ways
+  - TimeSinceObservation metric for considering observation frequency
+  - KLDivergence metric for comparing information gains
+  - Unit test for all modules in the tasking package
+  - De-duplication of imported observations
+  - `services` package for various service-layer related modules
+  - Database interface for outputting data, rather than writing to JSON files
+  - Tasking information to a new DB table
+
+- Changed
+  - Moved metrics, rewards, core, decisions packages into a combined tasking package
+  - The tasking package is now modular in the algorithms chosen, and can be specified from a JSON configuration file
+  - Simplified tasking engine API
+  - `async_functions.py` logic for new tasking API
+  - Multiple updates/fixes to factory methods & `ScenarioConfig`
+  - JSON config file format, added many more options for propagation, noise, target set, sensor set, time span, etc.
+  - Various updates to module/package structure and names for better organization
+  - Refactored parallel processing logic into its own module
+  - Many Updates associated with `agents` package API changes
+  - Renamed `Config` to `BehavioralConfig` to separate from `ScenarioConfig`
+
+- Deprecated
+  - Old JSON init file format no longer works
+
+- Removed
+  - `central_core_30.py` and `central_core_40.py` modules
+  - `user_interface.py` module
+  - `copyable.py` module
+  - Various deprecated folders and files that are no longer relevant
+
+- Fixed
+  - Clarified the `Agent` API by creating `TargetAgent`, `SensingAgent`, and `EstimateAgent` classes. This allows for easier variation in sensor vs. target agent types.
+  - Streamlined visibility calculations

@@ -47,7 +47,7 @@ def runResonaate(init_message, sim_time_hours=3, db_save=True, output_db_path=No
     isMaster()
 
     # Build the Scenario application from the JSON/YAML init
-    app = Scenario.fromConfig(init_message)
+    app = Scenario.fromConfigFile(init_message)
 
     # Determine final time as a Julian date
     elapsed_time = timedelta(hours=sim_time_hours)

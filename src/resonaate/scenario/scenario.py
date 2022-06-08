@@ -284,17 +284,15 @@ class Scenario:
             self.addNode(addition)
             self.logger.info("Added new target {0}: {1}".format(addition.unique_id, addition.name))
 
-    @classmethod
-    def fromConfig(cls, path, start_workers=True):
-        """Factory to create a :class:`.Scenario` object from a config file.
+    @staticmethod
+    def parseConfigFile(path):
+        """Parse out configuration from a given filepath.
 
         Args:
             path (``str``): path to main config file
-            start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
-                spin up its own :class:`.WorkerManager` instance or not. Defaults to ``True``.
 
         Returns:
-            :class:`.Scenario`: properly constructed `Scenario` object
+            ``dict``: config dictionary object with the necessary fields
         """
         if path.endswith("json"):
             file_loader = loadJSONFile
@@ -329,8 +327,37 @@ class Scenario:
             sensor_events = file_loader(os.path.join(config_file_path, sensor_events_file))
         configuration["sensor_events"] = sensor_events
 
+        return configuration
+
+    @classmethod
+    def fromConfigFile(cls, path, start_workers=True):
+        """Factory to create a :class:`.Scenario` object from a config file.
+
+        Args:
+            path (``str``): path to main config file
+            start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
+                spin up its own :class:`.WorkerManager` instance or not. Defaults to ``True``.
+
+        Returns:
+            :class:`.Scenario`: properly constructed `Scenario` object
+        """
+        configuration = Scenario.parseConfigFile(path)
+        return cls.fromConfig(configuration, start_workers=start_workers)
+
+    @classmethod
+    def fromConfig(cls, config, start_workers=True):
+        """Factory to create a :class:`.Scenario` object from a config dict.
+
+        Args:
+            config (``dict``): configuration dictionary object with the necessary fields
+            start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
+                spin up its own :class:`.WorkerManager` instance or not. Defaults to ``True``.
+
+        Returns:
+            :class:`.Scenario`: properly constructed `Scenario` object
+        """
         # Create :class:`ScenarioBuilder` object, and then instantiate a :class:`.Scenario` object
-        builder = ScenarioBuilder(configuration)
+        builder = ScenarioBuilder(config)
         return cls(
             builder.config,
             builder.clock,
