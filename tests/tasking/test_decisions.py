@@ -9,7 +9,7 @@ from numpy import (
 try:
     from resonaate.tasking.decisions.decision_base import Decision
     from resonaate.tasking.decisions.decisions import (
-        MunkresDecision, MyopicNaiveGreedyDecision, RandomDecision
+        MunkresDecision, MyopicNaiveGreedyDecision, RandomDecision, AllVisibleDecision
     )
 except ImportError as error:
     raise Exception(
@@ -223,3 +223,54 @@ class TestRandomDecision(BaseTestCase):
 
         # Perform decision making, test expected null-tasking
         assert not np_any(random_decision(reward_matrix))
+
+
+class TestAllVisibleDecision(BaseTestCase):
+    """Test the AllVisibleDecision class of the decisions module."""
+
+    def testAllVisibleRegistry(self):
+        """Test registering the AllVisible decision is registered."""
+        all_visible = AllVisibleDecision()
+        assert all_visible.is_registered is True
+
+    def testBasicDecision(self):
+        """Test the call function of the AllVisibleDecision class."""
+        all_visible_decision = AllVisibleDecision()
+        # Create example reward matrix & expected decision matrix
+        reward_matrix = asarray([[1.1, 0.0, 12], [0.0, 15.9, 1], [2.1, 3, 11]])
+        expected = [[True, False, True], [False, True, True], [True, True, True]]
+
+        # Perform decision making, test expected
+        decision = all_visible_decision(reward_matrix)
+        assert array_equal(decision, expected)
+
+    def testNegativeDecision(self):
+        """Test the call function of the AllVisibleDecision class."""
+        all_visible_decision = AllVisibleDecision()
+        # Create example reward matrix & expected decision matrix
+        reward_matrix = -1 * asarray([[1.1, 10, 12], [4, 15.9, 1], [2.1, 3, 11]])
+        expected = [[False, False, False], [False, False, False], [False, False, False]]
+
+        # Perform decision making, test expected
+        decision = all_visible_decision(reward_matrix)
+        assert array_equal(decision, expected)
+
+    def testEqualDecision(self):
+        """Test the call function of the AllVisibleDecision class."""
+        all_visible_decision = AllVisibleDecision()
+        # Create example reward matrix & expected decision matrix
+        reward_matrix = full((3, 3), 10)
+        expected = [[True, True, True], [True, True, True], [True, True, True]]
+
+        # Perform decision making, test expected
+        decision = all_visible_decision(reward_matrix)
+        assert array_equal(decision, expected)
+
+    def testNullDecision(self):
+        """Test the call function of the AllVisibleDecision class."""
+        all_visible_decision = AllVisibleDecision()
+        # Create example null reward matrix
+        reward_matrix = asarray([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+
+        # Perform decision making, test expected null-tasking
+        assert not np_any(all_visible_decision(reward_matrix))

@@ -1,0 +1,26 @@
+{
+    "reward": {
+        "name": "CostConstrainedReward",
+        "metrics": [
+            {
+                "name": "ShannonInformation",
+                "parameters": {}
+            },
+            {
+                "name": "DeltaPosition",
+                "parameters": {}
+            },
+            {
+                "name": "LyapunovStability",
+                "parameters": {}
+            }
+        ],
+        "parameters": {}
+    },
+    "decision": {
+        "name": "AllVisibleDecision",
+        "parameters": {}
+    },
+    "target_set": "targets/leo_only_test_targets.json",
+    "sensor_set": "sensor_networks/single_adv_radar_network.json"
+}

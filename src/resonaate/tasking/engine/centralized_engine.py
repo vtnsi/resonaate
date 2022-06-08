@@ -1,5 +1,4 @@
 # Standard Library Imports
-from pickle import dumps
 # Third Party Imports
 from numpy import zeros, where
 from sqlalchemy.orm import Query
@@ -13,7 +12,6 @@ from ...data.data_interface import DataInterface, Observation, ManualSensorTask
 from ...data.query_util import addAlmostEqualFilter
 from ...filters.filter_debug_utils import checkThreeSigmaObs
 from ...physics.time.stardate import julianDateToDatetime, JulianDate
-from ...parallel import getRedisConnection
 from ...parallel.async_functions import asyncCalculateReward, asyncExecuteTasking
 from ...parallel.producer import QueueManager
 from ...parallel.task import Task
@@ -28,32 +26,30 @@ class CentralizedTaskingEngine(TaskingEngine):
     any at all.
     """
 
-    def __init__(self, clock, sosi_network, filter_config, reward, decision, estimate_error):
+    def __init__(self, sensor_nums, target_nums, reward, decision):
         """Construct a centralized tasking engine object.
 
         Args:
-            clock (:class:`.ScenarioClock`): clock for tracking time
-            sosi_network (:class:`.SOSINetwork`): network of sensor agents
-            filter_config (dict): config for the nominal filter object for tracking target agents
+            sensor_nums (:class:`.List`): list of sensor agents
+            target_nums (:class: `.List`): list of target agents
             reward (:class:`.Reward`): callable reward object for determining tasking priority
             decision (:class:`.Decision`): callable decision object for optimizing tasking
-            estimate_error (float): variance used to generate uncertain initial estimate positions
         """
         super(CentralizedTaskingEngine, self).__init__(
-            clock, sosi_network, filter_config, reward, decision, estimate_error
+            sensor_nums, target_nums, reward, decision
         )
 
-        ## List of observations made during the current time step.
-        self.cur_step_observations = []
-
-        ## Queue manager class instance.
+        # Queue manager class instance.
         self.queue_mgr = QueueManager(processed_callback=self.handleProcessedTask)
 
-        ## Dictionary correlating submitted task IDs to
+        # Dictionary correlating submitted task IDs to
+        self.execute_tasking_task_ids = {}
+
+        # Dictionary correlating submitted task IDs to
         self.assess_matrix_coordinate_task_ids = {}
 
-        ## Dictionary correlating submitted task IDs to
-        self.execute_tasking_task_ids = {}
+        # List of observations made during the current time step.
+        self.cur_step_observations = []
 
     def handleProcessedTask(self, task):
         """Handle completed tasks via the :class:`.QueueManager` process.
@@ -75,9 +71,6 @@ class CentralizedTaskingEngine(TaskingEngine):
 
             elif self.execute_tasking_task_ids:
                 # process execute tasking
-                self.execute_tasking_task_ids[task.id].updateFromAsyncUpdateResult(
-                    task.retval
-                )
                 self.saveObservations(task.retval["observations"])
 
             else:
@@ -88,19 +81,16 @@ class CentralizedTaskingEngine(TaskingEngine):
                 task
             ))
 
-    def assess(self):
+    def assess(self, julian_date):
         """Perform desired analysis on the current simulation state.
 
         First, the rewards for all possible tasks are computed, then the engine optimizes
         tasking based on the reward matrix. Finally, the optimized tasking strategy is
         applied, observations are collected, and the estimate agents are updated.
         """
-        # Update targets in case some are lost/added during ticToc()
-        self.num_targets = len(self.target_list)
-
         self.constructRewardMatrix()
         self.generateTasking()
-        self.executeTasking()
+        self.executeTasking(julian_date)
 
     def generateTasking(self):
         """Create tasking solution based on the current simulation state."""
@@ -112,22 +102,19 @@ class CentralizedTaskingEngine(TaskingEngine):
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         self.reward_matrix = zeros((self.num_targets, self.num_sensors), dtype=float)
 
-        red = getRedisConnection()
-        red.set('sensor_agents', dumps(self.sensor_agents))
-        red.set('estimate_agents', dumps(self.estimate_agents))
-
         # Determine if each sensor can observe a target. If so, save the metrics.
-        for estimate_index, estimate_agent in enumerate(self.estimate_list):
+        for index, target in enumerate(self.target_list):
             task = Task(
                 asyncCalculateReward,
                 args=[
-                    estimate_agent.simulation_id,
-                    self._reward
+                    target,
+                    self._reward,
+                    self.sensor_list
                 ]
             )
             # [NOTE]: Value set here must be the EstimateAgent's corresponding index in
             #   viz/reward matrices
-            self.assess_matrix_coordinate_task_ids[task.id] = estimate_index
+            self.assess_matrix_coordinate_task_ids[task.id] = index
             self.queue_mgr.queueTasks(task)
 
         # Wait for tasks to complete
@@ -147,16 +134,16 @@ class CentralizedTaskingEngine(TaskingEngine):
         # reset task handling mappings
         self.assess_matrix_coordinate_task_ids = {}
 
-    def executeTasking(self):
+    def executeTasking(self, julian_date):
         """Collect tasked observations, if they exist, based on the decision matrix.
 
         Collected observations are applied to each corresponding estimate agent's filter.
         """
         shared_interface = DataInterface.getSharedInterface()
-        for num, (estimate, target) in enumerate(zip(self.estimate_list, self.target_list)):
+        for index, target in enumerate(self.target_list):
             # Get any imported observations from the database
-            query = Query([Observation]).filter(Observation.target_id == estimate.simulation_id)
-            query = addAlmostEqualFilter(query, Observation, 'julian_date', estimate.julian_date_epoch)
+            query = Query([Observation]).filter(Observation.target_id == target)
+            query = addAlmostEqualFilter(query, Observation, 'julian_date', julian_date)
             imported_observation_data = shared_interface.getData(query)
 
             imported_observations = []
@@ -177,35 +164,30 @@ class CentralizedTaskingEngine(TaskingEngine):
                 self.logger.debug(
                     "Imported {0} observations for {1}".format(
                         len(imported_observations),
-                        estimate.simulation_id
+                        target
                     )
                 )
 
             # Retrieve all the sensors tasked to this target as a tuple, so [0] is required.
-            tasked_sensors = where(self.decision_matrix[num, :])[0]
+            tasked_sensors = where(self.decision_matrix[index, :])[0]
 
             if len(tasked_sensors) > 0:
                 sensor_list = {
-                    sensor_agent.name for idx, sensor_agent in enumerate(self.sensor_list) if idx in tasked_sensors
+                    sensor_agent for idx, sensor_agent in enumerate(self.sensor_list) if idx in tasked_sensors
                 }
-                self.logger.debug("Taskable sensors for RSO {0}: {1}".format(estimate.simulation_id, sensor_list))
+                self.logger.debug("Taskable sensors for RSO {0}: {1}".format(target, sensor_list))
 
             if len(tasked_sensors) > 0 or imported_observations:
                 task = Task(
                     asyncExecuteTasking,
                     args=[
                         tasked_sensors,
-                        estimate,
                         target,
                         imported_observations
                     ]
                 )
-                self.execute_tasking_task_ids[task.id] = estimate
+                self.execute_tasking_task_ids[task.id] = target
                 self.queue_mgr.queueTasks(task)
-            else:
-                # If there are no observations, there is no update information and the predicted state
-                #   estimate and covariance are stored as the updated state estimate and covariance
-                estimate.updateEstimate([], [])
 
         # Wait for tasks to complete
         try:
@@ -228,17 +210,16 @@ class CentralizedTaskingEngine(TaskingEngine):
         if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
             filenames = checkThreeSigmaObs(
                 self.cur_step_observations,
-                self.target_agents,
-                self.sensor_agents,
+                self.target_list,
+                self.sensor_list,
                 sigma=3
             )
             for filename in filenames:
                 self.logger.warning("Made bad observation, debugging info:\n\t{0}".format(filename))
 
-    def retaskSensors(self, new_estimate_agents):
+    def retaskSensors(self, new_estimate_nums):
         """Update the set of target agents, usually after a target is added/removed."""
-        self.num_targets = len(new_estimate_agents)
-        self.target_agents = new_estimate_agents
+        self.target_list = new_estimate_nums
 
     def saveObservations(self, observations):
         """Save set of observations.
@@ -259,17 +240,16 @@ class CentralizedTaskingEngine(TaskingEngine):
 
         return observations
 
-    def getCurrentTasking(self):
+    def getCurrentTasking(self, julian_date):
         """Return database information of current tasking."""
-        for tgt_ind, target in enumerate(self.estimate_list):
-            date_time = julianDateToDatetime(target.julian_date_epoch)
+        date_time = julianDateToDatetime(julian_date)
+        for tgt_ind, target in enumerate(self.target_list):
             for sen_ind, sensor_agent in enumerate(self.sensor_list):
-
                 yield TaskingData(
-                    julian_date=target.julian_date_epoch,
+                    julian_date=julian_date,
                     timestampISO=date_time.isoformat() + '.000Z',
-                    target_id=target.simulation_id,
-                    sensor_id=sensor_agent.simulation_id,
+                    target_id=target,
+                    sensor_id=sensor_agent,
                     visibility=self.visibility_matrix[tgt_ind, sen_ind],
                     reward=self.reward_matrix[tgt_ind, sen_ind],
                     decision=self.decision_matrix[tgt_ind, sen_ind]
@@ -288,7 +268,6 @@ class CentralizedTaskingEngine(TaskingEngine):
         Returns:
             ``dict``: Dictionary of current priorities keyed on RSO ID's.
 
-        Note: 20191206 David Kusterer
             This method should be more efficient (time-wise) than `query_util::currentPriority()`
             since it results in less database queries.
         """

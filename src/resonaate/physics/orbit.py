@@ -70,21 +70,21 @@ class Orbit:
 
         @param config \b dict -- dictionary of arguments that define a valid orbit
         """
-        base_args = all([arg in config.keys() for arg in ("orbitAlt", "ecc", "incl")])
+        base_args = all(arg in config.keys() for arg in ("orbitAlt", "ecc", "incl"))
 
-        if base_args and all([arg in config.keys() for arg in ("right_ascension", "argPeriapsis", "true_anomaly")]):
+        if base_args and all(arg in config.keys() for arg in ("right_ascension", "argPeriapsis", "true_anomaly")):
             return cls(config["orbitAlt"], config["ecc"], config["incl"],
                        config["right_ascension"], config["argPeriapsis"], config["true_anomaly"])
 
-        if base_args and all([arg in config.keys() for arg in ("true_long_periapsis", "true_anomaly")]):
+        if base_args and all(arg in config.keys() for arg in ("true_long_periapsis", "true_anomaly")):
             return cls(config["orbitAlt"], config["ecc"], config["incl"],
                        config["true_long_periapsis"], config["true_anomaly"])
 
-        if base_args and all([arg in config.keys() for arg in ("right_ascension", "argLatitude")]):
+        if base_args and all(arg in config.keys() for arg in ("right_ascension", "argLatitude")):
             return cls(config["orbitAlt"], config["ecc"], config["incl"],
                        config["right_ascension"], config["argLatitude"])
 
-        if base_args and all([arg in config.keys() for arg in "true_longitude"]):
+        if base_args and all(arg in config.keys() for arg in "true_longitude"):
             return cls(config["orbitAlt"], config["ecc"], config["incl"], config["true_longitude"])
 
         msg = "The classical orbital element set"

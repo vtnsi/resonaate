@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [Changelog](#changelog)
     - [[Unreleased]](#unreleased)
+    - [[1.1.0] - 2021-03-24](#110---2021-03-24)
     - [[1.0.1] - 2021-01-21](#101---2021-01-21)
     - [[1.0.0] - 2021-01-14](#100---2021-01-14)
     - [[0.9.0] - 2020-10-20](#090---2020-10-20)
@@ -14,6 +15,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [Unreleased]
 
 N/A
+
+### [1.1.0] - 2021-03-24
+
+Update that includes LPAR sensors and multiple sensor networks.
+
+- Added
+  - Engine config object
+  - Large & medium target config sets
+  - Capability to designate separate sensor networks & target sets for different tasking engines
+  - `asyncUpdateEstimate()` for separately applying observations _a posteriori_
+  - `AllVisibleDecision` class for high-volume sensors like LPAR
+
+- Changed
+  - Split `EstimateAgent` update and `executeTasking` parallelization into separate files
+  - `sensor_list` passed to `asyncCalculateReward()` for down-selecting this engine's sensors
+  - `target_num` passed to `asyncExecuteTasking()`
+  - moved parallelization of executing tasks and applying observations to `Scenario`
+
+- Removed
+  - `networks` sub-package as it is no longer useful
+  - debugging logic in `metrics` sub-package that was leftover
+
+- Fixed
+  - new pylint & flake8 errors
 
 ### [1.0.1] - 2021-01-21
 
@@ -93,7 +118,6 @@ Mostly config/refactoring updates since the initial port.
   - `UKF` bugs
 
 ### [0.0.0] - 2020-05-08
-
 
 - Added
   - MunkresDecision & MyopicGreedyDecision functions for optimizing the reward matrix.

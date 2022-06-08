@@ -1,19 +1,20 @@
 # Standard Library Imports
 # Third Party Imports
 from numpy import asarray
+from numpy.random import default_rng
 # RESONAATE Imports
 from .scenario_config import ScenarioConfig
 from ..agents.target_agent import TargetAgent
+from ..agents.estimate_agent import EstimateAgent
+from ..agents.sensing_agent import SensingAgent
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
 from ..data.data_interface import DataInterface
 from ..dynamics import spacecraftDynamicsFactory
 from ..events.impulsive import Impulsive
 from ..events.propulsion import Propulsion
-from ..networks.constellation import Constellation
 from ..physics.noise import noiseCovarianceFactory
 from ..physics.time.stardate import JulianDate
-from ..networks.sosi_network import SOSINetwork
 from ..scenario.clock import ScenarioClock
 from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
@@ -27,22 +28,23 @@ class ScenarioBuilder:
     properly construct a :class:`.Scenario` object.
     """
 
-    def __init__(self, scenario_configuration):
+    # pylint:disable=too-many-locals
+    def __init__(self, scenario_configuration):  # noqa: C901
         """Instantiate a :class:`.ScenarioBuilder` from a config dictionary.
 
         Args:
             scenario_configuration (``dict``): config settings to make a valid :class:`.Scenario`
 
         Raises:
-            ValueError: raised if the "targets" or "sensors" field is empty
+            ValueError: raised if the "engines" field is empty
         """
         # Create logger from configs
         self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
         # Save base config
         self._config = ScenarioConfig(scenario_configuration)
         # Check to make sure these ar not empty lists
-        if not self._config.targets or not self._config.sensors:
-            self.logger.error("You must include valid list of targets & sensors in Scenario config.")
+        if not self._config.engines:
+            self.logger.error("You must include valid list of engines in Scenario config.")
             raise ValueError
 
         # Instantiate clock based on config's start time and class variables
@@ -81,55 +83,10 @@ class ScenarioBuilder:
             )
         )
 
-        # Create Reward & Decision from configuration
-        self._reward = rewardsFactory(self._config.reward)
-        self.logger.info(
-            "Reward function: {0}".format(
-                self._reward.__class__.__name__
-            )
-        )
-        self._decision = decisionFactory(self._config.decision)
-        self.logger.info(
-            "Decision function: {0}".format(
-                self._decision.__class__.__name__
-            )
-        )
-
-        # Build target set
-        self._targets = self.initTargets(self._config.targets)
-        self.target_constellation = Constellation(list(self._targets.values()))
-
-        self.logger.info(
-            "Successfully loaded {0} target agents".format(
-                len(self.target_constellation.nodes)
-            )
-        )
-
-        # Build sensor network
-        self.sensor_network = SOSINetwork.fromDict(
-            self.clock,
-            self._config.sensors,
-            spacecraftDynamicsFactory(
-                self.propagation["propagation_model"],
-                self.clock,
-                self.geopotential,
-                self.perturbations,
-                method=self.propagation["integration_method"]
-            ),
-            realtime=self.propagation["realtime_propagation"]
-        )
-        self.sensor_network.assignTo(self.target_constellation)
-
-        self.logger.info(
-            "Successfully loaded {0} sensor agents".format(
-                len(self.sensor_network.nodes)
-            )
-        )
-
         # Create the base estimation filter for nominal operation
         # [TODO]: UKF parameters should be configurable
         self._filter_config = {
-            "filter_type": "UKF",
+            "filter_type": self.config.filter['name'],
             # Create dynamics object for RSO filter propagation
             "dynamics": spacecraftDynamicsFactory(
                 self.propagation["propagation_model"],
@@ -163,21 +120,111 @@ class ScenarioBuilder:
                 BehavioralConfig.getConfig().database.PhysicsModelDataPath
             )
 
-        # Create the tasking engine object for this scenario
-        # [TODO]: Make the tasking engine configurable when that's desired
-        self.tasking_engine = CentralizedTaskingEngine(
-            self.clock,
-            self.sensor_network,
-            self._filter_config,
-            self._reward,
-            self._decision,
-            self.noise["initial_error_magnitude"]
-        )
+        # create target and sensor sets
+        estimate_set = set()
+        target_dict = {}
+        sensor_dict = {}
+        self.targets_agents = {}
+        self.estimate_agents = {}
+        self.tasking_engines = []
+
+        for engine in self._config.engines:
+            # Create Reward & Decision from configuration
+            reward = rewardsFactory(engine['reward'])
+            self.logger.info(
+                "Reward function: {0}".format(
+                    reward.__class__.__name__
+                )
+            )
+            decision = decisionFactory(engine['decision'])
+            self.logger.info(
+                "Decision function: {0}".format(
+                    decision.__class__.__name__
+                )
+            )
+            if engine['decision']['name'] == 'AllVisibleDecision':
+                for sensor in engine['sensors']:
+                    assert sensor['sensor_type'] == 'AdvRadar', "Only AdvRadar sensors can use the AllVisibleDecision"
+
+            # Build target and estimate sets
+            engine_targets = []
+            for rso in engine['targets']:
+                engine_targets.append(rso['sat_num'])
+                estimate_set.add(rso['sat_num'])
+                target_dict[rso['sat_num']] = rso
+
+            # Build sensor set
+            engine_sensors = []
+            for sensor in engine['sensors']:
+                engine_sensors.append(sensor['id'])
+                sensor_dict[sensor['id']] = sensor
+
+            # Create the tasking engine object
+            tasking_engine = CentralizedTaskingEngine(
+                engine_sensors,
+                engine_targets,
+                reward,
+                decision
+            )
+
+            self.tasking_engines.append(tasking_engine)
+            self.logger.info(
+                "Successfully built tasking engine: {0}".format(
+                    tasking_engine.__class__.__name__
+                )
+            )
+
+        self.target_agents = self.initTargets(target_dict)
+
         self.logger.info(
-            "Successfully built tasking engine: {0}".format(
-                self.tasking_engine.__class__.__name__
+            "Successfully loaded {0} target agents".format(
+                len(self.target_agents)
             )
         )
+        # Reformat list of sensors
+        sensor_list = list(sensor_dict.values())
+
+        self.sensor_network = []
+        for agent in sensor_list:
+            config = {
+                "agent": agent,
+                "clock": self.clock,
+                "satellite_dynamics": spacecraftDynamicsFactory(
+                    self.propagation["propagation_model"],
+                    self.clock,
+                    self.geopotential,
+                    self.perturbations,
+                    method=self.propagation["integration_method"]
+                ),
+                "realtime": self.propagation["realtime_propagation"]
+            }
+
+            self.sensor_network.append(
+                SensingAgent.fromConfig(config, events=[])
+            )
+
+        self.logger.info(
+            "Successfully loaded sensor network"
+        )
+
+        self.logger.info(
+            "Successfully loaded {0} sensor agents".format(
+                len(self.sensor_network)
+            )
+        )
+
+        # Build estimate set
+        self.estimate_agents = {}
+        for target_id, target_agent in self.target_agents.items():
+            config = {
+                "target": target_agent,
+                "init_estimate_error": self.noise["initial_error_magnitude"],
+                "rng": default_rng(random_seed),
+                "clock": self.clock,
+                "filter": self._filter_config,
+                "seed": random_seed
+            }
+            self.estimate_agents[target_id] = EstimateAgent.fromConfig(config, events=[])
 
     def initTargets(self, targets_conf):
         """Initialize target RSOs based on a given config.
@@ -192,7 +239,7 @@ class ScenarioBuilder:
             ``dict``: constructed :class:`.Spacecraft` objects for each RSO specified
         """
         targets = {}
-        for target in targets_conf:
+        for key in targets_conf:
             dynamics_method = spacecraftDynamicsFactory(
                 self.propagation["propagation_model"],
                 self.clock,
@@ -208,14 +255,14 @@ class ScenarioBuilder:
             )
 
             config = {
-                "target": target,
+                "target": targets_conf[key],
                 "clock": self.clock,
                 "dynamics": dynamics_method,
                 "realtime": self.propagation["realtime_propagation"],
                 "noise": dynamics_noise,
                 "random_seed": self.noise["random_seed"]
             }
-            targets[target["sat_num"]] = TargetAgent.fromConfig(config, events=[])
+            targets[key] = TargetAgent.fromConfig(config, events=[])
 
         return targets
 

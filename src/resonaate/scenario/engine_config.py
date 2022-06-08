@@ -1,136 +1,52 @@
 # Standard Library Imports
 from logging import getLogger
-from datetime import datetime
 # Third Party Imports
 # RESONAATE Imports
 
 
-class ScenarioConfig:
-    """Configuration class for creating valid :class:`.Scenario`s.
+class EngineConfig:
+    """Configuration class for creating valid :class:`.Engines`s.
 
     This allows the extra logic for properly checking all configs to be abstracted from the
-    factory methods and the :class:`.Scenario`'s constructor.
+    factory methods and the :class:`.Engine`'s constructor.
     """
 
     CONFIG = {
-        "time": {
-            "start_timestamp": {
-                "default": None,
-                "types": (str, datetime, ),
-            },
-            # Timestep used for propagation. Defaults to 60 seconds.
-            "physics_step_sec": {
-                "default": 60,
-                "types": (int, ),
-            },
-            # Timestep used for propagation. Defaults to 60 seconds.
-            "output_step_sec": {
-                "default": 60,
-                "types": (int, ),
-            },
-            "stop_timestamp": {
-                "default": None,
-                "types": (str, datetime, ),
-            },
-        },
-        "noise": {
-            # Variance of initial RSO uncertainty in filter
-            "initial_error_magnitude": {
-                "default": 0.00005,
-                "types": (float, ),
-            },
-            # Type of noise to implement in dynamics propagation
-            "dynamics_noise_type": {
-                "default": "simple_noise",
-                "types": (str, ),
-            },
-            # "Variance" of noise added in dynamics propagation
-            "dynamics_noise_magnitude": {
-                "default": 1e-20,
-                "types": (float, ),
-            },
-            # Type of noise to implement in filter propagation
-            "filter_noise_type": {
-                "default": "continuous_white_noise",
-                "types": (str, ),
-            },
-            # "Variance" of noise added in filter propagation
-            "filter_noise_magnitude": {
-                "default": 1e-7,
-                "types": (float, ),
-            },
-            # RNG seed value (int|None). If `None`, use system clock
-            "random_seed": {
-                "default": 1,
-                "types": (int, type(None),),
-            },
-        },
-        "propagation": {
-            # Model with which to propagate RSOs
-            "propagation_model": {
-                "default": "special_perturbations",
-                "types": (str, ),
-            },
-            # Method with which to numericall integrate RSOs
-            "integration_method": {
-                "default": "RK45",
-                "types": (str, ),
-            },
-            # Whether to use the internal propgation for the truth model
-            "realtime_propagation": {
-                "default": False,
-                "types": (bool, ),
-            },
-            # Whether to generate observations during the simulation
-            "realtime_observation": {
-                "default": True,
-                "types": (bool, ),
-            },
-        },
-        "geopotential": {
-            # Model file used to define the Earth's gravity model
-            "model": {
-                "default": "egm96.txt",
-                "types": (str, ),
-            },
-            # Degree of the Earth's gravity model
-            "degree": {
-                "default": 4,
-                "types": (int, ),
-            },
-            # Order of the Earth's gravity model
-            "order": {
-                "default": 4,
-                "types": (int, ),
-            },
-        },
-        "perturbations": {
-            # Third bodies to include in physics model
-            "third_bodies": {
-                "default": [],
-                "types": (list, )
-            }
-        },
-        "target_events": {},
-        "sensor_events": {},
-        "filter": {
+        "reward": {
             "name": {
-                "default": "unscented_kalman_filter",
+                "default": None,
                 "types": (str, ),
-            }
+            },
+            "metrics": {
+                "default": None,
+                "types": (list, ),
+            },
+            "parameters": {
+                "default": dict(),
+                "types": (dict, ),
+            },
         },
-        "engines": {},
+        "decision": {
+            "name": {
+                "default": None,
+                "types": (str, ),
+            },
+            "parameters": {
+                "default": dict(),
+                "types": (dict, ),
+            },
+        },
+        "target_set": [],
+        "sensor_set": [],
     }
     """dict: defines the default values for each optional :class:`.Scenario` config."""
 
     REQUIRED_SECTIONS = [
-        "time", "engines", "filter",
+        "reward", "decision", "target_set", "sensor_set",
     ]
     """list: defines the required sections for the :class:`.Scenario` config."""
 
-    OPTIONAL_SECTIONS = [
-        "noise", "propagation", "geopotential", "perturbations", "target_events", "sensor_events",
-    ]
+    OPTIONAL_SECTIONS = []
     """list: defines the optional sections for the :class:`.Scenario` config."""
 
     def __init__(self, configuration):
@@ -165,7 +81,6 @@ class ScenarioConfig:
 
         # If optional sections don't exist, add them, then add in optional fields.
         configuration = self._checkOptionalSections(configuration)
-        configuration = self._checkOptionalFields(configuration)
 
         # Check the types of all the config fields
         bad_type = self._checkConfigTypes(configuration)
@@ -177,19 +92,10 @@ class ScenarioConfig:
             ))
             raise TypeError(bad_type[2])
 
-        # Grab all the sections out of the config
-        self.time = configuration.pop("time")
-        self.noise = configuration.pop("noise")
-        self.propagation = configuration.pop("propagation")
-        self.geopotential = configuration.pop("geopotential")
-        self.perturbations = configuration.pop("perturbations")
-        self.filter = configuration.pop("filter")
-        self.engines = configuration.pop("engines")
-
-        # Optional config sections with no defaults
-        self.target_events = configuration.pop("target_events", {})
-        self.sensor_events = configuration.pop("sensor_events", {})
-
+        self.reward = configuration.pop("reward")
+        self.decision = configuration.pop("decision")
+        self.targets = configuration.pop("targets")
+        self.sensor_networks = configuration.pop("sensor_networks")
         # Log a warning if unused sections were included in the :class:`.Scenario` config
         if configuration:
             logger.warning(
@@ -223,8 +129,8 @@ class ScenarioConfig:
         """
         # Grab each config section and all the fields
         for section, fields in self.CONFIG.items():
-            if section in ("engine", "filter"):
-                continue
+            # if section in ("engine", "filter"):
+            #     continue
             # Grab each field in a section, and that field's config
             for field, field_config in fields.items():
                 # Return the missing field & it's section
@@ -253,29 +159,6 @@ class ScenarioConfig:
                 configuration[section] = default_section
         return configuration
 
-    def _checkOptionalFields(self, configuration):
-        """Check for missing optional config fields.
-
-        Args:
-            configuration (dict): :class:`.Scenario` config
-
-        Returns:
-            dict: updated :class:`.Scenario` config with missing fields
-        """
-        # Grab each config section and all the fields
-        for section, fields in self.CONFIG.items():
-            if section in ("engine", "filter"):
-                continue
-            # Grab each field in a section, and that field's config
-            for field, field_config in fields.items():
-                # Pass on required fields
-                if field_config["default"] is None:
-                    continue
-                # Only add a field if it's missing
-                if field not in configuration[section]:
-                    configuration[section][field] = field_config["default"]
-        return configuration
-
     def _checkConfigTypes(self, configuration):
         """Check for the correct types for all config values.
 
@@ -287,7 +170,7 @@ class ScenarioConfig:
         """
         # Grab each config section and all the fields
         for section, fields in self.CONFIG.items():
-            if section in ("engine", "filter"):
+            if section in ("reward", "decision"):
                 if not isinstance(configuration[section], type(fields)):
                     return section, fields, type(fields)
                 else:

@@ -13,28 +13,6 @@
         "filter_noise_magnitude": 1e-15,
         "random_seed": 2804798372
     },
-    "reward": {
-        "name": "CostConstrainedReward",
-        "metrics": [
-            {
-                "name": "ShannonInformation",
-                "parameters": {}
-            },
-            {
-                "name": "DeltaPosition",
-                "parameters": {}
-            },
-            {
-                "name": "LyapunovStability",
-                "parameters": {}
-            }
-        ],
-        "parameters": {}
-    },
-    "decision": {
-        "name": "MunkresDecision",
-        "parameters": {}
-    },
     "propagation": {
         "propagation_model": "two_body",
         "integration_method": "RK45",
@@ -45,6 +23,11 @@
     "perturbations": {},
     "target_event_set": "",
     "sensor_event_set": "",
-    "target_set": "targets/geo_only_test_targets.json",
-    "sensor_set": "sensor_networks/single_optical_network.json"
+    "filter": {
+        "name": "unscented_kalman_filter"
+    },
+    "engines": [
+        "engines/all_visible_engine.json",
+        "engines/taskable_engine.json"
+    ]
 }

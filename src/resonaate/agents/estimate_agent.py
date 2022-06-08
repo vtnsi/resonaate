@@ -123,7 +123,7 @@ class EstimateAgent(Agent):
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
 
-    def updateFromAsyncUpdateResult(self, async_result):
+    def updateFromAsyncUpdateEstimate(self, async_result):
         """Perform update using EstimateAgent's :attr:`nominal_filter`'s async result.
 
         Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. This occurs

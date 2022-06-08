@@ -1,6 +1,6 @@
 # Standard Library Imports
 # Third Party Imports
-from numpy import argmax, zeros, any as np_any
+from numpy import argmax, zeros, where, any as np_any
 from numpy.random import default_rng
 from munkres import Munkres, make_cost_matrix
 # RESONAATE Imports
@@ -81,3 +81,18 @@ class RandomDecision(Decision):
                 decision[tgt_ind, sen_ind] = True
 
         return decision
+
+
+class AllVisibleDecision(Decision):
+    """Optimizes for each sensor independently and tasks all AllVisibleDecision options."""
+
+    def _makeDecision(self, reward_matrix, **kwargs):
+        """Task each sensor to every available target.
+
+        Args:
+            reward_matrix (``numpy.ndarray``): reward matrix to optimize
+
+        Returns:
+            ``numpy.ndarray``: unconstrained optimal decision set
+        """
+        return where(reward_matrix > 0.0, True, False)

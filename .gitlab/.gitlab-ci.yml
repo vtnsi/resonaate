@@ -17,7 +17,8 @@ variables:
 cache:
   key:
     files:
-      - requirements.txt
+      - requirements/requirements.txt
+      - requirements/development.txt
     prefix: "%CI_COMMIT_REF_SLUG%"
   paths:
     - .cache/pip
@@ -75,13 +76,15 @@ pytest:
     expire_in: 1 week
 
 # Build the documentation. We can deploy to GitLab Pages later on...
-docs:
+pages:
   stage: check
   script:
     - cd docs
     - sphinx-apidoc -MPTefo source/modules ../src/resonaate
     - make html
+    - mv build/html/ ../public/
   artifacts:
     paths:
-      - docs/build/html/
+      - public
     expose_as: "Documentation"
+    when: always

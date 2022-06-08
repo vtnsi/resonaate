@@ -70,8 +70,12 @@ def getScenarioTestConfig():
         },
         "target_events": "",
         "sensor_events": "",
-        "targets": [],
-        "sensors": [],
+        "filter": {
+            "name": "unscented_kalman_filter"
+        },
+        "engines": [
+            "engines/taskable_engine.json"
+        ]
     }
 
 
@@ -83,22 +87,12 @@ def getMinimalScenarioConfig():
             "start_timestamp": "2018-12-01T12:00:00.000Z",
             "stop_timestamp": "2018-12-01T13:00:00.000Z"
         },
-        "reward": {
-            "name": "CostConstrainedReward",
-            "metrics": [
-                {
-                    "name": "FisherInformation",
-                    "parameters": {}
-                }
-            ],
-            "parameters": {}
+        "filter": {
+            "name": "unscented_kalman_filter"
         },
-        "decision": {
-            "name": "MyopicNaiveGreedyDecision",
-            "parameters": {}
-        },
-        "targets": [],
-        "sensors": []
+        "engines": [
+            "engines/taskable_engine.json"
+        ]
     }
 
 
@@ -159,7 +153,7 @@ class TestScenarioConfig(BaseTestCase):
         """Test bad types for each section."""
         for section, fields in ScenarioConfig.CONFIG.items():
             # These sections are special
-            if section in ("targets", "sensors"):
+            if section in ("filter", "engine"):
                 # Grab a copy of the test config
                 tmp_config = deepcopy(scenario_config)
                 # Overwrite field with an in-compatible type

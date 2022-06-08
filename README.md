@@ -15,62 +15,24 @@ For additional information on the development of the RESONAATE Tool, see the fol
 - Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness
     - Digital Object Identifier (DOI) : 10919/84931
 
-## Features
+## Table of Contents
 
-### Current [2018-12-31]
-
-RESONAATE tasks the customizable SSN to make measurements (observations) of orbiting satellites. 
-Each measurement is combined with the previous estimate of a satellite to find the current state estimate of the satellite (EstimateAgent Ephemeris).
-
-#### Input Data
-
-- Satellites
-    - Each satellite in the simulation must be provided a priori along with properties of that satellite.
-    - Identification: satellite name and NORAD catalog number.
-    - Initial State: either as Cartesian position and velocity vectors or as Classical Orbital Elements (COEs).
-    - Physical Parameters: including the visual cross section as well as ballistic and solar coefficients (in SI units).
-- SOSI Network
-    - The SOSI network used as defined in "SSN Specifications OpenSource v1.7" is set as the default.
-- Manual sensor tasking
-    - Low-level interface for operator to designate RSO(s) as high-priority for a given time.
-    - Optimal sensor tasking will take this into account and output more observations for the designated RSO(s).
-
-#### Propagation Methods
-
-Two methods of acquiring actual subsequent states of a satellite (commonly referred to as truth data or truth ephemerides) are allowed. 
-RESONAATE has its own numerical propagator which will read in the initial state of an RSO and numerically propagate it forward in time including J2, J3, & J4 perturbations. 
-Alternatively, ephemerides can be imported from an external source and used as truth data.
-
- - "Special Perturbations" real time propagation of a given set of RSOs.
-    - Internally tracks current simulated time. 
-    - Accepts a time delta message that drives propagation to given time. 
-    - Propagates "truth" ephemerides for every RSO on a configurable timestep (`propagation.PhysicsTimeStep`).
-    - Outputs generated "truth" ephemerides for every RSO on a configurable timestep (`propagation.OutputTimeStep`).
- - "Importer" model propagation of a given set of RSOs. 
-    - Uses pre-populated (SQLite) database to keep track of RSOs states. 
-    - Is almost twice as fast as "Special Perturbations" real time propagation.
-
-#### Output Data
-
- - Observation generation of a given set of RSOs and sensors.
-    - Tasked sensors provide optimal observational coverage of RSOs over a single timestep. 
-    - Generates observational data based on the type of sensor used and the measured values of "truth" data.
-    - Generates and outputs observations for set of RSOs for each timestep. 
- - EstimateAgent ephemeris generation of a given set of RSOs.
-    - Bases estimate off of generated observations
-    - Generates and outputs estimated ephemerides for a set of RSOs in step with the observation generation.
-    - Contains the covariance matrix, which is the uncertainty of the estimate ephemeris. Note that the covariance assumes the satellite has not maneuvered. Thus the satellites true position (reflected in truth data) will be outside the covariance if the satellite has recently maneuvered.
-
-### Planned
-
- - Real time manual sensor tasking 
-    - Current implementation of manual sensor tasking requires that priorities be set before running a scenario. 
-    - It is planned to provide an interface to operators to be able to set priorities in real time. 
- - Maneuver generation for maneuvering RSOs.
-    - Generates and outputs manuevers in step with observation generation.
-    - Maneuver output will _not_ be provided at exact time of maneuver, but delayed until the RSO is observed to be maneuvering.  
-
+- [The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE)](#the-responsive-space-observation-analysis-and-autonomous-tasking-engine-resonaate)
+    - [Table of Contents](#table-of-contents)
+    - [Dependencies](#dependencies)
+    - [Setup for standalone RESONAATE](#setup-for-standalone-resonaate)
+        - [Installation](#installation)
+        - [Running RESONAATE](#running-resonaate)
+        - [Standalone Behavior](#standalone-behavior)
+    - [Contributing](#contributing)
+        - [Linting](#linting)
+        - [Testing](#testing)
+        - [Generating Documentation](#generating-documentation)
 ## Dependencies
+
+These are the software requirements for all versions of RESONAATE.
+Packages can be installed at their required versions using `pip install -r requirements/requirements.txt`.
+Please see software documentation for best installation practices.
 
 - Python (PIP) Packages
     - [NumPy](http://www.numpy.org/)
@@ -81,13 +43,12 @@ Alternatively, ephemerides can be imported from an external source and used as t
     - [PyYAML](https://pyyaml.org/wiki/PyYAML)
     - [jplephem](https://github.com/brandon-rhodes/python-jplephem)
     - [redis](https://github.com/andymccurdy/redis-py)
-- Software 
-    - [redis server](https://redis.io/)
+    - [munkres](https://github.com/bmc/munkres)
+- Software
+    - [Python >= 3.7.9](python.org)
+    - [Redis server > 5.0](https://redis.io/)
 
-Packages can be installed at their required versions using `pip install -r requirements/requirements.txt`.
-Please see software documentation for best installation practices. 
-
-## Setup
+## Setup for standalone RESONAATE
 
 ### Installation
 
@@ -120,11 +81,10 @@ $ conda activate resonaate
 ```bash
 (resonaate) $ resonaate <init_file> -t <number_of_hours>
 ```
+### Standalone Behavior
 
-### Behavior
-
-By default, RESONAATE will use the default settings defined in **src/resonaate/common/behavior_config.py**.
-To overwrite these settings, please copy the contents of **src/resonaate/common/default_behavior.config** to a new **.config** file.
+By default, RESONAATE will use the default settings defined in `src/resonaate/common/default_behavior.config`.
+To overwrite these settings, please copy the contents of `src/resonaate/common/default_behavior.config` to a new `.config` file.
 Edit by un-commenting and changing the required values.
 After, set the following environment variable to the absolute path to the new config file:
 
@@ -132,11 +92,12 @@ After, set the following environment variable to the absolute path to the new co
 (resonaate) $ export RESONAATE_BEHAVIOR_CONFIG=<config_file_path>
 ```
 
-Alternatively, you can add the above command to your **~/.bashrc** (or equivalent).
+Alternatively, you can add the above command to your `~/.bashrc` (or equivalent).
 
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for more thorough details.
+Using these development tools requires a standalone version of RESONAATE to be installed.
 
 ### Linting
 

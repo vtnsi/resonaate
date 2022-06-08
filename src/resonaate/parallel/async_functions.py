@@ -41,7 +41,7 @@ def asyncPredict(_filter, time):
     return _filter.getPredictionResult()
 
 
-def asyncCalculateReward(estimate_id, reward):
+def asyncCalculateReward(estimate_id, reward, sensor_list):
     """Calculate an entire row in the reward matrix.
 
     This function calculate the rewards for each sensor tasked to a single estimate.
@@ -53,6 +53,7 @@ def asyncCalculateReward(estimate_id, reward):
     Args:
         estimate_id (``int``): id of the :class:`.EstimateAgent` to calculate metrics for.
         reward (:class:`.Reward`): function used to calculate a sensor/estimate pair's reward.
+        sensor_list (``list``): list of sensor `unique_id` assigned to the current tasking engine.
 
     Returns:
         ``dict``: reward result dictionary containts:
@@ -65,15 +66,14 @@ def asyncCalculateReward(estimate_id, reward):
     red = getRedisConnection()
     sensor_agents = loads(red.get('sensor_agents'))
     estimate_agents = loads(red.get('estimate_agents'))
+    estimate = estimate_agents[estimate_id]
 
-    visibility = zeros(len(sensor_agents), dtype=bool)
+    # Ensure the visibility and reward matrices are the same scale as in the tasking engine
+    visibility = zeros(len(sensor_list), dtype=bool)
     reward_matrix = zeros_like(visibility, dtype=float)
 
-    # Circumvent custom serialization for filters that removes the 'host' field.
-    estimate = estimate_agents[estimate_id]
-    estimate.nominal_filter.host = estimate
-
-    for sensor_index, (sensor_id, sensor) in enumerate(sensor_agents.items()):
+    for sensor_index, sensor_id in enumerate(sensor_list):
+        sensor = sensor_agents[sensor_id]
 
         # Attempt predicted observations, in order to perform sensor tasking
         observation, _ = sensor.sensors.makeObservation(
@@ -96,12 +96,11 @@ def asyncCalculateReward(estimate_id, reward):
     return {
         'visibility': visibility,
         'reward_matrix': reward_matrix,
-        'filter_update': estimate.nominal_filter.getForecastResult()
     }
 
 
-def asyncExecuteTasking(tasked_sensors, estimate_agent, target_agent, imported_observations):
-    """Generate observations and update the estimate for a target.
+def asyncExecuteTasking(tasked_sensors, target_num, imported_observations):
+    """Generate observations for a target.
 
     This function executes all tasks on the given :class:`.EstimateAgent`.
 
@@ -111,9 +110,7 @@ def asyncExecuteTasking(tasked_sensors, estimate_agent, target_agent, imported_o
 
     Args:
         tasked_sensors (``list``): indices corresponding to sensors tasked to observe the target.
-        estimate_agent (:class:`.EstimateAgent`): :class:`.EstimateAgent` object corresponding to
-            the target.
-        target_agent (:class:`.TargetAgent`): :class:`.TargetAgent` to task on.
+        target_num (``int``): satnum of `.TargetAgent` being tasked on.
         imported_observations (``list``): :class:`.Observation`s to be incorporated in the filter
             update
 
@@ -122,22 +119,20 @@ def asyncExecuteTasking(tasked_sensors, estimate_agent, target_agent, imported_o
 
         :``"observations"``: (``list`` (:class:`.Observation`)): successful observations of this
             target.
-        :``"filter_update"``: (``dict``): filter update results to be applied.
     """
-    # Circumvent custom serialization for filters that removes the 'host' field.
-    estimate_agent.nominal_filter.host = estimate_agent
     successful_obs = []
     sensor_agents = loads(getRedisConnection().get('sensor_agents'))
+    target_agents = loads(getRedisConnection().get('target_agents'))
     sensor_list = list(sensor_agents.values())
     if len(tasked_sensors) > 0:
         successful_obs.extend(list(filter(
             None,
             (
                 sensor_list[ss].sensors.makeNoisyObservation(
-                    target_agent.simulation_id,
-                    target_agent.name,
-                    target_agent.eci_state,
-                    target_agent.visual_cross_section,
+                    target_num,
+                    target_agents[target_num].name,
+                    target_agents[target_num].eci_state,
+                    target_agents[target_num].visual_cross_section,
                 )[0] for ss in tasked_sensors
             )
         )))
@@ -145,10 +140,37 @@ def asyncExecuteTasking(tasked_sensors, estimate_agent, target_agent, imported_o
     if imported_observations:
         successful_obs.extend(imported_observations)
 
-    # Update the filter with the successful observations, save the data
-    estimate_agent.updateEstimate(successful_obs, target_agent.eci_state)
-
     return {
-        'observations': successful_obs,
-        'filter_update': estimate_agent.nominal_filter.getUpdateResult()
+        'observations': successful_obs
+    }
+
+
+def asyncUpdateEstimate(estimate_agent, target_agent_eci_state, successful_obs):
+    """Update the estimate for a target.
+
+    This function executes all tasks on the given :class:`.EstimateAgent`.
+
+    Hint:
+        The filter that's being used needs to have :meth:`~.SequentialFilter.getUpdateResult`
+        implemented
+
+    Args:
+        estimate_agent (:class:`.EstimateAgent`): :class:`.EstimateAgent` object corresponding to
+            the target.
+        target_agent_eci_state (``list``): [6x1] Target ECI state.
+        successful_obs (``list``): :class:`.Observation`s to be incorporated in the filter
+            update
+
+    Returns:
+        ``dict``: execute result dictionary contains:
+
+        :``"filter_update"``: (``dict``): filter update results to be applied.
+        :``"observations"``: (``list`` (:class:`.Observation`)): successful observations of this
+            target.
+    """
+    # Update the filter with the successful observations, save the data
+    estimate_agent.updateEstimate(successful_obs, target_agent_eci_state)
+    return {
+        'filter_update': estimate_agent.nominal_filter.getUpdateResult(),
+        'observations': successful_obs
     }

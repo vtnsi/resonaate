@@ -169,7 +169,7 @@ class TestScenarioFactory(BaseTestCase):
         init_dir = os.path.join(datafiles, "config", "init_messages")
         for init_file in self.INVALID_JSON_CONFIGS:
             init_file_path = os.path.join(init_dir, init_file)
-            if init_file in ("no_sensors_init.json", "no_targets_init.json"):
+            if init_file in ("no_engine.json", "no_filter.json", "no_time.json"):
                 # Check empty target and sensor lists
                 with pytest.raises(ValueError):
                     Scenario.fromConfigFile(init_file_path)

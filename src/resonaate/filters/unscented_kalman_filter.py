@@ -214,7 +214,7 @@ class UnscentedKalmanFilter(SequentialFilter):  # pylint: disable=too-many-insta
             obs_states = []
             angular_measurement_bool = []
             for pred_observation in obs:
-                sensor = sensor_agents[pred_observation.observer].sensors
+                sensor = sensor_agents[pred_observation.unique_id].sensors
                 observation, angle_bool = sensor.makeObservation(
                     self.host.simulation_id,
                     self.host.name,
@@ -252,7 +252,7 @@ class UnscentedKalmanFilter(SequentialFilter):  # pylint: disable=too-many-insta
         Args:
             obs (:class:`.Observation`): observations associated with this UKF step
         """
-        temp = [sensor_agents[observation.observer].sensors.r_matrix for observation in obs]
+        temp = [sensor_agents[observation.unique_id].sensors.r_matrix for observation in obs]
         self.r_matrix = block_diag(*temp)
 
     def calculateKalmanGain(self, obs):

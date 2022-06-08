@@ -22,7 +22,7 @@ class Reward(metaclass=ABCMeta):
         """
         if isinstance(metrics, Metric):
             metrics = [metrics]
-        if not all([isinstance(metric, Metric) for metric in metrics]):
+        if not all(isinstance(metric, Metric) for metric in metrics):
             raise TypeError("Reward constructor must be given Metric objects.")
         self._metrics = metrics
 

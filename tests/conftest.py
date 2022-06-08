@@ -14,7 +14,6 @@ try:
     from resonaate.common.behavioral_config import BehavioralConfig
     from resonaate.data.data_interface import DataInterface
     from resonaate.filters.unscented_kalman_filter import UnscentedKalmanFilter
-    from resonaate.networks.sosi_network import SOSINetwork
     from resonaate.parallel import getRedisConnection, isMaster, resetMaster
     from resonaate.parallel.task import Task
     from resonaate.scenario.clock import ScenarioClock
@@ -237,20 +236,12 @@ def getMockedDecisionObject():
     return decision
 
 
-@pytest.fixture(scope="class", name="mocked_sosi_network")
-def getMockedSOSINetworkObject():
-    """Create a mocked :class:`.SOSINetwork` object."""
-    sosi_network = create_autospec(SOSINetwork)
-
-    return sosi_network
-
-
 @pytest.fixture(scope="class", name="mocked_central_tasking_engine")
 def getMockedCentralizedTaskingEngineObject():
     """Create a mocked :class:`.CentralizedTaskingEngine` object."""
-    cental_engine = create_autospec(CentralizedTaskingEngine)
+    central_engine = create_autospec(CentralizedTaskingEngine)
 
-    return cental_engine
+    return central_engine
 
 
 @pytest.fixture(scope="class", name="mocked_filter")

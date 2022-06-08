@@ -2,7 +2,7 @@
     "targets": [
         {
             "sat_name": "RSO 1",
-            "sat_num": 10001,
+            "sat_num": 40001,
             "init_eci": [
                 41574.6,
                 6681.53,
@@ -14,7 +14,7 @@
         },
         {
             "sat_name": "RSO 2",
-            "sat_num": 10002,
+            "sat_num": 40002,
             "init_eci": [
                 42166.7,
                 0.00000002,
@@ -25,7 +25,7 @@
             ]
         },        {
             "sat_name": "RSO 3",
-            "sat_num": 10003,
+            "sat_num": 40003,
             "init_eci": [
                 15166.4,
                 -39243.4,
@@ -36,7 +36,7 @@
             ]
         },        {
             "sat_name": "RSO 4",
-            "sat_num": 10004,
+            "sat_num": 40004,
             "init_eci": [
                 26111.6,
                 33076.1,
@@ -47,7 +47,7 @@
             ]
         },        {
             "sat_name": "RSO 5",
-            "sat_num": 10005,
+            "sat_num": 40005,
             "init_eci": [
                 32769.9,
                 -26406.4,

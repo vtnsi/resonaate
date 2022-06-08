@@ -2,7 +2,7 @@
     "sensors": [
         {
             "name": "Test Adv Radar",
-            "id": 100000,
+            "id": 300000,
             "covariance": [
                 [
                     2.388200571127796e-11,
