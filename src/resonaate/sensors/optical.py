@@ -1,0 +1,191 @@
+# Standard Library Imports
+# Third Party Imports
+from numpy import sqrt, asarray, squeeze
+from scipy.linalg import norm
+# RESONAATE Imports
+from .sensor_base import Sensor
+from .measurements import getAzimuth, getElevation
+from ..physics import constants as const
+from ..physics.bodies.third_body import getThirdBodyPositions
+from ..physics.sensor_utils import (
+    calculateIncidentSolarFlux, checkGroundSensorLightingConditions,
+    checkSpaceSensorLightingConditions, getObscurAngle,
+)
+
+
+class Optical(Sensor):
+    """Electro-Optical sensor class.
+
+    The Optical sensor class provides the framework and functionality for optical sensor payloads,
+    which provide azimuth and elevation measurements with each observation. The Optical sensor
+    class introduces additional visibility constraints, which are dependent on the type of agent.
+    Facility objects with optical sensors must be in eclipse while the target is in sunlight.
+    Spacecraft objects with optical sensors must be viewing the target against empty space, and not
+    the Earth.
+    """
+
+    def __init__(self, az_mask, el_mask, r_matrix, diameter, efficiency, exemplar, slew_rate, **sensor_args):
+        """Construct a `Optical` sensor object.
+
+        Args:
+            az_mask (``list``): azimuth mask for visibility conditions
+            el_mask (``list``): elevation mask for visibility conditions
+            r_matrix (``np.ndarray``): measurement noise covariance matrix
+            diameter (``float``): size of sensor (m)
+            efficiency (``float``): efficiency percentage of the sensor
+            exemplar (``np.ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation
+                    [cross sectional area (m^2), range (km)]
+            slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
+            sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
+        """
+        super().__init__(
+            az_mask,
+            el_mask,
+            r_matrix,
+            diameter,
+            efficiency,
+            slew_rate,
+            **sensor_args
+        )
+
+        # Calculate minimum detectable power & maximum auxiliary range
+        self.exemplar = squeeze(exemplar)
+        self.min_detect = self._minPowerFromExemplar(diameter, self.exemplar[0], self.exemplar[1] * 1000)
+        self.max_range_aux = self._maxRangeFromExemplar(diameter, self.min_detect)
+
+    def _minPowerFromExemplar(self, diameter, exemplar_area, exemplar_range):
+        """Calculate the minimum detectable power based on exemplar criterion.
+
+        References:
+            Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness,
+            Kevin M. Nastasi. 8 June 2018. page 48, equation 3.10
+
+        Args:
+            diameter (``float``): aperture diameter, m^2
+            exemplar_area (``float``): cross-sectional area of the exemplar target, m^2
+            exemplar_range (``float``): range to exemplar target, m
+
+        Returns:
+            ``float``: minimum detectable power for this sensors, W
+        """
+        return (const.SOLAR_FLUX * exemplar_area * diameter**2 * self.efficiency) / (16 * exemplar_range**2)
+
+    def _maxRangeFromExemplar(self, diameter, min_detect_power):
+        """Calculate the auxiliary maximum range for a detection.
+
+        This is an intermediate calculation for simplifying when `maximumRangeTo()` is called.
+
+        References:
+            Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness,
+            Kevin M. Nastasi. 8 June 2018. page 48, equation 3.11
+
+        Args:
+            diameter (``float``): aperture diameter, m^2
+            min_detect_power (``float``): minimum detectable power of the sensor, W
+
+        Returns:
+            ``float``: auxiliary maximum range, (mW-1)^1/2
+        """
+        return sqrt((diameter**2 * self.efficiency) / (16 * min_detect_power))
+
+    @property
+    def angle_measurements(self):
+        """``np.ndarray``: Returns 2x1 boolean array of which measurements are angles."""
+        return asarray([1, 1], dtype=bool)
+
+    def getMeasurements(self, obs_sez_state, noisy=False):
+        """Return the measurement state of the measurement.
+
+        Args:
+            obs_sez_state (``np.ndarray``): 6x1 SEZ observation vector from sensor to target (km; km/sec)
+            noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
+
+        Returns:
+            ``dict``: measurements made by the sensor
+
+            :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
+            :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
+        """
+        measurements = {
+            "azimuth_rad": getAzimuth(obs_sez_state),
+            "elevation_rad": getElevation(obs_sez_state),
+        }
+        if noisy:
+            measurements["azimuth_rad"] += self.measurement_noise[0]
+            measurements["elevation_rad"] += self.measurement_noise[1]
+
+        return measurements
+
+    def isVisible(self, tgt_eci_state, viz_cross_section, obs_sez_state):
+        """Determine if the target is in view of the sensor.
+
+        This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical
+        sensors which includes checking sunlight conditions for targets & sensors.
+        :meth:`.Sensor.isVisible` is called if the sunlight conditions are satisfied.
+
+        Args:
+            tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target agent
+            viz_cross_section (``float``): area of the target facing the sun (m^2)
+            obs_sez_state (``np.ndarray``): 6x1 SEZ observation vector from sensor to target (km; km/sec)
+
+        Returns:
+            ``bool``: True if target is visible; False if target is not visible
+        """
+        sun_eci_position = getThirdBodyPositions()["sun"]
+
+        # Calculate the illumination of the target object
+        tgt_solar_flux = calculateIncidentSolarFlux(
+            viz_cross_section,
+            tgt_eci_state[:3],
+            sun_eci_position
+        )
+
+        if self.host.agent_type == "Spacecraft":
+            # Check if sensor is pointed at the Sun
+            boresight_eci = tgt_eci_state - self.host.eci_state
+            lighting = checkSpaceSensorLightingConditions(
+                boresight_eci[:3],
+                sun_eci_position / norm(sun_eci_position)
+            )
+
+            # Check if target is in front of the Earth's limb
+            # [NOTE]: The limb angle will always be [-pi/2, 0] for satellites, b/c elevation is
+            #           measured from the LOCAL SE plane in the SEZ system to the Z axis which
+            #           points radially outward, along the ECI position direction. Therefore, the
+            #           sensor's limb angle will always be negative.
+            elevation = getElevation(obs_sez_state)
+            limb_angle = getObscurAngle(self.host.eci_state)
+
+            # Combine the two conditions
+            can_observe = lighting and limb_angle <= elevation
+
+        else:
+            # Ground based require eclipse conditions
+            can_observe = checkGroundSensorLightingConditions(
+                self.host.eci_state[:3],
+                sun_eci_position / norm(sun_eci_position)
+            )
+
+        # Check if target is illuminated & if sensor has good lighting conditions
+        if tgt_solar_flux > 0 and can_observe:
+            # Call base class' visibility check
+            return super().isVisible(tgt_eci_state, viz_cross_section, obs_sez_state)
+        else:
+            return False
+
+    def maximumRangeTo(self, viz_cross_section, tgt_eci_state):
+        """Calculate the maximum possible range based on a target's visible area.
+
+        Args:
+            viz_cross_section (``float``): area of the target facing the sun (m^2)
+            tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target agent
+
+        Returns:
+            ``float``: maximum possible range to target at which this sensor can make valid observations (km)
+        """
+        solar_flux = calculateIncidentSolarFlux(
+            viz_cross_section,
+            tgt_eci_state[:3],
+            getThirdBodyPositions()["sun"]
+        )
+        return sqrt(solar_flux) * self.max_range_aux / 1000.0

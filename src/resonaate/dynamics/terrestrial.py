@@ -1,0 +1,39 @@
+# Standard Library Imports
+# Third Party Imports
+# RESONAATE Imports
+from .dynamics_base import Dynamics
+from ..physics.transforms.methods import ecef2eci
+
+
+class Terrestrial(Dynamics):
+    """The Terrestrial dynamics class defines the behavior of non-moving ground-based Agents."""
+
+    def __init__(self, jd_start, x_ecef):
+        """Construct a Terrestrial object.
+
+        Args:
+            jd_start (:class:`.JulianDate`): Julian date of the scenario's initial epoch
+            x_ecef (``numpy.ndarray``): Earth-fixed location of the ground-based object
+        """
+        self.julian_date_start = jd_start
+        self.x_ecef = x_ecef
+
+    def propagate(self, initial_time, final_time, initial_state):
+        """Propagate the state from the initial time to the final time.
+
+        Args:
+            initial_time (:class:`.ScenarioTime`): time value when the integration will begin (seconds)
+            final_time (:class:`.ScenarioTime`): time value when the integration will stop (seconds)
+            initial_state (``numpy.ndarray``): (6, ) initial state vector for the integration step, (km; km/sec)
+
+        ReturnsL
+            ``numpy.ndarray``: 6x1 ECI state vector (km; km/sec)
+        """
+        if final_time < initial_time:
+            raise ValueError("Terrestrial: Invalid input for final_time. final_time must be greater than initial_time.")
+
+        return ecef2eci(self.x_ecef)
+
+    def retrogress(self, initial_time, final_time, initial_state):
+        """See base class."""
+        raise NotImplementedError

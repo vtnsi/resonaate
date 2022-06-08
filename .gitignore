@@ -1,0 +1,40 @@
+# Ignore processed Python
+*.py[oc]
+
+# Ignore VS Code things
+*.code-workspace
+*.vscode/settings.json
+
+# Ignore setup/output directories/files
+build/
+dist/
+logs/
+*.egg-info
+.eggs/
+**/output/
+**/plots/
+**/debugging/
+**/plots/
+**/public/
+
+# Ignore coverage data, ipython cache, pytest cache
+coverage_report/
+**/.pytest_cache/
+**/.ipynb_checkpoints/
+
+# Ignore all database files and redis-server rdb file
+*.db
+dump.rdb
+tests/data/db/
+
+# Don't ignore .gitkeep files
+!**/**/.gitkeep
+
+# Ignore certain documentation
+docs/build
+docs/source/modules
+README.html
+README.pdf
+
+# Mac stuff
+*.DS_Store

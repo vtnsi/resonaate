@@ -1,0 +1,87 @@
+# All stages use Python 3.7 Docker image
+default:
+  image: python:3.7
+
+# List the stages to use
+stages:
+  - check
+  - test
+  - build
+
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items.
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Cache the pip libraries. Only update if different branch, or requirements.txt changed.
+cache:
+  key:
+    files:
+      - requirements.txt
+    prefix: "%CI_COMMIT_REF_SLUG%"
+  paths:
+    - .cache/pip
+
+# This pipeline is only run for MR, Tags, & pushes to master
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Pre-script that all jobs will run by default. Install redis, RESONAATE pip packages, & RESONAATE
+before_script:
+  - apt-get update -qq && apt-get install -y -qq redis
+  - python -V
+  - pip install -r requirements/development.txt
+  - pip install -e .
+
+# Pylint job, save log file for later observation
+pylint:
+  stage: check
+  script:
+    - pylint --rcfile=.pylintrc --reports=y *.py tests src/resonaate | tee pylint.log
+  artifacts:
+    paths:
+      - pylint.log
+    when: always
+    expose_as: "pylint log"
+    expire_in: 1 week
+
+# Flake8 job, save log file for later observation
+flake8:
+  stage: check
+  script:
+    - flake8 --config=.flake8 --show-source --tee --output-file=flake8.log *.py tests src/resonaate
+  artifacts:
+    paths:
+      - flake8.log
+    when: always
+    expose_as: "flake8 log"
+    expire_in: 1 week
+
+# Pytest job, save coverage analysis report in HTML format for easy viewing.
+pytest:
+  stage: test
+  script:
+    - redis-server 2>&1 > redis.log &
+    - pytest -x --cov=src/resonaate --cov-report=term --cov-report=html:coverage tests/
+  artifacts:
+    paths:
+      - coverage/
+      - redis.log
+    when: always
+    expose_as: "Coverage"
+    expire_in: 1 week
+
+# Build the documentation. We can deploy to GitLab Pages later on...
+docs:
+  stage: check
+  script:
+    - cd docs
+    - sphinx-apidoc -MPTefo source/modules ../src/resonaate
+    - make html
+  artifacts:
+    paths:
+      - docs/build/html/
+    expose_as: "Documentation"

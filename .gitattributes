@@ -1,0 +1,17 @@
+# Default behavior
+# Most files should remain lf
+* text=auto eol=lf
+
+# A few windows files stay crlf, but only those that require it
+*.{cmd,[cC][mM][dD]} text eol=crlf
+*.{bat,[bB][aA][tT]} text eol=crlf
+
+# Files to not fix
+*.pdf binary
+*.png binary
+*.jpg binary
+*.bsp binary
+
+# Exclude the documentation files from the linguist so
+# the 'Jupyter Notebook' doesn't dominate the repo language
+*.ipynb linguist-documentation

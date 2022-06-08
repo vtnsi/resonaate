@@ -1,0 +1,166 @@
+# pylint: disable=attribute-defined-outside-init, no-self-use
+# Standard Library Imports
+# Third Party Imports
+# RESONAATE Library Imports
+try:
+    from resonaate.data.ephemeris import TruthEphemeris, EstimateEphemeris
+except ImportError as error:
+    raise Exception(
+        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+    ) from error
+# Testing Imports
+from ..conftest import BaseTestCase
+
+
+class TestTruthEphemerisTable(BaseTestCase):
+    """Test class for :class:`.TruthEphemeris` database table class."""
+
+    def testInit(self):
+        """Test the init of TruthEphemeris database table."""
+        _ = TruthEphemeris()
+
+    def testInitKwargs(self):
+        """Test initializing the kewards of the truth ephemeris table."""
+        _ = TruthEphemeris(
+            unique_id=38093,
+            name="Sat1",
+            julian_date=2458207.010416667,
+            timestampISO="2019-01-01T00:01:00.000Z",
+            pos_x_km=32832.44359,
+            pos_y_km=-26125.770428,
+            pos_z_km=-4175.978356,
+            vel_x_km_p_sec=1.920657,
+            vel_y_km_p_sec=2.399111,
+            vel_z_km_p_sec=0.090893
+        )
+
+    def testFromECIVector(self):
+        """Test initializing the kewards of the truth ephemeris table."""
+        _ = TruthEphemeris.fromECIVector(
+            unique_id=38093,
+            name="Sat1",
+            julian_date=2458207.010416667,
+            timestampISO="2019-01-01T00:01:00.000Z",
+            eci=[32832.44359, -26125.770428, -4175.978356, 1.920657, 2.399111, 0.090893]
+        )
+
+
+class TestEstimateEphemerisTable(BaseTestCase):
+    """Test class for :class:`.EstimateEphemeris` database table."""
+
+    def testInit(self):
+        """Test init of EstimateEphemeris."""
+        _ = EstimateEphemeris()
+
+    def testInitKwargs(self):
+        """Test initializing the kewards of the estimate ephemeris table."""
+        _ = EstimateEphemeris(
+            unique_id=38093,
+            name="Sat1",
+            julian_date=2458207.010416667,
+            timestampISO="2019-01-01T00:01:00.000Z",
+            source="Propagation",
+            pos_x_km=32832.44359,
+            pos_y_km=-26125.770428,
+            pos_z_km=-4175.978356,
+            vel_x_km_p_sec=1.920657,
+            vel_y_km_p_sec=2.399111,
+            vel_z_km_p_sec=0.090893,
+            covar_00=1.0,
+            covar_01=0.0,
+            covar_02=0.0,
+            covar_03=0.0,
+            covar_04=0.0,
+            covar_05=0.0,
+            covar_10=0.0,
+            covar_11=1.0,
+            covar_12=0.0,
+            covar_13=0.0,
+            covar_14=0.0,
+            covar_15=0.0,
+            covar_20=0.0,
+            covar_21=0.0,
+            covar_22=1.0,
+            covar_23=0.0,
+            covar_24=0.0,
+            covar_25=0.0,
+            covar_30=0.0,
+            covar_31=0.0,
+            covar_32=0.0,
+            covar_33=1.0,
+            covar_34=0.0,
+            covar_35=0.0,
+            covar_40=0.0,
+            covar_41=0.0,
+            covar_42=0.0,
+            covar_43=0.0,
+            covar_44=1.0,
+            covar_45=0.0,
+            covar_50=0.0,
+            covar_51=0.0,
+            covar_52=0.0,
+            covar_53=0.0,
+            covar_54=0.0,
+            covar_55=1.0
+        )
+
+    def testFromCovarianceMatrix(self):
+        """Test `fromCovarianceMatrix()` in ephemeris.py."""
+        _ = EstimateEphemeris.fromCovarianceMatrix(
+            unique_id=38093,
+            name="Sat1",
+            julian_date=2458207.010416667,
+            timestampISO="2019-01-01T00:01:00.000Z",
+            source="Propagation",
+            eci=[32832.44359, -26125.770428, -4175.978356, 1.920657, 2.399111, 0.090893],
+            covariance=[
+                [
+                    0.00045868865860573414,
+                    7.077473035630296e-06,
+                    2.6569219326775983e-06,
+                    2.8572329061974494e-06,
+                    7.608865602971146e-08,
+                    3.148427436402753e-08
+                ],
+                [
+                    7.077473035630296e-06,
+                    0.0004674186128723682,
+                    4.744166300030342e-06,
+                    7.612786387301252e-08,
+                    2.948885588397417e-06,
+                    5.552773026893281e-08
+                ],
+                [
+                    2.6569219326775983e-06,
+                    4.744166300030342e-06,
+                    0.0004565441207723332,
+                    3.138196138795943e-08,
+                    5.531814945587278e-08,
+                    2.837433422429151e-06
+                ],
+                [
+                    2.8572329061974494e-06,
+                    7.612786387301252e-08,
+                    3.138196138795943e-08,
+                    2.3814900977709134e-08,
+                    6.340781281444123e-10,
+                    2.716632627973775e-10
+                ],
+                [
+                    7.608865602971146e-08,
+                    2.9488855883974173e-06,
+                    5.531814945587278e-08,
+                    6.340781281444124e-10,
+                    2.4570879395801635e-08,
+                    4.76786127886514e-10
+                ],
+                [
+                    3.148427436402753e-08,
+                    5.552773026893281e-08,
+                    2.837433422429151e-06,
+                    2.716632627973775e-10,
+                    4.76786127886514e-10,
+                    2.3661179498536405e-08
+                ]
+            ]
+        )

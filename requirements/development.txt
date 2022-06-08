@@ -1,0 +1,17 @@
+# Base requirements
+-r requirements.txt
+# Linting
+pylint
+flake8
+flake8-docstrings
+flake8-blind-except
+flake8-builtins
+# Testing
+pytest
+pytest-datafiles
+pytest-cov
+pytest-randomly
+# Docs
+sphinx==3.2.1
+sphinx-rtd-theme
+m2r2

@@ -1,92 +1,205 @@
-# resonaate
+# The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE)
 
-The REsponsive Space ObservatioN Analysis & Autonomous Tasking Engine (RESONAATE) toolbox 
+With the expected resident space object (RSO) population growth and improvements of satellite propulsion capabilities, it has become increasingly apparent that maintaining space domain awareness in future decades will require using human-on-the-loop autonomy as opposed to the current human-in-the-loop methods. 
+RESONAATE is a decision making algorithm that creates a tasking strategy for a customizable Space Surveillance Network (SSN). 
+The program presents responsive and autonomous sensor network management for tracking multiple maneuvering and non-maneuvering satellites with a diversely populated space object surveillance and identification (SOSI) network. 
+The method utilizes a sub-optimal partially observed Markov decision process (POMDP) to task various ground and space-based sensors.
+The POMDP implements the largest Lyapunov exponent, the Fisher information gain, and a sensor transportability metric to assess the overall reward for tasking a specific sensor to track a particular satellite. 
+The successful measurements from the tasked sensors are combined using an unscented Kalman filter to maintain viable orbit estimates for all targets.
 
-## Getting started
+For additional information on the development of the RESONAATE Tool, see the following publications:
+- Dynamically Tracking Maneuvering Spacecraft with a Globally-Distributed, Heterogeneous Wireless Sensor Network
+    - Digital Object Identifier (DOI) : 10.2514/6.2017-5172
+- An Autonomous Sensor Management Strategy for Monitoring a Dynamic Space Domain with Diverse Sensors
+    - Digital Object Identifier (DOI) : 10.2514/6.2018-0890
+- Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness
+    - Digital Object Identifier (DOI) : 10919/84931
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Features
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### Current [2018-12-31]
 
-## Add your files
+RESONAATE tasks the customizable SSN to make measurements (observations) of orbiting satellites. 
+Each measurement is combined with the previous estimate of a satellite to find the current state estimate of the satellite (EstimateAgent Ephemeris).
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+#### Input Data
 
+- Satellites
+    - Each satellite in the simulation must be provided a priori along with properties of that satellite.
+    - Identification: satellite name and NORAD catalog number.
+    - Initial State: either as Cartesian position and velocity vectors or as Classical Orbital Elements (COEs).
+    - Physical Parameters: including the visual cross section as well as ballistic and solar coefficients (in SI units).
+- SOSI Network
+    - The SOSI network used as defined in "SSN Specifications OpenSource v1.7" is set as the default.
+- Manual sensor tasking
+    - Low-level interface for operator to designate RSO(s) as high-priority for a given time.
+    - Optimal sensor tasking will take this into account and output more observations for the designated RSO(s).
+
+#### Propagation Methods
+
+Two methods of acquiring actual subsequent states of a satellite (commonly referred to as truth data or truth ephemerides) are allowed. 
+RESONAATE has its own numerical propagator which will read in the initial state of an RSO and numerically propagate it forward in time including J2, J3, & J4 perturbations. 
+Alternatively, ephemerides can be imported from an external source and used as truth data.
+
+ - "Special Perturbations" real time propagation of a given set of RSOs.
+    - Internally tracks current simulated time. 
+    - Accepts a time delta message that drives propagation to given time. 
+    - Propagates "truth" ephemerides for every RSO on a configurable timestep (`propagation.PhysicsTimeStep`).
+    - Outputs generated "truth" ephemerides for every RSO on a configurable timestep (`propagation.OutputTimeStep`).
+ - "Importer" model propagation of a given set of RSOs. 
+    - Uses pre-populated (SQLite) database to keep track of RSOs states. 
+    - Is almost twice as fast as "Special Perturbations" real time propagation.
+
+#### Output Data
+
+ - Observation generation of a given set of RSOs and sensors.
+    - Tasked sensors provide optimal observational coverage of RSOs over a single timestep. 
+    - Generates observational data based on the type of sensor used and the measured values of "truth" data.
+    - Generates and outputs observations for set of RSOs for each timestep. 
+ - EstimateAgent ephemeris generation of a given set of RSOs.
+    - Bases estimate off of generated observations
+    - Generates and outputs estimated ephemerides for a set of RSOs in step with the observation generation.
+    - Contains the covariance matrix, which is the uncertainty of the estimate ephemeris. Note that the covariance assumes the satellite has not maneuvered. Thus the satellites true position (reflected in truth data) will be outside the covariance if the satellite has recently maneuvered.
+
+### Planned
+
+ - Real time manual sensor tasking 
+    - Current implementation of manual sensor tasking requires that priorities be set before running a scenario. 
+    - It is planned to provide an interface to operators to be able to set priorities in real time. 
+ - Maneuver generation for maneuvering RSOs.
+    - Generates and outputs manuevers in step with observation generation.
+    - Maneuver output will _not_ be provided at exact time of maneuver, but delayed until the RSO is observed to be maneuvering.  
+
+## Dependencies
+
+- Python (PIP) Packages
+    - [NumPy](http://www.numpy.org/)
+    - [SciPy](https://www.scipy.org/scipylib/index.html)
+    - [concurrent-log-handler](https://github.com/Preston-Landers/concurrent-log-handler)
+    - [SQLAlchemy](https://www.sqlalchemy.org/)
+    - [matplotlib](https://matplotlib.org/index.html)
+    - [PyYAML](https://pyyaml.org/wiki/PyYAML)
+    - [jplephem](https://github.com/brandon-rhodes/python-jplephem)
+    - [redis](https://github.com/andymccurdy/redis-py)
+- Software 
+    - [redis server](https://redis.io/)
+
+Packages can be installed at their required versions using `pip install -r requirements/requirements.txt`.
+Please see software documentation for best installation practices. 
+
+## Setup
+
+### Installation
+
+- Clone this repository
+- Install [Anaconda](https://docs.anaconda.com/anaconda)
+    - See their [Installation Guide](https://docs.anaconda.com/anaconda/install/linux/) for help
+- Setup anaconda environment
+
+```bash
+$ conda create -n resonaate python=3.7 redis
+$ conda activate resonaate
 ```
-cd existing_repo
-git remote add origin https://code.vt.edu/space-research/resonaate/resonaate.git
-git branch -M main
-git push -uf origin main
+
+- Install the package "in-place"
+
+```bash
+(resonaate) $ pip install -e .
 ```
 
-## Integrate with your tools
+### Running RESONAATE
 
-- [ ] [Set up project integrations](https://code.vt.edu/space-research/resonaate/resonaate/-/settings/integrations)
+- Get Redis server running
 
-## Collaborate with your team
+```bash
+(resonaate) $ redis-server &
+```
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+- Run example
 
-## Test and Deploy
+```bash
+(resonaate) $ resonaate <init_file> -t <number_of_hours>
+```
 
-Use the built-in continuous integration in GitLab.
+### Behavior
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+By default, RESONAATE will use the default settings defined in **src/resonaate/common/behavior_config.py**.
+To overwrite these settings, please copy the contents of **src/resonaate/common/default_behavior.config** to a new **.config** file.
+Edit by un-commenting and changing the required values.
+After, set the following environment variable to the absolute path to the new config file:
 
-***
+```bash
+(resonaate) $ export RESONAATE_BEHAVIOR_CONFIG=<config_file_path>
+```
 
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Alternatively, you can add the above command to your **~/.bashrc** (or equivalent).
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Please see [CONTRIBUTING](CONTRIBUTING.md) for more thorough details.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### Linting
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+- Install linting libraries:
 
-## License
-For open source projects, say how it is licensed.
+```bash
+(resonaate) $ pip install -r requirements/development.txt
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- Running `flake8` linter:
+
+```bash
+(resonaate) $ flake8 --config=.flake8 *.py tests src/resonaate
+```
+
+- Running `pylint` linter:
+
+```bash
+(resonaate) $ pylint --rcfile=.pylintrc *.py tests src/resonaate
+```
+
+### Testing
+
+- Install pytest
+
+```bash
+(resonaate) $ pip install -r requirements/development.txt
+```
+
+- Get Redis server running
+
+```bash
+(resonaate) $ redis-server &
+```
+
+- Run unit tests
+
+```bash
+(resonaate) $ pytest
+```
+
+### Generating Documentation
+
+1. Install required packages:
+   ```shell
+   (resonaate) $ pip install -r requirements/development.txt
+   ```
+1. Navigate into the **docs** directory:
+   ```shell
+   (resonaate) $ cd docs
+   ```
+1. Create Sphinx source files for entire package
+   ```shell
+   (resonaate) $ sphinx-apidoc -MPTefo source/modules ../src/resonaate
+   ```
+   - `-M`: module documentation written above sub-module documentation
+   - `-P`: include "private" members in documentation
+   - `-T`: don't create a table of contents file using `sphinx-apidoc`
+   - `-e`: separate each module's documentation onto it's own page
+   - `-f`: force overwriting of Sphinx source files
+   - `-o`: where to output the Sphinx source files, created if it doesn't exist
+1. Build the documentation
+   ```shell
+   (resonaate) $ make clean; make html
+   ```
+1. Open **docs/build/html/index.html** in a browser to view the documentation
