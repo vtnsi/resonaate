@@ -10,7 +10,6 @@ from ..data.observation import Observation
 from ..physics import constants as const
 from ..physics.sensor_utils import lineOfSight
 from ..physics.transforms.methods import getObservationVector
-from ..physics.time.stardate import julianDateToDatetime
 
 
 class Sensor(metaclass=ABCMeta):
@@ -81,12 +80,11 @@ class Sensor(metaclass=ABCMeta):
         """``np.ndarray``: Returns which measurements are angles as boolean values."""
         raise NotImplementedError
 
-    def makeObservation(self, tgt_id, tgt_name, tgt_eci_state, viz_cross_section, noisy=False, check_viz=True):
+    def makeObservation(self, tgt_id, tgt_eci_state, viz_cross_section, noisy=False, check_viz=True):
         """Calculate the measurement data for a single observation.
 
         Args:
             tgt_id (``int``): simulation ID associated with current target
-            tgt_name (``str``): simulation name associated with current target
             tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target (km; km/sec)
             viz_cross_section (``float``): visible cross-sectional area of the target (m^2)
             noisy (``bool``, optional): whether observation should include noisy measurements. Defaults to ``False``.
@@ -102,7 +100,6 @@ class Sensor(metaclass=ABCMeta):
         self._current_target = tgt_id
         obs_sez_state = getObservationVector(self.host.ecef_state, tgt_eci_state)
         julian_date = self.host.julian_date_epoch
-        timestamp = julianDateToDatetime(julian_date).isoformat() + '.000Z'
 
         # Construct observations
         observation = []
@@ -111,12 +108,9 @@ class Sensor(metaclass=ABCMeta):
             if self.isVisible(tgt_eci_state, viz_cross_section, obs_sez_state):
                 observation = Observation.fromSEZVector(
                     sensor_type=getTypeString(self),
-                    unique_id=self.host.simulation_id,
-                    observer=self.host.name,
+                    sensor_id=self.host.simulation_id,
                     target_id=tgt_id,
-                    target_name=tgt_name,
                     julian_date=julian_date,
-                    timestampISO=timestamp,
                     sez=obs_sez_state,
                     sensor_position=self.host.lla_state,
                     **self.getNoisyMeasurements(obs_sez_state)
@@ -129,12 +123,9 @@ class Sensor(metaclass=ABCMeta):
             if self.isVisible(tgt_eci_state, viz_cross_section, obs_sez_state):
                 observation = Observation.fromSEZVector(
                     sensor_type=getTypeString(self),
-                    unique_id=self.host.simulation_id,
-                    observer=self.host.name,
+                    sensor_id=self.host.simulation_id,
                     target_id=tgt_id,
-                    target_name=tgt_name,
                     julian_date=julian_date,
-                    timestampISO=timestamp,
                     sez=obs_sez_state,
                     sensor_position=self.host.lla_state,
                     **self.getMeasurements(obs_sez_state)
@@ -144,12 +135,9 @@ class Sensor(metaclass=ABCMeta):
             # Predicting/estimating observations for filtering
             observation = Observation.fromSEZVector(
                 sensor_type=getTypeString(self),
-                unique_id=self.host.simulation_id,
-                observer=self.host.name,
+                sensor_id=self.host.simulation_id,
                 target_id=tgt_id,
-                target_name=tgt_name,
                 julian_date=julian_date,
-                timestampISO=timestamp,
                 sez=obs_sez_state,
                 sensor_position=self.host.lla_state,
                 **self.getMeasurements(obs_sez_state)
@@ -157,12 +145,11 @@ class Sensor(metaclass=ABCMeta):
 
         return observation, self.angle_measurements
 
-    def makeNoisyObservation(self, tgt_id, tgt_name, tgt_eci_state, viz_cross_section):
+    def makeNoisyObservation(self, tgt_id, tgt_eci_state, viz_cross_section):
         """Calculate the measurement data for a single observation with noisy measurements.
 
         Args:
             tgt_id (``int``): simulation ID associated with current target
-            tgt_name (``str``): simulation name associated with current target
             tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target (km; km/sec)
             viz_cross_section (``float``): visible cross-sectional area of the target (m^2)
 
@@ -172,7 +159,7 @@ class Sensor(metaclass=ABCMeta):
             : :class:`.Observation`: valid observation, or empty list (invalid observation)
             : ``np.ndarray``: boolean array signifying which measurements are angles
         """
-        return self.makeObservation(tgt_id, tgt_name, tgt_eci_state, viz_cross_section, noisy=True)
+        return self.makeObservation(tgt_id, tgt_eci_state, viz_cross_section, noisy=True)
 
     def getNoisyMeasurements(self, obs_sez_state):
         """Return noisy measurements.
@@ -221,10 +208,18 @@ class Sensor(metaclass=ABCMeta):
 
         # Check if you are able to slew to the new target
         if self.slew_rate * (self.host.time - self.time_last_ob) >= self.delta_boresight:
-            # Check if the azimuth is within sensor bounds
-            if self.az_mask[0] <= azimuth <= self.az_mask[1]:
-                # Check if the elevation is within sensor bounds
-                if self.el_mask[0] <= elevation <= self.el_mask[1]:
+            # Check if the elevation is within sensor bounds
+            if elevation <= self.el_mask[0] or elevation >= self.el_mask[1]:
+                return False
+
+            # [NOTE]: Azimuth check requires two versions:
+            #   - az_0 <= az_1 for normal situations
+            #   - az_0 > az_1 for when mask transits the 360deg/True North line
+            if self.az_mask[0] <= self.az_mask[1]:
+                if self.az_mask[0] <= azimuth <= self.az_mask[1]:
+                    return True
+            else:
+                if azimuth >= self.az_mask[0] or azimuth <= self.az_mask[1]:
                     return True
 
         # Default: target satellite is not in view

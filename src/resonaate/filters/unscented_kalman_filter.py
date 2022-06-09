@@ -1,5 +1,5 @@
 # Standard Library Imports
-from pickle import loads
+import pickle
 # Third Party Imports
 from numpy import (
     ones, diagflat, zeros, sqrt, matmul, full, concatenate, sin,
@@ -91,7 +91,7 @@ class UnscentedKalmanFilter(SequentialFilter):  # pylint: disable=too-many-insta
         if not isinstance(obs, list):
             obs = [obs]
 
-        sensor_agents = loads(getRedisConnection().get('sensor_agents'))
+        sensor_agents = pickle.loads(getRedisConnection().get('sensor_agents'))
 
         # STEP 1:  Calculate the Measurement Matrix (H)
         self.calculateMeasurementMatrix(sensor_agents, obs)
@@ -143,8 +143,7 @@ class UnscentedKalmanFilter(SequentialFilter):  # pylint: disable=too-many-insta
 
                 # If error increase is larger than desired log the debug information
                 if est_error > pred_error + tol_km:
-                    sensor_agents = loads(getRedisConnection().get('sensor_agents'))
-                    file_name = logFilterStep(self, description, obs, truth, sensor_agents)
+                    file_name = logFilterStep(self, description, obs, truth)
                     self.logger.warning("EstimateAgent error inflation occurred:\n\t{0}".format(file_name))
 
     def predictStateEstimate(self):
@@ -214,10 +213,9 @@ class UnscentedKalmanFilter(SequentialFilter):  # pylint: disable=too-many-insta
             obs_states = []
             angular_measurement_bool = []
             for pred_observation in obs:
-                sensor = sensor_agents[pred_observation.unique_id].sensors
+                sensor = sensor_agents[pred_observation.sensor_id].sensors
                 observation, angle_bool = sensor.makeObservation(
                     self.host.simulation_id,
-                    self.host.name,
                     self.sigma_points[:, number],
                     self.host.visual_cross_section,
                     noisy=False,  # Don't add noise in sigma point measurements
@@ -252,7 +250,7 @@ class UnscentedKalmanFilter(SequentialFilter):  # pylint: disable=too-many-insta
         Args:
             obs (:class:`.Observation`): observations associated with this UKF step
         """
-        temp = [sensor_agents[observation.unique_id].sensors.r_matrix for observation in obs]
+        temp = [sensor_agents[observation.sensor_id].sensors.r_matrix for observation in obs]
         self.r_matrix = block_diag(*temp)
 
     def calculateKalmanGain(self, obs):

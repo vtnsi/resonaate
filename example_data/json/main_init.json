@@ -11,7 +11,7 @@
         "dynamics_noise_magnitude": 1e-25,
         "filter_noise_type": "continuous_white_noise",
         "filter_noise_magnitude": 1e-12,
-        "random_seed": null
+        "random_seed": "os"
     },
     "propagation": {
         "propagation_model": "special_perturbations",
@@ -25,12 +25,17 @@
         "order": 0
     },
     "perturbations": {},
-    "target_event_set": "",
-    "sensor_event_set": "",
     "filter": {
-        "name": "unscented_kalman_filter"
+        "name": "unscented_kalman_filter",
+        "parameters": {
+            "alpha": 0.05,
+            "beta": 2.0
+        },
+        "dynamics_model": "special_perturbations"
     },
-    "engines": [
+    "target_events_file": "",
+    "sensor_events_file": "",
+    "engines_files": [
         "engines/taskable_engine.json"
     ]
 }

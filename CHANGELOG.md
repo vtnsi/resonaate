@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [RESONAATE Changelog](#resonaate-changelog)
 - [[Unreleased]](#unreleased)
+- [[1.2.0] - 2021-06-14](#120---2021-06-14)
 - [[1.1.1] - 2021-03-25](#111---2021-03-25)
 - [[1.1.0] - 2021-03-24](#110---2021-03-24)
 - [[1.0.1] - 2021-01-21](#101---2021-01-21)
@@ -25,6 +26,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed
 
+# [1.2.0] - 2021-06-14
+
+- Added
+  - Scenario/Simulation config sub-package for all valid JSON/YAML objects/options under `resonaate.scenario.config`
+    - See !27 for details on how this was implemented
+  - `Agent` DB table entry object
+  - `Epoch` DB table entry object
+  - New `build` and `upload` stages to CI pipeline, along with `sast` test job
+  - **tasks.json** file for starting/stopping Redis through VS Code tasks
+  - `__hash__()` magic method for `JulianDate` and `ScenarioTime` objects
+  - `__version__` attribute to top-level **resonaate/__init__.py** for easier version tracking
+  - Unit tests for all modules in **resonaate/data**
+  - Unit tests for all modules in **resonaate/common**
+  - Various **datafiles** for performing unit tests
+  - Ability to dump an in-memory database to disk at the end of a simulation
+  - Calling `WorkerManager.stopWorkers()` at the end of simulation
+  - `EarthOrientationParameter` dataclass object for tracking EOPs outside of DB
+  - `dynamics.integration_events` module that includes station keeping and impulsive maneuvers
+  - `Celestial` class to `dynamics` module for functionality shared between space based agents
+
+- Changed
+  - Make `Agent::setCallback()` abstract, and define in concrete classes
+  - Split database architecture into `ResonaateDatabase` and `ImporterDatabase`
+    - `ResonaateDatabase` for produced data
+    - `ImporterDatabase` for **read-only** data ingested into RESONAATE
+  - Move all DB table objects to use a relational model
+    - Reference `Agent` and `Epoch` objects with `ForeignKey` constraint
+    - More efficient storage and querying
+  - Improve `DataInterface::getSharedInterface()` logic
+  - Move `assess()` definition into `TaskingEngine` abstract class
+  - Make `ResonaateDatabase` explicitly defined in `Scenario` constructor
+  - Add whether to use `ImporterDatabase` to `Scenario` & `PropagateJobHandler` constructors and `TaskingEngine::assess()`
+  - Moved CLI functionality into separate module **resonaate/common/cli.py** and added new options for improved DB architecture
+  - Improve **resonaate/common/utilities.py** module error handling & added unit tests
+  - Move **external_data** to **resonaate/physics/data**
+  - Allow proper packaging of RESONAATE by including data files and using `resource_filename`
+  - Move nutation parts into separate **resonaate/physics/transforms/nutation.py** module & cache the function call
+  - `config.propagation.realtime_propagation` defaults to `True`
+  - Refactor imported estimate/observation logic into separate functions `PropagateJobHandler::loadImportedEphemerides()` and `CentralizedTaskingEngine::loadImportedObservations()` respectively
+  - Minor improvements to entry-point script in **resonaate/__main__.py**
+  - Improvements and clarifications to **README.md** and **CONTRIBUTING.md** for new users
+  - Updates to **initialization.md** and **interface.md** for all requisite changes
+  - Update **launch.json** to use debugging configurations with and without db saving
+  - `Task` objects are now `Jobs` to deconflict with sensor "tasking"
+  - `TaskingData` is now called `Task` to be more consistent
+  - EOPs are no longer kept in the databases, but are loaded from disk and cached
+
+- Deprecated
+  - JSON/YAML config formats to fit new scenario config class
+  - Options `PhysicsModelDataPath` and `EphemerisPreLoaded` for config file aren't needed
+  - `EarthOrientationParams` is no longer a valid DB table
+
+- Removed
+  - **scripts** directory, and put in the SDA Post Processing/SDA Analysis repo
+  - `NutationParams` DB table entry object because it is not dynamic data nor is it very large
+  - Excess pre-loaded truth data for unit tests
+  - `insertData()`, `deleteData()`, & `bulkSave()` from `ImporterDatabase` because it supposed to be **read-only**
+  - `ImporterDatabase` initialization from `ScenarioBuilder` constructor
+  - `events` module
+
+- Fixed
+  - North-facing sensors' azimuth mask was not handled properly causing `isVisible()` to always return false (#78)
+  - `TaskingEngine.observations` weren't reset unless `getCurrentObservations()` was called (#79)
+  - Config values of `0` were not handled, and so those field were set to the default value (#77)
+  - Config `"random_seed": null` was not handled. Changed valid option to `"os"` (#76)
+  - No **output** directory caused RESONAATE to crash (#54)
+  - `TaskingData` were published to DB with `julian_date_start` rather than `julian_date_epoch` (commit 28ef305c)
+  - DB table equality operator (commit 7df42e9a5)
+  - Fix issue with `JulianDate` subtraction & comparison operators (commits a1a6f2489 and 31f29420b)
+
 # [1.1.1] - 2021-03-25
 
 Fix environment variable reading security issue and change Git workflow docs.
@@ -33,7 +104,7 @@ Fix environment variable reading security issue and change Git workflow docs.
   - Documentation on release process and Git workflow
 
 - Removed
-  - Feature to read environment variable pointing to config file
+  - Feature to read environment variable pointing to config file (#62)
 
 # [1.1.0] - 2021-03-24
 
@@ -114,7 +185,7 @@ Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard st
 
 - Fixed
   - Redis password is now retrieved via an environment variable `REDIS_PASSWORD`, or `None`
-  - `safeArgCos()` now properly checks for non-rounding cases when called
+  - `safeArcCos()` now properly checks for non-rounding cases when called
   - Small corner-case sign errors in reference frame rotations
   - Incorrect lighting conditions
 

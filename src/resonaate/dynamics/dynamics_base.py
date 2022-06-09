@@ -15,11 +15,6 @@ class Dynamics:
     ABSOLUTE_TOL = 10**-12
 
     @abstractmethod
-    def propagate(self, initial_time, final_time, initial_state):
+    def propagate(self, initial_time, final_time, initial_state, station_keeping=None):
         """Abstract method for forwards propagation."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def retrogress(self, initial_time, final_time, initial_state):
-        """Abstract method for backwards propagation."""
         raise NotImplementedError

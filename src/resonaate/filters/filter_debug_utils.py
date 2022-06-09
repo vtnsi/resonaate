@@ -1,6 +1,7 @@
 # Standard Library Imports
 import json
 import os
+import pickle
 from uuid import uuid4
 # Third Party Imports
 import numpy as np
@@ -10,8 +11,10 @@ from sqlalchemy.orm import Query
 # RESONAATE Imports
 from ..common.behavioral_config import BehavioralConfig
 from ..common.utilities import getTypeString
-from ..data.data_interface import DataInterface, TruthEphemeris
+from ..data.ephemeris import TruthEphemeris
+from ..data.resonaate_database import ResonaateDatabase
 from ..data.query_util import addAlmostEqualFilter
+from ..parallel import getRedisConnection
 from ..physics.math import nearestPD
 from ..physics.transforms.methods import ecef2sez, eci2ecef
 from ..sensors.measurements import getAzimuth, getElevation, getRange, getRangeRate
@@ -51,19 +54,21 @@ def debugToJSONFile(base_filename, debug_dir, json_dict):
     return complete_filename
 
 
-def checkThreeSigmaObs(current_obs, target_agents, sensor_agents, sigma=3):
+def checkThreeSigmaObs(current_obs, sigma=3):
     """Check if an :class:`.Observation`'s absolute error is greater than 3 std."""
-    shared_interface = DataInterface.getSharedInterface()
+    target_agents = pickle.loads(getRedisConnection().get('target_agents'))
+    sensor_agents = pickle.loads(getRedisConnection().get('sensor_agents'))
+    shared_interface = ResonaateDatabase.getSharedInterface()
     filenames = []
     for observation in current_obs:
         # Grab ephemeris directly from the Database to avoid any noise potentially associated
         # with `Spacecraft` objects.
-        query = Query([TruthEphemeris]).filter(TruthEphemeris.unique_id == observation.target_id)
+        query = Query([TruthEphemeris]).filter(TruthEphemeris.agent_id == observation.target_id)
         query = addAlmostEqualFilter(query, TruthEphemeris, 'julian_date', observation.julian_date)
         ephem = shared_interface.getData(query, multi=False)
 
         # Calculate SEZ vector from ephemeris state
-        sensor_agent = sensor_agents[observation.observer]
+        sensor_agent = sensor_agents[observation.unique_id]
         ephem_minus_sensor_ecef = eci2ecef(np.asarray(ephem.eci)) - sensor_agent.ecef_state
         ephem_sez = ecef2sez(ephem_minus_sensor_ecef, sensor_agent.lla_state[0], sensor_agent.lla_state[1])
 
@@ -236,7 +241,7 @@ def findNearestPositiveDefiniteMatrix(covariance):
     return cholesky_p, complete_filename
 
 
-def logFilterStep(filter_obj, description, observations, truth_state, sensor_agents):
+def logFilterStep(filter_obj, description, observations, truth_state):
     """Log information from a complete filter step for debugging purposes.
 
     This occurs at the end of the :meth:`.SequentialFilter.update` logic.
@@ -246,7 +251,6 @@ def logFilterStep(filter_obj, description, observations, truth_state, sensor_age
         description (``dict``): initial error description with pre-forecast data
         observations (``list): :class:`.Observation`s associated with this filter step
         truth_state (``np.ndarray``): 6x1 ECI state vector of the estimate's truth dynamics
-        sensor_agents (``dict``): collection of :class:`.SensingAgent`s in the simulation
 
     Returns:
         ``str``: filename where the filter step information was logged
@@ -257,7 +261,7 @@ def logFilterStep(filter_obj, description, observations, truth_state, sensor_age
         description,
         observations,
         truth_state,
-        sensor_agents
+        pickle.loads(getRedisConnection().get('sensor_agents'))
     )
 
     # Write information to output file
@@ -300,7 +304,7 @@ def createFilterDebugDict(filter_obj, description, observations, truth_state, se
 
     # Update debugging information from valid observation
     for item, observation in enumerate(observations):
-        sensor_agent = sensor_agents[observation.observer]
+        sensor_agent = sensor_agents[observation.unique_id]
         description["observation_{0}".format(item)] = observation.makeDictionary()
         description["sensor_{0}".format(item)] = sensor_agent.sensors.getSensorData()
         description["facility_{0}".format(item)] = sensor_agent.getCurrentEphemeris().makeDictionary()

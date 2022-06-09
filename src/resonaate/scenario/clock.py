@@ -1,11 +1,12 @@
 # Standard Library Imports
 import logging
-from datetime import datetime
 # Pip Package Imports
 # RESONAATE Imports
+from ..data.epoch import Epoch
+from ..data.resonaate_database import ResonaateDatabase
 from ..physics import constants as const
 from ..physics.bodies.third_body import updateThirdBodyPositions, Moon, Sun
-from ..physics.time.stardate import JulianDate, ScenarioTime, datetimeToJulianDate
+from ..physics.time.stardate import JulianDate, ScenarioTime, datetimeToJulianDate, julianDateToDatetime
 from ..physics.transforms.reductions import updateReductionParameters
 
 
@@ -58,41 +59,33 @@ class ScenarioClock:
         updateReductionParameters(self.julian_date_epoch)
         updateThirdBodyPositions(self.julian_date_epoch, BODIES)
 
-    ## [REVIEW][implementation] Double check this implementation!
-    def reset(self):
-        """Reset the `ScenarioClock` object."""
-        self.time = self.initial_time
-        self.julian_date_epoch = self.julian_date_start
-        updateReductionParameters(self.julian_date_epoch)
-        updateThirdBodyPositions(self.julian_date_epoch, BODIES)
+        # Insert epoch into database
+        self.updateDatabase()
+
+    def updateDatabase(self):
+        """Update internal DB with epoch."""
+        database = ResonaateDatabase.getSharedInterface()
+        database.insertData(
+            Epoch(
+                julian_date=self.julian_date_epoch,
+                timestampISO=julianDateToDatetime(self.julian_date_epoch).isoformat()
+            )
+        )
 
     @classmethod
     def fromConfig(cls, config):
         """Factory to create a valid :class:`.ScenarioClock` object from a config dictionary.
 
         Args:
-            config (``dict``): corresponding configuration
+            config (TimeConfig): corresponding configuration
 
         Returns:
             :class:`.ScenarioClock`: properly constructed `ScenarioClock` object
         """
-        # Parse start & stop times and calc the timespan
-        if isinstance(config["start_timestamp"], datetime):
-            start_time = config["start_timestamp"]
-            stop_time = config["stop_timestamp"]
-        else:
-            start_time = datetime.strptime(
-                config["start_timestamp"],
-                "%Y-%m-%dT%H:%M:%S.%fZ"
-            )
-            stop_time = datetime.strptime(
-                config["stop_timestamp"],
-                "%Y-%m-%dT%H:%M:%S.%fZ"
-            )
-        time_span = (stop_time - start_time).total_seconds()
+        time_span = (config.stop_timestamp - config.start_timestamp).total_seconds()
 
         return cls(
-            datetimeToJulianDate(start_time),
+            datetimeToJulianDate(config.start_timestamp),
             time_span,
-            config["physics_step_sec"]
+            config.physics_step_sec
         )

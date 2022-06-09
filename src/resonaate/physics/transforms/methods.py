@@ -2,12 +2,12 @@
 # Third Party Imports
 from numpy import (
     concatenate, sqrt, sin, cos, sign, arccos,
-    arctan, matmul, asarray, finfo, float64, tan
+    arctan, matmul, asarray, finfo, float64, tan, cross
 )
 from scipy.linalg import norm
 # RESONAATE Imports
-from ...physics import constants as const
-from ...physics.math import rot2, rot3, cross
+from .. import constants as const
+from ..math import rot2, rot3
 from ..bodies import Earth
 from .reductions import getReductionParameters
 
@@ -26,7 +26,7 @@ def eci2ecef(x_eci):
     """
     reduction = getReductionParameters()
     r_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[:3]))
-    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["eops"]["lod"] / 86400.0)])
+    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
     v_correction = cross(om_earth, matmul(reduction["rot_w"], r_ecef))
     v_ecef = matmul(
         reduction["rot_wt"],
@@ -50,7 +50,7 @@ def ecef2eci(x_ecef):
     """
     reduction = getReductionParameters()
     r_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[:3]))
-    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["eops"]["lod"] / 86400.0)])
+    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
     v_correction = cross(om_earth, matmul(reduction["rot_w"], x_ecef[:3]))
     v_eci = matmul(
         reduction["rot_pnr"],

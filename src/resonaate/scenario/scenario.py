@@ -1,6 +1,5 @@
 # Standard Library Imports
 import logging
-import os.path
 from pickle import dumps
 from collections import defaultdict
 # Third Party Imports
@@ -9,22 +8,21 @@ from numpy.random import default_rng
 from scipy.linalg import norm
 from sqlalchemy.orm import Query
 # RESONAATE Imports
-from .scenario_builder import ScenarioBuilder
 from ..agents.estimate_agent import EstimateAgent
 from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
-from ..common.exceptions import TaskTimeoutError
+from ..common.exceptions import JobTimeoutError
 from ..common.logger import Logger
-from ..common.utilities import loadJSONFile, loadYAMLFile, getTimeout
-from ..data.data_interface import DataInterface
-from ..data.node_addition import NodeAddition
+from ..common.utilities import getTimeout
+from ..data.data_interface import NodeAddition, Agent
+from ..data.resonaate_database import ResonaateDatabase
 from ..data.query_util import addAlmostEqualFilter
 from ..dynamics import spacecraftDynamicsFactory
 from ..parallel import getRedisConnection, REDIS_QUEUE_LOGGER
 from ..parallel.async_functions import asyncUpdateEstimate
 from ..parallel.job_handler import PropagateJobHandler, CallbackRegistration
 from ..parallel.producer import QueueManager
-from ..parallel.task import Task
+from ..parallel.job import Job
 from ..parallel.worker import WorkerManager
 from ..physics.noise import noiseCovarianceFactory
 
@@ -38,19 +36,22 @@ class Scenario:
     """
 
     def __init__(
-            self, config, clock, target_agents,
-            estimate_agents, sensor_network, tasking_engines, _filter, logger=None, start_workers=True
+            self, config, clock, target_agents, estimate_agents, sensor_network,
+            tasking_engines, internal_db_path=None, importer_db_path=None, logger=None, start_workers=True
     ):
         """Instantiate a Scenario object.
 
         Args:
             config (:class:`.ScenarioConfig`): configuration used to create this instance, kept for reference.
-            clock (:class:`.ScenarioClock`): main clock object for tracking time & managing tasking queues
+            clock (:class:`.ScenarioClock`): main clock object for tracking time
             target_agents (``dict``): target RSO objects for this :class:`.Scenario` .
             estimate_agents (``dict``): estimate RSO objects for this :class:`.Scenario` .
             sensor_network (``list``): sensor network for this :class:`.Scenario` .
             tasking_engines (:class:`.TaskingEngine`): list of tasking engines for this :class:`.Scenario` .
-            _filter (:class:`.SequentialFilter`): kalman filter for this "class:`.Scenario` .
+            internal_db_path (``str``, optional): path to RESONAATE internal database object.
+                Defaults to ``None``.
+            importer_db_path (``str``, optional): path to external importer database for pre-canned
+                data. Defaults to ``None``.
             logger (:class:`.Logger`, optional):pPreviously instantiated :class:`.Logger` instance to be used.
                 Defaults to `None`, resulting in the class instantiating its own :class:`.Logger`.
             start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
@@ -68,35 +69,34 @@ class Scenario:
         self.sensor_network = sensor_network
         self._sensor_agents = {node.simulation_id: node for node in self.sensor_network}
         self._tasking_engines = tasking_engines
-        self.filter = _filter
         self.current_julian_date = self.julian_date_start
 
         # Queue manager class instance.
-        self.queue_mgr = QueueManager(processed_callback=self.handleProcessedTask)
+        self.queue_mgr = QueueManager(processed_callback=self.handleProcessedJob)
 
-        # Dictionary correlating submitted task IDs to
-        self.execute_tasking_task_ids = {}
+        # Dictionary correlating submitted job IDs to
+        self.execute_tasking_job_ids = {}
 
         # Save filter dynamics functions
         self._dynamics_method = spacecraftDynamicsFactory(
-            config.propagation["propagation_model"],
+            config.filter.dynamics,
             self.clock,
             config.geopotential,
             config.perturbations,
-            method=config.propagation["integration_method"]
+            method=config.propagation.integration_method
         )
 
         # Save filter & dynamics process noise matrix
         self._filter_noise_matrix = noiseCovarianceFactory(
-            config.noise["filter_noise_type"],
-            config.time["physics_step_sec"],
-            config.noise["filter_noise_magnitude"]
+            config.noise.filter_noise_type,
+            config.time.physics_step_sec,
+            config.noise.filter_noise_magnitude
         )
 
         self._dynamics_noise_matrix = noiseCovarianceFactory(
-            config.noise["dynamics_noise_type"],
-            config.time["physics_step_sec"],
-            config.noise["dynamics_noise_magnitude"]
+            config.noise.dynamics_noise_type,
+            config.time.physics_step_sec,
+            config.noise.dynamics_noise_magnitude
         )
 
         ## Logging class used to track execution.
@@ -105,7 +105,7 @@ class Scenario:
             self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
 
         if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
-            self.logger.warning("Simulation is running in debug mode. Worker tasks can block indefinitely.")
+            self.logger.warning("Simulation is running in debug mode. Worker jobs can block indefinitely.")
 
         REDIS_QUEUE_LOGGER.setLevel(logging.WARNING)
         if start_workers:
@@ -116,21 +116,21 @@ class Scenario:
         # Log some basic information about propagation for this simulation
         self.logger.info("Filter process noise magnitude: {0}".format(norm(self._filter_noise_matrix)))
         self.logger.info("Dynamics process noise magnitude: {0}".format(norm(self._dynamics_noise_matrix)))
-        self.logger.info("Random seed: {0}".format(config.noise["random_seed"]))
+        self.logger.info("Random seed: {0}".format(config.noise.random_seed))
         self.logger.info(
-            "Using real-time propagation for truth data: {0}".format(config.propagation["realtime_propagation"])
+            "Using real-time propagation for truth data: {0}".format(config.propagation.realtime_propagation)
         )
-        self.logger.info("Spacecraft dynamics model: {0}".format(config.propagation["propagation_model"]))
-        self.logger.info("Numerical integration method: {0}".format(config.propagation["integration_method"]))
-        self.logger.info("Earth gravity model: {0}".format(config.geopotential["model"]))
+        self.logger.info("Spacecraft dynamics model: {0}".format(config.propagation.propagation_model))
+        self.logger.info("Numerical integration method: {0}".format(config.propagation.integration_method))
+        self.logger.info("Earth gravity model: {0}".format(config.geopotential.model))
         self.logger.info(
             "Earth geopotential degree, order: {0}, {1}".format(
-                config.geopotential["degree"],
-                config.geopotential["order"]
+                config.geopotential.degree,
+                config.geopotential.order
             )
         )
-        if config.perturbations["third_bodies"]:
-            self.logger.info("Third body perturbations: {third_bodies}".format(**config.perturbations))
+        if config.perturbations.third_bodies:
+            self.logger.info(f"Third body perturbations: {config.perturbations.third_bodies}")
 
         # [NOTE] We want to print all Numpy warnings to stdout, otherwise they are suppressed. However,
         #          some warnings are actually negligible, such as:
@@ -138,20 +138,34 @@ class Scenario:
         #          thrown inside of the `numpy::solve_ivp()` method. Therefore, we don't want to raise, just print.
         seterr(all="warn")
 
-        self._propagate_job_handler = PropagateJobHandler()
+        # Initialize truth propagation job queue, and assign callbacks for all agents
+        self._propagate_job_handler = PropagateJobHandler(importer_db_path=importer_db_path)
 
-        for estimate_number in self.estimate_agents:
-            self._propagate_job_handler.registerPropagateCallback(self.estimate_agents[estimate_number].callback)
+        # Save DB objects
+        self._importer_db_path = importer_db_path
+        self.database = ResonaateDatabase.getSharedInterface(
+            db_url=internal_db_path,
+            logger=self.logger
+        )
+        # Initialize the shared DB with initial `Epoch` and complete set of `Agent`s
+        self._initializeScenarioDB()
+
+        # [TODO]: Refactor estimate prediction step into it's own job queue. Should be more closely
+        #           related to the "assess" step.
+        for estimate_agent in self.estimate_agents.values():
+            callback = estimate_agent.setCallback(importer_db_path)
+            self._propagate_job_handler.registerPropagateCallback(callback)
 
         for target_agent in self.target_agents.values():
-            if isinstance(target_agent.callback, CallbackRegistration):
-                self._propagate_job_handler.registerPropagateCallback(target_agent.callback)
+            callback = target_agent.setCallback(importer_db_path)
+            if isinstance(callback, CallbackRegistration):
+                self._propagate_job_handler.registerPropagateCallback(callback)
             else:
-                self._propagate_job_handler.registerImporterCallback(target_agent.simulation_id, target_agent.callback)
+                self._propagate_job_handler.registerImporterCallback(target_agent.simulation_id, callback)
 
         for tasking_engine in self._tasking_engines:
             for simulation_id in tasking_engine.sensor_list:
-                callback = self.sensor_agents[simulation_id].callback
+                callback = self.sensor_agents[simulation_id].setCallback(importer_db_path)
                 if isinstance(callback, CallbackRegistration):
                     self._propagate_job_handler.registerPropagateCallback(callback)
                 else:
@@ -159,38 +173,58 @@ class Scenario:
 
         self.logger.info("Initialized Scenario.")
 
-    def handleProcessedTask(self, task):
-        """Handle completed tasks via the :class:`.QueueManager` process.
+    def _initializeScenarioDB(self):
+        """Initialize database with current epoch and agents."""
+        self.clock.updateDatabase()
+        # Insert all target and sensor agents
+        self.database.bulkSave([
+            Agent(
+                unique_id=agent.simulation_id,
+                name=agent.name
+            ) for agent in self.all_agents]
+        )
+
+    @property
+    def all_agents(self):
+        """Compiles set of all target and sensor agents.
+
+        Returns:
+            set: all current target and sensor agents combined.
+        """
+        agents = set(self.target_agents.values())
+        agents.update(list(self.sensor_agents.values()))
+        return agents
+
+    def handleProcessedJob(self, job):
+        """Handle completed jobs via the :class:`.QueueManager` process.
 
         Args:
-            task (:class:`.Task`): task object to be handled
+            job (:class:`.Job`): job object to be handled
 
         Raises:
-            Exception: raised if task-tracking dicts are empty and task is handled
-            Exception: raised if task completed in an error state
+            Exception: raised if job-tracking dicts are empty and job is handled
+            Exception: raised if job completed in an error state
         """
-        if task.status == 'processed':
-            if self.execute_tasking_task_ids:
+        if job.status == 'processed':
+            if self.execute_tasking_job_ids:
                 # process execute estimation updates
-                self.execute_tasking_task_ids[task.id].updateFromAsyncUpdateEstimate(
-                    task.retval
+                self.execute_tasking_job_ids[job.id].updateFromAsyncUpdateEstimate(
+                    job.retval
                 )
 
             else:
-                raise Exception("No map to handle task {0.id}.".format(task))
+                raise Exception("No map to handle job {0.id}.".format(job))
 
         else:
-            raise Exception("Error occurred in task {0.id}:\n\t{0.error}".format(
-                task
+            raise Exception("Error occurred in job {0.id}:\n\t{0.error}".format(
+                job
             ))
 
-    def propagateTo(self, target_time, output_database=None):
+    def propagateTo(self, target_time):
         """Propagate the :class:`.Scenario` forward to the given time.
 
         Args:
             target_time (:class:`.JulianDate`): Julian date of when to propagate to.
-            output_database (:class:`.DataInterface`, optional): database to output simulation data
-                to. Defaults to ``None``, which means do not output any data.
 
         Raises:
             ValueError: raised if a `target_time` given is less than :attr:`.ScenarioClock.dt_step`
@@ -215,8 +249,8 @@ class Scenario:
                 self.stepForward()
 
                 # Build the output message on OUTPUT interval timestep
-                if self.clock.time % self.output_time_step == 0 and output_database is not None:
-                    self.saveDatabaseOutput(output_database)
+                if self.clock.time % self.output_time_step == 0:
+                    self.saveDatabaseOutput()
 
         else:
             self.logger.error("Delta less than physics time step of {0} seconds.".format(
@@ -224,7 +258,7 @@ class Scenario:
             ))
             raise ValueError(rounded_delta)
 
-    def saveDatabaseOutput(self, output_database):
+    def saveDatabaseOutput(self):
         """Save Truth, Estimate, and Observation data to the output database."""
         # Grab `TruthEphemeris` for targets & sensors
         output_data = [tgt.getCurrentEphemeris() for tgt in self.target_agents.values()]
@@ -236,29 +270,29 @@ class Scenario:
             obs = tasking_engine.getCurrentObservations()
             if obs:
                 self.logger.debug(
-                    "Saving {0} observations for targets {1} to the database.".format(
+                    "Committing {0} observations for targets {1} to the database.".format(
                         len(obs),
-                        {ob.target_id for ob in obs})
+                        {ob.target_id for ob in obs}
+                    )
                 )
             output_data.extend(obs)
             # Grab tasking data
-            output_data.extend(tasking for tasking in tasking_engine.getCurrentTasking(self.current_julian_date))
+            output_data.extend(
+                tasking for tasking in tasking_engine.getCurrentTasking(self.clock.julian_date_epoch)
+            )
 
         # Commit data to output DB
-        output_database.bulkSave(output_data)
+        self.database.bulkSave(output_data)
 
     def stepForward(self):
         """Propagate the simulation forward by a single timestep."""
         # Call to update the entire model
         self.logger.debug("TicToc")
+        # Tic clock forward, push epoch to DB
         self.clock.ticToc()
-        self._propagate_job_handler.executeJobs(self.clock)
 
-        # Add truth data to the shared interface
-        shared_interface = DataInterface.getSharedInterface()
-        ephems = [tgt.getCurrentEphemeris() for tgt in self.target_agents.values()]
-        ephems.extend(sensor.getCurrentEphemeris() for sensor in self.sensor_network)
-        shared_interface.bulkSave(ephems)
+        # Propagate truth model forward in time.
+        self._propagate_job_handler.executeJobs(self.clock)
 
         red = getRedisConnection()
         red.set('sensor_agents', dumps(self.sensor_agents))
@@ -269,44 +303,53 @@ class Scenario:
         self.logger.debug("Assess")
         obs_dict = defaultdict(list)
         for tasking_engine in self._tasking_engines:
-            tasking_engine.assess(self.clock.julian_date_epoch)
-            for observation in tasking_engine.cur_step_observations:
+            tasking_engine.assess(
+                self.clock.julian_date_epoch,
+                importer_db_path=self._importer_db_path
+            )
+            for observation in tasking_engine.observations:
                 obs_dict[observation.target_id].append(observation)
 
         # Estimate and covariance are stored as the updated state estimate and covariance
         # If there are no observations, there is no update information and the predicted state
+        jobs = []
         for estimate in self.estimate_agents:
-            task = Task(
+            job = Job(
                 asyncUpdateEstimate,
                 args=[
                     self.estimate_agents[estimate],
-                    self.target_agents[estimate],
+                    self.target_agents[estimate].eci_state,
                     obs_dict[estimate]
                 ]
             )
 
-            self.execute_tasking_task_ids[task.id] = self.estimate_agents[estimate]
-            self.queue_mgr.queueTasks(task)
+            self.execute_tasking_job_ids[job.id] = self.estimate_agents[estimate]
+            jobs.append(job)
 
-        # Wait for tasks to complete
+        self.queue_mgr.queueJobs(*jobs)
+
+        # Wait for jobs to complete
         try:
             self.queue_mgr.blockUntilProcessed(
-                timeout=getTimeout(self.execute_tasking_task_ids)
+                timeout=getTimeout(self.execute_tasking_job_ids)
             )
-        except TaskTimeoutError:
-            # tasks took longer to complete than expected
-            msg = "Tasks haven't completed after {0} seconds."
+        except JobTimeoutError:
+            # jobs took longer to complete than expected
+            msg = "Jobs haven't completed after {0} seconds."
             self.logger.error(
                 msg.format(
-                    5 * len(self.execute_tasking_task_ids)
+                    5 * len(self.execute_tasking_job_ids)
                 )
             )
 
-        # reset task handling mappings
-        self.execute_tasking_task_ids = {}
+        # reset job handling mappings
+        self.execute_tasking_job_ids = {}
 
         # Add any nodes as needed
         self.processNodeAdditions()
+
+        # Update Julian date properly
+        self.current_julian_date = self.clock.julian_date_epoch
 
     def addNode(self, target, tasking_engine):
         """Add a node to the target network.
@@ -320,7 +363,7 @@ class Scenario:
         ])
 
         # _id, name, initial_state, clock, dynamics, realtime, process_noise, seed=None
-        seed = self.scenario_config.noise["random_seed"]
+        seed = self.scenario_config.noise.random_seed
         new_tgt = TargetAgent(
             target.sat_num,
             target.sat_name,
@@ -328,16 +371,17 @@ class Scenario:
             initial_state,
             self.clock,
             self._dynamics_method,
-            self.scenario_config.propagation["realtime_propagation"],
+            self.scenario_config.propagation.realtime_propagation,
             self._dynamics_noise_matrix,
-            seed=seed
+            seed=seed,
+            station_keeping=target.station_keeping
         )
 
         # Create a filter config object
         filter_config = {
-            "filter_type": self.filter.__class__.__name__,
+            "filter_type": self.scenario_config.filter.name,
             # Create dynamics object for RSO filter propagation
-            "dynamics": self._dynamics_method,
+            "dynamics": self.scenario_config.filter.dynamics,
             # Create process noise covariance for uncertainty propagation
             "process_noise": self._filter_noise_matrix,
             "alpha": 0.05,
@@ -347,10 +391,11 @@ class Scenario:
         # Create new ``EstimateAgent`` based on new ``TargetAgent``
         config = {
             "target": new_tgt,
-            "init_estimate_error": self.scenario_config.noise["initial_error_magnitude"],
+            "init_estimate_error": self.scenario_config.noise.initial_error_magnitude,
             "rng": default_rng(seed),
             "clock": self.clock,
             "filter": filter_config,
+            "station_keeping": None,
             "seed": seed
         }
         new_est_agent = EstimateAgent.fromConfig(config, events=[])
@@ -362,122 +407,24 @@ class Scenario:
 
     def processNodeAdditions(self):
         """Execute any node additions that are present in the database for the current time."""
-        shared_interface = DataInterface.getSharedInterface()
-        query = Query([NodeAddition])
-        query = addAlmostEqualFilter(query, NodeAddition, 'start_time', float(self.clock.julian_date_epoch))
-        node_additions = shared_interface.getData(query)
+        query = Query(NodeAddition)
+        query = addAlmostEqualFilter(query, NodeAddition, 'start_time_jd', float(self.clock.julian_date_epoch))
+        node_additions = self.database.getData(query)
 
         for addition in node_additions:
             ## [NOTE]: default to first tasking engine, needs update
             self.addNode(addition, self._tasking_engines[0])
-            self.logger.info("Added new target {0}: {1}".format(addition.unique_id, addition.name))
-
-    @staticmethod
-    def parseConfigFile(path):
-        """Parse out configuration from a given filepath.
-
-        Args:
-            path (``str``): path to main config file
-
-        Returns:
-            ``dict``: config dictionary object with the necessary fields
-        """
-        if path.endswith("json"):
-            file_loader = loadJSONFile
-        elif path.endswith("yaml"):
-            file_loader = loadYAMLFile
-        else:
-            raise ValueError(path)
-
-        # Load the main config, and save the path
-        config_file_path = os.path.dirname(os.path.abspath(path))
-        configuration = file_loader(path)
-
-        # Load target events
-        target_events = None
-        target_events_file = configuration.pop("target_event_set", None)
-        if target_events_file:
-            target_events = file_loader(os.path.join(config_file_path, target_events_file))
-        configuration["target_events"] = target_events
-
-        # Load sensor events
-        sensor_events = None
-        sensor_events_file = configuration.pop("sensor_event_set", None)
-        if sensor_events_file:
-            sensor_events = file_loader(os.path.join(config_file_path, sensor_events_file))
-        configuration["sensor_events"] = sensor_events
-
-        # Load the Tasking Engines
-        tasking_engines = configuration.pop("engines")
-        configuration["engines"] = []
-        for engine in tasking_engines:
-            engine_file = file_loader(os.path.join(config_file_path, engine))
-
-            # Load the RSO target set
-            target_file = file_loader(os.path.join(config_file_path, engine_file["target_set"]))["targets"]
-
-            # Load the sensor set
-            sensor_file = file_loader(os.path.join(config_file_path, engine_file["sensor_set"]))["sensors"]
-
-            configuration["engines"].append({"name": engine,
-                                             "targets": target_file,
-                                             "sensors": sensor_file,
-                                             "reward": engine_file["reward"],
-                                             "decision": engine_file["decision"]})
-
-        assert len(configuration["engines"]) > 0, "No engine object included in configuration."
-
-        return configuration
-
-    @classmethod
-    def fromConfigFile(cls, path, start_workers=True):
-        """Factory to create a :class:`.Scenario` object from a config file.
-
-        Args:
-            path (``str``): path to main config file
-            start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
-                spin up its own :class:`.WorkerManager` instance or not. Defaults to ``True``.
-
-        Returns:
-            :class:`.Scenario`: properly constructed `Scenario` object
-        """
-        configuration = Scenario.parseConfigFile(path)
-        return cls.fromConfig(configuration, start_workers=start_workers)
-
-    @classmethod
-    def fromConfig(cls, config, start_workers=True):
-        """Factory to create a :class:`.Scenario` object from a config dict.
-
-        Args:
-            config (``dict``): configuration dictionary object with the necessary fields
-            start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
-                spin up its own :class:`.WorkerManager` instance or not. Defaults to ``True``.
-
-        Returns:
-            :class:`.Scenario`: properly constructed `Scenario` object
-        """
-        # Create :class:`ScenarioBuilder` object, and then instantiate a :class:`.Scenario` object
-        builder = ScenarioBuilder(config)
-        return cls(
-            builder.config,
-            builder.clock,
-            builder.target_agents,
-            builder.estimate_agents,
-            builder.sensor_network,
-            builder.tasking_engines,
-            builder.logger,
-            start_workers=start_workers
-        )
+            self.logger.info("Added new target {0}: {1}".format(addition.agent_id, addition.agent.name))
 
     @property
     def output_time_step(self):
         """int: returns the configuration output time step in seconds."""
-        return self.scenario_config.time["output_step_sec"]
+        return self.scenario_config.time.output_step_sec
 
     @property
     def physics_time_step(self):
         """int: returns the configuration physics time step in seconds."""
-        return self.scenario_config.time["physics_step_sec"]
+        return self.scenario_config.time.physics_step_sec
 
     @property
     def julian_date_start(self):

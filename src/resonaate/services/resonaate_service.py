@@ -13,14 +13,15 @@ from sqlalchemy.orm import Query
 # Package Imports
 from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.common.logger import Logger
-from resonaate.data.data_interface import DataInterface, ManualSensorTask
+from resonaate.data.manual_sensor_task import ManualSensorTask
 from resonaate.data.ephemeris import EstimateEphemeris
 from resonaate.data.observation import Observation
 from resonaate.data.query_util import addAlmostEqualFilter
+from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.parallel import isMaster, resetMaster, REDIS_QUEUE_LOGGER
 from resonaate.parallel.worker import WorkerManager
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
-from resonaate.scenario.scenario import Scenario
+from resonaate.scenario import buildScenarioFromConfigDict
 from resonaate.services.output_processing import mungeLostUCTData, determineCurrentLeader
 
 
@@ -168,15 +169,15 @@ class ManualSensorTaskMessage(ServiceMessage):
         """Construct a :class:`.ManualSensorTask` object with given parameters.
 
         Args:
-            unique_id (int): Satellite number for target.
+            target_id (int): Satellite number for target.
             obs_priority (float): Scalar that indicates how important it is that this target be observed.
             start_time (JulianDate): :class:`.JulianDate` for when this prioritization should start.
             end_time (JulianDate): :class:`.JulianDate` for when this prioritization should end.
             message_id (str): Unique identifier for message.
         """
-        self.unique_id = target_id
-        if not isinstance(self.unique_id, int):
-            err = "Target ID must be an integer, not '{0}'".format(type(self.unique_id))
+        self.target_id = target_id
+        if not isinstance(self.target_id, int):
+            err = "Target ID must be an integer, not '{0}'".format(type(self.target_id))
             raise TypeError(err)
 
         self.obs_priority = obs_priority
@@ -207,8 +208,8 @@ class ManualSensorTaskMessage(ServiceMessage):
         """Return a string representation of this :class:`.ManualSensorTaskMessage`."""
         start_date_time = julianDateToDatetime(self.start_time)
         end_date_time = julianDateToDatetime(self.end_time)
-        return "ManualSensorTaskMessage(unique_id={0}, obs_priority={1}, start_time={2}|{3}, end_time={4}|{5})".format(
-            self.unique_id,
+        return "ManualSensorTaskMessage(target_id={0}, obs_priority={1}, start_time={2}|{3}, end_time={4}|{5})".format(
+            self.target_id,
             self.obs_priority,
             "JulianDate({0})".format(float(self.start_time)),
             "ISO({0})".format(start_date_time.isoformat()),
@@ -256,7 +257,7 @@ class ManualSensorTaskResponse:
     @property
     def primary_id(self):
         """str: Satellite number for target RSO."""
-        return str(self.task_message.unique_id)
+        return str(self.task_message.target_id)
 
     @property
     def status(self):
@@ -473,8 +474,8 @@ class ResonaateService:
     def _removeOldSensorTasks(self):
         """Remove old dynamic sensor tasks from the database."""
         query = Query([ManualSensorTask]).filter(ManualSensorTask.is_dynamic == True)  # noqa: E712
-        shared_interface = DataInterface.getSharedInterface()
-        removed_count = shared_interface.deleteData(query)
+        database = ResonaateDatabase.getSharedInterface()
+        removed_count = database.deleteData(query)
         self.logger.debug("Removed {0} dynamic sensor tasks from the database.".format(removed_count))
 
     def _dropMessage(self, dropped_message):
@@ -561,8 +562,15 @@ class ResonaateService:
         Args:
             message (InitMessage): Initialization message specifying the new Resonaate scenario.
         """
+        database = ResonaateDatabase.getSharedInterface()
+        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
         self.logger.debug("Loading scenario...")
-        self._scenario = Scenario.fromConfig(message.contents, start_workers=False)
+        self._scenario = buildScenarioFromConfigDict(
+            message.contents,
+            internal_db_path=None,
+            importer_db_path="sqlite://" if not message.contents["propagation"]["realtime_propagation"] else None,
+            start_workers=False
+        )
         self.logger.debug("Loaded.")
 
         self.logger.debug("Updating state...")
@@ -596,10 +604,8 @@ class ResonaateService:
                 # Propagate scenario forward in time
                 self._scenario.propagateTo(message.time_target)
 
-                # Get `DataInterface` for querying for data
-                shared_interface = DataInterface.getSharedInterface()
-
                 # Grab estimate data from db
+                database = ResonaateDatabase.getSharedInterface()
                 query = Query([EstimateEphemeris])
                 query = addAlmostEqualFilter(
                     query,
@@ -607,7 +613,7 @@ class ResonaateService:
                     'julian_date',
                     self._scenario.clock.julian_date_epoch
                 )
-                current_ephemerides = shared_interface.getData(query)
+                current_ephemerides = database.getData(query)
 
                 # Grab observation data from db
                 query = Query([Observation])
@@ -617,15 +623,13 @@ class ResonaateService:
                     'julian_date',
                     self._scenario.clock.julian_date_epoch
                 )
-                observation_data = shared_interface.getData(query)
+                observation_data = database.getData(query)
                 for estimate in current_ephemerides:
-                    leader_id = determineCurrentLeader(estimate.unique_id, estimate.julian_date)
-                    if leader_id != estimate.unique_id:
-                        # Get datetime format of Julian date
-                        date_time = julianDateToDatetime(estimate.julian_date)
+                    leader_id = determineCurrentLeader(estimate.agent_id, estimate.julian_date)
+                    if leader_id != estimate.agent_id:
                         # Grab leader estimate data from db
                         query = Query([EstimateEphemeris]).filter(
-                            EstimateEphemeris.unique_id == leader_id
+                            EstimateEphemeris.agent_id == leader_id
                         )
                         query = addAlmostEqualFilter(
                             query,
@@ -633,14 +637,12 @@ class ResonaateService:
                             'julian_date',
                             self._scenario.clock.julian_date_epoch
                         )
-                        leader_est = shared_interface.getData(query)
+                        leader_est = database.getData(query, multi=False)
 
                         # Overwrite follower estimate/covariance with that of the leader's
                         estimate = EstimateEphemeris.fromCovarianceMatrix(
-                            unique_id=estimate.unique_id,
-                            name=estimate.name,
+                            agent_id=estimate.agent_id,
                             julian_date=estimate.julian_date,
-                            timestampISO=date_time.isoformat() + '.000Z',
                             source=estimate.source,
                             eci=leader_est.eci,
                             covariance=leader_est.covariance
@@ -685,14 +687,14 @@ class ResonaateService:
         self.logger.info("Received sensor tasking: {0}".format(message))
         try:
             db_task = ManualSensorTask(
-                unique_id=message.unique_id,
+                target_id=message.target_id,
                 priority=message.obs_priority,
-                start_time=float(message.start_time),
-                end_time=float(message.end_time),
+                start_time_jd=float(message.start_time),
+                end_time_jd=float(message.end_time),
                 is_dynamic=True
             )
-            shared_interface = DataInterface.getSharedInterface()
-            shared_interface.insertData(db_task)
+            database = ResonaateDatabase.getSharedInterface()
+            database.insertData(db_task)
 
         except Exception:  # pylint: disable=broad-except
             self.handleManualSensorTaskResponse(ManualSensorTaskResponse(

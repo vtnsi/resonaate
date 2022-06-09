@@ -1,7 +1,9 @@
 # pylint: disable=attribute-defined-outside-init, no-self-use
 # Standard Library Imports
 import logging
+import os
 # Third Party Imports
+import pytest
 # RESONAATE Imports
 try:
     from resonaate.common.logger import Logger
@@ -10,7 +12,7 @@ except ImportError as error:
         "Please ensure you have appropriate packages installed:\n {0}".format(error)
     ) from error
 # Testing Imports
-from ..conftest import BaseTestCase
+from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
 
 
 def getLines(stdout_buff):
@@ -65,8 +67,11 @@ class TestLogging(BaseTestCase):
 
         assert line_count == 5
 
-    def testLogfile(self):
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testLogfile(self, datafiles):
         """Test the logger's output to a logfile."""
+        saved_cwd = os.getcwd()
+        os.chdir(datafiles)
         file_logger = Logger("logfile-test", path="logs/")
 
         file_logger.debug("This is a debug message.")
@@ -82,3 +87,5 @@ class TestLogging(BaseTestCase):
                 line_count += 1
 
             assert line_count == 5
+
+        os.chdir(saved_cwd)

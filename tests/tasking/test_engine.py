@@ -24,7 +24,7 @@ def getCentralizedEngineClass(mocked_reward, mocked_decision):
     engine = CentralizedTaskingEngine(
         sensor_nums, target_nums, mocked_reward, mocked_decision
     )
-    engine.assess_matrix_coordinate_task_ids[1] = 0
+    engine.assess_matrix_coordinate_job_ids[1] = 0
     engine.visibility_matrix = asarray([[0, 0, 0]])
     engine.reward_matrix = asarray([[0, 0, 0]])
     engine.decision_matrix = zeros((3, 1), dtype=bool)
@@ -34,13 +34,13 @@ def getCentralizedEngineClass(mocked_reward, mocked_decision):
 class TestCentralizedTaskingEngine(BaseTestCase):
     """Test CentralizedTaskingEngine subclass."""
 
-    def testhandleProcessedTask(self, mocked_error_task, mocked_valid_task, centralized_tasking_engine):
-        """Test handleProcessedTask(task)."""
+    def testhandleProcessedJob(self, mocked_error_job, mocked_valid_job, centralized_tasking_engine):
+        """Test handleProcessedJob(job)."""
         # [NOTE]: This also tests saveObservations()
         with pytest.raises(Exception):
-            centralized_tasking_engine.handleProcessedTask(mocked_error_task)
+            centralized_tasking_engine.handleProcessedJob(mocked_error_job)
 
-        centralized_tasking_engine.handleProcessedTask(mocked_valid_task)
+        centralized_tasking_engine.handleProcessedJob(mocked_valid_job)
 
     def testGenerateTasking(self, centralized_tasking_engine):
         """Test generateTasking()."""

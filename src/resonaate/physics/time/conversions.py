@@ -17,7 +17,7 @@ def greenwichMeanTime(julian_date):
         float: Greenwich sidereal time in radians
     """
     # Implementation
-    tut1 = (julian_date - 2451545.0) / 36525.0
+    tut1 = (float(julian_date) - 2451545.0) / 36525.0
     gst = - 6.2e-6 * tut1**3 + 0.093104 * tut1**2 + (876600 * 3600 + 8640184.812866) * tut1 + 67310.54841
     # Convert from seconds to radians
     gst = fmod(gst * (1 / 240) * const.DEG2RAD, const.TWOPI)
@@ -82,7 +82,7 @@ def utc2TerrestrialTime(year, month, day, hour, minute, second, delta_atomic_tim
     hr_temp, min_temp, sec_temp = seconds2hms(tt_secs)
     # Get Julian day. Convert to Julian centuries since J2000 epoch, Eq. 3-42 Vallado 4th Ed.
     julian_date = JulianDate.getJulianDate(year, month, day, hr_temp, min_temp, sec_temp)
-    ttt = (julian_date - 2451545) / 36525
+    ttt = (float(julian_date) - 2451545) / 36525
 
     return tt_secs, ttt
 

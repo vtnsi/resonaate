@@ -8,20 +8,23 @@ _BaseReward.register("CostConstrainedReward", CostConstrainedReward)
 _BaseReward.register("SimpleSummationReward", SimpleSummationReward)
 _BaseReward.register("CombinedReward", CombinedReward)
 
+VALID_REWARDS = list(_BaseReward.REGISTRY.keys())
+"""list: List of valid reward labels."""
+
 
 def rewardsFactory(configuration):
     """Build a :class:`.Reward` object from a configuration dict.
 
     Args:
-        configuration (``dict``): describes the reward to be built
+        configuration (RewardConfig): describes the reward to be built
 
     Returns:
         :class:`.Reward`: constructed reward object
     """
-    metrics_config = configuration["metrics"]
-    metrics = [Metric.REGISTRY[metric["name"]](**metric["parameters"]) for metric in metrics_config]
+    metrics_config = configuration.metrics
+    metrics = [Metric.REGISTRY[metric.name](**metric.parameters) for metric in metrics_config]
 
-    return _BaseReward.REGISTRY[configuration["name"]](
+    return _BaseReward.REGISTRY[configuration.name](
         metrics,
-        **configuration["parameters"]
+        **configuration.parameters
     )

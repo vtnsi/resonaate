@@ -1,0 +1,26 @@
+{
+    "reward": {
+        "name": "CostConstrainedReward",
+        "metrics": [
+            {
+                "name": "ShannonInformation",
+                "parameters": {}
+            },
+            {
+                "name": "DeltaPosition",
+                "parameters": {}
+            },
+            {
+                "name": "LyapunovStability",
+                "parameters": {}
+            }
+        ],
+        "parameters": {}
+    },
+    "decision": {
+        "name": "MunkresDecision",
+        "parameters": {}
+    },
+    "targets_file": "targets/small_target_set.json",
+    "sensors_file": "sensor_networks/ssn_network.json"
+}

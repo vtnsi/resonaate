@@ -17,7 +17,10 @@ class _DataMixin:
         Returns:
             str: String representation of this :class:`.DataMixin` object.
         """
-        rep_str = "{0}(id={1}, ".format(self.__class__, self.id)
+        if self.__class__.__name__ == "Agent":
+            rep_str = "{0}(".format(self.__class__)
+        else:
+            rep_str = "{0}(id={1}, ".format(self.__class__, self.id)
         for field in self.MUTABLE_COLUMN_NAMES:
             rep_str += "{0}={1}, ".format(field, getattr(self, field))
         rep_str += ")"
@@ -36,15 +39,12 @@ class _DataMixin:
         if not isinstance(self, other.__class__):
             raise TypeError("Can't compare {0} object to {1} object.".format(type(self), type(other)))
 
-        is_equal = True
-
+        # False if any of the columns aren't equal
         for attribute in self.MUTABLE_COLUMN_NAMES:
-            self_val = getattr(self, attribute)
-            other_val = getattr(other, attribute)
+            if getattr(self, attribute) != getattr(other, attribute):
+                return False
 
-            is_equal = (self_val == other_val)
-
-        return is_equal
+        return True
 
     def makeDictionary(self):
         """Return a dictionary representation of this :class:`.DataMixin` object.

@@ -15,3 +15,6 @@
 # Exclude the documentation files from the linguist so
 # the 'Jupyter Notebook' doesn't dominate the repo language
 *.ipynb linguist-documentation
+
+# Allow syntax highlighting of MAtlab files
+*.m gitlab-language=matlab

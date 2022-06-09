@@ -3,13 +3,14 @@ import setuptools
 setuptools.setup(
     name="resonaate",
     description="The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE) ",
-    version="1.1.1",
+    version="1.2.0",
     packages=setuptools.find_packages('src'),
     package_dir={'': 'src'},
     package_data={
-        "": ["default.config"],
-        "external_data": ["*"],
-        "example_data": ["*"],
+        "": [
+            "common/default_behavior.config",
+            "physics/data/*"
+        ],
     },
     install_requires=[
         "numpy>=1.19",

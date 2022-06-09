@@ -1,9 +1,7 @@
 # Standard Library Imports
+import logging
 # Third Party Imports
-from numpy import spacing, sin, cos, asarray, real, diag, eye
-from numpy import min as np_min
-from numpy import cross as np_cross
-from numpy import abs as np_abs, arccos, fix
+import numpy as np
 from numpy.linalg import multi_dot, cholesky, LinAlgError
 from scipy.linalg import norm, eigvals, svd
 # RESONAATE Imports
@@ -15,41 +13,41 @@ from . import constants as const
 
 def dotRot3(angle, omega):
     """Return the derivative of third-axis rotation matrix. Assumes radians."""
-    return asarray([
-        [-omega * sin(angle), omega * cos(angle), 0],
-        [-omega * cos(angle), -omega * sin(angle), 0],
+    return np.asarray([
+        [-omega * np.sin(angle), omega * np.cos(angle), 0],
+        [-omega * np.cos(angle), -omega * np.sin(angle), 0],
         [0, 0, 0]
     ])
 
 
 def rot1(angle):
     """Return the first-axis rotation matrix. Assumes radians."""
-    return asarray([
+    return np.asarray([
         [1, 0, 0],
-        [0, cos(angle), sin(angle)],
-        [0, -sin(angle), cos(angle)]
+        [0, np.cos(angle), np.sin(angle)],
+        [0, -np.sin(angle), np.cos(angle)]
     ])
 
 
 def rot2(angle):
     """Return the second-axis rotation matrix. Assumes radians."""
-    return asarray([
-        [cos(angle), 0, -sin(angle)],
+    return np.asarray([
+        [np.cos(angle), 0, -np.sin(angle)],
         [0, 1, 0],
-        [sin(angle), 0, cos(angle)]
+        [np.sin(angle), 0, np.cos(angle)]
     ])
 
 
 def rot3(angle):
     """Return the third-axis rotation matrix. Assumes radians."""
-    return asarray([
-        [cos(angle), sin(angle), 0],
-        [-sin(angle), cos(angle), 0],
+    return np.asarray([
+        [np.cos(angle), np.sin(angle), 0],
+        [-np.sin(angle), np.cos(angle), 0],
         [0, 0, 1]
     ])
 
 
-def cross(vec1, vec2, **kwargs):
+def safeCrossProduct(vec1, vec2, **kwargs):
     """Re-implement numpy cross function to accept 1D & 2D vectors."""
     if vec1.shape == (3, 1):
         vec1 = vec1.reshape(3)
@@ -65,7 +63,7 @@ def cross(vec1, vec2, **kwargs):
     elif vec2.shape[0] not in (3, 2):
         raise ValueError("incompatible dimensions for cross product \n(dimension must be 2 or 3)")
 
-    return np_cross(vec1, vec2, **kwargs)
+    return np.cross(vec1, vec2, **kwargs)
 
 
 # [REVIEW] Port of nearestSPD.m found online.
@@ -83,7 +81,7 @@ def nearestPD(original_mat):
     # symmetrize matrix, perform singular value decomposition, compute symmetric polar factor
     sym_mat = (original_mat + original_mat.T) / 2
     _, singular, right_mat = svd(sym_mat)
-    pol_factor = multi_dot((right_mat.T, diag(singular), right_mat))
+    pol_factor = multi_dot((right_mat.T, np.diag(singular), right_mat))
 
     # Find A-hat in formula from paper, symmetrize it
     pd_mat = (sym_mat + pol_factor) / 2
@@ -93,7 +91,7 @@ def nearestPD(original_mat):
     if isPD(sym_pd_mat):
         return sym_pd_mat
 
-    _spacing = spacing(norm(original_mat))
+    _spacing = np.spacing(norm(original_mat))
     # The above is different from [1]. It appears that MATLAB's `chol` Cholesky
     # decomposition will accept matrixes with exactly 0-eigenvalue, whereas
     # numpy cholesky will not. So where [1] uses `eps(min_eig)` (where `eps` is Matlab
@@ -103,10 +101,10 @@ def nearestPD(original_mat):
     # `spacing` will, for Gaussian random matrixes of small dimension, be on
     # the order of 1e-16. In practice, both ways converge, as the unit test
     # below suggests.
-    identity = eye(original_mat.shape[0])
+    identity = np.eye(original_mat.shape[0])
     k = 1
     while not isPD(sym_pd_mat):
-        min_eig = np_min(real(eigvals(sym_pd_mat)))
+        min_eig = np.min(np.real(eigvals(sym_pd_mat)))
         sym_pd_mat += identity * (-min_eig * k**2 + _spacing)
         k += 1
 
@@ -140,13 +138,18 @@ def safeArccos(arg):
         arg (``np.ndarray``): value(s) to perform `arccos` calculation on
 
     Returns:
-        (``np.ndarray``): result of `arccos` calculation on given `arg`
+        (``np.ndarray``): result of `arccos` calculation on given `arg`, radians
     """
-    if np_abs(arg) > 1.0:
-        assert np_abs(arg) - 1.0 < 1e-15, "`safeArgcos()` used on non-truncation/rounding error"
-        return arccos(fix(arg))
-    else:
-        return arccos(arg)
+    # Check for valid arccos domain
+    if np.abs(arg) <= 1.0:
+        return np.arccos(arg)
+    # else
+    try:
+        assert np.abs(arg) - 1.0 < np.finfo(float).resolution
+    except AssertionError:
+        logger = logging.getLogger("resonaate")
+        logger.warning("`safeArccos()` used on non-truncation/rounding error. Value: {0}".format(arg))
+    return np.arccos(np.fix(arg))
 
 
 def isPD(matrix):

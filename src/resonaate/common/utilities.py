@@ -1,8 +1,9 @@
 # Standard Library Imports
-import argparse
 import json
+import os
 from datetime import datetime
 # Third Party Imports
+import numpy as np
 import yaml
 # RESONAATE Imports
 from .behavioral_config import BehavioralConfig
@@ -15,7 +16,7 @@ def getTypeString(class_instance):
         class_instance (generic class instance): instance of a general class
 
     Returns:
-        str: name of the class without base classes
+        ``str``: name of the class without base classes
 
     """
     return class_instance.__class__.__name__
@@ -25,20 +26,25 @@ def loadYAMLFile(file_name):
     """Load in a YAML file into a Python dictionary.
 
     Args:
-        file_name (str): name of YAML file to load
+        file_name (``str``): name of YAML file to load
 
     Raises:
-        IOError: helps with debugging bad filenames
+        ``FileNotFoundError``: helps with debugging bad filenames
+        ``yaml.YAMLError``: error parsing YAML file (bad syntax)
+        ``IOError``: valid YAML file is empty
 
     Returns:
-        dict: documents loaded from the YAML file
+        ``dict``: documents loaded from the YAML file
     """
     try:
         with open(file_name, 'r') as input_file:
             yaml_data = yaml.safe_load(input_file)
-    except IOError:
-        print("Error reading YAML file: {0}".format(file_name))
-        raise
+    except FileNotFoundError as err:
+        print("Could not find YAML file: {0}".format(file_name))
+        raise err
+    except yaml.YAMLError as err:
+        print("Parsing error reading YAML file: {0}".format(file_name))
+        raise err
 
     if not yaml_data:
         print("Empty YAML file: {0}".format(file_name))
@@ -51,20 +57,25 @@ def loadJSONFile(file_name):
     """Load in a JSON file into a Python dictionary.
 
     Args:
-        file_name (str): name of JSON file to load
+        file_name (``str``): name of JSON file to load
 
     Raises:
-        IOError: helps with debugging bad filenames
+        ``FileNotFoundError``: helps with debugging bad filenames
+        ``json.decoder.JSONDecodeError``: error parsing JSON file (bad syntax)
+        ``IOError``: valid JSON file is empty
 
     Returns:
-        dict: documents loaded from the JSON file
+        ``dict``: documents loaded from the JSON file
     """
     try:
         with open(file_name, 'r') as input_file:
             json_data = json.load(input_file)
-    except json.decoder.JSONDecodeError:
-        print("Error reading JSON file: {0}".format(file_name))
-        raise
+    except FileNotFoundError as err:
+        print("Could not find JSON file: {0}".format(file_name))
+        raise err
+    except json.decoder.JSONDecodeError as err:
+        print("Decoding error reading JSON file: {0}".format(file_name))
+        raise err
 
     if not json_data:
         print("Empty JSON file: {0}".format(file_name))
@@ -73,42 +84,91 @@ def loadJSONFile(file_name):
     return json_data
 
 
-def parseCommandLineArguments():
-    """Parse command line parameters.
+def loadDatFile(file_name, delim=None):
+    """Load the corresponding dat file.
 
-    Returns
-        (:class:`argparse.Namespace`): return Parsed command line arguments
+    Note:
+        Assumes all data is representable by ``float``.
+
+    Args:
+        file_name (``str``): name of dat file to load
+        delim (``str``, optional): delimiter character to separate data on same line. Defaults to
+            ``None``, which removes all whitespace between values.
+
+    Raises:
+        ``FileNotFoundError``: helps with debugging bad filenames
+        ``ValueError``: error parsing dat file, likely because values are convertable to ``float``
+        ``IOError``: valid dat file is empty
+
+    Returns:
+        ``list``: nested list of float values of each row
     """
-    parser = argparse.ArgumentParser(description="RESONAATE Command Line Interface")
-    message_i = "Path to RESONAATE initialization message file"
-    parser.add_argument("init_msg", metavar="INIT_FILE", help=message_i, type=str)
-    message_t = "Time in hours to simulate. DEFAULT: 1/2 hour."
-    parser.add_argument("-t", dest="sim_time_hours", metavar="HOURS", default=0.5, type=float, help=message_t)
-    message_no_output = "Turns off output database."
-    parser.add_argument("--no-db", dest="output_db", action="store_false", default=True, help=message_no_output)
-    message_db_path = "Path to desired output database"
-    parser.add_argument("-o", dest="output_db_path", metavar="DB_PATH", default=None, help=message_db_path)
-    message_debug_mode = "Turns on parallel debug mode."
-    parser.add_argument("--debug", dest="debug_mode", action="store_true", default=False, help=message_debug_mode)
+    try:
+        with open(file_name, 'r') as data_file:
+            data = []
+            for line in data_file:
+                data.append([float(x) for x in line.split(sep=delim)])
+    except FileNotFoundError as err:
+        print("Could not find DAT file: {0}".format(file_name))
+        raise err
+    except ValueError:
+        print("Parsing error reading DAT file: {0}".format(file_name))
+        raise
 
-    return parser.parse_args()
+    if not data:
+        print("Empty DAT file: {0}".format(file_name))
+        raise IOError
+
+    return data
 
 
-def saveMatrix(name, matrix):
+def saveMatrix(name, matrix, path=None):
     """Save a given matrix to a file for post processing.
 
     Args:
-        name (str): Name of matrix, used in the file name, & should adhere to good file-naming conventions.
-        matrix (``numpy.ndarray``): Matrix to be saved.
+        name (``str``): name of matrix, used in the file name, & should adhere to good file-naming conventions.
+        matrix (``numpy.ndarray``): matrix to be saved.
+        path (``str``, optional): path of where to save the matrix. Defaults to ``None``, which
+            means it will use the current working directory.
+
+    Returns:
+        ``str``: full path file name of matrix that was saved
+
+    Raises:
+        ``TypeError``: notifies when a bad type is passed for `matrix`
     """
+    # Normalize path & use CWD if not specified
+    if path is None:
+        path = os.path.join(os.getcwd(), "matrix")
+    path = os.path.realpath(
+        os.path.abspath(path)
+    )
+
+    # Make directory
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+    # Create timestamped filename
     now = datetime.utcnow()
-    file_name = "matrices/{0}_{1}.json".format(name, now.isoformat())
+    file_name = os.path.join(
+        os.path.realpath(path),
+        "{0}_{1}.json".format(name, now.isoformat())
+    )
+    # Save to file, convert to list if `numpy.ndarray`
     with open(file_name, 'w') as out_file:
-        json.dump(matrix.tolist(), out_file)
+        if isinstance(matrix, list):
+            json.dump(matrix, out_file)
+        elif isinstance(matrix, np.ndarray):
+            json.dump(matrix.tolist(), out_file)
+        else:
+            print("saveMatrix() only takes `list` and `np.ndarray` types for 'matrix' argument")
+            raise TypeError(type(matrix))
+
+    return file_name
 
 
 def getTimeout(sequence, multiplier=5):
-    """Determine the worker task timeout length.
+    """Determine the worker job timeout length.
 
     Args:
         sequence (``list``): sequence object for determining timeout length
@@ -121,3 +181,20 @@ def getTimeout(sequence, multiplier=5):
         return None
     else:
         return multiplier * len(sequence)
+
+
+def checkTypes(_locals, _types):
+    """Throw a ``TypeError`` if `_locals` doesn't match `_types`.
+
+    Args:
+        _locals (dict): Dictionary of local variables.
+        _types (dict): Dictionary where keys are names of variables and values are the expected types.
+
+    Raises:
+        TypeError: If `_locals` doesn't match `_types`.
+    """
+    for var, _type in _types.items():
+        val = _locals.get(var)
+        if not isinstance(val, _type):
+            err = f"Incorrect type for {var} param"
+            raise TypeError(err)

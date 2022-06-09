@@ -1,6 +1,7 @@
 # Standard Library Imports
 # Third Party Imports
-from sqlalchemy import Column, Integer, Float, String
+from sqlalchemy import Column, Integer, Float, String, ForeignKey
+from sqlalchemy.orm import relationship
 # RESONAATE Imports
 from . import Base, _DataMixin
 
@@ -9,40 +10,47 @@ class _EphemerisMixin(_DataMixin):
 
     id = Column(Integer, primary_key=True)  # noqa: A003
 
-    ## NORAD Catalog Number or Simulation ID
-    unique_id = Column(Integer)
-
-    ## Describes satellite associated with NORAD number
-    # Corresponds to a valid Space Track "SATNAME" field.
-    name = Column(String(128))
-
-    # Human readable version of the `julian_date`
-    timestampISO = Column(String())
-
-    ## Defines the epoch associated with the given data
-    # i.e. when this data is provided
-    julian_date = Column(Float(), index=True)
-
     ## Cartesian x-coordinate for inertial satellite location in ECI frame in kilometers
-    pos_x_km = Column(Float())
+    pos_x_km = Column(Float)
 
     ## Cartesian y-coordinate for inertial satellite location in ECI frame in kilometers
-    pos_y_km = Column(Float())
+    pos_y_km = Column(Float)
 
     ## Cartesian z-coordinate for inertial satellite location in ECI frame in kilometers
-    pos_z_km = Column(Float())
+    pos_z_km = Column(Float)
 
     ## Cartesian x-coordinate for inertial satellite velocity in ECI frame in kilometers per second
-    vel_x_km_p_sec = Column(Float())
+    vel_x_km_p_sec = Column(Float)
 
     ## Cartesian y-coordinate for inertial satellite velocity in ECI frame in kilometers per second
-    vel_y_km_p_sec = Column(Float())
+    vel_y_km_p_sec = Column(Float)
 
     ## Cartesian z-coordinate for inertial satellite velocity in ECI frame in kilometers per second
-    vel_z_km_p_sec = Column(Float())
+    vel_z_km_p_sec = Column(Float)
+
+    @property
+    def eci(self):
+        """``list``: returns formatted ECI state vector."""
+        return [
+            self.pos_x_km, self.pos_y_km, self.pos_z_km,
+            self.vel_x_km_p_sec, self.vel_y_km_p_sec, self.vel_z_km_p_sec
+        ]
+
+
+class TruthEphemeris(Base, _EphemerisMixin):
+    """Snapshot of truth ephemeris in time."""
+
+    __tablename__ = "truth_ephemerides"
+    ## Defines the epoch associated with the given data
+    # Many to one relation with :class:`.Epoch`
+    julian_date = Column(Integer, ForeignKey('epochs.julian_date'), nullable=False)
+    epoch = relationship("Epoch", lazy='joined', innerjoin=True)
+    # Many to one relation with :class:`.Agent`
+    agent_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
+    agent = relationship("Agent", lazy='joined', innerjoin=True)
 
     MUTABLE_COLUMN_NAMES = (
-        'unique_id', 'name', 'julian_date', "timestampISO",
+        'julian_date', 'agent_id',
         'pos_x_km', 'pos_y_km', 'pos_z_km',
         'vel_x_km_p_sec', 'vel_y_km_p_sec', 'vel_z_km_p_sec'
     )
@@ -69,75 +77,68 @@ class _EphemerisMixin(_DataMixin):
 
         return cls(**kwargs)
 
-    @property
-    def eci(self):
-        """``list``: returns formatted ECI state vector."""
-        return [
-            self.pos_x_km, self.pos_y_km, self.pos_z_km,
-            self.vel_x_km_p_sec, self.vel_y_km_p_sec, self.vel_z_km_p_sec
-        ]
 
-
-class TruthEphemeris(_EphemerisMixin, Base):
-    """Snapshot of truth ephemeris in time."""
-
-    __tablename__ = "truth_ephemeris"
-
-
-class EstimateEphemeris(_EphemerisMixin, Base):
+class EstimateEphemeris(Base, _EphemerisMixin):
     """Snapshot of estimate ephemeris in time."""
 
-    __tablename__ = "estimate_ephemeris"
+    __tablename__ = "estimate_ephemerides"
+    ## Defines the epoch associated with the given data
+    # Many to one relation with :class:`.Epoch`
+    julian_date = Column(Integer, ForeignKey('epochs.julian_date'), nullable=False)
+    epoch = relationship("Epoch", lazy='joined', innerjoin=True)
+    # Many to one relation with :class:`.Agent`
+    agent_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
+    agent = relationship("Agent", lazy='joined', innerjoin=True)
 
     # Source of Estimate (Observation or Propagation)
-    source = Column(String())
+    source = Column(String, nullable=False)
 
     # 6x6 Covariance Matrix
     # Row 0
-    covar_00 = Column(Float())
-    covar_01 = Column(Float())
-    covar_02 = Column(Float())
-    covar_03 = Column(Float())
-    covar_04 = Column(Float())
-    covar_05 = Column(Float())
+    covar_00 = Column(Float)
+    covar_01 = Column(Float)
+    covar_02 = Column(Float)
+    covar_03 = Column(Float)
+    covar_04 = Column(Float)
+    covar_05 = Column(Float)
     # Row 1
-    covar_10 = Column(Float())
-    covar_11 = Column(Float())
-    covar_12 = Column(Float())
-    covar_13 = Column(Float())
-    covar_14 = Column(Float())
-    covar_15 = Column(Float())
+    covar_10 = Column(Float)
+    covar_11 = Column(Float)
+    covar_12 = Column(Float)
+    covar_13 = Column(Float)
+    covar_14 = Column(Float)
+    covar_15 = Column(Float)
     # Row 2
-    covar_20 = Column(Float())
-    covar_21 = Column(Float())
-    covar_22 = Column(Float())
-    covar_23 = Column(Float())
-    covar_24 = Column(Float())
-    covar_25 = Column(Float())
+    covar_20 = Column(Float)
+    covar_21 = Column(Float)
+    covar_22 = Column(Float)
+    covar_23 = Column(Float)
+    covar_24 = Column(Float)
+    covar_25 = Column(Float)
     # Row 3
-    covar_30 = Column(Float())
-    covar_31 = Column(Float())
-    covar_32 = Column(Float())
-    covar_33 = Column(Float())
-    covar_34 = Column(Float())
-    covar_35 = Column(Float())
+    covar_30 = Column(Float)
+    covar_31 = Column(Float)
+    covar_32 = Column(Float)
+    covar_33 = Column(Float)
+    covar_34 = Column(Float)
+    covar_35 = Column(Float)
     # Row 4
-    covar_40 = Column(Float())
-    covar_41 = Column(Float())
-    covar_42 = Column(Float())
-    covar_43 = Column(Float())
-    covar_44 = Column(Float())
-    covar_45 = Column(Float())
+    covar_40 = Column(Float)
+    covar_41 = Column(Float)
+    covar_42 = Column(Float)
+    covar_43 = Column(Float)
+    covar_44 = Column(Float)
+    covar_45 = Column(Float)
     # Row 5
-    covar_50 = Column(Float())
-    covar_51 = Column(Float())
-    covar_52 = Column(Float())
-    covar_53 = Column(Float())
-    covar_54 = Column(Float())
-    covar_55 = Column(Float())
+    covar_50 = Column(Float)
+    covar_51 = Column(Float)
+    covar_52 = Column(Float)
+    covar_53 = Column(Float)
+    covar_54 = Column(Float)
+    covar_55 = Column(Float)
 
     MUTABLE_COLUMN_NAMES = (
-        'unique_id', 'name', 'julian_date', 'timestampISO', 'source',
+        'julian_date', 'agent_id', 'source',
         'pos_x_km', 'pos_y_km', 'pos_z_km',
         'vel_x_km_p_sec', 'vel_y_km_p_sec', 'vel_z_km_p_sec',
         'covar_00', 'covar_01', 'covar_02', 'covar_03', 'covar_04', 'covar_05',

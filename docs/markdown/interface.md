@@ -28,11 +28,48 @@ The `InitMessage` input is rigidly defined by Virginia Tech in the [initializati
 To construct a `Scenario` (the interface used to propagate the physics model and generate data), code similar to the following snippet can be used:
 
 ```python
+# Standard Library Imports
+from datetime import timedelta
+# RESONAATE Imports
+from resonaate.common.logger import Logger
+from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.parallel import isMaster, resetMaster
-from resonaate.scenario.scenario import Scenario
+from resonaate.physics.time.conversions import getTargetJulianDate
+from resonaate.scenario import buildScenarioFromConfigFile
 
+# Establish Redis connection
 isMaster()
-app = Scenario.fromConfig(init_message)
+
+# Points to a valid main configuration file
+init_file = "scenarios/main/test1.json"
+
+# Define custom logger object which logs to the console
+logger = Logger("resonaate", path="stdout")
+
+# Define internal database instance explicitly
+db_path = "db/resonaate.sqlite3"
+
+# Build the Scenario application from the JSON/YAML init
+app = buildScenarioFromConfigFile(
+    init_file,          # Initialization file/scenario config
+    db_path,            # Path to `ResonaateDatabase` file (or `None` for in-memory)
+    importer=None,      # No imported data
+    start_workers=True  # Starts `WorkerManager` instance
+)
+
+# Determine final time as a Julian date
+target_date = getTargetJulianDate(
+    app.clock.julian_date_start,
+    timedelta(hours=sim_time_hours)
+)
+
+# Step through simulation to final time
+app.propagateTo(target_date)
+
+# Stop workers gracefully
+app.worker_mgr.stopWorkers()
+
+# Reset the Redis master key
 resetMaster()
 ```
 
@@ -40,15 +77,6 @@ resetMaster()
 
 The `TimeTargetMessage` should give `resonaate_service` some indication of a target time to propagate to.
 The `TimeTargetMessage` can be defined by the testbed and `resonaate_service` will handle any necessary transposition for the `resonaate` tool to be able to properly ingest the relevant information.
-
-To propagate a constructed physics model and generate data, code similar to the following snippet can be used (assuming the 'init' snippet was used):
-
-```python
-from resonaate.physics.stardate import JulianDate
-
-target_jd = JulianDate(2458207.0624999334) # Corresponds to 13:30 UTC 29 March 2018
-app.propagateTo(target_jd) # Data is published to an output database at every time step
-```
 
 # 4 Discontinuation Message
 
@@ -64,10 +92,10 @@ This is achieved by pre-populating the database with messages containing data on
 Setting a high priority for collecting observations on a particular target is achieved by injecting the database with a message formatted the following way:
 
 ```python
-from resonaate.data.data_interface import DataInterface
+from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.data.manual_sensor_task import ManualSensorTask
 
-shared_interface = DataInterface.getSharedInterface()
+shared_interface = ResonaateDatabase.getSharedInterface()
 shared_interface.insertData(
     ManualSensorTask(
         unique_id =34903, # Unique simulation ID for target

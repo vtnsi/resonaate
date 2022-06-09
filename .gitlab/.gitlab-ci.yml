@@ -7,11 +7,21 @@ stages:
   - check
   - test
   - build
+  - upload
+
+# Includes any relevant Static Application Security Testing jobs
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
+# Exclude 'public' directory, since it just flags a bunch on our auto-documentation
+# Turn on experimental features for semgrep
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  SAST_EXCLUDED_PATHS: spec, test, tests, tmp, public
+  SAST_EXPERIMENTAL_FEATURES: 'true'
 
 # Cache the pip libraries. Only update if different branch, or requirements.txt changed.
 cache:
@@ -26,20 +36,16 @@ cache:
 # This pipeline is only run for MR, Tags, & pushes to master
 workflow:
   rules:
-    - if: $CI_MERGE_REQUEST_IID
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
-# Pre-script that all jobs will run by default. Install redis, RESONAATE pip packages, & RESONAATE
-before_script:
-  - apt-get update -qq && apt-get install -y -qq redis
-  - python -V
-  - pip install -r requirements/development.txt
-  - pip install -e .
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "master"'
 
 # Pylint job, save log file for later observation
 pylint:
   stage: check
+  before_script:
+    - apt-get update -qq
+    - python -V && pip install -r requirements/development.txt && pip install -e .
   script:
     - pylint --rcfile=.pylintrc --reports=y *.py tests src/resonaate | tee pylint.log
   artifacts:
@@ -52,6 +58,9 @@ pylint:
 # Flake8 job, save log file for later observation
 flake8:
   stage: check
+  before_script:
+    - apt-get update -qq
+    - python -V && pip install -r requirements/development.txt && pip install -e .
   script:
     - flake8 --config=.flake8 --show-source --tee --output-file=flake8.log *.py tests src/resonaate
   artifacts:
@@ -64,6 +73,9 @@ flake8:
 # Pytest job, save coverage analysis report in HTML format for easy viewing.
 pytest:
   stage: test
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq redis
+    - python -V && pip install -r requirements/development.txt && pip install -e .
   script:
     - redis-server 2>&1 > redis.log &
     - pytest -x --cov=src/resonaate --cov-report=term --cov-report=html:coverage tests/
@@ -77,7 +89,10 @@ pytest:
 
 # Build the documentation. We can deploy to GitLab Pages later on...
 pages:
-  stage: check
+  stage: build
+  before_script:
+    - apt-get update -qq
+    - python -V && pip install -r requirements/development.txt && pip install -e .
   script:
     - cd docs
     - sphinx-apidoc -MPTefo source/modules ../src/resonaate
@@ -87,4 +102,37 @@ pages:
     paths:
       - public
     expose_as: "Documentation"
-    when: always
+
+# Build the Python package in source and built form, only runs when test stage succeeds
+build:
+  stage: build
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq redis
+    - python -V && pip install -r requirements/development.txt && pip install -e .
+  script:
+    - python setup.py sdist bdist_wheel
+    - RESONAATE_VERSION=$(python -c "import resonaate; print(resonaate.__version__)")
+    - echo RESONAATE_VERSION="${RESONAATE_VERSION}" > $CI_PROJECT_DIR/variables.env
+  artifacts:
+    paths:
+      - dist/*.tar.gz
+      - dist/*.whl
+    expire_in: 1 week
+    reports:
+      dotenv: variables.env
+  when: on_success
+
+# Upload Python package versions, only runs when build stage succeeds
+upload:
+  stage: upload
+  image: curlimages/curl:latest
+  before_script:
+    - echo $RESONAATE_VERSION
+  script:
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file dist/resonaate-${RESONAATE_VERSION}.tar.gz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/resonaate_sdist/${RESONAATE_VERSION}/resonaate-${RESONAATE_VERSION}.tar.gz"'
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file dist/resonaate-${RESONAATE_VERSION}-py3-none-any.whl "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/resonaate_bdist/${RESONAATE_VERSION}/resonaate-${RESONAATE_VERSION}-py3-none-any.whl"'
+  dependencies:
+    - build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_success

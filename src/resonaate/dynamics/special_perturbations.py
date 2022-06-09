@@ -1,12 +1,11 @@
 # Standard Library Imports
-import logging
 # Third Party Imports
-from numpy import dot, matmul, spacing, asarray, sum as np_sum, empty_like, ones_like
+from numpy import dot, matmul, asarray, sum as np_sum, empty_like
 from numpy.linalg import multi_dot
 from scipy.linalg import norm
-from scipy.integrate import solve_ivp
 # RESONAATE Imports
-from .dynamics_base import Dynamics
+from .constants import RK45_LABEL
+from .celestial import Celestial, checkEarthCollision
 from ..physics import constants as const
 from ..physics.bodies import Earth, Moon, Sun
 from ..physics.bodies.third_body import getThirdBodyPositions
@@ -17,67 +16,29 @@ from ..physics.time.stardate import JulianDate
 from ..physics.transforms.reductions import getReductionParameters
 
 
-class SpecialPerturbations(Dynamics):
+class SpecialPerturbations(Celestial):
     """SpecialPerturbations class.
 
     Implements the Dynamics abstract class to enable propagation of the state vector (in the ECI
     reference frame) using the Special Perturbations method of numerical integration.
     """
 
-    def __init__(self, jd_start, geopotential, perturbations, method='RK45'):
+    def __init__(self, jd_start, geopotential, perturbations, method=RK45_LABEL):
         """Construct a SpecialPerturbations object.
 
         Args:
             jd_start (:class:`.JulianDate`): Julian date of the scenario's initial epoch
-            geopotential (``dict``): config describing the geopotential model and the accuracy
-            perturbations (``dict``): config describing which perturbations to include
+            geopotential (GeopotentialConfig): config describing the geopotential model and the accuracy
+            perturbations (PerturbationsConfig): config describing which perturbations to include
             method (``str``, optional): Defaults to ``'RK45'``. Which ODE integration method to use
         """
+        super(SpecialPerturbations, self).__init__(method=method)
         self.init_julian_date = jd_start
-        self.earth_model = Earth(geopotential["model"])
-        self.degree = geopotential["degree"]
-        self.order = geopotential["order"]
-        self.third_bodies = thirdBodyFactory(perturbations["third_bodies"])
+        self.earth_model = Earth(geopotential.model)
+        self.degree = geopotential.degree
+        self.order = geopotential.order
+        self.third_bodies = thirdBodyFactory(perturbations.third_bodies)
         self._method = method
-
-    def propagate(self, initial_time, final_time, initial_state):
-        """Numerically integrate the state vector forward to the final time.
-
-        Args:
-            initial_time (:class:`.ScenarioTime`): time value when the integration will begin (seconds)
-            final_time (:class:`.ScenarioTime`): time value when the integration will stop (seconds)
-            initial_state (``numpy.ndarray``): (6 * K, ) initial state vector for the integration step, (km; km/sec)
-
-        Note: this function must take and receive 1-dimensional state vectors! Also, `K` below
-            refers to the number of parallel integrations being performed
-
-        Returns:
-            ``numpy.ndarray``: (6 * K, ) final state vector after numerical integration has stopped, (km; km/sec)
-        """
-        assert final_time > initial_time, "SpecialPerturbations: Invalid input. final_time must be < initial_time."
-
-        # Continue integration until we reach final_time
-        while initial_time < final_time:
-            solution = solve_ivp(
-                self._differentialEquation,
-                (initial_time, final_time),
-                initial_state.ravel(),
-                method='RK45',
-                rtol=self.RELATIVE_TOL,
-                atol=self.ABSOLUTE_TOL * ones_like(initial_state.ravel())
-            )
-            # Get the final 'truth' state from the solver
-            final_state = solution.y[::, -1]
-
-            # Retrieve final time, this should auto-exit the loop if fully-integrated
-            initial_time = solution.t[-1] + spacing(solution.t[-1])
-
-        # Return state & covar as well for flexibility
-        return final_state
-
-    def retrogress(self, initial_time, final_time, initial_state):
-        """See base class."""
-        raise NotImplementedError
 
     def _differentialEquation(self, time, state):
         """Calculate the first time derivative of the state for numerical integration.
@@ -108,14 +69,9 @@ class SpecialPerturbations(Dynamics):
 
             # Determine the position vectors in J2000 frame
             r_eci = state[jj:jj + half:step]
-            r_norm = norm(r_eci)
 
             # Check if an RSO crashed into the Earth
-            assert r_norm > Earth.radius, "An RSO has crashed into the Earth"
-            if r_norm < Earth.radius + 100:
-                msg = "An RSO is within 100km of Earth surface"
-                logger = logging.getLogger("resonaate")
-                logger.warning(msg)
+            checkEarthCollision(norm(r_eci))
 
             # Get ECEF position
             r_ecef = matmul(ecef_2_eci.T, r_eci)
@@ -156,7 +112,7 @@ def _getRotationMatrix(julian_date, reduction):
     """
     # Convert year and epoch to mdhms form. Time always in UTC
     year, month, day, hours, minutes, seconds = julian_date.calendar_date
-    elapsed_days = dayOfYear(year, month, day, hours, minutes, seconds + reduction["eops"]["dut1"]) - 1
+    elapsed_days = dayOfYear(year, month, day, hours, minutes, seconds + reduction["dut1"]) - 1
     greenwich_apparent_sidereal_time = greenwichApparentTime(year, elapsed_days, reduction["eq_equinox"])
     return multi_dot(
         [reduction["rot_pn"], rot3(-1.0 * greenwich_apparent_sidereal_time), reduction["rot_w"]]

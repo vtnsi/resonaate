@@ -21,6 +21,6 @@
         "name": "AllVisibleDecision",
         "parameters": {}
     },
-    "target_set": "targets/leo_only_test_targets.json",
-    "sensor_set": "sensor_networks/single_adv_radar_network.json"
+    "targets_file": "targets/leo_only_test_targets.json",
+    "sensors_file": "sensor_networks/single_adv_radar_network.json"
 }

@@ -15,3 +15,6 @@ _BaseMetric.register("SlewCycle", SlewCycle)
 _BaseMetric.register("TimeToTransit", TimeToTransit)
 _BaseMetric.register("LyapunovStability", LyapunovStability)
 _BaseMetric.register("KLDivergence", KLDivergence)
+
+VALID_METRICS = list(_BaseMetric.REGISTRY.keys())
+"""list: List of valid metric labels."""

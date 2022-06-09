@@ -8,7 +8,7 @@ from os import kill, getpid
 from signal import SIGINT
 from datetime import datetime
 
-from . import TASK_QUEUE_LIST, PROCESSED_QUEUE_NAME_PREFIX, MASTER_KEY_NAME
+from . import JOB_QUEUE_LIST, PROCESSED_QUEUE_NAME_PREFIX, MASTER_KEY_NAME
 from . import getRedisConnection, REDIS_QUEUE_LOGGER, masterExists, getMasterHash
 from ..common.behavioral_config import BehavioralConfig
 
@@ -20,7 +20,7 @@ class WorkerManager:
     """int: Interval on which the watchdog thread operates."""
 
     WATCHDOG_TERMINATE_AFTER = 15
-    """int: Number of seconds a worker can spend processing a single task before being terminated."""
+    """int: Number of seconds a worker can spend processing a single job before being terminated."""
 
     def __init__(self, proc_count=None, daemonic=False, logger=None):
         """Instantiate a :class:`.WorkerManager` object.
@@ -118,7 +118,7 @@ class WorkerManager:
         workers_processing = {}
 
         def currentWorkerProcessingDuration(worker):
-            """Return how long a worker has been processing a single task.
+            """Return how long a worker has been processing a single job.
 
             Args:
                 worker (str): Name of worker to determine processing duration.
@@ -126,52 +126,52 @@ class WorkerManager:
             Return:
                 float: Number of seconds the worker has been processing.
             """
-            tasking = workers_processing.get(worker, (None, None))
+            jobs = workers_processing.get(worker, (None, None))
 
-            if tasking[0] is not None:
-                return time() - tasking[1]
+            if jobs[0] is not None:
+                return time() - jobs[1]
 
             else:
                 return 0.0
 
         total_proc_time = 0.0
-        total_tasks_processed = 0
+        total_jobs_processed = 0
         last_average_log = 0.0
         while 1:
             serialized = self._redis_conn.blpop(self._processing_queue_name, timeout=self.WATCHDOG_INTERVAL)
             if serialized is not None:
-                new_tasking = loads(serialized[1])
+                new_jobs = loads(serialized[1])
 
-                if new_tasking[1] is None:
-                    # task has finished
+                if new_jobs[1] is None:
+                    # job has finished
                     try:
-                        prev_tasking = workers_processing[new_tasking[0]]
+                        prev_jobs = workers_processing[new_jobs[0]]
                     except KeyError:
                         pass
                     else:
-                        total_proc_time += new_tasking[2] - prev_tasking[1]
-                        total_tasks_processed += 1
+                        total_proc_time += new_jobs[2] - prev_jobs[1]
+                        total_jobs_processed += 1
 
-                workers_processing[new_tasking[0]] = new_tasking[1:]
+                workers_processing[new_jobs[0]] = new_jobs[1:]
 
             if time() - last_average_log > self.WATCHDOG_TERMINATE_AFTER:
-                if total_tasks_processed > 0:
-                    self._logger.info("Average task processing time: {0}".format(
-                        total_proc_time / total_tasks_processed
+                if total_jobs_processed > 0:
+                    self._logger.info("Average job processing time: {0}".format(
+                        total_proc_time / total_jobs_processed
                     ))
 
-                    for worker_id, tasking in workers_processing.items():
-                        self._logger.info("'{0}' working on task '{1}' since {2}".format(
+                    for worker_id, jobs in workers_processing.items():
+                        self._logger.info("'{0}' working on job '{1}' since {2}".format(
                             worker_id,
-                            tasking[0],
-                            datetime.utcfromtimestamp(tasking[1]).isoformat()
+                            jobs[0],
+                            datetime.utcfromtimestamp(jobs[1]).isoformat()
                         ))
 
                     last_average_log = time()
 
             for worker in self._worker_processes:
                 if currentWorkerProcessingDuration(worker.name) > self.WATCHDOG_TERMINATE_AFTER:
-                    msg = "Terminating worker '{0}' because it's been processing task '{1}' for more than {2} seconds."
+                    msg = "Terminating worker '{0}' because it's been processing job '{1}' for more than {2} seconds."
                     self._logger.warning(
                         msg.format(
                             worker.name,
@@ -192,13 +192,13 @@ class WorkerManager:
 def workerLoop(name, lock, processing_queue_name, logger=None):
     """Start a worker thread loop.
 
-    Continuously pop :class:`.Task` s off of the task queue and process them.
+    Continuously pop :class:`.Job` s off of the job queue and process them.
 
     Args:
         name (str): Name for the process that started this worker loop.
         lock (multiprocessing.Lock): Lock used to indicate when processing is taking place vs when
-            the worker loop is blocked on trying to pop its next task off the queue.
-        processing_queue_name (str): Name of Redis queue to use to report worker's tasking.
+            the worker loop is blocked on trying to pop its next job off the queue.
+        processing_queue_name (str): Name of Redis queue to use to report worker's jobs.
         logger (logging.Logger, optional): Custom logging instance for :meth:`.workerLoop` to use,
             instead of :attr:`.REDIS_QUEUE_LOGGER` .
     """
@@ -210,35 +210,35 @@ def workerLoop(name, lock, processing_queue_name, logger=None):
         redis_conn = getRedisConnection()
 
         while masterExists(redis_connection=redis_conn):
-            logger.debug("{0} - Waiting for task...".format(name))
+            logger.debug("{0} - Waiting for job...".format(name))
 
-            # Get a list of registered task queue names
-            task_queue_names = redis_conn.lrange(TASK_QUEUE_LIST, 0, -1)
-            if len(task_queue_names) > 0:
-                # Decode the list of task queue names so they are Python strings
-                task_queue_names = [name.decode() for name in task_queue_names]
+            # Get a list of registered job queue names
+            job_queue_names = redis_conn.lrange(JOB_QUEUE_LIST, 0, -1)
+            if len(job_queue_names) > 0:
+                # Decode the list of job queue names so they are Python strings
+                job_queue_names = [name.decode() for name in job_queue_names]
             else:
-                # If no task queues are registered yet, wait until there are
+                # If no job queues are registered yet, wait until there are
                 sleep(1)
                 continue
 
-            serialized = redis_conn.blpop(task_queue_names, timeout=1)
+            serialized = redis_conn.blpop(job_queue_names, timeout=1)
 
             if serialized:
                 with lock:
-                    task_queue_name = serialized[0].decode()
-                    task_queue_id = task_queue_name.split('_')[-1]
-                    task = loads(serialized[1])
+                    job_queue_name = serialized[0].decode()
+                    job_queue_id = job_queue_name.split('_')[-1]
+                    job = loads(serialized[1])
 
-                    redis_conn.rpush(processing_queue_name, dumps((name, task.id, time())))
+                    redis_conn.rpush(processing_queue_name, dumps((name, job.id, time())))
 
-                    logger.debug("{0} - Working on task {1} from {2}...".format(name, task.id, task_queue_id))
-                    task.process()
+                    logger.debug("{0} - Working on job {1} from {2}...".format(name, job.id, job_queue_id))
+                    job.process()
 
-                    processed_queue_name = PROCESSED_QUEUE_NAME_PREFIX + task_queue_id
-                    logger.debug("{0} - Returning task {1} to {2}.".format(name, task.id, processed_queue_name))
+                    processed_queue_name = PROCESSED_QUEUE_NAME_PREFIX + job_queue_id
+                    logger.debug("{0} - Returning job {1} to {2}.".format(name, job.id, processed_queue_name))
 
-                    redis_conn.rpush(processed_queue_name, dumps(task))
+                    redis_conn.rpush(processed_queue_name, dumps(job))
                     redis_conn.rpush(processing_queue_name, dumps((name, None, time())))
         logger.info("{0} - Master seems to no longer exist. Exiting.".format(name))
 

@@ -1,33 +1,44 @@
 {
     "time": {
-        "start_timestamp": "2019-02-01T15:00:00.000Z",
-        "physics_step_sec": 300,
-        "output_step_sec": 300,
-        "stop_timestamp": "2019-02-01T17:00:00.000Z"
+        "start_timestamp": "2018-12-01T12:00:00.000Z",
+        "physics_step_sec": 60,
+        "output_step_sec": 60,
+        "stop_timestamp": "2018-12-01T13:00:00.000Z"
     },
     "noise": {
-        "initial_error_magnitude": 1e-8,
+        "initial_error_magnitude": 1e-20,
         "dynamics_noise_type": "simple_noise",
         "dynamics_noise_magnitude": 1e-25,
         "filter_noise_type": "continuous_white_noise",
-        "filter_noise_magnitude": 1e-15,
-        "random_seed": 2804798372
+        "filter_noise_magnitude": 1e-7,
+        "random_seed": "os"
     },
     "propagation": {
-        "propagation_model": "two_body",
+        "propagation_model": "special_perturbations",
         "integration_method": "RK45",
-        "realtime_propagation": true,
-        "realtime_observation": true
+        "realtime_propagation": false,
+        "realtime_observation": false
     },
-    "geopotential": {},
-    "perturbations": {},
-    "target_event_set": "",
-    "sensor_event_set": "",
+    "geopotential": {
+        "model": "egm96.txt",
+        "degree": 4,
+        "order": 4
+    },
+    "perturbations": {
+        "third_bodies": ["sun", "moon"]
+    },
     "filter": {
-        "name": "unscented_kalman_filter"
+        "name": "unscented_kalman_filter",
+        "parameters": {
+            "alpha": 0.05,
+            "beta": 2.0
+        },
+        "dynamics_model": "two_body"
     },
-    "engines": [
-        "engines/all_visible_engine.json",
-        "engines/taskable_engine.json"
+    "target_events_file": "",
+    "sensor_events_file": "",
+    "engines_files": [
+        "engines/cost_constrained_ssn.json",
+        "engines/cost_constrained_space.json"
     ]
 }

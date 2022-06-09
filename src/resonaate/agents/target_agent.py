@@ -2,20 +2,26 @@
 # Third Party Imports
 from numpy import ndarray, copy, asarray
 from numpy.random import default_rng
+from sqlalchemy.orm import Query
 # RESONAATE Imports
-from .agent_base import Agent
+from .agent_base import Agent, DEFAULT_VIS_X_SECTION
+from ..data.importer_database import ImporterDatabase
 from ..data.ephemeris import TruthEphemeris
 from ..common.exceptions import ShapeError
-from ..parallel.task import Task
+from ..parallel.async_functions import asyncPropagate
+from ..parallel.job_handler import CallbackRegistration
+from ..parallel.job import Job
 from ..physics.orbit import Orbit
-from ..physics.time.stardate import JulianDate, julianDateToDatetime
+from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
+from ..dynamics.integration_events.station_keeping import StationKeeper
 
 
 class TargetAgent(Agent):
     """Define the behavior of the **true** target agents in the simulation."""
 
-    def __init__(self, _id, name, agent_type, initial_state, clock, dynamics, realtime, process_noise, seed=None):
+    def __init__(self, _id, name, agent_type, initial_state, clock, dynamics,
+                 realtime, process_noise, seed=None, station_keeping=None):
         """Construct a TargetAgent object.
 
         Args:
@@ -28,14 +34,16 @@ class TargetAgent(Agent):
             realtime (``bool``): whether to use :attr:`dynamics` or import data for propagation
             process_noise (``numpy.ndarray``): 6x6 process noise covariance
             seed (int, optional): number to seed random number generator. Defaults to ``None``.
+            station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station keeping to
+                be performed
 
         Raises:
             TypeError: raised on incompatible types for input params
             ShapeError: raised if process noise is not a 6x6 matrix
         """
-        # [TODO]: Make visual cross-section better
         super(TargetAgent, self).__init__(
-            _id, name, agent_type, initial_state, clock, dynamics, realtime, visual_cross_section=25.0
+            _id, name, agent_type, initial_state, clock, dynamics, realtime, DEFAULT_VIS_X_SECTION,
+            station_keeping=station_keeping
         )
         if not isinstance(process_noise, ndarray):
             self._logger.error("Incorrect type for process_noise param")
@@ -65,18 +73,14 @@ class TargetAgent(Agent):
         Returns:
             :class:`.TruthEphemeris`: valid data object for insertion into output database.
         """
-        date_time = julianDateToDatetime(self.julian_date_epoch)
-
         return TruthEphemeris.fromECIVector(
-            unique_id=self.simulation_id,
-            name=self.name,
+            agent_id=self.simulation_id,
             julian_date=self.julian_date_epoch,
-            timestampISO=date_time.isoformat() + '.000Z',
             eci=self.eci_state.tolist()
         )
 
-    def updateTask(self, new_time):
-        """Create a task to be processed in parallel and update :attr:`time` appropriately.
+    def updateJob(self, new_time):
+        """Create a job to be processed in parallel and update :attr:`time` appropriately.
 
         This relies on a common interface for :meth:`.Dynamics.propagate`
 
@@ -85,26 +89,79 @@ class TargetAgent(Agent):
                 indicate the current simulation time
 
         Returns
-            :class:`.Task`: Task to be processed in parallel.
+            :class:`.Job`: Job to be processed in parallel.
         """
-        task = Task(
+        job = Job(
             self.callback.job_computation,
             args=[
                 self._dynamics,
                 self._time,
                 new_time,
                 self._truth_state
-            ]
+            ],
+            kwargs={
+                "station_keeping": self.station_keeping
+            }
         )
         self._time = new_time
 
-        return task
+        return job
 
-    def jobCompleteCallback(self, job):
-        """Execute when the job submitted in :meth:`~.TargetAgent.updateTask` completes.
+    def setCallback(self, importer):
+        """Set the callback associated when :meth:`.executeJobs()` is executed.
 
         Args:
-            job (:class:`.Task`): job object that's returned when a job completes
+            importer (``bool``): whether a proper :class:`.ImporterDatabase` exists
+        Note:
+            #. If the :attr:`realtime` is ``True``, use :func:`.asyncPropagate`.
+            #. If neither are true query the database for :class:`.Ephemeris` items.
+            #. If a valid :class:`.Ephemeris` returns, use :meth:`.importState`.
+            #. Otherwise, fall back to :func:`.asyncPropagate`.
+
+        Returns:
+            :meth:`.importstate`, or instance of :class:`.CallbackRegistration`
+        """
+        if self._realtime is True:
+            # Realtime propagation is on, so use `::asyncPropagate()`
+            self.callback = CallbackRegistration(
+                self,
+                self.updateJob,
+                asyncPropagate,
+                self.jobCompleteCallback
+            )
+        elif importer:
+            # Realtime propagation is off, attempt to query database for valid `Ephemeris` objects
+            query = Query(TruthEphemeris).filter(TruthEphemeris.agent_id == self.simulation_id)
+            truth_ephem = ImporterDatabase.getSharedInterface().getData(query, multi=False)
+
+            # If minimal truth data exists in the database, use importer model, otherwise default to
+            # realtime propagation (and print warning that this happened).
+            if truth_ephem is None:
+                self._logger.warning(
+                    "Could not find importer truth for {0}. Defaulting to realtime propagation!".format(
+                        self.simulation_id
+                    )
+                )
+                self.callback = CallbackRegistration(
+                    self,
+                    self.updateJob,
+                    asyncPropagate,
+                    self.jobCompleteCallback
+                )
+            else:
+                self.callback = self.importState
+
+        else:
+            self._logger.error("A valid ImporterDatabase was not established")
+            raise ValueError(importer)
+
+        return self.callback
+
+    def jobCompleteCallback(self, job):
+        """Execute when the job submitted in :meth:`~.TargetAgent.updateJob` completes.
+
+        Args:
+            job (:class:`.Job`): job object that's returned when a job completes
         """
         self.eci_state = job.retval
 
@@ -132,27 +189,29 @@ class TargetAgent(Agent):
         tgt = config["target"]
 
         # Determine the target's initial ECI state
-        initial_coe = tgt.get("init_coe")
-        initial_eci = tgt.get("init_eci")
-
-        if initial_coe is not None:
-            orbit = Orbit.buildFromCOEConfig(initial_coe)
+        if tgt.coe_set:
+            orbit = Orbit.buildFromCOEConfig(tgt.init_coe)
             initial_state = orbit.coe2rv()
-        elif initial_eci is not None:
-            initial_state = asarray(initial_eci)
+        elif tgt.eci_set:
+            initial_state = asarray(tgt.init_eci)
         else:
             raise ValueError("Target dict doesn't contain initial state information: {0}".format(tgt))
 
+        station_keeping = []
+        for config_str in tgt.station_keeping:
+            station_keeping.append(StationKeeper.factory(config_str, tgt.sat_num, initial_state))
+
         return cls(
-            tgt["sat_num"],
-            tgt["sat_name"],
+            tgt.sat_num,
+            tgt.sat_name,
             "Spacecraft",
             initial_state,
             config["clock"],
             config["dynamics"],
             config["realtime"],
             config["noise"],
-            seed=config["random_seed"]
+            seed=config["random_seed"],
+            station_keeping=station_keeping
         )
 
     @property

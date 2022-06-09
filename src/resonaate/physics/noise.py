@@ -108,6 +108,16 @@ def initialEstimateNoise(true_target_state, variance, rng):
     return init_x, init_p
 
 
+CONTINUOUS_WHITE_NOISE_LABEL = "continuous_white_noise"
+"""str: Constant string used to describe continuous white noise."""
+
+DISCRETE_WHITE_NOISE_LABEL = "discrete_white_noise"
+"""str: Constant string used to describe discrete white noise."""
+
+SIMPLE_NOISE_LABEL = "simple_noise"
+"""str: Constant string used to describe simple noise."""
+
+
 def noiseCovarianceFactory(method, time_step, magnitude):
     """Build a dynamics propagation noise covariance matrix.
 
@@ -128,11 +138,11 @@ def noiseCovarianceFactory(method, time_step, magnitude):
     Returns:
         ``numpy.ndarray``: 6x6 noise covariance matrix
     """
-    if method.lower() == "continuous_white_noise":
+    if method.lower() == CONTINUOUS_WHITE_NOISE_LABEL:
         noise = continuousWhiteNoise(time_step, magnitude)
-    elif method.lower() == "discrete_white_noise":
+    elif method.lower() == DISCRETE_WHITE_NOISE_LABEL:
         noise = discreteWhiteNoise(time_step, magnitude)
-    elif method.lower() == "simple_noise":
+    elif method.lower() == SIMPLE_NOISE_LABEL:
         noise = simpleNoise(time_step, magnitude)
     else:
         raise ValueError(method)

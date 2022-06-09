@@ -12,10 +12,9 @@ try:
     from resonaate.agents.estimate_agent import EstimateAgent
     from resonaate.agents.sensing_agent import SensingAgent
     from resonaate.common.behavioral_config import BehavioralConfig
-    from resonaate.data.data_interface import DataInterface
     from resonaate.filters.unscented_kalman_filter import UnscentedKalmanFilter
     from resonaate.parallel import getRedisConnection, isMaster, resetMaster
-    from resonaate.parallel.task import Task
+    from resonaate.parallel.job import Job
     from resonaate.scenario.clock import ScenarioClock
     from resonaate.physics.time.stardate import ScenarioTime
     from resonaate.sensors.sensor_base import Sensor
@@ -36,14 +35,16 @@ FIXTURE_DATA_DIR = os.path.join(
 
 
 class BaseTestCase:
-    """Base unit test class for all to override.
+    """Base unit test class for all to inherit from.
 
-    This is primarily so DB fixtures can assume that the class will have the `shared_db_url` and
-    the `output_db_url` attributes.
+    This is primarily for storing global constants/common file locations, etc.
     """
 
-    shared_db_path = None
-    output_db_path = None
+    importer_db_path = "db/importer.sqlite3"
+    shared_db_path = "db/shared.sqlite3"
+    json_init_path = "json/config/init_messages"
+    json_rso_truth = "json/rso_truth"
+    json_sensor_truth = "json/sat_sensor_truth"
 
 
 @pytest.fixture(autouse=True)
@@ -82,49 +83,8 @@ def getRedisInstance():
     """Setup and destroy an instance of Redis key-value store."""
     redis_conn = getRedisConnection()
     redis_conn.flushall()
-    isMaster()
-    yield
+    yield isMaster()
     resetMaster()
-
-
-@pytest.mark.datafiles(FIXTURE_DATA_DIR)
-@pytest.fixture(scope="function", name="shared_db")
-def getSharedDatabaseInstance(datafiles, request):
-    """Setup and destroy a shared instance of :class:`.DataInterface`."""
-    # Check if class overrides DB path
-    if request.cls.shared_db_path:
-        shared_db_url = "sqlite:///" + os.path.join(datafiles, request.cls.shared_db_path)
-    else:
-        shared_db_url = None
-
-    # Create & yield instance. Delete after test completes
-    drop_tables = (
-        "truth_ephemeris", "estimate_ephemeris", "sensor_tasks",
-        "node_additions", "observations", "tasking_data"
-    )
-    shared_interface = DataInterface.getSharedInterface(db_url=shared_db_url)
-    yield shared_interface
-    shared_interface.resetData(tables=drop_tables)
-    if shared_interface:
-        del shared_interface
-
-
-@pytest.mark.datafiles(FIXTURE_DATA_DIR)
-@pytest.fixture(scope="function", name="output_db")
-def getOutputDatabaseInstance(datafiles, request):
-    """Setup and destroy an instance of :class:`.DataInterface`. for output."""
-    # Check if class overrides DB path
-    if request.cls.output_db_path:
-        output_db_url = os.path.join(datafiles, request.cls.output_db_path)
-    else:
-        output_db_url = os.path.join(datafiles, "db/output_test.db")
-    output_db_url = "sqlite:///" + output_db_url
-
-    # Create & yield instance. Delete after test completes
-    output_db = DataInterface(db_url=output_db_url)
-    yield output_db
-    if output_db:
-        del output_db
 
 
 @pytest.fixture(scope="class", name="mocked_clock")
@@ -196,28 +156,28 @@ def getMockedMetricObject():
     return metric
 
 
-@pytest.fixture(scope="class", name="mocked_error_task")
-def getMockedErrorTaskObject():
-    """Create a mocked error :class:`.Task` object."""
-    task = create_autospec(Task)
-    task.id = 1
-    task.error = "F"
+@pytest.fixture(scope="class", name="mocked_error_job")
+def getMockedErrorJobObject():
+    """Create a mocked error :class:`.Job` object."""
+    job = create_autospec(Job)
+    job.id = 1
+    job.error = "F"
 
-    return task
+    return job
 
 
-@pytest.fixture(scope="class", name="mocked_valid_task")
-def getMockedValidTaskObject():
-    """Create a mocked valid :class:`.Task` object."""
-    task = create_autospec(Task)
-    task.id = 1
-    task.status = "processed"
-    task.retval = {
+@pytest.fixture(scope="class", name="mocked_valid_job")
+def getMockedValidJobObject():
+    """Create a mocked valid :class:`.Job` object."""
+    job = create_autospec(Job)
+    job.id = 1
+    job.status = "processed"
+    job.retval = {
         "reward_matrix": [0, 0, 1],
         "visibility": [1, 0, 1],
     }
 
-    return task
+    return job
 
 
 @pytest.fixture(scope="class", name="mocked_reward")

@@ -21,6 +21,7 @@ Please describe the tests that you ran to verify your changes. Provide instructi
 - [ ] Increment all refs the version according to [SemVer](https://semver.org/spec/v2.0.0.html) using release notation (e.g. `1.0.0`)
     - [ ] **setup.py**
     - [ ] **docs/source/conf.py**
+    - [ ] **src/resonaate/__init__.py**
     - Example version:  `1.3.2` is release Major Version 1, Minor Version 3, Patch 2
 - [ ] Complete the merge request (only on GitLab)
 - [ ] Tag the commit on the `master` branch using

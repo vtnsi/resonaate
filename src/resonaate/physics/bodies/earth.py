@@ -1,6 +1,6 @@
 # Standard Library Imports
 from csv import reader
-from os.path import abspath, join, dirname
+from pkg_resources import resource_filename
 # Third Party Imports
 from numpy import asarray, zeros, sqrt
 from scipy.linalg import norm
@@ -10,13 +10,7 @@ from scipy.special import factorial
 
 def _loadGeopotentialCoefficients(earth_model_file):
     """Read the gravity model file & save the geopotential coefficients."""
-    gravity_model_file = abspath(
-        join(
-            abspath(dirname(__file__)),
-            '../../../../external_data',
-            earth_model_file
-        )
-    )
+    gravity_model_file = resource_filename('resonaate', 'physics/data/{0}'.format(earth_model_file))
     with open(gravity_model_file, 'r') as csv_file:
         cos_terms = zeros((181, 181))
         sin_terms = zeros((181, 181))

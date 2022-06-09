@@ -1,11 +1,7 @@
 # Standard Library Imports
+from abc import ABCMeta, abstractclassmethod
 from contextlib import contextmanager
 from traceback import format_exc
-from os import listdir
-from os.path import isfile, isdir, join, abspath, split, splitext
-from json import load
-from json.decoder import JSONDecodeError
-from datetime import date
 # Third Party Imports
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Query
@@ -13,59 +9,56 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import StaticPool
 # RESONAATE Imports
 from . import Base
+from .agent import Agent
+from .epoch import Epoch
 from .ephemeris import TruthEphemeris, EstimateEphemeris
 from .manual_sensor_task import ManualSensorTask
-from .earth_orientation_params import EarthOrientationParams, NutationParams
 from .node_addition import NodeAddition
 from .observation import Observation
-from .tasking_data import TaskingData
+from .task import Task
 from ..common.logger import Logger
 from ..common.behavioral_config import BehavioralConfig
-from ..physics.time.stardate import JulianDate
 
 
-class DataInterface:
-    """Main generic data interface that is DB agnostic."""
+class DataInterface(metaclass=ABCMeta):
+    """Common data interface that is DB agnostic.
+
+    This defines the common data model by which all RESONAATE DBs are assumed to adhere to.
+    """
 
     # pylint: disable=no-member
 
     VALID_DATA_TYPES = {
+        Epoch.__tablename__: Epoch,
+        Agent.__tablename__: Agent,
         TruthEphemeris.__tablename__: TruthEphemeris,
         EstimateEphemeris.__tablename__: EstimateEphemeris,
         ManualSensorTask.__tablename__: ManualSensorTask,
-        EarthOrientationParams.__tablename__: EarthOrientationParams,
-        NutationParams.__tablename__: NutationParams,
         NodeAddition.__tablename__: NodeAddition,
         Observation.__tablename__: Observation,
-        TaskingData.__tablename__: TaskingData
+        Task.__tablename__: Task
     }
 
-    __shared_inst = None
+    SQLITE_PREFIX = "sqlite://"
 
-    def __init__(self, db_url=None, drop_tables=(), logger=None, verbose_echo=False):
+    def __init__(self, db_url, drop_tables, logger, verbose_echo):
         """Create SQLite database based on :attr:`.VALID_DATA_TYPES` .
 
         Args:
-            db_url (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
-                to use and where the database is located. Defaults to default configuration value.
-            drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of
-                :class:`.DataInterface` construction. This parameter makes sense in the context of
-                utilizing a pre-existing database that a user may not want to keep data from.
-                Defaults to an empty tuple, resulting in no tables being dropped.
-            logger (:class:`.Logger`, optional): Previously instantiated logging object that this
-                    :class:`.DataInterface` object should use. Defaults to ``None``, resulting in a
-                    new :class:`.Logger` instance being instantiated.
-            verbose_echo (``bool``, optional): Flag that if set ``True``, will tell the SQLAlchemy
-                engine to output the raw SQL statements it runs. Defaults to ``False``.
+            db_url (``str``): SQLAlchemy-accepted string denoting what database implementation to
+                use and where the database is located.
+            drop_tables (``iterable``): Iterable of table names to be dropped at time of construction. This parameter
+                makes sense in the context of utilizing a pre-existing database that a user may not want to keep data
+                    from.
+            logger (:class:`.Logger`): Previously instantiated logging object to use.
+            verbose_echo (``bool``): Flag that if set ``True``, will tell the SQLAlchemy engine to
+                output the raw SQL statements it runs.
         """
         self.logger = logger
         if self.logger is None:
             self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
 
-        if not db_url:
-            db_url = BehavioralConfig.getConfig().database.DatabaseURL
-
-        if db_url[:6] == 'sqlite':
+        if db_url.startswith(self.SQLITE_PREFIX):
             # Squash warnings in sqlite about thread safety. The only times that sqlite will be
             # used in a multi-threaded context is read-only (and thus thread safe)
             self.engine = create_engine(
@@ -77,45 +70,28 @@ class DataInterface:
         else:
             self.engine = create_engine(db_url, echo=verbose_echo)
 
-        self.resetData(drop_tables)
-
+        self.resetData(tables=drop_tables)
         self.session_factory = sessionmaker(bind=self.engine)
 
-    @classmethod
-    def getSharedInterface(cls, db_url=None, load_eops=True):
+    @abstractclassmethod
+    def getSharedInterface(cls, db_url=None, drop_tables=(), logger=None, verbose_echo=False):
         """Return a reference to the singleton shared interface.
 
         Args:
             db_url (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
-                to use and where the database is located. Defaults to ``None``.
-            load_eops (``bool``, optional): Whether to auto-load EOP table. Defaults to True.
+                to use and where the database is located. Defaults to default configuration value.
+            drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of construction. This
+                parameter makes sense in the context of utilizing a pre-existing database that a user may not want to
+                keep data from. Defaults to an empty tuple, resulting in no tables being dropped.
+            logger (:class:`.Logger`, optional): Previously instantiated logging object to use. Defaults to ``None``,
+                resulting in a new :class:`.Logger` instance being instantiated.
+            verbose_echo (``bool``, optional): Flag that if set ``True``, will tell the SQLAlchemy
+                engine to output the raw SQL statements it runs. Defaults to ``False``.
 
         Returns:
             :class:`.DataInterface`: reference to singleton shared data interface
         """
-        if cls.__shared_inst is None:
-            if not db_url:
-                # Connect to in-memory database
-                cls.__shared_inst = DataInterface()
-
-            else:
-                cls.__shared_inst = DataInterface(db_url=db_url)
-                # [NOTE][shared-data-resetting] Instantiating the singleton shared interface will no
-                # longer result in any of the database's tables being reset. While it makes sense to
-                # clean the table(s) holding temporary data (e.g. historical data or user-created
-                # manual sensor tasks) before or after each unrelated Resonaate run, it should no
-                # longer be done implicitly with shared interface instantiation. The reason for
-                # this is the multi-processing context in which Resonaate now performs. Should a
-                # separate process utilize the shared interface, the allocation of the singleton
-                # shared interface isn't guaranteed depending on when the separate process was
-                # forked versus when the shared interface was first utilized.
-
-            # Load database with EOP data
-            if load_eops:
-                directory = abspath(join(__file__, "../../../../external_data"))
-                cls.__shared_inst.initEOPData(join(directory, 'EOPdata.dat'), join(directory, 'nut80.dat'))
-
-        return cls.__shared_inst
+        raise NotImplementedError
 
     @contextmanager
     def _getSessionScope(self, **kwargs):
@@ -132,7 +108,9 @@ class DataInterface:
             yield current_session
             current_session.commit()
         except SQLAlchemyError:
-            self.logger.error("Exception thrown in `DataInterface.getSessionScope()`: \n{0}".format(format_exc()))
+            self.logger.error(
+                "Exception thrown in `::getSessionScope()` by {0}: \n{1}".format(self, format_exc())
+            )
             current_session.rollback()
             raise
         finally:
@@ -262,253 +240,3 @@ class DataInterface:
             save_count = len(data)
 
         return save_count
-
-    def initDatabaseFromJSON(self, *args, start=None, stop=None):
-        """Initialize a database by populating it with data from the JSON files listed in args.
-
-        Args:
-            args (``iterable``): list of JSON filenames/directories used to populate the DB.
-            start (:class:`.JulianDate`, optional): epoch of the earliest data object to load.
-                Defaults to ``None`` which indicates use the earliest in the file.
-            stop (:class:`.JulianDate`, optional): epoch of the latest data object to load.
-                Defaults to ``None`` which indicates use the latest in the file.
-        """
-        for path in args:
-            if isfile(path):
-                name = self._getJSONFilename(path)
-                if "truth" in name:
-                    self.loadJSONFile(path, start=start, stop=stop)
-                elif "observation" in name:
-                    self.loadObservationFile(path, start=start, stop=stop)
-
-            elif isdir(path):
-                for filename in listdir(path):
-                    name = self._getJSONFilename(filename)
-                    if "truth" in name:
-                        self.loadJSONFile(join(path, filename), start=start, stop=stop)
-                    elif "observation" in name:
-                        self.loadObservationFile(join(path, filename), start=start, stop=stop)
-
-            else:
-                self.logger.error("Argument is not a valid path: {0}".format(path))
-
-    def _getJSONFilename(self, path):
-        """Return the filename of a JSON file without the extension.
-
-        Args:
-            path (``str``): full file path object
-
-        Returns:
-            ``str``: name of the file with no basename or extension
-        """
-        (filename, extension) = splitext(split(path)[1])
-        if extension.lower() != ".json":
-            self.logger.error("Error parsing {0}, must be a JSON file.".format(path))
-            self.logger.error("{0}".format(split(path)[1]))
-            self.logger.error("{0}:{1}".format(filename, extension))
-            raise ValueError(filename)
-        return filename
-
-    def loadJSONFile(self, filename, start=None, stop=None):
-        """Loads ephemeris data from a JSON file into DB.
-
-        Args:
-            filename (``iterable``): JSON filename used to populate the DB.
-            start (:class:`.JulianDate`, optional): epoch of the earliest data object to load.
-                Defaults to ``None`` which indicates use the earliest in the file.
-            stop (:class:`.JulianDate`, optional): epoch of the latest data object to load.
-                Defaults to ``None`` which indicates use the latest in the file.
-        """
-        with open(filename, 'r') as json_file:
-            try:
-                ephemerides = load(json_file)
-            except (JSONDecodeError, UnicodeDecodeError):
-                self.logger.error("Error parsing {0}: \n{1}".format(filename, format_exc()))
-                ephemerides = []
-
-        if ephemerides:
-            valid_ephemerides = []
-            for ephemeris in ephemerides:
-                # Check to make sure ephemerides are in the correct timeframe, if specified
-                if start is not None:
-                    if JulianDate(ephemeris["julian_date"]) < start:
-                        continue
-                if stop is not None:
-                    if JulianDate(ephemeris["julian_date"]) > stop:
-                        self.logger.info("Found ending Julian date: {0}".format(stop))
-                        break
-
-                # Retrieve position & velocity. Remove covariance data
-                ephemeris["pos_x_km"] = ephemeris["position"][0]
-                ephemeris["pos_y_km"] = ephemeris["position"][1]
-                ephemeris["pos_z_km"] = ephemeris["position"][2]
-                del ephemeris["position"]
-
-                ephemeris["vel_x_km_p_sec"] = ephemeris["velocity"][0]
-                ephemeris["vel_y_km_p_sec"] = ephemeris["velocity"][1]
-                ephemeris["vel_z_km_p_sec"] = ephemeris["velocity"][2]
-                del ephemeris["velocity"]
-
-                ephemeris["unique_id"] = ephemeris.pop("satNum")
-                ephemeris["name"] = ephemeris.pop("satName")
-
-                del ephemeris["covariance"]
-
-                # only add valid ephemerides to database
-                valid_ephemerides.append(ephemeris)
-
-            self.logger.info("Loading {0} ephemerides from file '{1}'.".format(len(valid_ephemerides), filename))
-
-            with self._getSessionScope() as session:
-                session.bulk_insert_mappings(TruthEphemeris, valid_ephemerides)
-
-    def loadObservationFile(self, filename, start=None, stop=None):
-        """Loads observation data from a JSON file into DB.
-
-        Args:
-            filename (``iterable``): JSON filename used to populate the DB.
-            start (:class:`.JulianDate`, optional): epoch of the earliest data object to load.
-                Defaults to ``None`` which indicates use the earliest in the file.
-            stop (:class:`.JulianDate`, optional): epoch of the latest data object to load.
-                Defaults to ``None`` which indicates use the latest in the file.
-        """
-        with open(filename, 'r') as json_file:
-            try:
-                observations = load(json_file)
-            except (JSONDecodeError, UnicodeDecodeError):
-                self.logger.error("Error parsing {0}: \n{1}".format(filename, format_exc()))
-                observations = []
-
-        if observations:
-            valid_observations = []
-            for observation in observations:
-                # Check to make sure observations are in the correct timeframe, if specified
-                if start is not None:
-                    if JulianDate(observation["julian_date"]) < start:
-                        continue
-                if stop is not None:
-                    if JulianDate(observation["julian_date"]) > stop:
-                        self.logger.info("Found ending Julian date: {0}".format(stop))
-                        break
-
-                # Build new observation entry
-                obs_entry = {
-                    "julian_date": observation["julian_date"],
-                    "timestampISO": observation["timestampISO"],
-                    "observer": observation["observer"],
-                    "sensor_type": observation["sensorType"],
-                    "unique_id": observation["sensorId"],
-                    "target_id": observation["satNum"],
-                    "target_name": observation["satName"],
-                    "azimuth_rad": observation["azimuth"],
-                    "elevation_rad": observation["elevation"],
-                    "range_km": observation["range"],
-                    "range_rate_km_p_sec": observation["rangeRate"],
-                    "sez_state_s_km": observation["xSEZ"][0],
-                    "sez_state_e_km": observation["xSEZ"][1],
-                    "sez_state_z_km": observation["xSEZ"][2],
-                    "position_lat_rad": observation["position"][0],
-                    "position_long_rad": observation["position"][1],
-                    "position_altitude_km": observation["position"][2]
-                }
-
-                # only add valid observations to database
-                valid_observations.append(obs_entry)
-
-            self.logger.info("Loading {0} observations from file '{1}'.".format(len(valid_observations), filename))
-
-            with self._getSessionScope() as session:
-                session.bulk_insert_mappings(Observation, valid_observations)
-
-    def initEOPData(self, eop_filename, nut_filename):
-        """Initialize a database with EOP data.
-
-        Args:
-            eop_filename (``str``): EOP data file to load into DB.
-            nut_filename (``str``): nutation data file to load into DB.
-        """
-        with open(abspath(join(eop_filename)), 'r') as dat_file:
-            eop_data = loadDatFile(dat_file)
-
-        with open(abspath(join(nut_filename)), 'r') as dat_file:
-            nut_data = loadDatFile(dat_file)
-
-        if eop_data and nut_data:
-            self.loadEOPData(eop_data)
-            self.loadNutationData(nut_data)
-        else:
-            self.logger.error("No data in either `{0}`, or `{1}`".format(eop_filename, nut_filename))
-
-    def loadEOPData(self, eop_data):
-        """Load EOP data into DB.
-
-        Args:
-            eop_data (``list``): dicts describing the loaded EOP data.
-        """
-        self.logger.info("Loading {0} days of eop data".format(len(eop_data)))
-
-        eop_list = []
-        for eop_set in eop_data:
-            # Index 10 & 11 are for different reduction algorithm. # is modified Julian date.
-            current_date = date(
-                int(eop_set[0]),
-                int(eop_set[1]),
-                int(eop_set[2])
-            )
-            params = {
-                "eop_date": current_date,
-                "x_p": eop_set[4],
-                "y_p": eop_set[5],
-                "delta_ut1": eop_set[6],
-                "length_of_day": eop_set[7],
-                "d_delta_psi": eop_set[8],
-                "d_delta_eps": eop_set[9],
-                "delta_atomic_time": eop_set[12],
-            }
-            eop_list.append(params)
-
-        with self._getSessionScope() as session:
-            session.bulk_insert_mappings(EarthOrientationParams, eop_list)
-
-    def loadNutationData(self, nut_data):
-        """Load nutation data into DB.
-
-        Args:
-            nut_data (``list``): dicts describing the loaded nutation data.
-        """
-        self.logger.info("Loading {0} terms of nutation data".format(len(nut_data)))
-
-        coefficients = []
-        for terms in nut_data:
-            # Index 9 is ignored because order isn't important
-            params = {
-                "a_n1_i": terms[0],
-                "a_n2_i": terms[1],
-                "a_n3_i": terms[2],
-                "a_n4_i": terms[3],
-                "a_n5_i": terms[4],
-                "a_i": terms[5],
-                "b_i": terms[6],
-                "c_i": terms[7],
-                "d_i": terms[8],
-            }
-            coefficients.append(params)
-
-        with self._getSessionScope() as session:
-            session.bulk_insert_mappings(NutationParams, coefficients)
-
-
-def loadDatFile(data_file):
-    """Load the corresponding dat file. Assumes space delimeter.
-
-    Args:
-        data_file (``str``): file path to dat file.
-
-    Returns:
-        ``list``: nested list of float values of each row
-    """
-    output = []
-    for line in data_file:
-        output.append([float(x) for x in line.split()])
-
-    return output

@@ -1,12 +1,12 @@
 # Standard Library Imports
 # Third Party Imports
 from numpy import asarray, sqrt, concatenate, vdot, arccos, sin, cos
-from numpy import inf, matmul, cosh, sinh, finfo, float64
+from numpy import inf, matmul, cosh, sinh, finfo, float64, cross
 from scipy.linalg import norm
 # RESONAATE Imports
 from .bodies import Earth
 from ..physics import constants as const
-from ..physics.math import safeArccos, rot1, rot3, cross
+from ..physics.math import safeArccos, rot1, rot3
 
 
 class Orbit:
@@ -33,33 +33,45 @@ class Orbit:
         self.semimajor_axis = perigee_radius / (1 - ecc)
         self.eccentricity = ecc
         self.inclination = const.DEG2RAD * incl
+        self._defined_fields = {"semimajor_axis", "eccentricity", "inclination"}
 
         if len(args) == 3:  # Inclined, Eccentric Orbits
             self.right_ascension = const.DEG2RAD * args[0]
+            self._defined_fields.add("right_ascension")
             self.argument_periapsis = const.DEG2RAD * args[1]
+            self._defined_fields.add("argument_periapsis")
             self.true_anomaly = const.DEG2RAD * args[2]
+            self._defined_fields.add( "true_anomaly")
 
         elif len(args) == 2:
             if (ecc > self.eps) and (abs(incl) <= self.eps):   # Equatorial, Eccentric Orbits
                 self.true_long_periapsis = const.DEG2RAD * args[0]
+                self._defined_fields.add("true_long_periapsis")
                 self.true_anomaly = const.DEG2RAD * args[1]
+                self._defined_fields.add("true_anomaly")
 
             elif (ecc <= self.eps) and (abs(incl) > self.eps):   # Inclined, Circular Orbits
                 self.right_ascension = const.DEG2RAD * args[0]
+                self._defined_fields.add("right_ascension")
                 self.argument_latitude = const.DEG2RAD * args[1]
+                self._defined_fields.add("argument_latitude")
 
             else:
                 raise ValueError("Inputted Orbital Elements do not describe a valid orbit.")
 
         elif len(args) == 1:  # Equatorial, Circular Orbits
             self.true_longitude = const.DEG2RAD * args[0]
+            self._defined_fields.add("true_longitude")
 
         else:
             raise ValueError("Incorrect number of input variables.")
 
         self.semilatus_rectum = self.semimajor_axis * (1 - ecc**2)
+        self._defined_fields.add("semilatus_rectum")
         self.period = 2 * const.PI * sqrt(self.semimajor_axis**3 / Earth.mu)
+        self._defined_fields.add("period")
         self.mean_motion = 2 * const.PI / self.period
+        self._defined_fields.add("mean_motion")
 
         self.ecc_anomaly = None
         self.mean_anomaly = None
@@ -266,6 +278,25 @@ class Orbit:
             new_orbit.true_longitude = truelong
 
         return new_orbit
+
+    def __eq__(self, other):
+        """Test if `self` is equal to `other`.
+
+        Args:
+            other (Orbit): :class:`.Orbit` object being tested for equality.
+
+        Returns:
+            bool: Indication of whether `self` is equal to `other`.
+        """
+        for attr_name in self._defined_fields:
+            try:
+                other_attr = getattr(other, attr_name)
+            except AttributeError:
+                return False
+
+            if getattr(self, attr_name) != other_attr:
+                return False
+        return True
 
 
 def universalC2C3(psi):

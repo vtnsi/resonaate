@@ -18,13 +18,13 @@ class Terrestrial(Dynamics):
         self.julian_date_start = jd_start
         self.x_ecef = x_ecef
 
-    def propagate(self, initial_time, final_time, initial_state):
+    def propagate(self, initial_time, final_time, initial_state, station_keeping=None):
         """Propagate the state from the initial time to the final time.
 
         Args:
             initial_time (:class:`.ScenarioTime`): time value when the integration will begin (seconds)
             final_time (:class:`.ScenarioTime`): time value when the integration will stop (seconds)
-            initial_state (``numpy.ndarray``): (6, ) initial state vector for the integration step, (km; km/sec)
+            initial_state (``numpy.ndarray``): (6, ) state vector for the integration step, (km; km/sec)
 
         ReturnsL
             ``numpy.ndarray``: 6x1 ECI state vector (km; km/sec)
@@ -33,7 +33,3 @@ class Terrestrial(Dynamics):
             raise ValueError("Terrestrial: Invalid input for final_time. final_time must be greater than initial_time.")
 
         return ecef2eci(self.x_ecef)
-
-    def retrogress(self, initial_time, final_time, initial_state):
-        """See base class."""
-        raise NotImplementedError

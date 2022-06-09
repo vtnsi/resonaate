@@ -8,8 +8,8 @@ See Also:
     https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/ for more information on the binary files.
 """
 # Standard Library Imports
-from os.path import abspath, join, dirname
 from pickle import dumps, loads
+from pkg_resources import resource_filename
 # Third Party Imports
 from numpy import asarray
 from jplephem.spk import SPK
@@ -18,8 +18,7 @@ from ...parallel import getRedisConnection
 
 
 # Load the binary JPL Horizons kernel file
-FILE_LOCATION = abspath(dirname(__file__))
-KERNEL_FILE = abspath(join(FILE_LOCATION, '../../../../external_data/de432s.bsp'))
+KERNEL_FILE = resource_filename('resonaate', 'physics/data/de432s.bsp')
 """jplephem.spk.SPK: object that allows querying of JPL binary data file."""
 
 

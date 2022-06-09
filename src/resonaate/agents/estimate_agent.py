@@ -3,21 +3,23 @@
 from numpy import ndarray, copy
 from numpy.random import default_rng
 # RESONAATE Imports
-from .agent_base import Agent
+from .agent_base import Agent, DEFAULT_VIS_X_SECTION
 from ..common.exceptions import ShapeError
 from ..data.ephemeris import EstimateEphemeris
 from ..filters import kalmanFilterFactory
 from ..filters.sequential_filter import SequentialFilter
-from ..parallel.task import Task
+from ..parallel.async_functions import asyncPredict
+from ..parallel.job_handler import CallbackRegistration
+from ..parallel.job import Job
 from ..physics.noise import initialEstimateNoise
-from ..physics.time.stardate import julianDateToDatetime
 from ..physics.transforms.methods import eci2ecef, ecef2lla
 
 
 class EstimateAgent(Agent):
     """Define the behavior of the **estimated** target agents in the simulation."""
 
-    def __init__(self, _id, name, agent_type, clock, initial_state, initial_covariance, _filter, seed=None):
+    def __init__(self, _id, name, agent_type, clock, initial_state,
+                 initial_covariance, _filter, seed=None, station_keeping=None):
         """Construct an EstimateAgent object.
 
         Args:
@@ -29,14 +31,16 @@ class EstimateAgent(Agent):
             initial_covariance (``numpy.ndarray``): 6x6 initial covariance or uncertainty
             _filter (:class:`.SequentialFilter`): tracks the estimate's state throughout the simulation
             seed (``int``, optional): number to seed random number generator. Defaults to ``None``.
+            station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station
+                keeping to be performed
 
         Raises:
             TypeError: raised on incompatible types for input params
             ShapeError: raised if process noise is not a 6x6 matrix
         """
-        # [TODO]: Make visual cross-section better
         super(EstimateAgent, self).__init__(
-            _id, name, agent_type, initial_state, clock, _filter.dynamics, realtime=False, visual_cross_section=25.0
+            _id, name, agent_type, initial_state, clock, _filter.dynamics, True, DEFAULT_VIS_X_SECTION,
+            station_keeping=station_keeping
         )
         if not isinstance(initial_covariance, ndarray):
             self._logger.error("Incorrect type for initial_covariance param")
@@ -70,8 +74,11 @@ class EstimateAgent(Agent):
         # Attribute to track the most recent _actual_ observation of this object
         self.last_observed_at = self.julian_date_start
 
-    def updateTask(self, new_time):
-        """Create a task to be processed in parallel and update :attr:`time` appropriately.
+        # Apply None value to estimate station_keeping
+        assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
+
+    def updateJob(self, new_time):
+        """Create a job to be processed in parallel and update :attr:`time` appropriately.
 
         This relies on a common interface for :meth:`.SequentialFilter.predict`
 
@@ -80,9 +87,9 @@ class EstimateAgent(Agent):
                 indicate the current simulation time
 
         Returns
-            :class:`.Task`: Task to be processed in parallel.
+            :class:`.Job`: Job to be processed in parallel.
         """
-        task = Task(
+        job = Job(
             self.callback.job_computation,
             args=[
                 self._filter,
@@ -91,15 +98,37 @@ class EstimateAgent(Agent):
         )
         self._time = new_time
 
-        return task
+        return job
+
+    def setCallback(self, importer):
+        """Set the callback associated when :meth:`.executeJobs()` is executed.
+
+        Args:
+            importer (``bool``): whether a proper :class:`.ImporterDatabase` exists
+
+        Note:
+            Assumes that :class:`.EstimateAgent` objects don't have importable :class:`.Ephemeris`:
+
+            1. If an instance of :class:`.EstimateAgent`, use :func:`.asyncPredict`.
+
+        Returns:
+            :class:`.CallbackRegistration`
+        """
+        self.callback = CallbackRegistration(
+            self,
+            self.updateJob,
+            asyncPredict,
+            self.jobCompleteCallback
+        )
+        return self.callback
 
     def jobCompleteCallback(self, job):
-        """Execute when the job submitted in :meth:`~.EstimateAgent.updateTask` completes.
+        """Execute when the job submitted in :meth:`~.EstimateAgent.updateJob` completes.
 
         Save the *a priori* :attr:`state_estimate` and :attr:`error_covariance`.
 
         Args:
-            job (:class:`.Task`): job object that's returned when a job completes
+            job (:class:`.Job`): job object that's returned when a job completes
         """
         self.nominal_filter.updateFromAsyncResult(job.retval)
         self.state_estimate = self.nominal_filter.pred_x
@@ -109,7 +138,7 @@ class EstimateAgent(Agent):
         """Perform update using EstimateAgent's :attr:`nominal_filter`.
 
         Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. This occurs
-        **during** execution of tasking on a :class:`.Worker`. The tasking result is handled by
+        **during** execution of a job on a :class:`.Worker`. The job result is handled by
         the :class:`.QueueManager` to update the :attr:`nominal_filter`.
 
         See Also:
@@ -127,11 +156,11 @@ class EstimateAgent(Agent):
         """Perform update using EstimateAgent's :attr:`nominal_filter`'s async result.
 
         Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. This occurs
-        **after** execution of tasking on a :class:`.Worker`. The tasking result is handled by the
+        **after** execution a job on a :class:`.Worker`. The job result is handled by the
         :class:`.QueueManager` to update the :attr:`nominal_filter`.
 
         See Also:
-            :meth:`~.CentralizedTaskingEngine.handleProcessedTask` to see how the result is handled
+            :meth:`~.CentralizedTaskingEngine.handleProcessedJob` to see how the result is handled
 
         Args:
             async_result (``dict``): Result from parallel :attr:`nominal_filter` update.
@@ -150,13 +179,9 @@ class EstimateAgent(Agent):
         Returns:
             :class:`.EstimateEphemeris`: valid data object for insertion into output database.
         """
-        date_time = julianDateToDatetime(self.julian_date_epoch)
-
         return EstimateEphemeris.fromCovarianceMatrix(
-            unique_id=self.simulation_id,
-            name=self.name,
+            agent_id=self.simulation_id,
             julian_date=self.julian_date_epoch,
-            timestampISO=date_time.isoformat() + '.000Z',
             source=self.nominal_filter.source,
             eci=self.eci_state.tolist(),
             covariance=self.error_covariance.tolist()

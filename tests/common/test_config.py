@@ -30,8 +30,6 @@ class TestConfig(BaseTestCase):
         },
         "database": {
             "DatabaseURL": "sqlite://",
-            "PhysicsModelDataPath": "data/truth_json/",
-            "EphemerisPreLoaded": True,
         },
         "parallel":{
             "RedisHostname": 'localhost',

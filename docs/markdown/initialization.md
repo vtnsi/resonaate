@@ -116,7 +116,7 @@ Recommended Values:
     "dynamics_noise_magnitude": 1e-20,
     "filter_noise_type": "continuous_white_noise",
     "filter_noise_magnitude": 1e-12,
-    "random_seed": null
+    "random_seed": "os"
 }
 ```
 

@@ -4,13 +4,13 @@
 # RESONAATE Imports
 
 
-class TaskTimeoutError(Exception):
-    """Exception indicating tasks haven't completed within a given timeout."""
+class JobTimeoutError(Exception):
+    """Exception indicating jobs haven't completed within a given timeout."""
 
 
-class ShapeError(BaseException):
+class ShapeError(Exception):
     """Exception indicating an improperly shaped matrix was created."""
 
 
-class MissingEphemerisError(BaseException):
+class MissingEphemerisError(Exception):
     """Exception indicating that there is a missing :class:`.TruthEphemeris` in the database."""

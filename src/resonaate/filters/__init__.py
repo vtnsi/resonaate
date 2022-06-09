@@ -7,6 +7,10 @@ from .unscented_kalman_filter import UnscentedKalmanFilter
 from ..dynamics.dynamics_base import Dynamics
 
 
+VALID_FILTER_LABELS = ("ukf", "unscented_kalman_filter")
+"""tuple: Collection of valid entries for "filter_type" key in filter configuration dictionary."""
+
+
 def kalmanFilterFactory(configuration):
     """Build a :class:`.SequentialFilter` object for target state estimation.
 
@@ -24,7 +28,7 @@ def kalmanFilterFactory(configuration):
 
     # Create the base estimation filter for nominal operation
     config_copy = deepcopy(configuration)
-    if config_copy.pop("filter_type").lower() in ("ukf", "unscented_kalman_filter"):
+    if config_copy.pop("filter_type").lower() in VALID_FILTER_LABELS:
         nominal_filter = UnscentedKalmanFilter(
             config_copy.pop("dynamics"),
             config_copy.pop("process_noise"),

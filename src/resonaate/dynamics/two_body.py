@@ -1,106 +1,51 @@
 # Standard Library Imports
-import logging
 # Third Party Imports
-from numpy import concatenate, matmul, spacing, empty_like, ones_like, eye, zeros
+from numpy import concatenate, matmul, empty_like, eye, zeros
 from scipy.linalg import norm
-from scipy.integrate import solve_ivp
 # RESONAATE Imports
-from .dynamics_base import Dynamics
+from .celestial import Celestial, checkEarthCollision
 from ..physics.bodies import Earth
 
 
-class TwoBody(Dynamics):
+class TwoBody(Celestial):
     """TwoBody class.
 
     Implements the Dynamics abstract class to enable propagation of the state vector (in the ECI
     reference frame) using the Two-Body equations of motion.
     """
 
-    def __init__(self, method='RK45'):
-        """Construct a TwoBody object.
-
-        Args:
-            method (``str``, optional): Defaults to ``'RK45'``. Which ODE integration method to use.
-        """
-        self._method = method
-
-    def propagate(self, initial_time, final_time, initial_state):
-        """Numerically integrate the state vector forward to the final time.
-
-        Args:
-            initial_time (:class:`.ScenarioTime`): time value when the integration will begin (seconds)
-            final_time (:class:`.ScenarioTime`): time value when the integration will stop (seconds)
-            initial_state (``numpy.ndarray``): (6 * K, ) initial state vector for the integration step, (km; km/sec)
+    def _differentialEquation(self, time, state):  # pylint: disable=unused-argument
+        """Calculate the first time derivative of the state for numerical integration.
 
         Note: this function must take and receive 1-dimensional state vectors! Also, `K` below
             refers to the number of parallel integrations being performed
 
+        Args:
+            time (:class:`.ScenarioTime`): the current time of integration, (seconds)
+            state (``numpy.ndarray``): (6 * K, ) current state vector in integration, (km, km/sec)
+
         Returns:
-            ``numpy.ndarray``: (6 * K, ) final state vector after numerical integration has stopped, (km; km/sec)
+            ``numpy.ndarray``: (6 * K, ) derivative of the state vector, (km/sec; km/sec^2)
         """
-        assert final_time > initial_time, "TwoBody: Invalid input. final_time must be < initial_time."
+        # Determine the step and halfway point for each vector
+        step = int(state.shape[0] / 6)
+        half = int(state.shape[0] / 2)
+        derivative = empty_like(state, dtype=float)
+        for jj in range(step):
+            # pylint: disable=unsupported-assignment-operation
 
-        # Continue integration until we reach final_time
-        while initial_time < final_time:
-            solution = solve_ivp(
-                stateDerivative,
-                (initial_time, final_time),
-                initial_state.ravel(),
-                method='RK45',
-                rtol=self.RELATIVE_TOL,
-                atol=self.ABSOLUTE_TOL * ones_like(initial_state.ravel())
-            )
+            # Parse position vector
+            r_vector = state[jj:jj + half:step]
+            r_norm = norm(r_vector)
 
-            # Get the final 'truth' state from the solver
-            final_state = solution.y[::, -1]
+            # Check if an RSO crashed into the Earth
+            checkEarthCollision(r_norm)
 
-            # Retrieve final time, this should auto-exit the loop if fully-integrated
-            initial_time = solution.t[-1] + spacing(solution.t[-1])
+            # Save state derivative for this state vector
+            derivative[jj:jj + half:step] = state[jj + half::step]
+            derivative[jj + half::step] = -1. * Earth.mu / (r_norm**3.0) * r_vector
 
-        # Return state & covar as well for flexibility
-        return final_state
-
-    def retrogress(self, initial_time, final_time, initial_state):
-        """See base class."""
-        raise NotImplementedError
-
-
-def stateDerivative(time, state):  # pylint: disable=unused-argument
-    """Calculate the first time derivative of the state for numerical integration.
-
-    Note: this function must take and receive 1-dimensional state vectors! Also, `K` below
-        refers to the number of parallel integrations being performed
-
-    Args:
-        time (:class:`.ScenarioTime`): the current time of integration, (seconds)
-        state (``numpy.ndarray``): (6 * K, ) current state vector in integration, (km, km/sec)
-
-    Returns:
-        ``numpy.ndarray``: (6 * K, ) derivative of the state vector, (km/sec; km/sec^2)
-    """
-    # Determine the step and halfway point for each vector
-    step = int(state.shape[0] / 6)
-    half = int(state.shape[0] / 2)
-    derivative = empty_like(state, dtype=float)
-    for jj in range(step):
-        # pylint: disable=unsupported-assignment-operation
-
-        # Parse position vector
-        r_vector = state[jj:jj + half:step]
-        r_norm = norm(r_vector)
-
-        # Check if an RSO crashed into the Earth
-        assert r_norm > Earth.radius, "An RSO has crashed into the Earth"
-        if r_norm < Earth.radius + 100:
-            msg = "An RSO is within 100km of Earth surface"
-            logger = logging.getLogger("resonaate")
-            logger.warning(msg)
-
-        # Save state derivative for this state vector
-        derivative[jj:jj + half:step] = state[jj + half::step]
-        derivative[jj + half::step] = -1. * Earth.mu / (r_norm**3.0) * r_vector
-
-    return derivative  # + self.host._propulsion.getThrust(state, time)
+        return derivative  # + self.host._propulsion.getThrust(state, time)
 
 
 def stateMatrix(x_position):

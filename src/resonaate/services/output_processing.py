@@ -194,7 +194,7 @@ class LostRSO:
             output_data (dict): Estimate or Observation data dictionary to uncorrelate.
         """
         if isinstance(data_obj, EstimateEphemeris):
-            data_obj.unique_id = self._uncorrelated_sat_num
+            data_obj.agent_id = self._uncorrelated_sat_num
             data_obj.name = self._uncorrelated_sat_name
         elif isinstance(data_obj, Observation):
             data_obj.target_id = self._uncorrelated_sat_num
@@ -250,7 +250,7 @@ def mungeLostUCTData(data_obj):
     current_julian_time = JulianDate(data_obj.julian_date)
 
     if isinstance(data_obj, EstimateEphemeris):
-        sat_num = data_obj.unique_id
+        sat_num = data_obj.agent_id
     elif isinstance(data_obj, Observation):
         sat_num = data_obj.target_id
     else:

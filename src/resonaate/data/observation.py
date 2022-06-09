@@ -1,31 +1,34 @@
 # Standard Library Imports
 # Third Party Imports
-from sqlalchemy import Column, Integer, Float, String
+from sqlalchemy import Column, Integer, Float, String, ForeignKey
+from sqlalchemy.orm import relationship
 # RESONAATE Imports
 from . import Base, _DataMixin
 
 
 class Observation(Base, _DataMixin):
-    """."""
+    """Represents singular observation information in database."""
 
     __tablename__ = 'observations'
-
     id = Column(Integer, primary_key=True)  # noqa: A003
 
+    ## Defines the epoch associated with the observation data
+    # Many to one relation with :class:`.Epoch`
+    julian_date = Column(Integer, ForeignKey('epochs.julian_date'), nullable=False)
+    epoch = relationship("Epoch", lazy='joined', innerjoin=True)
+
+    ## Defines the associated sensor agent with the observation data
+    # Many to one relation with :class:`.Agent`
+    sensor_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
+    sensor = relationship("Agent", foreign_keys=[sensor_id], lazy='joined', innerjoin=True)
+
+    ## Defines the associated target agent with the observation data
+    # Many to one relation with :class:`.Agent`
+    target_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
+    target = relationship("Agent", foreign_keys=[target_id], lazy='joined', innerjoin=True)
+
     # Type of the observing sensor (Optical, Radar, AdvRadar)
-    sensor_type = Column(String(128))
-
-    # Unique integer identifying the observing sensor
-    unique_id = Column(Integer)
-
-    # Name of observing sensor
-    observer = Column(String(128))
-
-    # Satellite number of the observed target
-    target_id = Column(Integer)
-
-    # Name of the observed target
-    target_name = Column(String(128))
+    sensor_type = Column(String(128), nullable=False)
 
     # Observed azimuth of target from observing sensor in radians
     azimuth_rad = Column(Float)
@@ -38,12 +41,6 @@ class Observation(Base, _DataMixin):
 
     # Observed range rate of target from observing sensor in kilometers per second
     range_rate_km_p_sec = Column(Float, nullable=True)
-
-    # Julian date corresponding to the time the observation was made
-    julian_date = Column(Float, index=True)
-
-    # ISO 8601 formatted string corresponding to the time the observation was made
-    timestampISO = Column(String(128))
 
     # South component of SEZ vector describing observation in kilometers
     sez_state_s_km = Column(Float)
@@ -64,9 +61,8 @@ class Observation(Base, _DataMixin):
     position_altitude_km = Column(Float)
 
     MUTABLE_COLUMN_NAMES = (
-        "sensor_type", "unique_id", "observer", "target_id", "target_name",
+        "julian_date", "sensor_id", "target_id", "sensor_type",
         "azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec",
-        "julian_date", "timestampISO",
         "sez_state_s_km", "sez_state_e_km", "sez_state_z_km",
         "position_lat_rad", "position_long_rad", "position_altitude_km"
     )

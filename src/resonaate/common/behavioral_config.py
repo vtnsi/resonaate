@@ -87,8 +87,6 @@ class BehavioralConfig:
         },
         "database": {
             "DatabaseURL": "sqlite://",
-            "PhysicsModelDataPath": "data/truth_json/",
-            "EphemerisPreLoaded": True,
         },
         "parallel":{
             "RedisHostname": 'localhost',
@@ -117,7 +115,7 @@ class BehavioralConfig:
 
     STR_ITEMS = {
         "logging": ("OutputLocation", ),
-        "database": ("DatabaseURL", "PhysicsModelDataPath", ),
+        "database": ("DatabaseURL", ),
         "parallel": ("RedisHostname", ),
         "debugging": (
             "OutputDirectory", "NearestPDDirectory", "EstimateErrorInflationDirectory",
@@ -136,7 +134,6 @@ class BehavioralConfig:
 
     BOOL_ITEMS = {
         "logging": ("AllowMultipleHandlers", ),
-        "database": ("EphemerisPreLoaded", ),
         "debugging": (
             "NearestPD", "EstimateErrorInflation", "ThreeSigmaObs", "SaveSpaceSensors",
             "SingularMatrix", "ParallelDebugMode"

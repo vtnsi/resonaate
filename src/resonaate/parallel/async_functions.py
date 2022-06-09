@@ -7,19 +7,20 @@ from numpy import zeros, zeros_like
 from . import getRedisConnection
 
 
-def asyncPropagate(dynamics, init_time, final_time, init_state):
+def asyncPropagate(dynamics, init_time, final_time, initial_state, station_keeping=None):
     """Wrap a dynamics propagation method for use with a parallel job submission module.
 
     Args:
         dynamics (:class:`.Dynamics`): dynamics object to propagate
         init_time (:class:`.ScenarioTime`): initial time to propagate from
         final_time (:class:`.ScenarioTime`): time during the scenario to propagate to
-        init_state (``numpy.ndarray``): state of object before propagation
+        initial_state (``numpy.ndarray``): state of object before propagation
+        station_keeping (list, optional): List of :class:`.StationKeeper` objects
 
     Returns:
         ``numpy.ndarray``: state of the object being propagated after calculations are made
     """
-    return dynamics.propagate(init_time, final_time, init_state)
+    return dynamics.propagate(init_time, final_time, initial_state, station_keeping=station_keeping)
 
 
 def asyncPredict(_filter, time):
@@ -78,7 +79,6 @@ def asyncCalculateReward(estimate_id, reward, sensor_list):
         # Attempt predicted observations, in order to perform sensor tasking
         observation, _ = sensor.sensors.makeObservation(
             estimate_id,
-            estimate.name,
             estimate.state_estimate,
             estimate.visual_cross_section,
             noisy=False,  # Don't add noise for prospective observations
@@ -122,17 +122,16 @@ def asyncExecuteTasking(tasked_sensors, target_num, imported_observations):
     """
     successful_obs = []
     sensor_agents = loads(getRedisConnection().get('sensor_agents'))
-    target_agents = loads(getRedisConnection().get('target_agents'))
+    target_agent = loads(getRedisConnection().get('target_agents'))[target_num]
     sensor_list = list(sensor_agents.values())
     if len(tasked_sensors) > 0:
         successful_obs.extend(list(filter(
             None,
             (
                 sensor_list[ss].sensors.makeNoisyObservation(
-                    target_num,
-                    target_agents[target_num].name,
-                    target_agents[target_num].eci_state,
-                    target_agents[target_num].visual_cross_section,
+                    target_agent.simulation_id,
+                    target_agent.eci_state,
+                    target_agent.visual_cross_section,
                 )[0] for ss in tasked_sensors
             )
         )))

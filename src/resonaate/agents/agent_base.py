@@ -3,21 +3,37 @@ import logging
 from abc import ABCMeta, abstractmethod, abstractproperty, abstractclassmethod
 # Third Party Imports
 from numpy import ndarray
-from sqlalchemy.orm import Query
 # RESONAATE Imports
-from ..common.utilities import getTypeString
-from ..data.data_interface import DataInterface
-from ..data.ephemeris import TruthEphemeris
+from ..common.utilities import checkTypes
 from ..dynamics.dynamics_base import Dynamics
-from ..parallel.async_functions import asyncPredict, asyncPropagate
-from ..parallel.job_handler import CallbackRegistration
 from ..scenario.clock import ScenarioClock
+from ..dynamics.integration_events.station_keeping import StationKeeper
+
+
+DEFAULT_VIS_X_SECTION = 25.0
+"""float: Default value for `visual_cross_section`.
+
+TODO: Make this better
+"""
 
 
 class Agent(metaclass=ABCMeta):
     """Abstract base class for a generic Agent object, i.e. an actor in the simulation."""
 
-    def __init__(self, _id, name, agent_type, initial_state, clock, dynamics, realtime, visual_cross_section):
+    TYPES = {
+        "_id": int,
+        "name": str,
+        "agent_type": str,
+        "initial_state": ndarray,
+        "clock": ScenarioClock,
+        "dynamics": Dynamics,
+        "realtime": bool,
+        "visual_cross_section": (int, float),
+        "station_keeping": (list, type(None))
+    }
+
+    def __init__(self, _id, name, agent_type, initial_state, clock, dynamics,
+                 realtime, visual_cross_section, station_keeping=None):
         """Construct an Agent object.
 
         Args:
@@ -29,6 +45,8 @@ class Agent(metaclass=ABCMeta):
             dynamics (:class:`.Dynamics`): Agent's simulation dynamics
             realtime (``bool``): whether to use :attr:`.dynamics` or import data for propagation
             visual_cross_section (``float``): constant visual cross-section of the agent
+            station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station keeping to
+                be performed
 
         Raises:
             TypeError: raised on incompatible types for input params
@@ -36,66 +54,49 @@ class Agent(metaclass=ABCMeta):
         """
         # Define a logger for the Agent
         self._logger = logging.getLogger("resonaate")
+        checkTypes(locals(), self.TYPES)
 
-        if not isinstance(_id, int):
-            self._logger.error("Incorrect type for _id param")
-            raise TypeError(type(_id))
         # Agent's integer ID number
         self._id = _id
-
-        if not isinstance(name, str):
-            self._logger.error("Incorrect type for name param")
-            raise TypeError(type(name))
         # String for the Agent's name.
         self._name = name
-
-        if not isinstance(agent_type, str):
-            self._logger.error("Incorrect type for agent_type param")
-            raise TypeError(type(agent_type))
         # String for the Agent's type.
         self._type = agent_type
-
-        if not isinstance(initial_state, ndarray):
-            self._logger.error("Incorrect type for initial_state param")
-            raise TypeError(type(initial_state))
         # ECI initial state vector describing the Agent's position & velocity
         self._initial_state = initial_state.reshape(6)
-
-        if not isinstance(clock, ScenarioClock):
-            self._logger.error("Incorrect type for clock param")
-            raise TypeError(type(clock))
         # Time associated with the state in the state property (seconds)
         self._time = clock.time
-
         # Julian date of start time
         self.julian_date_start = clock.julian_date_start
-
-        if not isinstance(dynamics, Dynamics):
-            self._logger.error("Incorrect type for dynamics param")
-            raise TypeError(type(dynamics))
         # Dynamics class for propagating the Agent's state
         self._dynamics = dynamics
-
-        if not isinstance(realtime, bool):
-            self._logger.error("Incorrect type for realtime param")
-            raise TypeError(type(realtime))
         # Flag for using real-time propagation
         self._realtime = realtime
 
-        if not isinstance(visual_cross_section, (int, float)):
-            self._logger.error("Incorrect type for visual_cross_section param")
-            raise TypeError(type(visual_cross_section))
-        elif visual_cross_section < 0.0:
+        if visual_cross_section < 0.0:
             self._logger.error("Invalid value for visual_cross_section param")
             raise ValueError(visual_cross_section)
         # Visible cross sectional area (m^2)
         self._visual_cross_section = visual_cross_section
 
-        # Set callback associated with parallel propagation
-        self.callback = self.setCallback()
+        # Default callback is `None`
+        self.callback = None
 
-    def setCallback(self):
+        if station_keeping:
+            self._station_keeping = station_keeping
+        else:
+            self._station_keeping = []
+        for station_keeper in self._station_keeping:
+            if not isinstance(station_keeper, StationKeeper):
+                err = f"{station_keeper} is not a valid StationKeeper object."
+                raise TypeError(err)
+
+    @abstractmethod
+    def setCallback(self, importer):
         """Set the callback associated when :meth:`.executeJobs()` is executed.
+
+        Args:
+            importer (``bool``): whether a proper :class:`.ImporterDatabase` exists
 
         Note:
             Assumes that :class:`.EstimateAgent` objects don't have importable :class:`.Ephemeris`:
@@ -109,46 +110,7 @@ class Agent(metaclass=ABCMeta):
         Returns:
             :meth:`.importstate`, or instance of :class:`.CallbackRegistration`
         """
-        if getTypeString(self) == "EstimateAgent":
-            # This is an `EstimateAgent`, so use `::asyncPredict()`
-            callback = CallbackRegistration(
-                self,
-                self.updateTask,
-                asyncPredict,
-                self.jobCompleteCallback
-            )
-        elif self._realtime is True:
-            # Realtime propagation is on, so use `::asyncPropagate()`
-            callback = CallbackRegistration(
-                self,
-                self.updateTask,
-                asyncPropagate,
-                self.jobCompleteCallback
-            )
-        else:
-            # Realtime propagation is off, attempt to query database for valid `Ephemeris` objects
-            shared_interface = DataInterface.getSharedInterface()
-            query = Query([TruthEphemeris]).filter(TruthEphemeris.unique_id == self.simulation_id)
-            truth_ephem = shared_interface.getData(query, multi=False)
-
-            # If minimal truth data exists in the database, use importer model, otherwise default to
-            # realtime propagation (and print warning that this happened).
-            if truth_ephem is None:
-                self._logger.warning(
-                    "Could not find importer truth for {0}. Defaulting to realtime propagation!".format(
-                        self.simulation_id
-                    )
-                )
-                callback = CallbackRegistration(
-                    self,
-                    self.updateTask,
-                    asyncPropagate,
-                    self.jobCompleteCallback
-                )
-            else:
-                callback = self.importState
-
-        return callback
+        raise NotImplementedError
 
     ### Abstract Methods & Properties ###
 
@@ -162,24 +124,24 @@ class Agent(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def updateTask(self, new_time):
-        """Create a task to be processed in parallel and update :attr:`time` appropriately.
+    def updateJob(self, new_time):
+        """Create a job to be processed in parallel and update :attr:`time` appropriately.
 
         Args:
             new_time (:class:`.ScenarioTime`): payload sent by :class:`.PropagateJobHandler` to
                 indicate the current simulation time
 
         Returns
-            :class:`.Task`: Task to be processed in parallel.
+            :class:`.Job`: Job to be processed in parallel.
         """
         raise NotImplementedError
 
     @abstractmethod
     def jobCompleteCallback(self, job):
-        """Execute when the job submitted in :meth:`~.Agent.updateTask` completes.
+        """Execute when the job submitted in :meth:`~.Agent.updateJob` completes.
 
         Args:
-            job (:class:`.Task`): job object that's returned when a job completes
+            job (:class:`.Job`): job object that's returned when a job completes
         """
         raise NotImplementedError
 
@@ -265,6 +227,11 @@ class Agent(metaclass=ABCMeta):
     def time(self):
         """:class:`.ScenarioTime`: Returns current epoch seconds."""
         return self._time
+
+    @property
+    def station_keeping(self):
+        """``list``: Returns the station_keeping list."""
+        return self._station_keeping
 
     @property
     def visual_cross_section(self):

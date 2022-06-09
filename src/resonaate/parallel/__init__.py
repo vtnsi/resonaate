@@ -1,7 +1,7 @@
-"""A widely-applicable interface for parallel task execution in Python.
+"""A widely-applicable interface for parallel job execution in Python.
 
 This design uses a :class:`.QueueManager` to make use of a concept called a `Redis`_ `Task Queue`_
-to schedule serialized :class:`.Task` s across multiple :meth:`.worker_loop()` s that are managed by
+to schedule serialized :class:`.Job` s across multiple :meth:`.worker_loop()` s that are managed by
 one or more :class:`.WorkerManager` s.
 
 In this ``__init__.py`` file, several package-level constants and functions are defined.
@@ -11,21 +11,25 @@ In this ``__init__.py`` file, several package-level constants and functions are 
 .. _Task Queue:
     https://redislabs.com/ebook/part-2-core-concepts/chapter-6-application-components-in-redis/6-4-task-queues/
 """
+# Standard Library Imports
 import logging
 import os
-from sys import stdout
+import sys
 from uuid import uuid4
+# Third Party Imports
 from redis import Redis
+from redis import exceptions as redis_exceptions
+# RESONAATE Imports
 from ..common.behavioral_config import BehavioralConfig
 
-TASK_QUEUE_LIST = 'task_queue_list'
-"""str: Key to use when accessing list of registered task queues."""
+JOB_QUEUE_LIST = 'job_queue_list'
+"""str: Key to use when accessing list of registered job queues."""
 
-TASK_QUEUE_NAME_PREFIX = 'task_queue_'
-"""str: Key to use when accessing ``redis`` task queue."""
+JOB_QUEUE_NAME_PREFIX = 'job_queue_'
+"""str: Key to use when accessing ``redis`` job queue."""
 
-PROCESSED_QUEUE_NAME_PREFIX = 'processed_task_queue_'
-"""str: Key to use when accessing redis processed task queue."""
+PROCESSED_QUEUE_NAME_PREFIX = 'processed_job_queue_'
+"""str: Key to use when accessing redis processed job queue."""
 
 MASTER_KEY_NAME = 'master'
 """str: Key to use for indication of whether the current instance is master."""
@@ -155,13 +159,17 @@ def isMaster(redis_connection=None):
     if MASTER_HASH is None:
         MASTER_HASH = str(uuid4())
 
-    wasnt_set = red.setnx(MASTER_KEY_NAME, MASTER_HASH)
+    try:
+        wasnt_set = red.setnx(MASTER_KEY_NAME, MASTER_HASH)
+    except redis_exceptions.ConnectionError as err:
+        setUpLogger()
+        REDIS_QUEUE_LOGGER.error("Redis server was not started, or pointing to a different port.")
+        sys.exit(err)
 
     if wasnt_set:
         return True
     else:
         redis_master = red.get(MASTER_KEY_NAME).decode('utf-8')
-
         return redis_master == MASTER_HASH
 
 
@@ -169,7 +177,7 @@ def masterExists(redis_connection=None):
     """Determine whether a master instance currently exists.
 
     This design relies on the master instance to call :meth:`.resetMaster()` when it exits, so that
-    slave instances can use this method as an indication to continue checking for tasks or to exit.
+    slave instances can use this method as an indication to continue checking for jobs or to exit.
 
     Args:
         redis_connection (Redis, optional): ``redis`` connection. If this isn't provided, this
@@ -215,7 +223,7 @@ def getMasterHash():
 REDIS_QUEUE_LOGGER = logging.getLogger(__name__)
 
 
-def setUpLogger(destination='stdout'):
+def setUpLogger(destination=BehavioralConfig.getConfig().logging.OutputLocation):
     """Set up the default loggin instance.
 
     Note:
@@ -229,19 +237,24 @@ def setUpLogger(destination='stdout'):
     """
     if not REDIS_QUEUE_LOGGER.hasHandlers():
         if destination == "stdout":
-            handler = logging.StreamHandler(stream=stdout)
+            handler = logging.StreamHandler(stream=sys.stdout)
 
-        elif destination == "file":
+        else:
+            # Create the path if it doesn't exist.
+            if not os.path.exists(destination):
+                print("Path did not exist: '{0}'. Creating path...".format(destination))
+                os.makedirs(destination)
+
             if isMaster():
                 filename = "master-{0}.log".format(MASTER_HASH[:8])
             else:
                 filename = "slave-{0}.log".format(MASTER_HASH[:8])
-            handler = logging.FileHandler(filename)
+            handler = logging.FileHandler(os.path.join(destination, filename))
 
-        else:
-            err = "'_LOGGING_LOCATION' can't be set to '{0}'".format(destination)
-            raise ValueError(err)
-
-        handler.setFormatter(logging.Formatter('%(asctime)s - %(module)s - %(levelname)s - %(message)s'))
+        handler.setFormatter(
+            logging.Formatter(
+                '%(asctime)s - %(module)s - %(funcName)s() - %(levelname)s - %(message)s'
+            )
+        )
         REDIS_QUEUE_LOGGER.addHandler(handler)
         REDIS_QUEUE_LOGGER.setLevel(logging.DEBUG)

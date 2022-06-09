@@ -21,6 +21,6 @@
         "name": "MunkresDecision",
         "parameters": {}
     },
-    "target_set": "targets/geo_only_test_targets.json",
-    "sensor_set": "sensor_networks/single_optical_network.json"
+    "targets_file": "targets/small_target_set.json",
+    "sensors_file": "sensor_networks/satellite_network.json"
 }
