@@ -1,3 +1,4 @@
+"""Defines the :class:`.ScenarioClock` class to track simulation time."""
 # Standard Library Imports
 import logging
 # Pip Package Imports
@@ -5,16 +6,8 @@ import logging
 from ..data.epoch import Epoch
 from ..data.resonaate_database import ResonaateDatabase
 from ..physics import constants as const
-from ..physics.bodies.third_body import updateThirdBodyPositions, Moon, Sun
 from ..physics.time.stardate import JulianDate, ScenarioTime, datetimeToJulianDate, julianDateToDatetime
 from ..physics.transforms.reductions import updateReductionParameters
-
-
-BODIES = {
-    "sun": Sun,
-    "moon": Moon,
-}
-"""dict: third body objects to update positions of on :meth:`~.ScenarioClock.ticToc`."""
 
 
 class ScenarioClock:
@@ -41,7 +34,20 @@ class ScenarioClock:
 
         # EOP params & third body positions updated
         updateReductionParameters(start_date)
-        updateThirdBodyPositions(start_date, BODIES)
+
+        epochs = []
+        sim_time_iter = ScenarioTime(0)
+        while sim_time_iter <= self.time_span:
+            jd_iter = sim_time_iter.convertToJulianDate(self.julian_date_start)
+            epochs.append(Epoch(
+                julian_date=jd_iter,
+                timestampISO=julianDateToDatetime(jd_iter).isoformat()
+            ))
+
+            sim_time_iter += self.dt_step
+
+        database = ResonaateDatabase.getSharedInterface()
+        database.insertData(*epochs)
 
     def ticToc(self, *args):  # noqa: C901
         """Increment the time property by one step, update class variables, and execute require callbacks."""
@@ -57,20 +63,6 @@ class ScenarioClock:
         #           the main simulation time step. If we implement smoothing/multi-step prediction, then we
         #           will have to revisit this implementation. This will likely just change to DB insert/queries
         updateReductionParameters(self.julian_date_epoch)
-        updateThirdBodyPositions(self.julian_date_epoch, BODIES)
-
-        # Insert epoch into database
-        self.updateDatabase()
-
-    def updateDatabase(self):
-        """Update internal DB with epoch."""
-        database = ResonaateDatabase.getSharedInterface()
-        database.insertData(
-            Epoch(
-                julian_date=self.julian_date_epoch,
-                timestampISO=julianDateToDatetime(self.julian_date_epoch).isoformat()
-            )
-        )
 
     @classmethod
     def fromConfig(cls, config):

@@ -1,3 +1,4 @@
+"""Defines dynamics of agents that can be used in RESONAATE simulations."""
 # Standard Imports
 # Third Party Imports
 # RESONAATE Imports

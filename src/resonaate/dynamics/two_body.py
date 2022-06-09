@@ -1,6 +1,7 @@
+"""Defines the :class:`.TwoBody` class defining Keplerian motion."""
 # Standard Library Imports
 # Third Party Imports
-from numpy import concatenate, matmul, empty_like, eye, zeros
+from numpy import empty_like
 from scipy.linalg import norm
 # RESONAATE Imports
 from .celestial import Celestial, checkEarthCollision
@@ -16,6 +17,10 @@ class TwoBody(Celestial):
 
     def _differentialEquation(self, time, state):  # pylint: disable=unused-argument
         """Calculate the first time derivative of the state for numerical integration.
+
+        References:
+            #. :cite:t:`vallado_2013_astro`, Section 1.3, Eqn 1-14
+            #. :cite:t:`wiesel_1997_spaceflight`, Section 2.3, Eqn 2.10
 
         Note: this function must take and receive 1-dimensional state vectors! Also, `K` below
             refers to the number of parallel integrations being performed
@@ -45,28 +50,4 @@ class TwoBody(Celestial):
             derivative[jj:jj + half:step] = state[jj + half::step]
             derivative[jj + half::step] = -1. * Earth.mu / (r_norm**3.0) * r_vector
 
-        return derivative  # + self.host._propulsion.getThrust(state, time)
-
-
-def stateMatrix(x_position):
-    """Calculate the partial derivative matrix, F, for Two-Body dynamics in ECI coordinates.
-
-    Args::
-        x_position (``numpy.ndarray``): 6x1 ECI state vector (km; km/sec)
-
-    Returns:
-        (``numpy.ndarray``): 6x6 F Matrix
-    """
-    r_vec = x_position[0:3]
-    r_norm = norm(r_vec)
-    f_upper_left = zeros((3, 3))
-    f_upper_right = eye(3)
-    f_lower_left = 3 * Earth.mu / (r_norm**5) * (matmul(r_vec.T, r_vec)) - Earth.mu / (r_norm**3) * eye(len(r_vec))
-    f_lower_right = zeros((3, 3))
-    return concatenate(
-        (
-            concatenate((f_upper_left, f_upper_right), axis=1),
-            concatenate((f_lower_left, f_lower_right), axis=1)
-        ),
-        axis=0
-    )
+        return derivative

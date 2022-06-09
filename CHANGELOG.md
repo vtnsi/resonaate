@@ -1,11 +1,17 @@
-# RESONAATE Changelog
+# Release History
 
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- [RESONAATE Changelog](#resonaate-changelog)
+-------------------------------------------------
+<!-- Start TOC -->
+
+**Table of Contents**
+
+- [Release History](#release-history)
 - [[Unreleased]](#unreleased)
+- [[1.3.0 - 2022-03-04]](#130---2022-03-04)
 - [[1.2.0] - 2021-06-14](#120---2021-06-14)
 - [[1.1.1] - 2021-03-25](#111---2021-03-25)
 - [[1.1.0] - 2021-03-24](#110---2021-03-24)
@@ -14,21 +20,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[0.9.0] - 2020-10-20](#090---2020-10-20)
 - [[0.0.0] - 2020-05-08](#000---2020-05-08)
 
+-------------------------------------------------
+<!-- END TOC -->
+
 # [Unreleased]
 
 - Added
+- Changed
+- Deprecated
+- Removed
+- Fixed
+
+# [1.3.0 - 2022-03-04]
+
+- Added
+  - `physics.orbits` package with new `OrbitalElement` class interface
+  - Supporting astrodynamics functions, utilities, & algorithms
+  - Unit tests for `orbits` package as well as `math` module
+  - Valid limits on eccentricity & inclination to properly define singular cases
+  - More unit tests for bodies package
+  - General relativity acceleration correction for Earth-orbiting satellites
+  - Ability to toggle GR & SRP perturbations in the configuration settings
+  - Multiple sections to HTML docs: "Getting Started", "Reference Material", "Technical Background", "For Developers"
+  - Proper docstrings to all package **__init__.py** files
+  - Copy button and bibliography Sphinx extensions
+  - Mermaid flowchart/diagram extension that works with MyST
+  - Sphinx Gallery extension for examples
+  - `IsAngle` enum class to track whether measurements are angles or not
+  - `dt_step` to all `Agent` classes
+  - Detailed documentation in the `noise.py` module
+  - Separate std values in config for initial estimate error
+  - Conversions between spherical & cartesian coordinates
+  - Conversions to/from Az/El, RaDec and common reference frames
+  - Unit tests to cover all functions in `physics.transforms.methods`
+  - `flight_path_angle` property to `Orbit`
+  - `ObservationTuple` for easier passing of observation
+  - Improved filtering documentation to better explain the API
+  - **parallel/handlers** directory with various parallel job handlers
+  - Simpler architecture for parallel job execution by refactoring
+  - `Agent.time` property for easily accessing the current agent's epoch
+  - `physics.math.normalizeAngleNegPiPi()` and `physics.math.normalizeAngle2Pi()`
+  - `tests/physics.math`
+  - Valid config option to use `"DOP853"` as a ODE solver
+  - Suite of `ConfigError`s that more verbosely explain configuration issues
+  - `data.events` module
+  - `TargetAddition`, `SensorAddition`, and `AgentRemoval` events
+  - Installation instructions for bare metal installation
+  - Instructions for making RESONAATE containers and running them
+  - Added sensor time bias event with test cases
+  - Added "events" config option to init.json messages
+  - Added ""station_keeping", "target_realtime_propagation", "sensor_realtime_propagation" init message options
+  - Added continuous state change events: finite maneuvers and finite burns
+  - filter/statistics.py file with NIS Class
+  - Maneuver Detection inside `update()` step of `UnscentedKalmanFilter`
+  - `data.queries` module
+  - Unit tests to cover all functions in `data.queries`
 
 - Changed
+  - Updated installation and tutorial information in docs
+  - Moved to using MyST as the main documentation parser, allowing Markdown rather than reStructuredText
+  - API docs to use `autosummary` extension rather than `api-docs`
+  - Moved unnecessary re-sampling of sigma points in `predict` step to `forecast()`
+  - No longer used the re-sampled predicted estimated on no-observation steps, but instead us the predicted mean (zero-th predicted sigma point)
+  - `"initial_error_magnitude"` is now split into separate values: `"init_position_std_km"` and `"init_velocity_std_km_p_sec"`
+  - Default config values for noise parameters
+  - References of "Observation Vector" to "Slant Range Vector" for clarification
+  - Renamed **example_data** to **configs** to clarify usage a bit more.
+  - Refactored sigma point generation into function
+  - Refactored looping calculations in UKF to use `map()`
+  - Simplified how `Scenario` and `CentralizedTaskingEngine` need to use/call parallel job handlers
+  - Moved all linting into **setup.cfg**
+  - `BehavioralConfig.debugging.DatabaseURL` to `DatabasePath`
+  - Moved `createDatabasePath()` into **data** directory
+  - Moved `saveDatabase()` to be a `ResonaateDatabase` method
+  - Changed `ManualSensorTask` to `TargetTaskingPriority` in the new `data.events` module
+  - Changed `Propulsion` events to `ScheduledImpulseEvent`s
+  - Updated scenario configuration documentation
+  - Passing entire target Agent object into `makeNoisyObservation()`
 
 - Deprecated
+  - `"initial_error_magnitude"` key in the `"noise"` config object
+  - `"init_estimate_error"` key in `Estimate.fromConfig()` `dict`
+  - In-memory database functionality for `ResonaateDatabase`: will be removed completely when we move to PostgreSQL
 
 - Removed
+  - old `orbit.py` module
+  - `jplephem` as a dependency
+  - Use of `Redis` inside `UnscentedKalmanFilter`
+  - `::retrogress()` & several unnecessary attributes from `SequentialFilter`
+  - Custom parallel logic in **agents**, **scenario**, & **tasking/engines**
+  - `physics.math.normalizeAngle()`, replaced with `normalizeAngleNegPiPi()` and `normalizeAngle2Pi()`
+  - `--no-db` and `--auto-db` CLI arguments
+  - Type assertions, and replaced with `TypeError` exceptions
+  - `Scenario.addNode()` method
+  - **tests/networks** directory
+  - "realtime_propagation" init message option
 
 - Fixed
+  - Skipped station-keeping test to pass
+  - Converted all `super()` calls to not use arguments, so it's more Python 3 oriented
+  - Broken and old style docstrings
+  - Deprecated empty `np.ndarray` check in `Celestial.propagate()`
+  - Tasking engine unit tests by removing the mocked classes. Pickling mocked objects doesn't behave well.
+  - `JobTimeoutError` bug (#103) introduced by !47, fixed by !56
 
 # [1.2.0] - 2021-06-14
 
 - Added
+  - New sensor network config for dedicated SSN sensors
+  - `angularMean()` math function
+  - Logging helper functions for one-off logs
+  - Skew-symmetric & 1st Chebyshev functions
   - Scenario/Simulation config sub-package for all valid JSON/YAML objects/options under `resonaate.scenario.config`
     - See !27 for details on how this was implemented
   - `Agent` DB table entry object
@@ -47,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Celestial` class to `dynamics` module for functionality shared between space based agents
 
 - Changed
+  - Change `normalizeAngle()` to `wrapAngle()`
   - Make `Agent::setCallback()` abstract, and define in concrete classes
   - Split database architecture into `ResonaateDatabase` and `ImporterDatabase`
     - `ResonaateDatabase` for produced data

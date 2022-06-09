@@ -1,1 +1,1 @@
-"""Module describing events that take place during :class:`.Dynamics`'s propagation."""
+"""Package describing events that take place during :class:`.Dynamics`'s propagation."""

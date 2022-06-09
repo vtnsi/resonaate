@@ -1,3 +1,4 @@
+"""Defines the capabilities and operation of different types of sensors."""
 # Standard Imports
 # Third Party Imports
 from numpy import asarray, sqrt

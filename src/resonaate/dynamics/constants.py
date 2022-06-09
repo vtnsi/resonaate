@@ -1,4 +1,4 @@
-"""Define constant strings used throughout the `dynamics` module."""
+"""Define string constants used throughout the `dynamics` module."""
 
 
 TWO_BODY_LABEL = "two_body"
@@ -9,3 +9,5 @@ SPECIAL_PERTURBATIONS_LABEL = "special_perturbations"
 
 RK45_LABEL = "RK45"
 """str: Constant string used to describe Runge-Kutta integration method of order 5(4)."""
+
+DOP853_LABEL = "DOP853"

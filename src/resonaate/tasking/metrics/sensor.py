@@ -1,3 +1,4 @@
+"""Defines sensor usage-focused tasking metrics."""
 # Standard Library Imports
 # Third Party Imports
 # RESONAATE Imports
@@ -6,7 +7,11 @@ from ...physics import constants as const
 
 
 class DeltaPosition(SensorMetric):
-    """Delta position sensor metric."""
+    """Delta position sensor metric.
+
+    References:
+        :cite:t:`nastasi_2018_diss`, Eqn 5.5
+    """
 
     def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
         """Calculate the change in angular position required for an observation.
@@ -45,6 +50,9 @@ class TimeToTransit(SensorMetric):
 
     def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
         """Calculate the time to slew the sensor from the current position to the proposed observation.
+
+        References:
+            :cite:t:`nastasi_2018_diss`, Eqn 5.11 - 5.12
 
         Args:
             delta_boresight (float): required change of boresight vector in radians

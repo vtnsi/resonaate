@@ -8,19 +8,19 @@ from scipy.linalg import norm
 
 # RESONAATE Imports
 try:
-    import resonaate.physics.transforms.methods as transforms
-    from resonaate.physics.orbit import Orbit
+    from resonaate.physics.transforms import methods as transforms
+    from resonaate.physics.orbits.elements import ClassicalElements
     from resonaate.dynamics.special_perturbations import SpecialPerturbations
-    import resonaate.dynamics.integration_events.station_keeping as station_keeping
+    from resonaate.dynamics.integration_events import station_keeping
     from resonaate.physics.bodies import Earth
     from resonaate.physics import constants as const
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config.geopotential_config import GeopotentialConfig
     from resonaate.scenario.config.perturbations_config import PerturbationsConfig
-    from resonaate.scenario.clock import updateReductionParameters, updateThirdBodyPositions, BODIES
+    from resonaate.scenario.clock import updateReductionParameters
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase
@@ -59,7 +59,6 @@ def getPerturbationsConfig():
 def updateParams():
     """Make sure reduction parameters and third body positions are up to date."""
     updateReductionParameters(TEST_START_JD)
-    updateThirdBodyPositions(TEST_START_JD, BODIES)
 
 
 @pytest.fixture(name="dynamics_obj")
@@ -97,7 +96,7 @@ class TestStationKeeping(BaseTestCase):
         """Validate that the LEO station keeper object can be correctly instantiated."""
         station_keeper = station_keeping.KeepLeoUp.fromInitECI(self.LEO_TEST_RSO, self.LEO_TEST_ECI)
         assert np.array_equal(station_keeper.initial_eci, self.LEO_TEST_ECI)
-        assert station_keeper.initial_coe == Orbit.rv2coe(self.LEO_TEST_ECI)
+        assert station_keeper.initial_coe == ClassicalElements.fromECI(self.LEO_TEST_ECI)
         assert station_keeper.ntw_delta_v == 0.0
 
     def testKeepLeoUpInterruptNotRequired(self, ):
@@ -109,11 +108,11 @@ class TestStationKeeping(BaseTestCase):
     def testKeepLeoUpInterruptRequired(self, ):
         """Validate that the LEO station keeper object correctly requires interrupt."""
         station_keeper = station_keeping.KeepLeoUp.fromInitECI(self.LEO_TEST_RSO, self.LEO_TEST_ECI)
-        coe = Orbit.rv2coe(self.LEO_TEST_ECI)
-        coe.semimajor_axis -= station_keeping.KeepLeoUp.ALT_DRIFT_THRESHOLD * 1.1
-        coe.semilatus_rectum = coe.semimajor_axis * (1 - coe.eccentricity**2)
-        coe.period = 2 * const.PI * np.sqrt(coe.semimajor_axis**3 / Earth.mu)
-        new_state = coe.coe2rv()
+        coe = ClassicalElements.fromECI(self.LEO_TEST_ECI)
+        coe.sma -= station_keeping.KeepLeoUp.ALT_DRIFT_THRESHOLD * 1.01
+        coe.semilatus_rectum = coe.sma * (1 - coe.ecc**2)
+        coe.period = 2 * const.PI * np.sqrt(coe.sma**3 / Earth.mu)
+        new_state = coe.toECI()
         assert station_keeper.interruptRequired(0.0, new_state) is True
         assert station_keeper(0.0, new_state) == 0
 
@@ -127,7 +126,7 @@ class TestStationKeeping(BaseTestCase):
         """Validate that the GEO East-West station keeper object can be correctly instantiated."""
         station_keeper = station_keeping.KeepGeoEastWest.fromInitECI(self.GEO_TEST_RSO, self.GEO_TEST_ECI)
         assert np.array_equal(station_keeper.initial_eci, self.GEO_TEST_ECI)
-        assert station_keeper.initial_coe == Orbit.rv2coe(self.GEO_TEST_ECI)
+        assert station_keeper.initial_coe == ClassicalElements.fromECI(self.GEO_TEST_ECI)
         assert station_keeper.ntw_delta_v == 0.0
 
     def testGeoEastWestInterruptNotRequired(self, ):
@@ -141,7 +140,7 @@ class TestStationKeeping(BaseTestCase):
         station_keeper = station_keeping.KeepGeoEastWest.fromInitECI(self.GEO_TEST_RSO, self.GEO_TEST_ECI)
 
         geo_lla = transforms.ecef2lla(transforms.eci2ecef(self.GEO_TEST_ECI))
-        geo_lla[1] += station_keeping.KeepGeoEastWest.LON_DRIFT_THRESHOLD * 1.1
+        geo_lla[1] += station_keeping.KeepGeoEastWest.LON_DRIFT_THRESHOLD * 1.01
         new_state = transforms.ecef2eci(transforms.lla2ecef(geo_lla))
 
         assert station_keeper.interruptRequired(0.0, new_state) is True
@@ -157,7 +156,7 @@ class TestStationKeeping(BaseTestCase):
         """Validate that the GEO North-South station keeper object can be correctly instantiated."""
         station_keeper = station_keeping.KeepGeoNorthSouth.fromInitECI(self.GEO_TEST_RSO, self.GEO_TEST_ECI)
         assert np.array_equal(station_keeper.initial_eci, self.GEO_TEST_ECI)
-        assert station_keeper.initial_coe == Orbit.rv2coe(self.GEO_TEST_ECI)
+        assert station_keeper.initial_coe == ClassicalElements.fromECI(self.GEO_TEST_ECI)
         assert station_keeper.ntw_delta_v == 0.0
 
     def testGeoNorthSouthInterruptNotRequired(self, ):
@@ -171,20 +170,19 @@ class TestStationKeeping(BaseTestCase):
         station_keeper = station_keeping.KeepGeoNorthSouth.fromInitECI(self.GEO_TEST_RSO, self.GEO_TEST_ECI)
 
         geo_lla = transforms.ecef2lla(transforms.eci2ecef(self.GEO_TEST_ECI))
-        geo_lla[0] += station_keeping.KeepGeoNorthSouth.LAT_DRIFT_THRESHOLD * 1.1
+        geo_lla[0] += station_keeping.KeepGeoNorthSouth.LAT_DRIFT_THRESHOLD * 1.01
         new_state = transforms.ecef2eci(transforms.lla2ecef(geo_lla))
 
         assert station_keeper.interruptRequired(0.0, new_state) is True
         assert station_keeper(0.0, new_state) == 0
         assert norm(station_keeper.getStateChange(0, new_state)[3:]) > 0
 
-    @pytest.mark.skip(reason="safeArccos() assertion")
     def testGeoNorthSouthPropagation(self, dynamics_obj):
         """Validate that the GEO North-South station keeping maneuver executes when it's supposed to."""
         station_keeper = station_keeping.KeepGeoNorthSouth.fromInitECI(self.GEO_TEST_RSO, self.GEO_TEST_ECI)
 
         geo_lla = transforms.ecef2lla(transforms.eci2ecef(self.GEO_TEST_ECI))
-        geo_lla[0] += station_keeping.KeepGeoNorthSouth.LAT_DRIFT_THRESHOLD
+        geo_lla[0] += station_keeping.KeepGeoNorthSouth.LAT_DRIFT_THRESHOLD * 1.01
         new_eci = transforms.ecef2eci(transforms.lla2ecef(geo_lla))
 
         dynamics_obj.propagate(0.0, self.PROPAGATE_DURATION, new_eci, station_keeping=[station_keeper])

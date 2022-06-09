@@ -1,3 +1,4 @@
+"""Defines the reward functions used to quantify tasking solutions."""
 # RESONAATE Imports
 from .reward_base import Reward as _BaseReward
 from .rewards import CostConstrainedReward, SimpleSummationReward, CombinedReward

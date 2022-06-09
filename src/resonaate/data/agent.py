@@ -1,3 +1,4 @@
+"""Defines the :class:`~.agent.Agent` data table class."""
 # Standard Library Imports
 # Third Party Imports
 from sqlalchemy import Column, Integer, String

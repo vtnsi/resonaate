@@ -13,7 +13,7 @@ try:
     )
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase

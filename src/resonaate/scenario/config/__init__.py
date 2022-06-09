@@ -1,22 +1,22 @@
-"""Submodule defining how a :class:`.Scenario` can be configured."""
+"""Subpackage defining how a :class:`.Scenario` can be configured."""
 # Standard Library Imports
-from logging import getLogger
 import os
 # Package
+from ...common.logger import resonaateLogWarning
 from ...common.utilities import loadJSONFile, loadYAMLFile
-from .base import ConfigObjectList
+from .base import ConfigObjectList, ConfigMissingRequiredError
 from .geopotential_config import GeopotentialConfig
 from .noise_config import NoiseConfig
 from .propagation_config import PropagationConfig
 from .time_config import TimeConfig
 from .perturbations_config import PerturbationsConfig
-from .event_configs import TargetEventConfigObject, SensorEventConfigObject
+from .event_configs import EventConfigObjectList
 from .engine_config import EngineConfigObject
 from .filter_config import FilterConfig
 
 
 class ScenarioConfig:
-    """Configuration class for creating valid :class:`.Scenario`s.
+    """Configuration class for creating valid :class:`.Scenario` objects.
 
     This allows the extra logic for properly checking all configs to be abstracted from the
     factory methods and the :class:`.Scenario`'s constructor.
@@ -31,12 +31,11 @@ class ScenarioConfig:
         self.engines = ConfigObjectList("engines", EngineConfigObject)
         self.perturbations = PerturbationsConfig()
         self.filter = FilterConfig()
-        self.target_events = ConfigObjectList("target_events", TargetEventConfigObject, default_empty=True)
-        self.sensor_events = ConfigObjectList("sensor_events", SensorEventConfigObject, default_empty=True)
+        self.events = EventConfigObjectList()
 
         self.sections = (
             self.time, self.noise, self.propagation, self.geopotential, self.engines,
-            self.perturbations, self.target_events, self.sensor_events, self.filter
+            self.perturbations, self.events, self.filter
         )
 
     @classmethod
@@ -61,23 +60,18 @@ class ScenarioConfig:
         Args:
             config_dict (dict): Config dictionary specifying :class:`.Scenario` attributes.
         """
-        logger = getLogger("resonaate")
         for section in self.sections:
             nested_config = config_dict.pop(section.config_label, None)
-            if section.isRequired() and not nested_config:
-                logger.error("Missing required section '{0}' in the Scenario config".format(
-                    section.config_label
-                ))
-                raise KeyError(section.config_label)
-
-            elif nested_config:
+            if nested_config:
                 section.readConfig(nested_config)
+
+            elif section.isRequired() and not nested_config:
+                raise ConfigMissingRequiredError("Scenario", section.config_label)
 
         # Log a warning if unused sections were included in the :class:`.Scenario` config
         if config_dict:
-            logger.warning(
-                "Scenario config included un-implemented sections: {0}".format(config_dict.keys())
-            )
+            msg = f"Scenario config included un-implemented sections: {config_dict.keys()}"
+            resonaateLogWarning(msg)
 
     @staticmethod
     def parseConfigFile(path):
@@ -100,20 +94,6 @@ class ScenarioConfig:
         config_file_path = os.path.dirname(os.path.abspath(path))
         configuration = file_loader(path)
 
-        # Load target events
-        target_events = None
-        target_events_file = configuration.pop("target_events_file", None)
-        if target_events_file:
-            target_events = file_loader(os.path.join(config_file_path, target_events_file))
-        configuration["target_events"] = target_events
-
-        # Load sensor events
-        sensor_events = None
-        sensor_events_file = configuration.pop("sensor_events_file", None)
-        if sensor_events_file:
-            sensor_events = file_loader(os.path.join(config_file_path, sensor_events_file))
-        configuration["sensor_events"] = sensor_events
-
         # Load the Tasking Engines
         engine_files = configuration.pop("engines_files")
         configuration["engines"] = []
@@ -126,12 +106,11 @@ class ScenarioConfig:
             # Load the sensor set
             sensors = file_loader(os.path.join(config_file_path, engine_config["sensors_file"]))
 
-            configuration["engines"].append({
+            engine_config.update({
                 "targets": targets,
-                "sensors": sensors,
-                "reward": engine_config["reward"],
-                "decision": engine_config["decision"]
+                "sensors": sensors
             })
+            configuration["engines"].append(engine_config)
 
         return configuration
 

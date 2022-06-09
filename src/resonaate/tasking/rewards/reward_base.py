@@ -1,3 +1,4 @@
+"""Abstract :class:`.Reward` base class defining the reward API."""
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 # Third Party Imports

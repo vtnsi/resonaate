@@ -1,3 +1,4 @@
+"""Functions for extra processing of the Resonaate service layer output."""
 # Standard Library Imports
 # Pip Package Imports
 # # RESONAATE Library Imports
@@ -118,17 +119,17 @@ class LostRSO:
         """
         self._sat_num = sat_num
         if not isinstance(self._sat_num, int):
-            err = "Satellite number must be an int, not '{0}'".format(type(self._sat_num))
+            err = f"Satellite number must be an int, not '{type(self._sat_num)}'"
             raise TypeError(err)
 
         self._time_lost = time_lost
         if not isinstance(self._time_lost, JulianDate):
-            err = "Time lost must be a JulianDate, not '{0}'".format(type(self._time_lost))
+            err = f"Time lost must be a JulianDate, not '{type(self._time_lost)}'"
             raise TypeError(err)
 
         self._time_found = time_found
         if not isinstance(self._time_found, JulianDate):
-            err = "Time found must be a JulianDate, not '{0}'".format(type(self._time_found))
+            err = f"Time found must be a JulianDate, not '{type(self._time_found)}'"
             raise TypeError(err)
 
         self._time_uncorrelated = time_uncorrelated
@@ -138,20 +139,20 @@ class LostRSO:
         if self._time_uncorrelated is not None:
             self._time_found = time_found
             if not isinstance(self._time_uncorrelated, JulianDate):
-                err = "Time uncorrelated must be a JulianDate, not '{0}'".format(type(self._time_uncorrelated))
+                err = f"Time uncorrelated must be a JulianDate, not '{type(self._time_uncorrelated)}'"
                 raise TypeError(err)
 
             if self._uncorrelated_sat_num is None or self._uncorrelated_sat_name is None:
-                err = "If satellite becomes uncorrelated at {0},".format(self._time_uncorrelated) + \
+                err = f"If satellite becomes uncorrelated at {self._time_uncorrelated}," + \
                       " please provide uncorrelated name and number."
                 raise ValueError(err)
 
             if not isinstance(self._uncorrelated_sat_num, int):
-                err = "Uncorrelated satellite number must be an int, not '{0}'".format(type(self._uncorrelated_sat_num))
+                err = f"Uncorrelated satellite number must be an int, not '{type(self._uncorrelated_sat_num)}'"
                 raise TypeError(err)
 
             if not isinstance(self._uncorrelated_sat_name, str):
-                err = "Uncorrelated satellite name must be a str, not '{0}'".format(type(self._uncorrelated_sat_name))
+                err = f"Uncorrelated satellite name must be a str, not '{type(self._uncorrelated_sat_name)}'"
                 raise TypeError(err)
 
     def isLost(self, current_julian_time):
@@ -164,7 +165,7 @@ class LostRSO:
             bool: Indication of whether this satellite is currently lost.
         """
         if not isinstance(current_julian_time, JulianDate):
-            err = "Current Julian time must be a JulianDate, not '{0}'".format(type(current_julian_time))
+            err = f"Current Julian time must be a JulianDate, not '{type(current_julian_time)}'"
             raise TypeError(err)
 
         end_lost = self._time_found

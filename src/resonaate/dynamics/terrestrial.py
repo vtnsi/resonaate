@@ -1,3 +1,4 @@
+"""Defines the :class:`.Terrestrial` class for agents that are stationary on the Earth."""
 # Standard Library Imports
 # Third Party Imports
 # RESONAATE Imports
@@ -18,7 +19,7 @@ class Terrestrial(Dynamics):
         self.julian_date_start = jd_start
         self.x_ecef = x_ecef
 
-    def propagate(self, initial_time, final_time, initial_state, station_keeping=None):
+    def propagate(self, initial_time, final_time, initial_state, station_keeping=None, scheduled_events=None):
         """Propagate the state from the initial time to the final time.
 
         Args:
@@ -26,7 +27,7 @@ class Terrestrial(Dynamics):
             final_time (:class:`.ScenarioTime`): time value when the integration will stop (seconds)
             initial_state (``numpy.ndarray``): (6, ) state vector for the integration step, (km; km/sec)
 
-        ReturnsL
+        Returns:
             ``numpy.ndarray``: 6x1 ECI state vector (km; km/sec)
         """
         if final_time < initial_time:

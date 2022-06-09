@@ -1,3 +1,4 @@
+"""Defines functions for common queries as well as functions that augment queries."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import around

@@ -30,7 +30,3 @@ Succinctly describe what currently happens.
 ## Detailed Explanation
 
 Add more detailed information here. Attach log files and/or include trace-backs if helpful.
-
-## Related
-
-Link to any other relevant issues or merge requests

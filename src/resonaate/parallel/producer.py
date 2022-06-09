@@ -18,15 +18,15 @@ class QueueManager:
     """Class for managing queuing of new jobs and handling of completed jobs."""
 
     _BLOCK_INTERVAL = 1
-    """float: How many seconds to wait between checking for job completion while blocking."""
+    """``float``: How many seconds to wait between checking for job completion while blocking."""
 
     def __init__(self, processed_callback=None, logger=None):
         """Instantiate a :class:`.QueueManager` object.
 
         Args:
-            processed_callback (callable, optional): Callback to execute each time a processed
+            processed_callback (``callable``, optional): Callback to execute each time a processed
                 job is returned by a worker.
-            logger (logging.Logger, optional): Custom logging instance for :class:`.QueueManager`
+            logger (``logging.Logger``, optional): Custom logging instance for :class:`.QueueManager`
                 to use, instead of :attr:`.REDIS_QUEUE_LOGGER` .
         """
         if logger is not None:
@@ -41,7 +41,8 @@ class QueueManager:
         self._job_queue_name = JOB_QUEUE_NAME_PREFIX + self._queue_id
         self._processed_queue_name = PROCESSED_QUEUE_NAME_PREFIX + self._queue_id
         self._redis_conn.rpush(JOB_QUEUE_LIST, self._job_queue_name)
-        self._logger.info("Registered job queue: {0}".format(self._job_queue_name))
+        msg = f"Registered job queue: {self._job_queue_name}"
+        self._logger.info(msg)
 
         self._queued_job_ids = set()
 
@@ -58,13 +59,14 @@ class QueueManager:
         """Add jobs to the queue.
 
         Args:
-            *args: Variable length list of :class:`.Job` objects to be queued.
+            *args (``iterable``): Variable length list of :class:`.Job` objects to be queued.
         """
         for job in args:
             if not isinstance(job, Job):
-                err = "Cannot queue objects of '{0}'".format(type(job))
-                raise ValueError(err)
-            self._logger.debug("Queuing job {0}".format(job.id))
+                err = f"Cannot queue objects of '{type(job)}'"
+                raise TypeError(err)
+            msg = f"Queuing job {job.id}"
+            self._logger.debug(msg)
             serialized = dumps(job)
             self._queued_job_ids.add(job.id)
             self._redis_conn.rpush(self._job_queue_name, serialized)
@@ -87,15 +89,15 @@ class QueueManager:
         while 1:
             try:
                 ret = self._redis_conn.blpop(self._processed_queue_name)
-                processed_job = loads(ret[1])
+                job = loads(ret[1])
 
                 if self._callback is None:
-                    msg = "Job {0.id} returned {0.retval} with status code {0.status}"
-                    self._logger.info(msg.format(processed_job))
-                    self._results.put(processed_job)
+                    msg = f"Job {job.id} returned {job.retval} with status code {job.status}"
+                    self._logger.info(msg)
+                    self._results.put(job)
                 else:
-                    self._callback(processed_job)
-                self._queued_job_ids.remove(processed_job.id)
+                    self._callback(job)
+                self._queued_job_ids.remove(job.id)
 
             except Exception as error:  # pylint: disable=broad-except
                 self._job_handler_exception = error
@@ -103,19 +105,19 @@ class QueueManager:
 
     @property
     def queued_jobs_processed(self):
-        """bool: Boolean indicating whether all queued jobs have been processed and handled."""
+        """``bool``: Boolean indicating whether all queued jobs have been processed and handled."""
         return len(self._queued_job_ids) == 0
 
     @property
     def queued_job_ids(self):
-        """set: Set of job IDs that have been queued, but not processed."""
+        """``set``: Set of job IDs that have been queued, but not processed."""
         return self._queued_job_ids
 
     def blockUntilProcessed(self, timeout=None):
         """Block until all queued jobs have been processed and handled.
 
         Args:
-            timeout (float, optional): How long to wait for jobs to be processed and handled.
+            timeout (``float``, optional): How long to wait for jobs to be processed and handled.
                 Defaults to ``None``, which will wait indefinitely for jobs to process and be
                 handled.
         """
@@ -131,24 +133,20 @@ class QueueManager:
                 waited += interval
 
                 if self._job_handler_exception is not None:
-                    self._logger.error(
-                        "Error occurred in job handler thread: \n{0}".format(self._job_handler_traceback)
-                    )
+                    msg = f"Error occurred in job handler thread: \n{self._job_handler_traceback}"
+                    self._logger.error(msg)
                     raise self._job_handler_exception
 
             if not self.queued_jobs_processed:
-                raise JobTimeoutError(
-                    "Reached timeout with {0} jobs left to process.".format(len(self._queued_job_ids))
-                )
+                raise JobTimeoutError(f"Reached timeout with {len(self._queued_job_ids)} jobs left to process.")
 
         else:
             while not self.queued_jobs_processed:
                 sleep(self._BLOCK_INTERVAL)
 
                 if self._job_handler_exception is not None:
-                    self._logger.error(
-                        "Error occurred in job handler thread: \n{0}".format(self._job_handler_traceback)
-                    )
+                    msg = f"Error occurred in job handler thread: \n{self._job_handler_traceback}"
+                    self._logger.error(msg)
                     raise self._job_handler_exception
 
     def getResults(self):

@@ -1,6 +1,8 @@
+"""Defines the :class:`.ResonaateDatabase` shared data interface class."""
 # Standard Library Imports
 # Third Party Imports
 # RESONAATE Imports
+from . import createDatabasePath
 from .data_interface import DataInterface
 from ..common.behavioral_config import BehavioralConfig
 
@@ -10,11 +12,11 @@ class ResonaateDatabase(DataInterface):
 
     __shared_inst = None
 
-    def __init__(self, db_url=None, drop_tables=(), logger=None, verbose_echo=False):
+    def __init__(self, db_path=None, drop_tables=(), logger=None, verbose_echo=False):
         """Create SQLite database based on :attr:`.VALID_DATA_TYPES` .
 
         Args:
-            db_url (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
+            db_path (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
                 to use and where the database is located. Defaults to default configuration value.
             drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of
                 :class:`.DataInterface` construction. This parameter makes sense in the context of
@@ -26,18 +28,22 @@ class ResonaateDatabase(DataInterface):
                 engine to output the raw SQL statements it runs. Defaults to ``False``.
         """
         # Last resort, use behavior config for DB
-        if not db_url:
-            db_url = BehavioralConfig.getConfig().database.DatabaseURL
+        if not db_path:
+            db_path = BehavioralConfig.getConfig().database.DatabasePath
 
         # Instantiate the data interface object
-        super().__init__(db_url, drop_tables, logger, verbose_echo)
+        super().__init__(db_path, drop_tables, logger, verbose_echo)
+
+        # [NOTE][force-db-path]: Log the location here so it is obvious if the intended DB path
+        #    is not being used.
+        self.logger.debug(f"Database path: {db_path}")
 
     @classmethod
-    def getSharedInterface(cls, db_url=None, drop_tables=(), logger=None, verbose_echo=False):
+    def getSharedInterface(cls, db_path=None, drop_tables=(), logger=None, verbose_echo=False):
         """Return a reference to the singleton shared interface.
 
         Args:
-            db_url (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
+            db_path (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
                 to use and where the database is located. Defaults to default configuration value.
             drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of construction. This
                 parameter makes sense in the context of utilizing a pre-existing database that a user may not want to
@@ -60,6 +66,35 @@ class ResonaateDatabase(DataInterface):
         #   shared interface isn't guaranteed depending on when the separate process was
         #   forked versus when the shared interface was first utilized.
         if cls.__shared_inst is None:
-            cls.__shared_inst = cls(db_url, drop_tables, logger, verbose_echo)
+            cls.__shared_inst = cls(db_path, drop_tables, logger, verbose_echo)
 
         return cls.__shared_inst
+
+    def saveDatabase(self, database_path=None):
+        """Copy data from an existing instance of :class:`.ResonaateDatabase` to a new instance.
+
+        Args:
+            database_path (``str``): desired path to the new database. Default is `None`, which
+                results in auto-generating a DB in the current directory.
+        """
+        # Create auto-generated DB path
+        db_path = createDatabasePath(database_path)
+        self.logger.info(f"Copying database to: {db_path}")
+
+        # Get instance of internal DB. Create a different instance to copy to
+        new_database = ResonaateDatabase(db_path=db_path)
+
+        # Get raw connections
+        raw_connection_memory = self.engine.raw_connection()
+        raw_connection_file = new_database.engine.raw_connection()
+
+        # Progress print statement for backup function
+        def progress(status, remaining, total):  # pylint: disable=unused-argument
+            print(f"Copied {total-remaining} of {total} pages...")
+
+        # Perform backup
+        raw_connection_memory.backup(raw_connection_file.connection, progress=progress)
+
+        # Close raw connections
+        raw_connection_memory.close()
+        raw_connection_file.close()

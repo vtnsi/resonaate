@@ -16,16 +16,25 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
 
+# Checking the import state for importlib.metadata.version method
+try:
+    # For 3.10 or later
+    from importlib.metadata import version
+except ImportError:
+    # For 3.9 and earlier
+    from importlib_metadata import version
+
 # -- Project information -----------------------------------------------------
 
-project = 'Resonaate'
-copyright = '2018-2021, Virginia Tech'
+project = 'RESONAATE'
+copyright = '2018-2022, Virginia Tech'
 author = 'Dylan Thomas, David Kusterer, Jon Kadan, Cameron Harris'
 
+project_ver = version(project)
 # The short X.Y version
-version = '1.2.0'
+version = '.'.join(project_ver.split('.')[:2])
 # The full version, including alpha/beta/rc tags
-release = '1.2.0'
+release = project_ver
 
 # -- General configuration ---------------------------------------------------
 
@@ -37,14 +46,23 @@ release = '1.2.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    # Included extensions
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.duration',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
-    'm2r2',
+    'sphinx.ext.coverage',
+    # MyST Markdown Parser
+    'myst_parser',
+    # External extensions
+    "sphinx_copybutton",
+    "sphinxcontrib.bibtex",
+    "sphinxcontrib.mermaid",
+    "sphinx_gallery.gen_gallery",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,7 +71,11 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = ['.rst', '.md']
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+    '.txt': 'markdown',
+}
 
 # The master toctree document.
 master_doc = 'index'
@@ -71,14 +93,21 @@ language = None
 exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = None
+pygments_style = 'sphinx'
 
+# If true, the current module name will be prepended to all description
+# unit titles (such as .. function::).
+add_module_names = False
 
 # A list of prefixes that are ignored for sorting the Python module index
 # (e.g., if this is set to ['foo.'], then foo.bar is shown under B, not F).
 # This can be handy if you document a project that consists of a single
 # package. Works only for the HTML builder currently. Default is [].
 modindex_common_prefix = ['resonaate.']
+
+# Auto-numbers all figures, tables, & code-blocks if they are captioned.
+# Enables the {numref} role, which makes referencing them in text easier.
+numfig = True
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -98,9 +127,9 @@ html_theme_options = {
     'prev_next_buttons_location': 'bottom',
     'style_external_links': False,
     # Toc options
-    'collapse_navigation': True,
+    'collapse_navigation': False,
     'sticky_navigation': True,
-    'navigation_depth': 4,
+    'navigation_depth': 7,
     'includehidden': True,
     'titles_only': False
 }
@@ -143,7 +172,11 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #
-    # 'preamble': '',
+    # 'preamble': r'''
+    # % make phantomsection empty inside figures
+    # \usepackage{etoolbox}
+    # \AtBeginEnvironment{figure}{\renewcommand{\phantomsection}{}}
+    # '''
 
     # Latex figure (float) alignment
     #
@@ -154,8 +187,9 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Resonaate.tex', 'Resonaate Documentation',
-     'Dylan Thomas', 'manual'),
+    (
+        master_doc, 'Resonaate.tex', 'Resonaate Documentation', author, 'manual'
+    ),
 ]
 
 
@@ -201,20 +235,64 @@ epub_exclude_files = ['search.html']
 
 # -- Extension configuration -------------------------------------------------
 
+autosummary_generate = True
+
 # -- Options for todo extension ----------------------------------------------
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-# Napoleon settings
+# -- Options for napoleon extension ------------------------------------------
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = True
 napoleon_include_private_with_doc = True
-napoleon_include_special_with_doc = True
+napoleon_include_special_with_doc = False
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
+napoleon_use_admonition_for_references = True
 napoleon_use_ivar = True
 napoleon_use_param = True
 napoleon_use_rtype = False
+
+# -- Options for BibTeX extension --------------------------------------------
+# Tell where LaTeX bib file is located
+bibtex_bibfiles = ['meta/resonaate.bib']
+
+bibtex_default_style = 'plain'
+bibtex_reference_style = 'author_year'
+
+# Changes BibTeX headers in Sphinx docs
+# bibtex_bibliography_header = ".. rubric:: References"
+# bibtex_footbibliography_header = bibtex_bibliography_header
+
+# -- Options for MyST Parser -------------------------------------------------
+myst_enable_extensions = [
+    # Allow $ or $$ encapsulated math & native LaTeX math environments
+    "amsmath",
+    "dollarmath",
+    # Typography improvements
+    "replacements",
+    "smartquotes",
+    # Allow Jinja2 substitutions
+    "substitution",
+    # Standard Markdown-friendly directive syntax
+    "colon_fence",
+    # Include task list formatting
+    "tasklist",
+]
+
+
+# -- Options for Sphinx Gallery ----------------------------------------------
+
+sphinx_gallery_conf = {
+     'examples_dirs': './examples',     # path to your example scripts
+     'gallery_dirs': './gen/examples',  # path to where to save gallery generated output
+     'show_signature': False,           # don't show "Generated by ..." notice on examples
+     'reset_modules_order': 'both',     # call resetting functions before & after each example
+     'reset_modules':                   # functions to call to reset modules
+        (
+            'matplotlib',               # resets matplotlib settings
+            'seaborn',                  # resets seaborn settings
+        ),
+}

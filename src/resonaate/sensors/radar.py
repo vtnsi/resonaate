@@ -1,8 +1,9 @@
+"""Defines the :class:`.Radar` sensor class."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import asarray, squeeze
 # RESONAATE Imports
-from .measurements import getAzimuth, getElevation, getRange
+from .measurements import getAzimuth, getElevation, getRange, getRangeRate, IsAngle
 from .sensor_base import Sensor
 from ..physics import constants as const
 from ..physics.sensor_utils import getWavelengthFromString, calculateRadarCrossSection
@@ -57,11 +58,8 @@ class Radar(Sensor):
         """Calculate the minimum detectable power based on exemplar criterion.
 
         References:
-            Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness,
-            Kevin M. Nastasi. 8 June 2018. page 46, equations 3.5 & 3.7
-
-            W. Rees, Physical Principles of Remote Sensing. Cambridge, UK: Cambridge University
-            Press, 3 ed., 2013. page 283
+            #. :cite:t:`nastasi_2018_diss`, Pg 46, Eqn 3.5 & 3.7
+            #. :cite:t:`rees_2013_remote_sensing`, Pg 283
 
         Args:
             exemplar_area (``float``): cross-sectional area of the exemplar target, m^2
@@ -86,8 +84,7 @@ class Radar(Sensor):
         This is an intermediate calculation for simplifying when `maximumRangeTo()` is called.
 
         References:
-            Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness,
-            Kevin M. Nastasi. 8 June 2018. page 46, equation 3.8
+            :cite:t:`nastasi_2018_diss`, Pg 46, Eqn 3.8
 
         Args:
             diameter (``float``): aperture diameter, m^2
@@ -102,14 +99,17 @@ class Radar(Sensor):
 
     @property
     def angle_measurements(self):
-        """``np.ndarray``: Returns 3x1 boolean array of which measurements are angles."""
-        return asarray([1, 1, 0], dtype=bool)
+        """``np.ndarray``: Returns 4x1 integer array of which measurements are angles."""
+        return asarray(
+            [IsAngle.ANGLE_2PI, IsAngle.ANGLE_PI, IsAngle.NOT_ANGLE, IsAngle.NOT_ANGLE],
+            dtype=int
+        )
 
-    def getMeasurements(self, obs_sez_state, noisy=False):
+    def getMeasurements(self, slant_range_sez, noisy=False):
         """Return the measurement state of the measurement.
 
         Args:
-            obs_sez_state (``np.ndarray``): 6x1 SEZ observation vector from sensor to target (km; km/sec)
+            slant_range_sez (``np.ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
             noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
 
         Returns:
@@ -118,16 +118,19 @@ class Radar(Sensor):
             :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
             :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
             :``"range_km"``: (``float``): range measurement (km)
+            :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
         """
         measurements = {
-            "azimuth_rad": getAzimuth(obs_sez_state),
-            "elevation_rad": getElevation(obs_sez_state),
-            "range_km": getRange(obs_sez_state),
+            "azimuth_rad": getAzimuth(slant_range_sez),
+            "elevation_rad": getElevation(slant_range_sez),
+            "range_km": getRange(slant_range_sez),
+            "range_rate_km_p_sec": getRangeRate(slant_range_sez),
         }
         if noisy:
             measurements["azimuth_rad"] += self.measurement_noise[0]
             measurements["elevation_rad"] += self.measurement_noise[1]
             measurements["range_km"] += self.measurement_noise[2]
+            measurements["range_rate_km_p_sec"] += self.measurement_noise[3]
 
         return measurements
 

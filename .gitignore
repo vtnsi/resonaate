@@ -6,9 +6,10 @@
 *.vscode/settings.json
 
 # Ignore setup/output directories/files
-build/
-dist/
-logs/
+**/build/
+**/dist/
+**/logs/
+**/gen/
 *.egg-info
 .eggs/
 **/output/
@@ -19,24 +20,28 @@ logs/
 **/init_test_files/
 
 # Ignore coverage data, ipython cache, pytest cache
-coverage_report/
+**/coverage_report/
+**/coverage/
 **/.pytest_cache/
 **/.ipynb_checkpoints/
 
 # Ignore all database files and redis-server rdb file
 *.db
-dump.rdb
-tests/data/db/
+*.rdb
 *.sqlite
 *.sqlite3
-db
+**/db/
+
+# Ignore output data file types
+*.csv
+*.zip
+*.out
+*.log
 
 # Don't ignore .gitkeep files
 !**/**/.gitkeep
 
 # Ignore certain documentation
-docs/build
-docs/source/modules
 README.html
 README.pdf
 

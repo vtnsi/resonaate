@@ -12,7 +12,7 @@ try:
     from resonaate.common.behavioral_config import BehavioralConfig
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
@@ -125,15 +125,15 @@ class TestCommonUtils(BaseTestCase):
         # Test debuggin mode
         default = BehavioralConfig.getConfig().debugging.ParallelDebugMode
         BehavioralConfig.getConfig().debugging.ParallelDebugMode = True
-        assert utils.getTimeout([]) is None
-        assert utils.getTimeout([0]) is None
-        assert utils.getTimeout([0, 2, 3]) is None
-        assert utils.getTimeout([0, 2, 3], multiplier=1) is None
+        assert utils.getTimeout(0) is None
+        assert utils.getTimeout(10) is None
+        assert utils.getTimeout(1000) is None
+        assert utils.getTimeout(10, multiplier=1) is None
         # Reset debug config value
         BehavioralConfig.getConfig().debugging.ParallelDebugMode = default
 
         # Various combinations of valid values
-        assert utils.getTimeout([]) == 0
-        assert utils.getTimeout([0]) == 5
-        assert utils.getTimeout([0, 2, 3]) == 15
-        assert utils.getTimeout([0, 2, 3], multiplier=1) == 3
+        assert utils.getTimeout(0) == 0
+        assert utils.getTimeout(1) == 5
+        assert utils.getTimeout(3) == 15
+        assert utils.getTimeout(3, multiplier=1) == 3

@@ -1,15 +1,16 @@
+"""Defines the :class:`.Optical` sensor class."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import sqrt, asarray, squeeze
 from scipy.linalg import norm
 # RESONAATE Imports
 from .sensor_base import Sensor
-from .measurements import getAzimuth, getElevation
+from .measurements import getAzimuth, getElevation, IsAngle
 from ..physics import constants as const
-from ..physics.bodies.third_body import getThirdBodyPositions
+from ..physics.bodies import Sun
 from ..physics.sensor_utils import (
     calculateIncidentSolarFlux, checkGroundSensorLightingConditions,
-    checkSpaceSensorLightingConditions, getObscurAngle,
+    checkSpaceSensorLightingConditions, getEarthLimbConeAngle,
 )
 
 
@@ -57,8 +58,7 @@ class Optical(Sensor):
         """Calculate the minimum detectable power based on exemplar criterion.
 
         References:
-            Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness,
-            Kevin M. Nastasi. 8 June 2018. page 48, equation 3.10
+            :cite:t:`nastasi_2018_diss`, Pg 48, Eqn 3.10
 
         Args:
             diameter (``float``): aperture diameter, m^2
@@ -76,8 +76,7 @@ class Optical(Sensor):
         This is an intermediate calculation for simplifying when `maximumRangeTo()` is called.
 
         References:
-            Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness,
-            Kevin M. Nastasi. 8 June 2018. page 48, equation 3.11
+            :cite:t:`nastasi_2018_diss`, Pg 48, Eqn 3.11
 
         Args:
             diameter (``float``): aperture diameter, m^2
@@ -90,14 +89,14 @@ class Optical(Sensor):
 
     @property
     def angle_measurements(self):
-        """``np.ndarray``: Returns 2x1 boolean array of which measurements are angles."""
-        return asarray([1, 1], dtype=bool)
+        """``np.ndarray``: Returns 2x1 integer array of which measurements are angles."""
+        return asarray([IsAngle.ANGLE_2PI, IsAngle.ANGLE_PI], dtype=int)
 
-    def getMeasurements(self, obs_sez_state, noisy=False):
+    def getMeasurements(self, slant_range_sez, noisy=False):
         """Return the measurement state of the measurement.
 
         Args:
-            obs_sez_state (``np.ndarray``): 6x1 SEZ observation vector from sensor to target (km; km/sec)
+            slant_range_sez (``np.ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
             noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
 
         Returns:
@@ -107,8 +106,8 @@ class Optical(Sensor):
             :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
         """
         measurements = {
-            "azimuth_rad": getAzimuth(obs_sez_state),
-            "elevation_rad": getElevation(obs_sez_state),
+            "azimuth_rad": getAzimuth(slant_range_sez),
+            "elevation_rad": getElevation(slant_range_sez),
         }
         if noisy:
             measurements["azimuth_rad"] += self.measurement_noise[0]
@@ -116,22 +115,26 @@ class Optical(Sensor):
 
         return measurements
 
-    def isVisible(self, tgt_eci_state, viz_cross_section, obs_sez_state):
+    def isVisible(self, tgt_eci_state, viz_cross_section, slant_range_sez):
         """Determine if the target is in view of the sensor.
 
         This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical
         sensors which includes checking sunlight conditions for targets & sensors.
         :meth:`.Sensor.isVisible` is called if the sunlight conditions are satisfied.
 
+        References:
+            :cite:t:`vallado_2013_astro`, Sections 4.1 - 4.4 and 5 - 5.3.5.
+
         Args:
             tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target agent
             viz_cross_section (``float``): area of the target facing the sun (m^2)
-            obs_sez_state (``np.ndarray``): 6x1 SEZ observation vector from sensor to target (km; km/sec)
+            slant_range_sez (``np.ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
 
         Returns:
             ``bool``: True if target is visible; False if target is not visible
         """
-        sun_eci_position = getThirdBodyPositions()["sun"]
+        jd = self.host.julian_date_epoch
+        sun_eci_position = Sun.getPosition(jd)
 
         # Calculate the illumination of the target object
         tgt_solar_flux = calculateIncidentSolarFlux(
@@ -149,14 +152,13 @@ class Optical(Sensor):
             )
 
             # Check if target is in front of the Earth's limb
-            # [NOTE]: The limb angle will always be [-pi/2, 0] for satellites, b/c elevation is
-            #           measured from the LOCAL SE plane in the SEZ system to the Z axis which
-            #           points radially outward, along the ECI position direction. Therefore, the
-            #           sensor's limb angle will always be negative.
-            elevation = getElevation(obs_sez_state)
-            limb_angle = getObscurAngle(self.host.eci_state)
+            elevation = getElevation(slant_range_sez)
+            limb_angle = getEarthLimbConeAngle(self.host.eci_state)
 
             # Combine the two conditions
+            # [NOTE]: The fields of regard of EO/IR space-based sensors are dynamically limited by
+            #           the limb of the Earth. Therefore, they cannot observe a target if the Earth
+            #           or its atmosphere is in the background.
             can_observe = lighting and limb_angle <= elevation
 
         else:
@@ -169,7 +171,7 @@ class Optical(Sensor):
         # Check if target is illuminated & if sensor has good lighting conditions
         if tgt_solar_flux > 0 and can_observe:
             # Call base class' visibility check
-            return super().isVisible(tgt_eci_state, viz_cross_section, obs_sez_state)
+            return super().isVisible(tgt_eci_state, viz_cross_section, slant_range_sez)
         else:
             return False
 
@@ -183,9 +185,11 @@ class Optical(Sensor):
         Returns:
             ``float``: maximum possible range to target at which this sensor can make valid observations (km)
         """
+        jd = self.host.julian_date_epoch
+        sun_eci_position = Sun.getPosition(jd)
         solar_flux = calculateIncidentSolarFlux(
             viz_cross_section,
             tgt_eci_state[:3],
-            getThirdBodyPositions()["sun"]
+            sun_eci_position
         )
         return sqrt(solar_flux) * self.max_range_aux / 1000.0

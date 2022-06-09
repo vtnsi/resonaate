@@ -1,3 +1,4 @@
+"""Defines supporting functions that help users debug numerical issues with filtering."""
 # Standard Library Imports
 import json
 import os
@@ -24,12 +25,12 @@ def debugToJSONFile(base_filename, debug_dir, json_dict):
     """Write debugging information to a JSON file.
 
     Args:
-        base_filename (``str```): name of the file which to write to
-        debug_dir (``str``): sub-directory of output where file will be written
-        json_dict (``dict``): debugging data to be written to the file
+        base_filename (str): name of the file which to write to
+        debug_dir (str): sub-directory of output where file will be written
+        json_dict (dict): debugging data to be written to the file
 
     Returns:
-        ``str``: complete path and filename of the debug JSON file
+        str: complete path and filename of the debug JSON file
     """
     # Determine and create, if necessary, the debugging directory
     out_dir = os.path.join(
@@ -40,22 +41,21 @@ def debugToJSONFile(base_filename, debug_dir, json_dict):
         os.makedirs(out_dir)
 
     # Determine complete filepath
-    complete_filename = os.path.abspath(
-        "{0}/{1}.json".format(
-            out_dir,
-            base_filename
-        )
-    )
+    complete_filename = os.path.abspath(f"{out_dir}/{base_filename}.json")
 
     # Write to debugging file & return complete filepath
-    with open(complete_filename, 'w') as out_file:
+    with open(complete_filename, 'w', encoding="utf-8") as out_file:
         json.dump(json_dict, out_file)
 
     return complete_filename
 
 
 def checkThreeSigmaObs(current_obs, sigma=3):
-    """Check if an :class:`.Observation`'s absolute error is greater than 3 std."""
+    """Check if an :class:`.Observation`'s absolute error is greater than 3 std.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 4.43, Eqn 4-4
+    """
     target_agents = pickle.loads(getRedisConnection().get('target_agents'))
     sensor_agents = pickle.loads(getRedisConnection().get('sensor_agents'))
     shared_interface = ResonaateDatabase.getSharedInterface()
@@ -114,7 +114,6 @@ def checkThreeSigmaObs(current_obs, sigma=3):
         noise_limit = norm(sigma * sensor_agent.sensors._sqrt_noise_covar)  # pylint: disable=protected-access
 
         if sez_diff > 1e-8 or dist > sigma or meas_diff > noise_limit:
-            # breakpoint()
             target = target_agents[observation.target_id]
 
             # Base debug info
@@ -149,11 +148,7 @@ def checkThreeSigmaObs(current_obs, sigma=3):
             })
 
             # Write to debug file, and add to filenames
-            filename = "bad_ob_{0}_{1}_{2}".format(
-                float(observation.julian_date),
-                target.simulation_id,
-                sensor_agent.simulation_id
-            )
+            filename = f"bad_ob_{float(observation.julian_date)}_{target.simulation_id}_{sensor_agent.simulation_id}"
             complete_filename = debugToJSONFile(
                 filename,
                 BehavioralConfig.getConfig().debugging.ThreeSigmaObsDirectory,
@@ -168,13 +163,13 @@ def innovationsCovarianceInflation(innovations_cov, r_matrix, observations, erro
     """Attempt to inflate the innovations covariance to make it invertible.
 
     Args:
-        innovations_cov (``np.ndarray`): innovations covariance matrix which isn't invertible
-        r_matrix (``np.ndarray``): measurement noise covariance matrix, block diagonal
-        observations (``list``): set of observations made of this estimate
-        error_description (``dict``): description of the error, including some initial information
+        innovations_cov (numpy.ndarray): innovations covariance matrix which isn't invertible
+        r_matrix (numpy.ndarray): measurement noise covariance matrix, block diagonal
+        observations (list): set of :class:`.ObservationTuple` made of this estimate
+        error_description (dict): description of the error, including some initial information
 
     Returns:
-        ``np.ndarray``: inflated covariance that is numerically invertible
+        obs_tuple: inflated covariance that is numerically invertible
 
     Raises:
         ``scipy.linalg.LinAlgError``: raised if innovations covariance matrix isn't invertible
@@ -189,11 +184,11 @@ def innovationsCovarianceInflation(innovations_cov, r_matrix, observations, erro
     }
 
     error_description["observations"] = []
-    for observation in observations:
-        error_description["observations"].append(observation.makeDictionary())
+    for obs_tuple in observations:
+        error_description["observations"].append(obs_tuple.observation.makeDictionary())
 
     # Write information to output file
-    filename = 'singular-matrix-error_{0}'.format(str(uuid4().hex)[:6])
+    filename = f'singular-matrix-error_{str(uuid4().hex)[:6]}'
     complete_filename = debugToJSONFile(
         filename,
         BehavioralConfig.getConfig().debugging.SingularMatrixDirectory,
@@ -214,10 +209,10 @@ def findNearestPositiveDefiniteMatrix(covariance):
     function also logs the covariance for before & after the change.
 
     Args:
-        covariance (``np.ndarray``): covariance matrix to be changed to PD
+        covariance (numpy.ndarray): covariance matrix to be changed to PD
 
     Returns:
-        ``tuple``: cholesky factorization of the nearest PD matrix, and the output filename
+        tuple`: cholesky factorization of the nearest PD matrix, and the output filename
     """
     # Factor the nearest positive definite matrix
     nearest_pd = nearestPD(covariance)
@@ -231,7 +226,7 @@ def findNearestPositiveDefiniteMatrix(covariance):
     }
 
     # Write information to output file
-    filename = 'not-pos-def_{0}'.format(str(uuid4().hex)[:8])
+    filename = f'not-pos-def_{str(uuid4().hex)[:8]}'
     complete_filename = debugToJSONFile(
         filename,
         BehavioralConfig.getConfig().debugging.NearestPDDirectory,
@@ -248,12 +243,12 @@ def logFilterStep(filter_obj, description, observations, truth_state):
 
     Args:
         filter_obj (:class:`.SequentialFilter`): filter object which is being logged
-        description (``dict``): initial error description with pre-forecast data
-        observations (``list): :class:`.Observation`s associated with this filter step
-        truth_state (``np.ndarray``): 6x1 ECI state vector of the estimate's truth dynamics
+        description (dict): initial error description with pre-forecast data
+        observations (list): :class:`.Observation` objects associated with this filter step
+        truth_state (numpy.ndarray): 6x1 ECI state vector of the estimate's truth dynamics
 
     Returns:
-        ``str``: filename where the filter step information was logged
+        str: filename where the filter step information was logged
     """
     # Add data to filter description
     filter_description = createFilterDebugDict(
@@ -265,10 +260,7 @@ def logFilterStep(filter_obj, description, observations, truth_state):
     )
 
     # Write information to output file
-    filename = 'err-inflation_{0}_{1}'.format(
-        float(filter_obj.host.julian_date_epoch),
-        filter_obj.host.simulation_id
-    )
+    filename = f'err-inflation_{float(filter_obj.host.julian_date_epoch)}_{filter_obj.host.simulation_id}'
     complete_filename = debugToJSONFile(
         filename,
         BehavioralConfig.getConfig().debugging.EstimateErrorInflationDirectory,
@@ -283,32 +275,29 @@ def createFilterDebugDict(filter_obj, description, observations, truth_state, se
 
     Args:
         filter_obj (:class:`.SequentialFilter`): filter object which is being logged
-        description (``dict``): initial error description with pre-forecast data
-        observations (``list): :class:`.Observation`s associated with this filter step
-        truth_state (``np.ndarray``): 6x1 ECI state vector of the estimate's truth dynamics
-        sensor_agents (``dict``): collection of :class:`.SensingAgent`s in the simulation
+        description (dict): initial error description with pre-forecast data
+        observations (list): :class:`.Observation` objects associated with this filter step
+        truth_state (numpy.ndarray): 6x1 ECI state vector of the estimate's truth dynamics
+        sensor_agents (dict): collection of :class:`.SensingAgent` objects in the simulation
 
     Returns:
-        ``dict``: complete dictionary with relevant filter step information
+        dict: complete dictionary with relevant filter step information
     """
     # Save truth ECI state & filter constants
     description["truth_eci"] = truth_state.tolist()
     description["q_matrix"] = filter_obj.q_matrix.tolist()
     if getTypeString(filter_obj) == "UnscentedKalmanFilter":
         # pylint: disable=protected-access
-        description["alpha"] = filter_obj._alpha
-        description["beta"] = filter_obj._beta
-        description["lambda"] = filter_obj._lambda
-        description["kappa"] = filter_obj._kappa
+        description.update(filter_obj.tuning_parameters)
         description["gamma"] = filter_obj.gamma
 
     # Update debugging information from valid observation
     for item, observation in enumerate(observations):
         sensor_agent = sensor_agents[observation.unique_id]
-        description["observation_{0}".format(item)] = observation.makeDictionary()
-        description["sensor_{0}".format(item)] = sensor_agent.sensors.getSensorData()
-        description["facility_{0}".format(item)] = sensor_agent.getCurrentEphemeris().makeDictionary()
-        description["facility_{0}".format(item)].update({
+        description[f"observation_{item}"] = observation.makeDictionary()
+        description[f"sensor_{item}"] = sensor_agent.sensors.getSensorData()
+        description[f"facility_{item}"] = sensor_agent.getCurrentEphemeris().makeDictionary()
+        description[f"facility_{item}"].update({
             "lla_state": sensor_agent.lla_state.tolist(),
             "ecef_state": sensor_agent.ecef_state.tolist(),
             "time": sensor_agent.time
@@ -317,19 +306,17 @@ def createFilterDebugDict(filter_obj, description, observations, truth_state, se
     # Update information from the prediction step data
     prediction_result = filter_obj.getPredictionResult()
     description["time"] = prediction_result["time"]
-    description["final_time"] = prediction_result["final_time"]
     description["predicted_state"] = prediction_result["pred_x"].tolist()
     description["predicted_covar"] = prediction_result["pred_p"].tolist()
     description["predicted_error"] = np.absolute(norm(truth_state - prediction_result["pred_x"]))
     description["sigma_points"] = prediction_result["sigma_points"].tolist()
-    description["sigma_x_variables"] = prediction_result["sigma_x_variables"].tolist()
+    description["sigma_x_res"] = prediction_result["sigma_x_res"].tolist()
 
     # Update information from the forecast step data
     forecast_result = filter_obj.getForecastResult()
     description["ang_meas_bool"] = forecast_result["ang_meas_bool"].tolist()
     description["est_y"] = forecast_result["est_y"].tolist()
-    description["sigma_obs"] = filter_obj.sigma_obs.tolist()
-    description["sigma_y_variables"] = forecast_result["sigma_y_variables"].tolist()
+    description["sigma_y_res"] = forecast_result["sigma_y_res"].tolist()
     description["r_matrix"] = forecast_result["r_matrix"].tolist()
     description["cross_cvr"] = forecast_result["cross_cvr"].tolist()
     description["innov_cvr"] = forecast_result["innov_cvr"].tolist()
@@ -340,8 +327,7 @@ def createFilterDebugDict(filter_obj, description, observations, truth_state, se
     update_result = filter_obj.getUpdateResult()
     description["estimate_after"] = update_result["est_x"].tolist()
     description["error_after"] = np.absolute(norm(truth_state - update_result["est_x"]))
-    description["true_y"] = update_result["true_y"].tolist()
-    description["residual"] = update_result["residual"].tolist()
-    description["maneuver_metric"] = update_result["maneuver_metric"].tolist()
+    description["innovation"] = update_result["innovation"].tolist()
+    description["nis"] = update_result["nis"].tolist()
 
     return description

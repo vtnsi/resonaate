@@ -1,125 +1,156 @@
+r"""This module defines common noise models used throughout RESONAATE.
+
+See Also:
+    :ref:`tech-noise-top` for a more complete and detailed.
+
+We typically define process noise for a Kalman filter as additive, zero-mean white noise.
+In general, the process noise covariance is time-varying (such that the noise is a non-stationary sequence),
+but we typically choose a constant process noise covariance up front.
+
+Difficulty arises in how to design :math:`Q` for a particular dynamics (process) model.
+If the system is kinematic, as is the case in astrodynamics, we can define the process noise itself as
+a kinematic system.
+This allows :math:`Q` to be defined via quantities derived from physics.
+Process noise can be modeled as an :math:`n\mathrm{th}` order kinematic model where the :math:`n\mathrm{th}`
+derivative of position is equal to white noise.
+This can be done in two primary ways:
+
+1. A discretize a continuous time model (see :func:`.continuousWhiteNoise`)
+
+2. A direct definition of the process noise in discrete time (see :func:`.discreteWhiteNoise`)
+"""
 # Standard Library Imports
+from typing import Any, Tuple
 # Third Party Imports
-from numpy import diagflat, full, block, concatenate, ones
-from scipy.linalg import norm
+from numpy import array, diagflat, ndarray
 # RESONAATE Imports
 
 
-def discreteWhiteNoise(delta_time, variance):
-    """Return a first-order discrete process noise matrix.
+def discreteWhiteNoise(dt: float, sigma: float) -> ndarray:
+    r"""Return a first-order discrete process noise matrix.
 
-    This assumes the noise as un-modeled constant piecewise acceleration, w, with the following
-    noise gain:
-                    Gamma = [0.5*(delta)^2, (deltaT)]^T
-                        q_k = Gamma*sigma^2*Gamma^T
+    See Also:
+        :ref:`tech-noise-disc`
+
+    References:
+        :cite:t:`bar-shalom_2001_estimation`, Section 6.3.2, Eqn 6.3.2-4
 
     Args:
-        delta_time (float): discrete time interval (seconds)
-        variance (float): assumed variance in un-modeled acceleration
+        dt (``float``): discrete time step, :math:`T` (s)
+        sigma (``float``): assumed standard deviation of un-modeled acceleration, :math:`\sigma` (km/s\ :sup:`2`).
+            This should be roughly on the same scale as the un-modeled dynamics in your system.
 
     Returns:
-        (``numpy.ndarray``): 6x6 discrete process noise covariance matrix
+        (``ndarray``): 6x6 process noise covariance matrix
     """
-    r_cov = diagflat(
-        full(3, 0.25 * delta_time**4)
-    )
-    rv_cov = diagflat(
-        full(3, 0.5 * delta_time**3)
-    )
-    v_cov = diagflat(
-        full(3, delta_time**2)
-    )
+    # pylint: disable=invalid-name
+    rr_term = 0.25 * dt**4
+    rv_term = 0.5 * dt**3
+    vv_term = dt**2
 
-    temp_mat = block(
+    temp_mat = array(
         [
-            [r_cov, rv_cov],
-            [rv_cov, v_cov]
+            [rr_term, 0.0, 0.0, rv_term, 0.0, 0.0],
+            [0.0, rr_term, 0.0, 0.0, rv_term, 0.0],
+            [0.0, 0.0, rr_term, 0.0, 0.0, rv_term],
+            [rv_term, 0.0, 0.0, vv_term, 0.0, 0.0],
+            [0.0, rv_term, 0.0, 0.0, vv_term, 0.0],
+            [0.0, 0.0, rv_term, 0.0, 0.0, vv_term],
         ]
     )
 
-    return temp_mat * variance**2
+    return temp_mat * sigma**2
 
 
-def continuousWhiteNoise(delta_time, spectral_density):
-    """Return a first-order continuous process noise matrix.
+def continuousWhiteNoise(dt: float, q: float) -> ndarray:
+    r"""Return process noise matrix for a first-order, discretized continuous process noise model.
 
-    This assumes the noise as un-modeled zero-mean constant acceleration, w(t):
+    See Also:
+        :ref:`tech-noise-cont`
 
-                    q_k = integral(F(t)Q_c(t)F^T(t)delta_time, 0, deltaT)
-
-    where Q_c(t) is the continuous noise
+    References:
+        :cite:t:`bar-shalom_2001_estimation`, Section 6.3.2, Eqn 6.3.2-4
 
     Args:
-        delta_time (float): discrete time interval (seconds)
-        spectral_density (float): assumed variance in un-modeled acceleration
+        dt (``float``): discrete time step, :math:`T` (s)
+        q (``float``): assumed spectral power density of un-modeled acceleration, :math:`\tilde{q}`
+            (km\ :sup:`2`/s\ :sup:`3`). This value should be scaled to satisfy
+            :math:`\tilde{q}\simeq\tilde{a}^2T`
 
     Returns:
-        (``numpy.ndarray``): 6x6 continuous process noise covariance matrix
+        (``ndarray``): 6x6 process noise covariance matrix
     """
-    r_cov = diagflat(
-        full(3, (1 / 3) * delta_time**3)
-    )
-    rv_cov = diagflat(
-        full(3, 0.5 * delta_time**2)
-    )
-    v_cov = diagflat(
-        full(3, delta_time)
-    )
+    # pylint: disable=invalid-name
+    rr_term = (1 / 3) * dt**3
+    rv_term = 0.5 * dt**2
+    vv_term = dt
 
-    temp_mat = block(
+    temp_mat = array(
         [
-            [r_cov, rv_cov],
-            [rv_cov, v_cov]
+            [rr_term, 0.0, 0.0, rv_term, 0.0, 0.0],
+            [0.0, rr_term, 0.0, 0.0, rv_term, 0.0],
+            [0.0, 0.0, rr_term, 0.0, 0.0, rv_term],
+            [rv_term, 0.0, 0.0, vv_term, 0.0, 0.0],
+            [0.0, rv_term, 0.0, 0.0, vv_term, 0.0],
+            [0.0, 0.0, rv_term, 0.0, 0.0, vv_term],
         ]
     )
 
-    return temp_mat * spectral_density
+    return temp_mat * q
 
 
-def simpleNoise(delta_time, variance):
-    """Simple noise model only in acceleration.
+def simpleNoise(dt: float, std: float) -> ndarray:
+    r"""Simple noise model only in acceleration.
 
-    Args:
-        delta_time (float): physics time step for scaling the noise
-        variance (float): magnitude of noise covariance
-
-    Returns:
-        (``numpy.ndarray``): 6x6 noise covariance matrix
-    """
-    return delta_time * diagflat([0, 0, 0, variance, variance, variance])**2
-
-
-def initialEstimateNoise(true_target_state, variance, rng):
-    """Initialize the estimate error for a target.
+    See Also:
+        :ref:`tech-noise-cont`
 
     Args:
-        true_target_state (``numpy.ndarray``): true initial state of target agent
-        variance (float): magnitude of the error in the initial state
-        rng (`np.random.Generator`): random number generator to create random error
+        dt (``float``): physics time step for scaling the noise (s)
+        std (``float``): standard deviation of the noise covariance (km/s)
 
     Returns:
-        tuple(``numpy.ndarray``): 6x1 initial state vector & 6x6 initial covariance
+        (``ndarray``): 6x6 process noise covariance matrix
     """
-    position = variance * norm(true_target_state[:3]) * ones((3, 1))
-    velocity = variance * norm(true_target_state[3:]) * ones((3, 1))
-    init_p = diagflat(concatenate((position, velocity), axis=0)**2)
+    # pylint: disable=invalid-name
+    return dt * diagflat([0, 0, 0, std, std, std])**2
+
+
+def initialEstimateNoise(
+    true_target_state: ndarray, pos_std: float, vel_std: float, rng: Any
+) -> Tuple[ndarray, ndarray]:
+    r"""Initialize the estimate error for a target.
+
+    See Also:
+        :ref:`tech-noise-est`
+
+    Args:
+        true_target_state (``ndarray``): true initial state of target agent, (km; km/s)
+        pos_std (``float``): standard deviation of initial position error, (km)
+        vel_std (``float``): standard deviation of initial position error, (km/s)
+        rng (``np.random.Generator``): random number generator used to create random error
+
+    Returns:
+        tuple (``ndarray``): 6x1 initial state vector & 6x6 initial error covariance matrix
+    """
+    init_p = diagflat([pos_std, pos_std, pos_std, vel_std, vel_std, vel_std])**2
     init_x = rng.multivariate_normal(true_target_state, init_p)
 
     return init_x, init_p
 
 
 CONTINUOUS_WHITE_NOISE_LABEL = "continuous_white_noise"
-"""str: Constant string used to describe continuous white noise."""
+"""``str``: Constant string used to describe continuous white noise."""
 
 DISCRETE_WHITE_NOISE_LABEL = "discrete_white_noise"
-"""str: Constant string used to describe discrete white noise."""
+"""``str``: Constant string used to describe discrete white noise."""
 
 SIMPLE_NOISE_LABEL = "simple_noise"
-"""str: Constant string used to describe simple noise."""
+"""``str``: Constant string used to describe simple noise."""
 
 
-def noiseCovarianceFactory(method, time_step, magnitude):
-    """Build a dynamics propagation noise covariance matrix.
+def noiseCovarianceFactory(method: str, time_step: int, magnitude: float) -> ndarray:
+    r"""Build a dynamics propagation noise covariance matrix.
 
     Args:
         method (``str``): the function used to generate the noise covariance
@@ -127,16 +158,17 @@ def noiseCovarianceFactory(method, time_step, magnitude):
         magnitude (``float``): the "variance" of the noise covariance
 
     Note:
-        Valid options for "method" argument:
-            - "continuous_white_noise": :func:`.continuousWhiteNoise`
-            - "discrete_white_noise": :func:`.discreteWhiteNoise`
-            - "simple_noise": :func:`.simpleNoise`
+        Valid options for `method` argument:
+
+        - ``'continuous_white_noise'``: uses :func:`.continuousWhiteNoise` to generate noise covariance
+        - ``'discrete_white_noise'``: uses :func:`.discreteWhiteNoise` to generate noise covariance
+        - ``'simple_noise'``: uses :func:`.simpleNoise` to generate noise covariance
 
     Raises:
-        ValueError: raised if given an invalid "method" argument
+        `ValueError`: raised if given an invalid "method" argument
 
     Returns:
-        ``numpy.ndarray``: 6x6 noise covariance matrix
+        ``ndarray``: 6x6 noise covariance matrix
     """
     if method.lower() == CONTINUOUS_WHITE_NOISE_LABEL:
         noise = continuousWhiteNoise(time_step, magnitude)

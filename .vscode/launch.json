@@ -5,20 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Resonaate Run - No DB",
-            "type": "python",
-            "request": "launch",
-            "module": "resonaate",
-            "console": "integratedTerminal",
-            "args": ["example_data/json/main_init.json", "-t", "1", "--debug", "--no-db"]
-        },
-        {
             "name": "Resonaate Run - Save DB",
             "type": "python",
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
-            "args": ["example_data/json/main_init.json", "-t", "1", "--debug"],
+            "args": ["configs/json/main_init.json", "-t", "1", "--debug"]
         },
         {
             "name": "Python Current File",

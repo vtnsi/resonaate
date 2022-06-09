@@ -1,17 +1,13 @@
+"""Defines the :class:`.TargetAgent` class."""
 # Standard Library Imports
 # Third Party Imports
-from numpy import ndarray, copy, asarray
+from numpy import ndarray, array
 from numpy.random import default_rng
-from sqlalchemy.orm import Query
 # RESONAATE Imports
 from .agent_base import Agent, DEFAULT_VIS_X_SECTION
-from ..data.importer_database import ImporterDatabase
 from ..data.ephemeris import TruthEphemeris
 from ..common.exceptions import ShapeError
-from ..parallel.async_functions import asyncPropagate
-from ..parallel.job_handler import CallbackRegistration
-from ..parallel.job import Job
-from ..physics.orbit import Orbit
+from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..dynamics.integration_events.station_keeping import StationKeeper
@@ -41,16 +37,18 @@ class TargetAgent(Agent):
             TypeError: raised on incompatible types for input params
             ShapeError: raised if process noise is not a 6x6 matrix
         """
-        super(TargetAgent, self).__init__(
+        super().__init__(
             _id, name, agent_type, initial_state, clock, dynamics, realtime, DEFAULT_VIS_X_SECTION,
             station_keeping=station_keeping
         )
         if not isinstance(process_noise, ndarray):
             self._logger.error("Incorrect type for process_noise param")
             raise TypeError(type(process_noise))
-        elif process_noise.shape != (6, 6):
+
+        if process_noise.shape != (6, 6):
             self._logger.error("Incorrect shape for process_noise param")
             raise ShapeError(process_noise.shape)
+
         # Process noise covariance used for generating noise
         self._process_noise_covar = process_noise
 
@@ -61,9 +59,10 @@ class TargetAgent(Agent):
         self._rng = default_rng(seed)
 
         # Properly initialize the TargetAgent's state types
-        self._truth_state = copy(initial_state)
+        self._truth_state = array(initial_state, copy=True)
         self._ecef_state = eci2ecef(self._truth_state)
         self._lla_state = ecef2lla(self._ecef_state)
+        self._previous_state = array(initial_state, copy=True)
 
     def getCurrentEphemeris(self):
         """Returns the TargetAgent's current ephemeris information.
@@ -79,104 +78,18 @@ class TargetAgent(Agent):
             eci=self.eci_state.tolist()
         )
 
-    def updateJob(self, new_time):
-        """Create a job to be processed in parallel and update :attr:`time` appropriately.
-
-        This relies on a common interface for :meth:`.Dynamics.propagate`
-
-        Args:
-            new_time (:class:`.ScenarioTime`): payload sent by :class:`.PropagateJobHandler` to
-                indicate the current simulation time
-
-        Returns
-            :class:`.Job`: Job to be processed in parallel.
-        """
-        job = Job(
-            self.callback.job_computation,
-            args=[
-                self._dynamics,
-                self._time,
-                new_time,
-                self._truth_state
-            ],
-            kwargs={
-                "station_keeping": self.station_keeping
-            }
-        )
-        self._time = new_time
-
-        return job
-
-    def setCallback(self, importer):
-        """Set the callback associated when :meth:`.executeJobs()` is executed.
-
-        Args:
-            importer (``bool``): whether a proper :class:`.ImporterDatabase` exists
-        Note:
-            #. If the :attr:`realtime` is ``True``, use :func:`.asyncPropagate`.
-            #. If neither are true query the database for :class:`.Ephemeris` items.
-            #. If a valid :class:`.Ephemeris` returns, use :meth:`.importState`.
-            #. Otherwise, fall back to :func:`.asyncPropagate`.
-
-        Returns:
-            :meth:`.importstate`, or instance of :class:`.CallbackRegistration`
-        """
-        if self._realtime is True:
-            # Realtime propagation is on, so use `::asyncPropagate()`
-            self.callback = CallbackRegistration(
-                self,
-                self.updateJob,
-                asyncPropagate,
-                self.jobCompleteCallback
-            )
-        elif importer:
-            # Realtime propagation is off, attempt to query database for valid `Ephemeris` objects
-            query = Query(TruthEphemeris).filter(TruthEphemeris.agent_id == self.simulation_id)
-            truth_ephem = ImporterDatabase.getSharedInterface().getData(query, multi=False)
-
-            # If minimal truth data exists in the database, use importer model, otherwise default to
-            # realtime propagation (and print warning that this happened).
-            if truth_ephem is None:
-                self._logger.warning(
-                    "Could not find importer truth for {0}. Defaulting to realtime propagation!".format(
-                        self.simulation_id
-                    )
-                )
-                self.callback = CallbackRegistration(
-                    self,
-                    self.updateJob,
-                    asyncPropagate,
-                    self.jobCompleteCallback
-                )
-            else:
-                self.callback = self.importState
-
-        else:
-            self._logger.error("A valid ImporterDatabase was not established")
-            raise ValueError(importer)
-
-        return self.callback
-
-    def jobCompleteCallback(self, job):
-        """Execute when the job submitted in :meth:`~.TargetAgent.updateJob` completes.
-
-        Args:
-            job (:class:`.Job`): job object that's returned when a job completes
-        """
-        self.eci_state = job.retval
-
     def importState(self, ephemeris):
         """Set the state of this TargetAgent based on a given :class:`.Ephemeris` object.
 
         Args:
             ephemeris (:class:`.Ephemeris`): data object to update this TargetAgent's state with
         """
-        self.eci_state = asarray(ephemeris.eci)
+        self.eci_state = array(ephemeris.eci)
         self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(self.julian_date_start)
 
     @classmethod
     def fromConfig(cls, config, events):
-        """Factory to initialize `TargetAgent`s based on given configuration.
+        """Factory to initialize `TargetAgent` objects based on given configuration.
 
         Args:
             config (``dict``): formatted configuration parameters
@@ -189,17 +102,21 @@ class TargetAgent(Agent):
         tgt = config["target"]
 
         # Determine the target's initial ECI state
-        if tgt.coe_set:
-            orbit = Orbit.buildFromCOEConfig(tgt.init_coe)
-            initial_state = orbit.coe2rv()
-        elif tgt.eci_set:
-            initial_state = asarray(tgt.init_eci)
+        if tgt.eci_set:
+            initial_state = array(tgt.init_eci)
+        elif tgt.coe_set:
+            orbit = ClassicalElements.fromConfig(tgt.init_coe)
+            initial_state = orbit.toECI()
+        elif tgt.eqe_set:
+            orbit = EquinoctialElements.fromConfig(tgt.init_eqe)
+            initial_state = orbit.toECI()
         else:
-            raise ValueError("Target dict doesn't contain initial state information: {0}".format(tgt))
+            raise ValueError(f"TargetAgent config doesn't contain initial state information: {tgt}")
 
         station_keeping = []
-        for config_str in tgt.station_keeping:
-            station_keeping.append(StationKeeper.factory(config_str, tgt.sat_num, initial_state))
+        if config['station_keeping']:
+            for config_str in tgt.station_keeping:
+                station_keeping.append(StationKeeper.factory(config_str, tgt.sat_num, initial_state))
 
         return cls(
             tgt.sat_num,
@@ -226,9 +143,15 @@ class TargetAgent(Agent):
         Args:
             new_state (``numpy.ndarray``): 6x1 ECI state vector
         """
+        self._previous_state = self._truth_state
         self._truth_state = new_state
         self._ecef_state = eci2ecef(new_state)
         self._lla_state = ecef2lla(self._ecef_state)
+
+    @property
+    def previous_state(self):
+        """``numpy.ndarray``: Returns the 6x1 ECI previous state vector."""
+        return self._previous_state
 
     @property
     def ecef_state(self):

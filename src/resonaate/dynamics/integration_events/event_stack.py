@@ -1,4 +1,4 @@
-"""Encapsulation of event tracking using Redis."""
+"""Encapsulation of event tracking using Redis with a :class:`.EventRecord` and :class:`.EventStack`."""
 # Standard Library Imports
 from collections import defaultdict
 import logging
@@ -69,5 +69,7 @@ class EventStack:
 
         logger = logging.getLogger("resonaate")
         for event_type, bucket in event_buckets.items():
-            logger.info("{0} events of type {1} performed.".format(len(bucket), event_type))
-            logger.debug("Performers: {0}".format(bucket))
+            msg1 = f"{len(bucket)} events of type {event_type} performed."
+            logger.info(msg1)
+            msg2 = f"Performers: {bucket}"
+            logger.debug(msg2)

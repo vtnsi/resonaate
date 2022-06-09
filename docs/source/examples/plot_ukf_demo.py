@@ -1,0 +1,298 @@
+"""
+UKF Step Demo
+=============
+
+Demonstrate how to create the required :class:`.agent_base.Agent` objects, propagate them forward, make an :class:`.Observation`, and apply the observation to an unscented Kalman filter.
+This shows how to directly create and use the following classes:
+
+- :class:`.TargetAgent`
+- :class:`.EstimateAgent`
+- :class:`.SensingAgent`
+- :class:`.UnscentedKalmanFilter`
+- :class:`.Observation`
+"""
+# %%
+# Initial Setup
+# -------------
+#
+# Redis Setup
+# ###########
+#
+# To properly use RESONAATE, you must start a **Redis** server.
+# This can be done by running the following command in a terminal:
+# 
+# .. code-block:: bash
+#
+#     $ redis-server > /dev/null 2>&1 &
+#
+# This starts the server as a background process, so you can keep using the same terminal session.
+#
+# When you are done working, you can stop the **Redis** server by running the following command:
+# 
+# .. code-block:: bash
+#
+#     $ redis-cli shutdown
+#
+# General Imports
+# ###############
+# 
+import numpy as np
+
+# %%
+# Setup problem time variables
+# ----------------------------
+#
+# Creating a clock object requires the Julian date of the initial epoch, a timespan (seconds), and a timestep (seconds).
+from resonaate.physics.time.stardate import JulianDate
+from resonaate.scenario.clock import ScenarioClock
+
+# Define time variables
+julian_date_start = JulianDate(2458516.0)
+tspan = 300.0   # seconds
+dt = 60.0       # seconds
+
+# Create the clock object
+clock = ScenarioClock(julian_date_start, tspan, dt)
+
+# For convenience, time is initialized to zero
+t0 = clock.time
+
+# %%
+#
+# Build a satellite as a :class:`.TargetAgent`
+# --------------------------------------------
+# 
+# This requires an id number, name, initial state.
+# Also, users must define a :class:`.Dynamics` object that handles propagating the satellite forward in time.
+from resonaate.agents.target_agent import TargetAgent
+from resonaate.dynamics.two_body import TwoBody
+from resonaate.physics.noise import simpleNoise
+
+# Initial information
+sat1_id   = 10001               # Unique ID number of satellite
+sat1_name = 'RSO1'              # Human-readable name of satellite
+sat1_type = 'Spacecraft'        # Type of agent object
+realtime  = True                # Propagate using dynamics model, rather than importing data
+
+# Initial state vector
+sat1_x0   =  np.array(
+    [
+        10000.0, 0.0, 0.0,      # Position (km)
+        0.0, 6.3134776, 0.0     # Velocity (km)
+    ]
+)
+
+# Create a two body dynamics object for simple Keplerian propagation
+two_body_dynamics = TwoBody()
+
+# Noise added to true state vector, for use in filtering
+two_body_noise = simpleNoise(dt, 1e-25)
+
+# Construct the satellite object
+sat1_agent = TargetAgent(
+    sat1_id,
+    sat1_name,
+    sat1_type,
+    sat1_x0,
+    clock,
+    two_body_dynamics,
+    realtime,
+    two_body_noise
+)
+
+# %%
+#
+# Build a corresponding :class:`.EstimateAgent`
+# ---------------------------------------------
+#
+from resonaate.agents.estimate_agent import EstimateAgent
+from resonaate.filters.unscented_kalman_filter import UnscentedKalmanFilter
+from resonaate.physics.noise import initialEstimateNoise, continuousWhiteNoise 
+
+# Extra information required by EstimateAgent
+seed = 12345        # Seeds the random number generator, used for adding noise
+pos_var = 1e-3      # normalized variance for position
+vel_var = 1e-6      # normalized variance for velocity uncertainty
+
+# Generate a random vector centered on x0
+sat1_est0, sat1_cov0 = initialEstimateNoise(
+    sat1_x0,
+    pos_var,
+    vel_var,
+    np.random.default_rng(seed)
+)
+
+# Generate the assumed noise covariance matrix used in the Kalman filter
+q_matrix = continuousWhiteNoise(dt, 1e-12)
+
+# Create an unscented Kalman filter (UKF) for tracking the satellite
+ukf = UnscentedKalmanFilter(two_body_dynamics, q_matrix, None)
+
+# Create an EstimateAgent object to track the actual TargetAgent satellite
+sat1_estimate_agent = EstimateAgent(sat1_id, sat1_name, sat1_type, clock, sat1_est0, sat1_cov0, ukf)
+
+# %%
+#
+# Build a :class:`.SensingAgent`
+# ------------------------------
+#
+from resonaate.agents.sensing_agent import SensingAgent
+from resonaate.dynamics.terrestrial import Terrestrial
+from resonaate.physics.transforms.methods import lla2ecef, ecef2eci
+from resonaate.sensors.radar import Radar
+
+# Sensor information
+sensor_name = "Test Sensor"
+sensor_type = "Ground-Based"        # Provides 3D measuremets
+sensor_id = 123690                  # Unique ID number
+
+# Create a measurement noise covariance for this sensor
+r_matrix = np.diagflat(
+    [
+        3.0461741978670863e-12,
+        3.0461741978670863e-12,
+        2.5000000000000004e-11,
+        1.0000000000000002e-14,
+    ]
+)
+
+az_mask = np.array([60.0, 300.0])   # Valid azimuth range (deg), measured positive from North
+el_mask = np.array([5.0, 90.0])     # Valid elevation range (deg), measured positive from local horizon
+slew_rate = 5.0                     # Sensor slew rate (deg/sec)
+efficiency = 0.95                   # Sensor efficiency (unitless)
+diameter = 14                       # Effective aperature diameter (m)
+tx_power = 2500000.0                # Sensor transmit power (W)
+tx_frequency = 1.5 * 1e9            # Sensor transmit center frequency (Hz)
+
+# Exemplar is akin to sensor capability descriptions found in OV-1s (baseball at LEO, basketball at GEO)
+exemplar = [
+    0.04908738521234052,            # Exemplar area (m^2)
+    40500.0                         # Exemplar range (km)
+],
+
+radar_sensor = Radar(
+    az_mask,
+    el_mask,
+    r_matrix,
+    diameter,
+    efficiency,
+    exemplar,
+    tx_power,
+    tx_frequency,
+    np.radians(slew_rate)
+)
+
+# Lat, Lon, Alt for sensor near VT
+sensor_lla = np.asarray(
+    [
+        np.radians(37.20723655488582),  # latitude (degrees)
+        np.radians(-80.41918669095047), # longitude (degrees)
+        0.105,                          # Altitude (km)
+    ]
+)
+
+# Convert sensor location to ECEF
+sensor_ecef = lla2ecef(sensor_lla)
+
+# Use terrestrial (ground-based) sensor dynamics
+sensor_dynamics = Terrestrial(clock.julian_date_start, sensor_ecef)
+
+sensor_agent = SensingAgent(
+    sensor_id,
+    sensor_name,
+    sensor_type,
+    ecef2eci(sensor_ecef),
+    clock,
+    radar_sensor,
+    sensor_dynamics,
+    True, # real time propagation
+)
+
+# %%
+#
+# Propagate agents forward
+# ------------------------
+#
+
+# Update time values
+clock.ticToc()
+t1 = clock.time
+
+# Propagate sensor agent to t1
+sensor_agent.eci_state = sensor_agent.dynamics.propagate(t0, t1, sensor_agent.eci_state)
+
+# Propagate satellite to t1, and save its ECI state
+sat1_agent.eci_state = two_body_dynamics.propagate(t0, t1, sat1_x0)
+
+# Propagate estimate's filter via the prediction step (a priori)
+sat1_estimate_agent.nominal_filter.predict(t1)
+
+# Predict step: no observations are made
+obs = []
+truth_state = sat1_agent.eci_state  # Note: only used for debugging purposes!
+# Apply filter prediction step to estimate's state
+sat1_estimate_agent.updateEstimate(obs, truth_state)
+
+# Magnitude of true error (true - estimate) after prediction step
+prior_error = np.linalg.norm(truth_state[:3] - sat1_estimate_agent.eci_state[:3])
+prior_error
+
+# %%
+#
+# Make an :class:`.Observation`
+# -----------------------------
+#
+from resonaate.data.observation import Observation
+from resonaate.physics.transforms.methods import getSlantRangeVector
+from resonaate.sensors.measurements import getAzimuth, getElevation, getRange, getRangeRate
+from resonaate.sensors.sensor_base import ObservationTuple
+
+# Get the SEZ slant range vector from sensor to target
+slant_range_sez = getSlantRangeVector(sensor_ecef, sat1_agent.eci_state)
+
+# Determine measurements from SEZ slant range
+measurements = {
+    'azimuth_rad': getAzimuth(slant_range_sez),
+    'elevation_rad': getElevation(slant_range_sez),
+    'range_km': getRange(slant_range_sez),
+    'range_rate_km_p_sec': getRangeRate(slant_range_sez)
+}
+
+# Add noise to measurements for imperfect sensor
+measurements['azimuth_rad'] += np.sqrt(r_matrix[0, 0]) * np.random.rand()
+measurements['elevation_rad'] += np.sqrt(r_matrix[1, 1]) * np.random.rand()
+measurements['range_km'] += np.sqrt(r_matrix[2, 2]) * np.random.rand()
+measurements['range_rate_km_p_sec'] += np.sqrt(r_matrix[3, 3]) * np.random.rand()
+
+observation = Observation.fromSEZVector(
+    sensor_type="Radar",
+    sensor_id=sensor_id,
+    target_id=sat1_agent.simulation_id,
+    julian_date=clock.julian_date_epoch,
+    sez=slant_range_sez,
+    sensor_position=sensor_lla,
+    **measurements
+)
+
+# Need to pass observations as tuple for required information
+obs_tuple = ObservationTuple(observation, sensor_agent, sensor_agent.sensors.angle_measurements)
+obs_tuple.observation
+
+# %%
+#
+# Apply :class:`.Observation` to :class:`.UnscentedKalmanFilter`
+# ---------------------------------------------------------------
+#
+
+# Update estimate's filter via the measurement update step (a posteriori)
+sat1_estimate_agent.nominal_filter.update([obs_tuple], truth_state)
+
+# Apply filter measurement update step to estimate's state
+sat1_estimate_agent.state_estimate = sat1_estimate_agent.nominal_filter.est_x
+sat1_estimate_agent.error_covariance = sat1_estimate_agent.nominal_filter.est_p
+
+# Magnitude of true error (true - estimate) after measurement update step
+posterior_error = np.linalg.norm(truth_state[:3] - sat1_estimate_agent.state_estimate[:3])
+
+# Observation should reduce the estimation error
+prior_error - posterior_error

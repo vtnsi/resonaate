@@ -26,7 +26,7 @@ class RewardConfig(ConfigSection):
 
     @property
     def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption`s that this section contains."""
+        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
         return [self._name, self._metrics, self._parameters]
 
     @property
@@ -36,7 +36,7 @@ class RewardConfig(ConfigSection):
 
     @property
     def metrics(self):
-        """list: List of :class:`.MetricConfigObject`s."""
+        """list: List of :class:`.MetricConfigObject` objects."""
         return self._metrics.objects
 
     @property
@@ -50,7 +50,7 @@ class MetricConfigObject(ConfigObject):
 
     @staticmethod
     def getFields():
-        """Return a tuple of defining required :class:`.ConfigOption`s for a :class:`.MetricConfigObject`."""
+        """Return a tuple :class:`.ConfigOption` objects required for a :class:`.MetricConfigObject`."""
         return (
             ConfigOption("name", (str, ), valid_settings=VALID_METRICS),
             ConfigOption("parameters", (dict, ), default={})

@@ -1,8 +1,8 @@
+"""Defines the :class:`.ScenarioBuilder` class to build valid :class:`.Scenario` objects from given configurations."""
 # Standard Library Imports
-from collections import defaultdict
 from math import isclose
 # Third Party Imports
-from numpy import asarray, allclose
+from numpy import array, allclose
 from numpy.random import default_rng
 # RESONAATE Imports
 from ..agents.target_agent import TargetAgent
@@ -10,14 +10,17 @@ from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
+from ..data.data_interface import Agent
+from ..data.resonaate_database import ResonaateDatabase
+from ..data.events import Event
 from ..dynamics import spacecraftDynamicsFactory
-from ..dynamics.integration_events.scheduled_impulse import ScheduledImpulse, ScheduledNTWImpulse
+from ..filters.statistics import nisFactory
 from ..physics.noise import noiseCovarianceFactory
-from ..physics.time.stardate import JulianDate
 from ..scenario.clock import ScenarioClock
 from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
 from ..tasking.rewards import rewardsFactory
+from .config.event_configs import MissingDataDependency
 
 
 class ScenarioBuilder:
@@ -27,12 +30,14 @@ class ScenarioBuilder:
     properly construct a :class:`.Scenario` object.
     """
 
-    # pylint:disable=too-many-locals
-    def __init__(self, scenario_configuration):  # noqa: C901
+    # pylint:disable=too-many-locals, too-many-branches
+    def __init__(self, scenario_configuration, importer_db_path=None):  # noqa: C901
         """Instantiate a :class:`.ScenarioBuilder` from a config dictionary.
 
         Args:
             scenario_configuration (ScenarioConfig): config settings to make a valid :class:`.Scenario`
+            importer_db_path (``str``, optional): path to external importer database for pre-canned
+                data. Defaults to ``None``.
 
         Raises:
             ValueError: raised if the "engines" field is empty
@@ -45,21 +50,9 @@ class ScenarioBuilder:
         # Instantiate clock based on config's start time and class variables
         self.clock = ScenarioClock.fromConfig(self.time)
 
-        # Target event parsing
-        self._target_events = self.initTargetEvents()
-
-        # Sensor event parsing
-        self._sensor_events = self.initSensorEvents()
-
-        self.logger.info(
-            "Successfully loaded {0} events".format(
-                len(self._target_events) + len(self._sensor_events)
-            )
-        )
-
         # Create the base estimation filter for nominal operation
         # [TODO]: UKF parameters should be configurable
-        self._filter_config = {
+        self.filter_config = {
             "filter_type": self.config.filter.name,
             # Create dynamics object for RSO filter propagation
             "dynamics": spacecraftDynamicsFactory(
@@ -74,29 +67,28 @@ class ScenarioBuilder:
                 self.noise.filter_noise_type,
                 self.time.physics_step_sec,
                 self.noise.filter_noise_magnitude
+            ),
+            "maneuver_detection_method": nisFactory(
+                self.config.filter.maneuver_detection_method
             )
         }
-        self._filter_config.update(self.config.filter.parameters)
+        self.filter_config.update(self.config.filter.parameters)
 
         # create target and sensor sets
         target_configs = {}
         sensor_configs = {}
-        self.tasking_engines = []
+        self.tasking_engines = {}
 
         for engine_conf in self._config.engines.objects:
+            if engine_conf.unique_id in self.tasking_engines:
+                err = f"Engines share a unique ID: {engine_conf.unique_id}"
+                raise ValueError(err)
+
             # Create Reward & Decision from configuration
             reward = rewardsFactory(engine_conf.reward)
-            self.logger.info(
-                "Reward function: {0}".format(
-                    reward.__class__.__name__
-                )
-            )
+            self.logger.info(f"Reward function: {reward.__class__.__name__}")
             decision = decisionFactory(engine_conf.decision)
-            self.logger.info(
-                "Decision function: {0}".format(
-                    decision.__class__.__name__
-                )
-            )
+            self.logger.info(f"Decision function: {decision.__class__.__name__}")
 
             # Build target and estimate sets
             engine_targets = []
@@ -120,39 +112,35 @@ class ScenarioBuilder:
 
             # Create the tasking engine object
             tasking_engine = CentralizedTaskingEngine(
+                engine_conf.unique_id,
                 engine_sensors,
                 engine_targets,
                 reward,
-                decision
+                decision,
+                importer_db_path,
+                self.propagation.realtime_observation
             )
 
-            self.tasking_engines.append(tasking_engine)
-            self.logger.info(
-                "Successfully built tasking engine: {0}".format(
-                    tasking_engine.__class__.__name__
-                )
-            )
+            self.tasking_engines[tasking_engine.unique_id] = tasking_engine
+            self.logger.info(f"Successfully built tasking engine: {tasking_engine.__class__.__name__}")
 
-        self.target_agents = self.initTargets(list(target_configs.values()))
+        self.target_agents = self.initTargets(list(target_configs.values()), self.propagation.station_keeping)
 
         # Build estimate set
         self.estimate_agents = {}
         for target_id, target_agent in self.target_agents.items():
             config = {
                 "target": target_agent,
-                "init_estimate_error": self.noise.initial_error_magnitude,
+                "position_std": self.noise.init_position_std_km,
+                "velocity_std": self.noise.init_velocity_std_km_p_sec,
                 "rng": default_rng(self.noise.random_seed),
                 "clock": self.clock,
-                "filter": self._filter_config,
+                "filter": self.filter_config,
                 "seed": self.noise.random_seed
             }
             self.estimate_agents[target_id] = EstimateAgent.fromConfig(config, events=[])
 
-        self.logger.info(
-            "Successfully loaded {0} target agents".format(
-                len(self.target_agents)
-            )
-        )
+        self.logger.info(f"Successfully loaded {len(self.target_agents)} target agents")
 
         self.sensor_network = []
         for agent in sensor_configs.values():
@@ -166,36 +154,70 @@ class ScenarioBuilder:
                     self.perturbations,
                     method=self.propagation.integration_method
                 ),
-                "realtime": self.propagation.realtime_propagation
+                "realtime": self.propagation.sensor_realtime_propagation
             }
 
             self.sensor_network.append(
                 SensingAgent.fromConfig(config, events=[])
             )
 
-        self.logger.info(
-            "Successfully loaded {0} sensor agents".format(
-                len(self.sensor_network)
-            )
-        )
+        self.logger.info(f"Successfully loaded {len(self.sensor_network)} sensor agents")
+
+        # Store agent data in the database for events that rely on them
+        agent_data = []
+        for target_agent in self.target_agents.values():
+            agent_data.append(Agent(
+                unique_id=target_agent.simulation_id,
+                name=target_agent.name
+            ))
+        for sensor_agent in self.sensor_network:
+            agent_data.append(Agent(
+                unique_id=sensor_agent.simulation_id,
+                name=sensor_agent.name
+            ))
+
+        shared_interface = ResonaateDatabase.getSharedInterface()
+        shared_interface.bulkSave(agent_data)
+
+        built_event_types = set()
+        built_events = []
+        for event_config in sorted(self._config.events.objects, key=lambda x: x.start_time):
+            for data_dependency in event_config.getDataDependencies():
+                found_dependency = shared_interface.getData(data_dependency.query, multi=False)
+                if found_dependency is None:
+                    try:
+                        new_dependency = data_dependency.createDependency()
+                    except MissingDataDependency as missing_dep:
+                        err = f"Event '{event_config.event_type}' is missing a data dependency."
+                        raise ValueError(err) from missing_dep
+                    else:
+                        self.logger.info(f"Creating event data dependency: {new_dependency}")
+                        shared_interface.insertData(new_dependency)
+
+            built_event_types.add(event_config.event_type)
+            built_events.append(Event.concreteFromConfig(event_config))
+
+        if built_events:
+            shared_interface.insertData(*built_events)
+        self.logger.info(f"Loaded {len(built_events)} events of types {built_event_types}")
 
     @staticmethod
     def _validateTargetAddition(new_target, existing_target):
-        """Throw an ``Exception`` if `new_target` and `existing_target`'s states don't match.
+        """Throw an ``Exception`` if the `new_target` and `existing_target` states don't match.
 
         Args:
             new_target (TargetConfigObject): Target object being added.
             existing_target (TargetConfigObject): Existing target object.
 
         Raises:
-            Exception: If `new_target` and `existing_target`s states don't match.
+            Exception: If the `new_target` and `existing_target` states don't match.
         """
         if existing_target.eci_set and new_target.eci_set:
-            eci_equal = allclose(
-                asarray(existing_target.init_eci),
-                asarray(new_target.init_eci)
-            )
-            if eci_equal:
+            if allclose(array(existing_target.init_eci), array(new_target.init_eci)):
+                return
+
+        if existing_target.eqe_set and new_target.eqe_set:
+            if allclose(array(existing_target.eqe_set), array(new_target.eqe_set)):
                 return
 
         if existing_target.coe_set and new_target.coe_set:
@@ -211,11 +233,11 @@ class ScenarioBuilder:
         err = f"Duplicate targets specified with different initial states: {new_target.sat_num}"
         raise Exception(err)
 
-    def initTargets(self, target_configs):
+    def initTargets(self, target_configs, station_keeping):
         """Initialize target RSOs based on a given config.
 
         Args:
-            target_configs (``list``): List of :class:`.TargetConfigObject`s describing target RSO
+            target_configs (``list``): List of :class:`.TargetConfigObject` objects describing target RSO
                 attributes.
 
         Raises:
@@ -239,113 +261,18 @@ class ScenarioBuilder:
                 self.time.physics_step_sec,
                 self.noise.dynamics_noise_magnitude
             )
-
             config = {
                 "target": target_conf,
                 "clock": self.clock,
                 "dynamics": dynamics_method,
-                "realtime": self.propagation.realtime_propagation,
-                "station_keeping": target_conf.station_keeping,
+                "realtime": self.propagation.target_realtime_propagation,
+                "station_keeping": station_keeping,
                 "noise": dynamics_noise,
                 "random_seed": self.noise.random_seed
             }
             targets[target_conf.sat_num] = TargetAgent.fromConfig(config, events=[])
 
         return targets
-
-    @staticmethod
-    def _getPropulsionFromEvents(cur_events):
-        """Parse the propulsion objects from a list of events.
-
-        Args:
-            cur_events (``list``): event objects as dictionaries
-
-        Raises:
-            NotImplementedError: raised if events are not an implemented type
-
-        Returns:
-            ``list``: :class:`.Propulsion` event objects
-        """
-        propulsion = []
-        for event in cur_events:
-            if isinstance(event, ScheduledImpulse):
-                propulsion.append(event)
-            else:
-                raise NotImplementedError("Not set up to handle events other than propulsions.")
-
-        return propulsion
-
-    def initTargetEvents(self):
-        """Initialize target events based on event configuration.
-
-        Returns:
-            dict: Initialized target events (or empty dictionary if there were no configured
-                events).
-        """
-        if self._config.target_events.objects:
-            target_events = defaultdict(list)
-            target_event_types = defaultdict(set)
-            for event in self._config.target_events.objects:
-                target_event = ScenarioBuilder._createEvent(event, self.clock)
-
-                for target in event.affected_targets:
-                    target_events[target].append(target_event)
-                    target_event_types[target].add(type(target_event))
-
-            for target in target_events.keys():
-                self.logger.info("Loaded {0} events with types {1} for target {2}.".format(
-                    len(target_events[target]),
-                    target_event_types[target],
-                    target
-                ))
-
-            return target_events
-        # else:
-        return {}
-
-    def initSensorEvents(self):  # pylint: disable=no-self-use
-        """Initialize sensor events based on configuration.
-
-        Returns:
-            dict: Initialized sensor events (or empty dictionary if there were no configured
-                events).
-
-        Note:
-            This method is a stub.
-
-        Todo:
-            - Implement this.
-
-        """
-        return {}
-
-    @staticmethod
-    def _createEvent(event_conf, clock):
-        """Create event object based on given configuration.
-
-        Args:
-            event_conf (TargetEventConfigObject): event definition
-            clock (:class:`.ScenarioClock`): global clock object used for the simulation.
-
-        Returns:
-            (:class:`.Event`): constructed event object
-        """
-        target_event = None
-        if event_conf.event_type == "IMPULSE":
-            delta_v = asarray(event_conf.delta_v)
-            delta_v = delta_v.reshape(3)
-
-            julian_date = JulianDate(event_conf.julian_date)
-            if julian_date < clock.julian_date_start:
-                err = "Event takes place before scenario: {0}".format(julian_date)
-                raise ValueError(err)
-
-            target_event = ScheduledNTWImpulse(julian_date.convertToScenarioTime(clock.julian_date_start), delta_v)
-
-        else:
-            raise Exception("Unable to handle event type '{0}'".format(event_conf["event_type"]))
-
-        return target_event
 
     @property
     def config(self):

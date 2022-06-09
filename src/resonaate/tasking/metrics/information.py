@@ -1,15 +1,23 @@
+"""Defines information-focused tasking metrics."""
 # Standard Library Imports
-import logging
 # Third Party Imports
 from numpy import log, matmul
 from numpy.linalg import LinAlgError
 from scipy.linalg import det, inv
 # RESONAATE Imports
+from ...common.logger import resonaateLogError
 from .metric_base import InformationMetric
 
 
 class FisherInformation(InformationMetric):
-    """Fisher information metric."""
+    """Fisher information metric.
+
+    References:
+        #. :cite:t:`bar-shalom_2001_estimation`
+        #. :cite:t:`crassidis_2012_optest`
+        #. :cite:t:`ristic_2003_fig`
+        #. :cite:t:`williams_2012_diss`
+    """
 
     def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
         """Calculate the determinant of the Fisher information gain.
@@ -31,16 +39,20 @@ class FisherInformation(InformationMetric):
             nu_var = matmul(cross_covar.T, inv(predicted_covar))
             fisher_info_gain = matmul(matmul(nu_var.T, inv(r_matrix)), nu_var)
         except LinAlgError:
-            msg = "Singular matrix in Fisher metric.\nPred Covar: {0}\nMeas Noise: {1}"
-            logger = logging.getLogger("resonaate")
-            logger.error(msg.format(predicted_covar, r_matrix))
+            msg = f"Singular matrix in Fisher metric.\nPred Covar: {predicted_covar}\nMeas Noise: {r_matrix}"
+            resonaateLogError(msg)
             raise
 
         return abs(det(fisher_info_gain))
 
 
 class ShannonInformation(InformationMetric):
-    """Shannon information metric."""
+    """Shannon information metric.
+
+    References:
+        #. :cite:t:`williams_2012_aas_dst`
+        #. :cite:t:`williams_2012_diss`
+    """
 
     def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
         """Calculate the log of the Shannon Information gain.
@@ -64,6 +76,9 @@ class KLDivergence(InformationMetric):
 
     def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
         """Calculate the Kullback-Leibler Divergence.
+
+        References:
+            :cite:t:`kullback_jstor_1951_info`
 
         Args:
             predicted_covar (``numpy.ndarray``): UKF a priori covariance

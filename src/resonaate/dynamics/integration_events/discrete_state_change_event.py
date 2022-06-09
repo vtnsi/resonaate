@@ -1,3 +1,4 @@
+"""Defines the :class:`.DiscreteStateChangeEvent` abstract base class."""
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 

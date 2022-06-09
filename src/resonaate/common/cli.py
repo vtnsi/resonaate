@@ -1,9 +1,10 @@
+"""Define the command line interface for the RESONAATE simulation tool."""
 # Standard Library Imports
 import argparse
-import logging
 import os.path
 # Third Party Imports
 # RESONAATE Imports
+from .logger import resonaateLogError
 
 
 def fileChecker(filepath):
@@ -20,7 +21,7 @@ def fileChecker(filepath):
     """
     filepath = os.path.abspath(os.path.realpath(os.path.normpath(filepath)))
     if not os.path.isfile(filepath):
-        logging.getLogger("resonaate").error("Bad filepath given to CLI")
+        resonaateLogError("Bad filepath given to CLI")
         raise ValueError(filepath)
     return filepath
 
@@ -33,7 +34,6 @@ def getCommandLineParser():
     """
     parser = argparse.ArgumentParser(description="RESONAATE Command Line Interface")
     db_group = parser.add_argument_group("Database Files")
-    db_opts = parser.add_argument_group("Database Options")
 
     parser.add_argument(
         "init_msg",
@@ -58,22 +58,6 @@ def getCommandLineParser():
         action="store_true",
         default=False,
         help="Turns on parallel debug mode"
-    )
-
-    db_opts.add_argument(
-        "--no-db",
-        dest="db_save",
-        action="store_false",
-        default=True,
-        help="Turns off output database, overriding all other options"
-    )
-
-    db_opts.add_argument(
-        "--auto-db",
-        dest="auto_db",
-        action="store_true",
-        default=False,
-        help="Auto-generate RESONAATE DB path to {cwd}/db/"
     )
 
     db_group.add_argument(

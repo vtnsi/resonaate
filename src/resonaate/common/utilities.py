@@ -1,3 +1,4 @@
+"""Various helper functions that are used across multiple modules."""
 # Standard Library Imports
 import json
 import os
@@ -37,17 +38,17 @@ def loadYAMLFile(file_name):
         ``dict``: documents loaded from the YAML file
     """
     try:
-        with open(file_name, 'r') as input_file:
+        with open(file_name, 'r', encoding="utf-8") as input_file:
             yaml_data = yaml.safe_load(input_file)
     except FileNotFoundError as err:
-        print("Could not find YAML file: {0}".format(file_name))
+        print(f"Could not find YAML file: {file_name}")
         raise err
     except yaml.YAMLError as err:
-        print("Parsing error reading YAML file: {0}".format(file_name))
+        print(f"Parsing error reading YAML file: {file_name}")
         raise err
 
     if not yaml_data:
-        print("Empty YAML file: {0}".format(file_name))
+        print(f"Empty YAML file: {file_name}")
         raise IOError
 
     return yaml_data
@@ -68,17 +69,17 @@ def loadJSONFile(file_name):
         ``dict``: documents loaded from the JSON file
     """
     try:
-        with open(file_name, 'r') as input_file:
+        with open(file_name, 'r', encoding="utf-8") as input_file:
             json_data = json.load(input_file)
     except FileNotFoundError as err:
-        print("Could not find JSON file: {0}".format(file_name))
+        print(f"Could not find JSON file: {file_name}")
         raise err
     except json.decoder.JSONDecodeError as err:
-        print("Decoding error reading JSON file: {0}".format(file_name))
+        print(f"Decoding error reading JSON file: {file_name}")
         raise err
 
     if not json_data:
-        print("Empty JSON file: {0}".format(file_name))
+        print(f"Empty JSON file: {file_name}")
         raise IOError
 
     return json_data
@@ -104,19 +105,19 @@ def loadDatFile(file_name, delim=None):
         ``list``: nested list of float values of each row
     """
     try:
-        with open(file_name, 'r') as data_file:
+        with open(file_name, 'r', encoding="utf-8") as data_file:
             data = []
             for line in data_file:
                 data.append([float(x) for x in line.split(sep=delim)])
     except FileNotFoundError as err:
-        print("Could not find DAT file: {0}".format(file_name))
+        print(f"Could not find DAT file: {file_name}")
         raise err
     except ValueError:
-        print("Parsing error reading DAT file: {0}".format(file_name))
+        print(f"Parsing error reading DAT file: {file_name}")
         raise
 
     if not data:
-        print("Empty DAT file: {0}".format(file_name))
+        print(f"Empty DAT file: {file_name}")
         raise IOError
 
     return data
@@ -152,10 +153,10 @@ def saveMatrix(name, matrix, path=None):
     now = datetime.utcnow()
     file_name = os.path.join(
         os.path.realpath(path),
-        "{0}_{1}.json".format(name, now.isoformat())
+        f"{name}_{now.isoformat()}.json"
     )
     # Save to file, convert to list if `numpy.ndarray`
-    with open(file_name, 'w') as out_file:
+    with open(file_name, 'w', encoding="utf-8") as out_file:
         if isinstance(matrix, list):
             json.dump(matrix, out_file)
         elif isinstance(matrix, np.ndarray):
@@ -167,11 +168,11 @@ def saveMatrix(name, matrix, path=None):
     return file_name
 
 
-def getTimeout(sequence, multiplier=5):
-    """Determine the worker job timeout length.
+def getTimeout(num_jobs, multiplier=5):
+    """Determine the total job timeout length.
 
     Args:
-        sequence (``list``): sequence object for determining timeout length
+        num_jobs (``int``): total number of jobs submitted to worker queue.
         multiplier (``int``, Optional): multiplies the timeout length. Defaults to 5.
 
     Returns:
@@ -180,7 +181,7 @@ def getTimeout(sequence, multiplier=5):
     if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
         return None
     else:
-        return multiplier * len(sequence)
+        return multiplier * num_jobs
 
 
 def checkTypes(_locals, _types):

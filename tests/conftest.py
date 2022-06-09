@@ -9,6 +9,8 @@ from numpy import asarray
 import pytest
 # Resonaate Imports
 try:
+    from resonaate.data.resonaate_database import ResonaateDatabase
+    from resonaate.data.observation import Observation
     from resonaate.agents.estimate_agent import EstimateAgent
     from resonaate.agents.sensing_agent import SensingAgent
     from resonaate.common.behavioral_config import BehavioralConfig
@@ -24,7 +26,7 @@ try:
     from resonaate.tasking.rewards.reward_base import Reward
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 
 
@@ -42,6 +44,7 @@ class BaseTestCase:
 
     importer_db_path = "db/importer.sqlite3"
     shared_db_path = "db/shared.sqlite3"
+    maneuver_db_path = "db/maneuver.sqlite3"
     json_init_path = "json/config/init_messages"
     json_rso_truth = "json/rso_truth"
     json_sensor_truth = "json/sat_sensor_truth"
@@ -60,6 +63,7 @@ def patchMissingEnvVariables(monkeypatch):
     """
     with monkeypatch.context() as m_patch:
         m_patch.delenv("RESONAATE_BEHAVIOR_CONFIG", raising=False)
+        m_patch.delenv("REDIS_PASSWORD", raising=False)
         yield
         # Make sure we reset the config after each test function
         BehavioralConfig.getConfig()
@@ -82,9 +86,22 @@ def getTestLoggerObject():
 def getRedisInstance():
     """Setup and destroy an instance of Redis key-value store."""
     redis_conn = getRedisConnection()
+    isMaster()
+    yield redis_conn
     redis_conn.flushall()
-    yield isMaster()
     resetMaster()
+
+
+@pytest.fixture(name="reset_db")
+def resetDatabase():
+    """Reset the database tables to avoid data integrity errors.
+
+    Note:
+        This fixture should be utilized any time a :class:`.ScenarioClock` object is instanitated so that the "epochs"
+        table is reset.
+    """
+    yield
+    ResonaateDatabase.getSharedInterface().resetData(tables=ResonaateDatabase.VALID_DATA_TYPES)
 
 
 @pytest.fixture(scope="class", name="mocked_clock")
@@ -175,6 +192,7 @@ def getMockedValidJobObject():
     job.retval = {
         "reward_matrix": [0, 0, 1],
         "visibility": [1, 0, 1],
+        "observations": [create_autospec(Observation)]
     }
 
     return job

@@ -1,3 +1,4 @@
+"""Functions that define physics related to sensors."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import sqrt, dot, arccos, arcsin
@@ -8,33 +9,40 @@ from ..physics.bodies import Earth
 from ..physics.bodies.third_body import Sun
 
 
-def getObscurAngle(eci_state):
-    """Return the elevation angle between tgt and the limb of the Earth.
+def getEarthLimbConeAngle(eci_state):
+    r"""Return the elevation angle between a sensor and the limb of the Earth.
 
     Determine the cone angle that the satellite makes with Earth's limb, which we define as the
-    radius of the Earth plus 100 km
+    radius of the Earth plus the height of the atmosphere.
 
-    Args;
-        eci_state (``np.ndarray``): 6x1 ECI state vector of the satellite (km; km/sec)
+    The limb angle will always be in :math:`[-\frac{\pi}{2}, 0]` for satellites, because elevation is
+    measured from the local SE plane in the SEZ system to the Z axis which points radially
+    outward, along the ECI position direction. Therefore, the sensor's limb angle will always
+    be negative.
+
+    References:
+        :cite:t:`nastasi_2018_scitech_dst`, Section II.C.3
+
+    Args:
+        eci_state (``ndarray``): 6x1 ECI state vector of the sensor satellite (km; km/s)
 
     Returns:
-        ``float``: angle target makes with the Earth's limb in radians, [-pi/2, 0]
+        ``float``: angle target makes with the Earth's limb, :math:`[-\frac{\pi}{2}, 0]` (rad)
     """
     return arcsin((Earth.radius + Earth.atmosphere) / norm(eci_state[:3])) - const.PI * 0.5
 
 
 def lineOfSight(eci_position_1, eci_position_2):
-    """Determine if line of sight exists between two given positions.
+    r"""Determine if line of sight exists between two given positions.
 
-    See Vallado Algorithm 35 for details. This assumes a spherical Earth which is more
-    conservative.
+    This assumes a spherical Earth which is more conservative.
 
     References:
-        "Fundamentals of Astrodynamics and Applications", David Vallado, Fourth Edition, 2013.
+        :cite:t:`vallado_2013_astro`, Algorithm 35
 
     Args:
-        eci_position_1 (``np.ndarray``): 3x1 ECI position vector 1, km
-        eci_position_2 (``np.ndarray``): 3x1 ECI position vector 2, km
+        eci_position_1 (``ndarray``): 3x1 ECI position vector 1 (km)
+        eci_position_2 (``ndarray``): 3x1 ECI position vector 2 (km)
 
     Returns:
         ``bool``: whether a line of sight exists between the given position vectors.
@@ -49,17 +57,16 @@ def lineOfSight(eci_position_1, eci_position_2):
 
 
 def calculateSunVizFraction(tgt_eci_position, sun_eci_position):
-    """Calculate the fraction of the Sun __NOT__ occluded by Earth from a satellite's position.
+    r"""Calculate the fraction of the Sun **NOT** occluded by Earth from a satellite's position.
 
-    See Montenbruck section 3.42 for an explanation & derivation. This method is only valid for
-    orbiting satellites.
+    This method is only valid for orbiting satellites.
 
     References:
-        "Satellite Orbits: Models, Methods and Applications", Oliver Montenbruck, 2000.
+        :cite:t:`montenbruck_2012_orbits`, Section 3.42
 
     Args:
-        tgt_eci_position (``np.ndarray``): 3X1 ECI position vector of satellite
-        sun_eci_position (``np.ndarray``): 3x1 ECI position vector of the Sun, relative to Earth (km)
+        tgt_eci_position (``ndarray``): 3x1 ECI position vector of satellite (km)
+        sun_eci_position (``ndarray``): 3x1 ECI position vector of the Sun, relative to Earth (km)
 
     Returns:
         ``float``: percentage of the Sun that is visible from the satellite
@@ -90,16 +97,15 @@ def calculateSunVizFraction(tgt_eci_position, sun_eci_position):
 
 
 def calculateIncidentSolarFlux(viz_cross_section, tgt_eci_position, sun_eci_position):
-    """Calculate the current solar flux of a target object.
+    r"""Calculate the current solar flux of a target object.
 
     References:
-        Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness,
-        Kevin M. Nastasi. 8 June 2018. page 47, equation 3.10
+        :cite:t:`nastasi_2018_diss`, Pg 47, Eqn 3.10
 
     Args:
-        viz_cross_section (``float``): area of the target facing the sun (m^2)
-        tgt_eci_position (``np.ndarray``): 3x1 ECI position vector of the target (km)
-        sun_eci_position (``np.ndarray``): 3x1 ECI position vector of the Sun, relative to Earth (km)
+        viz_cross_section (``float``): area of the target facing the sun (m\ :sup:`2`)
+        tgt_eci_position (``ndarray``): 3x1 ECI position vector of the target (km)
+        sun_eci_position (``ndarray``): 3x1 ECI position vector of the Sun, relative to Earth (km)
 
     Returns:
         ``float``: incident solar flux (W)
@@ -108,68 +114,73 @@ def calculateIncidentSolarFlux(viz_cross_section, tgt_eci_position, sun_eci_posi
     return solar_flux * calculateSunVizFraction(tgt_eci_position, sun_eci_position)
 
 
-def checkGroundSensorLightingConditions(sensor_eci_position, sun_eci_vector, buffer_angle=const.PI / 12):
-    """Determine if a ground sensor has the appropriate lighting condition.
+def checkGroundSensorLightingConditions(sensor_eci_position, sun_eci_unit_vector, buffer_angle=const.PI / 12):
+    r"""Determine if a ground sensor has the appropriate lighting condition.
 
     This assumes ground-based sensors can only collect during times of eclipse (nighttime). There
     is also an optional buffer added on for excluding dusk/dawn hours. The lighting condition is
     valid as long as the satellite-sun angle is greater than 90 degrees plus the buffer angle.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Section 5.3.2, Eqn 5-2
+
     Args:
-        sensor_eci_position (``np.ndarray``): 3x1 ECI position vector of the sensor object (km)
-        sun_eci_vector (``np.ndarray``): 3x1 ECI unit vector of the Sun, relative to the Earth
+        sensor_eci_position (``ndarray``): 3x1 ECI position vector of the sensor object (km)
+        sun_eci_unit_vector (``ndarray``): 3x1 ECI unit position vector of the Sun, relative to the Earth (km)
         buffer_angle (``float``, optional): angle to add to eclipse condition to account for
-            dusk/dawn (radians). Defaults to 15 degrees.
+            dusk/dawn (rad). Defaults to :math:`\frac{\pi}{12}`.
 
     Returns:
         ``bool``: whether the sensor can view objects or not based on the lighting condition.
     """
-    satellite_sun_angle = arccos(dot(sun_eci_vector, sensor_eci_position) / norm(sensor_eci_position))
+    satellite_sun_angle = arccos(dot(sun_eci_unit_vector, sensor_eci_position) / norm(sensor_eci_position))
     return satellite_sun_angle >= const.PI / 2 + buffer_angle
 
 
-def checkSpaceSensorLightingConditions(boresight_eci_vector, sun_eci_vector, cone_angle=const.PI / 12):
-    """Determine if a space sensor has the appropriate lighting condition.
+def checkSpaceSensorLightingConditions(boresight_eci_vector, sun_eci_unit_vector, cone_angle=const.PI / 12):
+    r"""Determine if a space sensor has the appropriate lighting condition.
 
     This assumes space-based sensors can only collect if the required boresight vector is not
     pointing to within a specified cone angle of the sun. The lighting condition is
     valid as long as the boresight-sun angle is greater than the cone angle.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Section 5.3.2, Eqn 5-2 (modified for space sensors)
+
     Args:
-        boresight_eci_vector (``np.ndarray``): 3x1 ECI boresight vector from the sensor to the target (km)
-        sun_eci_vector (``np.ndarray``): 3x1 ECI unit vector of the Sun, relative to the Earth
+        boresight_eci_vector (``ndarray``): 3x1 ECI boresight vector from the sensor to the target (km)
+        sun_eci_unit_vector (``ndarray``): 3x1 ECI unit position vector of the Sun, relative to the Earth (km)
         cone_angle (``float``, optional): minimum cone angle the sensor can have with the sun
-            (radians). Defaults to 15 degrees.
+            (rad). Defaults to :math:`\frac{\pi}{12}`.
 
     Returns:
         ``bool``: whether the sensor can view objects or not based on the lighting condition.
     """
-    boresight_sun_angle = arccos(dot(sun_eci_vector, boresight_eci_vector) / norm(boresight_eci_vector))
+    boresight_sun_angle = arccos(dot(sun_eci_unit_vector, boresight_eci_vector) / norm(boresight_eci_vector))
     return boresight_sun_angle >= cone_angle
 
 
 def calculateRadarCrossSection(viz_cross_section, wavelength):
-    """Calculate the effective area seen by a radar signal.
+    r"""Calculate the effective area seen by a radar signal.
 
-    This equation assumes radar is reflected perpendicualary from a flat plat and
-    returns the maximum possible cross section
+    This equation assumes radar is reflected perpendicularly from a flat plat and
+    returns the maximum possible cross section.
 
     References:
-        Autonomous and Responsive Surveillance Network Management for Adaptive Space Situational Awareness,
-        Kevin M. Nastasi. 8 June 2018. page 46, equation 3.5
+        :cite:t:`nastasi_2018_diss`, Pg 46, Eqn 3.5
 
     Args:
-        viz_cross_section (``float``): area of the object facing the signal (m^2)
+        viz_cross_section (``float``): area of the object facing the signal (m\ :sup:`2`)
         wavelength (``float``): wavelength of the signal (m)
 
     Returns:
-        ``float``: effective cross-sectional area (m^2)
+        ``float``: effective cross-sectional area (m\ :sup:`2`)
     """
     return 4 * const.PI * viz_cross_section ** 2 / wavelength ** 2
 
 
 def getWavelengthFromString(freq):
-    """Return the wavelength of the given frequency band.
+    r"""Return the wavelength of the given frequency band.
 
     Args:
         freq (``str``): frequency band to get the wavelength of

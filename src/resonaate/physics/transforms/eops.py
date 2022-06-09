@@ -2,9 +2,6 @@
 
 This module is for calculating values of EOPs for different dates. This was split out from the
 reductions.py module for later expansion/customization of how this works.
-
-Author: Dylan Thomas
-Date: June 7, 2021
 """
 # Standard Library Imports
 import datetime
@@ -58,7 +55,7 @@ def getEarthOrientationParameters(eop_date, filename=None):
     Note:
         This function is cached so repeated calls shouldn't need to re-read the file.
 
-    SeeAlso:
+    See Also:
         Default values obtained from Celestrak.com
 
     Returns:
@@ -82,7 +79,7 @@ def _readEOPFile(filename=None):
     Note:
         This function is cached so repeated calls shouldn't need to re-read the file.
 
-    SeeAlso:
+    See Also:
         Default values obtained from Celestrak.com
 
     Returns:
@@ -90,7 +87,7 @@ def _readEOPFile(filename=None):
     """
     # Load raw data from file
     if filename is None:
-        filename = resource_filename('resonaate', 'physics/data/EOPdata.dat')
+        filename = resource_filename('resonaate', 'physics/data/eop/EOPdata.dat')
     raw_data = loadDatFile(filename)
 
     # Create dictionary of EOPs

@@ -1,9 +1,11 @@
+"""Defines scheduled impulsive burn events to control spaceraft."""
 # Standard Library Imports
 from abc import ABCMeta
 # Third Party Imports
 from numpy import concatenate, zeros
 # RESONAATE Imports
 from ...physics.transforms.methods import ntw2eci
+from ...physics.math import fpe_equals
 from .discrete_state_change_event import DiscreteStateChangeEvent
 from .event_stack import EventStack, EventRecord
 
@@ -27,7 +29,10 @@ class ScheduledImpulse(DiscreteStateChangeEvent, metaclass=ABCMeta):
         See Also:
             :meth:`.DiscreteStateChangeEvent.__call__()`
         """
-        return time - self.time
+        _val = time - self.time
+        if fpe_equals(_val, 0.0):
+            return 0.0
+        return _val
 
 
 class ScheduledECIImpulse(ScheduledImpulse):

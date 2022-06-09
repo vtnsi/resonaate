@@ -1,5 +1,6 @@
-"""RESONAATE Tool Python Package.
+"""Main Module Documentation.
 
-The resonaate package includes the main resonaate application and all supporting modules.
+The top-level module is documented below, which mainly serves as a command line entry point for
+running large, parallelized SDA scenarios.
 """
-__version__ = "1.2.0"
+__version__ = "1.3.0"

@@ -1,3 +1,4 @@
+"""Defines the metrics used to measure tasking performance."""
 # RESONAATE Imports
 from .metric_base import Metric as _BaseMetric
 from .information import FisherInformation, ShannonInformation, KLDivergence

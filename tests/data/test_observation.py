@@ -9,7 +9,7 @@ try:
     from resonaate.data.observation import Observation
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase
@@ -126,6 +126,23 @@ class TestObservationTable(BaseTestCase):
         )
         assert isinstance(obs.sez, list)
         assert len(obs.sez) == 3
+
+    def testMeasurementProperty(self, epoch, target_agent, sensor_agent):
+        """Test sez property."""
+        obs = Observation.fromSEZVector(
+            epoch=epoch,
+            sensor=sensor_agent,
+            target=target_agent,
+            sensor_type="AdvRadar",
+            azimuth_rad=1.010036549841,
+            elevation_rad=0.33006189181,
+            range_km=1500.0,
+            range_rate_km_p_sec=0.10,
+            sez=self.sez,
+            sensor_position=[0.44393147656176574, 1.124890532, 0.6253]
+        )
+        assert isinstance(obs.measurements, list)
+        assert len(obs.measurements) == 4
 
     def testInsertWithRelationship(self, epoch, target_agent, sensor_agent):
         """Test inserting observation with related objects."""

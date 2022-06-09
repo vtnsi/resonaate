@@ -1,9 +1,6 @@
-"""Calculate Nutation Parameters.
+"""Calculate Earth nutation parameters.
 
 This module is for storing coefficients for different nutation series.
-
-Author: Dylan Thomas
-Date: April 4, 2021
 """
 # Standard Library Imports
 from functools import lru_cache
@@ -22,16 +19,15 @@ def get1980NutationSeries():
     Note:
         This function is cached so repeated calls shouldn't need to re-read the file.
 
-    SeeAlso:
-        Fundamentals of Astrodynamics & Applications, David Vallado, Fourth Edition, 2013.
-        Eq 3-83 (Pg 226)
+    References:
+        :cite:t:`vallado_2013_astro`, Eqn 3-83, Pg. 226
 
     Returns:
         tuple: (real coefficients, integer coefficients)
     """
     # Load nutation into numpy array
     nut_data = np.asarray(
-        loadDatFile(resource_filename('resonaate', 'physics/data/nut80.dat'))
+        loadDatFile(resource_filename('resonaate', 'physics/data/eop/nut80.dat'))
     )
 
     # Parse integer and real coefficients out.

@@ -17,21 +17,21 @@ class WorkerManager:
     """Class for managing worker processes."""
 
     WATCHDOG_INTERVAL = 3
-    """int: Interval on which the watchdog thread operates."""
+    """``int``: Interval on which the watchdog thread operates."""
 
     WATCHDOG_TERMINATE_AFTER = 15
-    """int: Number of seconds a worker can spend processing a single job before being terminated."""
+    """``int``: Number of seconds a worker can spend processing a single job before being terminated."""
 
     def __init__(self, proc_count=None, daemonic=False, logger=None):
         """Instantiate a :class:`.WorkerManager` object.
 
         Args:
-            proc_count (int): Number of worker processes to spin up.
-            daemonic (bool): Flag indicating whether worker threads should be daemonic or not. If
+            proc_count (``int``): Number of worker processes to spin up.
+            daemonic (``bool``): Flag indicating whether worker threads should be daemonic or not. If
                 worker threads are not flagged as daemonic, then it is up to the user to call
                 :meth:`.stopWorkers()` or de-scope this :class:`.WorkerManager` instance to clean
                 up the workers before the program ends.
-            logger (logging.Logger, optional): Custom logging instance for :class:`.WorkerManager`
+            logger (``logging.Logger``, optional): Custom logging instance for :class:`.WorkerManager`
                 and its workers to use, instead of :attr:`.REDIS_QUEUE_LOGGER` .
         """
         if logger is not None:
@@ -50,14 +50,14 @@ class WorkerManager:
         self._redis_conn = getRedisConnection()
         self._redis_conn.get(MASTER_KEY_NAME)
 
-        self._processing_queue_name = "processing-{0}".format(getMasterHash())
+        self._processing_queue_name = f"processing-{getMasterHash()}"
 
         if proc_count is None:
             proc_count = cpu_count()
 
         for item in range(proc_count):
             self._worker_locks.append(Lock())
-            worker_name = 'worker-{0}-{1}'.format(item, getMasterHash()[:8])
+            worker_name = f'worker-{item}-{getMasterHash()[:8]}'
 
             self._worker_processes.append(
                 Process(
@@ -75,7 +75,7 @@ class WorkerManager:
         """Start worker processes.
 
         Args:
-            watchdog (bool,optional): Flag indicating whether the watchdog thread should be
+            watchdog (``bool``, optional): Flag indicating whether the watchdog thread should be
                 started. This is useful in the case where there will be multiple instances of
                 :class:`.WorkerManager` 's since only one of them needs to track the the processing
                 Redis queue since all instances will report to the same Redis server.
@@ -90,21 +90,23 @@ class WorkerManager:
         """Stop worker processes.
 
         Args:
-            no_wait (bool, optional): Flag indicating whether to wait for worker processes to
+            no_wait (``bool``, optional): Flag indicating whether to wait for worker processes to
                 finish their current processing before terminating them.
         """
         if no_wait:
             for proc in self._worker_processes:
                 proc.terminate()
+                proc.join()
 
         else:
             for lock, proc in zip(self._worker_locks, self._worker_processes):
                 with lock:
                     proc.terminate()
+                    proc.join()
 
     @property
     def is_processing(self):
-        """bool: Boolean indicating whether one or more workers are still processing."""
+        """``bool``: Boolean indicating whether one or more workers are still processing."""
         for lock in self._worker_locks:
             if not lock.acquire(block=False):
                 return True
@@ -121,10 +123,10 @@ class WorkerManager:
             """Return how long a worker has been processing a single job.
 
             Args:
-                worker (str): Name of worker to determine processing duration.
+                worker (``str``): Name of worker to determine processing duration.
 
             Return:
-                float: Number of seconds the worker has been processing.
+                ``float``: Number of seconds the worker has been processing.
             """
             jobs = workers_processing.get(worker, (None, None))
 
@@ -156,29 +158,22 @@ class WorkerManager:
 
             if time() - last_average_log > self.WATCHDOG_TERMINATE_AFTER:
                 if total_jobs_processed > 0:
-                    self._logger.info("Average job processing time: {0}".format(
-                        total_proc_time / total_jobs_processed
-                    ))
+                    msg = f"Average job processing time: {total_proc_time / total_jobs_processed}"
+                    self._logger.info(msg)
 
                     for worker_id, jobs in workers_processing.items():
-                        self._logger.info("'{0}' working on job '{1}' since {2}".format(
-                            worker_id,
-                            jobs[0],
-                            datetime.utcfromtimestamp(jobs[1]).isoformat()
-                        ))
+                        date = datetime.utcfromtimestamp(jobs[1]).isoformat()
+                        msg = f"'{worker_id}' working on job '{jobs[0]}' since {date}"
+                        self._logger.info(msg)
 
                     last_average_log = time()
 
             for worker in self._worker_processes:
                 if currentWorkerProcessingDuration(worker.name) > self.WATCHDOG_TERMINATE_AFTER:
-                    msg = "Terminating worker '{0}' because it's been processing job '{1}' for more than {2} seconds."
-                    self._logger.warning(
-                        msg.format(
-                            worker.name,
-                            workers_processing[worker.name][0],
-                            self.WATCHDOG_TERMINATE_AFTER
-                        )
-                    )
+                    tim = self.WATCHDOG_TERMINATE_AFTER
+                    msg = f"Terminating worker '{worker.name}' because it's been "
+                    msg += f"processing job '{workers_processing[worker.name][0]}' for more than {tim} seconds."
+                    self._logger.warning(msg)
                     kill(worker.pid, SIGINT)
 
                     del workers_processing[worker.name]
@@ -195,22 +190,23 @@ def workerLoop(name, lock, processing_queue_name, logger=None):
     Continuously pop :class:`.Job` s off of the job queue and process them.
 
     Args:
-        name (str): Name for the process that started this worker loop.
-        lock (multiprocessing.Lock): Lock used to indicate when processing is taking place vs when
+        name (``str``): Name for the process that started this worker loop.
+        lock (``multiprocessing.Lock``): Lock used to indicate when processing is taking place vs when
             the worker loop is blocked on trying to pop its next job off the queue.
-        processing_queue_name (str): Name of Redis queue to use to report worker's jobs.
-        logger (logging.Logger, optional): Custom logging instance for :meth:`.workerLoop` to use,
+        processing_queue_name (``str``): Name of Redis queue to use to report worker's jobs.
+        logger (``logging.Logger``, optional): Custom logging instance for :meth:`.workerLoop` to use,
             instead of :attr:`.REDIS_QUEUE_LOGGER` .
     """
     if logger is None:
         logger = REDIS_QUEUE_LOGGER
 
-    name = "{0}-{1}".format(name, getpid())
+    name = f"{name}-{getpid()}"
     try:
         redis_conn = getRedisConnection()
 
         while masterExists(redis_connection=redis_conn):
-            logger.debug("{0} - Waiting for job...".format(name))
+            msg = f"{name} - Waiting for job..."
+            logger.debug(msg)
 
             # Get a list of registered job queue names
             job_queue_names = redis_conn.lrange(JOB_QUEUE_LIST, 0, -1)
@@ -231,16 +227,19 @@ def workerLoop(name, lock, processing_queue_name, logger=None):
                     job = loads(serialized[1])
 
                     redis_conn.rpush(processing_queue_name, dumps((name, job.id, time())))
-
-                    logger.debug("{0} - Working on job {1} from {2}...".format(name, job.id, job_queue_id))
+                    msg = f"{name} - Working on job {job.id} from {job_queue_id}..."
+                    logger.debug(msg)
                     job.process()
 
                     processed_queue_name = PROCESSED_QUEUE_NAME_PREFIX + job_queue_id
-                    logger.debug("{0} - Returning job {1} to {2}.".format(name, job.id, processed_queue_name))
+                    msg = f"{name} - Returning job {job.id} to {processed_queue_name}."
+                    logger.debug(msg)
 
                     redis_conn.rpush(processed_queue_name, dumps(job))
                     redis_conn.rpush(processing_queue_name, dumps((name, None, time())))
-        logger.info("{0} - Master seems to no longer exist. Exiting.".format(name))
+        msg = f"{name} - Master seems to no longer exist. Exiting."
+        logger.info(msg)
 
     except KeyboardInterrupt:
-        logger.warning("{0} - Received KeyboardInterrupt. Terminating...".format(name))
+        msg = f"{msg} - Received KeyboardInterrupt. Terminating..."
+        logger.warning(msg)

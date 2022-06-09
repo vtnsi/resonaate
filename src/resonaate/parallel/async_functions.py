@@ -1,4 +1,4 @@
-"""Collection of asynchronous functions used with the ``parallel`` submodule."""
+"""Collection of functions to be used asynchronously for parallel execution."""
 # Standard Imports
 from pickle import loads
 # Third Party Imports
@@ -7,23 +7,32 @@ from numpy import zeros, zeros_like
 from . import getRedisConnection
 
 
-def asyncPropagate(dynamics, init_time, final_time, initial_state, station_keeping=None):
+def asyncPropagate(dynamics, init_time, final_time, initial_state, station_keeping=None, scheduled_events=None):
     """Wrap a dynamics propagation method for use with a parallel job submission module.
+
+    Hint:
+        The dynamics object needs to have :meth:`~.Dynamics.propagate` implemented.
 
     Args:
         dynamics (:class:`.Dynamics`): dynamics object to propagate
         init_time (:class:`.ScenarioTime`): initial time to propagate from
         final_time (:class:`.ScenarioTime`): time during the scenario to propagate to
         initial_state (``numpy.ndarray``): state of object before propagation
-        station_keeping (list, optional): List of :class:`.StationKeeper` objects
+        station_keeping (``list``, optional): :class:`.StationKeeper` objects
 
     Returns:
-        ``numpy.ndarray``: state of the object being propagated after calculations are made
+        ``numpy.ndarray``: 6x1 final state vector of the object being propagated
     """
-    return dynamics.propagate(init_time, final_time, initial_state, station_keeping=station_keeping)
+    return dynamics.propagate(
+        init_time,
+        final_time,
+        initial_state,
+        station_keeping=station_keeping,
+        scheduled_events=scheduled_events
+    )
 
 
-def asyncPredict(_filter, time):
+def asyncPredict(seq_filter, time):
     """Wrap a filter prediction method for use with a parallel job submission module.
 
     Hint:
@@ -31,37 +40,37 @@ def asyncPredict(_filter, time):
         and :meth:`~.SequentialFilter.updateFromAsyncResult` methods implemented.
 
     Args:
-        _filter (:class:`.SequentialFilter`): filter object used to predict state estimates
+        seq_filter (:class:`.SequentialFilter`): filter object used to predict state estimates
         time (:class:`.ScenarioTime`): time during the scenario to predict to
 
     Returns:
-        ``numpy.ndarray``: state of the object being propagated after calculations are made
+        ``numpy.ndarray``: 6x1 final state vector of the object being propagated
     """
-    _filter.predict(time)
+    seq_filter.predict(time)
 
-    return _filter.getPredictionResult()
+    return seq_filter.getPredictionResult()
 
 
 def asyncCalculateReward(estimate_id, reward, sensor_list):
-    """Calculate an entire row in the reward matrix.
+    """Calculate an entire row in the reward matrix for each sensor tasked to a single target.
 
-    This function calculate the rewards for each sensor tasked to a single estimate.
+    This calculates predicted observations and their assumed reward value.
 
     Hint:
         The filter that's being used needs to have :meth:`~.SequentialFilter.getForecastResult`
         implemented
 
     Args:
-        estimate_id (``int``): id of the :class:`.EstimateAgent` to calculate metrics for.
+        estimate_id (``int``): ID of the :class:`.EstimateAgent` to calculate metrics for.
         reward (:class:`.Reward`): function used to calculate a sensor/estimate pair's reward.
-        sensor_list (``list``): list of sensor `unique_id` assigned to the current tasking engine.
+        sensor_list (``list``): sensor `unique_id` values assigned to the current tasking engine.
 
     Returns:
         ``dict``: reward result dictionary containts:
 
         :``"visibility"``: (``numpy.ndarray``): boolean array of whether each sensor can see the estimate.
         :``"reward_matrix"``: (``numpy.ndarray``): numeric reward array for each sensor.
-        :``"filter_update"``: (``dict``): filter forecast results to be applied.
+        :``"estimate_id"``: (``int``): ID of the :class:`.EstimateAgent` to calculate metrics for.
     """
     # pylint: disable=unsupported-assignment-operation
     red = getRedisConnection()
@@ -74,10 +83,10 @@ def asyncCalculateReward(estimate_id, reward, sensor_list):
     reward_matrix = zeros_like(visibility, dtype=float)
 
     for sensor_index, sensor_id in enumerate(sensor_list):
-        sensor = sensor_agents[sensor_id]
+        sensor_agent = sensor_agents[sensor_id]
 
         # Attempt predicted observations, in order to perform sensor tasking
-        observation, _ = sensor.sensors.makeObservation(
+        observation_tuple = sensor_agent.sensors.makeObservation(
             estimate_id,
             estimate.state_estimate,
             estimate.visual_cross_section,
@@ -86,23 +95,21 @@ def asyncCalculateReward(estimate_id, reward, sensor_list):
         )
 
         # Only calculate metrics if the estimate is observable
-        if observation:
+        if observation_tuple.observation:
             # This is required to update the metrics attached to the UKF/KF for this observation
-            estimate.nominal_filter.forecast(observation)
+            estimate.nominal_filter.forecast([observation_tuple])
             visibility[sensor_index] = True
-
             reward_matrix[sensor_index] = reward(estimate_agents, estimate_id, sensor_agents, sensor_id)
 
     return {
+        'estimate_id': estimate_id,
         'visibility': visibility,
         'reward_matrix': reward_matrix,
     }
 
 
-def asyncExecuteTasking(tasked_sensors, target_num, imported_observations):
-    """Generate observations for a target.
-
-    This function executes all tasks on the given :class:`.EstimateAgent`.
+def asyncExecuteTasking(tasked_sensors, target_id):
+    """Execute tasked observations on a :class:`.TargetAgent`.
 
     Hint:
         The filter that's being used needs to have :meth:`~.SequentialFilter.getUpdateResult`
@@ -110,66 +117,57 @@ def asyncExecuteTasking(tasked_sensors, target_num, imported_observations):
 
     Args:
         tasked_sensors (``list``): indices corresponding to sensors tasked to observe the target.
-        target_num (``int``): satnum of `.TargetAgent` being tasked on.
-        imported_observations (``list``): :class:`.Observation`s to be incorporated in the filter
-            update
+        target_id (``int``): ID of `.TargetAgent` being tasked on.
 
     Returns:
         ``dict``: execute result dictionary contains:
 
-        :``"observations"``: (``list`` (:class:`.Observation`)): successful observations of this
-            target.
+        :``"observations"``: (``list``): successful :class:`.Observation` objects of this target.
+        :``"target_id"``: (``int``): ID of the :class:`.TargetAgent` observations were made of.
     """
     successful_obs = []
     sensor_agents = loads(getRedisConnection().get('sensor_agents'))
-    target_agent = loads(getRedisConnection().get('target_agents'))[target_num]
+    target_agent = loads(getRedisConnection().get('target_agents'))[target_id]
     sensor_list = list(sensor_agents.values())
     if len(tasked_sensors) > 0:
         successful_obs.extend(list(filter(
-            None,
+            lambda x: x.observation,
             (
                 sensor_list[ss].sensors.makeNoisyObservation(
-                    target_agent.simulation_id,
-                    target_agent.eci_state,
-                    target_agent.visual_cross_section,
-                )[0] for ss in tasked_sensors
+                    target_agent,
+                ) for ss in tasked_sensors
             )
         )))
 
-    if imported_observations:
-        successful_obs.extend(imported_observations)
-
     return {
+        'target_id': target_id,
         'observations': successful_obs
     }
 
 
 def asyncUpdateEstimate(estimate_agent, target_agent_eci_state, successful_obs):
-    """Update the estimate for a target.
-
-    This function executes all tasks on the given :class:`.EstimateAgent`.
+    """Update the state estimate for a :class:`.EstimateAgent`.
 
     Hint:
         The filter that's being used needs to have :meth:`~.SequentialFilter.getUpdateResult`
-        implemented
+        and :meth:`~.SequentialFilter.updateFromAsyncResult` methods implemented.
 
     Args:
-        estimate_agent (:class:`.EstimateAgent`): :class:`.EstimateAgent` object corresponding to
-            the target.
-        target_agent_eci_state (``list``): [6x1] Target ECI state.
-        successful_obs (``list``): :class:`.Observation`s to be incorporated in the filter
-            update
+        estimate_agent (:class:`.EstimateAgent`): estimate object corresponding to the target.
+        target_agent_eci_state (``list``): 6x1 target truth ECI state vector (debugging only).
+        successful_obs (``list``): :class:`.Observation` objects to be incorporated in the filter update
 
     Returns:
         ``dict``: execute result dictionary contains:
 
         :``"filter_update"``: (``dict``): filter update results to be applied.
-        :``"observations"``: (``list`` (:class:`.Observation`)): successful observations of this
-            target.
+        :``"observed"``: (``bool``): whether there were successful observations of this target.
+        :``"estimate_id"``: (``int``): ID of the :class:`.EstimateAgent` to calculate metrics for.
     """
     # Update the filter with the successful observations, save the data
     estimate_agent.updateEstimate(successful_obs, target_agent_eci_state)
     return {
+        'estimate_id': estimate_agent.simulation_id,
         'filter_update': estimate_agent.nominal_filter.getUpdateResult(),
-        'observations': successful_obs
+        'observed': bool(successful_obs)
     }

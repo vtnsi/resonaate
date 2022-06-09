@@ -1,14 +1,19 @@
+"""Helper functions that convert between different forms of time."""
 # Standard Library Imports
 import datetime
 # Third Party Imports
-from numpy import fmod, floor
+from numpy import remainder, floor
 # RESONAATE Imports
 from .stardate import JulianDate, julianDateToDatetime
 from ...physics import constants as const
+from ..math import wrapAngle2Pi
 
 
 def greenwichMeanTime(julian_date):
     """Determine the Greenwich sidereal time associated with the given julian_date.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.5.2
 
     Args:
         julian_date (:class:`.JulianDate`): Julian date to convert to GST
@@ -20,12 +25,14 @@ def greenwichMeanTime(julian_date):
     tut1 = (float(julian_date) - 2451545.0) / 36525.0
     gst = - 6.2e-6 * tut1**3 + 0.093104 * tut1**2 + (876600 * 3600 + 8640184.812866) * tut1 + 67310.54841
     # Convert from seconds to radians
-    gst = fmod(gst * (1 / 240) * const.DEG2RAD, const.TWOPI)
-    return gst if gst > 0.0 else gst + const.TWOPI
+    return wrapAngle2Pi(gst * (1 / 240) * const.DEG2RAD)
 
 
 def greenwichApparentTime(year, elapsed_days, eq_equinox):
     """Determine the Greenwich apparent time.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.5.2
 
     Args:
         year (int): Current year
@@ -44,7 +51,7 @@ def greenwichApparentTime(year, elapsed_days, eq_equinox):
     # GMST of the exact time
     gmst = gmst_jan1 + earth_rotation_rate * elapsed_days * const.TWOPI
     # Convert to apparent GST
-    return fmod(gmst + eq_equinox, const.TWOPI)
+    return wrapAngle2Pi(gmst + eq_equinox)
 
 
 def utc2TerrestrialTime(year, month, day, hour, minute, second, delta_atomic_time):
@@ -56,6 +63,9 @@ def utc2TerrestrialTime(year, month, day, hour, minute, second, delta_atomic_tim
         Fundamentals of Astrodynamics & Applications, David Vallado, Fourth Edition, 2013.
 
         http://celestrak.com/software/vallado-sw.asp
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.5.5, Algorithm 16
 
     Note: convtime function in Vallado SOFTWARE omits fractional part:
         TTT = (jd - 2451545.0)/36525;
@@ -88,7 +98,11 @@ def utc2TerrestrialTime(year, month, day, hour, minute, second, delta_atomic_tim
 
 
 def seconds2hms(total_seconds):
-    """Convert total seconds in a day to hour, minute, second format."""
+    """Convert total seconds in a day to hour, minute, second format.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.6.3
+    """
     temp = total_seconds / 3600
     hour = floor(temp)
     minute = floor((temp - hour) * 60)
@@ -98,15 +112,19 @@ def seconds2hms(total_seconds):
 
 
 def dayOfYear(year, month, day, hour, minute, second):
-    """Determine the fractional day of the year."""
+    """Determine the fractional day of the year.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.6.4
+    """
     # Regular number of days in a month
     days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
     # Check for leap years for February days
-    if fmod(year, 4) == 0:
+    if remainder(year, 4) == 0:
         days_in_month[1] = 29
         # Multiples of 100, 200, 300 are not included in leap years, multiples of 400 are included
-        if (fmod(year, 100) == 0) and (fmod(year, 400) != 0):
+        if (remainder(year, 100) == 0) and (remainder(year, 400) != 0):
             days_in_month[1] = 28
 
     # Sum up total days up to the current month
@@ -124,7 +142,7 @@ def getTargetJulianDate(start_julian_date, jump_delta):
 
     Args:
         start_julian_date (:class:`.JulianDate`): Julian date at simulation start
-        jump_delta (float): number of hours to simulate
+        jump_delta (`datetime.timedelta`): amount of time to simulate
 
     Returns:
         :class:`.JulianDate`: Julian date at simulation stop

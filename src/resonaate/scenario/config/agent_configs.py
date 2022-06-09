@@ -1,5 +1,5 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
-from .base import ConfigOption, ConfigObject, NO_SETTING
+from .base import ConfigOption, ConfigObject, NO_SETTING, ConfigValueError, ConfigError
 from ...sensors import OPTICAL_LABEL, RADAR_LABEL, ADV_RADAR_LABEL
 from ...agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from ...dynamics.integration_events.station_keeping import StationKeeper
@@ -16,8 +16,7 @@ def validateStationKeepingConfigs(conf_str_list):
     """
     for conf_str in conf_str_list:
         if conf_str not in StationKeeper.validConfigs():
-            err = f"{conf_str} is not a valid station keeping configuration."
-            raise ValueError(err)
+            raise ConfigValueError("station_keeping", conf_str, StationKeeper.validConfigs())
 
 
 class TargetConfigObject(ConfigObject):
@@ -25,13 +24,14 @@ class TargetConfigObject(ConfigObject):
 
     @staticmethod
     def getFields():
-        """Return a tuple of defining required :class:`.ConfigOption`s for a :class:`.TargetConfigObject`."""
+        """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.TargetConfigObject`."""
         return (
             ConfigOption("sat_num", (int, )),
             ConfigOption("sat_name", (str, )),
             ConfigOption("init_eci", (list, ), default=NO_SETTING),
             ConfigOption("init_coe", (dict, ), default=NO_SETTING),
-            ConfigOption("station_keeping", (list, ), default=list())
+            ConfigOption("init_eqe", (dict, ), default=NO_SETTING),
+            ConfigOption("station_keeping", (list, ), default=[])
         )
 
     def __init__(self, object_config):
@@ -41,20 +41,31 @@ class TargetConfigObject(ConfigObject):
             object_config (dict): Configuration dictionary defining this
                 :class:`.TargetConfigObject`.
         """
-        super(TargetConfigObject, self).__init__(object_config)
+        super().__init__(object_config)
 
-        if not self.eci_set and not self.coe_set:
-            err = "Target {0}: State not specified: {1}".format(self.sat_num, object_config)
-            raise ValueError(err)
+        states_set = (self.eci_set, self.coe_set, self.eqe_set)
+        if not any(states_set):
+            err = f"Target {self.sat_num}: State not specified: {object_config}"
+            raise ConfigError(self.__class__.__name__, err)
 
-        if self.eci_set and self.coe_set:
-            err = "Target {0}: Duplicate state specified: {1}".format(self.sat_num, object_config)
-            raise ValueError(err)
+        if sum(states_set) > 1:
+            err = f"Target {self.sat_num}: Duplicate state specified: {object_config}"
+            raise ConfigError(self.__class__.__name__, err)
 
         if self.eci_set:
             if len(self.init_eci) != 6:
-                err = "ECI vector should have 6 elements, not {0}".format(len(self.init_eci))
-                raise ValueError(err)
+                err = f"Target {self.sat_num}: ECI vector should have 6 elements, not {len(self.init_eci)}"
+                raise ConfigError(self.__class__.__name__, err)
+
+        if self.eqe_set:
+            if len(self.init_eqe) != 6:
+                err = f"Target {self.sat_num}: EQE set should have 6 elements, not {len(self.init_eqe)}"
+                raise ConfigError(self.__class__.__name__, err)
+
+        if self.coe_set:
+            if len(self.init_coe) < 4:
+                err = f"Target {self.sat_num}: COE set should have at least 4 elements, not {len(self.init_coe)}"
+                raise ConfigError(self.__class__.__name__, err)
 
         validateStationKeepingConfigs(self.station_keeping)
 
@@ -80,10 +91,17 @@ class TargetConfigObject(ConfigObject):
     def init_coe(self):
         """dict: Set of classical orbital elements (COE) describing the target's orbit.
 
-        See :meth:`.Orbit.buildFromCOEConfig()` for rules on defining a set of classical orbital
-        elements.
+        See :meth:`.ClassicalElements.fromConfig()` for rules on defining a set of classical orbital elements.
         """
         return self._init_coe.setting  # pylint: disable=no-member
+
+    @property
+    def init_eqe(self):
+        """dict: Set of equinoctial orbital elements (EQE) describing the target's orbit.
+
+        See :meth:`.EquinoctialElements.fromConfig()` for rules on defining a set of equinoctial orbital elements.
+        """
+        return self._init_eqe.setting  # pylint: disable=no-member
 
     @property
     def station_keeping(self):
@@ -100,13 +118,18 @@ class TargetConfigObject(ConfigObject):
         """bool: Indication of whether COEs are available for this target configuration."""
         return self.init_coe != NO_SETTING
 
+    @property
+    def eqe_set(self):
+        """bool: Indication of whether EQEs are available for this target configuration."""
+        return self.init_eqe != NO_SETTING
 
-class SensorConfigObject(ConfigObject):
+
+class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-methods
     """Defines the structure for an object defined in the 'sensors' configuration section."""
 
     @staticmethod
     def getFields():
-        """Return a tuple of defining required :class:`.ConfigOption`s for a :class:`.SensorConfigObject`."""
+        """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.SensorConfigObject`."""
         return (
             ConfigOption("id", (int, )),
             ConfigOption("name", (str, )),
@@ -114,7 +137,9 @@ class SensorConfigObject(ConfigObject):
             ConfigOption("lat", (float, ), default=NO_SETTING),
             ConfigOption("lon", (float, ), default=NO_SETTING),
             ConfigOption("alt", (float, ), default=NO_SETTING),
-            ConfigOption("eci_state", (list, ), default=NO_SETTING),
+            ConfigOption("init_eci", (list, ), default=NO_SETTING),
+            ConfigOption("init_coe", (dict, ), default=NO_SETTING),
+            ConfigOption("init_eqe", (dict, ), default=NO_SETTING),
             ConfigOption("azimuth_range", (list, )),
             ConfigOption("elevation_range", (list, )),
             ConfigOption("covariance", (list, )),
@@ -125,7 +150,7 @@ class SensorConfigObject(ConfigObject):
             ConfigOption("sensor_type", (str, ), valid_settings=(OPTICAL_LABEL, RADAR_LABEL, ADV_RADAR_LABEL, )),
             ConfigOption("tx_power", (float, ), default=NO_SETTING),
             ConfigOption("tx_frequency", (float, ), default=NO_SETTING),
-            ConfigOption("station_keeping", (list, ), default=list())
+            ConfigOption("station_keeping", (list, ), default=[])
         )
 
     def __init__(self, object_config):
@@ -135,38 +160,41 @@ class SensorConfigObject(ConfigObject):
             object_config (dict): Configuration dictionary defining this
                 :class:`.SensorConfigObject`.
         """
-        super(SensorConfigObject, self).__init__(object_config)
+        super().__init__(object_config)
 
-        lla_set = all((self.lat != NO_SETTING, self.lon != NO_SETTING, self.alt != NO_SETTING))
-        eci_set = self.eci_state != NO_SETTING
-        if not lla_set and not eci_set:
-            err = "Sensor {0}: State not specified: {1}".format(self.id, object_config)
-            raise ValueError(err)
+        states_set = (self.lla_set, self.eci_set, self.coe_set, self.eqe_set)
+        if not any(states_set):
+            err = f"Sensor {self.id}: State not specified: {object_config}"
+            raise ConfigError(self.__class__.__name__, err)
 
-        if lla_set and eci_set:
-            err = "Sensor {0}: Duplicate state specified: {1}".format(self.id, object_config)
-            raise ValueError(err)
+        if sum(states_set) > 1:
+            err = f"Sensor {self.id}: Duplicate state specified: {object_config}"
+            raise ConfigError(self.__class__.__name__, err)
 
-        if eci_set:
-            if len(self.eci_state) != 6:
-                err = "Sensor {0}: ECI vector should have 6 elements, not {1}".format(
-                    self.id,
-                    len(self.eci_state)
-                )
-                raise ValueError(err)
+        if self.eci_set:
+            if len(self.init_eci) != 6:
+                err = f"Sensor {self.id}: ECI vector should have 6 elements, not {len(self.init_eci)}"
+                raise ConfigError(self.__class__.__name__, err)
+
+        if self.eqe_set:
+            if len(self.init_eqe) != 6:
+                err = f"Target {self.id}: EQE set should have 6 elements, not {len(self.init_eqe)}"
+                raise ConfigError(self.__class__.__name__, err)
+
+        if self.coe_set:
+            if len(self.init_coe) < 4:
+                err = f"Target {self.id}: COE set should have at least 4 elements, not {len(self.init_coe)}"
+                raise ConfigError(self.__class__.__name__, err)
 
         is_radar = self.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL)
         tx_not_set = self.tx_power is NO_SETTING or self.tx_frequency is NO_SETTING
         if is_radar and tx_not_set:
-            err = "Sensor {0}: Radar transmit parameters not set: {1}".format(
-                self.id,
-                object_config
-            )
-            raise ValueError(err)
+            err = f"Sensor {self.id}: Radar transmit parameters not set: {object_config}"
+            raise ConfigError(self.__class__.__name__, err)
 
-        if self.host_type is GROUND_FACILITY_LABEL and self.station_keeping is not None:
+        if self.host_type is GROUND_FACILITY_LABEL and self.station_keeping:
             err = "Ground based sensors cannot perform station keeping"
-            raise ValueError(err)
+            raise ConfigError(self.__class__.__name__, err)
 
         validateStationKeepingConfigs(self.station_keeping)
 
@@ -210,12 +238,45 @@ class SensorConfigObject(ConfigObject):
         return self._alt.setting  # pylint: disable=no-member
 
     @property
-    def eci_state(self):
-        """list: Six element list representing this sensor's initial ECI state vector.
+    def lla_set(self):
+        """bool: Boolean indication of whether this sensor has LLA settings."""
+        return all((self.lat != NO_SETTING, self.lon != NO_SETTING, self.alt != NO_SETTING))
 
-        Will only be set if :attr:`.host_type` is set to `SPACECRAFT_LABEL`.
+    @property
+    def init_eci(self):
+        """list: Six element list representing this target's initial ECI state vector."""
+        return self._init_eci.setting  # pylint: disable=no-member
+
+    @property
+    def eci_set(self):
+        """bool: Boolean indication of whether this sensor has ECI settings."""
+        return self.init_eci != NO_SETTING
+
+    @property
+    def init_coe(self):
+        """dict: Set of classical orbital elements (COE) describing the target's orbit.
+
+        See :meth:`.ClassicalElements.fromConfig()` for rules on defining a set of classical orbital elements.
         """
-        return self._eci_state.setting  # pylint: disable=no-member
+        return self._init_coe.setting  # pylint: disable=no-member
+
+    @property
+    def coe_set(self):
+        """bool: Indication of whether COEs are available for this target configuration."""
+        return self.init_coe != NO_SETTING
+
+    @property
+    def init_eqe(self):
+        """dict: Set of equinoctial orbital elements (EQE) describing the target's orbit.
+
+        See :meth:`.EquinoctialElements.fromConfig()` for rules on defining a set of equinoctial orbital elements.
+        """
+        return self._init_eqe.setting  # pylint: disable=no-member
+
+    @property
+    def eqe_set(self):
+        """bool: Indication of whether EQEs are available for this target configuration."""
+        return self.init_eqe != NO_SETTING
 
     @property
     def covariance(self):
@@ -264,7 +325,7 @@ class SensorConfigObject(ConfigObject):
     def tx_power(self):
         """float: Transmit power of radar sensor.
 
-        Will only be set if :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
+        Will only be set if :attr:`~.Observation.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
         """
         return self._tx_power.setting  # pylint: disable=no-member
 
@@ -272,7 +333,7 @@ class SensorConfigObject(ConfigObject):
     def tx_frequency(self):
         """float: Transmit frequency of radar sensor.
 
-        Will only be set if :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
+        Will only be set if :attr:`~.Observation.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
         """
         return self._tx_frequency.setting  # pylint: disable=no-member
 

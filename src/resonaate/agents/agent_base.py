@@ -1,13 +1,16 @@
+"""Abstract base class that defines a common interface for all `Agent` classes."""
 # Standard Library Imports
 import logging
-from abc import ABCMeta, abstractmethod, abstractproperty, abstractclassmethod
+from abc import ABCMeta, abstractmethod
 # Third Party Imports
 from numpy import ndarray
 # RESONAATE Imports
 from ..common.utilities import checkTypes
 from ..dynamics.dynamics_base import Dynamics
 from ..scenario.clock import ScenarioClock
+from ..physics.math import fpe_equals
 from ..dynamics.integration_events.station_keeping import StationKeeper
+from ..dynamics.integration_events.finite_thrust import ScheduledFiniteBurn, ScheduledFiniteManeuver
 
 
 DEFAULT_VIS_X_SECTION = 25.0
@@ -66,6 +69,8 @@ class Agent(metaclass=ABCMeta):
         self._initial_state = initial_state.reshape(6)
         # Time associated with the state in the state property (seconds)
         self._time = clock.time
+        # delta timestep
+        self._dt_step = clock.dt_step
         # Julian date of start time
         self.julian_date_start = clock.julian_date_start
         # Dynamics class for propagating the Agent's state
@@ -79,9 +84,6 @@ class Agent(metaclass=ABCMeta):
         # Visible cross sectional area (m^2)
         self._visual_cross_section = visual_cross_section
 
-        # Default callback is `None`
-        self.callback = None
-
         if station_keeping:
             self._station_keeping = station_keeping
         else:
@@ -91,26 +93,30 @@ class Agent(metaclass=ABCMeta):
                 err = f"{station_keeper} is not a valid StationKeeper object."
                 raise TypeError(err)
 
-    @abstractmethod
-    def setCallback(self, importer):
-        """Set the callback associated when :meth:`.executeJobs()` is executed.
+        self.propagate_event_queue = []
+
+    def appendPropagateEvent(self, event):
+        """Queue up a propagation event to happen on the next propagation.
 
         Args:
-            importer (``bool``): whether a proper :class:`.ImporterDatabase` exists
-
-        Note:
-            Assumes that :class:`.EstimateAgent` objects don't have importable :class:`.Ephemeris`:
-
-            1. If an instance of :class:`.EstimateAgent`, use :func:`.asyncPredict`.
-            #. If the :attr:`realtime` is ``True``, use :func:`.asyncPropagate`.
-            #. If neither are true query the database for :class:`.Ephemeris` items.
-            #. If a valid :class:`.Ephemeris` returns, use :meth:`.importState`.
-            #. Otherwise, fall back to :func:`.asyncPropagate`.
-
-        Returns:
-            :meth:`.importstate`, or instance of :class:`.CallbackRegistration`
+            event (DiscreteStateChangeEvent): Event that will take place during the next propagation.
         """
-        raise NotImplementedError
+        # [NOTE][parallel-maneuver-event-handling] Step two: call this method via the event handler to queue the
+        # relevant :class:`.DiscreteStateChangeEvent`.
+        self.propagate_event_queue.append(event)
+
+    def prunePropagateEvents(self):
+        """Remove events from the queue that happened in the past."""
+        relevant_events = []
+        for itr_event in self.propagate_event_queue:
+            if isinstance(itr_event, (ScheduledFiniteManeuver, ScheduledFiniteBurn)):
+                if self._time < itr_event.end_time or fpe_equals(itr_event.end_time, self._time):
+                    if itr_event not in relevant_events:
+                        relevant_events.append(itr_event)
+            else:
+                if self._time < itr_event.time or fpe_equals(itr_event.time, self._time):
+                    relevant_events.append(itr_event)
+        self.propagate_event_queue = relevant_events
 
     ### Abstract Methods & Properties ###
 
@@ -124,28 +130,6 @@ class Agent(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def updateJob(self, new_time):
-        """Create a job to be processed in parallel and update :attr:`time` appropriately.
-
-        Args:
-            new_time (:class:`.ScenarioTime`): payload sent by :class:`.PropagateJobHandler` to
-                indicate the current simulation time
-
-        Returns
-            :class:`.Job`: Job to be processed in parallel.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def jobCompleteCallback(self, job):
-        """Execute when the job submitted in :meth:`~.Agent.updateJob` completes.
-
-        Args:
-            job (:class:`.Job`): job object that's returned when a job completes
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def importState(self, ephemeris):
         """Set the state of this Agent based on a given :class:`.Ephemeris` object.
 
@@ -154,31 +138,35 @@ class Agent(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def eci_state(self):
         """``numpy.ndarray``: Returns the 6x1 ECI current state vector."""
         raise NotImplementedError
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def ecef_state(self):
         """``numpy.ndarray``: Returns the 6x1 ECEF current state vector."""
         raise NotImplementedError
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def lla_state(self):
         """``numpy.ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
         raise NotImplementedError
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def fromConfig(cls, config, events):
-        """Factory to initialize `Agent`s based on given configuration.
+        """Factory to initialize `Agent` objects based on given configuration.
 
         Args:
             config (``dict``): formatted configuration parameters
             events (``dict``): corresponding formatted events
 
         Returns:
-            :class:`.Agent`: properly constructed `Agent` object
+            `Agent`: properly constructed `Agent` object
         """
         raise NotImplementedError
 
@@ -227,6 +215,16 @@ class Agent(metaclass=ABCMeta):
     def time(self):
         """:class:`.ScenarioTime`: Returns current epoch seconds."""
         return self._time
+
+    @time.setter
+    def time(self, new_time):
+        """:class:`.ScenarioTime`: Returns current epoch seconds."""
+        self._time = new_time
+
+    @property
+    def dt_step(self):
+        """:class:`.ScenarioTime`: Returns the delta T of the scenario."""
+        return self._dt_step
 
     @property
     def station_keeping(self):

@@ -1,3 +1,4 @@
+"""Defines `Ephemeris` data table classes."""
 # Standard Library Imports
 # Third Party Imports
 from sqlalchemy import Column, Integer, Float, String, ForeignKey
@@ -43,7 +44,7 @@ class TruthEphemeris(Base, _EphemerisMixin):
     __tablename__ = "truth_ephemerides"
     ## Defines the epoch associated with the given data
     # Many to one relation with :class:`.Epoch`
-    julian_date = Column(Integer, ForeignKey('epochs.julian_date'), nullable=False)
+    julian_date = Column(Float, ForeignKey('epochs.julian_date'), nullable=False)
     epoch = relationship("Epoch", lazy='joined', innerjoin=True)
     # Many to one relation with :class:`.Agent`
     agent_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
@@ -84,7 +85,7 @@ class EstimateEphemeris(Base, _EphemerisMixin):
     __tablename__ = "estimate_ephemerides"
     ## Defines the epoch associated with the given data
     # Many to one relation with :class:`.Epoch`
-    julian_date = Column(Integer, ForeignKey('epochs.julian_date'), nullable=False)
+    julian_date = Column(Float, ForeignKey('epochs.julian_date'), nullable=False)
     epoch = relationship("Epoch", lazy='joined', innerjoin=True)
     # Many to one relation with :class:`.Agent`
     agent_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)

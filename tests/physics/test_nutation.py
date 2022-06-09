@@ -6,7 +6,7 @@ try:
     from resonaate.physics.transforms.nutation import get1980NutationSeries
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase

@@ -7,9 +7,9 @@ import pytest
 from sqlalchemy.orm import Query
 # RESONAATE Imports
 try:
-    from resonaate.data.data_interface import ManualSensorTask
     from resonaate.data.resonaate_database import ResonaateDatabase
     from resonaate.data.importer_database import ImporterDatabase
+    from resonaate.data.events import TargetTaskPriority
     from resonaate.parallel import getRedisConnection, resetMaster
     from resonaate.physics.time.stardate import JulianDate
     from resonaate.scenario.config import ScenarioConfig
@@ -19,7 +19,7 @@ try:
     )
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
@@ -193,11 +193,12 @@ class TestResonaateService(BaseTestCase):
         self.service.enqueueMessage(task_message)
         self.service.waitForHandler(timeout=3)
 
-        query = Query(ManualSensorTask).filter(
-            ManualSensorTask.target_id == task_message.target_id,
-            ManualSensorTask.priority == task_message.obs_priority,
-            ManualSensorTask.start_time_jd == task_message.start_time,
-            ManualSensorTask.end_time_jd == task_message.end_time
+        # pylint: disable=comparison-with-callable
+        query = Query(TargetTaskPriority).filter(
+            TargetTaskPriority.agent_id == task_message.target_id,
+            TargetTaskPriority.priority == task_message.obs_priority,
+            TargetTaskPriority.start_time_jd == task_message.start_time,
+            TargetTaskPriority.end_time_jd == task_message.end_time
         )
         database = ResonaateDatabase.getSharedInterface()
         inserted_task = database.getData(query, multi=False)  # pylint: disable=protected-access
@@ -218,11 +219,8 @@ class TestResonaateService(BaseTestCase):
         sleep(self.service.LOG_DROPPED_INTERVAL)
 
         # Expected log result
-        expected = "Dropped {0} messages of priority '{1}' in past {2} seconds.".format(
-            count,
-            TimeTargetMessage.PRIORITY,
-            self.service.LOG_DROPPED_INTERVAL,
-        )
+        expected = f"Dropped {count} messages of priority '{TimeTargetMessage.PRIORITY}'"
+        expected += f" in past {self.service.LOG_DROPPED_INTERVAL} seconds."
         # Capture logs, grab correct loggin message
         logging_msg = None
         for log_msg in caplog.messages:

@@ -1,0 +1,7 @@
+sphinx
+sphinx_rtd_theme
+myst-parser
+sphinx-copybutton
+sphinxcontrib-bibtex
+sphinxcontrib-mermaid
+sphinx-gallery

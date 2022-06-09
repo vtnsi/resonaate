@@ -1,0 +1,117 @@
+# pylint: disable=no-self-use, unused-argument
+# Standard Library Imports
+from datetime import datetime
+# Third Party Imports
+import pytest
+# RESONAATE Imports
+try:
+    from resonaate.scenario.config.event_configs import AgentRemovalEventConfigObject
+    from resonaate.physics.time.stardate import datetimeToJulianDate
+    from resonaate.data.data_interface import Epoch, Agent
+    from resonaate.data.events import AgentRemovalEvent
+except ImportError as error:
+    raise Exception(
+        f"Please ensure you have appropriate packages installed:\n {error}"
+    ) from error
+# Testing Imports
+from ...conftest import BaseTestCase
+
+
+class TestAgentRemovalEventConfig(BaseTestCase):
+    """Test class for :class:`.AgentRemovalEventConfig` class."""
+
+    def testInitGoodArgs(self):
+        """Test :class:`.AgentRemovalEventConfig` constructor with good arguments."""
+        assert AgentRemovalEventConfigObject({
+            "scope": AgentRemovalEvent.INTENDED_SCOPE.value,
+            "scope_instance_id": 123,
+            "start_time": datetime(2021, 8, 3, 12),
+            "event_type": AgentRemovalEvent.EVENT_TYPE,
+            "tasking_engine_id": 123,
+            "agent_id": 12345,
+            "agent_type": "target",
+        })
+
+    def testDataDependency(self):
+        """Test that :class:`.AgentRemovalEventConfig`'s data dependencies are correct."""
+        removal_config = AgentRemovalEventConfigObject({
+            "scope": AgentRemovalEvent.INTENDED_SCOPE.value,
+            "scope_instance_id": 123,
+            "start_time": datetime(2021, 8, 3, 12),
+            "event_type": AgentRemovalEvent.EVENT_TYPE,
+            "tasking_engine_id": 123,
+            "agent_id": 12345,
+            "agent_type": "target",
+        })
+        removal_dependencies = removal_config.getDataDependencies()
+        assert len(removal_dependencies) == 2
+
+        epoch_dependency = removal_dependencies[0]
+        assert epoch_dependency.data_type == Epoch
+        assert epoch_dependency.attributes is None
+
+        agent_dependency = removal_dependencies[1]
+        assert agent_dependency.data_type == Agent
+        assert agent_dependency.attributes is None
+
+
+class TestAgentRemovalEvent(BaseTestCase):
+    """Test class for :class:`.AgentRemovalEvent` class."""
+
+    def testFromConfig(self):
+        """Test :meth:`.AgentRemovalEvent.fromConfig()`."""
+        removal_config = AgentRemovalEventConfigObject({
+            "scope": AgentRemovalEvent.INTENDED_SCOPE.value,
+            "scope_instance_id": 123,
+            "start_time": datetime(2021, 8, 3, 12),
+            "event_type": AgentRemovalEvent.EVENT_TYPE,
+            "tasking_engine_id": 123,
+            "agent_id": 12345,
+            "agent_type": "target",
+        })
+        assert AgentRemovalEvent.fromConfig(removal_config)
+
+    def testHandleEventTarget(self, mocked_scenario):
+        """Test :meth:`.AgentRemovalEvent.handleEvent()`."""
+        impulse_event = AgentRemovalEvent(
+            scope=AgentRemovalEvent.INTENDED_SCOPE.value,
+            scope_instance_id=123,
+            start_time_jd=datetimeToJulianDate(datetime(2021, 8, 3, 12)),
+            end_time_jd=datetimeToJulianDate(datetime(2021, 8, 3, 12)),
+            event_type=AgentRemovalEvent.EVENT_TYPE,
+            tasking_engine_id=123,
+            agent_id=12345,
+            agent_type="target"
+        )
+        impulse_event.handleEvent(mocked_scenario)
+
+    def testHandleEventSensor(self, mocked_scenario):
+        """Test :meth:`.AgentRemovalEvent.handleEvent()`."""
+        impulse_event = AgentRemovalEvent(
+            scope=AgentRemovalEvent.INTENDED_SCOPE.value,
+            scope_instance_id=123,
+            start_time_jd=datetimeToJulianDate(datetime(2021, 8, 3, 12)),
+            end_time_jd=datetimeToJulianDate(datetime(2021, 8, 3, 12)),
+            event_type=AgentRemovalEvent.EVENT_TYPE,
+            tasking_engine_id=123,
+            agent_id=12345,
+            agent_type="sensor"
+        )
+        impulse_event.handleEvent(mocked_scenario)
+
+    def testHandleEventBadAgentType(self, mocked_scenario):
+        """Test :meth:`.AgentRemovalEvent.handleEvent()`."""
+        bad_agent_type = "bad agent type"
+        impulse_event = AgentRemovalEvent(
+            scope=AgentRemovalEvent.INTENDED_SCOPE.value,
+            scope_instance_id=123,
+            start_time_jd=datetimeToJulianDate(datetime(2021, 8, 3, 12)),
+            end_time_jd=datetimeToJulianDate(datetime(2021, 8, 3, 12)),
+            event_type=AgentRemovalEvent.EVENT_TYPE,
+            tasking_engine_id=123,
+            agent_id=12345,
+            agent_type=bad_agent_type
+        )
+        expected_err = f"'{bad_agent_type}' is not a valid agent type."
+        with pytest.raises(ValueError, match=expected_err):
+            impulse_event.handleEvent(mocked_scenario)

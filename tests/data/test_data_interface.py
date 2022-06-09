@@ -1,9 +1,12 @@
 # pylint: disable=attribute-defined-outside-init, no-self-use
 # Standard Library Imports
-from os.path import join
+from os.path import join, exists, abspath
 # Third Party Imports
 import pytest
 from numpy import allclose
+from sqlalchemy import Column, Float, Integer
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query
 # RESONAATE Imports
 try:
@@ -14,7 +17,7 @@ try:
     from resonaate.data.epoch import Epoch
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
@@ -97,7 +100,7 @@ class TestResonaateDatabase(BaseTestCase):
         """
         # Create & yield instance.
         shared_interface = ResonaateDatabase.getSharedInterface(
-            db_url=None
+            db_path=None
         )
         yield shared_interface
         shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
@@ -116,6 +119,14 @@ class TestResonaateDatabase(BaseTestCase):
         assert result.agent_id == result.agent.unique_id
         assert result.agent.name == EXAMPLE_RSO[0]["name"]
         assert allclose(result.eci, eci)
+
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testSaveDB(self, datafiles, database, ephems):
+        """Test saving database to new file."""
+        db_path = join(datafiles, "db/copied.sqlite3")
+        database.insertData(*ephems)
+        database.saveDatabase(database_path=db_path)
+        assert exists(abspath(db_path))
 
     def testInsertDataMultiPosArg(self, database, ephems):
         """Insert multiple data objects."""
@@ -136,10 +147,31 @@ class TestResonaateDatabase(BaseTestCase):
             )
         database.bulkSave(ephems)
 
+    def testSessionScopeError(self, database):
+        """Catches SQLAlchemy error during session scope usage."""
+        # Define a new db object class
+        class NewEpoch(declarative_base()):
+            __tablename__ = "new_epochs"
+
+            id = Column(Integer, primary_key=True)  # noqa: A003
+
+            julian_date = Column(Float, index=True, unique=True, nullable=False)
+
+        # Query for new DB object
+        query = Query(NewEpoch).filter(
+            NewEpoch.julian_date == EXAMPLE_EPOCH["julian_date"]
+        )
+
+        with pytest.raises(SQLAlchemyError):
+            database.deleteData(query)
+
     def testInsertDataBadArgs(self, database):
         """Insert a bad/malformed data object."""
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             database.insertData("this is not an ephemeris")
+
+        with pytest.raises(ValueError):
+            database.insertData()
 
     def testGetData(self, database, ephem):
         """Test getting a data object from the DB."""
@@ -158,6 +190,32 @@ class TestResonaateDatabase(BaseTestCase):
         assert result.agent.name == EXAMPLE_RSO[0]["name"]
         assert allclose(result.eci, eci)
 
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testGetDataError(self, datafiles, ephem):
+        """Test getting a data object from the DB."""
+        # Define a new db object class
+        class NewEpoch(declarative_base()):
+            __tablename__ = "new_epochs"
+
+            id = Column(Integer, primary_key=True)  # noqa: A003
+
+            julian_date = Column(Float, index=True, unique=True, nullable=False)
+
+        # Create DB, and insert data
+        shared_db_url = "sqlite:///" + join(datafiles, "db/deleted.sqlite3")
+        database = ResonaateDatabase(db_path=shared_db_url)
+        database.insertData(ephem)
+
+        # Query for new DB object
+        query = Query(NewEpoch).filter(
+            NewEpoch.julian_date == EXAMPLE_EPOCH["julian_date"]
+        )
+        with pytest.raises(SQLAlchemyError):
+            database.getData(query)
+
+        with pytest.raises(TypeError):
+            database.getData("not a query object")
+
     def testSingleDeleteData(self, database, ephems):
         """Test deleting objects from DB."""
         database.insertData(*ephems)
@@ -165,10 +223,12 @@ class TestResonaateDatabase(BaseTestCase):
         query = Query(TruthEphemeris).join(Agent).filter(
             Agent.unique_id == EXAMPLE_RSO[0]["unique_id"]
         )
-        print(database.getData(query))
         del_count = database.deleteData(query)
 
         assert del_count == 1
+
+        with pytest.raises(TypeError):
+            database.deleteData("not a query object")
 
     def testMultipleDeleteData(self, database, ephems):
         """Test deleting objects from DB."""
@@ -177,7 +237,6 @@ class TestResonaateDatabase(BaseTestCase):
         query = Query(TruthEphemeris).join(Epoch).filter(
             Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
         )
-        print(database.getData(query))
         del_count = database.deleteData(query)
 
         assert del_count == 3
@@ -268,7 +327,13 @@ class TestResonaateDatabase(BaseTestCase):
         """Test functionality of resetting data."""
         database.insertData(*ephems)
         database.resetData(tables={TruthEphemeris.__tablename__: TruthEphemeris})
+
+    def testResetDataBadArgs(self, database, ephems):
+        """Test functionality of resetting data with improper arguments."""
         database.insertData(*ephems)
+        # Test a non-existant table
+        with pytest.raises(ValueError):
+            database.resetData(tables={"ephemeris": TruthEphemeris})
 
 
 class TestImporterDatabase(BaseTestCase):

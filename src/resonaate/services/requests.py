@@ -1,3 +1,4 @@
+"""Functions that provide structured data for "get" requests to the Resonaate service layer."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import abs as np_abs, asarray, diagonal, sqrt, min as np_min
@@ -160,9 +161,9 @@ def getObservationBarChart(sat_num, timestamps, estimates, observations):
     """
     assert estimates.shape == (6, len(timestamps)), "VisibilityRequest: Incorrect state dimension of estimates"
     request = {
-        "label": "Observations for {0}".format(sat_num),    # chart header/title
-        "xAxis": getAxisObject("Time", unit="UTC"),         # x axis attributes
-        "barGroups": [                                      # `BarGroup` objects to plot
+        "label": f"Observations for {sat_num}",      # chart header/title
+        "xAxis": getAxisObject("Time", unit="UTC"),  # x axis attributes
+        "barGroups": [                               # `BarGroup` objects to plot
             {
                 "bars": getBarChart(timestamps, observations)
             }
@@ -205,9 +206,9 @@ def getRSODistanceLineChart(primary_sat_num, primary_est_hist, secondary_est_his
         assert len(timestamps) == distance.shape[0]
         data[rso_id] = getSequenceData(timestamps, distance, radius=1)
 
-    title = "Distance to RSO {0}"
+    title = f"Distance to RSO {primary_sat_num}"
     msg = {
-        "label": title.format(primary_sat_num),  # Header/title
+        "label": title,                                             # Header/title
         "xAxis": getAxisObject("Time", unit="UTC"),                 # x axis attributes
         "yAxis": getAxisObject("Total Distance", unit="km"),        # y axis attributes
         "sequences": [getSequence(rso_id, rso_data) for rso_id, rso_data in data.items()]
@@ -264,7 +265,7 @@ def getCovarianceLineChart(sat_num, timestamps, covar_hist, sigmas, labels):
 
     # Build the complete reply message
     msg = {
-        "label": "Covariance Magnitude for {0}".format(sat_num),                         # Header/title
+        "label": f"Covariance Magnitude for {sat_num}",                                  # Header/title
         "xAxis": getAxisObject("Time", unit="UTC"),                                      # x axis attributes
         "yAxis": getAxisObject("Estimated Uncertainty", unit="km"),                      # y axis attributes
         "sequences": [getSequence(label, data) for label, data in zip(labels, dataset)]  # `Sequence` objects to plot

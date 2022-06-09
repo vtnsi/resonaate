@@ -1,3 +1,4 @@
+"""Defines the decisions algorithms available in RESONAATE."""
 # RESONAATE Imports
 from .decision_base import Decision as _BaseDecision
 from .decisions import MunkresDecision, MyopicNaiveGreedyDecision, RandomDecision, AllVisibleDecision

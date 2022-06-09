@@ -1,6 +1,6 @@
+"""Defines the :class:`.ImporterDatabase` data interface class for pre-canned data."""
 # Standard Library Imports
 import os
-import logging
 # Third Party Imports
 from sqlalchemy.orm import Query
 # RESONAATE Imports
@@ -8,6 +8,7 @@ from .data_interface import DataInterface
 from .agent import Agent
 from .epoch import Epoch
 from .ephemeris import TruthEphemeris
+from ..common.logger import resonaateLogError
 from ..common.utilities import loadJSONFile
 from ..physics.time.stardate import JulianDate
 
@@ -17,11 +18,11 @@ class ImporterDatabase(DataInterface):
 
     __shared_inst = None
 
-    def __init__(self, db_url, drop_tables=(), logger=None, verbose_echo=False):
+    def __init__(self, db_path, drop_tables=(), logger=None, verbose_echo=False):
         """Create SQLite database based on :attr:`.VALID_DATA_TYPES` .
 
         Args:
-            db_url (``str``): SQLAlchemy-accepted string denoting what database implementation
+            db_path (``str``): SQLAlchemy-accepted string denoting what database implementation
                 to use and where the database is located.
             drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of
                 :class:`.DataInterface` construction. This parameter makes sense in the context of
@@ -33,12 +34,12 @@ class ImporterDatabase(DataInterface):
                 engine to output the raw SQL statements it runs. Defaults to ``False``.
         """
         # Force users to define db location
-        if not db_url:
-            logging.getLogger("resonaate").error("Importer database requires a valid url path")
-            raise ValueError(db_url)
+        if not db_path:
+            resonaateLogError("Importer database requires a valid url path")
+            raise ValueError(db_path)
 
         # Instantiate the data interface object
-        super().__init__(db_url, drop_tables, logger, verbose_echo)
+        super().__init__(db_path, drop_tables, logger, verbose_echo)
 
     def insertData(self, *args):
         """Override :class:`.DataInterface` implementation.
@@ -70,11 +71,11 @@ class ImporterDatabase(DataInterface):
             session.add_all(args)
 
     @classmethod
-    def getSharedInterface(cls, db_url=None, drop_tables=(), logger=None, verbose_echo=False):
+    def getSharedInterface(cls, db_path=None, drop_tables=(), logger=None, verbose_echo=False):
         """Return a reference to the singleton shared interface.
 
         Args:
-            db_url (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
+            db_path (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
                 to use and where the database is located. Defaults to default configuration value.
             drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of construction. This
                 parameter makes sense in the context of utilizing a pre-existing database that a user may not want to
@@ -98,10 +99,10 @@ class ImporterDatabase(DataInterface):
         #   forked versus when the shared interface was first utilized.
         if cls.__shared_inst is None:
             # Force users to define db location
-            if not db_url:
-                logging.getLogger("resonaate").error("Importer database requires a valid url path")
-                raise ValueError(db_url)
-            cls.__shared_inst = cls(db_url, drop_tables, logger, verbose_echo)
+            if not db_path:
+                resonaateLogError("Importer database requires a valid url path")
+                raise ValueError(db_path)
+            cls.__shared_inst = cls(db_path, drop_tables, logger, verbose_echo)
 
         return cls.__shared_inst
 
@@ -132,7 +133,7 @@ class ImporterDatabase(DataInterface):
                         self.loadObservationFile(os.path.join(path, filename), start=start, stop=stop)
 
             else:
-                self.logger.error("Argument is not a valid path: {0}".format(path))
+                self.logger.error(f"Argument is not a valid path: {path}")
 
     def _getJSONFilename(self, path):
         """Return the filename of a JSON file without the extension.
@@ -145,9 +146,9 @@ class ImporterDatabase(DataInterface):
         """
         (filename, extension) = os.path.splitext(os.path.split(path)[1])
         if extension.lower() != ".json":
-            self.logger.error("Error parsing {0}, must be a JSON file.".format(path))
-            self.logger.error("{0}".format(os.path.split(path)[1]))
-            self.logger.error("{0}:{1}".format(filename, extension))
+            self.logger.error(f"Error parsing {path}, must be a JSON file.")
+            self.logger.error(f"{os.path.split(path)[1]}")
+            self.logger.error(f"{filename}:{extension}")
             raise ValueError(filename)
         return filename
 
@@ -226,7 +227,7 @@ class ImporterDatabase(DataInterface):
                     TruthEphemeris(**ephemeris, agent_id=agent.unique_id, julian_date=epoch.julian_date)
                 )
 
-            self.logger.info("Loading {0} ephemerides from file '{1}'.".format(len(valid_ephemerides), filename))
+            self.logger.info(f"Loading {len(valid_ephemerides)} ephemerides from file '{filename}'.")
             self._insertData(*valid_ephemerides)
 
     def loadObservationFile(self, filename, start=None, stop=None):
@@ -248,7 +249,7 @@ class ImporterDatabase(DataInterface):
                 if start and JulianDate(observation["julian_date"]) < start:
                     continue
                 if stop and JulianDate(observation["julian_date"]) > stop:
-                    self.logger.info("Found ending Julian date: {0}".format(stop))
+                    self.logger.info(f"Found ending Julian date: {stop}")
                     continue
 
                 # Build new observation entry
@@ -275,5 +276,5 @@ class ImporterDatabase(DataInterface):
                 # only add valid observations to database
                 valid_observations.append(obs_entry)
 
-            self.logger.info("Loading {0} observations from file '{1}'.".format(len(valid_observations), filename))
+            self.logger.info(f"Loading {len(valid_observations)} observations from file '{filename}'.")
             self._insertData(*observations)

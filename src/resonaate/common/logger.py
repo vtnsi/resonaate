@@ -1,3 +1,4 @@
+"""Defines the :class:`.Logger` class."""
 # Standard Library Imports
 import logging
 import sys
@@ -20,9 +21,10 @@ class Logger:
     def __init__(self, name, level=None, path=None, allow_multiple_handlers=None):
         """Configure the logging information for this Logger instance.
 
-        @param name \b string -- Name of the the logger instance
-        @param level \b logging.LOG_LEVEL --  Determines what level of log messages are published
-        @param path \b string -- Path to where the log file will be stored
+        Args:
+            name (``string``): Name of the the logger instance
+            level (``logging.LOG_LEVEL``): Determines what level of log messages are published
+            path (``string``): Path to where the log file will be stored
         """
         if not level:
             level = BehavioralConfig.getConfig().logging.Level
@@ -42,21 +44,14 @@ class Logger:
             else:
                 # Create the path if it doesn't exist.
                 if not exists(path):
-                    print("Path did not exist: '{0}'. Creating path...".format(path))
+                    print(f"Path did not exist: '{path}'. Creating path...")
                     makedirs(path)
 
                 # Set the timestamp for the file name, and construct the entire filename
                 now = datetime.now()
                 time_tup = now.timetuple()
-                timestamp = "{0}{1}{2}_{3}{4}{5}".format(
-                    time_tup[0],
-                    time_tup[1],
-                    time_tup[2],
-                    time_tup[3],
-                    time_tup[4],
-                    time_tup[5]
-                )
-                log_name = "{0}_{1}.log".format(name, timestamp)
+                timestamp = f"{time_tup[0]}{time_tup[1]}{time_tup[2]}_{time_tup[3]}{time_tup[4]}{time_tup[5]}"
+                log_name = f"{name}_{timestamp}.log"
                 self.filename = join(path, log_name)
 
                 # Create the file handler based on the file name
@@ -77,3 +72,89 @@ class Logger:
     def __getattr__(self, name):
         """."""
         return getattr(self.logger, name)
+
+
+def _resonaateLog(message: str, level: int):
+    """Log a message to the top-level log record.
+
+    This provides a simple, easy one-liner that doesn't require pre-initializing a logger object.
+    The primary usecase is for simple functions that need to log messages.
+
+    Args:
+        message (``str``): message to record with in the log.
+        level (``int``): level at which to log this message, corresponding to `logging.LOG_LEVEL`.
+    """
+    logger = logging.getLogger("resonaate")
+    logger.log(msg=message, level=level)
+
+
+def resonaateLogCritical(message: str):
+    """Log a CRITICAL message to the top-level log record.
+
+    See Also:
+        :func:`._resonaateLog`
+
+    Args:
+        message (``str``): message to record with in the log.
+    """
+    _resonaateLog(message, level=logging.CRITICAL)
+
+
+def resonaateLogError(message: str):
+    """Log a ERROR message to the top-level log record.
+
+    See Also:
+        :func:`._resonaateLog`
+
+    Args:
+        message (``str``): message to record with in the log.
+    """
+    _resonaateLog(message, level=logging.ERROR)
+
+
+def resonaateLogWarning(message: str):
+    """Log a WARNING message to the top-level log record.
+
+    See Also:
+        :func:`._resonaateLog`
+
+    Args:
+        message (``str``): message to record with in the log.
+    """
+    _resonaateLog(message, level=logging.WARNING)
+
+
+def resonaateLogInfo(message: str):
+    """Log a INFO message to the top-level log record.
+
+    See Also:
+        :func:`._resonaateLog`
+
+    Args:
+        message (``str``): message to record with in the log.
+    """
+    _resonaateLog(message, level=logging.INFO)
+
+
+def resonaateLogDebug(message: str):
+    """Log a DEBUG message to the top-level log record.
+
+    See Also:
+        :func:`._resonaateLog`
+
+    Args:
+        message (``str``): message to record with in the log.
+    """
+    _resonaateLog(message, level=logging.DEBUG)
+
+
+def resonaateLogNotSet(message: str):
+    """Log a NOTSET message to the top-level log record.
+
+    See Also:
+        :func:`._resonaateLog`
+
+    Args:
+        message (``str``): message to record with in the log.
+    """
+    _resonaateLog(message, level=logging.NOTSET)

@@ -1,5 +1,6 @@
+"""Defines the :class:`.DataInterface` abstract base class."""
 # Standard Library Imports
-from abc import ABCMeta, abstractclassmethod
+from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from traceback import format_exc
 # Third Party Imports
@@ -12,10 +13,10 @@ from . import Base
 from .agent import Agent
 from .epoch import Epoch
 from .ephemeris import TruthEphemeris, EstimateEphemeris
-from .manual_sensor_task import ManualSensorTask
-from .node_addition import NodeAddition
 from .observation import Observation
+from .maneuver_detection import ManeuverDetection
 from .task import Task
+from .events import Event
 from ..common.logger import Logger
 from ..common.behavioral_config import BehavioralConfig
 
@@ -33,23 +34,23 @@ class DataInterface(metaclass=ABCMeta):
         Agent.__tablename__: Agent,
         TruthEphemeris.__tablename__: TruthEphemeris,
         EstimateEphemeris.__tablename__: EstimateEphemeris,
-        ManualSensorTask.__tablename__: ManualSensorTask,
-        NodeAddition.__tablename__: NodeAddition,
         Observation.__tablename__: Observation,
-        Task.__tablename__: Task
+        Task.__tablename__: Task,
+        Event.__tablename__: Event,
+        ManeuverDetection.__tablename__: ManeuverDetection
     }
 
     SQLITE_PREFIX = "sqlite://"
 
-    def __init__(self, db_url, drop_tables, logger, verbose_echo):
+    def __init__(self, db_path, drop_tables, logger, verbose_echo):
         """Create SQLite database based on :attr:`.VALID_DATA_TYPES` .
 
         Args:
-            db_url (``str``): SQLAlchemy-accepted string denoting what database implementation to
+            db_path (``str``): SQLAlchemy-accepted string denoting what database implementation to
                 use and where the database is located.
             drop_tables (``iterable``): Iterable of table names to be dropped at time of construction. This parameter
-                makes sense in the context of utilizing a pre-existing database that a user may not want to keep data
-                    from.
+                makes sense in the context of utilizing a pre-existing database that a user may not want to keep
+                data from.
             logger (:class:`.Logger`): Previously instantiated logging object to use.
             verbose_echo (``bool``): Flag that if set ``True``, will tell the SQLAlchemy engine to
                 output the raw SQL statements it runs.
@@ -58,27 +59,28 @@ class DataInterface(metaclass=ABCMeta):
         if self.logger is None:
             self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
 
-        if db_url.startswith(self.SQLITE_PREFIX):
+        if db_path.startswith(self.SQLITE_PREFIX):
             # Squash warnings in sqlite about thread safety. The only times that sqlite will be
             # used in a multi-threaded context is read-only (and thus thread safe)
             self.engine = create_engine(
-                db_url,
+                db_path,
                 echo=verbose_echo,
                 connect_args={'check_same_thread': False},
                 poolclass=StaticPool
             )
         else:
-            self.engine = create_engine(db_url, echo=verbose_echo)
+            self.engine = create_engine(db_path, echo=verbose_echo)
 
         self.resetData(tables=drop_tables)
         self.session_factory = sessionmaker(bind=self.engine)
 
-    @abstractclassmethod
-    def getSharedInterface(cls, db_url=None, drop_tables=(), logger=None, verbose_echo=False):
+    @classmethod
+    @abstractmethod
+    def getSharedInterface(cls, db_path=None, drop_tables=(), logger=None, verbose_echo=False):
         """Return a reference to the singleton shared interface.
 
         Args:
-            db_url (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
+            db_path (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
                 to use and where the database is located. Defaults to default configuration value.
             drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of construction. This
                 parameter makes sense in the context of utilizing a pre-existing database that a user may not want to
@@ -108,9 +110,7 @@ class DataInterface(metaclass=ABCMeta):
             yield current_session
             current_session.commit()
         except SQLAlchemyError:
-            self.logger.error(
-                "Exception thrown in `::getSessionScope()` by {0}: \n{1}".format(self, format_exc())
-            )
+            self.logger.error(f"Exception thrown in `::getSessionScope()` by {self}: \n{format_exc()}")
             current_session.rollback()
             raise
         finally:
@@ -126,18 +126,11 @@ class DataInterface(metaclass=ABCMeta):
         for table_name in tables:
             data_type = self.VALID_DATA_TYPES.get(table_name)
             if data_type is None:
-                err = "No such table: '{0}'".format(table_name)
+                err = f"No such table: '{table_name}'"
                 raise ValueError(err)
 
-            try:
-                data_type.__table__.drop(self.engine)
-
-            except SQLAlchemyError:
-                # table probably didn't exist
-                self.logger.warning("Couldn't drop table '{0}'".format(table_name))
-
-            else:
-                self.logger.warning("Dropped table '{0}'".format(table_name))
+            data_type.__table__.drop(self.engine)
+            self.logger.warning(f"Dropped table '{table_name}'")
 
         Base.metadata.create_all(self.engine, checkfirst=True)
 
@@ -146,16 +139,18 @@ class DataInterface(metaclass=ABCMeta):
 
         Positional argument(s) that is(are) already-constructed VALID_DATA_TYPES objects.
         """
-        msg = "[DataInterface.insertData()] Positional argument is not an valid data object: '{0}'"
         if args:
             for arg in args:
-                assert isinstance(arg, tuple(self.VALID_DATA_TYPES.values())), msg.format(arg)
+                msg = f"[DataInterface.insertData()] Positional argument is not an valid data object: '{arg}'"
+                if not isinstance(arg, tuple(self.VALID_DATA_TYPES.values())):
+                    self.logger.error(msg)
+                    raise TypeError(arg)
 
             with self._getSessionScope() as session:
                 session.add_all(args)
 
         else:
-            raise Exception("Cannot call `DataInterface.insertData()` without arguments.")
+            raise ValueError("Cannot call `DataInterface.insertData()` without arguments.")
 
     def getData(self, query, multi=True):
         """Retrieve ephemeris object(s) that match the given Query object.
@@ -169,8 +164,10 @@ class DataInterface(metaclass=ABCMeta):
         Returns:
             ``VALID_DATA_TYPES``: data object or list of data objects matching the query
         """
-        msg = "[DataInterface.getData()] `query` argument must be a `sqlalchemy.orm.Query` object, not '{0}'"
-        assert isinstance(query, Query), msg.format(type(query))
+        msg = f"[DataInterface.getData()] `query` argument must be a `sqlalchemy.orm.Query` object, not '{type(query)}'"
+        if not isinstance(query, Query):
+            self.logger.error(msg)
+            raise TypeError(query)
 
         if multi:
             retval = []
@@ -186,8 +183,9 @@ class DataInterface(metaclass=ABCMeta):
                 retval = query.with_session(cur_session).all()
             else:
                 retval = query.with_session(cur_session).first()
+
         except SQLAlchemyError as err:
-            self.logger.error("Exception thrown in `DataInterface.getData()`: \n{0}".format(format_exc()))
+            self.logger.error(f"Exception thrown in `DataInterface.getData()`: \n{format_exc()}")
             raise err
 
         finally:
@@ -205,8 +203,10 @@ class DataInterface(metaclass=ABCMeta):
         Returns:
             ``int``: number of data objects that were successfully deleted.
         """
-        msg = "[DataInterface.deleteData()] `query` argument must be a `sqlalchemy.orm.Query` object, not '{0}'"
-        assert isinstance(query, Query), msg.format(type(query))
+        msg = f"[DataInterface.deleteData()] `query` argument must be a `sqlalchemy.orm.Query`, not '{type(query)}'"
+        if not isinstance(query, Query):
+            self.logger.error(msg)
+            raise TypeError(query)
 
         deleted_count = 0
         with self._getSessionScope() as session:

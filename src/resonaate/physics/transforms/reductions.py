@@ -1,10 +1,7 @@
-"""IAU-76/FK5 Reduction module.
+"""Defines the IAU-76/FK5 Reduction Model.
 
 This module handles logic pertaining to the FK5 Reduction for properly rotating ECEF (ITRF)
 to/from ECI (GCRF). However, this module may later hold multiple forms of this reduction.
-
-Author: Dylan Thomas
-Date: October 5, 2018
 """
 # Standard Library Imports
 import datetime
@@ -72,13 +69,8 @@ def _updateFK5Parameters(julian_date, eops=None):  # pylint: disable=too-many-lo
         equations and constants are heavily derived from David Vallado's
         original code for his book and website.
 
-    SeeAlso:
-        Fundamentals of Astrodynamics & Applications, David Vallado, Fourth Edition, 2013.
-        http://celestrak.com/software/vallado-sw.asp
-
-    More specifically, this code follows the methodology outline in section
-        3.7 of his book. Note that some major changes were made, and a few
-        features were added to improve functionality.
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.7
 
     Args:
         julian_date (:class:`.JulianDate`): Julian date to calculate the transformation for
@@ -142,6 +134,9 @@ def _updateFK5Parameters(julian_date, eops=None):  # pylint: disable=too-many-lo
 
 def _getNutationParameters(ttt, dd_psi, dd_eps, num=2):
     """Calculate Nutation Parameters for IAU-76/FK5 Reduction.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Eqn 3-79, 3-81 - 3-83
 
     Note: L suffix for Lunar, S suffix for Solar
 

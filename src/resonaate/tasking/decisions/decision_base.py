@@ -1,3 +1,4 @@
+"""Abstract :class:`.Decision` base class defining the decision API."""
 # Standard Imports
 from abc import ABCMeta, abstractmethod
 # Third Party Imports

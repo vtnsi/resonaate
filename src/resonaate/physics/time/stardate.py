@@ -1,42 +1,42 @@
-"""Stardate module.
+"""Defines :class:`.JulianDate` & :class:`.ScenarioTime` classes and supporting functions.
 
 The classes defined in this module will be used to rigidly differentiate between
 the similar Julian Date and Scenario Time values. Both of these types of values
-are always going to be `float`s, and occasionally within the same order of
+are always going to be `float` objects, and occasionally within the same order of
 magnitude of each other, so they're easy targets for confusion.
 
 Subclassing the `float` type will allow for easy type-checking in modules or
 methods that depend on utilizing certain types of time values. A developer can
-still easily pass in a `time` variable that can be used like a `float`, but
+still easily pass in a `time` variable that can be used like a `float` , but
 calling `type` on the variable will reveal what type of time it was initialized
 to.
 
-Example:
-```python
-def methodUsingJulianDate(time):
-    assert type(time) == JulianDate
+.. code-block:: python
 
-    # ... do stuff ...
+    def methodUsingJulianDate(time):
+        assert type(time) == JulianDate
 
-def methodUsingScenarioTime(time):
-    assert isinstance(time, ScenarioTime)
+        # ... do stuff ...
 
-    # ... do stuff ...
+    def methodUsingScenarioTime(time):
+        assert isinstance(time, ScenarioTime)
 
-julian_date = JulianDate(123456.789)
-sTime = ScenarioTime(123456.789)
+        # ... do stuff ...
 
-methodUsingJulianDate(julian_date) # works
-methodUsingJulianDate(sTime) # throws exception
+    julian_date = JulianDate(123456.789)
+    sTime = ScenarioTime(123456.789)
 
-methodUsingScenarioTime(julian_date) # throws exception
-methodUsingScenarioTime(sTime) # works
-```
+    methodUsingJulianDate(julian_date) # works
+    methodUsingJulianDate(sTime) # throws exception
+
+    methodUsingScenarioTime(julian_date) # throws exception
+    methodUsingScenarioTime(sTime) # works
+
 """
 # Standard Library Imports
 from datetime import datetime, timedelta
 # Third Party Imports
-from numpy import floor, fmod
+from numpy import floor, remainder
 # RESONAATE Imports
 
 
@@ -49,7 +49,7 @@ def days2mdh(year, day_of_year):
     """Convert a year and an epoch day to the Calendar format."""
     # Get the number of days in each month, check leap year.
     days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    if fmod(year - 1900, 4) == 0:
+    if remainder(year - 1900, 4) == 0:
         days_in_month[1] = 29
 
     # Get integer day of year.
@@ -182,6 +182,9 @@ class JulianDate(float):
     def getJulianDate(cls, year, month, day, hour, minute, second):
         """From a datetime in UTC [ymdhms], return the :class:`.JulianDate`.
 
+        References:
+            :cite:t:`vallado_2013_astro`, Section 3.5.1, Algorithm 14
+
         Args:
             year (int): Calendar year
             month (int): Month of the year
@@ -230,10 +233,7 @@ class JulianDate(float):
         """Return a string representation of this :class:`.JulianDate`."""
         date_time = julianDateToDatetime(self)
 
-        return "JulianDate({0}, ISO={1})".format(
-            float(self),
-            date_time.isoformat()
-        )
+        return f"JulianDate({float(self)}, ISO={date_time.isoformat()})"
 
     def __str__(self):
         """Return a string representation of this :class:`.JulianDate`."""
@@ -361,7 +361,7 @@ class ScenarioTime(float):
 
     def __repr__(self):
         """Return a string representation of a :class:`.ScenarioTime` object."""
-        return "ScenarioTime({0} seconds)".format(float(self))
+        return f"ScenarioTime({float(self)} seconds)"
 
     def __str__(self):
         """Return a string representation of this :class:`.JulianDate`."""

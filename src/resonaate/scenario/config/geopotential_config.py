@@ -1,6 +1,6 @@
 """Submodule defining the 'geopotential' configuration section.
 
-Todos:
+TODO:
     - add range of valid values for 'degree' and 'order'
 
 """
@@ -22,7 +22,7 @@ class GeopotentialConfig(ConfigSection):
 
     @property
     def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption`s that this section contains."""
+        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
         return [self._model, self._degree, self._order]
 
     @property

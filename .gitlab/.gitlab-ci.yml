@@ -47,7 +47,7 @@ pylint:
     - apt-get update -qq
     - python -V && pip install -r requirements/development.txt && pip install -e .
   script:
-    - pylint --rcfile=.pylintrc --reports=y *.py tests src/resonaate | tee pylint.log
+    - pylint --rcfile=setup.cfg --reports=y *.py tests src/resonaate | tee pylint.log
   artifacts:
     paths:
       - pylint.log
@@ -62,7 +62,7 @@ flake8:
     - apt-get update -qq
     - python -V && pip install -r requirements/development.txt && pip install -e .
   script:
-    - flake8 --config=.flake8 --show-source --tee --output-file=flake8.log *.py tests src/resonaate
+    - flake8 --config=setup.cfg --show-source --tee --output-file=flake8.log *.py tests src/resonaate
   artifacts:
     paths:
       - flake8.log
@@ -78,7 +78,7 @@ pytest:
     - python -V && pip install -r requirements/development.txt && pip install -e .
   script:
     - redis-server 2>&1 > redis.log &
-    - pytest -x --cov=src/resonaate --cov-report=term --cov-report=html:coverage tests/
+    - pytest -x --cov --cov-report=term --cov-report=html --cov-config=setup.cfg tests/
   artifacts:
     paths:
       - coverage/
@@ -92,7 +92,7 @@ pages:
   stage: build
   before_script:
     - apt-get update -qq
-    - python -V && pip install -r requirements/development.txt && pip install -e .
+    - python -V && pip install -r docs/requirements.txt && pip install -e .
   script:
     - cd docs
     - sphinx-apidoc -MPTefo source/modules ../src/resonaate

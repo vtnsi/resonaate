@@ -1,3 +1,4 @@
+"""Defines a global set of configurations that define how the simulation operates."""
 # Standard Library Imports
 import os.path
 from configparser import ConfigParser, Error as ConfigError
@@ -18,7 +19,8 @@ class SubConfig:
     def __init__(self, section):
         """Instantiate a `SubConfig` object.
 
-        @param section \b str -- name of section that this SubConfig object represents
+        Args:
+            section (``str``): name of section that this SubConfig object represents
         """
         self.section = section
         assert isinstance(self.section, str)
@@ -26,16 +28,13 @@ class SubConfig:
     def setonce(self, name, value):
         """Set the field for this `SubConfig`, but raise an error if the field was already set.
 
-        @param name \b str -- name of field to set
-        @param value \b any -- value to set the field to
+        Args:
+            name (``str``): name of field to set
+            value (``any``): value to set the field to
         """
         already_set = getattr(self, name, None)
         if already_set is not None:
-            raise AttributeError("SubConfig '{0}' already has a value set for '{1}':'{2}'".format(
-                self.section,
-                name,
-                already_set
-            ))
+            raise AttributeError(f"SubConfig '{self.section}' already has a value set for '{name}':'{already_set}'")
         setattr(self, name, value)
 
 
@@ -86,7 +85,7 @@ class BehavioralConfig:
             "AllowMultipleHandlers": False
         },
         "database": {
-            "DatabaseURL": "sqlite://",
+            "DatabasePath": "sqlite://",
         },
         "parallel":{
             "RedisHostname": 'localhost',
@@ -115,7 +114,7 @@ class BehavioralConfig:
 
     STR_ITEMS = {
         "logging": ("OutputLocation", ),
-        "database": ("DatabaseURL", ),
+        "database": ("DatabasePath", ),
         "parallel": ("RedisHostname", ),
         "debugging": (
             "OutputDirectory", "NearestPDDirectory", "EstimateErrorInflationDirectory",
@@ -144,11 +143,12 @@ class BehavioralConfig:
 
     def __init__(self, config_file_path=DEFAULT_CONFIG_FILE):  # noqa: C901
         """Initialize the configuration object."""
+        # pylint: disable=too-many-branches
         self._parser = CustomConfigParser()
 
         if os.path.exists(config_file_path):
             # Read in the config file if it exists, otherwise use the defaults
-            with open(config_file_path, 'r') as config_file:
+            with open(config_file_path, 'r', encoding="utf-8") as config_file:
                 self._parser.read_file(config_file)
 
         for section, section_config in self.DEFAULT_SECTIONS.items():
@@ -174,11 +174,12 @@ class BehavioralConfig:
                     getter = self._parser.getlist
 
                 else:
-                    raise Exception("Configuration item '{0}::{1}' lacks a type classification.".format(section, key))
+                    raise Exception(f"Configuration item '{section}::{key}' lacks a type classification.")
 
                 try:
                     value = getter(section, key)
                 except ConfigError:
+                    # pylint: disable=unnecessary-dict-index-lookup
                     value = self.DEFAULT_SECTIONS[section][key]
                 finally:
                     sub.setonce(key, value)
@@ -186,7 +187,7 @@ class BehavioralConfig:
             # Set this config object's `SubConfig`
             setattr(self, section, sub)
 
-        BehavioralConfig.__shared_inst = self
+        BehavioralConfig.__shared_inst = self  # pylint: disable=unused-private-member
 
     @classmethod
     def getConfig(cls, config_file_path=DEFAULT_CONFIG_FILE):

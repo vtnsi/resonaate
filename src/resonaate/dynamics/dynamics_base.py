@@ -1,3 +1,4 @@
+"""Defines the abstract base class :class:`.Dynamics`."""
 # Standard Library Imports
 from abc import abstractmethod
 # Third Party Imports
@@ -15,6 +16,6 @@ class Dynamics:
     ABSOLUTE_TOL = 10**-12
 
     @abstractmethod
-    def propagate(self, initial_time, final_time, initial_state, station_keeping=None):
+    def propagate(self, initial_time, final_time, initial_state, station_keeping=None, scheduled_events=None):
         """Abstract method for forwards propagation."""
         raise NotImplementedError

@@ -1,3 +1,4 @@
+"""Defines stability-focused tasking metrics."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import log2, trace, sqrt
@@ -10,6 +11,9 @@ class LyapunovStability(StabilityMetric):
 
     def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
         """Calculate the scalar maximal Lyapunov exponent approximation.
+
+        References:
+            :cite:t:`nastasi_2018_diss`, Section 2.5.3
 
         Args:
             time (float): current time in epoch seconds

@@ -1,3 +1,4 @@
+"""Defines the :class:`.Task` data table class."""
 # Standard Library Imports
 # Third Party Imports
 from sqlalchemy import Column, Integer, Float, Boolean, ForeignKey
@@ -14,7 +15,7 @@ class Task(Base, _DataMixin):
 
     ## Defines the epoch associated with the observation data
     # Many to one relation with :class:`.Epoch`
-    julian_date = Column(Integer, ForeignKey('epochs.julian_date'), nullable=False)
+    julian_date = Column(Float, ForeignKey('epochs.julian_date'), nullable=False)
     epoch = relationship("Epoch", lazy='joined', innerjoin=True)
 
     ## Defines the associated sensor agent with the task data

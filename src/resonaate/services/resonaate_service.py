@@ -1,3 +1,4 @@
+"""Define service layer API and supporting :class:.`ServiceMessage` types."""
 # Standard Library Imports
 from queue import PriorityQueue, Empty
 from threading import Thread, Event
@@ -13,8 +14,8 @@ from sqlalchemy.orm import Query
 # Package Imports
 from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.common.logger import Logger
-from resonaate.data.manual_sensor_task import ManualSensorTask
 from resonaate.data.ephemeris import EstimateEphemeris
+from resonaate.data.events import TargetTaskPriority
 from resonaate.data.observation import Observation
 from resonaate.data.query_util import addAlmostEqualFilter
 from resonaate.data.resonaate_database import ResonaateDatabase
@@ -44,7 +45,7 @@ class InitMessage(ServiceMessage):
     """Message used to initialize a Resonaate scenario."""
 
     PRIORITY = 0
-    """int: Priority with which :class:`.InitMessage`s are added to the queue.
+    """int: Priority with which :class:`.InitMessage` objects are added to the queue.
 
     Init messages are enqueued with the highest priority, so that the Resonaate scenario is updated
     before other messages are handled.
@@ -63,11 +64,12 @@ class InitMessage(ServiceMessage):
         self.contents = contents
 
     def __lt__(self, other):
-        """:class:`.InitMessage`s can be sorted based on their 'jDate' contents."""
+        """:class:`.InitMessage` objects can be sorted based on their 'jDate' contents."""
         return self.contents['jDate'] < other.contents['jDate']
 
     def __repr__(self):
         """Give brief description of contents of init message."""
+        # pylint: disable=consider-using-f-string
         return "InitMessage(targetList={0} targets, sensorConf={sensorConf}, jDate={jDate}, " + \
                "targetEvents={1} events, sensorEvents={2} events)".format(
                    len(self.contents["targetList"]),
@@ -81,9 +83,9 @@ class DiscontinueMessage(ServiceMessage):
     """Message used to update service's state to ``STOPPED`` and/or destroy the Resonaate scenario."""
 
     PRIORITY = 1
-    """int: Priority with which :class:`.DiscontinueMessage`s are added to the queue.
+    """int: Priority with which :class:`.DiscontinueMessage` objects are added to the queue.
 
-    Discontinue messages need to be prioritized above all but :class:`.InitMessage`s to avoid
+    Discontinue messages need to be prioritized above all but :class:`.InitMessage` objects to avoid
     potential excess processing. E.g. the Resonaate scenario should be destroyed before time target
     messages are handled, to avoid the inherent processing.
     """
@@ -99,22 +101,19 @@ class DiscontinueMessage(ServiceMessage):
         self._created = time()
 
     def __lt__(self, other):
-        """:class:`.DiscontinueMessage`s can be sorted based on when they were created."""
+        """:class:`.DiscontinueMessage` objects can be sorted based on when they were created."""
         return self._created < other._created  # pylint: disable=protected-access
 
     def __repr__(self):
         """Return a string representation of this :class:`.DiscontinueMessage`."""
-        return "DiscontinueMessage(destroy_scenario={0}, _created={1})".format(
-            self.destroy_scenario,
-            self._created
-        )
+        return f"DiscontinueMessage(destroy_scenario={self.destroy_scenario,}, _created={self._created})"
 
 
 class TimeTargetMessage(ServiceMessage):
     """Message used to propagate a Resonaate scenario forward in time."""
 
     PRIORITY = 3
-    """int: Priority with which :class:`.TimeTargetMessage`s are added to the queue.
+    """int: Priority with which :class:`.TimeTargetMessage` objects are added to the queue.
 
     Time target messages should be handled last with respect to the other types of messages.
     """
@@ -127,28 +126,25 @@ class TimeTargetMessage(ServiceMessage):
         """
         self.time_target = time_target
         if not isinstance(self.time_target, JulianDate):
-            err = "Time target must be a JulianDate not '{0}'".format(type(self.time_target))
+            err = f"Time target must be a JulianDate not '{type(self.time_target)}'"
             raise TypeError(err)
 
     def __lt__(self, other):
-        """:class:`.TimeTargetMessage`s can be sorted based on their corresponding time target."""
+        """:class:`.TimeTargetMessage` objects can be sorted based on their corresponding time target."""
         return self.time_target < other.time_target
 
     def __repr__(self):
         """Return a string representation of this :class:`.TimeTargetMessage`."""
         date_time = julianDateToDatetime(self.time_target)
 
-        return "TimeTargetMessage(time_target=JulianDate({0})|ISO({1}))".format(
-            float(self.time_target),
-            date_time.isoformat()
-        )
+        return f"TimeTargetMessage(time_target=JulianDate({float(self.time_target)})|ISO({date_time.isoformat()}))"
 
 
 class ManualSensorTaskMessage(ServiceMessage):
     """Message used to manually set tasking priorities for Resonaate scenario's sensor network."""
 
     PRIORITY = 2
-    """int: Priority with which :class:`.ManualSensorTaskMessage`s are added to the queue.
+    """int: Priority with which :class:`.ManualSensorTaskMessage` objects are added to the queue.
 
     Observation priority messages should be handled before time target messages so that the
     priority is applied during all applicable scenario propagation.
@@ -177,45 +173,41 @@ class ManualSensorTaskMessage(ServiceMessage):
         """
         self.target_id = target_id
         if not isinstance(self.target_id, int):
-            err = "Target ID must be an integer, not '{0}'".format(type(self.target_id))
+            err = f"Target ID must be an integer, not '{type(self.target_id)}'"
             raise TypeError(err)
 
         self.obs_priority = obs_priority
         if not isinstance(self.obs_priority, float):
-            err = "Observation priority must be a float, not '{0}'".format(type(self.obs_priority))
+            err = f"Observation priority must be a float, not '{type(self.obs_priority)}'"
             raise TypeError(err)
 
         self.start_time = start_time
         if not isinstance(self.start_time, JulianDate):
-            err = "Start time must be a JulianDate, not '{0}'".format(type(self.start_time))
+            err = f"Start time must be a JulianDate, not '{type(self.start_time)}'"
             raise TypeError(err)
 
         self.end_time = end_time
         if not isinstance(self.end_time, JulianDate):
-            err = "Start time must be a JulianDate, not '{0}'".format(type(self.end_time))
+            err = f"Start time must be a JulianDate, not '{type(self.end_time)}'"
             raise TypeError(err)
 
         self.message_id = message_id
         if not isinstance(self.message_id, str):
-            err = "Message ID must be a string, not '{0}'".format(type(self.message_id))
+            err = f"Message ID must be a string, not '{type(self.message_id)}'"
             raise TypeError(err)
 
     def __lt__(self, other):
-        """:class:`.ManualSensorTaskMessage`s can be sorted based on their ``start_time`` attribute."""
+        """:class:`.ManualSensorTaskMessage` objects can be sorted based on their ``start_time`` attribute."""
         return self.start_time < other.start_time
 
     def __repr__(self):
         """Return a string representation of this :class:`.ManualSensorTaskMessage`."""
         start_date_time = julianDateToDatetime(self.start_time)
         end_date_time = julianDateToDatetime(self.end_time)
-        return "ManualSensorTaskMessage(target_id={0}, obs_priority={1}, start_time={2}|{3}, end_time={4}|{5})".format(
-            self.target_id,
-            self.obs_priority,
-            "JulianDate({0})".format(float(self.start_time)),
-            "ISO({0})".format(start_date_time.isoformat()),
-            "JulianDate({0})".format(float(self.end_time)),
-            "ISO({0})".format(end_date_time.isoformat())
-        )
+        msg = f"ManualSensorTaskMessage(target_id={self.target_id}, obs_priority={self.obs_priority}, "
+        msg += f"start_time=JulianDate({float(self.start_time)})|ISO({start_date_time.isoformat()}), "
+        msg += f"end_time=JulianDate({float(self.end_time)})|ISO({end_date_time.isoformat()}))"
+        return msg
 
 
 class ManualSensorTaskResponse:
@@ -232,12 +224,12 @@ class ManualSensorTaskResponse:
         """
         self.task_message = task_message
         if not isinstance(self.task_message, ManualSensorTaskMessage):
-            err = "Task message must be a ManualSensorTaskMessage, not '{0}'".format(type(self.task_message))
+            err = f"Task message must be a ManualSensorTaskMessage, not '{type(self.task_message)}'"
             raise TypeError(err)
 
         self.error_message = error_message
         if not isinstance(self.error_message, str):
-            err = "Error message must be a string, not '{0}'".format(type(self.error_message))
+            err = f"Error message must be a string, not '{type(self.error_message)}'"
             raise TypeError(err)
 
     def jsonify(self):
@@ -270,18 +262,15 @@ class ManualSensorTaskResponse:
     @property
     def label(self):
         """str: Label for this response."""
-        return "Resonaate Observation Request for {0}: {1}".format(self.primary_id, self.status)
+        return f"Resonaate Observation Request for {self.primary_id}: {self.status}"
 
     @property
     def details(self):
         """str: Details of sensor tasking."""
         if self.error_message:
-            return "Could not apply observation request: {0}".format(self.error_message)
+            return f"Could not apply observation request: {self.error_message}"
         # else
-        return "Applied observation priority of {0} to RSO {1}".format(
-            self.task_message.obs_priority,
-            self.primary_id
-        )
+        return f"Applied observation priority of {self.task_message.obs_priority} to RSO {self.primary_id}"
 
     @property
     def reply_to_id(self):
@@ -352,12 +341,10 @@ class ResonaateService:
             message (ServiceMessage): Message to enqueue.
         """
         if not isinstance(message, ServiceMessage):
-            err = "Can't enqueue message of type '{0}'".format(type(message))
-            raise ValueError(err)
+            raise ValueError(f"Can't enqueue message of type '{type(message)}'")
 
         if self._message_queue is None:
-            err = "Can't enqueue message: internal queue doesn't exist."
-            raise RuntimeError(err)
+            raise RuntimeError("Can't enqueue message: internal queue doesn't exist.")
 
         self._message_queue.put((message.PRIORITY, message))
 
@@ -405,7 +392,7 @@ class ResonaateService:
         Args:
             estimate (dict): EstimateAgent data dictionary to output.
         """
-        self.logger.info("Output estimate: {0}".format(estimate))
+        self.logger.info(f"Output estimate: {estimate}")
 
     def handleObservationOutput(self, observation):
         """Handle outputting a single observation message.
@@ -417,7 +404,7 @@ class ResonaateService:
         Args:
             observation (dict): Observation data dictionary to output.
         """
-        self.logger.info("Output observation: {0}".format(observation))
+        self.logger.info(f"Output observation: {observation}")
 
     def handleManualSensorTaskResponse(self, task_response):
         """Handle response generated by processing a :class:`.ManualSensorTaskMessage` .
@@ -473,10 +460,10 @@ class ResonaateService:
 
     def _removeOldSensorTasks(self):
         """Remove old dynamic sensor tasks from the database."""
-        query = Query([ManualSensorTask]).filter(ManualSensorTask.is_dynamic == True)  # noqa: E712
+        query = Query([TargetTaskPriority]).filter(TargetTaskPriority.is_dynamic == True)  # noqa: E712
         database = ResonaateDatabase.getSharedInterface()
         removed_count = database.deleteData(query)
-        self.logger.debug("Removed {0} dynamic sensor tasks from the database.".format(removed_count))
+        self.logger.debug(f"Removed {removed_count} dynamic sensor tasks from the database.")
 
     def _dropMessage(self, dropped_message):
         """Drop a message so that it can be logged later.
@@ -485,8 +472,7 @@ class ResonaateService:
             dropped_message (ServiceMessage): Message being dropped.
         """
         if self._dropped_messages is None:
-            err = "Can't drop message: internal queue doesn't exist."
-            raise RuntimeError(err)
+            raise RuntimeError("Can't drop message: internal queue doesn't exist.")
 
         self._dropped_messages.put((dropped_message.PRIORITY, dropped_message))
 
@@ -502,13 +488,10 @@ class ResonaateService:
                 dropped_count[priority] += 1
                 most_recent[priority] = dropped_message
 
-            for priority in most_recent.keys():
-                self.logger.info("Dropped {0} messages of priority '{1}' in past {2} seconds. Most recent: {3}".format(
-                    dropped_count[priority],
-                    priority,
-                    self.LOG_DROPPED_INTERVAL,
-                    most_recent[priority]
-                ))
+            for priority, recent_msg in most_recent.items():
+                msg = f"Dropped {dropped_count[priority]} messages of priority '{priority}' "
+                msg += f"in past {self.LOG_DROPPED_INTERVAL} seconds. Most recent: {recent_msg}"
+                self.logger.info(msg)
 
     def _updateState(self, state):
         """Update the state of the Resonaate service and log the transition.
@@ -520,17 +503,14 @@ class ResonaateService:
             self._state = state
 
             if self._scenario is None:
-                self.logger.info("Set service state to '{0}'.".format(self._state))
+                self.logger.info(f"Set service state to '{self._state}'.")
 
             else:
-                self.logger.info("Set service state to '{0}'. Current scenario clock: {1}".format(
-                    self._state,
-                    self._scenario.clock.julian_date_epoch
-                ))
+                jdate = self._scenario.clock.julian_date_epoch
+                self.logger.info(f"Set service state to '{self._state}'. Current scenario clock: {jdate}")
 
         else:
-            err = "Invalid state update: {0}".format(state)
-            raise ValueError(err)
+            raise ValueError(f"Invalid state update: {state}")
 
     def _messageHandler(self):
         """Loop over message queue, handling messages as they're enqueued."""
@@ -565,10 +545,11 @@ class ResonaateService:
         database = ResonaateDatabase.getSharedInterface()
         database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
         self.logger.debug("Loading scenario...")
+        msg = message.contents["propagation"]["target_realtime_propagation"]
         self._scenario = buildScenarioFromConfigDict(
             message.contents,
             internal_db_path=None,
-            importer_db_path="sqlite://" if not message.contents["propagation"]["realtime_propagation"] else None,
+            importer_db_path="sqlite://" if not msg else None,
             start_workers=False
         )
         self.logger.debug("Loaded.")
@@ -684,24 +665,34 @@ class ResonaateService:
         Args:
             message (ManualSensorTaskMessage): Manual sensor tasking message.
         """
-        self.logger.info("Received sensor tasking: {0}".format(message))
-        try:
-            db_task = ManualSensorTask(
-                target_id=message.target_id,
-                priority=message.obs_priority,
-                start_time_jd=float(message.start_time),
-                end_time_jd=float(message.end_time),
-                is_dynamic=True
-            )
-            database = ResonaateDatabase.getSharedInterface()
-            database.insertData(db_task)
+        self.logger.info(f"Received sensor tasking: {message}")
 
-        except Exception:  # pylint: disable=broad-except
+        errors = []
+        # create `TargetTaskPriority` for each tasking engine that observes the specified target
+        for engine in self._scenario.tasking_engines.values():
+            if message.target_id in engine.target_list:
+                try:
+                    db_task = TargetTaskPriority(
+                        scope=TargetTaskPriority.INTENDED_SCOPE.value,
+                        scope_instance_id=engine.unique_id,
+                        start_time_jd=float(message.start_time),
+                        end_time_jd=float(message.end_time),
+                        event_type=TargetTaskPriority.EVENT_TYPE,
+                        agent_id=message.target_id,
+                        priority=message.obs_priority,
+                        is_dynamic=True
+                    )
+                    database = ResonaateDatabase.getSharedInterface()
+                    database.insertData(db_task)
+
+                except Exception:  # pylint: disable=broad-except
+                    errors.append(format_exc())
+
+        if errors:
             self.handleManualSensorTaskResponse(ManualSensorTaskResponse(
                 message,
-                error_message=format_exc()
+                error_message=str(errors)
             ))
-
         else:
             self.handleManualSensorTaskResponse(ManualSensorTaskResponse(message))
 

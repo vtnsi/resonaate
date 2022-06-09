@@ -1,3 +1,4 @@
+"""Define service that provides responses from the Resonaate service layer."""
 # Standard Library Imports
 from copy import deepcopy
 from json import loads, dumps
@@ -33,15 +34,12 @@ class JSONBaseMessage:
         """
         self._contents = contents
         if not isinstance(self._contents, dict):
-            err = "Message contents must be a dictionary, not '{0}'".format(type(self._contents))
+            err = f"Message contents must be a dictionary, not '{type(self._contents)}'"
             raise TypeError(err)
 
         for field in self.REQUIRED_FIELDS:
             if not self._contents.get(field):
-                err = "Message contents missing '{0}' field: {1}".format(
-                    field,
-                    self._contents
-                )
+                err = f"Message contents missing '{field}' field: {self._contents}"
                 raise ValueError(err)
 
     @classmethod
@@ -249,10 +247,10 @@ class InsertSortedCacheList:
         Args:
             cache_time (float): Number of days-worth of data to store in the cache list.
         """
-        self._list = list()
+        self._list = []
         self._cache_time = cache_time
         if not isinstance(self._cache_time, (float, int)):
-            err = "Cache time must be fo type float or int, not '{0}'".format(type(self._cache_time))
+            err = f"Cache time must be fo type float or int, not '{type(self._cache_time)}'"
             raise TypeError(err)
 
     def addData(self, new_data):
@@ -305,7 +303,7 @@ class StorageCache:
         """
         self.cache_time = cache_time
         if not isinstance(self.cache_time, (float, int)):
-            err = "Cache time must be fo type float or int, not '{0}'".format(type(self.cache_time))
+            err = f"Cache time must be fo type float or int, not '{type(self.cache_time)}'"
             raise TypeError(err)
 
         self._cache = dict()
@@ -363,7 +361,7 @@ class ResponseService:
             self._estimate_cache.addData(estimate_message)
             self._countMessage(estimate_message)
         else:
-            err = "Expected EstimateMessage, not {0}".format(type(estimate_message))
+            err = f"Expected EstimateMessage, not {type(estimate_message)}"
             raise TypeError(err)
 
     def onReceiveObservation(self, observation_message):
@@ -377,7 +375,7 @@ class ResponseService:
             self._observation_cache.addData(observation_message)
             self._countMessage(observation_message)
         else:
-            err = "Expected ObservationMessage, not {0}".format(type(observation_message))
+            err = f"Expected ObservationMessage, not {type(observation_message)}"
             raise TypeError(err)
 
     @staticmethod
@@ -407,7 +405,7 @@ class ResponseService:
             "createdAt": created_at,
             "primaryId": str(analyze_rso_message.rso_id),
             "stackedBarChart": obs_chart,
-            "status": "Observation count: {0}".format(len(observation_data)),
+            "status": f"Observation count: {len(observation_data)}",
             "label": "Observations & Covariance"
         }
         return obs_response
@@ -458,7 +456,7 @@ class ResponseService:
             "primaryId": str(analyze_rso_message.rso_id),
             "secondaryIds": self.listToString(analyze_rso_message.secondary_rso_ids),
             "label": "RSO Distance",
-            "status": "Minimum distance: {0:.3} km".format(minimum_distance),
+            "status": f"Minimum distance: {minimum_distance:.3} km",
             "lineChart": dist_chart,
         }
         return dist_response
@@ -470,12 +468,12 @@ class ResponseService:
             analyze_rso_message (AnalyzeRSOMessage): New analyze RSO message to reply to.
         """
         if not isinstance(analyze_rso_message, AnalyzeRSOMessage):
-            err = "Expected AnalyzeRSOMessage, not {0}".format(type(analyze_rso_message))
+            err = f"Expected AnalyzeRSOMessage, not {type(analyze_rso_message)}"
             raise TypeError(err)
         if analyze_rso_message._contents.get("tools"):  # pylint: disable=protected-access
             return
         rso_id = analyze_rso_message.rso_id
-        self.logger.info("Received analyze RSO message for {0}!".format(rso_id))
+        self.logger.info(f"Received analyze RSO message for {rso_id}!")
 
         # Parse required data
         primary_estimates = self._estimate_cache.getDataContents(rso_id)
@@ -483,13 +481,13 @@ class ResponseService:
 
         # Log data for debugging
         if primary_estimates:
-            self.logger.debug("Primary EstimateAgent message: {0}".format(primary_estimates[0]))
+            self.logger.debug(f"Primary EstimateAgent message: {primary_estimates[0]}")
         else:
             # No response if we don't have any estimates
-            self.logger.warning("No analyze RSO response for {0}. It is not a tier 1 RSO".format(rso_id))
+            self.logger.warning(f"No analyze RSO response for {rso_id}. It is not a tier 1 RSO")
             return
         if primary_observations:
-            self.logger.debug("Observation message: {0}".format(primary_observations[0]))
+            self.logger.debug(f"Observation message: {primary_observations[0]}")
 
         # Build response
         obs_response = self.getObservationResponse(analyze_rso_message, primary_estimates, primary_observations)
@@ -508,11 +506,11 @@ class ResponseService:
                 skipped.append(second_rso)
 
         if secondary_estimates:
-            self.logger.debug("Secondary EstimateAgent messages for: {0}".format(list(secondary_estimates.keys())))
-            self.logger.warning("The following secondary ids are not tier 1 RSOs: {0}".format(skipped))
+            self.logger.debug(f"Secondary EstimateAgent messages for: {list(secondary_estimates.keys())}")
+            self.logger.warning(f"The following secondary ids are not tier 1 RSOs: {skipped}")
         else:
             # No distance response if the secondary estimates are not valid
-            self.logger.warning("No tier 1 RSOs given in `secondaryIds`: {0}".format(list(secondary_estimates.keys())))
+            self.logger.warning(f"No tier 1 RSOs given in `secondaryIds`: {list(secondary_estimates.keys())}")
             return
 
         # Build Analyze RSO response/reply messages
@@ -548,11 +546,9 @@ class ResponseService:
 
             with self._message_counter_lock:
                 for message_type, count in self._message_counter.items():
-                    self.logger.info("Received {0} messages of type {1} in the last {2} seconds.".format(
-                        count,
-                        message_type,
-                        self.LOG_COUNTED_INTERVAL
-                    ))
+                    msg = f"Received {count} messages of type {message_type} "
+                    msg += f"in the last {self.LOG_COUNTED_INTERVAL} seconds."
+                    self.logger.info(msg)
                 self._message_counter = Counter()
 
     @staticmethod

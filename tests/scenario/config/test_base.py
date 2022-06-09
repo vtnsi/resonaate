@@ -1,27 +1,33 @@
 # Standard Library Imports
 from abc import ABCMeta
+from copy import deepcopy
 # Third Party Imports
 import pytest
 # RESONAATE Imports
 try:
-    from resonaate.scenario.config.base import ConfigSection, ConfigOption, ConfigObject, ConfigObjectList
+    from resonaate.scenario.config.base import (ConfigSection, ConfigOption, ConfigObject, ConfigObjectList,
+                                                ConfigError, ConfigTypeError, ConfigValueError,
+                                                ConfigMissingRequiredError, NO_SETTING, inclusiveRange)
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 
 
 def testBasicConfigOption():
     """Test basic constructor of a :class:`.ConfigOption`."""
-    assert ConfigOption("test_item", (int, ))
+    test_option = ConfigOption("test_item", (int, ))
+    assert not test_option.nested_items
 
 
 def testConfigOptionBadDefault():
     """Test :class:`.ConfigOption` with bad default settings."""
-    with pytest.raises(TypeError):
+    expected_err = r"Setting .* must be in types .*, not .*"
+    with pytest.raises(ConfigTypeError, match=expected_err):
         _ = ConfigOption("test_item", (int, ), default="abc")
 
-    with pytest.raises(ValueError):
+    expected_err = r"Setting .* for .* is not a valid setting: .*"
+    with pytest.raises(ConfigValueError, match=expected_err):
         _ = ConfigOption("test_item", (int, ), default=6, valid_settings=range(5))
 
 
@@ -34,10 +40,10 @@ def testConfigOptionValidation():
     test_item.readConfig(5)
     assert test_item.setting == 5
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigTypeError):
         test_item.readConfig("abc")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ConfigValueError):
         test_item.readConfig(11)
 
 
@@ -45,8 +51,26 @@ def testConfigOptionRequired():
     """Test required functionality of :class:`.ConfigOption`."""
     required_item = ConfigOption("required", (int, ))
     assert required_item.isRequired()
-    with pytest.raises(ValueError):
+    expected_err = r"Missing required .* in .* config"
+    with pytest.raises(ConfigMissingRequiredError, match=expected_err):
         _ = required_item.setting
+
+
+def testNoSettingDeepcopy():
+    """Validate that `.NO_SETTING` cannot be copied."""
+    assert NO_SETTING is deepcopy(NO_SETTING)
+
+
+def testInclusiveRange():
+    """Validate that the :meth:`.inclusiveRange()` method works as intended."""
+    assert inclusiveRange(5) == range(5 + 1)
+    assert inclusiveRange(1, 5) == range(1, 5 + 1)
+    assert inclusiveRange(1, 5, 2) == range(1, 5 + 1, 2)
+
+    with pytest.raises(TypeError):
+        inclusiveRange()
+    with pytest.raises(TypeError):
+        inclusiveRange(0, 1, 2, 3)
 
 
 class TestSection(ConfigSection, metaclass=ABCMeta):
@@ -119,14 +143,14 @@ def testBasicConfigSection(basic_test_section):
 def testRequiredConfigSection(required_test_section):
     """Test the expected functionality of a :class:`.RequiredTestSection`."""
     assert required_test_section.isRequired() is True
-    with pytest.raises(ValueError):
+    with pytest.raises(ConfigMissingRequiredError):
         _ = required_test_section.int_option
 
     incomplete_config = {
         "int_option": 5,
         "str_option": "bar"
     }
-    with pytest.raises(KeyError):
+    with pytest.raises(ConfigMissingRequiredError):
         required_test_section.readConfig(incomplete_config)
 
     config_dict = {
@@ -187,12 +211,20 @@ def testConfigObjectList():
     list_item = ConfigObjectList("test_list", _TestConfigObject)
     assert list_item.isRequired() is True
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ConfigMissingRequiredError):
         _ = list_item.objects
 
-    config_list = [{}]
-    with pytest.raises(KeyError):
-        list_item.readConfig(config_list)
+    with pytest.raises(ConfigError):
+        list_item.readConfig([{}])
+
+    with pytest.raises(ConfigMissingRequiredError):
+        list_item.readConfig([])
+
+    with pytest.raises(ConfigTypeError):
+        list_item.readConfig("bad")
+
+    with pytest.raises(ConfigTypeError):
+        list_item.readConfig([[], []])
 
     config_list = [{
         "int_field": 123,
@@ -205,6 +237,14 @@ def testConfigObjectList():
         assert item.int_field == config_list[0]["int_field"]
         assert item.str_field == config_list[0]["str_field"]
         assert item.bool_field == config_list[0]["bool_field"]
+
+
+def testConfigObjectListDefaultEmpty():
+    """Validate that :class:`.ConfigObjectList` methods don't throw errors when list is allowed to be empty."""
+    conf_list = ConfigObjectList("list_label", _TestConfigObject, default_empty=True)
+    conf_list.readConfig([])
+    assert not conf_list.nested_items
+    assert not conf_list.objects
 
 
 class _TestConfigSection(ConfigSection):

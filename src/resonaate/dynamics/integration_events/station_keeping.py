@@ -1,3 +1,4 @@
+"""Defines station-keeping events that allow satellites to control their orbit "autonomously"."""
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 # Third Party Imports
@@ -5,7 +6,7 @@ from numpy import sin, cos, asarray
 from scipy.linalg import norm
 # RESONAATE Imports
 from ...physics.constants import DEG2RAD
-from ...physics.orbit import Orbit
+from ...physics.orbits.elements import ClassicalElements
 from ...physics.math import safeArccos
 from ...physics.transforms.methods import ntw2eci, eci2ecef, ecef2lla
 from .discrete_state_change_event import DiscreteStateChangeEvent
@@ -118,11 +119,8 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
 class KeepGeoEastWest(StationKeeper):
     """Encapsulation of GEO maneuvers to compensate for longitudinal variations.
 
-    See Also:
-        See Chao & Hoots, Section 8.1.1, Eq 8.7
-
     References:
-        Chao, C.-C., & Hoots, F. R. (2018). Applied orbit perturbation and maintenance (Second). Aerospace Press.
+        :cite:t:`chao_2005_perturbations`, Section 8.1.1, Eqn 8.7
     """
 
     LON_DRIFT_THRESHOLD = 0.5 * DEG2RAD
@@ -138,9 +136,9 @@ class KeepGeoEastWest(StationKeeper):
             rso_id (int): Identifier for the RSO that's performing these station keeping maneuvers
             initial_eci (numpy.ndarray): (6, ) initial ECI vector of the satellite, (km, km/s)
             initial_lon (float): initial longitude of the satellite
-            initial_coe (Orbit): classical orbital element set describing satellite's initial orbit
+            initial_coe (ClassicalElements): classical orbital element set describing satellite's initial orbit
         """
-        super(KeepGeoEastWest, self).__init__(rso_id)
+        super().__init__(rso_id)
         self.initial_eci = initial_eci
         self.initial_lon = initial_lon
         self.initial_coe = initial_coe
@@ -156,7 +154,7 @@ class KeepGeoEastWest(StationKeeper):
             :meth:`.StationKeeper.fromInitECI()`
         """
         initial_lon = ecef2lla(eci2ecef(initial_eci))[1]  # radians
-        initial_coe = Orbit.rv2coe(initial_eci)
+        initial_coe = ClassicalElements.fromECI(initial_eci)
         return cls(rso_id, initial_eci, initial_lon, initial_coe)
 
     @classmethod
@@ -176,11 +174,11 @@ class KeepGeoEastWest(StationKeeper):
         """
         self.ntw_delta_v = 0
         delta_lon = self.initial_lon - ecef2lla(eci2ecef(state))[1]  # radians
-        if abs(delta_lon) > self.LON_DRIFT_THRESHOLD:
-            current_coe = Orbit.rv2coe(state)
-            delta_a = self.initial_coe.semimajor_axis - current_coe.semimajor_axis  # km
+        if abs(delta_lon) >= self.LON_DRIFT_THRESHOLD:
+            current_coe = ClassicalElements.fromECI(state)
+            delta_a = self.initial_coe.sma - current_coe.sma  # km
             ntw_delta_v = current_coe.mean_motion * delta_a / 2  # km/s
-            if abs(ntw_delta_v) > self.BURN_THRESHOLD:
+            if abs(ntw_delta_v) >= self.BURN_THRESHOLD:
                 self.ntw_delta_v = ntw_delta_v
                 return True
         return False
@@ -215,11 +213,8 @@ class KeepGeoEastWest(StationKeeper):
 class KeepGeoNorthSouth(StationKeeper):
     """Encapsulation of GEO maneuvers to compensate for latitudinal variations.
 
-    See Also:
-        See Chao & Hoots, Section 8.2, Eq 8.11 & 8.12
-
     References:
-        Chao, C.-C., & Hoots, F. R. (2018). Applied orbit perturbation and maintenance (Second). Aerospace Press.
+        :cite:t:`chao_2005_perturbations`, Section 8.2, Eqn 8.11 & 8.12
     """
 
     LAT_DRIFT_THRESHOLD = 1.0 * DEG2RAD
@@ -235,9 +230,9 @@ class KeepGeoNorthSouth(StationKeeper):
             rso_id (int): Identifier for the RSO that's performing these station keeping maneuvers
             initial_eci (numpy.ndarray): (6, ) initial ECI vector of the satellite, (km, km/s)
             initial_lat (float): initial latitude of the satellite
-            initial_coe (Orbit): classical orbital element set describing satellite's initial orbit
+            initial_coe (ClassicalElements): classical orbital element set describing satellite's initial orbit
         """
-        super(KeepGeoNorthSouth, self).__init__(rso_id)
+        super().__init__(rso_id)
         self.initial_eci = initial_eci
         self.initial_lat = initial_lat
         self.initial_coe = initial_coe
@@ -251,7 +246,7 @@ class KeepGeoNorthSouth(StationKeeper):
             :meth:`.StationKeeper.fromInitECI()`
         """
         initial_lat = ecef2lla(eci2ecef(initial_eci))[0]  # radians
-        initial_coe = Orbit.rv2coe(initial_eci)
+        initial_coe = ClassicalElements.fromECI(initial_eci)
         return cls(rso_id, initial_eci, initial_lat, initial_coe)
 
     @classmethod
@@ -271,14 +266,14 @@ class KeepGeoNorthSouth(StationKeeper):
         """
         self.ntw_delta_v = 0
         delta_lat = self.initial_lat - ecef2lla(eci2ecef(state))[0]
-        if abs(delta_lat) > self.LAT_DRIFT_THRESHOLD:
+        if abs(delta_lat) >= self.LAT_DRIFT_THRESHOLD:
             current_vel = norm(state[3:])  # km/s
-            current_coe = Orbit.rv2coe(state)
-            delta_theta = safeArccos((sin(current_coe.inclination)**2)
-                                     * cos(current_coe.right_ascension - self.initial_coe.right_ascension)
-                                     + cos(current_coe.inclination)**2)
+            current_coe = ClassicalElements.fromECI(state)
+            delta_theta = safeArccos(
+                (sin(current_coe.inc)**2) * cos(current_coe.raan - self.initial_coe.raan) + cos(current_coe.inc)**2
+            )
             ntw_delta_v = 2 * current_vel * sin(delta_theta)  # km/s (sin assumes radians)
-            if abs(ntw_delta_v) > self.BURN_THRESHOLD:
+            if abs(ntw_delta_v) >= self.BURN_THRESHOLD:
                 self.ntw_delta_v = ntw_delta_v
                 return True
         return False
@@ -313,11 +308,8 @@ class KeepGeoNorthSouth(StationKeeper):
 class KeepLeoUp(StationKeeper):
     """Encapsulation of LEO maneuvers to compensate for gravity / drag / 3rd body effects.
 
-    See Also:
-        See Chao & Hoots, Section 7.1.1, Eq 7.6
-
     References:
-        Chao, C.-C., & Hoots, F. R. (2018). Applied orbit perturbation and maintenance (Second). Aerospace Press.
+        :cite:t:`chao_2005_perturbations`, Section 7.1.1, Eqn 7.6
     """
 
     ALT_DRIFT_THRESHOLD = 2.  # km
@@ -332,9 +324,9 @@ class KeepLeoUp(StationKeeper):
         Args:
             rso_id (int): Identifier for the RSO that's performing these station keeping maneuvers
             initial_eci (numpy.ndarray): (6, ) initial ECI vector of the satellite, (km, km/s)
-            initial_coe (Orbit): classical orbital element set describing satellite's initial orbit
+            initial_coe (ClassicalElements): classical orbital element set describing satellite's initial orbit
         """
-        super(KeepLeoUp, self).__init__(rso_id)
+        super().__init__(rso_id)
         self.initial_eci = initial_eci
         self.initial_coe = initial_coe
         self.ntw_delta_v = 0.0
@@ -346,7 +338,7 @@ class KeepLeoUp(StationKeeper):
         See Also:
             :meth:`.StationKeeper.fromInitECI()`
         """
-        initial_coe = Orbit.rv2coe(initial_eci)
+        initial_coe = ClassicalElements.fromECI(initial_eci)
         return cls(rso_id, initial_eci, initial_coe)
 
     @classmethod
@@ -365,11 +357,11 @@ class KeepLeoUp(StationKeeper):
             bool: Indication of whether this :class:`.StationKeeper` needs to activate.
         """
         self.ntw_delta_v = 0
-        current_coe = Orbit.rv2coe(state)
-        delta_a = self.initial_coe.semimajor_axis - current_coe.semimajor_axis  # km
-        if delta_a > self.ALT_DRIFT_THRESHOLD:
+        current_coe = ClassicalElements.fromECI(state)
+        delta_a = self.initial_coe.sma - current_coe.sma  # km
+        if delta_a >= self.ALT_DRIFT_THRESHOLD:
             ntw_delta_v = current_coe.mean_motion * delta_a / 2  # km/s
-            if abs(ntw_delta_v) > self.BURN_THRESHOLD:
+            if abs(ntw_delta_v) >= self.BURN_THRESHOLD:
                 self.ntw_delta_v = ntw_delta_v
                 return True
         return False

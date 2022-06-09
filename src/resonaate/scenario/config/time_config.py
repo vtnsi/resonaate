@@ -20,7 +20,7 @@ class TimeConfig(ConfigSection):
 
     @property
     def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption`s that this section contains."""
+        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
         return [self._start_timestamp, self._physics_step_sec, self._output_step_sec, self._stop_timestamp]
 
     @property

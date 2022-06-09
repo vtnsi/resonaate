@@ -13,7 +13,7 @@ try:
     from resonaate.physics.time.stardate import JulianDate
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
@@ -32,15 +32,14 @@ class TestScenarioApp(BaseTestCase):
         Args:
             init_file (str): file path for Resonaate initialization file
             elapsed_time (`timedelta`): amount of time to simulate
-            importer_db_path (``str``, optional): path to external importer database for pre-canned
-                data. Defaults to ``None``.
+            importer_db_path (``str``): path to external importer database for pre-canned data.
         """
         # Create scenario from JSON init message
         config_dict = ScenarioConfig.parseConfigFile(init_file)
 
         app = buildScenarioFromConfigDict(
             config_dict,
-            internal_db_path=self.shared_db_path,
+            internal_db_path=None,
             importer_db_path=importer_db_path,
         )
 
@@ -76,7 +75,7 @@ class TestScenarioApp(BaseTestCase):
     def testBuildFromConfig(self, datafiles):
         """Test building a scenario from config files."""
         init_file = os.path.join(datafiles, self.json_init_path, "default_realtime_est_realtime_obs.json")
-        app = buildScenarioFromConfigFile(init_file, internal_db_path=self.shared_db_path, importer_db_path=None)
+        app = buildScenarioFromConfigFile(init_file, internal_db_path=None, importer_db_path=None)
         app.database.resetData(tables=app.database.VALID_DATA_TYPES)
 
     @pytest.mark.realtime
@@ -171,7 +170,7 @@ class TestScenarioFactory(BaseTestCase):
 
         app = buildScenarioFromConfigFile(
             init_file_path,
-            internal_db_path=self.shared_db_path,
+            internal_db_path=None,
             importer_db_path=db_path if 'import' in init_file else None
         )
         importer_db.resetData(tables=ImporterDatabase.VALID_DATA_TYPES)
@@ -190,7 +189,7 @@ class TestScenarioFactory(BaseTestCase):
         with pytest.raises(KeyError):
             buildScenarioFromConfigFile(
                 init_file_path,
-                internal_db_path=self.shared_db_path,
+                internal_db_path=None,
                 importer_db_path=db_path if 'import' in init_file else None,
             )
 

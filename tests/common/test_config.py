@@ -29,7 +29,7 @@ class TestConfig(BaseTestCase):
             "AllowMultipleHandlers": False
         },
         "database": {
-            "DatabaseURL": "sqlite://",
+            "DatabasePath": "sqlite://",
         },
         "parallel":{
             "RedisHostname": 'localhost',
@@ -69,7 +69,7 @@ class TestConfig(BaseTestCase):
         """
         # Write to custom config file, and patch the proper environment variable
         config_path = os.path.join(datafiles, "test.config")
-        with open(config_path, 'w') as config_file:
+        with open(config_path, 'w', encoding="utf-8") as config_file:
             config_file.writelines(self.CONFIG_FILE_VALID)
 
         with monkeypatch.context() as m_patch:
@@ -135,7 +135,8 @@ class TestConfig(BaseTestCase):
             it set _before_ calling/importing anything.
         """
         # Patched environment variable
-        test_logger.debug("RESONAATE_BEHAVIOR_CONFIG: {0}".format(os.environ.get("RESONAATE_BEHAVIOR_CONFIG")))
+        msg = f'RESONAATE_BEHAVIOR_CONFIG: {os.environ.get("RESONAATE_BEHAVIOR_CONFIG")}'
+        test_logger.debug(msg)
 
         # Check the values
         assert file_config.logging.OutputLocation == "./logs/"

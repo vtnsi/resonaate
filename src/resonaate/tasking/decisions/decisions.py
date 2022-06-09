@@ -1,8 +1,9 @@
+"""Define implemented decision algorithms used to optimize tasked sensors."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import argmax, zeros, where, any as np_any
 from numpy.random import default_rng
-from munkres import Munkres, make_cost_matrix
+from scipy.optimize import linear_sum_assignment
 # RESONAATE Imports
 from .decision_base import Decision
 
@@ -12,6 +13,10 @@ class MyopicNaiveGreedyDecision(Decision):
 
     def _makeDecision(self, reward_matrix, **kwargs):
         """Select the optimal tasking for each sensor, disregarding the effect on other sensors.
+
+        References:
+            #. :cite:t:`nastasi_2018_diss`
+            #. :cite:t:`krishnamurthy_2016`
 
         Args:
             reward_matrix (``numpy.ndarray``): reward matrix to optimize
@@ -36,20 +41,21 @@ class MunkresDecision(Decision):
     def _makeDecision(self, reward_matrix, **kwargs):
         """Select optimal tasking for each sensor, constrained to "perfect matching".
 
+        References:
+            :cite:t:`crouse_taes_2016_assignment`
+
         Args:
             reward_matrix (``numpy.ndarray``): reward matrix to optimize
 
         Returns:
             ``numpy.ndarray``: unconstrained optimal decision set
         """
-        mun = Munkres()
         decision = zeros(reward_matrix.shape, dtype=bool)
 
-        # Convert reward matrix to cost matrix, and minimize via Munkres
-        indices = mun.compute(make_cost_matrix(reward_matrix, lambda x: (1e6 - x)))
-
-        # Determine the optimal decisions
-        for tgt_ind, sen_ind in indices:
+        # Solve reward matrix as a bipartite graph using the Hungarian algorithm
+        tgt_indices, sen_indices = linear_sum_assignment(reward_matrix, maximize=True)
+        for tgt_ind, sen_ind in zip(tgt_indices, sen_indices):
+            # Ensure we are only assigning capable pairs
             if reward_matrix[tgt_ind, sen_ind] > 0.0:
                 decision[tgt_ind, sen_ind] = True
 
@@ -57,7 +63,11 @@ class MunkresDecision(Decision):
 
 
 class RandomDecision(Decision):
-    """Completely random set decision-making."""
+    """Completely random set decision-making.
+
+    References:
+        CORE ALGORITHM
+    """
 
     def __init__(self, seed):
         """Override init to explicitly set the seed for randomization."""

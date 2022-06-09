@@ -2,6 +2,92 @@
 from abc import ABCMeta, abstractmethod
 
 
+class BaseConfigError(Exception, metaclass=ABCMeta):
+    """Base exception for configuration errors."""
+
+    def __init__(self, config_label):
+        """Instantiate an exception dealing with a bad configuration setting.
+
+        Args:
+            config_label (str): Name of config setting causing error.
+        """
+        super().__init__(config_label)
+        self.config_label = config_label
+
+    @abstractmethod
+    def __str__(self):
+        """Return a string representation of this exception."""
+        raise NotImplementedError()
+
+
+class ConfigError(BaseConfigError):
+    """Generic exception for configuration errors."""
+
+    def __init__(self, config_label, message):
+        """Instantiate an exception dealing with a bad configuration setting.
+
+        Args:
+            config_label (str): Name of config setting causing error.
+            message (str): Message associated with error.
+        """
+        super().__init__(config_label)
+        self.message = message
+
+    def __str__(self):
+        """Return a string representation of this exception."""
+        return f"Error occurred in '{self.config_label}': {self.message}"
+
+
+class ConfigSettingError(BaseConfigError, metaclass=ABCMeta):
+    """Encapsulate shared functionality of subclasses."""
+
+    def __init__(self, config_label, bad_setting, requirements):
+        """Instantiate an exception dealing with a config setting error.
+
+        Args:
+            config_label (str): Name of config setting causing error.
+            bad_setting (any): Value of setting causing error.
+            requirements (any): Correct types or values for the setting causing error.
+        """
+        super().__init__(config_label)
+        self.bad_setting = bad_setting
+        self.requirements = requirements
+
+
+class ConfigTypeError(ConfigSettingError):
+    """Exception thrown if configuration setting has a bad type."""
+
+    def __str__(self):
+        """Return a string representation of this exception."""
+        return f"Setting '{self.config_label}' must be in types {self.requirements}, not {type(self.bad_setting)}"
+
+
+class ConfigValueError(ConfigSettingError):
+    """Exception thrown if configuration setting has a bad value."""
+
+    def __str__(self):
+        """Return a string representation of this exception."""
+        return f"Setting '{self.bad_setting}' for '{self.config_label} is not a valid setting: {self.requirements}"
+
+
+class ConfigMissingRequiredError(BaseConfigError):
+    """Exception thrown if required configuration setting is missing."""
+
+    def __init__(self, config_label, missing):
+        """Instantiate an exception dealing with a missing required configuration setting.
+
+        Args:
+            config_label (str): Name of config item causing error.
+            missing (str): Name of missing config item.
+        """
+        super().__init__(config_label)
+        self.missing = missing
+
+    def __str__(self):
+        """Return a string representation of this exception."""
+        return f"Missing required '{self.missing}' in '{self.config_label}' config"
+
+
 class ConfigItem(metaclass=ABCMeta):
     """Define a common interface for all configuration classes to share."""
 
@@ -14,7 +100,7 @@ class ConfigItem(metaclass=ABCMeta):
     @property
     @abstractmethod
     def nested_items(self):
-        """list: List of nested :class:`.ConfigItem`s."""
+        """list: List of nested :class:`.ConfigItem` objects."""
         raise NotImplementedError()
 
     @abstractmethod
@@ -30,15 +116,14 @@ class ConfigItem(metaclass=ABCMeta):
         """
         for item in self.nested_items:
             nested_config = raw_config.get(item.config_label)
-            if nested_config is None and item.isRequired():
-                err = "Missing required key '{0}' in '{1}' section of Scenario config".format(
-                    item.config_label,
-                    self.config_label
-                )
-                raise KeyError(err)
+            if nested_config is not None:
+                try:
+                    item.readConfig(nested_config)
+                except BaseConfigError as inner_err:
+                    raise ConfigError(self.config_label, str(inner_err)) from inner_err
 
-            elif nested_config is not None:
-                item.readConfig(nested_config)
+            elif nested_config is None and item.isRequired():
+                raise ConfigMissingRequiredError(item.config_label, self.config_label)
 
 
 class NoSettingType:
@@ -72,21 +157,15 @@ NO_SETTING = NoSettingType.getSingleton()
 """NoSettingType: Singleton used for options that default to nothing."""
 
 
-def inclusiveRange(*args, step=1):
+def inclusiveRange(*args):
     """Return a `range` object that includes the last number of the given range."""
-    if len(args) == 1:
-        start = 0
-        stop = args[0] + 1
-    elif len(args) == 2:
-        start = args[0]
-        stop = args[1] + 1
-    elif len(args) == 3:
-        start = args[0]
-        stop = args[1] + 1
-        step = args[2]
-    else:
-        err = "inclusiveRange expected 1-3 arguments, got {0}".format(len(args))
+    if len(args) not in (1, 2, 3):
+        err = f"inclusiveRange expected 1-3 arguments, got {len(args)}"
         raise TypeError(err)
+    step = 1 if len(args) < 3 else args[2]
+    start = 0 if len(args) < 2 else args[0]
+    stop = args[0] if len(args) < 2 else args[1]
+    stop += 1
 
     return range(start, stop, step)
 
@@ -124,8 +203,7 @@ class ConfigOption(ConfigItem):
         elif self.default is not None:
             return self.default
         # else:
-        err = "Required config '{0}' not set.".format(self._config_label)
-        raise ValueError(err)
+        raise ConfigMissingRequiredError("config", self.config_label)
 
     def _validateSetting(self, new_setting):
         """Raise error if `new_setting` isn't valid.
@@ -138,13 +216,11 @@ class ConfigOption(ConfigItem):
             ValueError: If :attr:`.valid_settings` is not ``None`` and `new_setting` isn't in it.
         """
         if not isinstance(new_setting, self.types):
-            err = "Setting must be in types {0}, not {1}".format(self.types, type(new_setting))
-            raise TypeError(err)
+            raise ConfigTypeError(self.config_label, new_setting, self.types)
 
         if self.valid_settings:
             if new_setting not in self.valid_settings:
-                err = "Setting '{0}' is not a valid setting: {1}".format(new_setting, self.valid_settings)
-                raise ValueError(err)
+                raise ConfigValueError(self.config_label, new_setting, self.valid_settings)
 
     def isRequired(self):
         """Return a boolean indication of whether this :class:`.ConfigOption` is required."""
@@ -157,7 +233,7 @@ class ConfigOption(ConfigItem):
 
     @property
     def nested_items(self):
-        """list: List of nested :class:`.ConfigItem`s.
+        """list: List of nested :class:`.ConfigItem` objects.
 
         A :class:`.ConfigOption` is expected to be a leaf node in the configuration hierarchy, and
         so it cannot have any nested items.
@@ -196,7 +272,7 @@ class ConfigObject(metaclass=ABCMeta):
     @staticmethod
     @abstractmethod
     def getFields():
-        """Returns a tuple of :class:`.ConfigOption`s defining the fields required for this :class:`.ConfigObject`."""
+        """Returns tuple of :class:`.ConfigOption` defining the fields required for this :class:`.ConfigObject`."""
         raise NotImplementedError()
 
     def __init__(self, object_config):
@@ -211,21 +287,20 @@ class ConfigObject(metaclass=ABCMeta):
         for field in self.getFields():
             config_setting = object_config.get(field.config_label)
             if config_setting is not None:
-                field.readConfig(config_setting)
+                try:
+                    field.readConfig(config_setting)
+                except BaseConfigError as inner_err:
+                    raise ConfigError(self.__class__.__name__, str(inner_err)) from inner_err
 
             if field.isRequired() and config_setting is None:
-                err = "Missing required field '{0}' in '{1}' definition".format(
-                    field.config_label,
-                    self.__class__
-                )
-                raise KeyError(err)
+                raise ConfigMissingRequiredError(self.__class__.__name__, field.config_label)
 
             private_name = "_" + field.config_label
             setattr(self, private_name, field)
 
 
 class ConfigObjectList(ConfigItem):
-    """Class for defining a configuration item that is a list of :class:`.ConfigObject`s."""
+    """Class for defining a configuration item that is a list of :class:`.ConfigObject` objects."""
 
     def __init__(self, config_label, obj_type, default_empty=False):
         """Construct and instance of a :class:`.ConfigObjectList`.
@@ -252,49 +327,61 @@ class ConfigObjectList(ConfigItem):
 
     @property
     def nested_items(self):
-        """list: List of nested :class:`.ConfigItem`s.
+        """list: List of nested :class:`.ConfigItem` objects.
 
         The :attr:`.nested_items` attribute is a means to loop over the expected
-        :class:`.ConfigItem`s that define the nesting object. Because :class:`.ConfigObjectList`
-        doesn't have any inherit nested :class:`.ConfigItems` (just instantiated
-        :class:`.ConfigObject`s accessible via :attr:`.objects`), this function returns an empty
+        :class:`.ConfigItem` objects that define the nesting object. Because :class:`.ConfigObjectList`
+        doesn't have any inherit nested :class:`.ConfigItem` objects (just instantiated
+        :class:`.ConfigObject` objects accessible via :attr:`.objects`), this function returns an empty
         list.
         """
         return []
 
-    def readConfig(self, raw_config):
-        """Parse of list of object dictionaries and store them as :class:`.ConfigObject`s.
+    def _validateRawConfig(self, raw_config):
+        """Raise exceptions if types of `raw_config` are wrong.
 
         Args:
             raw_config (list): List of dictionaries that correspond to :attr:`.obj_type`.
+
+        Raises:
+            TypeError: If `raw_config` is not a list, or if the elements of `raw_config` aren't dictionaries.
+            ValueError: If `raw_config` is empty, but :attr:`.default_empty` is ``False``.
         """
         if not isinstance(raw_config, list):
-            err = f"Cannot read config objects from type {type(raw_config)}"
-            raise TypeError(err)
+            raise ConfigTypeError(self.config_label, raw_config, (list, ))
 
         if not raw_config:
             if not self.default_empty:
-                err = "'{0}' list cannot be empty.".format(self.config_label)
-                raise ValueError(err)
+                raise ConfigMissingRequiredError("config", self.config_label)
             return
 
         for config_dict in raw_config:
             if not isinstance(config_dict, dict):
-                err = f"Cannot read config object from type {type(config_dict)}"
-                raise TypeError(err)
+                raise ConfigTypeError(self.config_label, config_dict, (dict, ))
 
-            self._list.append(
-                self.obj_type(config_dict)
-            )
+    def readConfig(self, raw_config):
+        """Parse of list of object dictionaries and store them as :class:`.ConfigObject` objects.
+
+        Args:
+            raw_config (list): List of dictionaries that correspond to :attr:`.obj_type`.
+        """
+        self._validateRawConfig(raw_config)
+
+        for config_dict in raw_config:
+            try:
+                read_obj = self.obj_type(config_dict)
+            except BaseConfigError as inner_err:
+                raise ConfigError(self.config_label, str(inner_err)) from inner_err
+            else:
+                self._list.append(read_obj)
 
     @property
     def objects(self):
-        """list: List of stored :class:`.ConfigObject`s."""
+        """list: List of stored :class:`.ConfigObject` objects."""
         if self._list or self.default_empty:
             return self._list
         # else:
-        err = "Required config '{0}' not set.".format(self.config_label)
-        raise ValueError(err)
+        raise ConfigMissingRequiredError("config", self.config_label)
 
     def isRequired(self):
         """Return a boolean indication of whether this :class:`.ConfigList` is required."""

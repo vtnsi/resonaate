@@ -1,9 +1,10 @@
+"""RESONAATE Package setup file."""
 import setuptools
 
 setuptools.setup(
     name="resonaate",
     description="The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE) ",
-    version="1.2.0",
+    version="1.3.0",
     packages=setuptools.find_packages('src'),
     package_dir={'': 'src'},
     package_data={
@@ -19,9 +20,7 @@ setuptools.setup(
         "sqlalchemy>=1.3",
         "matplotlib>=3.3",
         "pyyaml>=5.3",
-        "jplephem>=2.9",
         "redis>=3.2.0",
-        "munkres>=1.1",
     ],
     entry_points={
         'console_scripts': [

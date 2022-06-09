@@ -3,6 +3,10 @@
 This module holds all constants that are used in various places across the
 codebase, allowing for a consistent place to store them. Constants specific
 to objects and classes remain in those files.
+
+References:
+    #. :cite:t:`montenbruck_2012_orbits`, Eqn 3.67
+    #. :cite:t:`vallado_2013_astro`
 """
 # Standard library imports
 # Third Party Imports

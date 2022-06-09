@@ -1,3 +1,4 @@
+"""Defines the :class:`.EstimateAgent` class."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import ndarray, copy
@@ -8,9 +9,6 @@ from ..common.exceptions import ShapeError
 from ..data.ephemeris import EstimateEphemeris
 from ..filters import kalmanFilterFactory
 from ..filters.sequential_filter import SequentialFilter
-from ..parallel.async_functions import asyncPredict
-from ..parallel.job_handler import CallbackRegistration
-from ..parallel.job import Job
 from ..physics.noise import initialEstimateNoise
 from ..physics.transforms.methods import eci2ecef, ecef2lla
 
@@ -38,16 +36,18 @@ class EstimateAgent(Agent):
             TypeError: raised on incompatible types for input params
             ShapeError: raised if process noise is not a 6x6 matrix
         """
-        super(EstimateAgent, self).__init__(
+        super().__init__(
             _id, name, agent_type, initial_state, clock, _filter.dynamics, True, DEFAULT_VIS_X_SECTION,
             station_keeping=station_keeping
         )
         if not isinstance(initial_covariance, ndarray):
             self._logger.error("Incorrect type for initial_covariance param")
             raise TypeError(type(initial_covariance))
-        elif initial_covariance.shape != (6, 6):
+
+        if initial_covariance.shape != (6, 6):
             self._logger.error("Incorrect shape for initial_covariance param")
             raise ShapeError(initial_covariance.shape)
+
         # Properly initialize the EstimateAgent's covariance types
         self._initial_covariance = copy(initial_covariance)
         self._error_covariance = copy(initial_covariance)
@@ -58,6 +58,11 @@ class EstimateAgent(Agent):
         # Save the random number generator for generating noise
         self._rng = default_rng(seed)
 
+        # Properly initialize the EstimateAgent's state types
+        self._state_estimate = copy(initial_state)
+        self._ecef_state = eci2ecef(initial_state)
+        self._lla_state = ecef2lla(self._ecef_state)
+
         # Set the EstimateAgent's filter & set itself to the filter's host
         if isinstance(_filter, SequentialFilter):
             self._filter = _filter
@@ -66,73 +71,11 @@ class EstimateAgent(Agent):
             self._logger.error("Invalid input type for _filter param")
             raise TypeError(type(_filter))
 
-        # Properly initialize the EstimateAgent's state types
-        self._state_estimate = copy(initial_state)
-        self._ecef_state = eci2ecef(initial_state)
-        self._lla_state = ecef2lla(self._ecef_state)
-
         # Attribute to track the most recent _actual_ observation of this object
         self.last_observed_at = self.julian_date_start
 
         # Apply None value to estimate station_keeping
         assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
-
-    def updateJob(self, new_time):
-        """Create a job to be processed in parallel and update :attr:`time` appropriately.
-
-        This relies on a common interface for :meth:`.SequentialFilter.predict`
-
-        Args:
-            new_time (:class:`.ScenarioTime`): payload sent by :class:`.PropagateJobHandler` to
-                indicate the current simulation time
-
-        Returns
-            :class:`.Job`: Job to be processed in parallel.
-        """
-        job = Job(
-            self.callback.job_computation,
-            args=[
-                self._filter,
-                new_time
-            ]
-        )
-        self._time = new_time
-
-        return job
-
-    def setCallback(self, importer):
-        """Set the callback associated when :meth:`.executeJobs()` is executed.
-
-        Args:
-            importer (``bool``): whether a proper :class:`.ImporterDatabase` exists
-
-        Note:
-            Assumes that :class:`.EstimateAgent` objects don't have importable :class:`.Ephemeris`:
-
-            1. If an instance of :class:`.EstimateAgent`, use :func:`.asyncPredict`.
-
-        Returns:
-            :class:`.CallbackRegistration`
-        """
-        self.callback = CallbackRegistration(
-            self,
-            self.updateJob,
-            asyncPredict,
-            self.jobCompleteCallback
-        )
-        return self.callback
-
-    def jobCompleteCallback(self, job):
-        """Execute when the job submitted in :meth:`~.EstimateAgent.updateJob` completes.
-
-        Save the *a priori* :attr:`state_estimate` and :attr:`error_covariance`.
-
-        Args:
-            job (:class:`.Job`): job object that's returned when a job completes
-        """
-        self.nominal_filter.updateFromAsyncResult(job.retval)
-        self.state_estimate = self.nominal_filter.pred_x
-        self.error_covariance = self.nominal_filter.pred_p
 
     def updateEstimate(self, obs, truth):
         """Perform update using EstimateAgent's :attr:`nominal_filter`.
@@ -152,21 +95,38 @@ class EstimateAgent(Agent):
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
 
-    def updateFromAsyncUpdateEstimate(self, async_result):
-        """Perform update using EstimateAgent's :attr:`nominal_filter`'s async result.
+    def updateFromAsyncPredict(self, async_result):
+        """Perform predict using EstimateAgent's :attr:`nominal_filter`'s async result.
 
-        Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. This occurs
-        **after** execution a job on a :class:`.Worker`. The job result is handled by the
+        Save the *a priori* :attr:`.state_estimate` and :attr:`.error_covariance`. This occurs
+        **after** execution of a job on a :class:`.Worker`. The job result is handled by the
         :class:`.QueueManager` to update the :attr:`nominal_filter`.
 
         See Also:
-            :meth:`~.CentralizedTaskingEngine.handleProcessedJob` to see how the result is handled
+            :meth:`~.JobHandler.handleProcessedJob` to see how the result is handled
+
+        Args:
+            async_result (``dict``): Result from parallel :attr:`nominal_filter` predict.
+        """
+        self.nominal_filter.updateFromAsyncResult(async_result)
+        self.state_estimate = self.nominal_filter.pred_x
+        self.error_covariance = self.nominal_filter.pred_p
+
+    def updateFromAsyncUpdateEstimate(self, async_result):
+        """Perform update using EstimateAgent's :attr:`nominal_filter`'s async result.
+
+        Save the *a posteriori* :attr:`.state_estimate` and :attr:`.error_covariance`. This occurs
+        **after** execution of a job on a :class:`.Worker`. The job result is handled by the
+        :class:`.QueueManager` to update the :attr:`nominal_filter`.
+
+        See Also:
+            :meth:`~.JobHandler.handleProcessedJob` to see how the result is handled
 
         Args:
             async_result (``dict``): Result from parallel :attr:`nominal_filter` update.
         """
         self.nominal_filter.updateFromAsyncResult(async_result["filter_update"])
-        if async_result["observations"]:
+        if async_result["observed"]:
             self.last_observed_at = self.julian_date_epoch
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
@@ -196,11 +156,11 @@ class EstimateAgent(Agent):
         Args:
             ephemeris (:class:`.Ephemeris`): data object to update this SensingAgent's state with
         """
-        raise NotImplementedError
+        raise NotImplementedError("Cannot load state estimates directly into simulation")
 
     @classmethod
     def fromConfig(cls, config, events):
-        """Factory to initialize `Estimate`s based on given configuration.
+        """Factory to initialize :class:`.EstimateAgent` objects based on given configuration.
 
         Args:
             config (``dict``): formatted configuration parameters
@@ -214,7 +174,9 @@ class EstimateAgent(Agent):
         clock = config["clock"]
         nominal_filter = kalmanFilterFactory(config["filter"])
         # Create the initial state & covariance
-        init_x, init_p = initialEstimateNoise(tgt.eci_state, config["init_estimate_error"], config["rng"])
+        init_x, init_p = initialEstimateNoise(
+            tgt.eci_state, config["position_std"], config["velocity_std"], config["rng"]
+        )
 
         # Create the `EstimateAgent` and initialize its filter object
         est = cls(
@@ -227,7 +189,6 @@ class EstimateAgent(Agent):
             nominal_filter,
             config["seed"]
         )
-        est.nominal_filter.initialize(clock.time, init_x, init_p)
 
         # Return properly initialized `EstimateAgent`
         return est

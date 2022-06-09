@@ -1,124 +1,142 @@
+"""Abstract :class:`.Tasking` base class defining the tasking engine API."""
 # Standard Library Imports
 from logging import getLogger
 from abc import ABCMeta, abstractmethod
+# Third Party Imports
+from numpy import zeros
 # RESONAATE Imports
-from ...data.importer_database import ImporterDatabase
 from ..decisions.decision_base import Decision
 from ..rewards.reward_base import Reward
+from ...data.importer_database import ImporterDatabase
 
 
 class TaskingEngine(metaclass=ABCMeta):
-    """Tasking Engine abstract base class.
+    """Abstract base class defining common API for tasking engines.
 
-    This class provides the framework and behavior for the command & control node of a network or agent.
+    This class provides the framework and behavior for the command & control of a network or agent.
     """
 
-    def __init__(self, sensor_nums, target_nums, reward, decision, seed=None):
-        """Construct a TaskingEngine object.
+    def __init__(self, engine_id, sensor_ids, target_ids, reward, decision, importer_db_path=None):
+        """Initialize a tasking engine object.
 
         Args:
-            clock (:class:`.ScenarioClock`): clock for tracking time
-            sensor_nums (:class:`.List`): list of sensor agents
-            target_nums (:class: `.List`): list of target agents
+            engine_id (int): Unique ID for this :class:`.TaskingEngine`
+            sensor_ids (``list``): list of sensor agent ID numbers
+            target_ids (``list``): list of target agent ID numbers
             reward (:class:`.Reward`): callable reward object for determining tasking priority
             decision (:class:`.Decision`): callable decision object for optimizing tasking
-            seed (int, optional): number to seed random number generator. Defaults to ``None``.
+            importer_db_path (``str``, optional): path to external importer database for pre-canned
+                data. Defaults to ``None``.
 
         Raises:
-            TypeError: raised if invalid :class:`.Reward` object
-            TypeError: raised if invalid :class:`.Decision` object
+            TypeError: raised if invalid reward parameter passed
+            TypeError: raised if invalid decision parameter passed
         """
-        # Get logger for the class
         self.logger = getLogger("resonaate")
+
+        self._unique_id = engine_id
+
         if not isinstance(reward, Reward):
             raise TypeError("Engine constructor requires an instantiated `Reward` object.")
         if not isinstance(decision, Decision):
             raise TypeError("Engine constructor requires an instantiated `Decision` object.")
+
         self._reward = reward
+        """:class:`.Reward`: callable that determines tasking priority based on various metric."""
         self._decision = decision
+        """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
 
-        if not isinstance(seed, int) and seed is not None:
-            self.logger.error("Incorrect type for seed param")
-            raise TypeError(type(seed))
+        self.target_list = target_ids
+        """``list``: target agent ID numbers."""
+        self.sensor_list = sensor_ids
+        """``list``: sensor agent ID numbers."""
 
-        # Save default values as None for important matrices
-        self.reward_matrix = None
-        self.decision_matrix = None
-        self.visibility_matrix = None
+        self.reward_matrix = zeros((self.num_targets, self.num_sensors), dtype=float)
+        """``numpy.ndarray``: NxM array defining the tasking reward for every target/sensor pair."""
+        self.decision_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
+        """``numpy.ndarray``: NxM array defining the tasking decision for every target/sensor pair."""
+        self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
+        """``numpy.ndarray``: NxM array defining the visibility condition for every target/sensor pair."""
 
-        # Save class variables
-        self.target_list = target_nums
-        self.sensor_list = sensor_nums
+        self.target_indices = {target_id: index for index, target_id in enumerate(self.target_list)}
 
         # List of transient observations (current timestep only)
         self._observations = []
-        # List of observations saved internally. Cleared on calls to `getCurrentObservations()`
+        """``list``: transient :class:`.Observation` tasked & saved by this engine during the current timestep."""
         self._saved_observations = []
+        """``list``: transient :class:`.Observation` tasked & saved by this engine not loaded to the DB."""
 
-        # Input database object for loading `Observation` objects
         self._importer_db = None
+        """:class:`.ImporterDatabase`: Input database object for loading :class:`.Observation` objects."""
+        if importer_db_path:
+            self._importer_db = ImporterDatabase.getSharedInterface(db_path=importer_db_path)
 
-    def assess(self, julian_date, importer_db_path=None):
-        """Perform desired analysis on the current simulation state.
-
-        First, the rewards for all possible tasks are computed, then the engine optimizes
-        tasking based on the reward matrix. Finally, the optimized tasking strategy is
-        applied, observations are collected, and the estimate agents are updated.
+    def addTarget(self, target_id):
+        """Add a target to this :class:`.TaskingEngine`.
 
         Args:
-            julian_date (:class:`.JulianDate`): epoch at which to task sensors
-            importer_db_path (``str``, optional): path to external importer database for pre-canned
-                data. Defaults to ``None``.
+            target_id (int): Unique identifier for the target being added.
         """
-        self._observations = []
+        self.target_indices[target_id] = len(self.target_list)
+        self.target_list.append(target_id)
 
-        # Load importer DB if not loaded
-        if importer_db_path and self._importer_db is None:
-            self._importer_db = ImporterDatabase.getSharedInterface(db_url=importer_db_path)
+    def removeTarget(self, target_id):
+        """Remove a target from this :class:`.TaskingEngine`.
 
-        self.constructRewardMatrix()
-        self.generateTasking()
-        self.executeTasking(julian_date)
+        Args:
+            target_id (int): Unique identifier for the target being removed.
+        """
+        del self.target_indices[target_id]
+        self.target_list.remove(target_id)
 
-        tasked_sensors = set()
-        observed_targets = set()
-        for cur_ob in self._observations:
-            tasked_sensors.add(cur_ob.sensor_id)
-            observed_targets.add(cur_ob.target_id)
+    def addSensor(self, sensor_id):
+        """Add a sensor to this :class:`.TaskingEngine`.
 
-        msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
-        msg += f"{len(tasked_sensors)} sensors {tasked_sensors} on {len(observed_targets)} targets {observed_targets}"
-        self.logger.info(msg)
+        Args:
+            sensor_id (int): Unique identifier for the sensor being added.
+        """
+        self.sensor_list.append(sensor_id)
+
+    def removeSensor(self, sensor_id):
+        """Remove a sensor from this :class:`.TaskingEngine`.
+
+        Args:
+            sensor_id (int): Unique identifier for the sensor being removed.
+        """
+        self.sensor_list.remove(sensor_id)
 
     def saveObservations(self, observations):
-        """Save set of observations.
+        """Save set of :class:`.Observation` objects to transient lists.
 
         Args:
-            observations (list): List of observations to save.
+            observations (``list``): :class:`.Observation` to save.
         """
         self._observations.extend(observations)
         self._saved_observations.extend(observations)
 
     def getCurrentObservations(self):
-        """Retrieve current list of observations saved internally & reset it."""
+        """``list``: Returns current list of observations saved internally & resets transient list."""
         observations = self._saved_observations
         self._saved_observations = []
 
         return observations
 
-    @abstractmethod
-    def constructRewardMatrix(self):
-        """Determine the visibility & reward matrices for the current step k."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def executeTasking(self, julian_date):
-        """Collect tasked observations, if they exist, based on the decision matrix.
-
-        Collected observations are applied to each corresponding estimate agent's filter.
+    def retaskSensors(self, new_target_nums):
+        """Update the set of target agents, usually after a target is added/removed.
 
         Args:
-            julian_date (:class:`.JulianDate`): epoch at which to task sensors
+            new_target_nums (``list``): ID numbers of new targets to task against.
+        """
+        self.target_list = new_target_nums
+
+    @abstractmethod
+    def assess(self, julian_date):
+        """Perform a set of analysis operations on the current simulation state.
+
+        Must be overridden by implemented classes.
+
+        Args:
+            julian_date (:class:`.JulianDate`): epoch at which to perform analysis
         """
         raise NotImplementedError
 
@@ -132,23 +150,44 @@ class TaskingEngine(metaclass=ABCMeta):
 
     @abstractmethod
     def getCurrentTasking(self, julian_date):
-        """Return database information of current tasking.
+        """Return current tasking solution.
 
         Must be overridden by implemented classes.
+
+        Args:
+            julian_date (:class:`.JulianDate`): epoch at which to retrieve tasking solution
+
+        Yields:
+            :class:`.Task`: tasking DB object for each target/sensor pair
         """
         raise NotImplementedError
 
     @property
+    def reward(self):
+        """:class:`.Reward`: Returns the tasking engine's reward function."""
+        return self._reward
+
+    @property
+    def decision(self):
+        """:class:`.Decision`: Returns the tasking engine's decision function."""
+        return self._decision
+
+    @property
+    def unique_id(self):
+        """int: Unique identifier for this :class:`.TaskingEngine`."""
+        return self._unique_id
+
+    @property
     def num_targets(self):
-        """int: number of targets."""
+        """``int``: Returns the number of targets."""
         return len(self.target_list)
 
     @property
     def num_sensors(self):
-        """int: number of sensors."""
+        """``int``: Returns the number of sensors."""
         return len(self.sensor_list)
 
     @property
     def observations(self):
-        """``list``: Returns the :class:`.Observation`s for the previous timestep."""
+        """``list``: Returns the :class:`.Observation` objects for the previous timestep."""
         return self._observations

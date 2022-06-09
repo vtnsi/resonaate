@@ -1,14 +1,15 @@
-"""Module defining a base :class:`.Dynamics` class for celestial :class:`.Agent`s."""
+"""Defines the abstract base class :class:`.Celestial`."""
 # Standard Library
 from abc import ABCMeta, abstractmethod
-import logging
 # Third Party Imports
 from scipy.integrate import solve_ivp
 from numpy import ones_like, spacing
 # RESONAATE Imports
+from ..common.logger import resonaateLogWarning
 from ..physics.bodies import Earth
 from .constants import RK45_LABEL
 from .dynamics_base import Dynamics
+from .integration_events.finite_thrust import ScheduledFiniteBurn, ScheduledFiniteManeuver
 
 
 class EarthCollision(Exception):
@@ -30,12 +31,11 @@ def checkEarthCollision(r_norm):
 
     if r_norm < Earth.radius + Earth.atmosphere:
         msg = "An RSO is within 100km of Earth surface"
-        logger = logging.getLogger("resonaate")
-        logger.warning(msg)
+        resonaateLogWarning(msg)
 
 
 class Celestial(Dynamics, metaclass=ABCMeta):
-    """The :class:`.Celestial` dynamics class defines the behavior of space-based :class:`.Agent`s."""
+    """The :class:`.Celestial` dynamics class defines the behavior of space-based :class:`agent_base.Agent` objects."""
 
     def __init__(self, method=RK45_LABEL):
         """Instantiate a :class:`.Celestial` object.
@@ -44,8 +44,9 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             method (str, optional): Which ODE integration method to use.
         """
         self._method = method
+        self.fin_t = None
 
-    def propagate(self, initial_time, final_time, initial_state, station_keeping=None):
+    def propagate(self, initial_time, final_time, initial_state, station_keeping=None, scheduled_events=None):
         """Numerically integrate the state vector forward to the final time.
 
         Args:
@@ -65,8 +66,20 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             raise ValueError("final_time must be > initial_time")
 
         events = []
+        self.fin_t = None
         if station_keeping:
             events.extend(station_keeping)
+        if scheduled_events:
+            # [NOTE][parallel-maneuver-event-handling] Step four:
+            #  Add the event queue to the list of events to be handled by the integration solver.
+            events.extend(scheduled_events)
+            for event in scheduled_events:
+                if isinstance(event, (ScheduledFiniteManeuver, ScheduledFiniteBurn)):
+                    if event.time < initial_time < event.end_time:
+                        self.fin_t = event.getStateChangeCallback(initial_time, initial_state)
+
+        # Save original shape of the input state
+        state_shape = initial_state.shape
 
         # Continue integration until we reach final_time
         while initial_time < final_time:
@@ -82,14 +95,18 @@ class Celestial(Dynamics, metaclass=ABCMeta):
 
             initial_state = solution.y[::, -1]
             for event_index, event in enumerate(events):
-                if solution.t_events[event_index]:
-                    initial_state += event.getStateChange(solution.t[-1], initial_state)
+                if solution.t_events[event_index].size > 0:
+                    if isinstance(event, (ScheduledFiniteManeuver, ScheduledFiniteBurn)):
+                        self.fin_t = event.getStateChangeCallback(solution.t[-1], initial_state)
+
+                    else:
+                        initial_state += event.getStateChange(solution.t[-1], initial_state)
 
             # Retrieve final time, this should auto-exit the loop if fully-integrated
             initial_time = solution.t[-1] + spacing(solution.t[-1])
 
         # Return final state from the solver
-        return solution.y[::, -1]
+        return solution.y[::, -1].reshape(state_shape)
 
     @abstractmethod
     def _differentialEquation(self, time, state):

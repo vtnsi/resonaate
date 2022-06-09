@@ -1,3 +1,4 @@
+"""Defines the :class:`.Observation` data table class."""
 # Standard Library Imports
 # Third Party Imports
 from sqlalchemy import Column, Integer, Float, String, ForeignKey
@@ -14,7 +15,7 @@ class Observation(Base, _DataMixin):
 
     ## Defines the epoch associated with the observation data
     # Many to one relation with :class:`.Epoch`
-    julian_date = Column(Integer, ForeignKey('epochs.julian_date'), nullable=False)
+    julian_date = Column(Float, ForeignKey('epochs.julian_date'), nullable=False)
     epoch = relationship("Epoch", lazy='joined', innerjoin=True)
 
     ## Defines the associated sensor agent with the observation data
@@ -105,11 +106,8 @@ class Observation(Base, _DataMixin):
     @property
     def measurements(self):
         """``list``: Vector containing available components of [azimuth, elevation, range, rangeRate]."""
-        if self.range_rate_km_p_sec:
+        if self.range_rate_km_p_sec and self.range_km:
             return [self.azimuth_rad, self.elevation_rad, self.range_km, self.range_rate_km_p_sec]
-
-        elif self.range_km:
-            return [self.azimuth_rad, self.elevation_rad, self.range_km]
 
         else:
             return [self.azimuth_rad, self.elevation_rad]

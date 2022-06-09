@@ -1,4 +1,4 @@
-# The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE)
+# REsponsive Space ObservatioN Analysis & Autonomous Tasking Engine (RESONAATE)
 
 With the expected resident space object (RSO) population growth and improvements of satellite propulsion capabilities, it has become increasingly apparent that maintaining space domain awareness in future decades will require using human-on-the-loop autonomy as opposed to the current human-in-the-loop methods. 
 RESONAATE is a decision making algorithm that creates a tasking strategy for a customizable Space Surveillance Network (SSN). 
@@ -7,48 +7,52 @@ The method utilizes a sub-optimal partially observed Markov decision process (PO
 The POMDP implements the largest Lyapunov exponent, the Fisher information gain, and a sensor transportability metric to assess the overall reward for tasking a specific sensor to track a particular satellite. 
 The successful measurements from the tasked sensors are combined using an unscented Kalman filter to maintain viable orbit estimates for all targets.
 
-## Table of Contents
+-------------------------------------------------
+<!-- START TOC -->
 
-- [The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE)](#the-responsive-space-observation-analysis-and-autonomous-tasking-engine-resonaate)
-  - [Table of Contents](#table-of-contents)
-  - [Dependencies](#dependencies)
-- [Setup](#setup)
-  - [Installation](#installation)
-  - [RESONAATE Configuration](#resonaate-configuration)
-- [Usage](#usage)
-  - [CLI Tool](#cli-tool)
-  - [Initialization](#initialization)
-  - [Database Architecture](#database-architecture)
-  - [Python Example](#python-example)
-- [Contributing](#contributing)
-  - [Linting](#linting)
-  - [Testing](#testing)
-  - [Generating Documentation](#generating-documentation)
-- [Publications](#publications)
-- [Authors](#authors)
-## Dependencies
+**Table of Contents**
+
+- [REsponsive Space ObservatioN Analysis & Autonomous Tasking Engine (RESONAATE)](#responsive-space-observation-analysis--autonomous-tasking-engine-resonaate)
+  - [Setup](#setup)
+    - [Dependencies](#dependencies)
+    - [Installation](#installation)
+    - [RESONAATE Configuration](#resonaate-configuration)
+  - [Usage](#usage)
+    - [CLI Tool](#cli-tool)
+    - [Initialization](#initialization)
+    - [Database Architecture](#database-architecture)
+    - [Python Example](#python-example)
+  - [Contributing](#contributing)
+    - [Linting](#linting)
+    - [Testing](#testing)
+    - [Generating Documentation](#generating-documentation)
+  - [Publications](#publications)
+  - [Authors](#authors)
+
+-------------------------------------------------
+<!-- END TOC -->
+
+## Setup
+
+### Dependencies
 
 These are the software requirements for all versions of RESONAATE.
 Packages can be installed at their minimum required versions using `pip install -r requirements/requirements.txt`.
 Please see software documentation for best installation practices.
 
 - Python (PIP) Packages
-    - [NumPy](http://www.numpy.org/)
+    - [NumPy](https://www.numpy.org/)
     - [SciPy](https://www.scipy.org/scipylib/index.html)
     - [concurrent-log-handler](https://github.com/Preston-Landers/concurrent-log-handler)
     - [SQLAlchemy](https://www.sqlalchemy.org/)
     - [matplotlib](https://matplotlib.org/index.html)
     - [PyYAML](https://pyyaml.org/wiki/PyYAML)
-    - [jplephem](https://github.com/brandon-rhodes/python-jplephem)
     - [redis](https://github.com/andymccurdy/redis-py)
-    - [munkres](https://github.com/bmc/munkres)
 - Software
-    - [Python >= 3.7.9](python.org)
-    - [Redis server > 5.0](https://redis.io/)
+    - [Python >= 3.7.9](https://www.python.org)
+    - [Redis server > 5.0.10](https://redis.io/)
 
-# Setup
-
-## Installation
+### Installation
 
 - Clone this repository
 - Install [Anaconda](https://docs.anaconda.com/anaconda)
@@ -66,21 +70,21 @@ $ conda activate resonaate
 (resonaate) $ pip install -e .
 ```
 
-## RESONAATE Configuration
+### RESONAATE Configuration
 
 By default, RESONAATE will use the default settings defined in `src/resonaate/common/default_behavior.config`.
 These values correspond to how RESONAATE behaves with respect to logging, database, debugging, and parallelization.
 To overwrite these settings, please copy the contents of `src/resonaate/common/default_behavior.config` to a new `.config` file to save the default settings.
 Edit by un-commenting and changing the required values.
 
-# Usage
+## Usage
 
 Using the RESONAATE tool is the easiest when using the CLI, which is installed along with the Python package.
 The reason for this, is that RESONAATE has been designed to be highly reconfigurable between separate simulation runs.
 This is accomplished by altering the values of configuration files which makes Monte Carlo & parametric studies easier to accomplish.
 Simple instructions for the `resonaate` CLI are described below along with a short definition of the configuration schema.
 
-## CLI Tool
+### CLI Tool
 
 - Get Redis server running
 
@@ -97,7 +101,7 @@ Simple instructions for the `resonaate` CLI are described below along with a sho
 - Command line arguments for `resonaate` entry point:
 ```bash
 (resonaate) $ resonaate -h
-usage: resonaate [-h] [-t HOURS] [--debug] [--no-db] [--auto-db] [-d DB_PATH]
+usage: resonaate [-h] [-t HOURS] [--debug] [-d DB_PATH]
                  [-i IMPORTER_DB_PATH]
                  INIT_FILE
 
@@ -117,11 +121,6 @@ Database Files:
                         Path to RESONAATE database
   -i IMPORTER_DB_PATH, --importer-db-path IMPORTER_DB_PATH
                         Path to Importer database
-
-Database Options:
-  --no-db               Turns off output database, overriding all other
-                        options
-  --auto-db             Auto-generate RESONAATE DB path to {cwd}/db/
 ```
 
 - Users should stop Redis when they are done working running/simulations
@@ -130,10 +129,10 @@ Database Options:
 (resonaate) $ redis-cli shutdown
 ```
 
-## Initialization
+### Initialization
 
 The initialization/configuration file structure required to run RESONAATE is described in detail by the [Initialization](https://code.vt.edu/space_at_vt/sda/resonaate/-/wikis/Initialization) documentation on the Wiki.
-Currently, example initialization files are located under **example_data/json**.
+Currently, example initialization files are located under **configs/json**.
 
 This Wiki defines the schema required by the different JSON/YAML configuration files:
 - Main initialization file
@@ -155,22 +154,20 @@ This Wiki defines the schema required by the different JSON/YAML configuration f
 - Target/Sensor event configuration file(s)
     - Not currently implemented
 
-## Database Architecture
+### Database Architecture
 
 When interacting with the `resonaate` CLI, users may specify two separate types of databases: `ResonaateDatabase` (aka internal) and `ImporterDatabase` (aka external).
 
 The internal `ResonaateDatabase` defines where data *produced* by RESONAATE is stored.
 The default behavior is to store the database **in memory** which is likely faster, but means that no produced data is guaranteed to be saved if the simulation stops early.
-Users may save the database to disk by with the `-d` or `--db-path` CLI options to `resonaate` (recommended) or by changing `DatabaseURL` in **resonaate.config** (not recommended).
+Users may save the database to disk by with the `-d` or `--db-path` CLI options to `resonaate` (recommended) or by changing `DatabasePath` in **resonaate.config** (not recommended).
 The `--db-path` option requires explicit selection of the file location.
-However, users may also use the `--auto-db` CLI option to use the default disk file location.
-Finally, users can force skip saving any database to disk by using the `--no-db` CLI option.
 
 The external `ImporterDatabase` defines **read-only** data that RESONAATE will ingest during a simulation and mix with produced data, but is protected from alteration by RESONAATE itself.
 This provides utility for preloading large sets of pre-computed data (truth, observations, tasks); testing fusion of external estimates or observations with internally generated estimates and observations; and stacking data from simulation runs together.
 Users can specify an `ImporterDatabase` with the `-i` or `--importer-db-path` CLI options to `resonaate`.
 
-## Python Example
+### Python Example
 
 If users wish to incorporate RESONAATE into a separate tool, they can start with this minimal example that will properly run a simulation.
 **NOTE**: Redis will still need to be started before this code is executed (see [RESONAATE CLI](#resonaate-cli)), but that can be performed programmatically if needed.
@@ -221,12 +218,12 @@ app.worker_mgr.stopWorkers()
 resetMaster()
 ```
 
-# Contributing
+## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for more thorough details.
 Using these development tools requires a standalone version of RESONAATE to be installed.
 
-## Linting
+### Linting
 
 - Install linting libraries:
 
@@ -237,16 +234,16 @@ Using these development tools requires a standalone version of RESONAATE to be i
 - Running `flake8` linter:
 
 ```bash
-(resonaate) $ flake8 --config=.flake8 *.py tests src/resonaate
+(resonaate) $ flake8 --config=setup.cfg *.py tests src/resonaate
 ```
 
 - Running `pylint` linter:
 
 ```bash
-(resonaate) $ pylint --rcfile=.pylintrc *.py tests src/resonaate
+(resonaate) $ pylint --rcfile=setup.cfg *.py tests src/resonaate
 ```
 
-## Testing
+### Testing
 
 - Install pytest
 
@@ -266,7 +263,7 @@ Using these development tools requires a standalone version of RESONAATE to be i
 (resonaate) $ pytest
 ```
 
-## Generating Documentation
+### Generating Documentation
 
 1. Install required packages:
    ```shell
@@ -293,7 +290,7 @@ Using these development tools requires a standalone version of RESONAATE to be i
 1. Open **docs/build/html/index.html** in a browser to view the documentation
 
 
- # Publications
+## Publications
 
 For additional information on the development of the RESONAATE Tool, see the following publications:
 - Dynamically Tracking Maneuvering Spacecraft with a Globally-Distributed, Heterogeneous Wireless Sensor Network
@@ -315,7 +312,7 @@ For additional information on the development of the RESONAATE Tool, see the fol
   - AIAA SciTech, 2021
   - Digital Object Identifier (DOI) : 10.2514/6.2021-1397
 
-# Authors
+## Authors
 
 - Project Principal Investigators
   - Dr. Jonathan Black: <jonathan.black@vt.edu>
@@ -327,3 +324,4 @@ For additional information on the development of the RESONAATE Tool, see the fol
   - Jon Kadan: <jkadan@vt.edu>
   - Cameron Harris: <camerondh@vt.edu>
   - Connor Segal: <csegal@vt.edu>
+  - Amit Bala: <agbala@vt.edu>

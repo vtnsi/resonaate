@@ -1,13 +1,15 @@
+"""Defines reference frame & coordinate system conversion functions."""
 # Standard Library Imports
 # Third Party Imports
 from numpy import (
-    concatenate, sqrt, sin, cos, sign, arccos,
-    arctan, matmul, asarray, finfo, float64, tan, cross
+    concatenate, diagflat, dot, sqrt, sin, cos, sign, arccos,
+    arctan, matmul, asarray, finfo, float64, tan, cross,
+    arcsin, arctan2,
 )
 from scipy.linalg import norm
 # RESONAATE Imports
 from .. import constants as const
-from ..math import rot2, rot3
+from ..math import rot2, rot3, wrapAngle2Pi, wrapAngleNegPiPi
 from ..bodies import Earth
 from .reductions import getReductionParameters
 
@@ -15,14 +17,17 @@ from .reductions import getReductionParameters
 def eci2ecef(x_eci):
     """Convert an ECI state vector into an ECEF state vector.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Sections 3.7 - 3.7.2
+
     Note:
-        `updateReductionParameters()` _must_ be called before this can be used.
+        `updateReductionParameters()` **must** be called before this can be used.
 
     Args:
-        x_eci (`np.ndarray`): 6x1 ECI state vector, (km; km/sec)
+        x_eci (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
 
     Returns:
-        (`np.ndarray`): 6x1 ECEF state vector, (km; km/sec)
+        (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
     """
     reduction = getReductionParameters()
     r_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[:3]))
@@ -39,14 +44,17 @@ def eci2ecef(x_eci):
 def ecef2eci(x_ecef):
     """Convert an ECEF state vector into an ECI state vector.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Sections 3.7 - 3.7.2
+
     Note:
-        `updateReductionParameters()` _must_ be called before this can be used.
+        `updateReductionParameters()` **must** be called before this can be used.
 
     Args:
-        x_eci (`np.ndarray`): 6x1 ECEF state vector, (km; km/sec)
+        x_eci (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
 
     Returns:
-        (`np.ndarray`): 6x1 ECI state vector, (km; km/sec)
+        (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
     """
     reduction = getReductionParameters()
     r_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[:3]))
@@ -63,16 +71,19 @@ def ecef2eci(x_ecef):
 def sez2ecef(x_sez, lat, lon):
     """Convert an SEZ state vector into an ECEF state vector.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.4.3, Eqn 3-28
+
     Note:
-        [TODO]: Unverified conversion
+        This assumes the ECEF state vector is **relative** to the observer.
 
     Args:
-        x_sez (`np.ndarray`): 6x1 SEZ state vector, (km; km/sec)
-        lat (float): scalar geodetic latitude, (radians)
-        lon (float): scalar longitude, (radians)
+        x_sez (``np.ndarray``): 6x1 SEZ state vector, (km; km/sec)
+        lat (``float``): scalar geodetic latitude, (radians)
+        lon (``float``): scalar longitude, (radians)
 
     Returns:
-        (`np.ndarray`): 6x1 ECEF state vector, (km; km/sec)
+        (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
     """
     sez_2_ecef_rotation = matmul(rot3(-lon), rot2(lat - const.PI / 2))
     return concatenate(
@@ -86,16 +97,19 @@ def sez2ecef(x_sez, lat, lon):
 def ecef2sez(x_ecef, lat, lon):
     """Convert an ECEF state vector into an SEZ state vector.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.4.3, Eqn 3-28
+
     Note:
-        [TODO]: Unverified conversion
+        This assumes the ECEF state vector is **relative** to the observer.
 
     Args:
-        x_ecef (`np.ndarray`): 6x1 ECEF state vector, (km; km/sec)
-        lat (float): scalar geodetic latitude, (radians)
-        lon (float): scalar longitude, (radians)
+        x_ecef (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
+        lat (``float``): scalar geodetic latitude, (radians)
+        lon (``float``): scalar longitude, (radians)
 
     Returns:
-        (`np.ndarray`): 6x1 SEZ state vector, (km; km/sec)
+        (``np.ndarray``): 6x1 SEZ state vector, (km; km/sec)
     """
     ecef_2_sez_rotation = matmul(rot2(const.PI / 2 - lat), rot3(lon))
     return concatenate(
@@ -109,16 +123,19 @@ def ecef2sez(x_ecef, lat, lon):
 def eci2sez(x_eci, lat, lon):
     """Convert an ECI state vector into an SEZ state vector.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.4.3, Eqn 3-28
+
     Note:
-        [TODO]: Unverified conversion
+        This assumes the ECI state vector is **relative** to the observer.
 
     Args:
-        x_eci (`np.ndarray`): 6x1 ECI state vector, (km; km/sec)
-        lat (float): scalar geodetic latitude, (radians)
-        lon (float): scalar longitude, (radians)
+        x_eci (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
+        lat (``float``): scalar geodetic latitude, (radians)
+        lon (``float``): scalar longitude, (radians)
 
     Returns:
-        (`np.ndarray`): 6x1 SEZ state vector, (km; km/sec)
+        (``np.ndarray``): 6x1 SEZ state vector, (km; km/sec)
     """
     return ecef2sez(eci2ecef(x_eci), lat, lon)
 
@@ -126,16 +143,19 @@ def eci2sez(x_eci, lat, lon):
 def sez2eci(x_sez, lat, lon):
     """Convert an SEZ state vector into an ECI state vector.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.4.3, Eqn 3-28
+
     Note:
-        [TODO]: Unverified conversion
+        This assumes the ECI state vector is **relative** to the observer.
 
     Args:
-        x_sez (`np.ndarray`): 6x1 SEZ state vector, (km; km/sec)
-        lat (float): scalar geodetic latitude, (radians)
-        lon (float): scalar longitude, (radians)
+        x_sez (``np.ndarray``): 6x1 SEZ state vector, (km; km/sec)
+        lat (``float``): scalar geodetic latitude, (radians)
+        lon (``float``): scalar longitude, (radians)
 
     Returns:
-        (`np.ndarray`): 6x1 ECI state vector, (km; km/sec)
+        (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
     """
     return ecef2eci(sez2ecef(x_sez, lat, lon))
 
@@ -143,21 +163,18 @@ def sez2eci(x_sez, lat, lon):
 def lla2ecef(x_lla):
     """Convert a latitude, longitude, and altitude to a 6x1 ECEF state vector.
 
-    The code is derived from Algorithm 51, on page 430 of Vallado, "Fundamentals of Astrodynamics
-    and Applications", 4th Edition. Most of these equations come from Equation (3-7) on page 138.
+    References:
+        #. :cite:t:`vallado_2013_astro`, Section 7.2.1, Algorithm 51
+        #. :cite:t:`vallado_2013_astro`, Section 3.2.2, Eqn 3-7
 
     Altitude is height above ellipsoid, and latitude is geodetic latitude.
 
-    Note:
-        [TODO]: Unverified conversion
-
     Args:
-        x_lla (`np.ndarray`): 3x1 of latitude, longitude, and altitude, (radians, radians, km)
+        x_lla (``np.ndarray``): 3x1 of latitude, longitude, and altitude, (radians, radians, km)
 
     Returns:
-        (`np.ndarray`): 6x1 ECEF state vector, (km; km/sec)
+        (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
     """
-    # pylint: disable=invalid-name
     lat, lon, alt = x_lla[0], x_lla[1], x_lla[2]
 
     # Geodesy Calculation: Radius of Curvature in Prime Vertical and Auxiliary Variables
@@ -175,19 +192,16 @@ def lla2ecef(x_lla):
 def ecef2lla(x_ecef):
     """Convert an ECEF state vector to latitude, longitude, and altitude.
 
-    The code is derived, with some minor modifications for coding, from Algorithm 13, on
-    page 173 of Vallado, "Fundamentals of Astrodynamics and Applications", 4th Edition
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.4.4, Algorithm 13
 
     Altitude is height above ellipsoid, and latitude is geodetic latitude.
 
-    Note:
-        [TODO]: Unverified conversion
-
     Args:
-        x_ecef (`np.ndarray`): 6x1 ECEF state vector, (km; km/sec)
+        x_ecef (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
 
     Returns:
-        (`np.ndarray`): 3x1 of latitude, longitude, and altitude, (radians, radians, km)
+        (``np.ndarray``): 3x1 of latitude, longitude, and altitude, (radians, radians, km)
     """
     # pylint: disable=invalid-name
 
@@ -224,7 +238,7 @@ def ecef2lla(x_ecef):
     lon = arccos(r_i / r_delta) * sign(r_j)  # Sign(r_j) allows for [-pi, pi] range of arccos
     alt = (r_delta - a * t) * cos(lat) + (r_k - b) * sin(lat)
 
-    return asarray([lat, lon, alt])
+    return asarray([lat, wrapAngleNegPiPi(lon), alt])
 
 
 def rsw2eci(x_eci, x_rsw):
@@ -239,19 +253,15 @@ def rsw2eci(x_eci, x_rsw):
     orbital plane (not aligned with ECI/ECEF `K`), and `S` is normal to the other axes, positive
     in the direction of velocity.
 
-    See Also:
-        Equation (3-20) in Vallado, "Fundamentals of Astrodynamics and Applications", 4th Edition
-        on page 164
-
-    Note:
-        [TODO]: Unverified conversion
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.4.1, Eqn 3-20
 
     Args:
-        x_eci (`np.ndarray`): 6x1 ECI reference state vector, (km; km/sec)
-        x_rsw (`np.ndarray`): 6x1 RSW state vector, relative to `x_eci`, (km; km/sec)
+        x_eci (``np.ndarray``): 6x1 ECI reference state vector, (km; km/sec)
+        x_rsw (``np.ndarray``): 6x1 RSW state vector, relative to `x_eci`, (km; km/sec)
 
     Returns:
-        (`np.ndarray`): 6x1 ECI state vector of the relative state, (km; km/sec)
+        (``np.ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
     """
     r_hat = x_eci[:3] / norm(x_eci[:3])
     w_hat = cross(x_eci[:3], x_eci[3:]) / norm(cross(x_eci[:3], x_eci[3:]))
@@ -278,19 +288,15 @@ def ntw2eci(x_eci, x_ntw):
     always parallel to the velocity vector, and `W` is normal to the orbital plane (not aligned
     with ECI/ECEF `K`).
 
-    See Also:
-        Equation (3-21) in Vallado, "Fundamentals of Astrodynamics and Applications", 4th Edition
-        on page 164
-
-    Note:
-        [TODO]: Unverified conversion
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.4.1, Eqn 3-21
 
     Args:
-        x_eci (`np.ndarray`): 6x1 ECI reference state vector, (km; km/sec)
-        x_ntw (`np.ndarray`): 6x1 NTW state vector, relative to `x_eci`, (km; km/sec)
+        x_eci (``np.ndarray``): 6x1 ECI reference state vector, (km; km/sec)
+        x_ntw (``np.ndarray``): 6x1 NTW state vector, relative to `x_eci`, (km; km/sec)
 
     Returns:
-        (`np.ndarray`): 6x1 ECI state vector of the relative state, (km; km/sec)
+        (``np.ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
     """
     t_hat = x_eci[3:] / norm(x_eci[3:])
     w_hat = cross(x_eci[:3], x_eci[3:]) / norm(cross(x_eci[:3], x_eci[3:]))
@@ -305,49 +311,262 @@ def ntw2eci(x_eci, x_ntw):
     )
 
 
-def convertToGeodeticLatitude(geocentric_latitude):
-    """Convert a geocentric longitude into geodetic latitude.
+def spherical2cartesian(rho, theta, phi, rho_dot, theta_dot, phi_dot):
+    """Conversion of spherical coordinates to cartesian coordinates.
 
-    See Also:
-        Equation (3-11) in Vallado, "Fundamentals of Astrodynamics and Applications", 4th Edition
-        on page 140.
+    This will convert spherical coordinates to cartesian coordinates in the same reference frame.
+    This does **not** convert reference frames.
+
+    References:
+        :cite:t:`vallado_2015_aiaa_transformations`
+
+    Note:
+        This uses the physics form of spherical coordinates:
+        - `rho` is the radial distance, measured from origin
+        - `theta` is the elevation angle, measured positive north from the reference plane
+        - `phi` is the azimuthal angle, measured positive from the initial meridian plane
 
     Args:
-        geocentric_latitude (float): latitude using geocentric defintion (radians).
+        rho (``float``): radial distance >=0 (km)
+        theta (``float``): elevation angle [-pi/2, pi/2] (radians)
+        phi (``float``): azimuthal angle [0, 2pi] (radians)
+        rho_dot (`float`): radial distance rate (km/sec)
+        theta_dot (``float``): polar angular rate (rad/sec)
+        phi_dot (``float``): azimuthal angular rate (rad/sec)
 
     Returns:
-        float: latitude using geodetic defintion (radians).
+        ``np.ndarray``: 6x1 cartesian state vector in corresponding reference frame.
+    """
+    c_phi, c_th, s_phi, s_th = cos(phi), cos(theta), sin(phi), sin(theta)
+    return asarray(
+        [
+            rho * c_th * c_phi,
+            rho * c_th * s_phi,
+            rho * s_th,
+            rho_dot * c_th * c_phi - rho * s_th * c_phi * theta_dot - rho * c_th * s_phi * phi_dot,
+            rho_dot * c_th * s_phi - rho * s_th * s_phi * theta_dot + rho * c_th * c_phi * phi_dot,
+            rho_dot * s_th + rho * c_th * theta_dot,
+        ]
+    )
+
+
+def cartesian2spherical(state):
+    """Conversion of cartesian coordinates to spherical coordinates.
+
+    This will convert cartesian coordinates to spherical coordinates in the same reference frame.
+    This does **not** convert reference frames.
+
+    References:
+        :cite:t:`vallado_2015_aiaa_transformations`
+
+    Note:
+        This uses the physics form of spherical coordinates:
+        - `rho` is the radial distance, measured from origin
+        - `theta` is the elevation angle, measured positive north from the reference plane
+        - `phi` is the azimuthal angle, measured positive from the initial meridian plane
+
+    Args:
+        state (``np.ndarray``): 6x1 cartesian state vector in corresponding reference frame.
+
+    Returns:
+        rho (``float``): radial distance >=0 (km)
+        theta (``float``): elevation angle [-pi/2, pi/2] (radians)
+        phi (``float``): azimuthal angle [0, 2pi] (radians)
+        rho_dot (`float`): radial distance rate (km/sec)
+        theta_dot (``float``): polar angular rate (rad/sec)
+        phi_dot (``float``): azimuthal angular rate (rad/sec)
+    """
+    r_i, r_j, r_k = state[0], state[1], state[2]
+    v_i, v_j, v_k = state[3], state[4], state[5]
+
+    rng = norm(state[:3])
+    temp1 = sqrt(r_i**2 + r_j**2)
+    temp2 = sqrt(v_i**2 + v_j**2)
+    temp3 = r_k / rng
+    theta = arcsin(temp3)
+    rng_dot = dot(state[:3], state[3:]) / rng
+    if temp1 != 0:
+        phi = arctan2(r_j / temp1, r_i / temp1)
+        theta_dot = (v_k - rng_dot * temp3) / temp1
+        phi_dot = (v_i * r_j - v_j * r_i) / (-r_j**2 - r_i**2)
+    else:
+        phi = arctan2(v_j / temp2, v_i / temp2)
+        theta_dot = 0  # In-determinant without accelerations
+        phi_dot = 0  # In-determinant without accelerations
+
+    return rng, theta, wrapAngle2Pi(phi), rng_dot, theta_dot, phi_dot
+
+
+def razel2sez(rng, el, az, rng_rate, el_rate, az_rate):
+    """Convert az, el, rng, & rates to a topocentric horizon slant range vector.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 4.4.3, Eqn 4-4 & 4-5
+
+    Args:
+        rng (``float``): topocentric horizon range to target (km)
+        el (``float``): topocentric horizon elevation angle [-pi/2, pi/2] (radians)
+        az (``float``): topocentric horizon azimuth angle [0, 2pi] (radians)
+        rng_rate (``float``): topocentric horizon range rate of target (km/sec)
+        el_rate (``float``): topocentric horizon elevation angular rate (radians/sec)
+        az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
+
+    Returns:
+        ``np.ndarray``: 6x1 topocentric horizon slant range vector, SEZ (km; km/sec).
+    """
+    # pylint: disable=invalid-name
+    return spherical2cartesian(
+        rng, el, az, rng_rate, el_rate, az_rate
+    ).dot(diagflat([-1, 1, 1, -1, 1, 1]))
+
+
+def razel2radec(rng, el, az, rng_rate, el_rate, az_rate, observer_eci):
+    """Convert az, el, rng, & rates to topocentric ra, dec, rng, & rates.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 4.4.4
+
+    Args:
+        rng (``float``): topocentric horizon range to target (km)
+        el (``float``): topocentric horizon elevation angle [-pi/2, pi/2] (radians)
+        az (``float``): topocentric horizon azimuth angle [0, 2pi] (radians)
+        rng_rate (``float``): topocentric horizon range rate of target (km/sec)
+        el_rate (``float``): topocentric horizon elevation angular rate (radians/sec)
+        az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
+        observer_eci (``np.ndarray``): 6x1 ECI state vector of observer (km; km/sec)
+
+    Returns:
+        rng (``float``): topocentric equatorial range to target (km)
+        dec (``float``): topocentric equatorial declination angle [-pi/2, pi/2] (radians)
+        ra (``float``): topocentric equatorial right ascension angle [0, 2pi] (radians)
+        rng_rate (``float``): topocentric equatorial range rate of target (km/sec)
+        dec_rate (``float``): topocentric equatorial declination angular rate (radians/sec)
+        ra_rate (``float``): topocentric equatorial right ascension angular rate (radians/sec)
+    """
+    # pylint: disable=invalid-name
+    observer_ecef = eci2ecef(observer_eci)
+    observer_lla = ecef2lla(observer_ecef)
+    tgt_ecef = observer_ecef + sez2ecef(
+        razel2sez(rng, el, az, rng_rate, el_rate, az_rate),
+        observer_lla[0],
+        observer_lla[1]
+    )
+    return cartesian2spherical(ecef2eci(tgt_ecef) - observer_eci)
+
+
+def radec2razel(rng, dec, ra, rng_rt, dec_rt, ra_rt, observer_eci):
+    """Convert topocentric ra, dec, rng, & rates to az, el, rng, & rates.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Eqn 4-1 & 4-2
+
+    Args:
+        rng (``float``): topocentric equatorial range to target (km)
+        dec (``float``): topocentric equatorial declination angle [-pi/2, pi/2] (radians)
+        ra (``float``): topocentric equatorial right ascension angle [0, 2pi] (radians)
+        rng_rate (``float``): topocentric equatorial range rate of target (km/sec)
+        dec_rate (``float``): topocentric equatorial declination angular rate (radians/sec)
+        ra_rate (``float``): topocentric equatorial right ascension angular rate (radians/sec)
+        observer_eci (``np.ndarray``): 6x1 ECI state vector of observer (km; km/sec)
+
+    Returns:
+        rng (``float``): topocentric horizon range to target (km)
+        el (``float``): topocentric horizon elevation angle [-pi/2, pi/2] (radians)
+        az (``float``): topocentric horizon azimuth angle [0, 2pi] (radians)
+        rng_rate (``float``): topocentric horizon range rate of target (km/sec)
+        el_rate (``float``): topocentric horizon elevation angular rate (radians/sec)
+        az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
+    """
+    # pylint: disable=invalid-name
+    target_eci = spherical2cartesian(
+        rng, dec, ra, rng_rt, dec_rt, ra_rt
+    ) + observer_eci
+    return eci2razel(target_eci, observer_eci)
+
+
+def eci2razel(target_eci, observer_eci):
+    """Convert target and observer ECI states into az, el, rng, & rates.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Algorithm 27
+
+    Args:
+        target_eci (``np.ndarray``): 6x1 ECI state vector of target
+        observer_eci (``np.ndarray``): 6x1 ECI state vector of observer
+
+    Returns:
+        rng (``float``): topocentric horizon range to target (km)
+        el (``float``): topocentric horizon elevation angle [-pi/2, pi/2] (radians)
+        az (``float``): topocentric horizon azimuth angle [0, 2pi] (radians)
+        rng_rate (``float``): topocentric horizon range rate of target (km/sec)
+        el_rate (``float``): topocentric horizon elevation angular rate (radians/sec)
+        az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
+    """
+    return sez2razel(getSlantRangeVector(eci2ecef(observer_eci), target_eci))
+
+
+def sez2razel(slant_range_sez):
+    """Convert topocentric horizon slant range vector into az, el, rng, & rates.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Algorithm 27
+
+    Args:
+        slant_range_sez (``np.ndarray``): 6x1 topocentric horizon slant range vector, SEZ (km; km/sec).
+
+    Returns:
+        rng (``float``): topocentric horizon range to target (km)
+        el (``float``): topocentric horizon elevation angle [-pi/2, pi/2] (radians)
+        az (``float``): topocentric horizon azimuth angle [0, 2pi] (radians)
+        rng_rate (``float``): topocentric horizon range rate of target (km/sec)
+        el_rate (``float``): topocentric horizon elevation angular rate (radians/sec)
+        az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
+    """
+    return cartesian2spherical(slant_range_sez.dot(diagflat([-1, 1, 1, -1, 1, 1])))
+
+
+def geocentric2geodetic(geocentric_latitude):
+    """Convert a geocentric longitude into geodetic latitude.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.2.2, Eqn 3-11
+
+    Args:
+        geocentric_latitude (``float``): latitude using geocentric defintion [-pi/2, pi/2] (radians).
+
+    Returns:
+        ``float``: latitude using geodetic defintion [-pi/2, pi/2] (radians).
     """
     return arctan(tan(geocentric_latitude) / (1.0 - Earth.eccentricity**2))
 
 
-def convertToGeocentricLatitude(geodetic_latitude):
+def geodetic2geocentric(geodetic_latitude):
     """Convert a geodetic longitude into geocentric latitude.
 
-    See Also:
-        Equation (3-11) in Vallado, "Fundamentals of Astrodynamics and Applications", 4th Edition
-        on page 140.
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.2.2, Eqn 3-11
 
     Args:
-        geodetic_latitude (float): latitude using geodetic defintion (radians).
+        geodetic_latitude (``float``): latitude using geodetic defintion [-pi/2, pi/2] (radians).
 
     Returns:
-        float: latitude using geocentric defintion (radians).
+        ``float``: latitude using geocentric defintion [-pi/2, pi/2] (radians).
     """
     return arctan((1.0 - Earth.eccentricity**2) * tan(geodetic_latitude))
 
 
-def getObservationVector(sensor_ecef, tgt_state):
-    """Calculate the observation vector in the SEZ frame from the observer to the target.
+def getSlantRangeVector(sensor_ecef, tgt_state):
+    """Calculate the slant range vector in the SEZ frame from the observer to the target.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 4.4.3, Eqn 4-6
 
     Args:
         sensor_ecef (``np.ndarray``): 6x1 ECEF state vector of the :class:`.SensingAgent` (km; km/sec)
-        tgt_state (``np.ndarray``): 6x1 ECI state vector of the target :class:`.Agent` (km; km/sec)
+        tgt_state (``np.ndarray``): 6x1 ECI state vector of the :class:`TargetAgent` (km; km/sec)
 
     Returns:
-        ``np.ndarray``: 6x1 SEZ observation vector (km; km/sec)
+        ``np.ndarray``: 6x1 SEZ slant range vector (km; km/sec)
     """
-    obs_ecef_state = eci2ecef(tgt_state) - sensor_ecef
     lla_state = ecef2lla(sensor_ecef)
-
-    return ecef2sez(obs_ecef_state, lla_state[0], lla_state[1])
+    return ecef2sez(eci2ecef(tgt_state) - sensor_ecef, lla_state[0], lla_state[1])

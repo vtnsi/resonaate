@@ -9,14 +9,14 @@ try:
     from resonaate.common.logger import Logger
 except ImportError as error:
     raise Exception(
-        "Please ensure you have appropriate packages installed:\n {0}".format(error)
+        f"Please ensure you have appropriate packages installed:\n {error}"
     ) from error
 # Testing Imports
 from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
 
 
 def getLines(stdout_buff):
-    """Return each separate line in a string buffer.
+    r"""Return each separate line in a string buffer.
 
     Args:
         stdout_buff (str): stdout string buffer
@@ -80,7 +80,7 @@ class TestLogging(BaseTestCase):
         file_logger.error("This is an error message.")
         file_logger.critical("This is a critical message.")
 
-        with open(file_logger.filename, 'r') as logfile:
+        with open(file_logger.filename, 'r', encoding="utf-8") as logfile:
             line_count = 0
             for item, line in enumerate(logfile):
                 assert line.split(" - ")[1:] == self.CORRECT_FILE_OUTPUT[item]

@@ -1,6 +1,7 @@
+"""Defines the :class:`.SpecialPerturbations` class for high fidelity astrodynamics models."""
 # Standard Library Imports
 # Third Party Imports
-from numpy import dot, matmul, asarray, sum as np_sum, empty_like
+from numpy import vdot, matmul, array, sum as np_sum, empty_like, cross
 from numpy.linalg import multi_dot
 from scipy.linalg import norm
 # RESONAATE Imports
@@ -8,7 +9,7 @@ from .constants import RK45_LABEL
 from .celestial import Celestial, checkEarthCollision
 from ..physics import constants as const
 from ..physics.bodies import Earth, Moon, Sun
-from ..physics.bodies.third_body import getThirdBodyPositions
+from ..physics.bodies.gravitational_potential import loadGeopotentialCoefficients, nonSphericalAcceleration
 from ..physics.math import rot3
 from ..physics.sensor_utils import calculateSunVizFraction
 from ..physics.time.conversions import dayOfYear, greenwichApparentTime
@@ -28,30 +29,36 @@ class SpecialPerturbations(Celestial):
 
         Args:
             jd_start (:class:`.JulianDate`): Julian date of the scenario's initial epoch
-            geopotential (GeopotentialConfig): config describing the geopotential model and the accuracy
-            perturbations (PerturbationsConfig): config describing which perturbations to include
+            geopotential (:class:`.GeopotentialConfig`): config describing the geopotential model and the accuracy
+            perturbations (:class:`.PerturbationsConfig`): config describing which perturbations to include
             method (``str``, optional): Defaults to ``'RK45'``. Which ODE integration method to use
         """
-        super(SpecialPerturbations, self).__init__(method=method)
+        super().__init__(method=method)
         self.init_julian_date = jd_start
-        self.earth_model = Earth(geopotential.model)
+        self.c_nm, self.s_nm = loadGeopotentialCoefficients(geopotential.model)
         self.degree = geopotential.degree
         self.order = geopotential.order
         self.third_bodies = thirdBodyFactory(perturbations.third_bodies)
-        self._method = method
+        self.use_srp = perturbations.solar_radiation_pressure
+        self.use_gr = perturbations.general_relativity
 
     def _differentialEquation(self, time, state):
         """Calculate the first time derivative of the state for numerical integration.
+
+        Uses Cowell's formulation.
+
+        References:
+            :cite:t:`vallado_2013_astro`, Section 8.6.3, Eqn 8-3
 
         Note: this function must take and receive 1-dimensional state vectors! Also, `K` below
             refers to the number of parallel integrations being performed
 
         Args:
             time (:class:`.ScenarioTime`): the current time of integration, (seconds)
-            state (``numpy.ndarray``): (6 * K, ) current state vector in integration, (km, km/sec)
+            state (``ndarray``): (6 * K, ) current state vector in integration, (km, km/sec)
 
         Returns:
-            ``numpy.ndarray``: (6 * K, ) derivative of the state vector, (km/sec; km/sec^2)
+            ``ndarray``: (6 * K, ) derivative of the state vector, (km/sec; km/sec^2)
         """
         # Determine the step and halfway point for each vector
         step = int(state.shape[0] / 6)
@@ -63,12 +70,15 @@ class SpecialPerturbations(Celestial):
         ecef_2_eci = _getRotationMatrix(julian_date, getReductionParameters())
 
         # Get third body positions
-        positions = {body: getThirdBodyPositions()[name] for body, name in self.third_bodies.items()}
+        positions = {body: body.getPosition(julian_date) for body in self.third_bodies}
         for jj in range(step):
             # pylint: disable=unsupported-assignment-operation
 
             # Determine the position vectors in J2000 frame
             r_eci = state[jj:jj + half:step]
+
+            # Determine the velocity vectors in J2000 frame
+            v_eci = state[jj + half::step]
 
             # Check if an RSO crashed into the Earth
             checkEarthCollision(norm(r_eci))
@@ -79,7 +89,9 @@ class SpecialPerturbations(Celestial):
             # Non-spherical gravity acceleration
             a_nonspherical = matmul(
                 ecef_2_eci,
-                self.earth_model.nonSphericalGeopotential(r_ecef, self.degree, self.order)
+                nonSphericalAcceleration(
+                    r_ecef, Earth.mu, Earth.radius, self.c_nm, self.s_nm, self.degree, self.order
+                )
             )
 
             # Third body accelerations
@@ -89,10 +101,25 @@ class SpecialPerturbations(Celestial):
             )
 
             # Solar Radiation Pressure accelerations
-            a_srp = _getSolarRadiationPressureAcceleration(r_eci)
+            if self.use_srp:
+                a_srp = _getSolarRadiationPressureAcceleration(r_eci, array(positions[Sun]))
+            else:
+                a_srp = 0.0
+
+            # General Relativity accelerations
+            if self.use_gr:
+                a_gr = _getGeneralRelativityAcceleration(r_eci, v_eci)
+            else:
+                a_gr = 0.0
+
+            # Thrust acceleration
+            if self.fin_t:
+                a_thrust = self.fin_t(state)[:3]
+            else:
+                a_thrust = array([0, 0, 0])
 
             # Add all the perturbations together
-            a_perturbations = a_nonspherical + a_third_body + a_srp
+            a_perturbations = a_nonspherical + a_third_body + a_srp + a_gr + a_thrust
 
             # Save state derivative for this state vector
             derivative[jj:jj + half:step] = state[jj + half::step]
@@ -104,11 +131,15 @@ class SpecialPerturbations(Celestial):
 def _getRotationMatrix(julian_date, reduction):
     """Determine the current ECEF -> ECI rotation matrix.
 
+    References:
+        :cite:t:`vallado_2013_astro`, Section 3.7, Eqn 3-57
+
     Args:
         julian_date (:class:`.JulianDate`): Julian date of the current rotation
+        reduction (``dict``): FK5 reductions dictionary
 
     Returns:
-        ``numpy.ndarray``: (3, 3) rotation matrix
+        ``ndarray``: 3x3 rotation matrix
     """
     # Convert year and epoch to mdhms form. Time always in UTC
     year, month, day, hours, minutes, seconds = julian_date.calendar_date
@@ -122,14 +153,19 @@ def _getRotationMatrix(julian_date, reduction):
 def _getThirdBodyAcceleration(sat_position, third_body_position):
     """Determine the acceleration of a satellite due to a third body.
 
-    See Vallado Ed. 4, Section 8.6.3, Eq
+    Follows Vallado section 8.6.3 equations (8-35) to compute the un-scaled acceleration (the LHS of 8-35).
+    Once the un-scaled acceleration is known, it is used to calculate the third-body acceleration from the
+    third-body equation (8-34).
+
+    References:
+        :cite:t:`vallado_2013_astro`, Section 8.6.3, Eqn 8-34 & 8-35
 
     Args:
-        sat_position (``numpy.ndarray``): (3, ) ECI position vector of the satellite, (km)
-        third_body_position (``numpy.ndarray``): (3, ) ECI position vector of the third body object, (km)
+        sat_position (``ndarray``): 3x1 ECI position vector of the satellite, km
+        third_body_position (``ndarray``): 3x1 ECI position vector of the third body object, km
 
     Returns:
-        `np::ndarray`: (3, ) un-scaled ECI acceleration term due to the third body object, (1/km^2)
+        ``ndarray``: 3x1 un-scaled ECI acceleration term due to the third body object, 1/km^2
     """
     # Position of the satellite, relative to Earth
     r_e_sat = sat_position
@@ -142,7 +178,7 @@ def _getThirdBodyAcceleration(sat_position, third_body_position):
     r_sat_3_norm = norm(r_sat_3)
 
     # Convenient intermediate term
-    denominator = (r_e_sat_norm**2 + 2 * dot(r_e_sat, r_sat_3)) *\
+    denominator = (r_e_sat_norm**2 + 2 * vdot(r_e_sat, r_sat_3)) *\
                   (r_e_3_norm**2 + r_e_3_norm * r_sat_3_norm + r_sat_3_norm**2)
     q_3 = denominator / (r_e_3_norm**3 * r_sat_3_norm**3 * (r_e_3_norm + r_sat_3_norm))
 
@@ -156,10 +192,10 @@ def thirdBodyFactory(configuration):
     """Create third body perturbations based on a config.
 
     Args:
-        configuration (list(str)): names of third bodies to include
+        configuration (``list``): ``str`` names of third bodies to include
 
     Returns:
-        dict: third body position function multi-dispatch dict
+        ``dict``: third body position function multi-dispatch dict
     """
     third_bodies = {}
     for body in configuration:
@@ -168,27 +204,25 @@ def thirdBodyFactory(configuration):
         elif body.lower() == "moon":
             third_bodies[Moon] = "moon"
         else:
-            raise ValueError("Incorrect option for 'third_bodies' in config: {0}".format(
-                body
-            ))
+            raise ValueError(f"Incorrect option for 'third_bodies' in config: {body}")
 
     return third_bodies
 
 
-def _getSolarRadiationPressureAcceleration(sat_position):
+def _getSolarRadiationPressureAcceleration(sat_position, sun_eci_position):
     """Calculate the acceleration on the spacecraft due to solar radiation pressure.
 
     TODO:
         - Remove hardcoded constants
 
     References:
-        "Satellite Orbits: Models, Methods and Applications", Oliver Montenbruck, 2000.
+        :cite:t:`montenbruck_2012_orbits`, Eqn 3.75 - 3.76, Table 3.5
 
     Args:
-        sat_position (`np.ndarray`): 3X1 ECI position vector of the satellite
+        sat_position (`ndarray`): 3x1 ECI position vector of the satellite, km
 
     Returns:
-        `np.ndarray`: 3X1 ECI acceleration vector due to SRP, km/s^2
+        `ndarray`: 3x1 ECI acceleration vector due to SRP, km/s^2
     """
     # Satellite Constants
     viz_cross_section = 25.0  # (m^2)
@@ -197,11 +231,69 @@ def _getSolarRadiationPressureAcceleration(sat_position):
     c_r = 1.21  # Radiation Pressure Coefficient (1 + epsilon) (Montenbruck, Eq. 3.76)
     sat_ratio = c_r * (viz_cross_section / mass)  # combine into single variable for simpler code
 
-    sun_position = asarray(getThirdBodyPositions()["sun"])
     # Vector from satellite to the Sun
-    position = sun_position - sat_position
+    position = sun_eci_position - sat_position
     # SRP acceleration in m/s^2, Montenbruck Eq. 3.75, modified
     a_srp = -const.SOLAR_PRESSURE * sat_ratio * (const.AU2KM / norm(position))**2 * position / norm(position)
 
     # Multiply SRP acceleration by the percentage of the Sun that is visible, convert to km/s^2
-    return a_srp * calculateSunVizFraction(sat_position, sun_position) / 1000.0
+    return a_srp * calculateSunVizFraction(sat_position, sun_eci_position) / 1000.0
+
+
+def _getGeneralRelativityAcceleration(r_eci, v_eci):
+    """Calculate the acceleration on the spacecraft due to general relativity.
+
+    References:
+        :cite:t:`montenbruck_2012_orbits`, Section 3.7.3, Eqn 3.146, Pg 111
+
+    Args:
+        r_eci (``ndarray``): 3x1 ECI position vector of the satellite, km
+        v_eci (``ndarray``): 3x1 ECI velocity vector of the satellite, km/s
+
+    Returns:
+        ``ndarray``: 3X1 ECI acceleration vector due to general relativity, km/s^2
+    """
+    r_norm, v_norm = norm(r_eci), norm(v_eci)
+    e_r, e_v = r_eci / r_norm, v_eci / v_norm
+    # Earth Gravitational constant (km^3/sec^2)
+    mu = Earth.mu
+    # speed of light squared (km/s)^2
+    c_sq = (const.SPEED_OF_LIGHT / 1000)**2
+    # Intermediate term
+    tmp = v_norm**2 / c_sq
+    return (mu / r_norm**2) * (((4 * mu) / (c_sq * r_norm) - tmp) * e_r + (4 * tmp) * (vdot(e_r, e_v) * e_v))
+
+
+def _getGeneralRelativityAccelerationIERS(r_eci, v_eci, sun_eci, beta=1.0, gamma=1.0):
+    """Calculate the relativistic acceleration term of an Earth orbiting satellite.
+
+    This is the method cited by STK and is derived from the IERS equations.
+
+    References:
+        :cite:t:`mccarthy_2004_iers`, Eqn 1, Pg 106
+
+    Args:
+        r_eci (``ndarray``): 3x1 ECI position vector of the satellite, km
+        v_eci (``ndarray``): 3x1 ECI velocity vector of the satellite, km/s
+        sun_eci (``ndarray``): 6x1 ECI state vector of the Sun (center), relative to Earth, km; km/s
+        beta (``float``, optional): PPN parameter for General Relativity. Defaults to 1.0.
+        gamma (``float``, optional): PPN parameter for General Relativity. Defaults to 1.0.
+
+    Returns:
+        ``ndarray``: 3x1 ECI acceleration vector due to general relativity
+    """
+    r_norm = norm(r_eci)
+    # Earth & Sun Gravitational constants (km^3/sec^2)
+    gme, gms = Earth.mu, Sun.mu
+    # Earth's angular momentum per unit mass (km^2/s)
+    j_e = array([0.0, 0.0, 980])
+    # speed of light squared (km/s)^2
+    c_sq = (const.SPEED_OF_LIGHT / 1000)**2
+    # Intermediate terms
+    tmp1 = gme / r_norm
+    tmp2 = tmp1 / (c_sq * r_norm**2)
+    line_1 = tmp2 * ((2 * (beta + gamma) * tmp1 - gamma * vdot(v_eci, v_eci)) * r_eci
+                     + 2 * (1 + gamma) * vdot(r_eci, v_eci) * v_eci)
+    line_2 = (1 + gamma) * tmp2 * ((3 / r_norm**2) * cross(r_eci, v_eci) * vdot(r_eci, j_e) + cross(v_eci, j_e))
+    line_3 = (1 + 2 * gamma) * cross(sun_eci[3:], cross((-gms * sun_eci[:3]) / (c_sq * norm(sun_eci[:3])**3), v_eci))
+    return line_1 + line_2 + line_3

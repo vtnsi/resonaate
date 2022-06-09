@@ -1,16 +1,13 @@
+"""Defines the :class:`.SensingAgent` class."""
 # Standard Library Imports
-import logging
 # Third Party Imports
-from numpy import copy, asarray
-from sqlalchemy.orm import Query
+from numpy import array
 # RESONAATE Imports
 from .agent_base import Agent, DEFAULT_VIS_X_SECTION
-from ..data.importer_database import ImporterDatabase
+from ..common.logger import resonaateLogError
 from ..data.ephemeris import TruthEphemeris
 from ..dynamics.terrestrial import Terrestrial
-from ..parallel.async_functions import asyncPropagate
-from ..parallel.job_handler import CallbackRegistration
-from ..parallel.job import Job
+from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef, ecef2eci, lla2ecef
 from ..sensors import sensorFactory
@@ -47,7 +44,7 @@ class SensingAgent(Agent):
             TypeError: raised on incompatible types for input params
         """
         # [TODO]: Make visual cross-section better
-        super(SensingAgent, self).__init__(
+        super().__init__(
             _id, name, agent_type, initial_state, clock, dynamics, realtime, DEFAULT_VIS_X_SECTION,
             station_keeping=station_keeping
         )
@@ -63,9 +60,34 @@ class SensingAgent(Agent):
         self._sensors.host = self
 
         # Properly initialize the SensingAgent's state types
-        self._truth_state = copy(initial_state)
+        self._truth_state = array(initial_state, copy=True)
         self._ecef_state = eci2ecef(self._truth_state)
         self._lla_state = ecef2lla(self._ecef_state)
+
+        self.sensor_time_bias_event_queue = []
+
+    def appendTimeBiasEvent(self, event):
+        """Queue up a sensor time bias event to happen on the next tasking.
+
+        Args:
+            event (SensorTimeBiasEvent): Event that will take place during the next tasking.
+        """
+        # [NOTE][parallel-time-bias-event-handling] Step two: call this method via the event handler to queue the
+        # relevant :class:`.SensorTimeBiasEvent`.
+        event_list = []
+        for old_event in self.sensor_time_bias_event_queue:
+            event_list.append(old_event.id)
+        # Make sure you're not adding the same event over multiple timesteps
+        if event.id not in event_list:
+            self.sensor_time_bias_event_queue.append(event)
+
+    def pruneTimeBiasEvents(self):
+        """Remove events from the queue that happened in the past."""
+        relevant_events = []
+        for itr_event in self.sensor_time_bias_event_queue:
+            if self.julian_date_epoch <= itr_event.end_time_jd and self.julian_date_epoch >= itr_event.start_time_jd:
+                relevant_events.append(itr_event)
+        self.sensor_time_bias_event_queue = relevant_events
 
     def getCurrentEphemeris(self):
         """Returns the SensingAgent's current ephemeris information.
@@ -81,105 +103,18 @@ class SensingAgent(Agent):
             eci=self.eci_state.tolist()
         )
 
-    def updateJob(self, new_time):
-        """Create a job to be processed in parallel and update :attr:`time` appropriately.
-
-        his relies on a common interface for :meth:`.Dynamics.propagate`
-
-        Args:
-            new_time (:class:`.ScenarioTime`): payload sent by :class:`.PropagateJobHandler` to
-                indicate the current simulation time
-
-        Returns
-            :class:`.Job`: Job to be processed in parallel.
-        """
-        job = Job(
-            self.callback.job_computation,
-            args=[
-                self._dynamics,
-                self._time,
-                new_time,
-                self._truth_state
-            ],
-            kwargs={
-                "station_keeping": self.station_keeping
-            }
-        )
-        self._time = new_time
-
-        return job
-
-    def setCallback(self, importer):
-        """Set the callback associated when :meth:`.executeJobs()` is executed.
-
-        Args:
-            importer (``bool``): whether a proper :class:`.ImporterDatabase` exists
-
-        Note:
-            #. If the :attr:`realtime` is ``True``, use :func:`.asyncPropagate`.
-            #. If neither are true query the database for :class:`.Ephemeris` items.
-            #. If a valid :class:`.Ephemeris` returns, use :meth:`.importState`.
-            #. Otherwise, fall back to :func:`.asyncPropagate`.
-
-        Returns:
-            :meth:`.importstate`, or instance of :class:`.CallbackRegistration`
-        """
-        if self._realtime is True:
-            # Realtime propagation is on, so use `::asyncPropagate()`
-            self.callback = CallbackRegistration(
-                self,
-                self.updateJob,
-                asyncPropagate,
-                self.jobCompleteCallback
-            )
-        elif importer:
-            # Realtime propagation is off, attempt to query database for valid `Ephemeris` objects
-            query = Query(TruthEphemeris).filter(TruthEphemeris.agent_id == self.simulation_id)
-            truth_ephem = ImporterDatabase.getSharedInterface().getData(query, multi=False)
-
-            # If minimal truth data exists in the database, use importer model, otherwise default to
-            # realtime propagation (and print warning that this happened).
-            if truth_ephem is None:
-                self._logger.warning(
-                    "Could not find importer truth for {0}. Defaulting to realtime propagation!".format(
-                        self.simulation_id
-                    )
-                )
-                self.callback = CallbackRegistration(
-                    self,
-                    self.updateJob,
-                    asyncPropagate,
-                    self.jobCompleteCallback
-                )
-            else:
-                self.callback = self.importState
-
-        else:
-            self._logger.error("A valid ImporterDatabase was not established")
-            raise ValueError(importer)
-
-        return self.callback
-
-    def jobCompleteCallback(self, job):
-        """Execute when the job submitted in :meth:`~.SensingAgent.updateJob` completes.
-
-        Args:
-            job (:class:`.Job`): job object that's returned when a job completes
-        """
-        self.eci_state = job.retval
-
     def importState(self, ephemeris):
         """Set the state of this SensingAgent based on a given :class:`.Ephemeris` object.
 
         Args:
             ephemeris (:class:`.Ephemeris`): data object to update this SensingAgent's state with
         """
-        self.eci_state = asarray(ephemeris.eci)
+        self.eci_state = array(ephemeris.eci)
         self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(self.julian_date_start)
 
     @classmethod
     def fromConfig(cls, config, events):
-        """Factory to initialize `SensingAgent`s based on given configuration.
+        """Factory to initialize `SensingAgent` objects based on given configuration.
 
         Args:
             config (``dict``): formatted configuration parameters
@@ -194,26 +129,36 @@ class SensingAgent(Agent):
         sensor = sensorFactory(agent)
 
         station_keeping = []
-        # Build generic agent kwargs
-        if agent.host_type == GROUND_FACILITY_LABEL:
-            # Assumes geodetic latitude
-            lla_orig = asarray([
+        use_realtime = config["realtime"]
+        if agent.lla_set:
+            lla_orig = array([
                 agent.lat, agent.lon, agent.alt  # radians, radians, km
             ])
-            ecef_state = lla2ecef(lla_orig)
-            dynamics = Terrestrial(config["clock"].julian_date_start, ecef_state)
-            initial_state = ecef2eci(ecef_state)
-            use_realtime = True
+            initial_state = ecef2eci(lla2ecef(lla_orig))
+        elif agent.eci_set:
+            initial_state = array(agent.init_eci)
+        elif agent.coe_set:
+            orbit = ClassicalElements.fromConfig(agent.init_coe)
+            initial_state = orbit.toECI()
+        elif agent.eqe_set:
+            orbit = EquinoctialElements.fromConfig(agent.init_eqe)
+            initial_state = orbit.toECI()
+        else:
+            raise ValueError(f"SensorAgent config doesn't contain initial state information: {agent}")
+
+        if agent.host_type == GROUND_FACILITY_LABEL:
+            dynamics = Terrestrial(
+                config["clock"].julian_date_start,
+                eci2ecef(initial_state)
+            )
         elif agent.host_type == SPACECRAFT_LABEL:
-            initial_state = asarray(agent.eci_state)
             # [TODO]: Find a way to pass down dynamics config?
             dynamics = config["satellite_dynamics"]
-            use_realtime = config["realtime"]
             for config_str in agent.station_keeping:
                 station_keeping.append(StationKeeper.factory(config_str, agent.id, initial_state))
         else:
-            logger = logging.getLogger("resonaate")
-            logger.error("Invalid value for 'host_type' key for sensor agent '{0}'".format(agent["name"]))
+            msg = f'Invalid value for `host_type` key for sensor agent `{agent["name"]}`'
+            resonaateLogError(msg)
             raise ValueError(agent.host_type)
 
         return cls(
