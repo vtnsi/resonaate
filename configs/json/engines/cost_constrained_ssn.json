@@ -22,6 +22,6 @@
     "name": "MunkresDecision",
     "parameters": {}
   },
-  "targets_file": "targets/small_target_set.json",
-  "sensors_file": "sensor_networks/ssn_network.json"
+  "targets_file": "targets/large_target_set.json",
+  "sensors_file": "sensor_networks/single_optical_network.json"
 }

@@ -110,6 +110,9 @@ class SensorAdditionEvent(Event):
     exemplar_range = Column(Float)
     """float: Range (km) exemplar capability."""
 
+    field_of_view = Column(Float)
+    """float: Field of View (degrees)."""
+
     tx_power = Column(Float)
     """float: Transmit power of radar sensor.
 
@@ -150,6 +153,7 @@ class SensorAdditionEvent(Event):
         "sensor_type",
         "exemplar_cross_section",
         "exemplar_range",
+        "field_of_view",
         "tx_power",
         "tx_frequency",
         "station_keeping_json",
@@ -210,6 +214,7 @@ class SensorAdditionEvent(Event):
             "efficiency": self.efficiency,
             "slew_rate": self.slew_rate,
             "exemplar": self.exemplar,
+            "field_of_view": self.field_of_view,
             "sensor_type": self.sensor_type,
             "tx_power": self.tx_power,
             "tx_frequency": self.tx_frequency,
@@ -276,6 +281,7 @@ class SensorAdditionEvent(Event):
             sensor_type=config.sensor_type,
             exemplar_cross_section=config.exemplar[0],
             exemplar_range=config.exemplar[1],
+            field_of_view=config.field_of_view,
             tx_power=tx_power,
             tx_frequency=tx_frequency,
             station_keeping_json=dumps(config.station_keeping.toJSON()),

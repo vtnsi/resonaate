@@ -25,6 +25,7 @@ from numpy import (
     sign,
     sin,
     spacing,
+    vdot,
 )
 from numpy.linalg import LinAlgError, cholesky, multi_dot
 from scipy.linalg import eigvals, norm, svd
@@ -403,3 +404,16 @@ def angularMean(
     result_mean = wrapAngle2Pi(arctan2(sin_mean, cos_mean))
     # Rescale using the low, high values.
     return result_mean * (high - low) / const.TWOPI + low
+
+
+def subtendedAngle(vector1, vector2):
+    """Angle subtended by 2 vectors.
+
+    Args:
+        vector1 (``ndarray``): first vector input
+        vector2 (``ndarray``): second vector input
+
+    Returns:
+        ``float``: angle subtended by input vectors, in radians
+    """
+    return arccos(vdot(vector1, vector2) / (norm(vector1) * norm(vector2)))
