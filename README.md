@@ -84,15 +84,8 @@ $ conda activate resonaate
 ### Standalone Behavior
 
 By default, RESONAATE will use the default settings defined in `src/resonaate/common/default_behavior.config`.
-To overwrite these settings, please copy the contents of `src/resonaate/common/default_behavior.config` to a new `.config` file.
+To overwrite these settings, please copy the contents of `src/resonaate/common/default_behavior.config` to a new `.config` file to another file to save the default settings.
 Edit by un-commenting and changing the required values.
-After, set the following environment variable to the absolute path to the new config file:
-
-```bash
-(resonaate) $ export RESONAATE_BEHAVIOR_CONFIG=<config_file_path>
-```
-
-Alternatively, you can add the above command to your `~/.bashrc` (or equivalent).
 
 ## Contributing
 

@@ -149,10 +149,6 @@ class BehavioralConfig:
         """Initialize the configuration object."""
         self._parser = CustomConfigParser()
 
-        if os.environ.get("RESONAATE_BEHAVIOR_CONFIG"):
-            # Use the path set in the environment variable, if it exists
-            config_file_path = os.path.abspath(os.environ["RESONAATE_BEHAVIOR_CONFIG"])
-
         if os.path.exists(config_file_path):
             # Read in the config file if it exists, otherwise use the defaults
             with open(config_file_path, 'r') as config_file:

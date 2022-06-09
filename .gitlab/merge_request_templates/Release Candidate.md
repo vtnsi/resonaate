@@ -13,30 +13,30 @@ Please describe the tests that you ran to verify your changes. Provide instructi
   - [ ] Passes integration test (run via CLI)
   - [ ] Passes MR pipeline
 
-# Pre-Release Process
+# Release Process
 
 - [ ] Ensure this isn't a duplicate Merge Request
-- [ ] Update the change log below, remove unnecessary sub-sections
-- [ ] Add changelog subsections to repository **CHANGELOG.md** under __[Unreleased]__
-- [ ] Increment all refs the version according to [SemVer](https://semver.org/spec/v2.0.0.html) using pre-release notation (e.g. `1.0.0rc`)
+- [ ] Update the change log below from __[Unreleased]__, remove unnecessary sub-sections
+- [ ] Move changelog under __[Unreleased]__ of the repository **CHANGELOG.md** to a new section, titled for this release. Leave a blank __[Unreleased]__ section
+- [ ] Increment all refs the version according to [SemVer](https://semver.org/spec/v2.0.0.html) using release notation (e.g. `1.0.0`)
     - [ ] **setup.py**
     - [ ] **docs/source/conf.py**
-    - Example version:  `1.3.2rc` is pre-release Major Version 1, Minor Version 3, Patch 2
+    - Example version:  `1.3.2` is release Major Version 1, Minor Version 3, Patch 2
 - [ ] Complete the merge request (only on GitLab)
 - [ ] Tag the commit on the `master` branch using
     ```shell
     $ git checkout master
-    $ git tag -a v[Major].[Minor].[Patch]rc -m "Pre-Release v[Major].[Minor].[Patch]rc"
+    $ git tag -a v[Major].[Minor].[Patch] -m "Release v[Major].[Minor].[Patch]"
     ```
 - [ ] Push the tag
     ```shell
-    $ git push origin v[Major].[Minor].[Patch]rc
+    $ git push origin v[Major].[Minor].[Patch]
     ```
-- [ ] Open a new MR for an Official Release
+- [ ] Edit the tag's release notes on GitLab to include the changelog below (and description section above) to officially release this version.
 
 # Changelog:
 
-Add a formatted changelog. These sub-sections need to be added to the the repository change log under __[Unreleased]__.
+Add a formatted changelog. This will be added to the release notes and the repository change log.
 
 - Added
 

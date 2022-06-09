@@ -108,7 +108,7 @@ class TestFK5Reduction(BaseTestCase):
 
         # Time checks [TODO]: Move this check to conversions unit-test
         _, ttt = utc2TerrestrialTime(year, month, day, hour, minute, second, dat)
-        assert isclose(ttt * 36525 + 2451545 - 2400000.5,correct_tt)  # places=9
+        assert isclose(ttt * 36525 + 2451545 - 2400000.5, correct_tt)  # places=9
         utc = hour * 3600 + minute * 60 + second
         tut = utc + dut1
         ut1 = julian_day + tut * const.SEC2DAYS

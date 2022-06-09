@@ -1,22 +1,41 @@
-# Changelog
+# RESONAATE Changelog
 
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- [Changelog](#changelog)
-    - [[Unreleased]](#unreleased)
-    - [[1.1.0] - 2021-03-24](#110---2021-03-24)
-    - [[1.0.1] - 2021-01-21](#101---2021-01-21)
-    - [[1.0.0] - 2021-01-14](#100---2021-01-14)
-    - [[0.9.0] - 2020-10-20](#090---2020-10-20)
-    - [[0.0.0] - 2020-05-08](#000---2020-05-08)
+- [RESONAATE Changelog](#resonaate-changelog)
+- [[Unreleased]](#unreleased)
+- [[1.1.1] - 2021-03-25](#111---2021-03-25)
+- [[1.1.0] - 2021-03-24](#110---2021-03-24)
+- [[1.0.1] - 2021-01-21](#101---2021-01-21)
+- [[1.0.0] - 2021-01-14](#100---2021-01-14)
+- [[0.9.0] - 2020-10-20](#090---2020-10-20)
+- [[0.0.0] - 2020-05-08](#000---2020-05-08)
 
-### [Unreleased]
+# [Unreleased]
 
-N/A
+- Added
 
-### [1.1.0] - 2021-03-24
+- Changed
+
+- Deprecated
+
+- Removed
+
+- Fixed
+
+# [1.1.1] - 2021-03-25
+
+Fix environment variable reading security issue and change Git workflow docs.
+
+- Changed
+  - Documentation on release process and Git workflow
+
+- Removed
+  - Feature to read environment variable pointing to config file
+
+# [1.1.0] - 2021-03-24
 
 Update that includes LPAR sensors and multiple sensor networks.
 
@@ -40,7 +59,7 @@ Update that includes LPAR sensors and multiple sensor networks.
 - Fixed
   - new pylint & flake8 errors
 
-### [1.0.1] - 2021-01-21
+# [1.0.1] - 2021-01-21
 
 Small fixes to the `ResonaateService` class and supporting API. Also updated documentation for new formats.
 
@@ -57,7 +76,7 @@ Small fixes to the `ResonaateService` class and supporting API. Also updated doc
   - Outdated scenario configuration documentation in `initialization.md`
   - Outdated RESONAATE service ICD in `interface.md`
 
-### [1.0.0] - 2021-01-14
+# [1.0.0] - 2021-01-14
 
 Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard stop where main architectural changes and major features were completed and introduced bugs were fixed.
 
@@ -99,7 +118,7 @@ Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard st
   - Small corner-case sign errors in reference frame rotations
   - Incorrect lighting conditions
 
-### [0.9.0] - 2020-10-20
+# [0.9.0] - 2020-10-20
 
 Mostly config/refactoring updates since the initial port.
 
@@ -117,7 +136,7 @@ Mostly config/refactoring updates since the initial port.
   - `KLDivergence` hotfix
   - `UKF` bugs
 
-### [0.0.0] - 2020-05-08
+# [0.0.0] - 2020-05-08
 
 - Added
   - MunkresDecision & MyopicGreedyDecision functions for optimizing the reward matrix.

@@ -38,10 +38,7 @@ email, or any other method with the owners of this repository before making a ch
   - This ensures `develop` is stable enough for "continuous development"
 - Once `develop` is deemed stable enough, it can become a release candidate
   - Open a merge request into `master` for the release candidate
-  - This ensures `master` is stable enough for "environment testing"
-- Once `master` passes the required review as a release candidate, it can be officially released
-  - Open a merge request into `release` for the official release
-  - This ensures `release` remains "production-ready" as much as possible
+  - This ensures `master` remains "production-ready" as much as possible
 
 ## Code Styling
 

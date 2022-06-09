@@ -74,9 +74,10 @@ class Radar(Sensor):
         lam_sq = self.wavelength**2
         # Validated against Nastasi's equations
         return (
-            (four_pi * self.tx_power * (self.aperture_area * self.efficiency)**2
-                * (four_pi * exemplar_area**2 / lam_sq))
-            / (lam_sq * (four_pi * exemplar_range**2.0)**2.0)
+            (
+                four_pi * self.tx_power * (self.aperture_area * self.efficiency)**2
+                * (four_pi * exemplar_area**2 / lam_sq)
+            ) / (lam_sq * (four_pi * exemplar_range**2.0)**2.0)
         )
 
     def _maxRangeFromExemplar(self, diameter, min_detect_power):

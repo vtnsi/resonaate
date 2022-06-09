@@ -30,6 +30,7 @@ Please describe the tests that you ran to verify your changes. Provide instructi
   - [ ] Passes linting checks
   - [ ] Passes integration test (run via CLI)
   - [ ] Passes MR pipeline
+  - [ ] Add updates to **CHANGELOG.md** under __[Unreleased]__
 
 ## Concerns
 
