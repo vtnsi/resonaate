@@ -163,6 +163,7 @@ tx_frequency = 1.5 * 1e9  # Sensor transmit center frequency (Hz)
 
 # Exemplar is akin to sensor capability descriptions found in OV-1s (baseball at LEO, basketball at GEO)
 exemplar = [0.04908738521234052, 40500.0]  # Exemplar area (m^2)  # Exemplar range (km)
+field_of_view = 15.0
 
 radar_sensor = Radar(
     az_mask,
@@ -171,6 +172,7 @@ radar_sensor = Radar(
     diameter,
     efficiency,
     exemplar,
+    field_of_view,
     tx_power,
     tx_frequency,
     np.radians(slew_rate),

@@ -1,12 +1,16 @@
 """Collection of functions to be used asynchronously for parallel execution."""
 # Standard Library Imports
 from pickle import loads
+from typing import List
 
 # Third Party Imports
 from numpy import zeros, zeros_like
 
 # Local Imports
+from ..agents.sensing_agent import SensingAgent
 from ..estimation.sequential.sequential_filter import FilterDebugFlag
+
+# Package Imports
 from . import getRedisConnection
 
 
@@ -114,7 +118,7 @@ def asyncCalculateReward(estimate_id, reward, sensor_list):
     }
 
 
-def asyncExecuteTasking(tasked_sensors, target_id):
+def asyncExecuteTasking(tasked_sensors: List[SensingAgent], target_id: int):
     """Execute tasked observations on a :class:`.TargetAgent`.
 
     Hint:
@@ -128,27 +132,21 @@ def asyncExecuteTasking(tasked_sensors, target_id):
     Returns:
         ``dict``: execute result dictionary contains:
 
-        :``"observations"``: (``list``): successful :class:`.Observation` objects of this target.
+        :``"observations"``: (``list``): successful :class:`.Observation` objects of target(s).
         :``"target_id"``: (``int``): ID of the :class:`.TargetAgent` observations were made of.
     """
     successful_obs = []
     sensor_agents = loads(getRedisConnection().get("sensor_agents"))
-    target_agent = loads(getRedisConnection().get("target_agents"))[target_id]
+    target_agents = loads(getRedisConnection().get("target_agents"))
+    estimate_agent = loads(getRedisConnection().get("estimate_agents"))[target_id]
     sensor_list = list(sensor_agents.values())
+    target_list = list(target_agents.values())
+
     if len(tasked_sensors) > 0:
-        successful_obs.extend(
-            list(
-                filter(  # pylint: disable=bad-builtin
-                    lambda x: x.observation,
-                    (
-                        sensor_list[ss].sensors.makeNoisyObservation(
-                            target_agent,
-                        )
-                        for ss in tasked_sensors
-                    ),
-                )
+        for sensor in tasked_sensors:
+            successful_obs.extend(
+                sensor_list[sensor].sensors.collectObservations(estimate_agent, target_list)
             )
-        )
 
     return {"target_id": target_id, "observations": successful_obs}
 

@@ -39,6 +39,7 @@ def sensorFactory(configuration):
         "efficiency": configuration.efficiency,
         "slew_rate": configuration.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(configuration.exemplar),
+        "field_of_view": asarray(configuration.field_of_view),  # Assumes degrees
     }
 
     # Instantiate sensor object. Add extra params if needed
