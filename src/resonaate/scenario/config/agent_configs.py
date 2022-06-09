@@ -163,6 +163,7 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ConfigOption("efficiency", (float,)),
             ConfigOption("slew_rate", (float,)),
             ConfigOption("exemplar", (list,)),
+            ConfigOption("field_of_view", (float,), default=10.0),
             ConfigOption(
                 "sensor_type",
                 (str,),
@@ -342,6 +343,11 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         Example/units: [cross sectional area (m^2), range (km)]
         """
         return self._exemplar.setting  # pylint: disable=no-member
+
+    @property
+    def field_of_view(self):
+        """float: angle (degrees) of visibility of this sensor."""
+        return self._field_of_view.setting  # pylint: disable=no-member
 
     @property
     def tx_power(self):
