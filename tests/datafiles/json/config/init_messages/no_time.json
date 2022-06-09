@@ -1,0 +1,8 @@
+{
+  "estimation": {
+    "sequential_filter": {
+      "name": "unscented_kalman_filter"
+    }
+  },
+  "engines_files": ["../engines/test_engine.json"]
+}

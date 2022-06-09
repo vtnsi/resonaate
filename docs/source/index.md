@@ -1,22 +1,26 @@
 ---
 orphan: true
 ---
+
 % This file isn't included in TOC, so set it as "orphan"
 
 (main-index-intro)=
+
 # RESONAATE Documentation
 
 Welcome to the RESONAATE (Responsive Space Observation Analysis & Autonomous Tasking Engine) documentation!
 
 (index-main-fig-catalog)=
-:::{figure} _static/catalog.png
+
+```{figure} _static/catalog.png
 ---
 align: right
 scale: 50 %
 alt: Satellite Catalog Growth
 ---
 Plot of satellite catalog growth over time.
-:::
+```
+
 With the expected resident space object (RSO) population growth and improvements of satellite propulsion capabilities, it has become increasingly apparent that maintaining space domain awareness (SDA) in future decades will require using human-on-the-loop autonomy as opposed to the current human-in-the-loop methods.
 
 RESONAATE provides a stable, configurable API for advance algorithms related to SDA research, especially big-data oriented problems.
@@ -27,6 +31,7 @@ This interface combines many settings and algorithm to perform truth simulation 
 More specific details on how the CLI works can be seen in {mod}`.cli` and details on the JSON configuration format can be seen in {ref}`ref-cfg-top`.
 
 Here are some of the features that RESONAATE has to offer:
+
 - {class}`.EstimateAgent`, {class}`.SensingAgent`, and {class}`.TargetAgent` classes for agent-based simulation
 - High-fidelity, configurable orbit propagation using Cowell's method
 - {class}`.UnscentedKalmanFilter` for tracking RSOs
@@ -42,29 +47,37 @@ See {ref}`main-index-site` for a description of these sections.
 
 View the [source code](https://code.vt.edu/space-research/resonaate/resonaate), [issue tracker](https://code.vt.edu/space-research/resonaate/resonaate/-/issues), and [wiki](https://code.vt.edu/space-research/resonaate/resonaate/-/wikis/home), hosted on GitLab.
 
--------------------------------------------------
-<!-- TOC formatted for sphinx -->
-:::{contents} Table of Contents
-:depth: 2
-:backlinks: none
-:local:
-:::
+______________________________________________________________________
 
--------------------------------------------------
+<!-- TOC formatted for sphinx -->
+
+```{contents} Table of Contents
+---
+depth: 2
+backlinks: none
+local:
+---
+```
+
+______________________________________________________________________
 
 (main-index-abstract)=
+
 ## Abstract
 
 % Include initial bit of README
+
 (index-main-fig-ssn)=
-:::{figure} _static/ssn.jpg
+
+```{figure} _static/ssn.jpg
 ---
 align: right
 scale: 40 %
 alt: Space Surveillance Network
 ---
 The U.S. Space Surveillance Network (SSN)
-:::
+```
+
 The RESONAATE simulation creates a decision making engine that can create a tasking strategy for a diversely populated space object surveillance and identification (SOSI) network.
 The figure on the right ({numref}`index-main-fig-ssn`) shows a visual representation of the United States Space Surveillance Network (SSN).
 RESONAATE often uses a version of this model, but also provides the flexibility to construct an arbitrary SSN with different sensors.
@@ -78,22 +91,25 @@ The successful measurements from the tasked sensors are combined using an unscen
 This process is repeated over sequential time steps for the entire simulation length.
 The RESONAATE simulation stores both truth and estimated state information into a SQL database which allows for comparisons of various algorithms across different portions of the RSO tracking problem (e.g. tasking, estimation, or fusion) by directly measuring the global performance.
 It is also easy to perform Monte Carlo studies to determine algorithm sensitivity, or parametric studies to determine trade offs for tunable algorithm parameters.
+
 (index-main-fig-pomdp)=
-:::{figure} _static/pomdp.jpg
+
+```{figure} _static/pomdp.jpg
 ---
 align: center
 scale: 60 %
 alt: Partially Observable Markov Decision Process block diagram
 ---
 Block diagram of RESONAATE's Partially Observable Markov Decision Process (POMDP) model
-:::
+```
 
--------------------------------------------------
+______________________________________________________________________
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The TOC trees are hidden so they only appear on the sidebar
 
 (main-index-site)=
+
 ## Site Contents
 
 {ref}`main-index-started` goes over basic information on how to install, setup, and use the RESONAATE tool and library.
@@ -112,80 +128,97 @@ The material here is meant specifically for RESONAATE software developers to ref
 These pages serve as a way to document software history, references, licensing, and other "metadata" about the tool/library.
 
 % Getting Started Section
-(main-index-started)=
-:::{toctree}
-:maxdepth: 1
-:caption: Getting Started
-:name: home_started_toc
-:includehidden:
 
+(main-index-started)=
+
+```{toctree}
+---
+maxdepth: 1
+caption: Getting Started
+name: home_started_toc
+includehidden:
+---
 intro/install
 intro/quickstart
 gen/examples/index
 
-:::
+```
 
 % Reference Material TOC
-(main-index-ref)=
-:::{toctree}
-:maxdepth: 1
-:caption: Reference Material
-:name: home_ref_toc
-:includehidden:
-:hidden:
 
+(main-index-ref)=
+
+```{toctree}
+---
+maxdepth: 1
+caption: Reference Material
+name: home_ref_toc
+includehidden:
+hidden:
+---
 reference/config_format
 reference/service
 reference/api
 
-:::
+```
 
 % Technical Explanation TOC
-(main-index-tech)=
-:::{toctree}
-:maxdepth: 1
-:caption: Technical Explanations
-:name: home_background_toc
-:includehidden:
 
+(main-index-tech)=
+
+```{toctree}
+---
+maxdepth: 1
+caption: Technical Explanations
+name: home_background_toc
+includehidden:
+---
 background/astro
 background/estimation
 background/noise
 background/tasking
-:::
+```
 
 % Developer Info TOC
-(main-index-dev)=
-:::{toctree}
-:maxdepth: 1
-:caption: For Developers
-:name: home_dev_toc
-:includehidden:
 
+(main-index-dev)=
+
+```{toctree}
+---
+maxdepth: 1
+caption: For Developers
+name: home_dev_toc
+includehidden:
+---
 development/contributing
 development/doc_readme
 development/containers
-:::
+```
 
 % Meta Information TOC
-(main-index-meta)=
-:::{toctree}
-:maxdepth: 1
-:caption: Meta Information
-:name: home_meta_toc
-:includehidden:
 
+(main-index-meta)=
+
+```{toctree}
+---
+maxdepth: 1
+caption: Meta Information
+name: home_meta_toc
+includehidden:
+---
 meta/bibliography
 meta/changelog
 meta/license
-:::
+```
 
--------------------------------------------------
+______________________________________________________________________
 
 (main-index-pub)=
+
 ## Publications
 
 For additional information on the development of the RESONAATE Tool, see the following publications:
+
 - "Dynamically Tracking Maneuvering Spacecraft with a Globally-Distributed, Heterogeneous Wireless Sensor Network"
   - {cite:t}`nastasi_2017_space_dst`
 - "An Autonomous Sensor Management Strategy for Monitoring a Dynamic Space Domain with Diverse Sensors"
@@ -199,9 +232,10 @@ For additional information on the development of the RESONAATE Tool, see the fol
 - "Parametric Analysis of an Autonomous Sensor Tasking Engine for Spacecraft Tracking"
   - {cite:t}`kadan_2021_scitech_parametric`
 
--------------------------------------------------
+______________________________________________________________________
 
 (main-index-auth)=
+
 ## Authors
 
 - Project Principal Investigators

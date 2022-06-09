@@ -1,8 +1,6 @@
 """Abstract :class:`.Metric` base class defining the metric API."""
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
-# Third Party Imports
-# RESONAATE Imports
 
 
 class Metric(metaclass=ABCMeta):

@@ -1,15 +1,17 @@
 """Defines the :class:`.SensorAdditionEvent` data table class."""
 # Standard Library Imports
-from json import loads, dumps
+from json import dumps, loads
+
 # Third Party Imports
-from sqlalchemy import Column, Integer, Float, String, ForeignKey
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declared_attr
 from numpy import array
-# RESONAATE Imports
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import relationship
+
+# Local Imports
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.time.stardate import datetimeToJulianDate
-from ...physics.transforms.methods import lla2ecef, ecef2eci
+from ...physics.transforms.methods import ecef2eci, lla2ecef
 from ...sensors import ADV_RADAR_LABEL, RADAR_LABEL
 from .base import Event, EventScope
 
@@ -23,16 +25,13 @@ class SensorAdditionEvent(Event):
     INTENDED_SCOPE = EventScope.SCENARIO_STEP
     """EventScope: Scope where :class:`.SensorAdditionEvent` objects should be handled."""
 
-    __mapper_args__ = {
-        'polymorphic_identity': EVENT_TYPE
-    }
+    __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
     def agent_id(self):  # pylint: disable=invalid-name
         """int: Unique ID of the :class:`.Agent` being added to the scenario."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'agent_id',
-            Column(Integer, ForeignKey('agents.unique_id'))
+            "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
         )
 
     agent = relationship("Agent", lazy="joined", innerjoin=True)
@@ -42,8 +41,7 @@ class SensorAdditionEvent(Event):
     def tasking_engine_id(self):  # pylint: disable=invalid-name
         """int: Unique ID for the :class:`.TaskingEngine` that this sensor should be added to."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'tasking_engine_id',
-            Column(Integer)
+            "tasking_engine_id", Column(Integer)
         )
 
     host_type = Column(String(64))
@@ -52,50 +50,32 @@ class SensorAdditionEvent(Event):
     @declared_attr
     def pos_x_km(self):  # pylint: disable=invalid-name
         """float: Cartesian x-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'pos_x_km',
-            Column(Float)
-        )
+        return Event.__table__.c.get("pos_x_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def pos_y_km(self):  # pylint: disable=invalid-name
         """float: Cartesian y-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'pos_y_km',
-            Column(Float)
-        )
+        return Event.__table__.c.get("pos_y_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def pos_z_km(self):  # pylint: disable=invalid-name
         """float: Cartesian z-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'pos_z_km',
-            Column(Float)
-        )
+        return Event.__table__.c.get("pos_z_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_x_km_p_sec(self):  # pylint: disable=invalid-name
         """float: Cartesian x-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'vel_x_km_p_sec',
-            Column(Float)
-        )
+        return Event.__table__.c.get("vel_x_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_y_km_p_sec(self):  # pylint: disable=invalid-name
         """float: Cartesian y-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'vel_y_km_p_sec',
-            Column(Float)
-        )
+        return Event.__table__.c.get("vel_y_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_z_km_p_sec(self):  # pylint: disable=invalid-name
         """float: Cartesian z-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'vel_z_km_p_sec',
-            Column(Float)
-        )
+        return Event.__table__.c.get("vel_z_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     azimuth_min = Column(Float)
     """float: Minimum amount of motion (radians) this sensor has in the azimuth plane."""
@@ -146,23 +126,45 @@ class SensorAdditionEvent(Event):
     def station_keeping_json(self):  # pylint: disable=invalid-name
         """str: JSON serialized list of station keeping key words for this target."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'station_keeping_json',
-            Column(String(128))
+            "station_keeping_json", Column(String(128))
         )
 
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
-        "agent_id", "tasking_engine_id", "host_type", "pos_x_km", "pos_y_km", "pos_z_km", "vel_x_km_p_sec",
-        "vel_y_km_p_sec", "vel_z_km_p_sec", "azimuth_min", "azimuth_max", "elevation_min", "elevation_max",
-        "covariance_json", "aperture_area", "efficiency", "slew_rate", "sensor_type", "exemplar_cross_section",
-        "exemplar_range", "tx_power", "tx_frequency", "station_keeping_json"
+        "agent_id",
+        "tasking_engine_id",
+        "host_type",
+        "pos_x_km",
+        "pos_y_km",
+        "pos_z_km",
+        "vel_x_km_p_sec",
+        "vel_y_km_p_sec",
+        "vel_z_km_p_sec",
+        "azimuth_min",
+        "azimuth_max",
+        "elevation_min",
+        "elevation_max",
+        "covariance_json",
+        "aperture_area",
+        "efficiency",
+        "slew_rate",
+        "sensor_type",
+        "exemplar_cross_section",
+        "exemplar_range",
+        "tx_power",
+        "tx_frequency",
+        "station_keeping_json",
     )
 
     @property
     def eci(self):
         """``list``: returns the formatted ECI state vector."""
         return [
-            self.pos_x_km, self.pos_y_km, self.pos_z_km,
-            self.vel_x_km_p_sec, self.vel_y_km_p_sec, self.vel_z_km_p_sec
+            self.pos_x_km,
+            self.pos_y_km,
+            self.pos_z_km,
+            self.vel_x_km_p_sec,
+            self.vel_y_km_p_sec,
+            self.vel_z_km_p_sec,
         ]
 
     @property
@@ -211,7 +213,7 @@ class SensorAdditionEvent(Event):
             "sensor_type": self.sensor_type,
             "tx_power": self.tx_power,
             "tx_frequency": self.tx_frequency,
-            "station_keeping": self.station_keeping
+            "station_keeping": self.station_keeping,
         }
         scope_instance.addSensor(sensor_spec, self.tasking_engine_id)
 
@@ -226,9 +228,9 @@ class SensorAdditionEvent(Event):
             NodeAdditionEvent: :class:`.NodeAdditionEvent` object based on the specified `config`.
         """
         if config.lla_set:
-            ecef_state = lla2ecef(array([
-                config.lat, config.lon, config.alt  # radians, radians, km
-            ]))
+            ecef_state = lla2ecef(
+                array([config.lat, config.lon, config.alt])  # radians, radians, km
+            )
             initial_state = ecef2eci(ecef_state)
         elif config.eci_set:
             initial_state = array(config.init_eci)
@@ -276,5 +278,5 @@ class SensorAdditionEvent(Event):
             exemplar_range=config.exemplar[1],
             tx_power=tx_power,
             tx_frequency=tx_frequency,
-            station_keeping_json=dumps(config.station_keeping)
+            station_keeping_json=dumps(config.station_keeping.toJSON()),
         )

@@ -1,0 +1,11 @@
+# Soft guideline line length
+printWidth: 99
+# Use two spaces in tabs
+tabWidth: 2
+useTabs: false
+# Enforce line endings
+endOfLine: "lf"
+# Always insert trailing commas
+trailingComma: "all"
+# Use double quotes by default
+singleQuote: false

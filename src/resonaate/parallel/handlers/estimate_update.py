@@ -1,10 +1,18 @@
 """:class:`.Job` handler class that manages estimate updating logic."""
+from __future__ import annotations
+
 # Standard Library Imports
-# Third Party Imports
-# RESONAATE Imports
-from .job_handler import JobHandler
+from typing import TYPE_CHECKING
+
+# Local Imports
 from ..async_functions import asyncUpdateEstimate
 from ..job import CallbackRegistration, Job
+from .job_handler import JobHandler
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...agents.estimate_agent import EstimateAgent
 
 
 class EstimateUpdateRegistration(CallbackRegistration):
@@ -28,8 +36,8 @@ class EstimateUpdateRegistration(CallbackRegistration):
             args=[
                 self.registrant.estimate_agents[estimate_id],
                 self.registrant.target_agents[estimate_id].eci_state,
-                kwargs["observations"]
-            ]
+                kwargs["observations"],
+            ],
         )
 
     def jobCompleteCallback(self, job):
@@ -40,9 +48,12 @@ class EstimateUpdateRegistration(CallbackRegistration):
         Args:
             job (:class:`.Job`): job object that's returned when a job completes.
         """
-        self.registrant.estimate_agents[job.retval['estimate_id']].updateFromAsyncUpdateEstimate(
-            job.retval
-        )
+        est_agent: EstimateAgent = self.registrant.estimate_agents[job.retval["estimate_id"]]
+        if job.retval["new_filter"]:
+            # [NOTE]: Reset nominal filter for MMAE starting/stopping
+            est_agent.resetFilter(job.retval["new_filter"])
+
+        est_agent.updateFromAsyncUpdateEstimate(job.retval)
 
 
 class EstimateUpdateJobHandler(JobHandler):

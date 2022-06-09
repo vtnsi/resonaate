@@ -1,0 +1,29 @@
+#####################
+# Base Job Settings #
+#####################
+
+include:
+  - local: /.gitlab/ci/common.gitlab-ci.yml
+
+##################
+# Script Aliases #
+##################
+
+####################
+# Base Release Job #
+####################
+
+.release-base:
+  stage: release
+  before_script:
+    - !reference [.apt-update]
+    - !reference [.create-venv]
+  artifacts:
+    expire_in: 1 week
+  when: on_success
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_success
+# Job to auto-bump version
+
+# Job to auto-release to Gitlab

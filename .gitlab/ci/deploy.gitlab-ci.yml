@@ -1,0 +1,76 @@
+#####################
+# Base Job Settings #
+#####################
+
+include:
+  - local: /.gitlab/ci/common.gitlab-ci.yml
+
+##################
+# Script Aliases #
+##################
+
+# deploy to Gitlab Pages command
+.deploy-pages: &deploy-pages
+  - mv docs/build/html/ ./public/
+
+# deploy source dist to Gitlab package registry
+.deploy-source: &deploy-source
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file dist/resonaate-${RESONAATE_VERSION}.tar.gz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/resonaate_sdist/${RESONAATE_VERSION}/resonaate-${RESONAATE_VERSION}.tar.gz"'
+
+# deploy wheel dist to Gitlab package registry
+.deploy-wheel: &deploy-wheel
+  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file dist/resonaate-${RESONAATE_VERSION}-py3-none-any.whl "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/resonaate_bdist/${RESONAATE_VERSION}/resonaate-${RESONAATE_VERSION}-py3-none-any.whl"'
+
+###################
+# Base Deploy Job #
+###################
+
+.deploy-base:
+  stage: deploy
+  before_script:
+    - !reference [.apt-update]
+    - !reference [.create-venv]
+  artifacts:
+    expire_in: 1 week
+  when: on_success
+
+####################
+# Pages Deploy Job #
+####################
+
+# For deployment to Gitlab Pages....
+pages:
+  extends: .deploy-base
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:pages[collapsed=true]\r\e[0K Moving docs to public folder"
+    - *deploy-pages
+    - echo -e "\e[0Ksection_end:`date +%s`:pages\r\e[0K"
+  needs:
+    - sphinx
+  artifacts:
+    paths:
+      - public
+    expose_as: "Documentation"
+
+######################
+# Publish Deploy Job #
+######################
+
+# For deployment to Gitlab Package Registry....
+publish:
+  extends: .deploy-base
+  image: curlimages/curl:latest
+  before_script:
+    - echo $RESONAATE_VERSION
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:deploy_source[collapsed=true]\r\e[0K Publishing source to Gitlab package registry"
+    - *deploy-source
+    - echo -e "\e[0Ksection_end:`date +%s`:deploy_source\r\e[0K"
+    - echo -e "\e[0Ksection_start:`date +%s`:deploy_wheel[collapsed=true]\r\e[0K Publishing wheel to Gitlab package registry"
+    - *deploy-wheel
+    - echo -e "\e[0Ksection_end:`date +%s`:deploy_wheel\r\e[0K"
+  needs:
+    - build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_success

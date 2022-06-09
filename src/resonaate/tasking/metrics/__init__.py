@@ -1,11 +1,10 @@
 """Defines the metrics used to measure tasking performance."""
-# RESONAATE Imports
-from .metric_base import Metric as _BaseMetric
-from .information import FisherInformation, ShannonInformation, KLDivergence
-from .stability import LyapunovStability
-from .sensor import TimeToTransit, DeltaPosition, SlewCycle
+# Local Imports
 from .behavior import TimeSinceObservation
-
+from .information import FisherInformation, KLDivergence, ShannonInformation
+from .metric_base import Metric as _BaseMetric
+from .sensor import DeltaPosition, SlewCycle, TimeToTransit
+from .stability import LyapunovStability
 
 # Register each metric class to global registry
 _BaseMetric.register("TimeSinceObservation", TimeSinceObservation)

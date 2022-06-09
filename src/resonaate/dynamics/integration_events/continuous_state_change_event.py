@@ -14,7 +14,7 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
     terminal = True
     """bool: Whether to terminate integration if this event occurs."""
 
-    direction = 0.
+    direction = 0.0
     """float: Value of zero indicates that either direction of zero crossing should trigger this event."""
 
     @abstractmethod
@@ -43,7 +43,7 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def getStateChangeCallback(self, time, state):
+    def getStateChangeCallback(self, time):
         """Return the function that calculates your state change continuously.
 
         Args:

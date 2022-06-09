@@ -1,28 +1,32 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 import datetime
 import os
 from dataclasses import asdict
+
 # Third Party Imports
 import pytest
-# RESONAATE Imports
+
 try:
-    from resonaate.physics.transforms.eops import EarthOrientationParameter, getEarthOrientationParameters
+    # RESONAATE Imports
+    from resonaate.physics.transforms.eops import (
+        EarthOrientationParameter,
+        getEarthOrientationParameters,
+    )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
-from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
+from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
 
 
 class TestEarthOrientationParameter(BaseTestCase):
     """Tests for :class:`.EarthOrientationParameter` class."""
 
-    @pytest.fixture(scope="function", name="eop_data")
+    @pytest.fixture(name="eop_data")
     def fixtureEOPData(self):
         """Create EOP data for testing."""
-        yield {
+        return {
             "date": datetime.date(2018, 1, 1),
             "x_p": 0.059224,
             "y_p": 0.247646,

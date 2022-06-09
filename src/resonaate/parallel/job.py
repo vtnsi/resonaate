@@ -3,8 +3,6 @@
 from abc import ABCMeta, abstractmethod
 from functools import partial
 from traceback import format_exc
-# Pip Package Imports
-# RESONAATE Imports
 
 
 class Job:
@@ -23,7 +21,7 @@ class Job:
 
     _JOB_ID_ITER = 0
 
-    def __init__(self, method, args=[], kwargs={}):  # pylint: disable=dangerous-default-value
+    def __init__(self, method, args=None, kwargs=None):
         """Instantiate a :class:`.Job` object.
 
         Args:
@@ -31,6 +29,10 @@ class Job:
             args (``list``, optional): Variable length argument list for ``method``.
             kwargs (``dict``, optional): Keyword arguments for ``method``.
         """
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
         self.function = partial(method, *args, **kwargs)
         self.id = str(Job._JOB_ID_ITER)  # pylint: disable=invalid-name
         Job._JOB_ID_ITER += 1
@@ -48,11 +50,11 @@ class Job:
     def status(self):
         """``str``: String indicating :class:`.Job`'s status: 'unprocessed', 'processed', or 'failed'."""
         if self.retval is None and self.error is None:
-            status = 'unprocessed'
+            status = "unprocessed"
         elif self.error is None and self.retval is not None:
-            status = 'processed'
+            status = "processed"
         elif self.retval is None and self.error is not None:
-            status = 'failed'
+            status = "failed"
         return status
 
 

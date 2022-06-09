@@ -1,5 +1,6 @@
 # Ignore processed Python
 *.py[oc]
+**/__pycache__/
 
 # Ignore VS Code things
 *.code-workspace
@@ -20,10 +21,18 @@
 **/init_test_files/
 
 # Ignore coverage data, ipython cache, pytest cache
+.coverage*
+!.coveragerc
+coverage.*
 **/coverage_report/
 **/coverage/
 **/.pytest_cache/
+**/.mypy_cache/
 **/.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
 
 # Ignore all database files and redis-server rdb file
 *.db
@@ -44,6 +53,7 @@
 # Ignore certain documentation
 README.html
 README.pdf
+*.pdf
 
 # Mac stuff
 *.DS_Store

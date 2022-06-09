@@ -1,10 +1,10 @@
 """Defines information-focused tasking metrics."""
-# Standard Library Imports
 # Third Party Imports
 from numpy import log, matmul
 from numpy.linalg import LinAlgError
 from scipy.linalg import det, inv
-# RESONAATE Imports
+
+# Local Imports
 from ...common.logger import resonaateLogError
 from .metric_base import InformationMetric
 

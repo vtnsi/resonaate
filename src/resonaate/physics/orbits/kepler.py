@@ -1,18 +1,32 @@
 """Defines methods of solving Kepler's Equation & Kepler's Problem."""
 # Standard Library Imports
 from typing import Optional
+
 # Third Party Imports
 from numpy import (
-    arctan, array, concatenate, cos, fabs, isclose, log, ndarray, sign, sin,
-    sqrt, tan, vdot, power
+    arctan,
+    array,
+    concatenate,
+    cos,
+    fabs,
+    isclose,
+    log,
+    ndarray,
+    power,
+    sign,
+    sin,
+    sqrt,
+    tan,
+    vdot,
 )
 from scipy.linalg import norm
 from scipy.optimize import newton
-# RESONAATE Imports
-from .utils import universalC2C3, getAngularMomentum
+
+# Local Imports
+from ...common.logger import resonaateLogError
 from ..bodies import Earth
 from ..math import _ATOL, _MAX_ITER
-from ...common.logger import resonaateLogError
+from .utils import getAngularMomentum, universalC2C3
 
 
 class KeplerProblemError(Exception):
@@ -106,8 +120,12 @@ def _equinoctialKeplerEquationDerivative(F: float, h: float, k: float, lam: floa
 
 
 def keplerSolveCOE(
-    E_0: float, M: float, ecc: float,
-    tol: Optional[float] = _ATOL, maxiter: Optional[int] = _MAX_ITER, raise_err: bool = True,
+    E_0: float,
+    M: float,
+    ecc: float,
+    tol: Optional[float] = _ATOL,
+    maxiter: Optional[int] = _MAX_ITER,
+    raise_err: bool = True,
 ) -> float:
     r"""Solve Kepler's equation via Newton-Raphson.
 
@@ -131,14 +149,24 @@ def keplerSolveCOE(
     """
     # pylint: disable=invalid-name
     return newton(
-        _keplerEquation, E_0, fprime=_keplerEquationDerivative,
-        args=(M, ecc), tol=tol, maxiter=maxiter, disp=raise_err,
+        _keplerEquation,
+        E_0,
+        fprime=_keplerEquationDerivative,
+        args=(M, ecc),
+        tol=tol,
+        maxiter=maxiter,
+        disp=raise_err,
     )
 
 
 def keplerSolveEQE(
-    F_0: float, h: float, k: float, lam: float,
-    tol: Optional[float] = _ATOL, maxiter: Optional[int] = _MAX_ITER, raise_err: bool = True,
+    F_0: float,
+    h: float,
+    k: float,
+    lam: float,
+    tol: Optional[float] = _ATOL,
+    maxiter: Optional[int] = _MAX_ITER,
+    raise_err: bool = True,
 ) -> float:
     r"""Solve the equinoctial form of Kepler's equation via Newton-Raphson.
 
@@ -165,14 +193,22 @@ def keplerSolveEQE(
     """
     # pylint: disable=invalid-name
     return newton(
-        _equinoctialKeplerEquation, F_0, fprime=_equinoctialKeplerEquationDerivative,
-        args=(h, k, lam), tol=tol, maxiter=maxiter, disp=raise_err,
+        _equinoctialKeplerEquation,
+        F_0,
+        fprime=_equinoctialKeplerEquationDerivative,
+        args=(h, k, lam),
+        tol=tol,
+        maxiter=maxiter,
+        disp=raise_err,
     )
 
 
 def solveKeplerProblemUniversal(
-    init_state: ndarray, tof: float,
-    mu: Optional[float] = Earth.mu, tol: Optional[float] = _ATOL, maxiter: Optional[int] = _MAX_ITER
+    init_state: ndarray,
+    tof: float,
+    mu: Optional[float] = Earth.mu,
+    tol: Optional[float] = _ATOL,
+    maxiter: Optional[int] = _MAX_ITER,
 ) -> ndarray:
     r"""Solver Kepler's problem using the universal variables formulation.
 
@@ -199,30 +235,40 @@ def solveKeplerProblemUniversal(
     """
     # pylint: disable=invalid-name, too-many-locals
     r0, v0 = array(init_state[:3], copy=True), array(init_state[3:], copy=True)
-    alpha = -norm(v0)**2 / mu + 2.0 / norm(r0)
+    alpha = -norm(v0) ** 2 / mu + 2.0 / norm(r0)
     sqrt_mu = sqrt(mu)
     if alpha > 1e-6:
         chi = sqrt_mu * tof * alpha
     if fabs(alpha) < 1e-6:
-        p = norm(getAngularMomentum(r0, v0))**2 / mu
+        p = norm(getAngularMomentum(r0, v0)) ** 2 / mu
         s = 0.5 * arctan(1 / (3 * sqrt_mu / p**3 * tof))
         chi = sqrt(p) * 2 / tan(2 * arctan(power(tan(s), 1 / 3)))
     if alpha < -1e-6:
         sqrt_a = sqrt(-1 / alpha)
-        chi = sign(tof) * sqrt_a * log(
-            (-2 * mu * alpha * tof) / (vdot(r0, v0) + sign(tof) * sqrt_mu * sqrt_a * (1 - norm(r0) * alpha))
+        chi = (
+            sign(tof)
+            * sqrt_a
+            * log(
+                (-2 * mu * alpha * tof)
+                / (vdot(r0, v0) + sign(tof) * sqrt_mu * sqrt_a * (1 - norm(r0) * alpha))
+            )
         )
 
-    for ii in range(maxiter):
+    for ii in range(maxiter):  # noqa: B007
         # Get Stumpff coefficients & temporary variables
         chi_sq = chi**2
         psi = chi_sq * alpha
         c2, c3 = universalC2C3(psi)
-        tmp = (1 - psi * c3)
+        tmp = 1 - psi * c3
         # Perform iteration of Kepler's problem
         r = chi_sq * c2 + vdot(r0, v0) / sqrt_mu * chi * tmp + norm(r0) * (1 - psi * c2)
         chi_old = chi
-        chi += (sqrt_mu * tof - chi ** 3 * c3 - vdot(r0, v0) / sqrt_mu * chi_sq * c2 - norm(r0) * chi * tmp) / r
+        chi += (
+            sqrt_mu * tof
+            - chi**3 * c3
+            - vdot(r0, v0) / sqrt_mu * chi_sq * c2
+            - norm(r0) * chi * tmp
+        ) / r
         if isclose(chi, chi_old, rtol=0.0, atol=tol):
             break
 

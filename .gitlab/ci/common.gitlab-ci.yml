@@ -1,0 +1,96 @@
+####################
+# Default Workflow #
+####################
+
+# This pipeline is only run for MR, Tags, & pushes to master
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+########################
+# Default Job Settings #
+########################
+
+default:
+  # Python 3.7 Docker image by default
+  image: python:3.7
+  # These tags allow jobs to be run on DFARS shared runners
+  tags:
+    - docker
+    - cpu
+    - dfars
+  # Cache the pip libraries. Only update if different branch, or requirements.txt changed.
+  cache:
+    key:
+      files:
+        - requirements.txt
+        - setup.py
+      prefix: "%CI_COMMIT_REF_SLUG%"
+    paths:
+      - .cache/pip
+      - .venv
+
+########################
+# Common Env Variables #
+########################
+
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+##############
+# Job Stages #
+##############
+
+stages:
+  - check
+  - test
+  - build
+  - release
+  - deploy
+
+##################
+# Script Aliases #
+##################
+
+# apt update common command
+.apt-update: &apt-update
+  - echo -e "\e[0Ksection_start:`date +%s`:apt_update[collapsed=true]\r\e[0K Update apt packages"
+  - apt-get update -qq
+  - echo -e "\e[0Ksection_end:`date +%s`:apt_update\r\e[0K"
+
+# apt install common command
+.apt-install: &apt-install
+  - echo -e "\e[0Ksection_start:`date +%s`:apt_install[collapsed=true]\r\e[0K Install apt packages"
+  - apt-get install -y -qq redis
+  - echo -e "\e[0Ksection_end:`date +%s`:apt_install\r\e[0K"
+
+# full apt setup command
+.apt-setup: &apt-setup
+  - *apt-update
+  - *apt-install
+
+# Create venv, install base requirements into venv
+.create-venv: &create-venv
+  - echo -e "\e[0Ksection_start:`date +%s`:venv[collapsed=true]\r\e[0K Create venv, install dependencies"
+  - python3 -V
+  - python3 -m pip install --upgrade pip virtualenv
+  - virtualenv .venv
+  - source .venv/bin/activate
+  - python3 -m pip install -r requirements.txt
+  - echo -e "\e[0Ksection_end:`date +%s`:venv\r\e[0K"
+
+# Start redis - must include 'stop-redis' in the 'after_script' key
+.start-redis: &start-redis
+  - echo -e "\e[0Ksection_start:`date +%s`:start_redis_server[collapsed=true]\r\e[0K Start Redis server in background"
+  - redis-server 2>&1 > redis.log &
+  - echo -e "\e[0Ksection_end:`date +%s`:start_redis_server\r\e[0K"
+
+# Stop redis
+.stop-redis: &stop-redis
+  - echo -e "\e[0Ksection_start:`date +%s`:stop_redis_server[collapsed=true]\r\e[0K Stop running Redis server"
+  - redis-cli shutdown
+  - echo -e "\e[0Ksection_end:`date +%s`:stop_redis_server\r\e[0K"

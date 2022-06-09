@@ -1,0 +1,7 @@
+# Base requirements - pinned for development
+numpy==1.21.6
+scipy==1.7.3
+concurrent-log-handler==0.9.20
+sqlalchemy==1.4.37
+matplotlib==3.5.2
+redis==4.3.3

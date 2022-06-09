@@ -1,8 +1,4 @@
 """Defines the :class:`.Earth` class."""
-# Standard Library Imports
-# from math import factorial
-# Third Party Imports
-# RESONAATE Imports
 
 
 class Earth:

@@ -1,19 +1,20 @@
-# pylint: disable=no-self-use, unused-argument
+# pylint: disable=unused-argument
 # Standard Library Imports
 from datetime import datetime
+
 # Third Party Imports
 import pytest
 from sqlalchemy.orm import Query
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     from resonaate.data.data_interface import Epoch
     from resonaate.data.events import Event
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config.event_configs import DataDependency, MissingDataDependency
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ...conftest import BaseTestCase
 
@@ -32,7 +33,7 @@ class TestBaseEventClass(BaseTestCase):
             scope_instance_id=12345,
             start_time_jd=datetimeToJulianDate(datetime(2018, 12, 1, 12, 5)),
             end_time_jd=datetimeToJulianDate(datetime(2018, 12, 1, 12, 5)),
-            event_type="test_event"
+            event_type="test_event",
         )
 
     def testEventTypes(self):
@@ -41,6 +42,7 @@ class TestBaseEventClass(BaseTestCase):
 
     def testChildEventChecks(self):
         """Test to make sure a good child event doesn't throw any errors."""
+
         class TestChild(Event):
 
             EVENT_TYPE = "test_event"
@@ -51,6 +53,7 @@ class TestBaseEventClass(BaseTestCase):
             @classmethod
             def fromConfig(cls, config):
                 pass
+
         Event.EVENT_REGISTRY = None
         assert Event.eventTypes()
 
@@ -96,10 +99,7 @@ class TestDataDependency(BaseTestCase):
 
     def testNoAttributes(self):
         """Test a :class:`.DataDependency` with no ``attributes``."""
-        dep = DataDependency(
-            Epoch,
-            Query([Epoch])
-        )
+        dep = DataDependency(Epoch, Query([Epoch]))
         with pytest.raises(MissingDataDependency):
             dep.createDependency()
 
@@ -109,7 +109,10 @@ class TestDataDependency(BaseTestCase):
         dep = DataDependency(
             Epoch,
             Query([Epoch]),
-            {"julian_date": datetimeToJulianDate(timestamp), "timestampISO": timestamp.isoformat()}
+            {
+                "julian_date": datetimeToJulianDate(timestamp),
+                "timestampISO": timestamp.isoformat(),
+            },
         )
         created_dep = dep.createDependency()
         assert isinstance(created_dep, Epoch)

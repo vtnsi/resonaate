@@ -1,14 +1,16 @@
 """Functions for extra processing of the Resonaate service layer output."""
-# Standard Library Imports
-# Pip Package Imports
-# # RESONAATE Library Imports
-from resonaate.physics.time.stardate import JulianDate
-from resonaate.data.observation import Observation
+# RESONAATE Imports
 from resonaate.data.ephemeris import EstimateEphemeris
-
+from resonaate.data.observation import Observation
+from resonaate.physics.time.stardate import JulianDate
 
 MERGE_LIST = [
-    {"leader": 11111, "follower": 11112, "start_merge": 2458454.0006944444, "end_merge": 2458454.8026684606},
+    {
+        "leader": 11111,
+        "follower": 11112,
+        "start_merge": 2458454.0006944444,
+        "end_merge": 2458454.8026684606,
+    },
 ]
 """list: List of dictionaries defining when docks (merges) take place between.
 
@@ -20,6 +22,10 @@ Each merge has the following fields defined:
 """
 
 
+MERGE_LIST_INDEX = len(MERGE_LIST)
+"""``int``: total number of merges to process."""
+
+
 DOCKING_SATS = {11111, 11112}
 """set: Set of unique RSO identifiers present in the MERGE_LIST.
 
@@ -28,7 +34,7 @@ unique RSO ID.
 """
 
 
-def determineCurrentLeader(sat_num, current_julian_time, merge_list_index=len(MERGE_LIST)):
+def determineCurrentLeader(sat_num, current_julian_time, merge_list_index=MERGE_LIST_INDEX):
     """Follow recursion based on order of ``MERGE_LIST`` to determine real leader.
 
     Args:
@@ -49,7 +55,7 @@ def determineCurrentLeader(sat_num, current_julian_time, merge_list_index=len(ME
         conditions = (
             merge["follower"] == sat_num,
             current_julian_time >= merge["start_merge"],
-            current_julian_time < merge["end_merge"]
+            current_julian_time < merge["end_merge"],
         )
         if all(conditions):
             leader = merge["leader"]
@@ -59,7 +65,7 @@ def determineCurrentLeader(sat_num, current_julian_time, merge_list_index=len(ME
             break
 
     if leader is None:
-        # got through relevent part of list and couldn't find a leader
+        # got through relevant part of list and couldn't find a leader
         return sat_num
     # else
     return determineCurrentLeader(leader, current_julian_time, merge_list_index=end)
@@ -86,7 +92,7 @@ def isLeader(sat_num, current_julian_time):
         conditions = (
             merge["leader"] == sat_num,
             current_julian_time >= merge["start_merge"],
-            current_julian_time < merge["end_merge"]
+            current_julian_time < merge["end_merge"],
         )
         if all(conditions):
             leader_merge = merge
@@ -101,8 +107,15 @@ def isLeader(sat_num, current_julian_time):
 class LostRSO:
     """Abstract the functionality of an RSO that is lost and/or becomes uncorrelated."""
 
-    def __init__(self, sat_num, time_lost, time_found, time_uncorrelated=None,
-                 uncorrelated_sat_num=None, uncorrelated_sat_name=None):
+    def __init__(
+        self,
+        sat_num,
+        time_lost,
+        time_found,
+        time_uncorrelated=None,
+        uncorrelated_sat_num=None,
+        uncorrelated_sat_name=None,
+    ):
         """Instantiate a new :class:`.LostRSO` based on parameters.
 
         Args:
@@ -143,8 +156,10 @@ class LostRSO:
                 raise TypeError(err)
 
             if self._uncorrelated_sat_num is None or self._uncorrelated_sat_name is None:
-                err = f"If satellite becomes uncorrelated at {self._time_uncorrelated}," + \
-                      " please provide uncorrelated name and number."
+                err = (
+                    f"If satellite becomes uncorrelated at {self._time_uncorrelated},"
+                    + " please provide uncorrelated name and number."
+                )
                 raise ValueError(err)
 
             if not isinstance(self._uncorrelated_sat_num, int):
@@ -192,7 +207,8 @@ class LostRSO:
         """Replace the `id` and `name` fields in data_obj to uncorrelated values.
 
         Args:
-            output_data (dict): Estimate or Observation data dictionary to uncorrelate.
+            data_obj (:class:`.EstimateEphemeris` | :class:`.Observation`): Estimate or Observation
+                data dictionary to uncorrelate.
         """
         if isinstance(data_obj, EstimateEphemeris):
             data_obj.agent_id = self._uncorrelated_sat_num
@@ -213,7 +229,7 @@ LOST_UCT_TARGETS = {
         JulianDate.getJulianDate(2018, 12, 1, 12, 30, 0),
         time_uncorrelated=JulianDate.getJulianDate(2018, 12, 1, 12, 20, 0),
         uncorrelated_sat_num=90001,
-        uncorrelated_sat_name="UCT-1"
+        uncorrelated_sat_name="UCT-1",
     ),
 }
 
@@ -222,7 +238,7 @@ def isLostOrUncorrelated(sat_num, current_julian_time):
     """Determine if a satellite is currently lost or uncorrelated.
 
     Args:
-        sat_num (int): Satellite number of relevent RSO.
+        sat_num (int): Satellite number of relevant RSO.
         current_julian_time (JulianDate): Current date/time in Julian date format.
 
     Return:

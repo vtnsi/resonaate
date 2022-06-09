@@ -1,13 +1,13 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 # RESONAATE Imports
 try:
+    # RESONAATE Imports
     from resonaate.data.agent import Agent
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 

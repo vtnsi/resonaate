@@ -3,22 +3,25 @@
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from traceback import format_exc
+
 # Third Party Imports
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Query, sessionmaker
 from sqlalchemy.pool import StaticPool
-# RESONAATE Imports
+
+# Local Imports
+from ..common.behavioral_config import BehavioralConfig
+from ..common.logger import Logger
 from . import Base
 from .agent import Agent
+from .detected_maneuver import DetectedManeuver
+from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .epoch import Epoch
-from .ephemeris import TruthEphemeris, EstimateEphemeris
-from .observation import Observation
-from .maneuver_detection import ManeuverDetection
-from .task import Task
 from .events import Event
-from ..common.logger import Logger
-from ..common.behavioral_config import BehavioralConfig
+from .filter_step import FilterStep
+from .observation import Observation
+from .task import Task
 
 
 class DataInterface(metaclass=ABCMeta):
@@ -37,7 +40,8 @@ class DataInterface(metaclass=ABCMeta):
         Observation.__tablename__: Observation,
         Task.__tablename__: Task,
         Event.__tablename__: Event,
-        ManeuverDetection.__tablename__: ManeuverDetection
+        DetectedManeuver.__tablename__: DetectedManeuver,
+        FilterStep.__tablename__: FilterStep,
     }
 
     SQLITE_PREFIX = "sqlite://"
@@ -57,7 +61,9 @@ class DataInterface(metaclass=ABCMeta):
         """
         self.logger = logger
         if self.logger is None:
-            self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
+            self.logger = Logger(
+                "resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation
+            )
 
         if db_path.startswith(self.SQLITE_PREFIX):
             # Squash warnings in sqlite about thread safety. The only times that sqlite will be
@@ -65,8 +71,8 @@ class DataInterface(metaclass=ABCMeta):
             self.engine = create_engine(
                 db_path,
                 echo=verbose_echo,
-                connect_args={'check_same_thread': False},
-                poolclass=StaticPool
+                connect_args={"check_same_thread": False},
+                poolclass=StaticPool,
             )
         else:
             self.engine = create_engine(db_path, echo=verbose_echo)
@@ -110,7 +116,9 @@ class DataInterface(metaclass=ABCMeta):
             yield current_session
             current_session.commit()
         except SQLAlchemyError:
-            self.logger.error(f"Exception thrown in `::getSessionScope()` by {self}: \n{format_exc()}")
+            self.logger.error(
+                f"Exception thrown in `::getSessionScope()` by {self}: \n{format_exc()}"
+            )
             current_session.rollback()
             raise
         finally:

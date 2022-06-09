@@ -1,12 +1,14 @@
 """Helper functions that convert between different forms of time."""
 # Standard Library Imports
 import datetime
+
 # Third Party Imports
-from numpy import remainder, floor
-# RESONAATE Imports
-from .stardate import JulianDate, julianDateToDatetime
+from numpy import floor, remainder
+
+# Local Imports
 from ...physics import constants as const
 from ..math import wrapAngle2Pi
+from .stardate import JulianDate, julianDateToDatetime
 
 
 def greenwichMeanTime(julian_date):
@@ -23,7 +25,12 @@ def greenwichMeanTime(julian_date):
     """
     # Implementation
     tut1 = (float(julian_date) - 2451545.0) / 36525.0
-    gst = - 6.2e-6 * tut1**3 + 0.093104 * tut1**2 + (876600 * 3600 + 8640184.812866) * tut1 + 67310.54841
+    gst = (
+        -6.2e-6 * tut1**3
+        + 0.093104 * tut1**2
+        + (876600 * 3600 + 8640184.812866) * tut1
+        + 67310.54841
+    )
     # Convert from seconds to radians
     return wrapAngle2Pi(gst * (1 / 240) * const.DEG2RAD)
 
@@ -47,7 +54,11 @@ def greenwichApparentTime(year, elapsed_days, eq_equinox):
     julian_centuries_jan1 = (julian_date_jan1 - 2451545.0) / 36525.0
     gmst_jan1 = greenwichMeanTime(julian_date_jan1)
     # Earth's rotation rate (Eq. 3-40 Vallado Ed. 4)
-    earth_rotation_rate = 1.002737909350795 + 5.9005e-11 * julian_centuries_jan1 - 5.9e-15 * julian_centuries_jan1**2
+    earth_rotation_rate = (
+        1.002737909350795
+        + 5.9005e-11 * julian_centuries_jan1
+        - 5.9e-15 * julian_centuries_jan1**2
+    )
     # GMST of the exact time
     gmst = gmst_jan1 + earth_rotation_rate * elapsed_days * const.TWOPI
     # Convert to apparent GST
@@ -130,7 +141,7 @@ def dayOfYear(year, month, day, hour, minute, second):
     # Sum up total days up to the current month
     count = 1
     days = 0
-    while ((count < month) and (count < 12)):
+    while (count < month) and (count < 12):
         days += days_in_month[count - 1]
         count += 1
 
@@ -163,5 +174,5 @@ def getTargetJulianDate(start_julian_date, jump_delta):
         target_calendar_date.day,
         target_calendar_date.hour,
         target_calendar_date.minute,
-        target_calendar_date.second
+        target_calendar_date.second,
     )

@@ -1,0 +1,26 @@
+{
+  "unique_id": 2,
+  "reward": {
+    "name": "CostConstrainedReward",
+    "metrics": [
+      {
+        "name": "ShannonInformation",
+        "parameters": {}
+      },
+      {
+        "name": "DeltaPosition",
+        "parameters": {}
+      },
+      {
+        "name": "LyapunovStability",
+        "parameters": {}
+      }
+    ],
+    "parameters": {}
+  },
+  "decision": {
+    "name": "MunkresDecision",
+    "parameters": {}
+  },
+  "sensors_file": "../sensor_sets/small_network.json"
+}

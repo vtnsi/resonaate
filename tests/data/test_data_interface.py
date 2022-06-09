@@ -1,6 +1,7 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init, unused-argument
 # Standard Library Imports
-from os.path import join, exists, abspath
+from os.path import abspath, exists, join
+
 # Third Party Imports
 import pytest
 from numpy import allclose
@@ -8,20 +9,19 @@ from sqlalchemy import Column, Float, Integer
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Query
-# RESONAATE Imports
-try:
-    from resonaate.data.resonaate_database import ResonaateDatabase
-    from resonaate.data.importer_database import ImporterDatabase
-    from resonaate.data.ephemeris import TruthEphemeris
-    from resonaate.data.agent import Agent
-    from resonaate.data.epoch import Epoch
-except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
-# Testing Imports
-from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
 
+try:
+    # RESONAATE Imports
+    from resonaate.data.agent import Agent
+    from resonaate.data.ephemeris import TruthEphemeris
+    from resonaate.data.epoch import Epoch
+    from resonaate.data.importer_database import ImporterDatabase
+    from resonaate.data.resonaate_database import ResonaateDatabase
+except ImportError as error:
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
+# Testing Imports
+from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
 
 EXAMPLE_RSO = [
     {
@@ -38,7 +38,7 @@ EXAMPLE_RSO = [
         "name": "Sat3",
         "unique_id": 27839,
         "eci": [4642.213371, 41904.121624, -480.890384, -3.056102, 0.338368, -0.013438],
-    }
+    },
 ]
 
 
@@ -65,7 +65,7 @@ def getSingleEphemerisData():
         pos_z_km=eci[2],
         vel_x_km_p_sec=eci[3],
         vel_y_km_p_sec=eci[4],
-        vel_z_km_p_sec=eci[5]
+        vel_z_km_p_sec=eci[5],
     )
 
     return ephem
@@ -82,7 +82,8 @@ def getMultipleEphemerisData():
             TruthEphemeris.fromECIVector(
                 epoch=epoch,
                 agent=Agent(unique_id=rso["unique_id"], name=rso["name"]),
-                eci=rso["eci"])
+                eci=rso["eci"],
+            )
         )
 
     return ephems
@@ -90,20 +91,6 @@ def getMultipleEphemerisData():
 
 class TestResonaateDatabase(BaseTestCase):
     """Tests for :class:`.DataInterface` class."""
-
-    @pytest.fixture(scope="function", name="database")
-    def getDataInterface(self):
-        """Create common, non-shared DB object for all tests.
-
-        Yields:
-            :class:`.ResonaateDatabase`: properly constructed DB object
-        """
-        # Create & yield instance.
-        shared_interface = ResonaateDatabase.getSharedInterface(
-            db_path=None
-        )
-        yield shared_interface
-        shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
 
     def testInsertDataOnePosArg(self, database, ephem):
         """Insert a single data object."""
@@ -143,7 +130,8 @@ class TestResonaateDatabase(BaseTestCase):
                 TruthEphemeris.fromECIVector(
                     julian_date=EXAMPLE_EPOCH["julian_date"],
                     agent_id=rso["unique_id"],
-                    eci=rso["eci"])
+                    eci=rso["eci"],
+                )
             )
         database.bulkSave(ephems)
 
@@ -158,9 +146,7 @@ class TestResonaateDatabase(BaseTestCase):
             julian_date = Column(Float, index=True, unique=True, nullable=False)
 
         # Query for new DB object
-        query = Query(NewEpoch).filter(
-            NewEpoch.julian_date == EXAMPLE_EPOCH["julian_date"]
-        )
+        query = Query(NewEpoch).filter(NewEpoch.julian_date == EXAMPLE_EPOCH["julian_date"])
 
         with pytest.raises(SQLAlchemyError):
             database.deleteData(query)
@@ -170,15 +156,18 @@ class TestResonaateDatabase(BaseTestCase):
         with pytest.raises(TypeError):
             database.insertData("this is not an ephemeris")
 
-        with pytest.raises(ValueError):
+        error_msg = r"Cannot call `DataInterface.insertData\(\)` without arguments."
+        with pytest.raises(ValueError, match=error_msg):
             database.insertData()
 
     def testGetData(self, database, ephem):
         """Test getting a data object from the DB."""
         database.insertData(ephem)
 
-        julian_date_query = Query(TruthEphemeris).join(Epoch).filter(
-            Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
+        julian_date_query = (
+            Query(TruthEphemeris)
+            .join(Epoch)
+            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
         )
         result = database.getData(julian_date_query, multi=False)
 
@@ -191,7 +180,7 @@ class TestResonaateDatabase(BaseTestCase):
         assert allclose(result.eci, eci)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testGetDataError(self, datafiles, ephem):
+    def testGetDataError(self, datafiles, ephem, reset_shared_db):
         """Test getting a data object from the DB."""
         # Define a new db object class
         class NewEpoch(declarative_base()):
@@ -207,9 +196,7 @@ class TestResonaateDatabase(BaseTestCase):
         database.insertData(ephem)
 
         # Query for new DB object
-        query = Query(NewEpoch).filter(
-            NewEpoch.julian_date == EXAMPLE_EPOCH["julian_date"]
-        )
+        query = Query(NewEpoch).filter(NewEpoch.julian_date == EXAMPLE_EPOCH["julian_date"])
         with pytest.raises(SQLAlchemyError):
             database.getData(query)
 
@@ -220,8 +207,10 @@ class TestResonaateDatabase(BaseTestCase):
         """Test deleting objects from DB."""
         database.insertData(*ephems)
 
-        query = Query(TruthEphemeris).join(Agent).filter(
-            Agent.unique_id == EXAMPLE_RSO[0]["unique_id"]
+        query = (
+            Query(TruthEphemeris)
+            .join(Agent)
+            .filter(Agent.unique_id == EXAMPLE_RSO[0]["unique_id"])
         )
         del_count = database.deleteData(query)
 
@@ -234,15 +223,17 @@ class TestResonaateDatabase(BaseTestCase):
         """Test deleting objects from DB."""
         database.insertData(*ephems)
 
-        query = Query(TruthEphemeris).join(Epoch).filter(
-            Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
+        query = (
+            Query(TruthEphemeris)
+            .join(Epoch)
+            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
         )
         del_count = database.deleteData(query)
 
         assert del_count == 3
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSharedDataInterface(self, datafiles, ephems):
+    def testSharedDataInterface(self, datafiles, ephems, reset_shared_db):
         """Test the :meth:`.getSharedInterface()` class method."""
         # Create DB using API
         shared_db_url = "sqlite:///" + join(datafiles, self.shared_db_path)
@@ -250,10 +241,12 @@ class TestResonaateDatabase(BaseTestCase):
         database.insertData(*ephems)
 
         # Query on ID and Julian date
-        combined_query = Query(TruthEphemeris).join(Epoch).filter(
-            Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
-        ).join(Agent).filter(
-            Agent.unique_id == EXAMPLE_RSO[1]["unique_id"]
+        combined_query = (
+            Query(TruthEphemeris)
+            .join(Epoch)
+            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
+            .join(Agent)
+            .filter(Agent.unique_id == EXAMPLE_RSO[1]["unique_id"])
         )
         result = database.getData(combined_query, multi=False)
 
@@ -267,15 +260,19 @@ class TestResonaateDatabase(BaseTestCase):
         assert allclose(result.eci, eci)
 
         # Delete based on ID
-        sat_num_query = Query(TruthEphemeris).join(Agent).filter(
-            Agent.unique_id == EXAMPLE_RSO[0]["unique_id"]
+        sat_num_query = (
+            Query(TruthEphemeris)
+            .join(Agent)
+            .filter(Agent.unique_id == EXAMPLE_RSO[0]["unique_id"])
         )
         deleted_count = database.deleteData(sat_num_query)
         assert deleted_count == 1
 
         # Delete based on Julian date
-        julian_date_query = Query(TruthEphemeris).join(Epoch).filter(
-            Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
+        julian_date_query = (
+            Query(TruthEphemeris)
+            .join(Epoch)
+            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
         )
         deleted_count = database.deleteData(julian_date_query)
         assert deleted_count == 2
@@ -283,17 +280,19 @@ class TestResonaateDatabase(BaseTestCase):
         # Delete DB after finished
         database.resetData(tables=database.VALID_DATA_TYPES)
 
-    def testInit(self, ephems):
+    def testInit(self, ephems, reset_shared_db):
         """Test the constructor."""
         # Create DB using API
         database = ResonaateDatabase(None, logger=None, verbose_echo=True)
         database.insertData(*ephems)
 
         # Query on ID and Julian date
-        combined_query = Query(TruthEphemeris).join(Epoch).filter(
-            Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
-        ).join(Agent).filter(
-            Agent.unique_id == EXAMPLE_RSO[1]["unique_id"]
+        combined_query = (
+            Query(TruthEphemeris)
+            .join(Epoch)
+            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
+            .join(Agent)
+            .filter(Agent.unique_id == EXAMPLE_RSO[1]["unique_id"])
         )
         result = database.getData(combined_query, multi=False)
 
@@ -307,15 +306,19 @@ class TestResonaateDatabase(BaseTestCase):
         assert allclose(result.eci, eci)
 
         # Delete based on ID
-        sat_num_query = Query(TruthEphemeris).join(Agent).filter(
-            Agent.unique_id == EXAMPLE_RSO[0]["unique_id"]
+        sat_num_query = (
+            Query(TruthEphemeris)
+            .join(Agent)
+            .filter(Agent.unique_id == EXAMPLE_RSO[0]["unique_id"])
         )
         deleted_count = database.deleteData(sat_num_query)
         assert deleted_count == 1
 
         # Delete based on Julian date
-        julian_date_query = Query(TruthEphemeris).join(Epoch).filter(
-            Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
+        julian_date_query = (
+            Query(TruthEphemeris)
+            .join(Epoch)
+            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
         )
         deleted_count = database.deleteData(julian_date_query)
         assert deleted_count == 2
@@ -332,7 +335,8 @@ class TestResonaateDatabase(BaseTestCase):
         """Test functionality of resetting data with improper arguments."""
         database.insertData(*ephems)
         # Test a non-existant table
-        with pytest.raises(ValueError):
+        error_msg = r"No such table: '\w+'"
+        with pytest.raises(ValueError, match=error_msg):
             database.resetData(tables={"ephemeris": TruthEphemeris})
 
 
@@ -342,7 +346,7 @@ class TestImporterDatabase(BaseTestCase):
     # [TODO]: Write test for importing observations
 
     # Only do two to save time
-    EXAMPLE_TRUTH_FILES = ('11111-truth.json', '11112-truth.json')
+    EXAMPLE_TRUTH_FILES = ("11111-truth.json", "11112-truth.json")
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testInitDatabaseFromJSON(self, datafiles):
@@ -357,15 +361,10 @@ class TestImporterDatabase(BaseTestCase):
             stop=2458454.0 + 1 / 24,  # one hour later
         )
         ephems = importer_db.getData(
-            Query(
-                TruthEphemeris
-            ).join(
-                Agent
-            ).filter(
-                Agent.unique_id == 11111
-            )
+            Query(TruthEphemeris).join(Agent).filter(Agent.unique_id == 11111)
         )
         assert len(ephems) == 61
+        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testReadOnly(self, datafiles, ephems):
@@ -381,17 +380,19 @@ class TestImporterDatabase(BaseTestCase):
         # `deleteData()`
         with pytest.raises(NotImplementedError):
             importer_db.deleteData(
-                Query(TruthEphemeris).join(Agent).filter(
-                    Agent.unique_id == EXAMPLE_RSO[0]["unique_id"]
-                )
+                Query(TruthEphemeris)
+                .join(Agent)
+                .filter(Agent.unique_id == EXAMPLE_RSO[0]["unique_id"])
             )
 
         # `bulkSave()`
         with pytest.raises(NotImplementedError):
             importer_db.insertData(ephems)
 
+        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
+
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSharedDataInterface(self, datafiles, ephems):
+    def testSharedDataInterface(self, datafiles, ephems, reset_importer_db):
         """Test the :meth:`.getSharedInterface()` class method."""
         # Create DB using API
         importer_db_url = "sqlite:///" + join(datafiles, self.importer_db_path)
@@ -399,10 +400,12 @@ class TestImporterDatabase(BaseTestCase):
         database._insertData(*ephems)  # pylint: disable=protected-access
 
         # Query on ID and Julian date
-        combined_query = Query(TruthEphemeris).join(Epoch).filter(
-            Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
-        ).join(Agent).filter(
-            Agent.unique_id == EXAMPLE_RSO[1]["unique_id"]
+        combined_query = (
+            Query(TruthEphemeris)
+            .join(Epoch)
+            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
+            .join(Agent)
+            .filter(Agent.unique_id == EXAMPLE_RSO[1]["unique_id"])
         )
         result = database.getData(combined_query, multi=False)
 
@@ -414,25 +417,24 @@ class TestImporterDatabase(BaseTestCase):
         assert result.agent_id == result.agent.unique_id
         assert result.agent.name == EXAMPLE_RSO[1]["name"]
         assert allclose(result.eci, eci)
-
-        # Delete DB after finished
-        database.resetData(tables=database.VALID_DATA_TYPES)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testInit(self, datafiles, ephems):
         """Test the constructor."""
         # Create DB using API
         importer_db_url = "sqlite:///" + join(datafiles, self.importer_db_path)
-        database = ImporterDatabase(importer_db_url, logger=None, verbose_echo=True)
-        database._insertData(*ephems)  # pylint: disable=protected-access
+        importer_db = ImporterDatabase(importer_db_url, logger=None, verbose_echo=True)
+        importer_db._insertData(*ephems)  # pylint: disable=protected-access
 
         # Query on ID and Julian date
-        combined_query = Query(TruthEphemeris).join(Epoch).filter(
-            Epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
-        ).join(Agent).filter(
-            Agent.unique_id == EXAMPLE_RSO[1]["unique_id"]
+        combined_query = (
+            Query(TruthEphemeris)
+            .join(Epoch)
+            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
+            .join(Agent)
+            .filter(Agent.unique_id == EXAMPLE_RSO[1]["unique_id"])
         )
-        result = database.getData(combined_query, multi=False)
+        result = importer_db.getData(combined_query, multi=False)
 
         # Make sure returned result is correct
         eci = EXAMPLE_RSO[1]["eci"]
@@ -442,6 +444,4 @@ class TestImporterDatabase(BaseTestCase):
         assert result.agent_id == result.agent.unique_id
         assert result.agent.name == EXAMPLE_RSO[1]["name"]
         assert allclose(result.eci, eci)
-
-        # Delete DB after finished
-        database.resetData(tables=database.VALID_DATA_TYPES)
+        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)

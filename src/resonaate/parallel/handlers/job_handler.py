@@ -2,12 +2,12 @@
 # Standard Library Imports
 import logging
 from abc import ABCMeta, abstractmethod
-# Pip Package Imports
-# RESONAATE Imports
+
+# Local Imports
+from ...common.exceptions import JobProcessingError, JobTimeoutError
+from ...common.utilities import getTimeout
 from ..job import CallbackRegistration
 from ..producer import QueueManager
-from ...common.utilities import getTimeout
-from ...common.exceptions import JobTimeoutError, JobProcessingError
 
 
 class JobHandler(metaclass=ABCMeta):
@@ -64,7 +64,9 @@ class JobHandler(metaclass=ABCMeta):
         """
         registration = self.callback_class(registrant)  # pylint: disable=not-callable
         if not isinstance(registration, CallbackRegistration):
-            raise TypeError(f"Use `CallbackRegistration` to register job callbacks, not {type(registration)}")
+            raise TypeError(
+                f"Use `CallbackRegistration` to register job callbacks, not {type(registration)}"
+            )
         self.callback_registry.append(registration)
 
     @abstractmethod
@@ -88,7 +90,7 @@ class JobHandler(metaclass=ABCMeta):
         Raises:
             :class:`.JobProcessingError`: raised if job completed in an error state
         """
-        if job.status == 'processed':
+        if job.status == "processed":
             self.job_id_registration_dict[job.id].jobCompleteCallback(job)
 
         else:
@@ -106,13 +108,13 @@ class JobHandler(metaclass=ABCMeta):
 
         # Wait for jobs to complete
         try:
-            self.queue_mgr.blockUntilProcessed(
-                timeout=getTimeout(self.total_jobs)
-            )
+            self.queue_mgr.blockUntilProcessed(timeout=getTimeout(self.total_jobs))
         except JobTimeoutError:
             # jobs took longer to complete than expected
             for job_id in self.queue_mgr.queued_job_ids:
-                msg = f"Jobs {job_id} haven't completed after {getTimeout(self.total_jobs)} seconds"
+                msg = (
+                    f"Jobs {job_id} haven't completed after {getTimeout(self.total_jobs)} seconds"
+                )
                 self.logger.error(msg)
 
         self.job_id_registration_dict = {}

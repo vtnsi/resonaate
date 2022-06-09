@@ -1,0 +1,27 @@
+{
+  "unique_id": 2,
+  "reward": {
+    "name": "CostConstrainedReward",
+    "metrics": [
+      {
+        "name": "ShannonInformation",
+        "parameters": {}
+      },
+      {
+        "name": "DeltaPosition",
+        "parameters": {}
+      },
+      {
+        "name": "LyapunovStability",
+        "parameters": {}
+      }
+    ],
+    "parameters": {}
+  },
+  "decision": {
+    "name": "MunkresDecision",
+    "parameters": {}
+  },
+  "targets_file": "targets/leo_sun_sync_target_set.json",
+  "sensors_file": "sensor_networks/single_adv_radar_network.json"
+}

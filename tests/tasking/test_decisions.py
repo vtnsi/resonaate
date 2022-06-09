@@ -1,20 +1,22 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
-from numpy import (
-    any as np_any, asarray, array_equal, full, nonzero, sort, unique
-)
-# RESONAATE Imports
+from numpy import any as np_any
+from numpy import array_equal, asarray, full, nonzero, sort, unique
+
 try:
+    # RESONAATE Imports
     from resonaate.tasking.decisions.decision_base import Decision
     from resonaate.tasking.decisions.decisions import (
-        MunkresDecision, MyopicNaiveGreedyDecision, RandomDecision, AllVisibleDecision
+        AllVisibleDecision,
+        MunkresDecision,
+        MyopicNaiveGreedyDecision,
+        RandomDecision,
     )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -22,6 +24,7 @@ from ..conftest import BaseTestCase
 @pytest.fixture(name="mocked_decision_class")
 def mockedDecisionClass():
     """Return reference to a minimal :class:`.Decision` class."""
+
     class MockedDecision(Decision):
         def _makeDecision(self, reward_matrix, **kwargs):
             return 3

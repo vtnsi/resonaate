@@ -1,8 +1,6 @@
 """Defines functions for common queries as well as functions that augment queries."""
-# Standard Library Imports
 # Third Party Imports
 from numpy import around
-# RESONAATE Imports
 
 
 def addAlmostEqualFilter(query, data_type, field, value, decimal_places=6):
@@ -19,11 +17,10 @@ def addAlmostEqualFilter(query, data_type, field, value, decimal_places=6):
         `sqlalchemy.orm.Query`: given query with `::filter()` called on it to apply "almost equal"
     """
     rounded_target = float(around(value, decimals=decimal_places))
-    delta = (1 * pow(10, (-1 * decimal_places)))
+    delta = 1 * pow(10, (-1 * decimal_places))
     upper_bound = rounded_target + delta
     lower_bound = rounded_target - delta
 
     return query.filter(
-        getattr(data_type, field) < upper_bound,
-        getattr(data_type, field) > lower_bound
+        getattr(data_type, field) < upper_bound, getattr(data_type, field) > lower_bound
     )

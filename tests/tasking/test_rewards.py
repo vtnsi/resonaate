@@ -1,16 +1,16 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     from resonaate.tasking.metrics.metric_base import Metric
     from resonaate.tasking.rewards.reward_base import Reward
     from resonaate.tasking.rewards.rewards import CostConstrainedReward, SimpleSummationReward
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -18,6 +18,7 @@ from ..conftest import BaseTestCase
 @pytest.fixture(name="mocked_reward_class")
 def mockedRewardClass():
     """Return reference to a minimal :class:`.Reward` class."""
+
     class MockedReward(Reward):
         def _calculateReward(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
             return 3
@@ -28,6 +29,7 @@ def mockedRewardClass():
 @pytest.fixture(name="mocked_metric_class")
 def mockedMetricClass():
     """Return reference to a minimal :class:`.Metric` class."""
+
     class MockedMetric(Metric):
         def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
             return 3
@@ -57,7 +59,9 @@ class TestRewardBase(BaseTestCase):
         with pytest.raises(TypeError):
             Reward(mocked_metric)  # pylint: disable=abstract-class-instantiated
 
-    def testCalculateReward(self, mocked_reward_class, mocked_metric, mocked_estimate, mocked_sensor):
+    def testCalculateReward(
+        self, mocked_reward_class, mocked_metric, mocked_estimate, mocked_sensor
+    ):
         """Test the call function of the Reward base class."""
         target_agents = {11111: mocked_estimate}
         target_id = 11111
@@ -70,7 +74,7 @@ class TestRewardBase(BaseTestCase):
 class TestCostConstrainedReward(BaseTestCase):
     """Test the CostConstrainedReward class of the reward module."""
 
-    @pytest.fixture(scope="function", name="metric_list")
+    @pytest.fixture(name="metric_list")
     def getMetricList(self, mocked_metric_class):
         """Create list of metrics to assign proper metric length of Reward Function calls."""
         info_metric = mocked_metric_class()
@@ -99,7 +103,7 @@ class TestCostConstrainedReward(BaseTestCase):
 class TestSimpleSummationReward(BaseTestCase):
     """Test the SimpleSummationReward class of the reward module."""
 
-    @pytest.fixture(scope="function", name="metric_list")
+    @pytest.fixture(name="metric_list")
     def getMetricList(self, mocked_metric_class):
         """Create list of metrics to assign proper metric length of Reward Function calls."""
         info_metric = mocked_metric_class()

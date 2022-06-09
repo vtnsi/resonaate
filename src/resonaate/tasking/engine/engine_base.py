@@ -1,13 +1,15 @@
 """Abstract :class:`.Tasking` base class defining the tasking engine API."""
 # Standard Library Imports
-from logging import getLogger
 from abc import ABCMeta, abstractmethod
+from logging import getLogger
+
 # Third Party Imports
 from numpy import zeros
-# RESONAATE Imports
+
+# Local Imports
+from ...data.importer_database import ImporterDatabase
 from ..decisions.decision_base import Decision
 from ..rewards.reward_base import Reward
-from ...data.importer_database import ImporterDatabase
 
 
 class TaskingEngine(metaclass=ABCMeta):
@@ -58,7 +60,9 @@ class TaskingEngine(metaclass=ABCMeta):
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         """``numpy.ndarray``: NxM array defining the visibility condition for every target/sensor pair."""
 
-        self.target_indices = {target_id: index for index, target_id in enumerate(self.target_list)}
+        self.target_indices = {
+            target_id: index for index, target_id in enumerate(self.target_list)
+        }
 
         # List of transient observations (current timestep only)
         self._observations = []
@@ -130,12 +134,13 @@ class TaskingEngine(metaclass=ABCMeta):
         self.target_list = new_target_nums
 
     @abstractmethod
-    def assess(self, julian_date):
+    def assess(self, prior_julian_date, julian_date):
         """Perform a set of analysis operations on the current simulation state.
 
         Must be overridden by implemented classes.
 
         Args:
+            prior_julian_date (:class:`.JulianDate`): previous epoch
             julian_date (:class:`.JulianDate`): epoch at which to perform analysis
         """
         raise NotImplementedError

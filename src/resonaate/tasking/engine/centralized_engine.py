@@ -1,19 +1,17 @@
 """Defines the :class:`.CentralizedTaskingEngine` class."""
-# Standard Library Imports
 # Third Party Imports
 from numpy import zeros
 from sqlalchemy.orm import Query
-# RESONAATE Imports
-from .engine_base import TaskingEngine
-from ...common.behavioral_config import BehavioralConfig
-from ...data.task import Task
+
+# Local Imports
 from ...data.data_interface import Observation
 from ...data.events import EventScope, handleRelevantEvents
-from ...data.resonaate_database import ResonaateDatabase
 from ...data.query_util import addAlmostEqualFilter
-from ...filters.filter_debug_utils import checkThreeSigmaObs
+from ...data.resonaate_database import ResonaateDatabase
+from ...data.task import Task
 from ...parallel.handlers.task_execution import TaskExecutionJobHandler
 from ...parallel.handlers.task_prediction import TaskPredictionJobHandler
+from .engine_base import TaskingEngine
 
 
 class CentralizedTaskingEngine(TaskingEngine):
@@ -24,7 +22,9 @@ class CentralizedTaskingEngine(TaskingEngine):
     The nodes themselves perform only a minimal amount of processing, if any at all.
     """
 
-    def __init__(self, engine_id, sensor_ids, target_ids, reward, decision, importer_db_path, realtime_obs):
+    def __init__(
+        self, engine_id, sensor_ids, target_ids, reward, decision, importer_db_path, realtime_obs
+    ):
         """Initialize a centralized tasking engine.
 
         Args:
@@ -48,7 +48,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         self._execute_handler = TaskExecutionJobHandler()
         self._execute_handler.registerCallback(self)
 
-    def assess(self, julian_date):
+    def assess(self, prior_julian_date, julian_date):
         """Perform a set of analysis operations on the current simulation state.
 
         #. The rewards for all possible tasks are computed
@@ -56,6 +56,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         #. The optimized tasking strategy is applied and observations are collected
 
         Args:
+            prior_julian_date (:class:`.JulianDate`): previous epoch
             julian_date (:class:`.JulianDate`): epoch at which to perform analysis
         """
         # Pre-conditions: reset values to ensure clean tasking state at start of every timestep
@@ -71,28 +72,17 @@ class CentralizedTaskingEngine(TaskingEngine):
                 self,
                 ResonaateDatabase.getSharedInterface(),
                 EventScope.TASK_REWARD_GENERATION,
+                prior_julian_date,
                 julian_date,
                 self.logger,
-                scope_instance_id=self.unique_id
+                scope_instance_id=self.unique_id,
             )
             self.generateTasking()
             self._execute_handler.executeJobs(decision_matrix=self.decision_matrix)
 
         # Load imported observations
         if self._importer_db:
-            self.saveObservations(
-                self.loadImportedObservations(julian_date)
-            )
-
-        # Check the three sigma distance of observations & log if needed
-        if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
-            filenames = checkThreeSigmaObs(
-                self.observations,
-                sigma=3
-            )
-            for filename in filenames:
-                msg = f"Made bad observation, debugging info:\n\t{filename}"
-                self.logger.warning(msg)
+            self.saveObservations(self.loadImportedObservations(julian_date))
 
         tasked_sensors = set()
         observed_targets = set()
@@ -101,7 +91,8 @@ class CentralizedTaskingEngine(TaskingEngine):
             observed_targets.add(cur_obs_tuple.observation.target_id)
 
         msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
-        msg += f"{len(tasked_sensors)} sensors {tasked_sensors} on {len(observed_targets)} targets {observed_targets}"
+        msg += f"{len(tasked_sensors)} sensors {tasked_sensors}"
+        msg += f" on {len(observed_targets)} targets {observed_targets}"
         self.logger.info(msg)
 
     def generateTasking(self):
@@ -117,7 +108,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         Returns:
             ``list``: :class:`.Observation` objects imported from database
         """
-        query = addAlmostEqualFilter(Query(Observation), Observation, 'julian_date', epoch)
+        query = addAlmostEqualFilter(Query(Observation), Observation, "julian_date", epoch)
         imported_observation_data = self._importer_db.getData(query)
 
         imported_observations = []
@@ -126,7 +117,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             position_key = (
                 int(observation.position_lat_rad * 1000000),
                 int(observation.position_long_rad * 1000000),
-                observation.target_id
+                observation.target_id,
             )
             if position_key not in sensor_position_set:
                 imported_observations.append(observation)
@@ -159,5 +150,5 @@ class CentralizedTaskingEngine(TaskingEngine):
                     sensor_id=sensor_agent,
                     visibility=self.visibility_matrix[tgt_ind, sen_ind],
                     reward=self.reward_matrix[tgt_ind, sen_ind],
-                    decision=self.decision_matrix[tgt_ind, sen_ind]
+                    decision=self.decision_matrix[tgt_ind, sen_ind],
                 )

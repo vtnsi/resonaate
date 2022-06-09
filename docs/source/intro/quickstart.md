@@ -1,34 +1,44 @@
 (intro-quick-top)=
+
 # Quickstart
 
 This is a basic example showing how the CLI {command}`resonaate` command works, and demonstrate a typical simulation run.
 Also, this will document the Python logic behind the command.
 
--------------------------------------------------
-<!-- TOC formatted for sphinx -->
-:::{contents} Table of Contents
-:depth: 2
-:backlinks: none
-:local:
-:::
+______________________________________________________________________
 
--------------------------------------------------
+<!-- TOC formatted for sphinx -->
+
+```{contents} Table of Contents
+---
+depth: 2
+backlinks: none
+local:
+---
+```
+
+______________________________________________________________________
 
 (intro-quick-redis)=
+
 ## Prerequisite: Redis Server
 
 A prerequisite to using the {command}`resonaate` command to start simulations is to start a Redis server which handles distributing tasks to different CPU cores.
 To start Redis server running in the background, execute:
+
 ```bash
-$ redis-server &
+redis-server &
 ```
+
 Once the server is started, users can run the {command}`resonaate` command multiple times.
 Finally, users should stop the Redis server when they are done working:
+
 ```bash
-$ redis-cli shutdown
+redis-cli shutdown
 ```
 
 (intro-quick-cli)=
+
 ## Command Line Tool
 
 Typically, users start simulations by using the provided CLI command {command}`resonaate`, which is installed along with the Python package.
@@ -36,17 +46,20 @@ To change simulation settings or features, users can alter the values of configu
 Instructions for the {command}`resonaate` CLI are described below ({ref}`intro-quick-cli`) along with a short definition of the configuration schema ({ref}`intro-quick-init`).
 
 Start simulation using {command}`resonaate` command
+
 ```bash
-$ resonaate <init_file> -t <number_of_hours>
+resonaate <init_file> -t <number_of_hours>
 ```
+
 Replace `<init_file>` with the location of a main scenario configuration file.
 There are example scenario configuration files in the **resonaate/configs/json** directory.
 Replace `<number_of_hours>` with a decimal for the number of hours to simulate during the scenario.
 If this argument is omitted, it will run the full scenario length defined in the configuration file.
 
 Invoke the `-h` option to get help with the CLI arguments for the {command}`resonaate` command:
+
 ```bash
-$ resonaate -h
+resonaate -h
 usage: resonaate [-h] [-t HOURS] [--debug] [-d DB_PATH]
                  [-i IMPORTER_DB_PATH]
                  INIT_FILE
@@ -70,10 +83,13 @@ Database Files:
 ```
 
 To run a simulation using the **configs/json/main_init.json** config file for an hour of simulated time:
+
 ```bash
-$ resonaate configs/json/main_init.json -t1
+resonaate configs/json/main_init.json -t1
 ```
+
 The log output should look something like:
+
 ```bash
 2022-02-01 20:28:50,798 - resonaate_database - DEBUG - Database path: sqlite:////path/to/resonaate/db/resonaate_2022-02-01T20-28-50-257612.sqlite3
 2022-02-01 20:28:50,948 - scenario_builder - INFO - Reward function: CostConstrainedReward
@@ -89,14 +105,18 @@ The log output should look something like:
 ...
 2022-02-01 20:32:15,805 - __main__ - INFO - Simulation complete
 ```
+
 When the simulation is complete, you can query the SQLite database by running the {command}`sqlite` command:
+
 ```bash
 sqlite db/resonaate_2022-02-01T20-28-50-257612.sqlite3
 SQLite version 3.36.0 2021-06-18 18:36:39
 Enter ".help" for usage hints.
 sqlite>
 ```
+
 Then use the appropriate SQL query. Here is an example getting positions for a specific agent ID number:
+
 ```sql
 sqlite> SELECT agent_id, julian_date, pos_x_km, pos_y_km, pos_z_km FROM estimate_ephemerides WHERE agent_id = 12309 ;
 12309|2459304.17013889|38441.7764672795|-17240.0776023789|144.753940349412
@@ -114,6 +134,7 @@ sqlite> SELECT agent_id, julian_date, pos_x_km, pos_y_km, pos_z_km FROM estimate
 ```
 
 (intro-quick-python)=
+
 ## Python Example
 
 This example goes over a small Python script that emulates the behavior of the {command}`resonaate` command.
@@ -121,6 +142,7 @@ This will show the necessary steps required to execute a RESONAATE simulation.
 Redis still needs to be started before this code is executed (see {ref}`intro-quick-redis`), but that can be performed programmatically if needed.
 
 To start, connect to Redis and determine the simulation parameters.
+
 ```python
 import os
 from resonaate.parallel import isMaster
@@ -130,10 +152,7 @@ started = isMaster()
 
 # Points to a valid main configuration file
 init_file = os.path.abspath(
-    os.path.join(
-        os.getcwd(),
-        "./resonaate/configs/json/main_init.json"
-    )
+    os.path.join(os.getcwd(), "./resonaate/configs/json/main_init.json")
 )
 
 # Define number of hours to simulate
@@ -142,32 +161,44 @@ sim_time_hours = 0.1
 
 Build the {class}`.Scenario` object using the JSON config using the factory function.
 Also, convert the simulation time to a final simulation epoch.
+
 ```python
 from datetime import timedelta
 from resonaate.physics.time.conversions import getTargetJulianDate
 from resonaate.scenario import buildScenarioFromConfigFile
 
-# Build the Scenario from the JSON/YAML init.
+# Build the Scenario from the JSON init.
 scenario = buildScenarioFromConfigFile(
-    init_file,          # Initialization file/scenario config
-    start_workers=True  # Starts `WorkerManager` instance
+    init_file,  # Initialization file/scenario config
+    start_workers=True,  # Starts `WorkerManager` instance
 )
 
 # Determine final time as a Julian date
 target_date = getTargetJulianDate(
-    scenario.clock.julian_date_start,
-    timedelta(hours=sim_time_hours)
+    scenario.clock.julian_date_start, timedelta(hours=sim_time_hours)
 )
 ```
 
 Using the built {class}`.Scenario` object, propagate the simulation to the target scenario epoch.
+
 ```python
 # Step through simulation to final time
-scenario.propagateTo(target_date)
+try:
+    scenario.propagateTo(target_date)
+except KeyboardInterrupt:
+    # Notification simulation stopped via KeyboardInterrupt
+    scenario.logger.warning("Simulation terminated")
+else:
+    # Notification simulation stopped gracefully
+    scenario.logger.info("Simulation complete")
+finally:
+    # Gracefully shutdown the simulation
+    scenario.shutdown(flushall=True)
 ```
 
 The simulation will log information to `stdout`, unless otherwise specified, and it should look similar to the CLI example above.
 Once the simulation completes, you can directly query the database from Python.
+
 ```python
 from sqlalchemy.orm.query import Query
 from resonaate.data.ephemeris import TruthEphemeris
@@ -179,49 +210,40 @@ db = ResonaateDatabase.getSharedInterface()
 print(len(db.getData(Query(TruthEphemeris))))
 ```
 
-Finally, users should always properly stop the workers and reset the Redis connection.
-```python
-from resonaate.parallel import resetMaster
-
-# Stop workers gracefully
-app.worker_mgr.stopWorkers()
-
-# Reset the Redis master key
-resetMaster()
-```
-
 Once the script completes, users should stop the Redis server, as mentioned in {ref}`intro-quick-redis`.
 
 (intro-quick-init)=
+
 ## Initialization
 
 The initialization/configuration file structure required to run RESONAATE is described in detail by the {ref}`ref-cfg-top`.
 Currently, example initialization files are located under **resonaate/configs/json**.
 
-The documentation defines the schema required by the different JSON/YAML configuration files:
+The documentation defines the schema required by the different JSON configuration files:
+
 - Main initialization file
-    - File required to be pointed to when using `resonaate` CLI
-    - Describes the main `Scenario`-level properties of the simulation
-    - Points to files defining `Engine` objects
-    - Points to files for `TargetEvent` and `SensorEvent` objects
+  - File required to be pointed to when using `resonaate` CLI
+  - Describes the main `Scenario`-level properties of the simulation
+  - Points to files defining `Engine` objects
+  - Points to files for `TargetEvent` and `SensorEvent` objects
 - Engine configuration file(s)
-    - Defines a single `Engine` object, and all required parameters
-    - Points to file defining `Target` objects for the engine to be tasked to
-    - Points to file defining `Sensor` objects that are taskable by the engine
+  - Defines a single `Engine` object, and all required parameters
+  - Points to file defining `Target` objects for the engine to be tasked to
+  - Points to file defining `Sensor` objects that are taskable by the engine
 - Target agent configuration file(s)
-    - Defines list of `Target` objects to track/estimate in simulation
-    - Only ID, name, and state are currently implemented
+  - Defines list of `Target` objects to track/estimate in simulation
+  - Only ID, name, and state are currently implemented
 - Sensor agent configuration file(s)
-    - Defines list of `Sensor` objects to task in simulation
-    - Fully-defined agents & their sensors
-    - Ground-based & space-based sensor agents are supported
+  - Defines list of `Sensor` objects to task in simulation
+  - Fully-defined agents & their sensors
+  - Ground-based & space-based sensor agents are supported
 - Target/Sensor event configuration file(s)
-    - Not currently implemented
+  - Not currently implemented
 
 (intro-quick-config)=
+
 ## Standalone Behavior Configuration
 
 By default, RESONAATE will use the default settings defined in **resonaate/src/resonaate/common/default_behavior.config**.
 To overwrite these settings, please copy the contents of **src/resonaate/common/default_behavior.config** to a new `.config` file to another file to save the default settings.
 Edit by un-commenting and changing the required values.
-

@@ -1,16 +1,18 @@
-# pylint: disable=attribute-defined-outside-init, import-outside-toplevel, reimported, no-self-use
+# pylint: disable=attribute-defined-outside-init, import-outside-toplevel, reimported
 # Standard Library Imports
 import os
 from collections import OrderedDict
 from logging import DEBUG, INFO
+
 # Third Party Imports
 import pytest
-# RESONAATE Imports
-from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
+
+# Local Imports
+from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
 
 
 class TestConfig(BaseTestCase):
-    """Class to test :module:`.common.behavioral_config` module."""
+    """Class to test :mod:`.common.behavioral_config` module."""
 
     CONFIG_FILE_VALID = (
         "[logging]\n",
@@ -20,39 +22,35 @@ class TestConfig(BaseTestCase):
         "MaxFileCount = 10\n",
     )
 
-    CORRECT_DEFAULTS = OrderedDict({
-        "logging": {
-            "OutputLocation": "stdout",
-            "Level": DEBUG,
-            "MaxFileSize": 1048576,
-            "MaxFileCount": 50,
-            "AllowMultipleHandlers": False
-        },
-        "database": {
-            "DatabasePath": "sqlite://",
-        },
-        "parallel":{
-            "RedisHostname": 'localhost',
-            "RedisPort": 6379,
-            "WorkerCount": None
-        },
-        "debugging": {
-            "OutputDirectory": 'debugging',
-            "NearestPD": False,
-            "NearestPDDirectory": 'cholesky_failure',
-            "EstimateErrorInflation": False,
-            "EstimateErrorInflationDirectory": 'est_error_inflation',
-            "ThreeSigmaObs": False,
-            "ThreeSigmaObsDirectory": 'three_sigma_obs',
-            "SaveSpaceSensors": False,
-            "SaveSpaceSensorsDirectory": 'space_sensor_truth',
-            "SingularMatrix": False,
-            "SingularMatrixDirectory": 'singular_matrix',
+    CORRECT_DEFAULTS = OrderedDict(
+        {
+            "logging": {
+                "OutputLocation": "stdout",
+                "Level": DEBUG,
+                "MaxFileSize": 1048576,
+                "MaxFileCount": 50,
+                "AllowMultipleHandlers": False,
+            },
+            "database": {
+                "DatabasePath": "sqlite://",
+            },
+            "parallel": {"RedisHostname": "localhost", "RedisPort": 6379, "WorkerCount": None},
+            "debugging": {
+                "OutputDirectory": "debugging",
+                "NearestPD": False,
+                "NearestPDDirectory": "cholesky_failure",
+                "EstimateErrorInflation": False,
+                "EstimateErrorInflationDirectory": "est_error_inflation",
+                "ThreeSigmaObs": False,
+                "ThreeSigmaObsDirectory": "three_sigma_obs",
+                "SaveSpaceSensors": False,
+                "SaveSpaceSensorsDirectory": "space_sensor_truth",
+            },
         }
-    })
+    )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    @pytest.fixture(scope="function", name="file_config")
+    @pytest.fixture(name="file_config")
     def mockCustomSettingsFile(self, monkeypatch, datafiles):
         """Automatically delete each environment variable, if set.
 
@@ -69,18 +67,22 @@ class TestConfig(BaseTestCase):
         """
         # Write to custom config file, and patch the proper environment variable
         config_path = os.path.join(datafiles, "test.config")
-        with open(config_path, 'w', encoding="utf-8") as config_file:
+        with open(config_path, "w", encoding="utf-8") as config_file:
             config_file.writelines(self.CONFIG_FILE_VALID)
 
         with monkeypatch.context() as m_patch:
             # Patch env variable, and yield the new config
             m_patch.setenv("RESONAATE_BEHAVIOR_CONFIG", os.path.join(datafiles, "test.config"))
+            # RESONAATE Imports
             from resonaate.common.behavioral_config import BehavioralConfig
+
             yield BehavioralConfig(os.environ.get("RESONAATE_BEHAVIOR_CONFIG"))
 
     def testImported(self):
         """Test that importing :class:`._BehavioralConfig` results in the default values."""
+        # RESONAATE Imports
         from resonaate.common.behavioral_config import BehavioralConfig
+
         config = BehavioralConfig.getConfig()
         for section, section_conf in self.CORRECT_DEFAULTS.items():
             for option, value in section_conf.items():
@@ -90,15 +92,21 @@ class TestConfig(BaseTestCase):
 
     def testSinglePattern(self):
         """Test that :class:.`_BehavioralConfig` is a proper Singleton class."""
+        # RESONAATE Imports
         from resonaate.common.behavioral_config import BehavioralConfig
+
         config = BehavioralConfig.getConfig()
+        # RESONAATE Imports
         from resonaate.common.behavioral_config import BehavioralConfig as second_config
+
         assert config is second_config.getConfig()
 
     def testOverwrite(self):
         """Test overwriting the default :class:`._BehavioralConfig` directly with custom settings."""
         # Import and overwrite default settings
+        # RESONAATE Imports
         from resonaate.common.behavioral_config import BehavioralConfig
+
         custom_config = BehavioralConfig.getConfig()
         custom_config.logging.OutputLocation = "./logs/"
         custom_config.logging.Level = INFO
@@ -145,7 +153,9 @@ class TestConfig(BaseTestCase):
         assert file_config.logging.MaxFileCount == 10
 
         # Check it change for all imports
+        # RESONAATE Imports
         from resonaate.common.behavioral_config import BehavioralConfig
+
         second_config = BehavioralConfig.getConfig()
         assert second_config.logging.OutputLocation == file_config.logging.OutputLocation
         assert second_config.logging.Level == file_config.logging.Level

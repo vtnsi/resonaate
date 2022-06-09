@@ -1,0 +1,119 @@
+#####################
+# Base Job Settings #
+#####################
+
+include:
+  - local: /.gitlab/ci/common.gitlab-ci.yml
+
+##################
+# Script Aliases #
+##################
+
+# pip install development tools (linting & testing)
+.pip-dev: &pip-dev
+  - python3 -m pip install .[dev,test]
+
+# pip install doc tools
+.pip-doc: &pip-doc
+  - python3 -m pip install .[doc]
+
+# flake8 command(s)
+.flake8-check: &flake8-check
+  - flake8 --tee --output-file=flake8.log *.py tests src/resonaate docs
+
+# pylint command(s)
+.pylint-check: &pylint-check
+  - pylint *.py tests src/resonaate docs | tee pylint.log
+
+# sphinx command
+.make-docs: &make-docs
+  - cd docs && make clean && make html
+
+# manifest check command
+.check-manifest: &check-manifest
+  - check-manifest -v
+
+##################
+# Base Check Job #
+##################
+
+.check-base:
+  stage: check
+  before_script:
+    - !reference [.apt-update]
+    - !reference [.create-venv]
+    - echo -e "\e[0Ksection_start:`date +%s`:pip_dev[collapsed=true]\r\e[0K Install resonaate dev & test dependencies via pip"
+    - *pip-dev
+    - echo -e "\e[0Ksection_end:`date +%s`:pip_dev\r\e[0K"
+  artifacts:
+    when: always
+    expire_in: 1 week
+  needs: []
+
+##############
+# Pylint Job #
+##############
+
+# Pylint job, save log file for later observation
+pylint:
+  extends: .check-base
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:pylint_check[collapsed=true]\r\e[0K Analyze code with pylint"
+    - *pylint-check
+    - echo -e "\e[0Ksection_end:`date +%s`:pylint_check\r\e[0K"
+  artifacts:
+    paths:
+      - pylint.log
+    expose_as: "pylint log"
+
+##############
+# Flake8 Job #
+##############
+
+# Flake8 job, save log file for later observation
+flake8:
+  extends: .check-base
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:flake8_check[collapsed=true]\r\e[0K Analyze code with flake8"
+    - *flake8-check
+    - echo -e "\e[0Ksection_end:`date +%s`:flake8_check\r\e[0K"
+  artifacts:
+    paths:
+      - flake8.log
+    expose_as: "flake8 log"
+
+##############
+# Sphinx Job #
+##############
+
+# Build the documentation.
+sphinx:
+  extends: .check-base
+  before_script:
+    - !reference [.apt-setup]
+    - !reference [.start-redis]
+    - !reference [.create-venv]
+    - echo -e "\e[0Ksection_start:`date +%s`:pip_doc[collapsed=true]\r\e[0K Install resonaate doc dependencies via pip"
+    - *pip-doc
+    - echo -e "\e[0Ksection_end:`date +%s`:pip_doc\r\e[0K"
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:sphinx[collapsed=true]\r\e[0K Build documentation with sphinx"
+    - *make-docs
+    - echo -e "\e[0Ksection_end:`date +%s`:sphinx\r\e[0K"
+    - !reference [.stop-redis]
+  artifacts:
+    paths:
+      - docs/build/html
+    expose_as: "Documentation"
+
+################
+# Manifest Job #
+################
+
+# Check Manifest.in for source package data
+manifest:
+  extends: .check-base
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:check_manifest[collapsed=true]\r\e[0K Check Manifest.in files"
+    - *check-manifest
+    - echo -e "\e[0Ksection_end:`date +%s`:check_manifest\r\e[0K"

@@ -1,16 +1,18 @@
 """This module contains functions that execute common database queries for post-processing RESONAATE data."""
 # Standard Library Imports
-from typing import List, Union, Sequence
-# Third party imports
+from typing import List, Sequence, Union
+
+# Third Party Imports
 from sqlalchemy import asc, distinct
 from sqlalchemy.orm import Query
-# RESONAATE Library Imports
-from resonaate.common.logger import resonaateLogError
-from resonaate.data.agent import Agent
-from resonaate.data.data_interface import DataInterface
-from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
-from resonaate.data.observation import Observation
-from resonaate.physics.time.stardate import JulianDate
+
+# Local Imports
+from ..common.logger import resonaateLogError
+from ..physics.time.stardate import JulianDate
+from .agent import Agent
+from .data_interface import DataInterface
+from .ephemeris import EstimateEphemeris, TruthEphemeris
+from .observation import Observation
 
 
 def fetchAgentIDs(database: DataInterface) -> List[int]:
@@ -26,10 +28,7 @@ def fetchAgentIDs(database: DataInterface) -> List[int]:
     Returns:
         (``list``): list of agent ID numbers, as integers
     """
-    agent_id_tuples = database.getData(
-        Query(distinct(Agent.unique_id)),
-        multi=True
-    )
+    agent_id_tuples = database.getData(Query(distinct(Agent.unique_id)), multi=True)
     return [int(agent_id_tuple[0]) for agent_id_tuple in agent_id_tuples]
 
 
@@ -46,10 +45,7 @@ def fetchEstimateIDs(database: DataInterface) -> List[int]:
     Returns:
         (``list``): list of estimate agent ID numbers, as integers
     """
-    est_agent_id_tuples = database.getData(
-        Query(distinct(EstimateEphemeris.agent_id)),
-        multi=True
-    )
+    est_agent_id_tuples = database.getData(Query(distinct(EstimateEphemeris.agent_id)), multi=True)
     return [int(agent_id_tuple[0]) for agent_id_tuple in est_agent_id_tuples]
 
 
@@ -76,9 +72,7 @@ def fetchEstimatesByJDInterval(
 
 
 def fetchEstimatesByJDEpoch(
-    database: DataInterface,
-    sat_nums: Sequence[int],
-    jd: JulianDate
+    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
 ) -> List[EstimateEphemeris]:
     """Get a posteriori estimate states during a specific time.
 
@@ -116,9 +110,7 @@ def fetchTruthByJDInterval(
 
 
 def fetchTruthByJDEpoch(
-    database: DataInterface,
-    sat_nums: Sequence[int],
-    jd: JulianDate
+    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
 ) -> List[TruthEphemeris]:
     """Get truth during a specific time.
 
@@ -156,9 +148,7 @@ def fetchObservationsByJDInterval(
 
 
 def fetchObservationsByJDEpoch(
-    database: DataInterface,
-    sat_nums: Sequence[int],
-    jd: JulianDate
+    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
 ) -> List[Observation]:
     """Get observations during a specific time.
 
@@ -206,7 +196,7 @@ def jdEpochQuery(
     table: Union[EstimateEphemeris, TruthEphemeris, Observation],
     target_column: str,
     sat_nums: Sequence[int],
-    jd: JulianDate
+    jd: JulianDate,
 ) -> Query:
     """Properly formats a generic database table query where single Julian date epoch is defined.
 
@@ -245,13 +235,13 @@ def filterByJulianDateInterval(
             msg = "Julian date lower bound is greater than the upper bound"
             resonaateLogError(msg)
             raise ValueError(msg)
-        return query.filter(
-            table.julian_date.between(float(jd_lb), float(jd_ub))
-        ).order_by(asc(table.julian_date))
-    else:
-        type_error_msg = "Julian date inputs must be type `.JulianDate`."
-        resonaateLogError(type_error_msg)
-        raise TypeError(type_error_msg)
+        return query.filter(table.julian_date.between(float(jd_lb), float(jd_ub))).order_by(
+            asc(table.julian_date)
+        )
+
+    type_error_msg = "Julian date inputs must be type `.JulianDate`."
+    resonaateLogError(type_error_msg)
+    raise TypeError(type_error_msg)
 
 
 def filterBySingleJulianDate(
@@ -272,6 +262,6 @@ def filterBySingleJulianDate(
     type_error_msg = "Single Julian date must be type `Julian Date`, not type {0}!"
     if isinstance(jd, JulianDate):
         return query.filter(table.julian_date == float(jd))
-    else:
-        resonaateLogError(type_error_msg.format(type(jd)))
-        raise TypeError(type_error_msg.format(type(jd)))
+
+    resonaateLogError(type_error_msg.format(type(jd)))
+    raise TypeError(type_error_msg.format(type(jd)))

@@ -1,10 +1,8 @@
 """Defines dynamics of agents that can be used in RESONAATE simulations."""
-# Standard Imports
-# Third Party Imports
-# RESONAATE Imports
+# Local Imports
+from .constants import RK45_LABEL, SPECIAL_PERTURBATIONS_LABEL, TWO_BODY_LABEL
 from .special_perturbations import SpecialPerturbations
 from .two_body import TwoBody
-from .constants import TWO_BODY_LABEL, SPECIAL_PERTURBATIONS_LABEL, RK45_LABEL
 
 
 def spacecraftDynamicsFactory(model, clock, geopotential, perturbations, method=RK45_LABEL):

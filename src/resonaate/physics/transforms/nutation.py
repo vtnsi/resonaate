@@ -2,18 +2,39 @@
 
 This module is for storing coefficients for different nutation series.
 """
+from __future__ import annotations
+
 # Standard Library Imports
 from functools import lru_cache
-from pkg_resources import resource_filename
+from importlib import resources
+from typing import TYPE_CHECKING
+
 # Third Party Imports
-import numpy as np
-# RESONAATE Imports
-import resonaate.physics.constants as const
+from numpy import array
+
+# Local Imports
 from ...common.utilities import loadDatFile
+from .. import constants as const
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Tuple
+
+    # Third Party Imports
+    from numpy import ndarray
+
+
+NUTATION_MODULE: str = "resonaate.physics.data.nutation"
+"""``str``: defines nutation data module location."""
+
+
+NUTATION_1980: str = "nut80.dat"
+"""``str``: defines nutation data file for 1980 nutation model."""
 
 
 @lru_cache(maxsize=5)
-def get1980NutationSeries():
+def get1980NutationSeries() -> Tuple[ndarray, ndarray]:
     """Return the complete set of IAU 1980 Nutation Theory coefficients.
 
     Note:
@@ -23,15 +44,14 @@ def get1980NutationSeries():
         :cite:t:`vallado_2013_astro`, Eqn 3-83, Pg. 226
 
     Returns:
-        tuple: (real coefficients, integer coefficients)
+        ``tuple``: (real coefficients, integer coefficients)
     """
     # Load nutation into numpy array
-    nut_data = np.asarray(
-        loadDatFile(resource_filename('resonaate', 'physics/data/eop/nut80.dat'))
-    )
+    with resources.path(NUTATION_MODULE, NUTATION_1980) as file_resource:
+        nut_data = array(loadDatFile(file_resource))
 
     # Parse integer and real coefficients out.
     i_coeffs = nut_data[::, :5]
-    r_coeffs = nut_data[::, 5:9]
+    r_coeffs = nut_data[::, 5:9] * 0.0001 * const.ARCSEC2RAD
 
-    return np.asarray(r_coeffs) * 0.0001 * const.ARCSEC2RAD, np.asarray(i_coeffs)
+    return array(r_coeffs), array(i_coeffs)

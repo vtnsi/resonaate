@@ -1,11 +1,12 @@
 """Define :class:`.Event` abstract base class and common functionality."""
 # Standard Library Imports
 from enum import Enum
+
 # Third Party Imports
-from sqlalchemy import Column, Integer, Float, String, ForeignKey
-from sqlalchemy.orm import relationship
-# Package
-from .. import _DataMixin, Base
+from sqlalchemy import Column, Float, Integer, String
+
+# Local Imports
+from .. import Base, _DataMixin
 
 
 class EventScope(Enum):
@@ -67,7 +68,10 @@ class Event(_DataMixin, Base):
     EVENT_TYPE = "event"
     """str: Name of this type of event."""
 
-    id = Column(Integer, primary_key=True,)  # noqa: A003
+    id = Column(  # noqa: A003
+        Integer,
+        primary_key=True,
+    )
     """int: Primary key for the 'events' table."""
 
     scope = Column(String(128), nullable=False)
@@ -87,11 +91,8 @@ class Event(_DataMixin, Base):
         :class:`.EventScope` has more information on what this identifier actually points to for each defined scope.
     """
 
-    start_time_jd = Column(Float, ForeignKey('epochs.julian_date'), index=True, nullable=False)
+    start_time_jd = Column(Float, index=True, nullable=False)
     """float: Time that this event needs to be handled."""
-
-    start_time = relationship("Epoch", foreign_keys=[start_time_jd], lazy='joined', innerjoin=True)
-    """Epoch: Many to one relationship to :class:`.Epoch`."""
 
     end_time_jd = Column(Float, nullable=False)
     """float: Julian date for when this event is no longer active.
@@ -109,20 +110,21 @@ class Event(_DataMixin, Base):
     event_type = Column(String(64), nullable=False)
     """str: Attribute delineating which child class this table row implements."""
 
-    __mapper_args__ = {
-        'polymorphic_on': event_type,
-        'polymorphic_identity': EVENT_TYPE
-    }
+    __mapper_args__ = {"polymorphic_on": event_type, "polymorphic_identity": EVENT_TYPE}
 
     MUTABLE_COLUMN_NAMES = (
-        "scope", "scope_instance_id", "start_time_jd", "end_time_jd", "event_type"
+        "scope",
+        "scope_instance_id",
+        "start_time_jd",
+        "end_time_jd",
+        "event_type",
     )
 
     @classmethod
     def _generateRegistry(cls):
         """Populate :attr:`.EVENT_REGISTRY` based on subclasses."""
         if cls.EVENT_REGISTRY is None:
-            cls.EVENT_REGISTRY = dict()
+            cls.EVENT_REGISTRY = {}
             for subclass in cls.__subclasses__():
                 if subclass.EVENT_TYPE == Event.EVENT_TYPE:
                     err = f"{subclass} needs to define an 'EVENT_TYPE' class attribute."
@@ -136,7 +138,9 @@ class Event(_DataMixin, Base):
                     err = f"{subclass} needs to define a 'fromConfig' method."
                     raise AttributeError(err)
 
-                cls.EVENT_REGISTRY[subclass.EVENT_TYPE] = subclass  # pylint: disable=unsupported-assignment-operation
+                cls.EVENT_REGISTRY[  # pylint: disable=unsupported-assignment-operation
+                    subclass.EVENT_TYPE
+                ] = subclass
 
     @classmethod
     def eventTypes(cls):
@@ -155,5 +159,7 @@ class Event(_DataMixin, Base):
             Event: :class:`.Event` object based on specified `config`.
         """
         Event._generateRegistry()
-        child_event = Event.EVENT_REGISTRY[config.event_type]  # pylint: disable=unsubscriptable-object
+        child_event = Event.EVENT_REGISTRY[  # pylint: disable=unsubscriptable-object
+            config.event_type
+        ]
         return child_event.fromConfig(config)

@@ -3,7 +3,8 @@
 When contributing to this repository, please first discuss the change you wish to make via issue,
 email, or any other method with the owners of this repository before making a change.
 
--------------------------------------------------
+______________________________________________________________________
+
 <!-- Start TOC -->
 
 **Table of Contents**
@@ -14,6 +15,7 @@ email, or any other method with the owners of this repository before making a ch
     - [Merge Request Process](#merge-request-process)
     - [Git Workflow](#git-workflow)
   - [Developer Tools](#developer-tools)
+    - [VS Code Extensions](#vs-code-extensions)
     - [Code Styling](#code-styling)
     - [Testing](#testing)
     - [Docker Images](#docker-images)
@@ -21,9 +23,12 @@ email, or any other method with the owners of this repository before making a ch
     - [Check Stage](#check-stage)
     - [Test Stage](#test-stage)
     - [Build Stage](#build-stage)
-    - [Upload Stage](#upload-stage)
+    - [Deploy Stage](#deploy-stage)
+    - [Release Stage](#release-stage)
+    - [Other](#other)
 
--------------------------------------------------
+______________________________________________________________________
+
 <!-- END TOC -->
 
 ## General Information
@@ -31,12 +36,9 @@ email, or any other method with the owners of this repository before making a ch
 In general, developers should attempt to create unit tests for all new code added to ensure proper coverage.
 Also, users should review their use of `print()` and `log.debug()` statements when merging completed code into main branches.
 
-Please review the Sphinx-flavored [reST][sphinx-rest] and [napoleon][napoleon] documentation before contributing code.
+Please review the Sphinx-flavored [reST][sphinx-rest] and [napoleon] documentation before contributing code.
 Properly documenting your functions and classes is critical to allowing other users to understand how to use them, and adhering to the established style/rules of the RESONAATE documentation is necessary to provide a consistent documentation reading experience.
 Also, documenting your own code will force you to review it before passing it on to others to review.
-
-[napoleon]: https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
-[sphinx-rest]: https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html
 
 ### New Developers
 
@@ -49,30 +51,28 @@ If an issue peaks your interest, read it over and ask a maintainer about tacklin
 They should be able to provide more information on if it's a good "first issue" and how to get started.
 Open a new branch based on the latest **develop** commit, and start working!
 
-[issue-list]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues
-
 ### Merge Request Process
 
 - Use the provided merge request templates
 - Properly format the code using the established linting procedures
-- Ensure any install or build dependencies are removed before the end of the layer when doing a 
-   build.
-- Update the README.md with details of changes to the interface, this includes new environment 
-   variables, exposed ports, useful file locations and container parameters.
+- Ensure any install or build dependencies are removed before the end of the layer when doing a
+  build.
+- Update the README.md with details of changes to the interface, this includes new environment
+  variables, exposed ports, useful file locations and container parameters.
 - Update CHANGELOG.md with in-depth developer log notes
 - Increase the version numbers in any examples files and the README.md to the new version that this
-   Merge Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
-- You may merge the Merge Request in once you have the sign-off of a maintainer or owner, or if you 
-   do not have permission to do that, you may request the reviewer to merge it for you.
+  Merge Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
+- You may merge the Merge Request in once you have the sign-off of a maintainer or owner, or if you
+  do not have permission to do that, you may request the reviewer to merge it for you.
 
 ### Git Workflow
 
 - New features and bug-fixes are completed in a separate branch, based off the `develop` branch
   - Make sure to do the following before creating the new branch: `git pull origin develop`
   - Use a descriptive name starting with either the `feature/` or `bugfix/` prefix.
-   - Include the number of the issue it addresses before a descriptive name
-   - `bugfix/10-hanging-process` or `feature/54-add-node-dynamics` are good examples (address issues 10 & 54, resp.)
-   - Ensures easy tracking of issues and new features
+  - Include the number of the issue it addresses before a descriptive name
+  - `bugfix/10-hanging-process` or `feature/54-add-node-dynamics` are good examples (address issues 10 & 54, resp.)
+  - Ensures easy tracking of issues and new features
 - Once the feature is initially finished, it can be reviewed
   - Open a merge request into `develop` for the branch
   - Assign a reviewer to check your work, a code review may be requested
@@ -83,6 +83,26 @@ Open a new branch based on the latest **develop** commit, and start working!
 
 ## Developer Tools
 
+To install all development dependencies:
+
+```shell
+pip install -e .[dev,test,doc]
+pre-commit install
+```
+
+### VS Code Extensions
+
+The following VS Code extensions are highly recommended; they can be easily installed by searching them from within the VS Code extension page. Also, make sure to install into WSL as well!
+
+1. [ms-vscode-remote.vscode-remote-extensionpack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
+1. [ms-python.python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+1. [esbenp.prettier-vscode](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+1. [yzhang.markdown-all-in-one](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one)
+1. [eamodio.gitlens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens)
+1. [streetsidesoftware.code-spell-checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker)
+1. [njpwerner.autodocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring)
+1. [bungcip.better-toml](https://marketplace.visualstudio.com/items?itemName=bungcip.better-toml)
+
 ### Code Styling
 
 Please lint your features before merging into develop, so the codebase can remain clean, concise, and consistent.
@@ -90,57 +110,73 @@ Please lint your features before merging into develop, so the codebase can remai
 Run the following command to install the proper tools for linting:
 
 ```shell
-(resonaate) $ pip install -r requirements/development.txt
+pip install -e .[dev]
+pre-commit install
 ```
 
 To execute linting checks please run both of the following commands:
 
 ```shell
-(resonaate) $ pylint --rcfile=setup.cfg *.py tests src/resonaate
+pylint *.py tests src/resonaate docs
 ```
 
+`pylint` is pretty slow for checking every file, so this only checks dirty **.py** files:
+
 ```shell
-(resonaate) $ flake8 --config=setup.cfg *.py tests src/resonaate
+pylint `git diff --name-only --diff-filter=d | grep -E '\.py$' | tr '\n' ' '`
+```
+
+`flake8` is another linter that covers different checks:
+
+```shell
+flake8 .
 ```
 
 ### Testing
 
 Running unit tests is required before merging into protected branches.
 
-Install `pytest` by executing 
+Install `pytest` and our required plugins by executing
 
 ```shell
-(resonaate) $ pip install -r requirements/development.txt
+pip install -e .[test]
 ```
 
-The `pytest` package has *excellent* [documentation][pytest-docs], so please refer to their [Getting Started][pytest-tutorial] page first.
+The `pytest` package has _excellent_ [documentation][pytest-docs], so please refer to their [Getting Started][pytest-tutorial] page first.
 There is also a helpful tutorial on `pytest` located [here][pytest-realpython].
 
-[pytest-docs]: https://docs.pytest.org/en/latest/
-[pytest-tutorial]: https://docs.pytest.org/en/latest/getting-started.html#getstarted
-[pytest-realpython]: https://realpython.com/pytest-python-testing/
-
-Running the full unit test suite is easy:
+Running the full test suite is easy:
 
 ```shell
-(resonaate) $ redis-server &
-(resonaate) $ pytest -vv
+redis-server &
+pytest
 ```
 
-This does take a decent amount of time because it includes integration tests. To run a quicker, but still large percentage of unit test run the following command:
+This does take a decent amount of time because it includes integration tests. To run a quicker, but still large percentage of tests run the following command:
 
 ```shell
-(resonaate) $ pytest -x -m "not integration" -k "not service"
+pytest -xm "not (service or event or scenario)"
+```
+
+This runs only the unit tests which are much faster to run.
+
+To determine coverage statistics:
+
+```shell
+coverage run -m pytest -m "not (service or event or scenario)"
+coverage combine
+coverage report
+coverage html
 ```
 
 Also, refer to the example test module (`tests/example.py`) for how to write and format proper test cases.
 To see how the tests behave, run the following:
 
 ```shell
-(resonaate) $ pytest -vvs tests/example.py
+pytest -vvs tests/example.py
 ```
 
-**NOTE** Using `ResonaateDatabase::getSharedInterface()` or `ImporterDatabase::getSharedInterface()` is *usually* a bad idea when writing a unit test unless the test **requires** it be called first.
+**NOTE** Using `ResonaateDatabase::getSharedInterface()` or `ImporterDatabase::getSharedInterface()` is _usually_ a bad idea when writing a unit test unless the test **requires** it be called first.
 If this is the case, please call `ResonaateDatabase::resetData()` or `ImporterDatabase::resetData()` with the appropriate tables to drop.
 
 ### Docker Images
@@ -148,58 +184,89 @@ If this is the case, please call `ResonaateDatabase::resetData()` or `ImporterDa
 Once the **resonaate** submodule is updated & tested, and once the repository is updated to accommodate any changes to **resonaate**, developers should rebuild, tag, save, and upload the new image to the GitLab registry.
 
 1. Rebuild the Docker images:
-    ```shell
-    $ docker-compose -f docker-compose.yml build
-    ```
+   ```shell
+   docker-compose -f docker-compose.yml build
+   ```
 1. Generate a personal access token with `write_package_registry` permissions from [GitLab](https://code.vt.edu/-/profile/personal_access_tokens)
 1. Login into the container registry:
-    ```shell
-    $ docker login code.vt.edu:5005
-    ```
-    - Use your GitLab username, and the personal access token as your password
+   ```shell
+    docker login code.vt.edu:5005
+   ```
+   - Use your GitLab username, and the personal access token as your password
 1. Next, tag the image(s) using the proper registry hostname & port (from above):
-    ```shell
-    $ docker tag <image_id> code.vt.edu:5005/space_at_vt/sda/resonaate-group/resonaate/<image_name>:<tag>
-    ```
-    - Be sure to replace `<image_id>`, `<image_name>`, and `<image_tag>` accordingly
+   ```shell
+   docker tag <image_id> code.vt.edu:5005/space-research/resonaate/resonaate/<image_name>:<tag>
+   ```
+   - Be sure to replace `<image_id>`, `<image_name>`, and `<image_tag>` accordingly
 1. Now that the image is properly tagged, you can simply push it to the registry:
-    ```shell
-    $ docker push code.vt.edu:5005/space_at_vt/sda/resonaate-group/resonaate/<image_name>:<tag>
-    ```
+   ```shell
+   docker push code.vt.edu:5005/space-research/resonaate/resonaate/<image_name>:<tag>
+   ```
 1. Finally, logout of the registry:
-    ```shell
-    $ docker logout code.vt.edu:5005
-    ```
+   ```shell
+   docker logout code.vt.edu:5005
+   ```
 
 ## GitLab CI/CD
 
-The continuous integration/deployment configuration is located in **.gitlab/.gitlab-ci.yml** which defines several pipeline stages: `check`, `test`, `build`, and `upload`.
-The pipeline is run for all updates to Merge Requests or direct pushes to the **develop** branch.
-Each job in a stage installs Redis, all dependencies, and RESONAATE before running, and then runs the particular jobs.
+The continuous integration/deployment configuration is located in **.gitlab/.gitlab-ci.yml**.
+This is the main CI config file, and it includes other CI config files from **.gitlab/ci/**.
+The CI configs are split across multiple files to make it easier to understand the different stages.
+The pipeline is run for all updates to Merge Requests or direct pushes to the **develop** & **master** branches.
+
+The **.gitlab/ci/common.gitlab-ci.yml** file defines the workflow, default configs, environment variables, stages, & aliases used by many job definitions.
+All jobs will inherit these attributes unless explicitly refusing it or overwriting the configuration values.
 
 ### Check Stage
 
-The check stage defines pre-test checks to enforce code styling and ensure that the documentation builds.
+Jobs in the check stage define pre-test checks to enforce code styling and ensure that the documentation builds.
+
 - **flake8** runs a full `flake8` linter check and outputs results to a job artifact
 - **pylint** runs a full `pylint` linter check and outputs results to a job artifact
-- **pages** generates and builds the `sphinx` documentation and uploads the produced html
+- **sphinx** builds the full documentation and uploads it to a job artifact
+- **manifest** verifies that the **Manifest.in** file properly includes tracked files, so that source distributions work properly
 
 The check stage jobs are always run during a pipeline.
 
 ### Test Stage
 
-The test stage defines active test suites run against the RESONAATE source code.
-- **pytest** runs the *entire* unit test suite and calculates the coverage statistics
-- **sast** runs static security analysis tools
+Jobs in the test stage define run test suites against the source code.
+
+- **pytest:\*** jobs run various portions of the test suite. These are split into separate chunks and run in parallel for faster pipelines. The jobs upload coverage data & unit test reports as job artifacts
+- **coverage-report** collects data from the test suite jobs and calculates the coverage statistics, uploading the combined coverage data as a job artifact
 
 The test stage jobs are always run during a pipeline.
 
 ### Build Stage
 
-The build stage creates source and binary distribution packages of RESONAATE to be distributed on GitLab.
-This job is run for every pipeline in which the test stage succeeds.
+The build stage defines tasks that build the source code package distributions.
 
-### Upload Stage
+- **build** creates source (`sdist`) and binary (`whl`) distribution packages and uploads them as job artifacts. This job relies on **manifest** successfully succeeding.
 
-The upload stage pushes the source and binary packages of RESONAATE from the build stage to the GitLab package registry in the RESONAATE repository.
-This job is only run on Merge Requests on the **develop** branch for release candidates if the build stage succeeds.
+### Deploy Stage
+
+The deploy stage uploads package distributions & containers to the GitLab package & container registries as well as any deployments to specific environments.
+
+- **pages** deploys built documentation to the correct path for GitLab Pages SSG. This doesn't work and needs a new option. This job relies on **sphinx** succeeding.
+- **publish** uploads package distributions to the GitLab registry. It is only run when releases are merged into the **master** branch, and it relies on the **build** job succeeding.
+
+### Release Stage
+
+The release stage performs required actions for properly releasing a new version of the source code.
+Currently, there are no jobs, but this will change soon.
+Jobs to perform are bumping version numbers automatically, creating release notes, tagging the release.
+These may need to come before or after **deploy** stage jobs.
+
+### Other
+
+These are the other CI jobs/pipelines included under **.gitlab/ci/** which configure external tools or use external templates.
+
+- **dependabot.gitlab-ci.yml** for running scheduled jobs to perform automated dependency updating. See "CI/CD" -> "Schedules" -> "RESONAATE - Nightly" for details on when it's run
+- **security.gitlab-ci.yml** includes GitLab SAST & Secret Detection templates for automated security scanning of the repository.
+
+[issue-list]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues
+[napoleon]: https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
+[pytest-docs]: https://docs.pytest.org/en/latest/
+[pytest-realpython]: https://realpython.com/pytest-python-testing/
+[pytest-tutorial]: https://docs.pytest.org/en/latest/getting-started.html#getstarted
+[sphinx-rest]: https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html

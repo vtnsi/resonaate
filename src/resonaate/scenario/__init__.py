@@ -22,14 +22,17 @@ def buildScenarioFromConfigFile(
             spin up its own :class:`.WorkerManager` instance or not.
     """
     # pylint: disable=import-outside-toplevel
+    # Standard Library Imports
     from pickle import dumps
-    from .config import ScenarioConfig
+
+    # Local Imports
     from ..data import createDatabasePath
     from ..data.resonaate_database import ResonaateDatabase
     from ..parallel import getRedisConnection
+    from .config import ScenarioConfig
+
     # [NOTE][avoid-circular-import]: Import done inside of function to avoid circular imports for
     #    other components of the `scenario` package.
-
     # Create output database
     database_path = createDatabasePath(internal_db_path, importer=False)
     # [NOTE][force-db-path]: Guarantees first call to `getSharedInterface()` will use properly
@@ -38,7 +41,7 @@ def buildScenarioFromConfigFile(
     #    function (aka in __main__.py), or bypass this function entirely.
     _ = ResonaateDatabase.getSharedInterface(database_path)
     red = getRedisConnection()
-    red.set('db_path', dumps(database_path))
+    red.set("db_path", dumps(database_path))
 
     # Load input/external DB
     importer_database_path = None
@@ -49,7 +52,7 @@ def buildScenarioFromConfigFile(
         ScenarioConfig.parseConfigFile(config_file_path),
         internal_db_path=database_path,
         importer_db_path=importer_database_path,
-        start_workers=start_workers
+        start_workers=start_workers,
     )
 
 
@@ -74,9 +77,11 @@ def buildScenarioFromConfigDict(
             spin up its own :class:`.WorkerManager` instance or not.
     """
     # pylint: disable=import-outside-toplevel
+    # Local Imports
     from .config import ScenarioConfig
-    from .scenario_builder import ScenarioBuilder
     from .scenario import Scenario
+    from .scenario_builder import ScenarioBuilder
+
     # [NOTE][avoid-circular-import]: Import done inside of function to avoid circular imports for
     #    other components of the `scenario` package.
 
@@ -91,9 +96,9 @@ def buildScenarioFromConfigDict(
         builder.estimate_agents,
         builder.sensor_network,
         builder.tasking_engines,
-        builder.filter_config,
+        builder.config.estimation,
         internal_db_path=internal_db_path,
         importer_db_path=importer_db_path,
         logger=builder.logger,
-        start_workers=start_workers
+        start_workers=start_workers,
     )

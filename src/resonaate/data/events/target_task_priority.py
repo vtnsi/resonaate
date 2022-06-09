@@ -1,10 +1,10 @@
 """Defines the :class:`.TargetTaskPriority` data table class."""
-# Standard Library Imports
 # Third Party Imports
-from sqlalchemy import Column, Float, Boolean, Integer, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declared_attr
-# RESONAATE Imports
+from sqlalchemy.orm import relationship
+
+# Local Imports
 from ...physics.time.stardate import datetimeToJulianDate
 from .base import Event, EventScope
 
@@ -18,16 +18,13 @@ class TargetTaskPriority(Event):
     INTENDED_SCOPE = EventScope.TASK_REWARD_GENERATION
     """EventScope: Scope where :class:`.TargetTaskPriority` objects should be handled."""
 
-    __mapper_args__ = {
-        'polymorphic_identity': EVENT_TYPE
-    }
+    __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
     def agent_id(self):  # pylint: disable=invalid-name
         """int: Unique ID of the :class:`.Agent` with the observation priority."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'agent_id',
-            Column(Integer, ForeignKey('agents.unique_id'))
+            "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
         )
 
     agent = relationship("Agent", lazy="joined", innerjoin=True)
@@ -43,9 +40,7 @@ class TargetTaskPriority(Event):
         This facilitated logic in the service layer of resonaate.
     """
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
-        "agent_id", "priority", "is_dynamic"
-    )
+    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + ("agent_id", "priority", "is_dynamic")
 
     def handleEvent(self, scope_instance):
         """Increase the reward for tasking sensors to observe the `target`.
@@ -53,7 +48,9 @@ class TargetTaskPriority(Event):
         Args:
             scope_instance (TaskingEngine): The tasking engine that's being given this :class:`.TargetTaskPriority`.
         """
-        scope_instance.reward_matrix[scope_instance.target_indices[self.agent_id],:] *= self.priority
+        scope_instance.reward_matrix[
+            scope_instance.target_indices[self.agent_id], :
+        ] *= self.priority
 
     @classmethod
     def fromConfig(cls, config):
@@ -73,5 +70,5 @@ class TargetTaskPriority(Event):
             event_type=config.event_type,
             agent_id=config.target_id,
             priority=config.priority,
-            is_dynamic=config.is_dynamic
+            is_dynamic=config.is_dynamic,
         )

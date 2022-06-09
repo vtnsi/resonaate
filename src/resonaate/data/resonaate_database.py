@@ -1,10 +1,8 @@
 """Defines the :class:`.ResonaateDatabase` shared data interface class."""
-# Standard Library Imports
-# Third Party Imports
-# RESONAATE Imports
+# Local Imports
+from ..common.behavioral_config import BehavioralConfig
 from . import createDatabasePath
 from .data_interface import DataInterface
-from ..common.behavioral_config import BehavioralConfig
 
 
 class ResonaateDatabase(DataInterface):

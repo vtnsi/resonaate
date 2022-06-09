@@ -5,20 +5,24 @@ Users should be able to easily distinguish between different orbit element sets.
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from typing import Any, Optional
+
 # Third Party Imports
 from numpy import array, isclose, ndarray
-# RESONAATE Imports
-from . import isInclined, isEccentric
-from .anomaly import trueAnom2MeanAnom, meanLong2EccLong
-from .conversions import (
-    coe2eci, coe2eqe, eqe2coe, eqe2eci, eci2coe, eci2eqe
-)
-from .utils import (
-    getEccentricityFromEQE, getInclinationFromEQE, getPeriod, getMeanMotion, singularityCheck
-)
+
+# Local Imports
 from .. import constants as const
 from ..bodies import Earth
 from ..math import wrapAngle2Pi
+from . import isEccentric, isInclined
+from .anomaly import meanLong2EccLong, trueAnom2MeanAnom
+from .conversions import coe2eci, coe2eqe, eci2coe, eci2eqe, eqe2coe, eqe2eci
+from .utils import (
+    getEccentricityFromEQE,
+    getInclinationFromEQE,
+    getMeanMotion,
+    getPeriod,
+    singularityCheck,
+)
 
 
 class OrbitalElements(metaclass=ABCMeta):
@@ -101,11 +105,17 @@ class OrbitalElements(metaclass=ABCMeta):
 class ClassicalElements(OrbitalElements):
     """Define an osculating orbit using classical elements (COEs)."""
 
-    DEFINED_FIELDS = ('sma', 'ecc', 'inc', 'raan', 'argp', 'true_anomaly')
+    DEFINED_FIELDS = ("sma", "ecc", "inc", "raan", "argp", "true_anomaly")
 
     def __init__(
-        self, sma: float, ecc: float, inc: float, raan: float, argp: float, true_anom: float,
-        mu: Optional[float] = Earth.mu
+        self,
+        sma: float,
+        ecc: float,
+        inc: float,
+        raan: float,
+        argp: float,
+        true_anom: float,
+        mu: Optional[float] = Earth.mu,
     ):
         r"""Define an orbit from a set of COEs.
 
@@ -138,9 +148,7 @@ class ClassicalElements(OrbitalElements):
             :cite:t:`vallado_2013_astro`, Sections 2-4 - 2-6
         """
         super().__init__(
-            array([sma, ecc, inc, raan, argp, true_anom]),
-            isInclined(inc),
-            isEccentric(ecc)
+            array([sma, ecc, inc, raan, argp, true_anom]), isInclined(inc), isEccentric(ecc)
         )
 
         # Update raan, argp, anomaly for singular orbits
@@ -177,7 +185,16 @@ class ClassicalElements(OrbitalElements):
         return cls(*eci2coe(eci_state, mu=mu))
 
     @classmethod
-    def fromEQE(cls, sma: float, h: float, k: float, p: float, q: float, mean_long: float, retro: bool = False):
+    def fromEQE(
+        cls,
+        sma: float,
+        h: float,
+        k: float,
+        p: float,
+        q: float,
+        mean_long: float,
+        retro: bool = False,
+    ):
         r"""Convert an orbit defined by a set of EQEs into corresponding COEs.
 
         See Also:
@@ -211,7 +228,9 @@ class ClassicalElements(OrbitalElements):
         Returns:
             ``ndarray``: 6x1 ECI state vector (km; km/sec).
         """
-        return coe2eci(self.sma, self.ecc, self.inc, self.raan, self.argp, self.true_anomaly, mu=mu)
+        return coe2eci(
+            self.sma, self.ecc, self.inc, self.raan, self.argp, self.true_anomaly, mu=mu
+        )
 
     @classmethod
     def fromConfig(cls, config: dict):
@@ -229,7 +248,7 @@ class ClassicalElements(OrbitalElements):
 
         raan, argp, anomaly = 0.0, 0.0, 0.0
         if all(elem in config.keys() for elem in ("raan", "arg_p", "true_anom")):
-            raan = config["inc"] * const.DEG2RAD
+            raan = config["raan"] * const.DEG2RAD
             argp = config["arg_p"] * const.DEG2RAD
             anomaly = config["true_anom"] * const.DEG2RAD
 
@@ -238,7 +257,7 @@ class ClassicalElements(OrbitalElements):
             anomaly = config["true_anom"] * const.DEG2RAD
 
         elif all(elem in config.keys() for elem in ("raan", "arg_lat")):
-            raan = config["inc"] * const.DEG2RAD
+            raan = config["raan"] * const.DEG2RAD
             anomaly = config["arg_lat"] * const.DEG2RAD
 
         elif "true_long" in config.keys():
@@ -254,10 +273,17 @@ class ClassicalElements(OrbitalElements):
 class EquinoctialElements(OrbitalElements):
     """Define an osculating orbit using equinoctial elements (EQEs)."""
 
-    DEFINED_FIELDS = ('sma', 'h', 'k', 'p', 'q', 'mean_longitude')
+    DEFINED_FIELDS = ("sma", "h", "k", "p", "q", "mean_longitude")
 
     def __init__(
-        self, sma: float, h: float, k: float, p: float, q: float, mean_longitude: float, retro: bool = False
+        self,
+        sma: float,
+        h: float,
+        k: float,
+        p: float,
+        q: float,
+        mean_longitude: float,
+        retro: bool = False,
     ):
         r"""Define an orbit from a set of EQEs.
 
@@ -284,7 +310,7 @@ class EquinoctialElements(OrbitalElements):
         super().__init__(
             array([sma, h, k, p, q, mean_longitude]),
             isInclined(getInclinationFromEQE(p, q)),
-            isEccentric(getEccentricityFromEQE(h, k))
+            isEccentric(getEccentricityFromEQE(h, k)),
         )
 
         # Save elements as instance variables
@@ -306,7 +332,9 @@ class EquinoctialElements(OrbitalElements):
         return self._is_retro
 
     @classmethod
-    def fromECI(cls, eci_state: ndarray, mu: Optional[float] = Earth.mu, retro: Optional[bool] = False):
+    def fromECI(
+        cls, eci_state: ndarray, mu: Optional[float] = Earth.mu, retro: Optional[bool] = False
+    ):
         r"""Define a set of EQEs from a ECI (J2000) position and velocity vector.
 
         See Also:
@@ -325,8 +353,14 @@ class EquinoctialElements(OrbitalElements):
 
     @classmethod
     def fromCOE(
-        cls, sma: float, ecc: float, inc: float, raan: float, argp: float, true_anom: float,
-        retro: bool = False
+        cls,
+        sma: float,
+        ecc: float,
+        inc: float,
+        raan: float,
+        argp: float,
+        true_anom: float,
+        retro: bool = False,
     ):
         r"""Convert an orbit defined by a set of COEs into corresponding EQEs.
 
@@ -360,7 +394,16 @@ class EquinoctialElements(OrbitalElements):
         Returns:
             ``ndarray``: 6x1 ECI state vector (km; km/sec).
         """
-        return eqe2eci(self.sma, self.h, self.k, self.p, self.q, self.mean_longitude, mu=mu, retro=self.is_retro)
+        return eqe2eci(
+            self.sma,
+            self.h,
+            self.k,
+            self.p,
+            self.q,
+            self.mean_longitude,
+            mu=mu,
+            retro=self.is_retro,
+        )
 
     @classmethod
     def fromConfig(cls, config: dict):

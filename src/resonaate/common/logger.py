@@ -2,12 +2,14 @@
 # Standard Library Imports
 import logging
 import sys
-from os.path import join, exists
-from os import makedirs
 from datetime import datetime
+from os import makedirs
+from os.path import exists, join
+
 # Third Party Imports
 from concurrent_log_handler import ConcurrentRotatingFileHandler as FileHandler
-# RESONAATE Imports
+
+# Local Imports
 from .behavioral_config import BehavioralConfig
 
 
@@ -25,6 +27,7 @@ class Logger:
             name (``string``): Name of the the logger instance
             level (``logging.LOG_LEVEL``): Determines what level of log messages are published
             path (``string``): Path to where the log file will be stored
+            allow_multiple_handlers (``bool``, optional): whether multiple log handlers are permitted
         """
         if not level:
             level = BehavioralConfig.getConfig().logging.Level
@@ -58,11 +61,11 @@ class Logger:
                 handler = FileHandler(
                     self.filename,
                     maxBytes=BehavioralConfig.getConfig().logging.MaxFileSize,
-                    backupCount=BehavioralConfig.getConfig().logging.MaxFileCount
+                    backupCount=BehavioralConfig.getConfig().logging.MaxFileCount,
                 )
 
             # Set the logger's formatter
-            formatter = logging.Formatter('%(asctime)s - %(module)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter("%(asctime)s - %(module)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
 
             # Configure the logger with the handler

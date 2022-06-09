@@ -7,10 +7,13 @@ Show propagation of Two Body dynamics.
 This example demonstrates how the :class:`.TwoBody` class works along with a simple plot.
 """
 
+# pylint: disable=invalid-name, wrong-import-position
+
 # %%
 # Imports
 # -------
 
+# Third Party Imports
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -23,10 +26,12 @@ from matplotlib import pyplot as plt
 # Also, the simulation propagates for one hour at one minute time steps.
 
 # [km, km, km, km/s, km/s, km/s]
-init_state = np.array([-2872.57438, 3128.21583, -5311.55207, -5.250942201, -5.547484592, -0.428942173])
-init_epoch = 0.0            # seconds
-final_epoch = 3600.0        # seconds
-time_step = 60.0            # seconds
+init_state = np.array(
+    [-2872.57438, 3128.21583, -5311.55207, -5.250942201, -5.547484592, -0.428942173]
+)
+init_epoch = 0.0  # seconds
+final_epoch = 3600.0  # seconds
+time_step = 60.0  # seconds
 
 # %%
 # Instantiate `TwoBody`
@@ -34,6 +39,7 @@ time_step = 60.0            # seconds
 #
 # Create the TwoBody object using an empty initialization function.
 
+# RESONAATE Imports
 from resonaate.dynamics.two_body import TwoBody
 
 dynamics = TwoBody()
@@ -78,9 +84,9 @@ states = np.array(states)
 # Plot propagated orbit.
 
 plt.figure()
-ax1 = plt.axes(projection='3d')
-ax1.scatter(states[::, 0], states[::, 1], states[::, 2], 'green')
-ax1.set_xlabel('x axis')
-ax1.set_ylabel('y axis')
-ax1.set_zlabel('z axis')
+ax1 = plt.axes(projection="3d")
+ax1.scatter(states[::, 0], states[::, 1], states[::, 2], "green")
+ax1.set_xlabel("x axis")
+ax1.set_ylabel("y axis")
+ax1.set_zlabel("z axis")
 plt.show()

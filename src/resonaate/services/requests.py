@@ -1,9 +1,10 @@
 """Functions that provide structured data for "get" requests to the Resonaate service layer."""
-# Standard Library Imports
 # Third Party Imports
-from numpy import abs as np_abs, asarray, diagonal, sqrt, min as np_min
+from numpy import abs as np_abs
+from numpy import asarray, diagonal
+from numpy import min as np_min
+from numpy import sqrt
 from scipy.linalg import norm
-# RESONAATE Imports
 
 
 def getAxisObject(label, unit=None, axis_min=None, axis_max=None):
@@ -23,9 +24,7 @@ def getAxisObject(label, unit=None, axis_min=None, axis_max=None):
         raise TypeError("Axis label must be a string.")
 
     # Build simple axis object
-    msg = {
-        "label": label
-    }
+    msg = {"label": label}
 
     # Add units and plot min/max if desired
     if unit:
@@ -57,13 +56,17 @@ def getSequenceData(x_values, y_values, radius=None):
         dict: formatted `Sequence` data object
     """
     if radius:
-        data = [{"x": str(xx), "y": str(yy), "radius": radius} for xx, yy in zip(x_values, y_values)]
+        data = [
+            {"x": str(xx), "y": str(yy), "radius": radius} for xx, yy in zip(x_values, y_values)
+        ]
     else:
         data = [{"x": str(xx), "y": str(yy)} for xx, yy in zip(x_values, y_values)]
     return data
 
 
-def getSequence(label, data, line_type=None, dasharray=None, color=None, fill=None, url=None, tooltip=None):
+def getSequence(
+    label, data, line_type=None, dasharray=None, color=None, fill=None, url=None, tooltip=None
+):
     """Create a generic `Sequence` object based on required specification.
 
     Args:
@@ -115,7 +118,7 @@ def getBarChart(timestamps, observations):
     ## [TODO]: Add visibility check into the logic
     # Create dict with sensors' names as the keys, and the values are
     #   list where successful observations of the target ocurred
-    sensors = dict()
+    sensors = {}
     for observation in observations:
         sensor = observation["observer"]
         timestamp = observation["timestampISO"]
@@ -132,10 +135,7 @@ def getBarChart(timestamps, observations):
     for timestamp in timestamps:
         for empty_bar in bar_chart:
             # Default data produces an error
-            data = {
-                "value": timestamp,
-                "label": "none"
-            }
+            data = {"value": timestamp, "label": "none"}
             # Check if the timestamp associated with an observation
             obs_times = sensors[empty_bar["label"]]
             if timestamp in obs_times:
@@ -159,15 +159,16 @@ def getObservationBarChart(sat_num, timestamps, estimates, observations):
     Returns:
         dict: valid single stacked bar chart message
     """
-    assert estimates.shape == (6, len(timestamps)), "VisibilityRequest: Incorrect state dimension of estimates"
+    assert estimates.shape == (
+        6,
+        len(timestamps),
+    ), "VisibilityRequest: Incorrect state dimension of estimates"
     request = {
-        "label": f"Observations for {sat_num}",      # chart header/title
+        "label": f"Observations for {sat_num}",  # chart header/title
         "xAxis": getAxisObject("Time", unit="UTC"),  # x axis attributes
-        "barGroups": [                               # `BarGroup` objects to plot
-            {
-                "bars": getBarChart(timestamps, observations)
-            }
-        ]
+        "barGroups": [  # `BarGroup` objects to plot
+            {"bars": getBarChart(timestamps, observations)}
+        ],
     }
     return request
 
@@ -185,12 +186,12 @@ def getRSODistanceLineChart(primary_sat_num, primary_est_hist, secondary_est_his
         dict: formatted line chart object for distance between two RSOs
     """
     # Build primary estimate timestamp set
-    pri_timestamps = {est['timestampISO'] for est in primary_est_hist}
+    pri_timestamps = {est["timestampISO"] for est in primary_est_hist}
     data = {}
     min_distances = []
     for rso_id, sec_est in secondary_est_hist.items():
         # Build secondary timestamp set, and find intersection with the primary set
-        sec_timestamps = {est['timestampISO'] for est in sec_est}
+        sec_timestamps = {est["timestampISO"] for est in sec_est}
         timestamps = sorted(list(pri_timestamps.intersection(sec_timestamps)))
 
         # Get the subset of each RSOs state vectors that correspond to the timestamp intersection
@@ -208,10 +209,10 @@ def getRSODistanceLineChart(primary_sat_num, primary_est_hist, secondary_est_his
 
     title = f"Distance to RSO {primary_sat_num}"
     msg = {
-        "label": title,                                             # Header/title
-        "xAxis": getAxisObject("Time", unit="UTC"),                 # x axis attributes
-        "yAxis": getAxisObject("Total Distance", unit="km"),        # y axis attributes
-        "sequences": [getSequence(rso_id, rso_data) for rso_id, rso_data in data.items()]
+        "label": title,  # Header/title
+        "xAxis": getAxisObject("Time", unit="UTC"),  # x axis attributes
+        "yAxis": getAxisObject("Total Distance", unit="km"),  # y axis attributes
+        "sequences": [getSequence(rso_id, rso_data) for rso_id, rso_data in data.items()],
     }
 
     return msg, np_min(min_distances)
@@ -227,7 +228,9 @@ def getSortedEstimates(timestamps, estimates):
     Returns:
         ``numpy.ndarray``: subset of state vectors
     """
-    est = [est['position'] + est['velocity'] for est in estimates if est["timestampISO"] in timestamps]
+    est = [
+        est["position"] + est["velocity"] for est in estimates if est["timestampISO"] in timestamps
+    ]
 
     return asarray(est).transpose()
 
@@ -247,11 +250,11 @@ def getCovarianceLineChart(sat_num, timestamps, covar_hist, sigmas, labels):
     """
     # Enforce strict typing
     if not isinstance(sigmas, tuple):
-        raise TypeError('Sigma values must be entered as a tuple')
+        raise TypeError("Sigma values must be entered as a tuple")
     if not isinstance(labels, tuple):
-        raise TypeError('Label values must be entered as a tuple')
+        raise TypeError("Label values must be entered as a tuple")
     if len(sigmas) != len(labels):
-        raise ValueError('Must include a label for each sigma value')
+        raise ValueError("Must include a label for each sigma value")
 
     # Calculate the positional uncertainty for each percentage
     sigma_sets = [[] for _ in sigmas]
@@ -265,10 +268,12 @@ def getCovarianceLineChart(sat_num, timestamps, covar_hist, sigmas, labels):
 
     # Build the complete reply message
     msg = {
-        "label": f"Covariance Magnitude for {sat_num}",                                  # Header/title
-        "xAxis": getAxisObject("Time", unit="UTC"),                                      # x axis attributes
-        "yAxis": getAxisObject("Estimated Uncertainty", unit="km"),                      # y axis attributes
-        "sequences": [getSequence(label, data) for label, data in zip(labels, dataset)]  # `Sequence` objects to plot
+        "label": f"Covariance Magnitude for {sat_num}",  # Header/title
+        "xAxis": getAxisObject("Time", unit="UTC"),  # x axis attributes
+        "yAxis": getAxisObject("Estimated Uncertainty", unit="km"),  # y axis attributes
+        "sequences": [
+            getSequence(label, data) for label, data in zip(labels, dataset)
+        ],  # `Sequence` objects to plot
     }
 
     return msg

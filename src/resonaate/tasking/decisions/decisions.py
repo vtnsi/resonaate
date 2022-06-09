@@ -1,10 +1,11 @@
 """Define implemented decision algorithms used to optimize tasked sensors."""
-# Standard Library Imports
 # Third Party Imports
-from numpy import argmax, zeros, where, any as np_any
+from numpy import any as np_any
+from numpy import argmax, where, zeros
 from numpy.random import default_rng
 from scipy.optimize import linear_sum_assignment
-# RESONAATE Imports
+
+# Local Imports
 from .decision_base import Decision
 
 

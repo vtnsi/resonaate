@@ -1,17 +1,19 @@
 """Define service layer API and supporting :class:.`ServiceMessage` types."""
 # Standard Library Imports
-from queue import PriorityQueue, Empty
-from threading import Thread, Event
-from enum import Enum
-from json import dumps
-from time import sleep, time
-from logging import INFO, WARNING
 from collections import Counter
 from datetime import datetime
+from enum import Enum
+from json import dumps
+from logging import INFO, WARNING
+from queue import Empty, PriorityQueue
+from threading import Event, Thread
+from time import sleep, time
 from traceback import format_exc
-# Pip Package Imports
+
+# Third Party Imports
 from sqlalchemy.orm import Query
-# Package Imports
+
+# RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.common.logger import Logger
 from resonaate.data.ephemeris import EstimateEphemeris
@@ -19,11 +21,11 @@ from resonaate.data.events import TargetTaskPriority
 from resonaate.data.observation import Observation
 from resonaate.data.query_util import addAlmostEqualFilter
 from resonaate.data.resonaate_database import ResonaateDatabase
-from resonaate.parallel import isMaster, resetMaster, REDIS_QUEUE_LOGGER
+from resonaate.parallel import REDIS_QUEUE_LOGGER, isMaster
 from resonaate.parallel.worker import WorkerManager
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.scenario import buildScenarioFromConfigDict
-from resonaate.services.output_processing import mungeLostUCTData, determineCurrentLeader
+from resonaate.services.output_processing import determineCurrentLeader, mungeLostUCTData
 
 
 class ServiceMessage:
@@ -65,18 +67,20 @@ class InitMessage(ServiceMessage):
 
     def __lt__(self, other):
         """:class:`.InitMessage` objects can be sorted based on their 'jDate' contents."""
-        return self.contents['jDate'] < other.contents['jDate']
+        return self.contents["jDate"] < other.contents["jDate"]
 
     def __repr__(self):
         """Give brief description of contents of init message."""
         # pylint: disable=consider-using-f-string
-        return "InitMessage(targetList={0} targets, sensorConf={sensorConf}, jDate={jDate}, " + \
-               "targetEvents={1} events, sensorEvents={2} events)".format(
-                   len(self.contents["targetList"]),
-                   len(self.contents["targetEvents"]),
-                   len(self.contents["sensorEvents"]),
-                   **self.contents
-               )
+        return (
+            "InitMessage(targetList={0} targets, sensorConf={sensorConf}, jDate={jDate}, "
+            + "targetEvents={1} events, sensorEvents={2} events)".format(
+                len(self.contents["targetList"]),
+                len(self.contents["targetEvents"]),
+                len(self.contents["sensorEvents"]),
+                **self.contents,
+            )
+        )
 
 
 class DiscontinueMessage(ServiceMessage):
@@ -90,13 +94,13 @@ class DiscontinueMessage(ServiceMessage):
     messages are handled, to avoid the inherent processing.
     """
 
-    def __init__(self, destory_scenario=False):
+    def __init__(self, destroy_scenario=False):
         """Construct an :class:`.DiscontinueMessage` object.
 
         Args:
-            destroy_scenario (bool): Flag indicating whether to destroy the Resonaate scenario.
+            destroy_scenario (``bool``, optional): Flag indicating whether to destroy the Resonaate scenario.
         """
-        self.destroy_scenario = destory_scenario
+        self.destroy_scenario = destroy_scenario
 
         self._created = time()
 
@@ -205,7 +209,9 @@ class ManualSensorTaskMessage(ServiceMessage):
         start_date_time = julianDateToDatetime(self.start_time)
         end_date_time = julianDateToDatetime(self.end_time)
         msg = f"ManualSensorTaskMessage(target_id={self.target_id}, obs_priority={self.obs_priority}, "
-        msg += f"start_time=JulianDate({float(self.start_time)})|ISO({start_date_time.isoformat()}), "
+        msg += (
+            f"start_time=JulianDate({float(self.start_time)})|ISO({start_date_time.isoformat()}), "
+        )
         msg += f"end_time=JulianDate({float(self.end_time)})|ISO({end_date_time.isoformat()}))"
         return msg
 
@@ -224,7 +230,9 @@ class ManualSensorTaskResponse:
         """
         self.task_message = task_message
         if not isinstance(self.task_message, ManualSensorTaskMessage):
-            err = f"Task message must be a ManualSensorTaskMessage, not '{type(self.task_message)}'"
+            err = (
+                f"Task message must be a ManualSensorTaskMessage, not '{type(self.task_message)}'"
+            )
             raise TypeError(err)
 
         self.error_message = error_message
@@ -234,17 +242,19 @@ class ManualSensorTaskResponse:
 
     def jsonify(self):
         """Return a valid JSON analyze-rso-reply message."""
-        return dumps({
-            "createdAt": datetime.utcnow().isoformat() + "+00:00",
-            "createdBy": "resonaate",
-            "replyToUuid": self.reply_to_id,
-            "details": self.details,
-            "label": self.label,
-            "primaryId": self.primary_id,
-            "secondaryIds": "",
-            "status": self.status,
-            "version": "1.9"
-        })
+        return dumps(
+            {
+                "createdAt": datetime.utcnow().isoformat() + "+00:00",
+                "createdBy": "resonaate",
+                "replyToUuid": self.reply_to_id,
+                "details": self.details,
+                "label": self.label,
+                "primaryId": self.primary_id,
+                "secondaryIds": "",
+                "status": self.status,
+                "version": "1.9",
+            }
+        )
 
     @property
     def primary_id(self):
@@ -301,7 +311,7 @@ class ResonaateService:
 
     def __init__(self):
         """Construct a :class:`.ResonaateService` object with supporting infrastructure."""
-        self.logger = Logger('resonaate', path=BehavioralConfig.getConfig().logging.OutputLocation)
+        self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
         self._master = None
         self._scenario = None
         self._state = self.State.UNINITIALIZED
@@ -425,6 +435,7 @@ class ResonaateService:
         Args:
             timeout (float, optional): Number of seconds to wait for messages to be handled before
                 returning False.
+
         Returns:
             bool: ``True`` if all messages have been handled, ``False`` if ``timeout`` was met.
         """
@@ -460,7 +471,9 @@ class ResonaateService:
 
     def _removeOldSensorTasks(self):
         """Remove old dynamic sensor tasks from the database."""
-        query = Query([TargetTaskPriority]).filter(TargetTaskPriority.is_dynamic == True)  # noqa: E712
+        query = Query([TargetTaskPriority]).filter(
+            TargetTaskPriority.is_dynamic == True  # noqa: E712
+        )
         database = ResonaateDatabase.getSharedInterface()
         removed_count = database.deleteData(query)
         self.logger.debug(f"Removed {removed_count} dynamic sensor tasks from the database.")
@@ -507,7 +520,9 @@ class ResonaateService:
 
             else:
                 jdate = self._scenario.clock.julian_date_epoch
-                self.logger.info(f"Set service state to '{self._state}'. Current scenario clock: {jdate}")
+                self.logger.info(
+                    f"Set service state to '{self._state}'. Current scenario clock: {jdate}"
+                )
 
         else:
             raise ValueError(f"Invalid state update: {state}")
@@ -550,7 +565,7 @@ class ResonaateService:
             message.contents,
             internal_db_path=None,
             importer_db_path="sqlite://" if not msg else None,
-            start_workers=False
+            start_workers=False,
         )
         self.logger.debug("Loaded.")
 
@@ -565,7 +580,9 @@ class ResonaateService:
             message (TimeTargetMessage): Time target message specifying the time to propagate to.
         """
         if self._state == self.State.RUNNING:
-            message_delta_seconds = float(message.time_target - self._scenario.clock.julian_date_epoch) * 24 * 60 * 60
+            message_delta_seconds = (
+                float(message.time_target - self._scenario.clock.julian_date_epoch) * 24 * 60 * 60
+            )
 
             # Occurs if we fast-forward with new init, old TimeTarget mesages will be in the past
             if message.time_target < self._scenario.clock.julian_date_epoch:
@@ -576,9 +593,9 @@ class ResonaateService:
                 # responsive to other messages.
                 segments = int(round(message_delta_seconds / self._scenario.clock.dt_step))
                 for step in range(segments):
-                    segment_time_target = (self._scenario.clock.dt_step * (step + 1)).convertToJulianDate(
-                        self._scenario.clock.julian_date_epoch
-                    )
+                    segment_time_target = (
+                        self._scenario.clock.dt_step * (step + 1)
+                    ).convertToJulianDate(self._scenario.clock.julian_date_epoch)
                     self.enqueueMessage(TimeTargetMessage(segment_time_target))
 
             else:
@@ -589,20 +606,14 @@ class ResonaateService:
                 database = ResonaateDatabase.getSharedInterface()
                 query = Query([EstimateEphemeris])
                 query = addAlmostEqualFilter(
-                    query,
-                    EstimateEphemeris,
-                    'julian_date',
-                    self._scenario.clock.julian_date_epoch
+                    query, EstimateEphemeris, "julian_date", self._scenario.clock.julian_date_epoch
                 )
                 current_ephemerides = database.getData(query)
 
                 # Grab observation data from db
                 query = Query([Observation])
                 query = addAlmostEqualFilter(
-                    query,
-                    Observation,
-                    'julian_date',
-                    self._scenario.clock.julian_date_epoch
+                    query, Observation, "julian_date", self._scenario.clock.julian_date_epoch
                 )
                 observation_data = database.getData(query)
                 for estimate in current_ephemerides:
@@ -615,8 +626,8 @@ class ResonaateService:
                         query = addAlmostEqualFilter(
                             query,
                             EstimateEphemeris,
-                            'julian_date',
-                            self._scenario.clock.julian_date_epoch
+                            "julian_date",
+                            self._scenario.clock.julian_date_epoch,
                         )
                         leader_est = database.getData(query, multi=False)
 
@@ -626,7 +637,7 @@ class ResonaateService:
                             julian_date=estimate.julian_date,
                             source=estimate.source,
                             eci=leader_est.eci,
-                            covariance=leader_est.covariance
+                            covariance=leader_est.covariance,
                         )
 
                     estimate = mungeLostUCTData(estimate)
@@ -653,7 +664,7 @@ class ResonaateService:
             message (DiscontinueMessage): Discontinue message.
         """
         if message.destroy_scenario:
-            self._scenario = None
+            self._scenario.shutdown(flushall=True)
             self._updateState(self.State.UNINITIALIZED)
 
         else:
@@ -680,7 +691,7 @@ class ResonaateService:
                         event_type=TargetTaskPriority.EVENT_TYPE,
                         agent_id=message.target_id,
                         priority=message.obs_priority,
-                        is_dynamic=True
+                        is_dynamic=True,
                     )
                     database = ResonaateDatabase.getSharedInterface()
                     database.insertData(db_task)
@@ -689,15 +700,30 @@ class ResonaateService:
                     errors.append(format_exc())
 
         if errors:
-            self.handleManualSensorTaskResponse(ManualSensorTaskResponse(
-                message,
-                error_message=str(errors)
-            ))
+            self.handleManualSensorTaskResponse(
+                ManualSensorTaskResponse(message, error_message=str(errors))
+            )
         else:
             self.handleManualSensorTaskResponse(ManualSensorTaskResponse(message))
 
-    def __del__(self):
-        """Make sure Redis 'master' variable gets reset and workers are shut down."""
+    def shutdown(self, flushall=True):
+        """Gracefully shuts down the service.
+
+        Make sure Redis 'master' variable gets reset, workers are shut down nicely, and message queues are stopped.
+
+        Args:
+            flushall (``bool``, optional): whether to flush the Redis keys on shutdown. Defaults to True.
+        """
         self.stopMessageHandling(join_queue=False)
-        self._worker_manager.stopWorkers(no_wait=True)
-        resetMaster()
+        if self._scenario:
+            self._scenario.shutdown(flushall=flushall)
+        if self._worker_manager:
+            self._worker_manager.stopWorkers(no_wait=True)
+
+    def __del__(self):
+        """Gracefully shutdown if service goes out of scope.
+
+        See Also:
+            :class:`~.Scenario.shutdown`
+        """
+        self.shutdown(flushall=True)

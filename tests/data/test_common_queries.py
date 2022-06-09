@@ -1,29 +1,38 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 from copy import deepcopy
 from itertools import combinations, permutations
+
 # Third Party Imports
 import pytest
 from numpy import eye, linspace
 from sqlalchemy.orm import Query
-# RESONAATE Imports
+
 try:
-    from resonaate.data.queries import (
-        fetchEstimatesByJDInterval, fetchTruthByJDInterval, fetchObservationsByJDInterval,
-        fetchAgentIDs, fetchEstimateIDs, fetchTruthByJDEpoch, fetchEstimatesByJDEpoch, fetchObservationsByJDEpoch,
-        filterBySingleJulianDate, filterByJulianDateInterval, jdEpochQuery, jdIntervalQuery
-    )
-    from resonaate.data.observation import Observation
-    from resonaate.data.resonaate_database import ResonaateDatabase
-    from resonaate.data.ephemeris import TruthEphemeris, EstimateEphemeris
+    # RESONAATE Imports
     from resonaate.data.agent import Agent
+    from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
     from resonaate.data.epoch import Epoch
-    from resonaate.physics.time.stardate import JulianDate
+    from resonaate.data.observation import Observation
+    from resonaate.data.queries import (
+        fetchAgentIDs,
+        fetchEstimateIDs,
+        fetchEstimatesByJDEpoch,
+        fetchEstimatesByJDInterval,
+        fetchObservationsByJDEpoch,
+        fetchObservationsByJDInterval,
+        fetchTruthByJDEpoch,
+        fetchTruthByJDInterval,
+        filterByJulianDateInterval,
+        filterBySingleJulianDate,
+        jdEpochQuery,
+        jdIntervalQuery,
+    )
+    from resonaate.data.resonaate_database import ResonaateDatabase
     from resonaate.physics.constants import PI
+    from resonaate.physics.time.stardate import JulianDate
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 
 
 # SET UP RSO AGENTS
@@ -35,7 +44,9 @@ EXAMPLE_RSO = [{"name": name, "unique_id": uid} for name, uid in zip(RSO_NAMES, 
 # SET UP SENSOR AGENTS
 SENSOR_UNIQUE_IDS = [1]
 SENSOR_NAMES = ["Sensor1"]
-EXAMPLE_SENSORS = [{"name": name, "unique_id": uid} for name, uid in zip(SENSOR_NAMES, SENSOR_UNIQUE_IDS)]
+EXAMPLE_SENSORS = [
+    {"name": name, "unique_id": uid} for name, uid in zip(SENSOR_NAMES, SENSOR_UNIQUE_IDS)
+]
 
 
 # SET UP EPOCH ENTRIES
@@ -47,9 +58,11 @@ EXAMPLE_JD = [
 EXAMPLE_TIMESTAMPS = [
     "2019-01-01T00:01:00.000Z",
     "2021-03-30T17:10:00.000Z",
-    "2021-03-30T17:15:00.000Z"
+    "2021-03-30T17:15:00.000Z",
 ]
-EXAMPLE_EPOCHS = [{"julian_date": jd, "timestampISO": ts} for jd, ts in zip(EXAMPLE_JD, EXAMPLE_TIMESTAMPS)]
+EXAMPLE_EPOCHS = [
+    {"julian_date": jd, "timestampISO": ts} for jd, ts in zip(EXAMPLE_JD, EXAMPLE_TIMESTAMPS)
+]
 
 
 # SET UP TRUTH ENTRIES
@@ -63,14 +76,10 @@ EXAMPLE_ECI_STATES = [
     [1296.645611, -2457.821083, 5721.873513, 0.179231, 0.093705, -0.000365],
     [4642.213371, 41904.121624, -480.890384, -3.056102, 0.338368, -0.013438],
     [1909.774421, 6021.844998, -875.443327, -0.439119, 0.139392, 0.000890],
-    [4087.816918, -2810.139684, 3995.864181, 0.204921, 0.297495, -0.000419]
+    [4087.816918, -2810.139684, 3995.864181, 0.204921, 0.297495, -0.000419],
 ]
 EXAMPLE_TRUTH = [
-    {
-        "julian_date": jd,
-        "agent_id": uid,
-        "eci": eci
-    }
+    {"julian_date": jd, "agent_id": uid, "eci": eci}
     for jd, uid, eci in zip(RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, EXAMPLE_ECI_STATES)
 ]
 
@@ -78,7 +87,7 @@ EXAMPLE_TRUTH = [
 # SET UP ESTIMATE ENTRIES
 estimate_kwargs = {
     "covariance": eye(6),
-    "source": 'Observation',
+    "source": "Observation",
 }
 EXAMPLE_ESTIMATES = [dict(ephem, **estimate_kwargs) for ephem in deepcopy(EXAMPLE_TRUTH)]
 
@@ -92,7 +101,9 @@ sez_z = linspace(390.0, 450.0, num=len(EXAMPLE_RSO))
 lat = [0.0, 1.0, 2.0] * 3
 lon = [0.5, 1.5, 2.5] * 3
 alt = [0.0, 50.0, 100.0] * 3
-obs_vals = zip(RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, azimuths, elevations, sez_s, sez_e, sez_z, lat, lon, alt)
+obs_vals = zip(
+    RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, azimuths, elevations, sez_s, sez_e, sez_z, lat, lon, alt
+)
 EXAMPLE_OBSERVATIONS = [
     {
         "julian_date": jd,
@@ -158,9 +169,7 @@ def getMultipleEphemerisData():
     """Create several valid :class:`.TruthEphemeris` objects."""
     ephems = []
     for ex_ephem in EXAMPLE_TRUTH:
-        ephems.append(
-            TruthEphemeris.fromECIVector(**ex_ephem)
-        )
+        ephems.append(TruthEphemeris.fromECIVector(**ex_ephem))
     return ephems
 
 
@@ -169,9 +178,7 @@ def getMultipleEstimateData():
     """Create several valid :class:`.EstimateEphemeris` objects."""
     estimates = []
     for ex_estimate in EXAMPLE_ESTIMATES:
-        estimates.append(
-            EstimateEphemeris.fromCovarianceMatrix(**ex_estimate)
-        )
+        estimates.append(EstimateEphemeris.fromCovarianceMatrix(**ex_estimate))
     return estimates
 
 
@@ -192,9 +199,7 @@ def getDataInterface(agents, epochs, ephems, estimates, observations):
         :class:`.ResonaateDatabase`: properly constructed DB object
     """
     # Create & yield instance.
-    shared_interface = ResonaateDatabase.getSharedInterface(
-        db_path=None
-    )
+    shared_interface = ResonaateDatabase.getSharedInterface(db_path=None)
     shared_interface.bulkSave(deepcopy(agents + epochs + ephems + estimates + observations))
     yield shared_interface
     shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
@@ -218,11 +223,11 @@ TARGET_COLUMN_NAMES = ["agent_id", "agent_id", "target_id"]
 INTERVAL_TEST_PARAMETERS = zip(
     [fetchTruthByJDInterval, fetchEstimatesByJDInterval, fetchObservationsByJDInterval],
     INSERTED_DATA_FIXTURES,
-    TARGET_COLUMN_NAMES
+    TARGET_COLUMN_NAMES,
 )
 
 
-@pytest.mark.parametrize("test_func, fixture, target_column", deepcopy(INTERVAL_TEST_PARAMETERS))
+@pytest.mark.parametrize(("test_func", "fixture", "target_column"), INTERVAL_TEST_PARAMETERS)
 @pytest.mark.parametrize("jd_span", JD_SPANS)
 @pytest.mark.parametrize("rso", RSO_ID_COMBINATIONS)
 def testIntervalFetches(test_func, fixture, target_column, database, rso, jd_span, request):
@@ -249,11 +254,11 @@ def testIntervalFetches(test_func, fixture, target_column, database, rso, jd_spa
 EPOCH_TEST_PARAMETERS = zip(
     [fetchTruthByJDEpoch, fetchEstimatesByJDEpoch, fetchObservationsByJDEpoch],
     INSERTED_DATA_FIXTURES,
-    TARGET_COLUMN_NAMES
+    TARGET_COLUMN_NAMES,
 )
 
 
-@pytest.mark.parametrize("test_func, table, target_column", deepcopy(EPOCH_TEST_PARAMETERS))
+@pytest.mark.parametrize(("test_func", "table", "target_column"), deepcopy(EPOCH_TEST_PARAMETERS))
 @pytest.mark.parametrize("jd", JD_LIST)
 @pytest.mark.parametrize("rso", RSO_ID_COMBINATIONS)
 def testEpochFetches(test_func, table, target_column, database, rso, jd, request):
@@ -274,21 +279,17 @@ TABLES = [EstimateEphemeris, TruthEphemeris, Observation]
 
 
 @pytest.mark.parametrize("jd", JD_LIST)
-@pytest.mark.parametrize("sat_data, target_column", zip(TABLES, TARGET_COLUMN_NAMES))
+@pytest.mark.parametrize(("sat_data", "target_column"), zip(TABLES, TARGET_COLUMN_NAMES))
 def testSingleJulianDateFiltering(sat_data, target_column, jd):
     """Test filtering logic for single Julian date arguments."""
-    filtered_query = filterBySingleJulianDate(
-        Query(sat_data),
-        sat_data,
-        jd
-    )
+    filtered_query = filterBySingleJulianDate(Query(sat_data), sat_data, jd)
     assert isinstance(filtered_query, Query)
     epoch_query = jdEpochQuery(sat_data, target_column, [1], jd)
     assert isinstance(epoch_query, Query)
 
 
 @pytest.mark.parametrize("jd_span", JD_SPANS)
-@pytest.mark.parametrize("sat_data, target_column", zip(TABLES, TARGET_COLUMN_NAMES))
+@pytest.mark.parametrize(("sat_data", "target_column"), zip(TABLES, TARGET_COLUMN_NAMES))
 def testJulianDateRangeFiltering(sat_data, target_column, jd_span):
     """Test filtering logic for span Julian date arguments."""
     jd_lb, jd_ub = jd_span
@@ -297,17 +298,16 @@ def testJulianDateRangeFiltering(sat_data, target_column, jd_span):
     if not jd_ub:
         jd_ub = float("inf")
     filtered_query = filterByJulianDateInterval(
-        Query(sat_data),
-        sat_data,
-        jd_lb=JulianDate(jd_lb),
-        jd_ub=JulianDate(jd_ub)
+        Query(sat_data), sat_data, jd_lb=JulianDate(jd_lb), jd_ub=JulianDate(jd_ub)
     )
     assert isinstance(filtered_query, Query)
-    interval_query = jdIntervalQuery(sat_data, target_column, [1], JulianDate(jd_lb), JulianDate(jd_ub))
+    interval_query = jdIntervalQuery(
+        sat_data, target_column, [1], JulianDate(jd_lb), JulianDate(jd_ub)
+    )
     assert isinstance(interval_query, Query)
 
 
-@pytest.mark.parametrize("sat_data, target_column", zip(TABLES, TARGET_COLUMN_NAMES))
+@pytest.mark.parametrize(("sat_data", "target_column"), zip(TABLES, TARGET_COLUMN_NAMES))
 def testSingleBadJulianDate(sat_data, target_column):
     """Test filtering logic for bad single Julian date argument."""
     jd = 2458207.010416667
@@ -320,35 +320,26 @@ def testSingleBadJulianDate(sat_data, target_column):
 BAD_JD_SPAN_TYPES = [
     [2458207.010416667, JulianDate(2459304.21875)],  # lb is float
     [JulianDate(2458207.010416667), 2459304.21875],  # ub is float
-    [2458207.010416667, 2459304.21875]  # both are floats
+    [2458207.010416667, 2459304.21875],  # both are floats
 ]
 
 
 @pytest.mark.parametrize("jd_span", BAD_JD_SPAN_TYPES)
-@pytest.mark.parametrize("sat_data, target_column", zip(TABLES, TARGET_COLUMN_NAMES))
+@pytest.mark.parametrize(("sat_data", "target_column"), zip(TABLES, TARGET_COLUMN_NAMES))
 def testBadJulianDateSpanType(sat_data, target_column, jd_span):
     """Test filtering logic for bad Julian date argument."""
     with pytest.raises(TypeError):
-        filterByJulianDateInterval(
-            Query(sat_data),
-            sat_data,
-            jd_lb=jd_span[0],
-            jd_ub=jd_span[1]
-        )
+        filterByJulianDateInterval(Query(sat_data), sat_data, jd_lb=jd_span[0], jd_ub=jd_span[1])
     with pytest.raises(TypeError):
         jdIntervalQuery(sat_data, target_column, [1], jd_span[0], jd_ub=jd_span[1])
 
 
 @pytest.mark.parametrize("jd_span", BAD_JD_SPAN_BOUNDS)
-@pytest.mark.parametrize("sat_data, target_column", zip(TABLES, TARGET_COLUMN_NAMES))
+@pytest.mark.parametrize(("sat_data", "target_column"), zip(TABLES, TARGET_COLUMN_NAMES))
 def testBadJulianDateSpanBounds(sat_data, target_column, jd_span):
     """Test filtering logic for bad Julian date argument."""
-    with pytest.raises(ValueError):
-        filterByJulianDateInterval(
-            Query(sat_data),
-            sat_data,
-            jd_lb=jd_span[0],
-            jd_ub=jd_span[1]
-        )
-    with pytest.raises(ValueError):
+    error_msg = "Julian date lower bound is greater than the upper bound"
+    with pytest.raises(ValueError, match=error_msg):
+        filterByJulianDateInterval(Query(sat_data), sat_data, jd_lb=jd_span[0], jd_ub=jd_span[1])
+    with pytest.raises(ValueError, match=error_msg):
         jdIntervalQuery(sat_data, target_column, [1], jd_span[0], jd_ub=jd_span[1])

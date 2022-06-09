@@ -1,12 +1,19 @@
 """Defines the :class:`.ScheduledFiniteManeuverEvent` data table class."""
-# Third Party Imports
+# Standard Library Imports
 from functools import partial
-from sqlalchemy import Column, Float, String
-from numpy import asarray
-# Package
-from .base import Event, EventScope
+
+# Third Party Imports
+from sqlalchemy import Boolean, Column, Float, String
+from sqlalchemy.ext.declarative import declared_attr
+
+# Local Imports
+from ...dynamics.integration_events.finite_thrust import (
+    ScheduledFiniteManeuver,
+    planeChangeThrust,
+    spiralThrust,
+)
 from ...physics.time.stardate import JulianDate, datetimeToJulianDate
-from ...dynamics.integration_events.finite_thrust import ScheduledFiniteManeuver, spiralThrust, planeChangeThrust
+from .base import Event, EventScope
 
 
 class ScheduledFiniteManeuverEvent(Event):
@@ -27,9 +34,7 @@ class ScheduledFiniteManeuverEvent(Event):
     VALID_MANEUVER_TYPES = (MANEUVER_TYPE_SPIRAL, MANEUVER_TYPE_PLANE_CHANGE)
     """tuple: Valid values for :attr:`.maneuver_type`."""
 
-    __mapper_args__ = {
-        'polymorphic_identity': EVENT_TYPE
-    }
+    __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     maneuver_type = Column(String(10))
     """str: Label for type of maneuver being applied."""
@@ -37,8 +42,15 @@ class ScheduledFiniteManeuverEvent(Event):
     maneuver_mag = Column(Float)
     """float: Magnitude of maneuver vector in km/s^2."""
 
+    @declared_attr
+    def planned(self):  # pylint: disable=invalid-name
+        """bool: Flag indicating whether this task is expected by the filter or not."""
+        return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
+
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
-        "maneuver_mag", "maneuver_type"
+        "maneuver_mag",
+        "maneuver_type",
+        "planned",
     )
 
     def handleEvent(self, scope_instance):
@@ -52,8 +64,6 @@ class ScheduledFiniteManeuverEvent(Event):
         start_sim_time = start_jd.convertToScenarioTime(scope_instance.julian_date_start)
         end_sim_time = end_jd.convertToScenarioTime(scope_instance.julian_date_start)
 
-        time_vector = asarray([start_sim_time, end_sim_time])
-
         finite_maneuver = None
         if str(self.maneuver_type).lower() == self.MANEUVER_TYPE_SPIRAL:
             thrust_func = partial(spiralThrust, magnitude=self.maneuver_mag)
@@ -62,7 +72,7 @@ class ScheduledFiniteManeuverEvent(Event):
         else:
             err = f"{self.maneuver_type} is not a valid thrust type."
             raise ValueError(err)
-        finite_maneuver = ScheduledFiniteManeuver(time_vector, thrust_func)
+        finite_maneuver = ScheduledFiniteManeuver(start_sim_time, end_sim_time, thrust_func)
 
         # if finite_burn not in scope_instance.propagate_event_queue:
         scope_instance.appendPropagateEvent(finite_maneuver)
@@ -84,6 +94,7 @@ class ScheduledFiniteManeuverEvent(Event):
             start_time_jd=datetimeToJulianDate(config.start_time),
             end_time_jd=datetimeToJulianDate(config.end_time),
             event_type=config.event_type,
+            planned=config.planned,
             maneuver_type=config.maneuver_type,
-            maneuver_mag=config.maneuver_mag
+            maneuver_mag=config.maneuver_mag,
         )

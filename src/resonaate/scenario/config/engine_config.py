@@ -1,10 +1,10 @@
 """Submodule defining the objects listed in the 'engines' configuration section."""
-# Package
+# Local Imports
 from ...sensors import ADV_RADAR_LABEL
-from .base import ConfigObjectList, ConfigObject, ConfigError, ConfigOption
-from .reward_config import RewardConfig
+from .agent_configs import SensorConfigObject, TargetConfigObject
+from .base import ConfigError, ConfigObject, ConfigObjectList, ConfigOption
 from .decision_config import DecisionConfig
-from .agent_configs import TargetConfigObject, SensorConfigObject
+from .reward_config import RewardConfig
 
 
 class EngineConfigObject(ConfigObject):
@@ -14,11 +14,11 @@ class EngineConfigObject(ConfigObject):
     def getFields():
         """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.EngineConfigObject`."""
         return (
-            ConfigOption("unique_id", (int, )),
+            ConfigOption("unique_id", (int,)),
             RewardConfig(),
             DecisionConfig(),
             ConfigObjectList("targets", TargetConfigObject),
-            ConfigObjectList("sensors", SensorConfigObject)
+            ConfigObjectList("sensors", SensorConfigObject),
         )
 
     def __init__(self, object_config):
@@ -33,7 +33,7 @@ class EngineConfigObject(ConfigObject):
                 defined in :attr:`.sensors` are advanced radars.
         """
         super().__init__(object_config)
-        if self.decision.name == 'AllVisibleDecision':
+        if self.decision.name == "AllVisibleDecision":
             for sensor in self.sensors:
                 if sensor.sensor_type != ADV_RADAR_LABEL:
                     err = "Only AdvRadar sensors can use the AllVisibleDecision"

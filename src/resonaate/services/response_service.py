@@ -1,19 +1,21 @@
 """Define service that provides responses from the Resonaate service layer."""
 # Standard Library Imports
-from copy import deepcopy
-from json import loads, dumps
-from datetime import datetime
-from threading import Thread, Lock
 from collections import Counter
+from copy import deepcopy
+from datetime import datetime
+from json import dumps, loads
+from threading import Lock, Thread
 from time import sleep
+
 # Third Party Imports
 from numpy import asarray
-# Package Imports
-from .requests import getCovarianceLineChart, getObservationBarChart, getRSODistanceLineChart
+
+# Local Imports
+from ..common.behavioral_config import BehavioralConfig
+from ..common.logger import Logger
 from ..physics.constants import DEG2RAD
 from ..physics.time.stardate import datetimeToJulianDate
-from ..common.logger import Logger
-from ..common.behavioral_config import BehavioralConfig
+from .requests import getCovarianceLineChart, getObservationBarChart, getRSODistanceLineChart
 
 
 class JSONBaseMessage:
@@ -79,8 +81,13 @@ class EstimateMessage(CacheableData):
     """Class to abstract some helpful functionality from an estimate message."""
 
     REQUIRED_FIELDS = (
-        "julian_date", "satNum", "satNum", "position", "velocity",
-        "covariance", "source"
+        "julian_date",
+        "sat_num",
+        "sat_name",
+        "position",
+        "velocity",
+        "covariance",
+        "source",
     )
     """tuple(str): Required fields in the contents of an estimate message."""
 
@@ -92,7 +99,7 @@ class EstimateMessage(CacheableData):
     @property
     def entity_id(self):
         """int: Satellite number of RSO being estimated."""
-        return self._contents["satNum"]
+        return self._contents["sat_num"]
 
 
 class ObservationMessage(CacheableData):
@@ -108,8 +115,14 @@ class ObservationMessage(CacheableData):
     """
 
     REQUIRED_FIELDS = (
-        "julian_date", "satNum", "observer", "sensorType", "timestampISO",
-        "satName", "sensorId", "position"
+        "julian_date",
+        "sat_num",
+        "observer",
+        "sensorType",
+        "timestampISO",
+        "sat_name",
+        "sensorId",
+        "position",
     )
     """tuple(str): Required fields in the contents of an observation message."""
 
@@ -121,7 +134,7 @@ class ObservationMessage(CacheableData):
     @property
     def entity_id(self):
         """int: Satellite number of RSO being observed."""
-        return self._contents["satNum"]
+        return self._contents["sat_num"]
 
     @classmethod
     def fromExternalFormat(cls, external_obs):
@@ -138,8 +151,8 @@ class ObservationMessage(CacheableData):
             "sensorType": external_obs["observer_type"],
             "timestampISO": external_obs["observation_time"],
             "sensorId": external_obs["observer_id"],
-            "satNum": external_obs["observed_object_id"],
-            "satName": external_obs["observed_object_name"],
+            "sat_num": external_obs["observed_object_id"],
+            "sat_name": external_obs["observed_object_name"],
             "azimuth": external_obs["los_az_degrees"] * DEG2RAD,
             "elevation": external_obs["los_el_degrees"] * DEG2RAD,
             "range": external_obs["range_km"],
@@ -147,13 +160,10 @@ class ObservationMessage(CacheableData):
             "position": [
                 external_obs["observer_location_latitude_degrees"] * DEG2RAD,
                 external_obs["observer_location_longitude_degrees"] * DEG2RAD,
-                external_obs["observer_location_elevation_km"]
-            ]
+                external_obs["observer_location_elevation_km"],
+            ],
         }
-        date_time = datetime.strptime(
-            external_obs["observation_time"],
-            "%Y-%m-%dT%H:%M:%S.%fZ"
-        )
+        date_time = datetime.strptime(external_obs["observation_time"], "%Y-%m-%dT%H:%M:%S.%fZ")
         obs["julian_date"] = datetimeToJulianDate(date_time)
         return cls(obs)
 
@@ -178,17 +188,14 @@ class AnalyzeRSOMessage(JSONBaseMessage):
     def secondary_rso_ids(self):
         """list(int): Satellite numbers of secondary RSOs being analyzed."""
         if self._contents.get("secondaryIds"):
-            return [int(rso) for rso in self._contents["secondaryIds"].split(',')]
+            return [int(rso) for rso in self._contents["secondaryIds"].split(",")]
         # else
         return []
 
     @property
     def julian_date(self):
         """float: Julian date that this analyze RSO message is for."""
-        date_time = datetime.strptime(
-            self._contents["scenarioTime"],
-            "%Y-%m-%dT%H:%M:%S.%fZ"
-        )
+        date_time = datetime.strptime(self._contents["scenarioTime"], "%Y-%m-%dT%H:%M:%S.%fZ")
         return datetimeToJulianDate(date_time)
 
     @property
@@ -205,11 +212,24 @@ class AnalyzeRSOMessage(JSONBaseMessage):
 class AnalyzeRSOReply(JSONBaseMessage):
     """Class to abstract some helpful functionality from a SOLAR analyze RSO reply message."""
 
-    REQUIRED_FIELDS = ("version", "replyToUuid", "createdAt",
-                       "createdBy", "primaryId", "label", "status", )
+    REQUIRED_FIELDS = (
+        "version",
+        "replyToUuid",
+        "createdAt",
+        "createdBy",
+        "primaryId",
+        "label",
+        "status",
+    )
     """tuple(str): Required fields in the contents of an analyze RSO reply message."""
 
-    VIZ_FIELDS = ("lineChart", "stackedBarChart", "heatMap", "radarChart", "globe3d", )
+    VIZ_FIELDS = (
+        "lineChart",
+        "stackedBarChart",
+        "heatMap",
+        "radarChart",
+        "globe3d",
+    )
     """tuple(str): At least one of these visualization fields should be present."""
 
     VERSION_DEFAULT = "1.9"
@@ -306,7 +326,7 @@ class StorageCache:
             err = f"Cache time must be fo type float or int, not '{type(self.cache_time)}'"
             raise TypeError(err)
 
-        self._cache = dict()
+        self._cache = {}
         self._cache_lock = Lock()
 
     def addData(self, new_data):
@@ -329,7 +349,9 @@ class StorageCache:
         """
         contents = []
         with self._cache_lock:
-            contents = self._cache.get(entity_id, InsertSortedCacheList(cache_time=self.cache_time)).getDataContents()
+            contents = self._cache.get(
+                entity_id, InsertSortedCacheList(cache_time=self.cache_time)
+            ).getDataContents()
 
         return contents
 
@@ -340,9 +362,11 @@ class ResponseService:
     LOG_COUNTED_INTERVAL = 10
     """int: Number of seconds between logging all counted messages."""
 
-    def __init__(self, ):
+    def __init__(
+        self,
+    ):
         """Construct a :class:`.ResponseService` object with supporting infrastructure."""
-        self.logger = Logger('resonaate', path=BehavioralConfig.getConfig().logging.OutputLocation)
+        self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
         self._estimate_cache = StorageCache()
         self._observation_cache = StorageCache(cache_time=(2 / 24))
 
@@ -383,19 +407,23 @@ class ResponseService:
         """Create visibility response to AnalyzeRSO message.
 
         Args:
-            analyze_rso_message (AnalyzeRSOMessage): New analyze RSO message to reply to.
+            analyze_rso_message (:class:`.AnalyzeRSOMessage`): New analyze RSO message to reply to.
+            estimate_data (``list``): cached :class:`.EstimateMessage` objects.
+            observation_data (``list``): cached :class:`.Observation` objects.
+
+        Retruns:
+            ``dict``: observation response message.
         """
         # Grab timestamps and estimates from cached data
-        timestamps = [est['timestampISO'] for est in estimate_data]
-        estimates = asarray([est['position'] + est['velocity'] for est in estimate_data]).transpose()
+        timestamps = [est["timestampISO"] for est in estimate_data]
+        estimates = asarray(
+            [est["position"] + est["velocity"] for est in estimate_data]
+        ).transpose()
         created_at = analyze_rso_message.created_at
 
         # Build visibility request object
         obs_chart = getObservationBarChart(
-            analyze_rso_message.rso_id,
-            timestamps,
-            estimates,
-            observation_data
+            analyze_rso_message.rso_id, timestamps, estimates, observation_data
         )
         obs_chart["createdAt"] = created_at
 
@@ -406,7 +434,7 @@ class ResponseService:
             "primaryId": str(analyze_rso_message.rso_id),
             "stackedBarChart": obs_chart,
             "status": f"Observation count: {len(observation_data)}",
-            "label": "Observations & Covariance"
+            "label": "Observations & Covariance",
         }
         return obs_response
 
@@ -415,10 +443,14 @@ class ResponseService:
         """Create Historic covariance response to analyze RSO message.
 
         Args:
-            analyze_rso_message (AnalyzeRSOMessage): New analyze RSO message to reply to.
+            analyze_rso_message (:class:`.`AnalyzeRSOMessage`): New analyze RSO message to reply to.
+            estimate_data (``list``): cached :class:`.EstimateMessage` objects.
+
+        Returns:
+            ``dict``: covariance chart data dictionary.
         """
-        timestamps = [est['timestampISO'] for est in estimate_data]
-        covariance = [est['covariance'] for est in estimate_data]
+        timestamps = [est["timestampISO"] for est in estimate_data]
+        covariance = [est["covariance"] for est in estimate_data]
         created_at = analyze_rso_message.created_at
 
         # Build covariance request object
@@ -427,25 +459,30 @@ class ResponseService:
             timestamps,
             covariance,
             (0.674490, 1.15035, 3),
-            ("50%", "75%", "99.7%")
+            ("50%", "75%", "99.7%"),
         )
         covar_chart["createdAt"] = created_at
 
         return covar_chart
 
-    def getRSODistanceResponse(self, analyze_rso_message, primary_estimate_data, secondary_estimate_data):
+    def getRSODistanceResponse(
+        self, analyze_rso_message, primary_estimate_data, secondary_estimate_data
+    ):
         """Create Historic covariance response to analyze RSO message.
 
         Args:
             analyze_rso_message (AnalyzeRSOMessage): New analyze RSO message to reply to.
+            primary_estimate_data (``list``): cached :class:`.EstimateMessage` objects.
+            secondary_estimate_data (``list``): cached :class:`.EstimateMessage` objects.
+
+        Returns:
+            ``dict``: RSO distance chart data dictionary.
         """
         created_at = analyze_rso_message.created_at
 
         # Build covariance request object
         dist_chart, minimum_distance = getRSODistanceLineChart(
-            analyze_rso_message.rso_id,
-            primary_estimate_data,
-            secondary_estimate_data
+            analyze_rso_message.rso_id, primary_estimate_data, secondary_estimate_data
         )
         dist_chart["createdAt"] = created_at
 
@@ -490,8 +527,12 @@ class ResponseService:
             self.logger.debug(f"Observation message: {primary_observations[0]}")
 
         # Build response
-        obs_response = self.getObservationResponse(analyze_rso_message, primary_estimates, primary_observations)
-        obs_response["lineChart"] = self.getCovarianceResponse(analyze_rso_message, primary_estimates)
+        obs_response = self.getObservationResponse(
+            analyze_rso_message, primary_estimates, primary_observations
+        )
+        obs_response["lineChart"] = self.getCovarianceResponse(
+            analyze_rso_message, primary_estimates
+        )
         # Handle response
         self.handleAnalyzeRSOReply(AnalyzeRSOReply(obs_response))
 
@@ -506,15 +547,21 @@ class ResponseService:
                 skipped.append(second_rso)
 
         if secondary_estimates:
-            self.logger.debug(f"Secondary EstimateAgent messages for: {list(secondary_estimates.keys())}")
+            self.logger.debug(
+                f"Secondary EstimateAgent messages for: {list(secondary_estimates.keys())}"
+            )
             self.logger.warning(f"The following secondary ids are not tier 1 RSOs: {skipped}")
         else:
             # No distance response if the secondary estimates are not valid
-            self.logger.warning(f"No tier 1 RSOs given in `secondaryIds`: {list(secondary_estimates.keys())}")
+            self.logger.warning(
+                f"No tier 1 RSOs given in `secondaryIds`: {list(secondary_estimates.keys())}"
+            )
             return
 
         # Build Analyze RSO response/reply messages
-        distance_response = self.getRSODistanceResponse(analyze_rso_message, primary_estimates, secondary_estimates)
+        distance_response = self.getRSODistanceResponse(
+            analyze_rso_message, primary_estimates, secondary_estimates
+        )
         # Handle response
         self.handleAnalyzeRSOReply(AnalyzeRSOReply(distance_response))
 

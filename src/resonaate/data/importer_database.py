@@ -1,16 +1,18 @@
 """Defines the :class:`.ImporterDatabase` data interface class for pre-canned data."""
 # Standard Library Imports
 import os
+
 # Third Party Imports
 from sqlalchemy.orm import Query
-# RESONAATE Imports
-from .data_interface import DataInterface
-from .agent import Agent
-from .epoch import Epoch
-from .ephemeris import TruthEphemeris
+
+# Local Imports
 from ..common.logger import resonaateLogError
 from ..common.utilities import loadJSONFile
 from ..physics.time.stardate import JulianDate
+from .agent import Agent
+from .data_interface import DataInterface
+from .ephemeris import TruthEphemeris
+from .epoch import Epoch
 
 
 class ImporterDatabase(DataInterface):
@@ -119,21 +121,31 @@ class ImporterDatabase(DataInterface):
         for path in args:
             if os.path.isfile(path):
                 name = self._getJSONFilename(path)
-                if "truth" in name:
-                    self.loadEphemerisFile(path, start=start, stop=stop)
-                elif "observation" in name:
-                    self.loadObservationFile(path, start=start, stop=stop)
+                self._loadJSONFile(name, path, start=start, stop=stop)
 
             elif os.path.isdir(path):
                 for filename in os.listdir(path):
                     name = self._getJSONFilename(filename)
-                    if "truth" in name:
-                        self.loadEphemerisFile(os.path.join(path, filename), start=start, stop=stop)
-                    elif "observation" in name:
-                        self.loadObservationFile(os.path.join(path, filename), start=start, stop=stop)
+                    self._loadJSONFile(name, os.path.join(path, filename), start=start, stop=stop)
 
             else:
                 self.logger.error(f"Argument is not a valid path: {path}")
+
+    def _loadJSONFile(self, name, path, start=None, stop=None):
+        """Load a single JSON file.
+
+        Args:
+            name (``str``): file base name.
+            path (``str``): file path.
+            start (:class:`.JulianDate`, optional): minimum date which to load from the file.
+                Defaults to None which means no lower bound.
+            stop (:class:`.JulianDate`, optional): maximum date which to load from the file.
+                Defaults to None which means no upper bound.
+        """
+        if "truth" in name:
+            self.loadEphemerisFile(path, start=start, stop=stop)
+        elif "observation" in name:
+            self.loadObservationFile(path, start=start, stop=stop)
 
     def _getJSONFilename(self, path):
         """Return the filename of a JSON file without the extension.
@@ -184,9 +196,7 @@ class ImporterDatabase(DataInterface):
                 ephemeris["vel_z_km_p_sec"] = ephemeris["velocity"][2]
                 del ephemeris["velocity"]
 
-                agent_query = Query(Agent).filter(
-                    Agent.unique_id == ephemeris["satNum"]
-                )
+                agent_query = Query(Agent).filter(Agent.unique_id == ephemeris["sat_num"])
                 julian_date_query = Query(Epoch).filter(
                     Epoch.julian_date == ephemeris["julian_date"]
                 )
@@ -196,14 +206,14 @@ class ImporterDatabase(DataInterface):
                 if not agent:
                     self._insertData(
                         Agent(
-                            unique_id=ephemeris.pop("satNum"),
-                            name=ephemeris.pop("satName")
+                            unique_id=ephemeris.pop("sat_num"),
+                            name=ephemeris.pop("sat_name"),
                         )
                     )
                     agent = self.getData(agent_query, multi=False)
                 else:
-                    del ephemeris["satNum"]
-                    del ephemeris["satName"]
+                    del ephemeris["sat_num"]
+                    del ephemeris["sat_name"]
 
                 # Get epoch. Insert into DB if it doesn't exist yet
                 epoch = self.getData(julian_date_query, multi=False)
@@ -211,7 +221,7 @@ class ImporterDatabase(DataInterface):
                     self._insertData(
                         Epoch(
                             julian_date=ephemeris.pop("julian_date"),
-                            timestampISO=ephemeris.pop("timestampISO")
+                            timestampISO=ephemeris.pop("timestampISO"),
                         )
                     )
                     epoch = self.getData(julian_date_query, multi=False)
@@ -224,10 +234,16 @@ class ImporterDatabase(DataInterface):
 
                 # only add valid ephemerides to database
                 valid_ephemerides.append(
-                    TruthEphemeris(**ephemeris, agent_id=agent.unique_id, julian_date=epoch.julian_date)
+                    TruthEphemeris(
+                        **ephemeris,
+                        agent_id=agent.unique_id,
+                        julian_date=epoch.julian_date,
+                    )
                 )
 
-            self.logger.info(f"Loading {len(valid_ephemerides)} ephemerides from file '{filename}'.")
+            self.logger.info(
+                f"Loading {len(valid_ephemerides)} ephemerides from file '{filename}'."
+            )
             self._insertData(*valid_ephemerides)
 
     def loadObservationFile(self, filename, start=None, stop=None):
@@ -257,24 +273,26 @@ class ImporterDatabase(DataInterface):
                     "julian_date": observation["julian_date"],
                     "timestampISO": observation["timestampISO"],
                     "observer": observation["observer"],
-                    "sensor_type": observation["sensorType"],
-                    "unique_id": observation["sensorId"],
-                    "target_id": observation["satNum"],
-                    "target_name": observation["satName"],
+                    "sensor_type": observation["sensor_type"],
+                    "unique_id": observation["sensor_id"],
+                    "target_id": observation["sat_num"],
+                    "target_name": observation["sat_name"],
                     "azimuth_rad": observation["azimuth"],
                     "elevation_rad": observation["elevation"],
                     "range_km": observation["range"],
-                    "range_rate_km_p_sec": observation["rangeRate"],
-                    "sez_state_s_km": observation["xSEZ"][0],
-                    "sez_state_e_km": observation["xSEZ"][1],
-                    "sez_state_z_km": observation["xSEZ"][2],
+                    "range_rate_km_p_sec": observation["range_rate"],
+                    "sez_state_s_km": observation["sez_state"][0],
+                    "sez_state_e_km": observation["sez_state"][1],
+                    "sez_state_z_km": observation["sez_state"][2],
                     "position_lat_rad": observation["position"][0],
                     "position_long_rad": observation["position"][1],
-                    "position_altitude_km": observation["position"][2]
+                    "position_altitude_km": observation["position"][2],
                 }
 
                 # only add valid observations to database
                 valid_observations.append(obs_entry)
 
-            self.logger.info(f"Loading {len(valid_observations)} observations from file '{filename}'.")
+            self.logger.info(
+                f"Loading {len(valid_observations)} observations from file '{filename}'."
+            )
             self._insertData(*observations)

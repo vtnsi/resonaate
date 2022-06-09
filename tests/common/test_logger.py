@@ -1,18 +1,19 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 import logging
 import os
+
 # Third Party Imports
 import pytest
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     from resonaate.common.logger import Logger
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
-from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
+from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
 
 
 def getLines(stdout_buff):
@@ -24,7 +25,7 @@ def getLines(stdout_buff):
     Yields:
         str: single line captured in string buffer, delimited by `\\n`
     """
-    lines = stdout_buff.split('\n')
+    lines = stdout_buff.split("\n")
 
     for line in lines:
         if line:
@@ -32,14 +33,14 @@ def getLines(stdout_buff):
 
 
 class TestLogging(BaseTestCase):
-    """Class to test :module:`.common.logging` module."""
+    """Class to test :mod:`.common.logging` module."""
 
     CORRECT_OUTPUT = [
         ["test", logging.DEBUG, "This is a debug message."],
         ["test", logging.INFO, "This is an info message."],
         ["test", logging.WARNING, "This is a warning message."],
         ["test", logging.ERROR, "This is an error message."],
-        ["test", logging.CRITICAL, "This is a critical message."]
+        ["test", logging.CRITICAL, "This is a critical message."],
     ]
 
     CORRECT_FILE_OUTPUT = [
@@ -47,7 +48,7 @@ class TestLogging(BaseTestCase):
         ["test_logger", "INFO", "This is an info message.\n"],
         ["test_logger", "WARNING", "This is a warning message.\n"],
         ["test_logger", "ERROR", "This is an error message.\n"],
-        ["test_logger", "CRITICAL", "This is a critical message.\n"]
+        ["test_logger", "CRITICAL", "This is a critical message.\n"],
     ]
 
     def testStdout(self, caplog):
@@ -80,7 +81,7 @@ class TestLogging(BaseTestCase):
         file_logger.error("This is an error message.")
         file_logger.critical("This is a critical message.")
 
-        with open(file_logger.filename, 'r', encoding="utf-8") as logfile:
+        with open(file_logger.filename, "r", encoding="utf-8") as logfile:
             line_count = 0
             for item, line in enumerate(logfile):
                 assert line.split(" - ")[1:] == self.CORRECT_FILE_OUTPUT[item]

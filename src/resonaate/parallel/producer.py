@@ -1,17 +1,22 @@
 """Control module for managing the job queues."""
-# Standard Imports
+# Standard Library Imports
 from pickle import dumps, loads
 from queue import Queue
 from threading import Thread
 from time import sleep
 from traceback import format_exc
 from uuid import uuid4
-# Third Party Imports
-# RESONAATE Imports
-from . import JOB_QUEUE_LIST, JOB_QUEUE_NAME_PREFIX, PROCESSED_QUEUE_NAME_PREFIX
-from . import getRedisConnection, REDIS_QUEUE_LOGGER
-from .job import Job
+
+# Local Imports
 from ..common.exceptions import JobTimeoutError
+from . import (
+    JOB_QUEUE_LIST,
+    JOB_QUEUE_NAME_PREFIX,
+    PROCESSED_QUEUE_NAME_PREFIX,
+    REDIS_QUEUE_LOGGER,
+    getRedisConnection,
+)
+from .job import Job
 
 
 class QueueManager:
@@ -59,7 +64,7 @@ class QueueManager:
         """Add jobs to the queue.
 
         Args:
-            *args (``iterable``): Variable length list of :class:`.Job` objects to be queued.
+            args (``iterable``): Variable length list of :class:`.Job` objects to be queued.
         """
         for job in args:
             if not isinstance(job, Job):
@@ -138,7 +143,9 @@ class QueueManager:
                     raise self._job_handler_exception
 
             if not self.queued_jobs_processed:
-                raise JobTimeoutError(f"Reached timeout with {len(self._queued_job_ids)} jobs left to process.")
+                raise JobTimeoutError(
+                    f"Reached timeout with {len(self._queued_job_ids)} jobs left to process."
+                )
 
         else:
             while not self.queued_jobs_processed:

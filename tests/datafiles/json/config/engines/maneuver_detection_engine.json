@@ -1,0 +1,27 @@
+{
+  "unique_id": 8,
+  "reward": {
+    "name": "CostConstrainedReward",
+    "metrics": [
+      {
+        "name": "ShannonInformation",
+        "parameters": {}
+      },
+      {
+        "name": "DeltaPosition",
+        "parameters": {}
+      },
+      {
+        "name": "LyapunovStability",
+        "parameters": {}
+      }
+    ],
+    "parameters": {}
+  },
+  "decision": {
+    "name": "MyopicNaiveGreedyDecision",
+    "parameters": {}
+  },
+  "targets_file": "../target_sets/geo_rso_target_set.json",
+  "sensors_file": "../sensor_sets/small_network.json"
+}

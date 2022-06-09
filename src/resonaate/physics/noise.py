@@ -21,9 +21,9 @@ This can be done in two primary ways:
 """
 # Standard Library Imports
 from typing import Any, Tuple
+
 # Third Party Imports
 from numpy import array, diagflat, ndarray
-# RESONAATE Imports
 
 
 def discreteWhiteNoise(dt: float, sigma: float) -> ndarray:
@@ -113,7 +113,7 @@ def simpleNoise(dt: float, std: float) -> ndarray:
         (``ndarray``): 6x6 process noise covariance matrix
     """
     # pylint: disable=invalid-name
-    return dt * diagflat([0, 0, 0, std, std, std])**2
+    return dt * diagflat([0, 0, 0, std, std, std]) ** 2
 
 
 def initialEstimateNoise(
@@ -133,7 +133,7 @@ def initialEstimateNoise(
     Returns:
         tuple (``ndarray``): 6x1 initial state vector & 6x6 initial error covariance matrix
     """
-    init_p = diagflat([pos_std, pos_std, pos_std, vel_std, vel_std, vel_std])**2
+    init_p = diagflat([pos_std, pos_std, pos_std, vel_std, vel_std, vel_std]) ** 2
     init_x = rng.multivariate_normal(true_target_state, init_p)
 
     return init_x, init_p

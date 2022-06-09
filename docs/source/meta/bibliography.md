@@ -1,17 +1,23 @@
 # Bibliography
 
-Test citation {cite:p}`vallado_2013_astro`
+All references mentioned in the documentation.
 
--------------------------------------------------
+______________________________________________________________________
+
 <!-- TOC formatted for sphinx -->
-:::{contents} Table of Contents
-:depth: 2
-:backlinks: none
-:local:
-:::
 
--------------------------------------------------
+```{contents} Table of Contents
+---
+depth: 2
+backlinks: none
+local:
+---
+```
 
-:::{bibliography}
-:style: plain
-:::
+______________________________________________________________________
+
+```{bibliography}
+---
+style: plain
+---
+```

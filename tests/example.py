@@ -1,8 +1,8 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# Pylint and flake8 ignores only included b/c they are examples
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
-# RESONAATE Imports
 
 
 @pytest.fixture(scope="class", autouse=True)
@@ -24,7 +24,7 @@ def exampleClassFixture(test_logger):
     test_logger.warning("Executed after running any tests a class")
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def exampleFunctionFixture(test_logger):
     """Shows a fixture called at the function scope.
 
@@ -64,7 +64,7 @@ class TestExampleUnitTest:
         test_logger.info("This unit test is will fail!")
         assert False
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail()
     def testExampleExpectedFail(self, test_logger):
         """Example unit test that is an expected fail.
 
@@ -82,4 +82,4 @@ class TestExampleUnitTest:
             test_logger (:class:'logging.Logger`): logger fixture defined in `conftest.py`
         """
         test_logger.info("This unit test is skipped!")
-        assert False
+        assert True

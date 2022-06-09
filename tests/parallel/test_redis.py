@@ -1,20 +1,28 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use, unused-argument
+# pylint: disable=attribute-defined-outside-init, unused-argument
 # Standard Library Imports
 import os
 import pickle
+
 # Third Party Imports
 import pytest
 from redis import Redis
-# RESONAATE Imports
+from redis import exceptions as redis_exceptions
+
 try:
+    # RESONAATE Imports
     from resonaate.parallel import (
-        RedisConfig, getRedisConnection, resetRedisQueue, isMaster, masterExists, resetMaster,
-        getMasterHash, setUpLogger
+        RedisConfig,
+        getMasterHash,
+        getRedisConnection,
+        isMaster,
+        masterExists,
+        resetMaster,
+        resetRedisQueue,
+        setUpLogger,
     )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -24,17 +32,15 @@ class TestRedis(BaseTestCase):
 
     def testRedisConfig(self, monkeypatch):
         """Test all functionality of the _RedisConfig class."""
-        hostname = 'localhost'
+        hostname = "localhost"
         port = 7777
-        password = 'test_password'
+        password = "test_password"
 
         # Empty config, use defaults (password from environment variables)
-        envs = {
-            'REDIS_PASSWORD': password
-        }
+        envs = {"REDIS_PASSWORD": password}
         with monkeypatch.context() as m_patch:
             # Limit scope of env variable
-            m_patch.setattr(os, 'environ', envs)
+            m_patch.setattr(os, "environ", envs)
             redis_config = RedisConfig()
             assert redis_config.redis_password == password
 
@@ -49,7 +55,7 @@ class TestRedis(BaseTestCase):
             redis_config.setDefaultConnectionParameters(444323, port, password)
 
         with pytest.raises(TypeError):
-            redis_config.setDefaultConnectionParameters(hostname, '7777', password)
+            redis_config.setDefaultConnectionParameters(hostname, "7777", password)
 
         with pytest.raises(TypeError):
             redis_config.setDefaultConnectionParameters(hostname, port, 324343)
@@ -79,9 +85,8 @@ class TestRedis(BaseTestCase):
         # Call with implicit redis instance
         assert isMaster() is True
         # Call an catch a connection error because of malformed hostname
-        with pytest.raises(SystemExit):
-            new_redis = Redis(host='local')
-            isMaster(redis_connection=new_redis)
+        with pytest.raises(redis_exceptions.ConnectionError):
+            isMaster(redis_connection=Redis(host="local"))
 
     def testMasterExists(self, redis):
         """Test checking the master redis key is set."""

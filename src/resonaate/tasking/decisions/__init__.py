@@ -1,7 +1,12 @@
 """Defines the decisions algorithms available in RESONAATE."""
-# RESONAATE Imports
+# Local Imports
 from .decision_base import Decision as _BaseDecision
-from .decisions import MunkresDecision, MyopicNaiveGreedyDecision, RandomDecision, AllVisibleDecision
+from .decisions import (
+    AllVisibleDecision,
+    MunkresDecision,
+    MyopicNaiveGreedyDecision,
+    RandomDecision,
+)
 
 # Register each reward class to global registry
 _BaseDecision.register("MunkresDecision", MunkresDecision)

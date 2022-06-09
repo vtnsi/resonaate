@@ -4,26 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
--------------------------------------------------
+______________________________________________________________________
+
 <!-- Start TOC -->
 
 **Table of Contents**
 
 - [Release History](#release-history)
-- [[Unreleased]](#unreleased)
-- [[1.3.0 - 2022-03-04]](#130---2022-03-04)
-- [[1.2.0] - 2021-06-14](#120---2021-06-14)
-- [[1.1.1] - 2021-03-25](#111---2021-03-25)
-- [[1.1.0] - 2021-03-24](#110---2021-03-24)
-- [[1.0.1] - 2021-01-21](#101---2021-01-21)
-- [[1.0.0] - 2021-01-14](#100---2021-01-14)
-- [[0.9.0] - 2020-10-20](#090---2020-10-20)
-- [[0.0.0] - 2020-05-08](#000---2020-05-08)
+- [\[Unreleased\]](#unreleased)
+- [\[1.4.0 - 2022-06-06\]](#140---2022-06-06)
+- [\[1.3.0 - 2022-03-04\]](#130---2022-03-04)
+- [\[1.2.0\] - 2021-06-14](#120---2021-06-14)
+- [\[1.1.1\] - 2021-03-25](#111---2021-03-25)
+- [\[1.1.0\] - 2021-03-24](#110---2021-03-24)
+- [\[1.0.1\] - 2021-01-21](#101---2021-01-21)
+- [\[1.0.0\] - 2021-01-14](#100---2021-01-14)
+- [\[0.9.0\] - 2020-10-20](#090---2020-10-20)
+- [\[0.0.0\] - 2020-05-08](#000---2020-05-08)
 
--------------------------------------------------
+______________________________________________________________________
+
 <!-- END TOC -->
 
-# [Unreleased]
+# \[Unreleased\]
 
 - Added
 - Changed
@@ -31,9 +34,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed
 - Fixed
 
-# [1.3.0 - 2022-03-04]
+# \[1.4.0 - 2022-06-06\]
 
 - Added
+
+  - **.vscode/settings.json** for auto-formatting rules
+  - configurations for `black`, `isort`, `prettier`, `mdformat`, & `pre-commit`
+  - `Manifest.in` for source dist & CI job for checking
+  - `pyproject.toml` for build requirements
+  - `shutdown()` methods to `Scenario` & `ResonaateService` for gracefully shutting down, fixes bug #106
+  - `physics.statistics` with chi-square statistic tests
+  - Test coverage pipeline job
+  - `FilterDebugFlag` to `SequentialFilter` for tracking debug
+  - Debugging logic fo filters now directly handled by `EstimateAgent`
+  - Unit tests for maneuver detection and `filters` factory
+  - `julian_date_start` variable to `StationKeeping.fromInitECI()`
+  - Check if initial orbit is eccentric to `KeepLeoUp` Station Keeping class
+  - `data.filter_step` for filter property exports to database
+  - `getFilterStep` and `saveFilterStep` functions to `agents.estimate_agents`
+  - `Jupiter`, `Venus`, and `Saturn` objects to `third_body.py`
+  - `estimation` package
+  - Unit tests for adaptive `estimation` package
+  - Scheduled maneuver events have `planned` attribute, so that the filter does not flag them as a detection
+
+- Changed
+
+  - Format all `.py`, `.md`, `.json`, `.yaml` files
+  - Updated `flake8` configs with new extensions
+  - Split tool configs from `setup.cfg` into tool-specific config files
+  - `nut80.dat` now lives in `physics/data/nutation` directory
+  - `physics/data` directories are now packages/modules
+  - CI jobs are now more parallel, only waiting on direct `needs`
+  - Split `.gitlab-ci.yml` jobs into separate files
+  - Converted `pkg_resource` usage to `importlib.resources`
+  - Properly catch `KeyboardInterrupt` in `__main__.py` and shutdown
+  - Removed `host` attribute from `SequentialFilter` which decouples filters and `EstimateAgent` objects
+  - Made the package-level `__init__.py` dynamically create `LABEL` constants for simpler factory methods
+  - filter factory function now properly takes a `FilterConfig` object
+  - Made maneuver detection language more consistent and direct
+  - Adjusted NIS `ManeuverDetection` techniques to account for heterogeneous observations
+  - Move `filters.statistics` to `physics.maneuver_detection`
+  - `ManeuverDetection` data table to `DetectedManeuver` for better delineation
+  - Move `ManeuverDetection` handling to `EstimateAgent`
+  - Split testing into parallel jobs, and made them run without requiring passed check stage
+  - Improved fixture usage across all tests
+  - Modified event handling so it can occur between timesteps
+  - Station keeping is now its own section in the target configs
+
+- Deprecated
+
+- Removed
+
+  - `requirements/` directory -> moved deps into `setup.py` for now...
+  - `setup.cfg` because it was becoming very hard to manage
+  - Support for YAML config files, dropped `pyyaml` dep. See respect library for converter tool
+  - `SingularMatrix` filter debugging because it's irrelevant now
+  - Removed `Epoch` data dependency from event configs
+  - `filter` package for `estimation`
+
+- Fixed
+
+  - Usage of deprecated `pkg_resources`
+  - Small bug with how `calcMeasurementMean` corrected for different angular domains
+  - GitLab runner, so we can use pipelines again
+
+# \[1.3.0 - 2022-03-04\]
+
+- Added
+
   - `physics.orbits` package with new `OrbitalElement` class interface
   - Supporting astrodynamics functions, utilities, & algorithms
   - Unit tests for `orbits` package as well as `math` module
@@ -77,6 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Unit tests to cover all functions in `data.queries`
 
 - Changed
+
   - Updated installation and tutorial information in docs
   - Moved to using MyST as the main documentation parser, allowing Markdown rather than reStructuredText
   - API docs to use `autosummary` extension rather than `api-docs`
@@ -99,11 +168,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Passing entire target Agent object into `makeNoisyObservation()`
 
 - Deprecated
+
   - `"initial_error_magnitude"` key in the `"noise"` config object
   - `"init_estimate_error"` key in `Estimate.fromConfig()` `dict`
   - In-memory database functionality for `ResonaateDatabase`: will be removed completely when we move to PostgreSQL
 
 - Removed
+
   - old `orbit.py` module
   - `jplephem` as a dependency
   - Use of `Redis` inside `UnscentedKalmanFilter`
@@ -117,6 +188,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - "realtime_propagation" init message option
 
 - Fixed
+
   - Skipped station-keeping test to pass
   - Converted all `super()` calls to not use arguments, so it's more Python 3 oriented
   - Broken and old style docstrings
@@ -124,9 +196,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tasking engine unit tests by removing the mocked classes. Pickling mocked objects doesn't behave well.
   - `JobTimeoutError` bug (#103) introduced by !47, fixed by !56
 
-# [1.2.0] - 2021-06-14
+# \[1.2.0\] - 2021-06-14
 
 - Added
+
   - New sensor network config for dedicated SSN sensors
   - `angularMean()` math function
   - Logging helper functions for one-off logs
@@ -149,6 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Celestial` class to `dynamics` module for functionality shared between space based agents
 
 - Changed
+
   - Change `normalizeAngle()` to `wrapAngle()`
   - Make `Agent::setCallback()` abstract, and define in concrete classes
   - Split database architecture into `ResonaateDatabase` and `ImporterDatabase`
@@ -177,11 +251,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - EOPs are no longer kept in the databases, but are loaded from disk and cached
 
 - Deprecated
+
   - JSON/YAML config formats to fit new scenario config class
   - Options `PhysicsModelDataPath` and `EphemerisPreLoaded` for config file aren't needed
   - `EarthOrientationParams` is no longer a valid DB table
 
 - Removed
+
   - **scripts** directory, and put in the SDA Post Processing/SDA Analysis repo
   - `NutationParams` DB table entry object because it is not dynamic data nor is it very large
   - Excess pre-loaded truth data for unit tests
@@ -190,6 +266,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `events` module
 
 - Fixed
+
   - North-facing sensors' azimuth mask was not handled properly causing `isVisible()` to always return false (#78)
   - `TaskingEngine.observations` weren't reset unless `getCurrentObservations()` was called (#79)
   - Config values of `0` were not handled, and so those field were set to the default value (#77)
@@ -199,21 +276,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - DB table equality operator (commit 7df42e9a5)
   - Fix issue with `JulianDate` subtraction & comparison operators (commits a1a6f2489 and 31f29420b)
 
-# [1.1.1] - 2021-03-25
+# \[1.1.1\] - 2021-03-25
 
 Fix environment variable reading security issue and change Git workflow docs.
 
 - Changed
+
   - Documentation on release process and Git workflow
 
 - Removed
+
   - Feature to read environment variable pointing to config file (#62)
 
-# [1.1.0] - 2021-03-24
+# \[1.1.0\] - 2021-03-24
 
 Update that includes LPAR sensors and multiple sensor networks.
 
 - Added
+
   - Engine config object
   - Large & medium target config sets
   - Capability to designate separate sensor networks & target sets for different tasking engines
@@ -221,40 +301,47 @@ Update that includes LPAR sensors and multiple sensor networks.
   - `AllVisibleDecision` class for high-volume sensors like LPAR
 
 - Changed
+
   - Split `EstimateAgent` update and `executeTasking` parallelization into separate files
   - `sensor_list` passed to `asyncCalculateReward()` for down-selecting this engine's sensors
   - `target_num` passed to `asyncExecuteTasking()`
   - moved parallelization of executing tasks and applying observations to `Scenario`
 
 - Removed
+
   - `networks` sub-package as it is no longer useful
   - debugging logic in `metrics` sub-package that was leftover
 
 - Fixed
+
   - new pylint & flake8 errors
 
-# [1.0.1] - 2021-01-21
+# \[1.0.1\] - 2021-01-21
 
 Small fixes to the `ResonaateService` class and supporting API. Also updated documentation for new formats.
 
 - Added
+
   - `Scenario.parseConfigFile()` static method for automatically parsing main the scenario configuration file
   - `Scenario.fromConfigFile()` factory method for creating `Scenario` from a given filepath
 
 - Changed
+
   - Added old updates to CHANGELOG for better repo tracking
   - `Scenario.fromConfig()` factory method to accept only properly built JSON objects/dictionaries
   - `scenario` & `services` unit tests fixed for new factory methods
 
 - Fixed
+
   - Outdated scenario configuration documentation in `initialization.md`
   - Outdated RESONAATE service ICD in `interface.md`
 
-# [1.0.0] - 2021-01-14
+# \[1.0.0\] - 2021-01-14
 
 Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard stop where main architectural changes and major features were completed and introduced bugs were fixed.
 
 - Added
+
   - CI/CD integration for automated testing/linting
   - Added support for YAML scenario configuration files
   - Debug mode for runs, including a CLI argument. Allows blocking behavior in the workers
@@ -265,6 +352,7 @@ Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard st
   - Reward class combining cost-constrained & staleness metric
 
 - Changed
+
   - Updated requirements.txt, and split out development tool requirements
   - Moved factory methods into their respective class definitions for a simpler interface
   - Made `BehavioralConfig` able to be properly set, requires `getConfig()` to be called
@@ -278,41 +366,50 @@ Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard st
   - Made unit tests directory more organized
 
 - Deprecated
+
   - `Decision` objects callable interface no longer accepts `visibility_matrix` as an argument
   - `ObservationData` DB table objects are now `Observation` DB table objects. DBs are incompatible
 
 - Removed
+
   - `TaskingEngine` being an attribute of `Network` objects
   - Duplicate `sensors.observation.Observation` class because it can be handled by the DB table class
   - `observation_factory.py` module
 
 - Fixed
+
   - Redis password is now retrieved via an environment variable `REDIS_PASSWORD`, or `None`
   - `safeArcCos()` now properly checks for non-rounding cases when called
   - Small corner-case sign errors in reference frame rotations
   - Incorrect lighting conditions
 
-# [0.9.0] - 2020-10-20
+# \[0.9.0\] - 2020-10-20
 
 Mostly config/refactoring updates since the initial port.
 
 - Added
+
   - Unit tests for `resonaate_service` sub-package
   - Empty db files for testing
 
 - Changed
+
   - `UKF` and `TwoBody` perform multiple ODEs at once
   - `SpecialPerturbations` solves multiple ODEs at once
   - Removed "sosat" out of all files.
   - Renamed source code folder to resonaate.
 
 - Fixed
+
   - `KLDivergence` hotfix
   - `UKF` bugs
 
-# [0.0.0] - 2020-05-08
+# \[0.0.0\] - 2020-05-08
+
+Initial version ported to a new repository.
 
 - Added
+
   - MunkresDecision & MyopicGreedyDecision functions for optimizing the reward matrix.
   - Multiple reward functions to combine metrics in different ways
   - TimeSinceObservation metric for considering observation frequency
@@ -324,6 +421,7 @@ Mostly config/refactoring updates since the initial port.
   - Tasking information to a new DB table
 
 - Changed
+
   - Moved metrics, rewards, core, decisions packages into a combined tasking package
   - The tasking package is now modular in the algorithms chosen, and can be specified from a JSON configuration file
   - Simplified tasking engine API
@@ -336,14 +434,17 @@ Mostly config/refactoring updates since the initial port.
   - Renamed `Config` to `BehavioralConfig` to separate from `ScenarioConfig`
 
 - Deprecated
+
   - Old JSON init file format no longer works
 
 - Removed
+
   - `central_core_30.py` and `central_core_40.py` modules
   - `user_interface.py` module
   - `copyable.py` module
   - Various deprecated folders and files that are no longer relevant
 
 - Fixed
+
   - Clarified the `Agent` API by creating `TargetAgent`, `SensingAgent`, and `EstimateAgent` classes. This allows for easier variation in sensor vs. target agent types.
   - Streamlined visibility calculations

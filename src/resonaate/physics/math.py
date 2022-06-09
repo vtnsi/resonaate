@@ -1,23 +1,38 @@
-"""General mathematics functions that provided extended capability to `numpy`_ and `scipy`_.
+"""General mathematics functions that provided extended capability to `numpy` and `scipy`.
 
-.. _scipy: https://docs.scipy.org/doc/scipy/index.html
-.. _numpy: https://numpy.org/doc/stable/
+* `scipy docs <https://docs.scipy.org/doc/scipy/index.html>`_
+* `numpy docs <https://numpy.org/doc/stable/>`_
 """
 # Standard Library Imports
 from typing import Optional
+
 # Third Party Imports
 from numpy import (
-    amin, arccos, arctan2, array, clip, cos, diag, eye, fabs, finfo, fmod,
-    ndarray, real, remainder, sign, sin, spacing
+    amin,
+    arccos,
+    arctan2,
+    array,
+    clip,
+    cos,
+    diag,
+    eye,
+    fabs,
+    finfo,
+    fmod,
+    ndarray,
+    real,
+    remainder,
+    sign,
+    sin,
+    spacing,
 )
-# Third Party Imports
-from numpy.linalg import multi_dot, cholesky, LinAlgError
-from scipy.linalg import norm, eigvals, svd
-# RESONAATE Imports
-from . import constants as const
-from ..common.logger import resonaateLogError
-from ..common.exceptions import ShapeError
+from numpy.linalg import LinAlgError, cholesky, multi_dot
+from scipy.linalg import eigvals, norm, svd
 
+# Local Imports
+from ..common.exceptions import ShapeError
+from ..common.logger import resonaateLogError
+from . import constants as const
 
 _MAX_ITER = 100
 """``int``: maximum number of iterations for iterative algorithms."""
@@ -36,11 +51,13 @@ def rot1(angle: float) -> ndarray:
     Returns:
         ``ndarray``: 3x3 rotation matrix.
     """
-    return array([
-        [1, 0, 0],
-        [0, cos(angle), sin(angle)],
-        [0, -sin(angle), cos(angle)]
-    ])
+    return array(
+        [
+            [1, 0, 0],
+            [0, cos(angle), sin(angle)],
+            [0, -sin(angle), cos(angle)],
+        ]
+    )
 
 
 def rot2(angle: float) -> ndarray:
@@ -52,11 +69,13 @@ def rot2(angle: float) -> ndarray:
     Returns:
         ``ndarray``: 3x3 rotation matrix.
     """
-    return array([
-        [cos(angle), 0, -sin(angle)],
-        [0, 1, 0],
-        [sin(angle), 0, cos(angle)]
-    ])
+    return array(
+        [
+            [cos(angle), 0, -sin(angle)],
+            [0, 1, 0],
+            [sin(angle), 0, cos(angle)],
+        ]
+    )
 
 
 def rot3(angle: float) -> ndarray:
@@ -68,11 +87,13 @@ def rot3(angle: float) -> ndarray:
     Returns:
         ``ndarray``: 3x3 rotation matrix.
     """
-    return array([
-        [cos(angle), sin(angle), 0],
-        [-sin(angle), cos(angle), 0],
-        [0, 0, 1]
-    ])
+    return array(
+        [
+            [cos(angle), sin(angle), 0],
+            [-sin(angle), cos(angle), 0],
+            [0, 0, 1],
+        ]
+    )
 
 
 def dotRot1(angle: float, omega: ndarray) -> ndarray:
@@ -321,8 +342,10 @@ def isPD(matrix: ndarray) -> bool:
 
 
 def angularMean(
-    angles: ndarray, weights: Optional[ndarray] = None,
-    high: Optional[float] = const.TWOPI, low: Optional[float] = 0.0
+    angles: ndarray,
+    weights: Optional[ndarray] = None,
+    high: Optional[float] = const.TWOPI,
+    low: Optional[float] = 0.0,
 ) -> float:
     r"""Calculate the (possibly weighted) mean of `angles` within a given range.
 
@@ -378,4 +401,5 @@ def angularMean(
 
     # Determine the arctangent of the sine & cosine means, then rescale to [0, 2π]
     result_mean = wrapAngle2Pi(arctan2(sin_mean, cos_mean))
+    # Rescale using the low, high values.
     return result_mean * (high - low) / const.TWOPI + low

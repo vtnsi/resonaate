@@ -1,9 +1,9 @@
 """Functions that define physics related to sensors."""
-# Standard Library Imports
 # Third Party Imports
-from numpy import sqrt, dot, arccos, arcsin
+from numpy import arccos, arcsin, dot, sqrt
 from scipy.linalg import norm
-# RESONAATE Imports
+
+# Local Imports
 from ..physics import constants as const
 from ..physics.bodies import Earth
 from ..physics.bodies.third_body import Sun
@@ -48,12 +48,12 @@ def lineOfSight(eci_position_1, eci_position_2):
         ``bool``: whether a line of sight exists between the given position vectors.
     """
     r1_dot_r2 = dot(eci_position_1, eci_position_2)
-    r1sq, r2sq = norm(eci_position_1)**2, norm(eci_position_2)**2
+    r1sq, r2sq = norm(eci_position_1) ** 2, norm(eci_position_2) ** 2
     tau = (r1sq - r1_dot_r2) / (r1sq + r2sq - 2 * r1_dot_r2)
     if tau < 0.0 or tau > 1.0:
         return True
-    else:
-        return (1 - tau) * r1sq + r1_dot_r2 * tau >= Earth.radius**2
+
+    return (1 - tau) * r1sq + r1_dot_r2 * tau >= Earth.radius**2
 
 
 def calculateSunVizFraction(tgt_eci_position, sun_eci_position):
@@ -77,12 +77,15 @@ def calculateSunVizFraction(tgt_eci_position, sun_eci_position):
     # Montenbruck, Eqs. 3.85 to 3.87
     a = arcsin(Sun.radius / norm(sat_sun_vector))
     b = arcsin(Earth.radius / norm(tgt_eci_position))
-    c = arccos(dot(-tgt_eci_position, sat_sun_vector) / (norm(tgt_eci_position) * norm(sat_sun_vector)))
+    c = arccos(
+        dot(-tgt_eci_position, sat_sun_vector) / (norm(tgt_eci_position) * norm(sat_sun_vector))
+    )
 
     # [TODO]: Determine if the `AND`s are required. Does the algorithm include when sat in front of Earth?
     if c < abs(b - a) and norm(sun_eci_position) < norm(sat_sun_vector):
         return 0
-    elif c < abs(a + b) and norm(sun_eci_position) < norm(sat_sun_vector):
+
+    if c < abs(a + b) and norm(sun_eci_position) < norm(sat_sun_vector):
         # Montenbruck Eq. 3.93
         x = (c**2 + a**2 - b**2) / (2 * c)
         y = sqrt(a**2 - x**2)
@@ -92,8 +95,8 @@ def calculateSunVizFraction(tgt_eci_position, sun_eci_position):
 
         # Partial occultation
         return 1.0 - A / (const.pi * a**2)
-    else:
-        return 1  # No occultation by the Earth
+
+    return 1  # No occultation by the Earth
 
 
 def calculateIncidentSolarFlux(viz_cross_section, tgt_eci_position, sun_eci_position):
@@ -114,7 +117,9 @@ def calculateIncidentSolarFlux(viz_cross_section, tgt_eci_position, sun_eci_posi
     return solar_flux * calculateSunVizFraction(tgt_eci_position, sun_eci_position)
 
 
-def checkGroundSensorLightingConditions(sensor_eci_position, sun_eci_unit_vector, buffer_angle=const.PI / 12):
+def checkGroundSensorLightingConditions(
+    sensor_eci_position, sun_eci_unit_vector, buffer_angle=const.PI / 12
+):
     r"""Determine if a ground sensor has the appropriate lighting condition.
 
     This assumes ground-based sensors can only collect during times of eclipse (nighttime). There
@@ -133,11 +138,15 @@ def checkGroundSensorLightingConditions(sensor_eci_position, sun_eci_unit_vector
     Returns:
         ``bool``: whether the sensor can view objects or not based on the lighting condition.
     """
-    satellite_sun_angle = arccos(dot(sun_eci_unit_vector, sensor_eci_position) / norm(sensor_eci_position))
+    satellite_sun_angle = arccos(
+        dot(sun_eci_unit_vector, sensor_eci_position) / norm(sensor_eci_position)
+    )
     return satellite_sun_angle >= const.PI / 2 + buffer_angle
 
 
-def checkSpaceSensorLightingConditions(boresight_eci_vector, sun_eci_unit_vector, cone_angle=const.PI / 12):
+def checkSpaceSensorLightingConditions(
+    boresight_eci_vector, sun_eci_unit_vector, cone_angle=const.PI / 12
+):
     r"""Determine if a space sensor has the appropriate lighting condition.
 
     This assumes space-based sensors can only collect if the required boresight vector is not
@@ -156,7 +165,9 @@ def checkSpaceSensorLightingConditions(boresight_eci_vector, sun_eci_unit_vector
     Returns:
         ``bool``: whether the sensor can view objects or not based on the lighting condition.
     """
-    boresight_sun_angle = arccos(dot(sun_eci_unit_vector, boresight_eci_vector) / norm(boresight_eci_vector))
+    boresight_sun_angle = arccos(
+        dot(sun_eci_unit_vector, boresight_eci_vector) / norm(boresight_eci_vector)
+    )
     return boresight_sun_angle >= cone_angle
 
 
@@ -176,7 +187,7 @@ def calculateRadarCrossSection(viz_cross_section, wavelength):
     Returns:
         ``float``: effective cross-sectional area (m\ :sup:`2`)
     """
-    return 4 * const.PI * viz_cross_section ** 2 / wavelength ** 2
+    return 4 * const.PI * viz_cross_section**2 / wavelength**2
 
 
 def getWavelengthFromString(freq):
@@ -189,15 +200,15 @@ def getWavelengthFromString(freq):
         ``float``: wavelength of the given frequency band (m)
     """
     return {
-        'VHF': const.SPEED_OF_LIGHT / (165.0 * (1e6)),
-        'UHF': const.SPEED_OF_LIGHT / (650.0 * (1e6)),
-        'L': const.SPEED_OF_LIGHT / (1.5 * (1e9)),
-        'S': const.SPEED_OF_LIGHT / (3.0 * (1e9)),
-        'C': const.SPEED_OF_LIGHT / (6.0 * (1e9)),
-        'X': const.SPEED_OF_LIGHT / (10.0 * (1e9)),
-        'Ku': const.SPEED_OF_LIGHT / (15.0 * (1e9)),
-        'K': const.SPEED_OF_LIGHT / (20.0 * (1e9)),
-        'Ka': const.SPEED_OF_LIGHT / (30.0 * (1e9)),
-        'V': const.SPEED_OF_LIGHT / (60.0 * (1e9)),
-        'W': const.SPEED_OF_LIGHT / (15.0 * (1e9)),
+        "VHF": const.SPEED_OF_LIGHT / (165.0 * (1e6)),
+        "UHF": const.SPEED_OF_LIGHT / (650.0 * (1e6)),
+        "L": const.SPEED_OF_LIGHT / (1.5 * (1e9)),
+        "S": const.SPEED_OF_LIGHT / (3.0 * (1e9)),
+        "C": const.SPEED_OF_LIGHT / (6.0 * (1e9)),
+        "X": const.SPEED_OF_LIGHT / (10.0 * (1e9)),
+        "Ku": const.SPEED_OF_LIGHT / (15.0 * (1e9)),
+        "K": const.SPEED_OF_LIGHT / (20.0 * (1e9)),
+        "Ka": const.SPEED_OF_LIGHT / (30.0 * (1e9)),
+        "V": const.SPEED_OF_LIGHT / (60.0 * (1e9)),
+        "W": const.SPEED_OF_LIGHT / (15.0 * (1e9)),
     }[freq]

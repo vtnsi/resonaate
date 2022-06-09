@@ -1,12 +1,12 @@
 """Defines the :class:`.Radar` sensor class."""
-# Standard Library Imports
 # Third Party Imports
 from numpy import asarray, squeeze
-# RESONAATE Imports
-from .measurements import getAzimuth, getElevation, getRange, getRangeRate, IsAngle
-from .sensor_base import Sensor
+
+# Local Imports
 from ..physics import constants as const
-from ..physics.sensor_utils import getWavelengthFromString, calculateRadarCrossSection
+from ..physics.sensor_utils import calculateRadarCrossSection, getWavelengthFromString
+from .measurements import IsAngle, getAzimuth, getElevation, getRange, getRangeRate
+from .sensor_base import Sensor
 
 
 class Radar(Sensor):
@@ -16,7 +16,19 @@ class Radar(Sensor):
     which provide azimuth, elevation, & range measurements with each observation.
     """
 
-    def __init__(self, az_mask, el_mask, r_matrix, diameter, efficiency, exemplar, power_tx, frequency, slew_rate, **sensor_args):  # noqa: E501
+    def __init__(
+        self,
+        az_mask,
+        el_mask,
+        r_matrix,
+        diameter,
+        efficiency,
+        exemplar,
+        power_tx,
+        frequency,
+        slew_rate,
+        **sensor_args,
+    ):  # noqa: E501
         """Construct a `Radar` sensor object.
 
         Args:
@@ -33,13 +45,7 @@ class Radar(Sensor):
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         super().__init__(
-            az_mask,
-            el_mask,
-            r_matrix,
-            diameter,
-            efficiency,
-            slew_rate,
-            **sensor_args
+            az_mask, el_mask, r_matrix, diameter, efficiency, slew_rate, **sensor_args
         )
 
         # Save extra class variables
@@ -72,11 +78,11 @@ class Radar(Sensor):
         lam_sq = self.wavelength**2
         # Validated against Nastasi's equations
         return (
-            (
-                four_pi * self.tx_power * (self.aperture_area * self.efficiency)**2
-                * (four_pi * exemplar_area**2 / lam_sq)
-            ) / (lam_sq * (four_pi * exemplar_range**2.0)**2.0)
-        )
+            four_pi
+            * self.tx_power
+            * (self.aperture_area * self.efficiency) ** 2
+            * (four_pi * exemplar_area**2 / lam_sq)
+        ) / (lam_sq * (four_pi * exemplar_range**2.0) ** 2.0)
 
     def _maxRangeFromExemplar(self, diameter, min_detect_power):
         """Calculate the auxiliary maximum range for a detection.
@@ -101,8 +107,8 @@ class Radar(Sensor):
     def angle_measurements(self):
         """``np.ndarray``: Returns 4x1 integer array of which measurements are angles."""
         return asarray(
-            [IsAngle.ANGLE_2PI, IsAngle.ANGLE_PI, IsAngle.NOT_ANGLE, IsAngle.NOT_ANGLE],
-            dtype=int
+            [IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI, IsAngle.NOT_ANGLE, IsAngle.NOT_ANGLE],
+            dtype=int,
         )
 
     def getMeasurements(self, slant_range_sez, noisy=False):

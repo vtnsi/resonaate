@@ -7,9 +7,9 @@ SDA software simulations via JSON configuration files. Please see the {ref}`Modu
 for details on how the executable {command}`resonaate` works. For details on the library API, see the
 documentation of the {ref}`api-subpackages` listed below.
 
-:::{eval-rst}
+```{eval-rst}
 
--------------------
+______________________________________________________________________
 
 .. _api-main:
 
@@ -19,12 +19,11 @@ documentation of the {ref}`api-subpackages` listed below.
 .. automodule:: resonaate.__main__
     :members:
 
--------------------
+______________________________________________________________________
 
-:::
+```
 
-
-:::{eval-rst}
+```{eval-rst}
 
 .. _api-subpackages:
 
@@ -41,12 +40,12 @@ documentation of the {ref}`api-subpackages` listed below.
     common
     data
     dynamics
-    filters
+    estimation
     parallel
     physics
     scenario
     sensors
     services
     tasking
-:::
 
+```

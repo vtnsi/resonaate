@@ -1,8 +1,6 @@
 """Abstract :class:`.Decision` base class defining the decision API."""
-# Standard Imports
+# Standard Library Imports
 from abc import ABCMeta, abstractmethod
-# Third Party Imports
-# Package Imports
 
 
 class Decision(metaclass=ABCMeta):

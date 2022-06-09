@@ -1,19 +1,32 @@
 """Module for defining the nonspherical gravity potential of a central body being orbited by an object."""
+from __future__ import annotations
+
 # Standard Library Imports
-import os.path
 from csv import reader
 from functools import lru_cache
+from importlib import resources
 from math import factorial
-from pkg_resources import resource_filename, resource_exists
-# from math import factorial
+from typing import TYPE_CHECKING
+
 # Third Party Imports
-from numpy import array, zeros, sqrt, float64
+from numpy import array, float64, sqrt, zeros
 from scipy.linalg import norm
-# RESONAATE Imports
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Tuple
+
+    # Third Party Imports
+    from numpy import ndarray
+
+
+GEOPOTENTIAL_MODULE: str = "resonaate.physics.data.geopotential"
+"""``str``: defines geopotential data module location."""
 
 
 @lru_cache(maxsize=5)
-def loadGeopotentialCoefficients(model_file):
+def loadGeopotentialCoefficients(model_file: str) -> Tuple[ndarray, ndarray]:
     r"""Read the gravity model file & save the geopotential coefficients.
 
     This assumes that the coefficients are normalized according to Eq 8-22 in Vallado:
@@ -32,24 +45,21 @@ def loadGeopotentialCoefficients(model_file):
     Returns:
         ``tuple``: ``ndarray`` defining the un-normalized cosine & sine geopotential coefficients.
     """
-    grv_filename = os.path.join('physics/data/geopotential/', model_file)
-    if not resource_exists('resonaate', grv_filename):
-        raise FileNotFoundError(grv_filename)
-    gravity_model_file = resource_filename('resonaate', grv_filename)
-    with open(gravity_model_file, 'r', encoding="utf-8") as csv_file:
-        cos_terms = zeros((181, 181))
-        sin_terms = zeros((181, 181))
-        for row in reader(csv_file, delimiter=' ', skipinitialspace=True):
-            # Read normalized coefficients, un-normalize them.
-            degree, order = int(row[0]), int(row[1])
-            scale = _getGeopotentialCoefficientScale(degree, order)
-            cos_terms[degree, order] = float(row[2]) * scale
-            sin_terms[degree, order] = float(row[3]) * scale
+    with resources.path(GEOPOTENTIAL_MODULE, model_file) as grv_filepath:
+        with open(grv_filepath, "r", encoding="utf-8") as csv_file:
+            cos_terms = zeros((181, 181))
+            sin_terms = zeros((181, 181))
+            for row in reader(csv_file, delimiter=" ", skipinitialspace=True):
+                # Read normalized coefficients, un-normalize them.
+                degree, order = int(row[0]), int(row[1])
+                scale = _getGeopotentialCoefficientScale(degree, order)
+                cos_terms[degree, order] = float(row[2]) * scale
+                sin_terms[degree, order] = float(row[3]) * scale
 
     return cos_terms, sin_terms
 
 
-def _getGeopotentialCoefficientScale(degree, order):
+def _getGeopotentialCoefficientScale(degree: int, order: int) -> float:
     r"""Get the scale to un-normalize the corresponding geopotential coefficients.
 
     :math:`\PI_{n,m} = \sqrt{\frac{(n + m)!}{(n - m)!k(2n + 1)}}` where
@@ -68,11 +78,16 @@ def _getGeopotentialCoefficientScale(degree, order):
     """
     if order == 0:
         return sqrt((2 * degree + 1))
-    else:
-        return sqrt((factorial(degree - order) * 2 * (2 * degree + 1)) / factorial(degree + order))
+
+    return sqrt((factorial(degree - order) * 2 * (2 * degree + 1)) / factorial(degree + order))
 
 
-def getNonSphericalHarmonics(ecef_pos, cb_radius, degree, order):
+def getNonSphericalHarmonics(
+    ecef_pos: ndarray,
+    cb_radius: float,
+    degree: int,
+    order: int,
+) -> Tuple[ndarray, ndarray]:
     r"""Compute the harmonic terms for a given position & gravity field.
 
     In general, the gravity model order must be less than or equal to the gravity model degree.
@@ -119,14 +134,26 @@ def getNonSphericalHarmonics(ecef_pos, cb_radius, degree, order):
                 w[m, m] = (2 * m - 1) * (x_bar * w[m - 1, m - 1] + y_bar * v[m - 1, m - 1])
             # Off-diagonal terms (m < n)
             else:
-                v[n, m] = ((2 * n - 1) * z_bar * v[n - 1, m] - (n + m - 1) * rho_sq * v[n - 2, m]) / (n - m)
+                v[n, m] = (
+                    (2 * n - 1) * z_bar * v[n - 1, m] - (n + m - 1) * rho_sq * v[n - 2, m]
+                ) / (n - m)
                 if m != 0:
-                    w[n, m] = ((2 * n - 1) * z_bar * w[n - 1, m] - (n + m - 1) * rho_sq * w[n - 2, m]) / (n - m)
+                    w[n, m] = (
+                        (2 * n - 1) * z_bar * w[n - 1, m] - (n + m - 1) * rho_sq * w[n - 2, m]
+                    ) / (n - m)
 
     return v, w
 
 
-def nonSphericalAcceleration(ecef_pos, cb_mu, cb_radius, c, s, max_degree, max_order):
+def nonSphericalAcceleration(
+    ecef_pos: ndarray,
+    cb_mu: float,
+    cb_radius: float,
+    c: ndarray,
+    s: ndarray,
+    max_degree: int,
+    max_order: int,
+) -> ndarray:
     r"""Compute the non-spherical geopotential acceleration.
 
     In general, the gravity model order must be less than or equal to the gravity model degree.
@@ -149,7 +176,7 @@ def nonSphericalAcceleration(ecef_pos, cb_mu, cb_radius, c, s, max_degree, max_o
     # pylint: disable=invalid-name
     # We require one degree & order higher harmonic terms due to the partial acceleration equations
     v, w = getNonSphericalHarmonics(ecef_pos, cb_radius, max_degree + 1, max_order + 1)
-    acceleration = zeros((3, ), dtype=float64)
+    acceleration = zeros((3,), dtype=float64)
     # [NOTE]: Reverse the iteration to accumulate from smaller terms first.
     for n in range(2, max_degree + 1):
         for m in range(max_order + 1):
@@ -167,15 +194,17 @@ def nonSphericalAcceleration(ecef_pos, cb_mu, cb_radius, c, s, max_degree, max_o
             elif n >= m:
                 fact_term = (n - m + 1) * (n - m + 2)
                 x_acc = 0.5 * (
-                    -c[n, m] * v[n + 1, m + 1] - s[n, m] * w[n + 1, m + 1]
+                    -c[n, m] * v[n + 1, m + 1]
+                    - s[n, m] * w[n + 1, m + 1]
                     + fact_term * (c[n, m] * v[n + 1, m - 1] + s[n, m] * w[n + 1, m - 1])
                 )
                 y_acc = 0.5 * (
-                    -c[n, m] * w[n + 1, m + 1] + s[n, m] * v[n + 1, m + 1]
+                    -c[n, m] * w[n + 1, m + 1]
+                    + s[n, m] * v[n + 1, m + 1]
                     + fact_term * (-c[n, m] * w[n + 1, m - 1] + s[n, m] * v[n + 1, m - 1])
                 )
 
             # Scale terms and increment non-spherical acceleration
             acceleration += array((x_acc, y_acc, z_acc), dtype=float64)
 
-    return acceleration * cb_mu / (cb_radius ** 2)
+    return acceleration * cb_mu / (cb_radius**2)

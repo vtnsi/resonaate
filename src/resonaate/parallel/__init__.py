@@ -16,22 +16,24 @@ import logging
 import os
 import sys
 from uuid import uuid4
+
 # Third Party Imports
 from redis import Redis
 from redis import exceptions as redis_exceptions
-# RESONAATE Imports
+
+# Local Imports
 from ..common.behavioral_config import BehavioralConfig
 
-JOB_QUEUE_LIST = 'job_queue_list'
+JOB_QUEUE_LIST = "job_queue_list"
 """``str``: Key to use when accessing list of registered job queues."""
 
-JOB_QUEUE_NAME_PREFIX = 'job_queue_'
+JOB_QUEUE_NAME_PREFIX = "job_queue_"
 """``str``: Key to use when accessing ``redis`` job queue."""
 
-PROCESSED_QUEUE_NAME_PREFIX = 'processed_job_queue_'
+PROCESSED_QUEUE_NAME_PREFIX = "processed_job_queue_"
 """``str``: Key to use when accessing redis processed job queue."""
 
-MASTER_KEY_NAME = 'master'
+MASTER_KEY_NAME = "master"
 """``str``: Key to use for indication of whether the current instance is master."""
 
 MASTER_HASH = None
@@ -104,7 +106,7 @@ class RedisConfig:
 REDIS_SINGLETON = None
 
 
-def getRedisConnection(host=None, port=None, password=None):
+def getRedisConnection(hostname=None, port=None, password=None):
     """Factory method that returns a connection to the ``redis`` server.
 
     Args:
@@ -113,13 +115,11 @@ def getRedisConnection(host=None, port=None, password=None):
         password (``str``, optional): Password used to authenticate on ``redis`` server.
     """
     global REDIS_SINGLETON  # pylint: disable=global-statement
-    config = RedisConfig.getConfig(hostname=host, port=port, password=password)
+    config = RedisConfig.getConfig(hostname=hostname, port=port, password=password)
 
     if REDIS_SINGLETON is None:
         REDIS_SINGLETON = Redis(
-            host=config.redis_hostname,
-            port=config.redis_port,
-            password=config.redis_password
+            host=config.redis_hostname, port=config.redis_port, password=config.redis_password
         )
 
     return REDIS_SINGLETON
@@ -170,13 +170,13 @@ def isMaster(redis_connection=None):
     except redis_exceptions.ConnectionError as err:
         setUpLogger()
         REDIS_QUEUE_LOGGER.error("Redis server was not started, or pointing to a different port.")
-        sys.exit(err)
+        raise err
 
     if wasnt_set:
         return True
-    else:
-        redis_master = red.get(MASTER_KEY_NAME).decode('utf-8')
-        return redis_master == MASTER_HASH
+
+    redis_master = red.get(MASTER_KEY_NAME).decode("utf-8")
+    return redis_master == MASTER_HASH
 
 
 def masterExists(redis_connection=None):
@@ -232,7 +232,11 @@ def getMasterHash():
 REDIS_QUEUE_LOGGER = logging.getLogger(__name__)
 
 
-def setUpLogger(destination=BehavioralConfig.getConfig().logging.OutputLocation):
+DEFAULT_REDIS_LOGGER_LOCATION = BehavioralConfig.getConfig().logging.OutputLocation
+"""``str``: default location of where to log Redis information."""
+
+
+def setUpLogger(destination=DEFAULT_REDIS_LOGGER_LOCATION):
     """Set up the default loggin instance.
 
     Note:
@@ -262,7 +266,7 @@ def setUpLogger(destination=BehavioralConfig.getConfig().logging.OutputLocation)
 
         handler.setFormatter(
             logging.Formatter(
-                '%(asctime)s - %(module)s - %(funcName)s() - %(levelname)s - %(message)s'
+                "%(asctime)s - %(module)s - %(funcName)s() - %(levelname)s - %(message)s"
             )
         )
         REDIS_QUEUE_LOGGER.addHandler(handler)

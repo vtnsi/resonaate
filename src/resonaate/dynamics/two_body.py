@@ -1,11 +1,11 @@
 """Defines the :class:`.TwoBody` class defining Keplerian motion."""
-# Standard Library Imports
 # Third Party Imports
 from numpy import empty_like
 from scipy.linalg import norm
-# RESONAATE Imports
-from .celestial import Celestial, checkEarthCollision
+
+# Local Imports
 from ..physics.bodies import Earth
+from .celestial import Celestial, checkEarthCollision
 
 
 class TwoBody(Celestial):
@@ -40,14 +40,14 @@ class TwoBody(Celestial):
             # pylint: disable=unsupported-assignment-operation
 
             # Parse position vector
-            r_vector = state[jj:jj + half:step]
+            r_vector = state[jj : jj + half : step]
             r_norm = norm(r_vector)
 
             # Check if an RSO crashed into the Earth
             checkEarthCollision(r_norm)
 
             # Save state derivative for this state vector
-            derivative[jj:jj + half:step] = state[jj + half::step]
-            derivative[jj + half::step] = -1. * Earth.mu / (r_norm**3.0) * r_vector
+            derivative[jj : jj + half : step] = state[jj + half :: step]
+            derivative[jj + half :: step] = -1.0 * Earth.mu / (r_norm**3.0) * r_vector
 
         return derivative

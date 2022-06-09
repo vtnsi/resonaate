@@ -1,10 +1,8 @@
 """:class:`.Job` handler class that manage task prediction logic."""
-# Standard Library Imports
-# Third Party Imports
-# RESONAATE Imports
-from .job_handler import JobHandler
+# Local Imports
 from ..async_functions import asyncCalculateReward
 from ..job import CallbackRegistration, Job
+from .job_handler import JobHandler
 
 
 class TaskPredictionRegistration(CallbackRegistration):
@@ -24,11 +22,7 @@ class TaskPredictionRegistration(CallbackRegistration):
         """
         return Job(
             asyncCalculateReward,
-            args=[
-                kwargs["estimate_id"],
-                self.registrant.reward,
-                self.registrant.sensor_list
-            ]
+            args=[kwargs["estimate_id"], self.registrant.reward, self.registrant.sensor_list],
         )
 
     def jobCompleteCallback(self, job):

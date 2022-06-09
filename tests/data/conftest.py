@@ -1,15 +1,15 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
+
 # RESONAATE Library Imports
 try:
+    # RESONAATE Imports
     from resonaate.data.agent import Agent
     from resonaate.data.epoch import Epoch
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Testing Imports
 
 

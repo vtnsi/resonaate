@@ -1,17 +1,43 @@
 """Defines reference frame & coordinate system conversion functions."""
+from __future__ import annotations
+
 # Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import (
-    concatenate, diagflat, dot, sqrt, sin, cos, sign, arccos,
-    arctan, matmul, asarray, finfo, float64, tan, cross,
-    arcsin, arctan2,
+    arccos,
+    arcsin,
+    arctan,
+    arctan2,
+    asarray,
+    concatenate,
+    cos,
+    cross,
+    diagflat,
+    dot,
+    finfo,
+    float64,
+    matmul,
+    sign,
+    sin,
+    sqrt,
+    tan,
 )
 from scipy.linalg import norm
-# RESONAATE Imports
+
+# Local Imports
 from .. import constants as const
-from ..math import rot2, rot3, wrapAngle2Pi, wrapAngleNegPiPi
 from ..bodies import Earth
+from ..math import rot2, rot3, wrapAngle2Pi
 from .reductions import getReductionParameters
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from ...sensors.sensor_base import ObservationTuple
 
 
 def eci2ecef(x_eci):
@@ -33,10 +59,7 @@ def eci2ecef(x_eci):
     r_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[:3]))
     om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
     v_correction = cross(om_earth, matmul(reduction["rot_w"], r_ecef))
-    v_ecef = matmul(
-        reduction["rot_wt"],
-        matmul(reduction["rot_rnp"], x_eci[3:]) - v_correction
-    )
+    v_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[3:]) - v_correction)
 
     return concatenate((r_ecef, v_ecef), axis=0)
 
@@ -60,10 +83,7 @@ def ecef2eci(x_ecef):
     r_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[:3]))
     om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
     v_correction = cross(om_earth, matmul(reduction["rot_w"], x_ecef[:3]))
-    v_eci = matmul(
-        reduction["rot_pnr"],
-        matmul(reduction["rot_w"], x_ecef[3:]) + v_correction
-    )
+    v_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[3:]) + v_correction)
 
     return concatenate((r_eci, v_eci), axis=0)
 
@@ -89,8 +109,9 @@ def sez2ecef(x_sez, lat, lon):
     return concatenate(
         (
             matmul(sez_2_ecef_rotation, x_sez[:3]),  # Convert position
-            matmul(sez_2_ecef_rotation, x_sez[3:])  # Convert velocity
-        ), axis=0
+            matmul(sez_2_ecef_rotation, x_sez[3:]),  # Convert velocity
+        ),
+        axis=0,
     )
 
 
@@ -115,8 +136,9 @@ def ecef2sez(x_ecef, lat, lon):
     return concatenate(
         (
             matmul(ecef_2_sez_rotation, x_ecef[:3]),  # Convert position
-            matmul(ecef_2_sez_rotation, x_ecef[3:])  # Convert velocity
-        ), axis=0
+            matmul(ecef_2_sez_rotation, x_ecef[3:]),  # Convert velocity
+        ),
+        axis=0,
     )
 
 
@@ -178,7 +200,7 @@ def lla2ecef(x_lla):
     lat, lon, alt = x_lla[0], x_lla[1], x_lla[2]
 
     # Geodesy Calculation: Radius of Curvature in Prime Vertical and Auxiliary Variables
-    radius_pv = Earth.radius / sqrt(1 - Earth.eccentricity**2 * sin(lat)**2)
+    radius_pv = Earth.radius / sqrt(1 - Earth.eccentricity**2 * sin(lat) ** 2)
     radius_aux = (1 - Earth.eccentricity**2) * radius_pv
 
     # Horizontal component along semi-major axis & vertical component parallel to semi-minor axis
@@ -215,10 +237,9 @@ def ecef2lla(x_ecef):
         r_delta = finfo(float64).eps
 
     # Calculate the mean polar radius of Earth
-    if r_k == 0:
-        b = a * sqrt(1 - Earth.eccentricity**2)
-    else:
-        b = a * sqrt(1 - Earth.eccentricity**2) * sign(r_k)
+    b = a * sqrt(1 - Earth.eccentricity**2)
+    if r_k != 0:
+        b *= sign(r_k)
 
     # Intermediate parameters
     E = (b * r_k - (a**2 - b**2)) / (a * r_delta)
@@ -227,7 +248,7 @@ def ecef2lla(x_ecef):
     Q = 2.0 * (E**2 - F**2)
     D = P**3 + Q**2
     if D >= 0:
-        nu = (sqrt(D) - Q)**(1.0 / 3) - (sqrt(D) + Q)**(1.0 / 3)
+        nu = (sqrt(D) - Q) ** (1.0 / 3) - (sqrt(D) + Q) ** (1.0 / 3)
     else:
         nu = 2.0 * sqrt(-P) * cos(arccos(Q / (P * sqrt(-P))) / 3.0)
     G = 0.5 * (sqrt(E**2 + nu) + E)
@@ -235,10 +256,10 @@ def ecef2lla(x_ecef):
 
     # Compute geodetic latitude, longitude, and altitude (height above ellipse)
     lat = arctan(a * (1.0 - t**2) / (2.0 * b * t))
-    lon = arccos(r_i / r_delta) * sign(r_j)  # Sign(r_j) allows for [-pi, pi] range of arccos
+    lon = arctan2(r_j, r_i)
     alt = (r_delta - a * t) * cos(lat) + (r_k - b) * sin(lat)
 
-    return asarray([lat, wrapAngleNegPiPi(lon), alt])
+    return asarray([lat, lon, alt])
 
 
 def rsw2eci(x_eci, x_rsw):
@@ -271,8 +292,9 @@ def rsw2eci(x_eci, x_rsw):
     return concatenate(
         (
             matmul(rsw_2_eci_rotation, x_rsw[:3]),  # Convert position
-            matmul(rsw_2_eci_rotation, x_rsw[3:])  # Convert velocity
-        ), axis=0
+            matmul(rsw_2_eci_rotation, x_rsw[3:]),  # Convert velocity
+        ),
+        axis=0,
     )
 
 
@@ -306,9 +328,31 @@ def ntw2eci(x_eci, x_ntw):
     return concatenate(
         (
             matmul(ntw_2_eci_rotation, x_ntw[:3]),  # Convert position
-            matmul(ntw_2_eci_rotation, x_ntw[3:])  # Convert velocity
-        ), axis=0
+            matmul(ntw_2_eci_rotation, x_ntw[3:]),  # Convert velocity
+        ),
+        axis=0,
     )
+
+
+def radarObs2eciPosition(obs_tuple: ObservationTuple) -> ndarray:
+    """Convert Radar observation from RAZEL to ECI position vector.
+
+    Args:
+        obs_tuple (:class:`.ObservationTuple`): `ObservationTuple` associated with observation
+
+    Returns:
+        ``ndarray``: 3x1 ECI Position State based on radar observation
+    """
+    range_ = obs_tuple.observation.range_km
+    azimuth = obs_tuple.observation.azimuth_rad
+    elevation = obs_tuple.observation.elevation_rad
+    x_j2000_relative = sez2eci(
+        x_sez=razel2sez(range_, elevation, azimuth, 0, 0, 0),
+        lat=obs_tuple.observation.position_lat_rad,
+        lon=obs_tuple.observation.position_long_rad,
+    )
+    # [NOTE]: Only valid for positions
+    return x_j2000_relative[:3] + obs_tuple.agent.eci_state[:3]
 
 
 def spherical2cartesian(rho, theta, phi, rho_dot, theta_dot, phi_dot):
@@ -388,7 +432,7 @@ def cartesian2spherical(state):
     if temp1 != 0:
         phi = arctan2(r_j / temp1, r_i / temp1)
         theta_dot = (v_k - rng_dot * temp3) / temp1
-        phi_dot = (v_i * r_j - v_j * r_i) / (-r_j**2 - r_i**2)
+        phi_dot = (v_i * r_j - v_j * r_i) / (-(r_j**2) - r_i**2)
     else:
         phi = arctan2(v_j / temp2, v_i / temp2)
         theta_dot = 0  # In-determinant without accelerations
@@ -415,9 +459,9 @@ def razel2sez(rng, el, az, rng_rate, el_rate, az_rate):
         ``np.ndarray``: 6x1 topocentric horizon slant range vector, SEZ (km; km/sec).
     """
     # pylint: disable=invalid-name
-    return spherical2cartesian(
-        rng, el, az, rng_rate, el_rate, az_rate
-    ).dot(diagflat([-1, 1, 1, -1, 1, 1]))
+    return spherical2cartesian(rng, el, az, rng_rate, el_rate, az_rate).dot(
+        diagflat([-1, 1, 1, -1, 1, 1])
+    )
 
 
 def razel2radec(rng, el, az, rng_rate, el_rate, az_rate, observer_eci):
@@ -447,9 +491,7 @@ def razel2radec(rng, el, az, rng_rate, el_rate, az_rate, observer_eci):
     observer_ecef = eci2ecef(observer_eci)
     observer_lla = ecef2lla(observer_ecef)
     tgt_ecef = observer_ecef + sez2ecef(
-        razel2sez(rng, el, az, rng_rate, el_rate, az_rate),
-        observer_lla[0],
-        observer_lla[1]
+        razel2sez(rng, el, az, rng_rate, el_rate, az_rate), observer_lla[0], observer_lla[1]
     )
     return cartesian2spherical(ecef2eci(tgt_ecef) - observer_eci)
 
@@ -478,9 +520,7 @@ def radec2razel(rng, dec, ra, rng_rt, dec_rt, ra_rt, observer_eci):
         az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
     """
     # pylint: disable=invalid-name
-    target_eci = spherical2cartesian(
-        rng, dec, ra, rng_rt, dec_rt, ra_rt
-    ) + observer_eci
+    target_eci = spherical2cartesian(rng, dec, ra, rng_rt, dec_rt, ra_rt) + observer_eci
     return eci2razel(target_eci, observer_eci)
 
 
@@ -532,10 +572,10 @@ def geocentric2geodetic(geocentric_latitude):
         :cite:t:`vallado_2013_astro`, Section 3.2.2, Eqn 3-11
 
     Args:
-        geocentric_latitude (``float``): latitude using geocentric defintion [-pi/2, pi/2] (radians).
+        geocentric_latitude (``float``): latitude using geocentric definition [-pi/2, pi/2] (radians).
 
     Returns:
-        ``float``: latitude using geodetic defintion [-pi/2, pi/2] (radians).
+        ``float``: latitude using geodetic definition [-pi/2, pi/2] (radians).
     """
     return arctan(tan(geocentric_latitude) / (1.0 - Earth.eccentricity**2))
 
@@ -547,10 +587,10 @@ def geodetic2geocentric(geodetic_latitude):
         :cite:t:`vallado_2013_astro`, Section 3.2.2, Eqn 3-11
 
     Args:
-        geodetic_latitude (``float``): latitude using geodetic defintion [-pi/2, pi/2] (radians).
+        geodetic_latitude (``float``): latitude using geodetic definition [-pi/2, pi/2] (radians).
 
     Returns:
-        ``float``: latitude using geocentric defintion [-pi/2, pi/2] (radians).
+        ``float``: latitude using geocentric definition [-pi/2, pi/2] (radians).
     """
     return arctan((1.0 - Earth.eccentricity**2) * tan(geodetic_latitude))
 

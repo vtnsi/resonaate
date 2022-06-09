@@ -1,23 +1,29 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
-import os
 # Third Party Imports
 import pytest
-from numpy import array, ndarray, allclose
+from numpy import allclose, array, ndarray
+
 # RESONAATE Imports
+from resonaate.physics.bodies.third_body import Venus
+
 try:
-    from resonaate.physics.bodies import Moon, Sun
+    # RESONAATE Imports
+    from resonaate.physics.bodies import Jupiter, Moon, Saturn, Sun
     from resonaate.physics.bodies.third_body import (
-        readKernelSegmentFile, readKernelSegments, ThirdBodyTuple, loadKernelData, TBK, getSegmentPosition
+        TBK,
+        ThirdBodyTuple,
+        getSegmentPosition,
+        loadKernelData,
+        readKernelSegmentFile,
+        readKernelSegments,
     )
     from resonaate.physics.time.stardate import JulianDate
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
-from .conftest import PHYSICS_DATA_DIR
 
 
 class TestThirdBody(BaseTestCase):
@@ -58,9 +64,45 @@ class TestThirdBody(BaseTestCase):
         array([-112812.30993091817, -335328.80197536974, -163309.90792258029]),
     )
 
+    JPL_EPHEM_JUPITER = (
+        array([-155715610.5536356, -771593805.7306125, -324428864.4725702]),
+        array([539297868.5558921, -665489073.6328514, -297273671.7757187]),
+        array([624128539.8741837, -592997575.71752, -266604867.19497398]),
+        array([668006315.0242654, -511061356.7869685, -231734985.3395112]),
+        array([676964535.9973992, -413765730.71923727, -190288252.67939237]),
+        array([806002626.1406696, -33412690.309808254, -31384344.70350618]),
+        array([739517604.8260012, 21790852.268733684, -7776186.843133321]),
+        array([615188522.563155, 27942634.375971355, -5634155.066650251]),
+    )
+
+    JPL_EPHEM_SATURN = (
+        array([445396551.3256828, -1432794618.013808, -607517595.3682841]),
+        array([901614201.6406103, -1252345965.7070923, -555567076.2057778]),
+        array([979781207.6109266, -1188308041.3472142, -528947069.0378752]),
+        array([1018474985.2245942, -1114498293.505165, -497952393.4926775]),
+        array([1022282198.9192564, -1027382208.8899746, -461344661.3236429]),
+        array([-1338736304.3277442, 23968326.74098009, 73458680.87779231]),
+        array([-1411693618.7646015, 22644453.396800224, 73360820.51010266]),
+        array([-1542556939.865906, -83939701.05154786, 28038186.979149718]),
+    )
+
+    JPL_EPHEM_VENUS = (
+        array([25248376.503555316, -131046502.4236743, -51710581.63809083]),
+        array([48866906.98203094, -217050363.9265716, -94420541.75883316]),
+        array([194790102.5546299, -145288277.92984402, -68507522.52351148]),
+        array([256053997.05789733, -19569878.97916062, -15478251.584634146]),
+        array([212762052.9621936, 132837318.34650537, 53627045.34750387]),
+        array([7054919.128941293, 185486556.69872993, 86261718.69691297]),
+        array([-98803182.93923302, 129945435.41415145, 62973077.689478755]),
+        array([-102597689.75835262, -17234608.62430422, -10422288.934953073]),
+    )
+
     # Combined Julian dates and ephemeris to check against
     SUN_POSITIONS = list(zip(JULIAN_DATES, JPL_EPHEM_SUN))
     MOON_POSITIONS = list(zip(JULIAN_DATES, JPL_EPHEM_MOON))
+    JUPITER_POSITIONS = list(zip(JULIAN_DATES, JPL_EPHEM_JUPITER))
+    SATURN_POSITIONS = list(zip(JULIAN_DATES, JPL_EPHEM_SATURN))
+    VENUS_POSITIONS = list(zip(JULIAN_DATES, JPL_EPHEM_VENUS))
 
     KERNEL_FILES = [
         # (filename, is_valid)
@@ -105,7 +147,7 @@ class TestThirdBody(BaseTestCase):
         TBK.VENUS_BC_2_VENUS_CENTER,
     ]
 
-    @pytest.mark.parametrize("julian_date, true_position", SUN_POSITIONS)
+    @pytest.mark.parametrize(("julian_date", "true_position"), SUN_POSITIONS)
     def testSunSingleJD(self, julian_date, true_position):
         """Test accuracy of single Julian date inputs for Sun position."""
         jd = JulianDate(julian_date)
@@ -113,7 +155,7 @@ class TestThirdBody(BaseTestCase):
 
         # Test assertions
         assert isinstance(sun_position, ndarray)
-        assert sun_position.shape == (3, )
+        assert sun_position.shape == (3,)
         assert allclose(true_position, sun_position, rtol=1e-8, atol=1e-12)
 
     def testSunMultipleJD(self):
@@ -125,7 +167,7 @@ class TestThirdBody(BaseTestCase):
         assert sun_positions.shape == (len(self.JULIAN_DATES), 3)
         assert allclose(sun_positions, self.JPL_EPHEM_SUN, rtol=1e-8, atol=1e-12)
 
-    @pytest.mark.parametrize("julian_date, true_position", MOON_POSITIONS)
+    @pytest.mark.parametrize(("julian_date", "true_position"), MOON_POSITIONS)
     def testMoonSingleJD(self, julian_date, true_position):
         """Test accuracy of single Julian date inputs for Moon position."""
         jd = JulianDate(julian_date)
@@ -133,7 +175,7 @@ class TestThirdBody(BaseTestCase):
 
         # Test assertions
         assert isinstance(moon_position, ndarray)
-        assert moon_position.shape == (3, )
+        assert moon_position.shape == (3,)
         assert allclose(true_position, moon_position, rtol=1e-8, atol=1e-12)
 
     def testMoonMultipleJD(self):
@@ -145,42 +187,93 @@ class TestThirdBody(BaseTestCase):
         assert moon_positions.shape == (len(self.JULIAN_DATES), 3)
         assert allclose(moon_positions, self.JPL_EPHEM_MOON, rtol=1e-8, atol=1e-12)
 
-    @pytest.mark.parametrize("filename, is_valid", KERNEL_FILES)
-    @pytest.mark.datafiles(PHYSICS_DATA_DIR)
-    def testReadKernelSegmentFile(self, datafiles, filename, is_valid):
+    @pytest.mark.parametrize(("julian_date", "true_position"), JUPITER_POSITIONS)
+    def testJupiterSingleJD(self, julian_date, true_position):
+        """Test accuracy of single Julian date inputs for Jupiter position."""
+        jd = JulianDate(julian_date)
+        jupiter_position = Jupiter.getPosition(jd)
+
+        # Test assertions
+        assert isinstance(jupiter_position, ndarray)
+        assert jupiter_position.shape == (3,)
+        assert allclose(true_position, jupiter_position, rtol=1e-8, atol=1e-12)
+
+    def testJupiterMultipleJD(self):
+        """Test accuracy of multiple Julian dates inputs for Jupiter position."""
+        jupiter_positions = Jupiter.getPosition(self.JULIAN_DATES)
+
+        # Test assertions
+        assert isinstance(jupiter_positions, ndarray)
+        assert jupiter_positions.shape == (len(self.JULIAN_DATES), 3)
+        assert allclose(jupiter_positions, self.JPL_EPHEM_JUPITER, rtol=1e-8, atol=1e-12)
+
+    @pytest.mark.parametrize(("julian_date", "true_position"), SATURN_POSITIONS)
+    def testSaturnSingleJD(self, julian_date, true_position):
+        """Test accuracy of single Julian date inputs for Saturn position."""
+        jd = JulianDate(julian_date)
+        saturn_position = Saturn.getPosition(jd)
+
+        # Test assertions
+        assert isinstance(saturn_position, ndarray)
+        assert saturn_position.shape == (3,)
+        assert allclose(true_position, saturn_position, rtol=1e-8, atol=1e-12)
+
+    def testSaturnMultipleJD(self):
+        """Test accuracy of multiple Julian dates inputs for Saturn position."""
+        saturn_positions = Saturn.getPosition(self.JULIAN_DATES)
+
+        # Test assertions
+        assert isinstance(saturn_positions, ndarray)
+        assert saturn_positions.shape == (len(self.JULIAN_DATES), 3)
+        assert allclose(saturn_positions, self.JPL_EPHEM_SATURN, rtol=1e-8, atol=1e-12)
+
+    @pytest.mark.parametrize(("julian_date", "true_position"), VENUS_POSITIONS)
+    def testVenusSingleJD(self, julian_date, true_position):
+        """Test accuracy of single Julian date inputs for Venus position."""
+        jd = JulianDate(julian_date)
+        venus_position = Venus.getPosition(jd)
+
+        # Test assertions
+        assert isinstance(venus_position, ndarray)
+        assert venus_position.shape == (3,)
+        assert allclose(true_position, venus_position, rtol=1e-8, atol=1e-12)
+
+    def testVenusMultipleJD(self):
+        """Test accuracy of multiple Julian dates inputs for Saturn position."""
+        venus_positions = Venus.getPosition(self.JULIAN_DATES)
+
+        # Test assertions
+        assert isinstance(venus_positions, ndarray)
+        assert venus_positions.shape == (len(self.JULIAN_DATES), 3)
+        assert allclose(venus_positions, self.JPL_EPHEM_VENUS, rtol=1e-8, atol=1e-12)
+
+    @pytest.mark.parametrize(("filename", "is_valid"), KERNEL_FILES)
+    def testReadKernelSegmentFile(self, filename, is_valid):
         """Test reading single kernel segment files directly."""
-        kernel_file = os.path.join(
-            datafiles,
-            self.KERNELS[0][0],
-            filename
-        )
+        kernel_module = f"resonaate.physics.data.{self.KERNELS[0][0]}"
         if is_valid:
-            tb_tuple = readKernelSegmentFile(kernel_file)
+            tb_tuple = readKernelSegmentFile(kernel_module, filename)
             assert isinstance(tb_tuple, ThirdBodyTuple)
 
         else:
             with pytest.raises(FileNotFoundError):
-                readKernelSegmentFile(kernel_file)
+                readKernelSegmentFile(kernel_module, filename)
 
-    @pytest.mark.parametrize("directory, is_valid", KERNELS)
-    @pytest.mark.datafiles(PHYSICS_DATA_DIR)
-    def testReadKernelSegments(self, datafiles, directory, is_valid):
+    @pytest.mark.parametrize(("directory", "is_valid"), KERNELS)
+    def testReadKernelSegments(self, directory, is_valid):
         """Test reading kernel directories."""
-        kernel_dir = os.path.join(
-            datafiles,
-            directory
-        )
+        kernel_module = f"resonaate.physics.data.{directory}"
         if is_valid:
-            tb_tuples = readKernelSegments(kernel_dir)
+            tb_tuples = readKernelSegments(kernel_module)
             assert isinstance(tb_tuples, list)
             for tb_tuple in tb_tuples:
                 assert isinstance(tb_tuple, ThirdBodyTuple)
 
         else:
-            with pytest.raises(FileNotFoundError):
-                readKernelSegments(kernel_dir)
+            with pytest.raises(ModuleNotFoundError):
+                readKernelSegments(kernel_module)
 
-    @pytest.mark.parametrize("kernel, is_valid", KERNELS)
+    @pytest.mark.parametrize(("kernel", "is_valid"), KERNELS)
     def testLoadingKernel(self, kernel, is_valid):
         """Test loading kernels in the resonaate library."""
         if is_valid:
@@ -194,7 +287,7 @@ class TestThirdBody(BaseTestCase):
                 assert isinstance(tb_tuple[2], ndarray)
 
         else:
-            with pytest.raises(FileNotFoundError):
+            with pytest.raises(ModuleNotFoundError):
                 loadKernelData(kernel)
 
     @pytest.mark.parametrize("segment", SEGMENTS)

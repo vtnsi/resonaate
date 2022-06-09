@@ -1,7 +1,5 @@
 """Defines the :class:`.AdvRadar` sensor class."""
-# Standard Library Imports
-# Third Party Imports
-# RESONAATE Imports
+# Local Imports
 from .radar import Radar
 
 

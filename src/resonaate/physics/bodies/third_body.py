@@ -70,37 +70,50 @@ See Also:
 .. _mapparms:
     https://numpy.org/devdocs/reference/generated/numpy.polynomial.polyutils.mapparms.html#numpy.polynomial.polyutils.mapparms
 """
+from __future__ import annotations
+
 # Standard Library Imports
-import os.path
-from collections import namedtuple
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import List, Tuple, Union, Iterable
-from pkg_resources import resource_filename, resource_isdir, resource_exists
+from importlib import resources
+from pathlib import Path
+from typing import TYPE_CHECKING, Iterable, NamedTuple, Union
+
 # Third Party Imports
-from numpy import ndarray, load, array
+from numpy import array, load
 from numpy.polynomial.chebyshev import chebval
-# RESONAATE Imports
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Dict, List, Tuple
+
+    # Third Party Imports
+    from numpy import ndarray
 
 
-THIRD_BODY_KERNEL = 'de432s'
+THIRD_BODY_KERNEL = "de432s"
 """``str``: define the kernel to use for third body perturbations."""
 
 
-THIRD_BODY_REDIS_KEY = "third_body"
-"""``str``: Redis key used to store third body positions."""
+class ThirdBodyTuple(NamedTuple):
+    """Named tuple for holding metadata and coefficients related to third body ephemeris interpolation.
 
+    Attributes:
+        center (``int``): integer describing the center body of the kernel segment.
+        target (``int``): integer describing the target body of the kernel segment.
+        init_epoch (``float``): Julian date of the initial epoch that is valid for this segment.
+        interval (``float``): number of Julian days that each sub-segment is valid for.
+        coefficients (``ndarray``): Chebyshev coefficients for each sub-segment.
+    """
 
-ThirdBodyTuple = namedtuple('ThirdBodyTuple', ['center', 'target', 'init_epoch', 'interval', 'coefficients'])
-"""Named tuple for holding metadata and coefficients related to third body ephemeris interpolation.
-
-Attributes:
-    center (``int``): integer describing the center body of the kernel segment.
-    target (``int``): integer describing the target body of the kernel segment.
-    init_epoch (``float``): Julian date of the initial epoch that is valid for this segment.
-    interval (``float``): number of Julian days that each sub-segment is valid for.
-    coefficients (``ndarray``): Chebyshev coefficients for each sub-segment.
-"""
+    center: int
+    target: int
+    init_epoch: float
+    interval: float
+    coefficients: ndarray
 
 
 class TBK(Enum):
@@ -131,8 +144,8 @@ class TBK(Enum):
         return int(self.value) < int(other.value)
 
 
-KERNEL_MAP = {
-    'de432s': {
+KERNEL_MAP: Dict[str, Dict[Tuple[int, int], TBK]] = {
+    "de432s": {
         (0, 1): TBK.SS_BC_2_MERCURY_BC,
         (0, 2): TBK.SS_BC_2_VENUS_BC,
         (0, 3): TBK.SS_BC_2_EARTH_BC,
@@ -152,88 +165,85 @@ KERNEL_MAP = {
 """``dict``: map describing how the (center, target) pairs of a kernel map to common tuple index."""
 
 
-def readKernelSegmentFile(filename: str) -> ThirdBodyTuple:
+def readKernelSegmentFile(kernel_module: str, filename: Union[str, Path]) -> ThirdBodyTuple:
     """Read kernel segment from a numpy array file.
 
     Args:
-        filename (``str``): file in which kernel segment data is located.
+        kernel_module (``str``): module in which the kernel segment files are located.
+        filename (``str`` | ``Path``): file in which kernel segment data is located.
 
     Returns:
         :class:`.ThirdBodyTuple`: kernel segment metadata and data.
     """
-    if not os.path.exists(os.path.abspath(filename)):
-        raise FileNotFoundError(filename)
-
     # Parse metadata from filename
-    basename = os.path.splitext(os.path.basename(filename))[0]
-    metadata = basename.split('-')
+    filepath = Path(filename)
+    metadata = filepath.stem.split("-")
     center, target = int(metadata[0]), int(metadata[1])
     init_jd, interval = float(metadata[2]), float(metadata[3])
 
     # Get coefficient array
-    with open(filename, 'rb') as segment_file:
-        coefficients = load(segment_file)
+    with resources.path(kernel_module, filename) as kernel_file:
+        with open(kernel_file, "rb") as segment_file:
+            coefficients = load(segment_file)
 
     return ThirdBodyTuple(center, target, init_jd, interval, coefficients)
 
 
-def readKernelSegments(directory: str) -> List[ThirdBodyTuple]:
+def readKernelSegments(kernel_module: str) -> List[ThirdBodyTuple]:
     """Read kernel segments from a given directory.
 
     Args:
-        directory (``str``): directory in which the kernel segment files are located.
-
-    Raises:
-        FileNotFoundError: raised if the directory doesn't exist.
+        kernel_module (``str``): module in which the kernel segment files are located.
 
     Returns:
         ``list``: :class:`.ThirdBodyTuple` objects describing each kernel segment.
     """
     kernel_segments = []
-    if not os.path.isdir(os.path.abspath(directory)):
-        raise FileNotFoundError(directory)
-    for (dirpath, _, filenames) in os.walk(directory):
-        for filename in filenames:
-            kernel_segments.append(readKernelSegmentFile(os.path.join(dirpath, filename)))
+    for filename in resources.contents(kernel_module):
+        filepath = Path(filename)
+        # Only parse .npy files
+        ext = filepath.suffix
+        if ext.lower() != ".npy":
+            continue
+        kernel_segments.append(readKernelSegmentFile(kernel_module, filepath))
 
     return kernel_segments
 
 
 @lru_cache(maxsize=5)
-def loadKernelData(kernel_name: str) -> Tuple[ndarray]:
+def loadKernelData(kernel_name: str) -> Tuple[Tuple[float, float, ndarray], ...]:
     """Load JPL Horizons kernel data from files into global tuple.
 
     Args:
         kernel_name (``str``): name of JPL ephemeris kernel to load data from.
 
-    Raises:
-        FileNotFoundError: raised if kernel directory not found.
-
     Returns:
         ``tuple``: initial epoch, interval, and coefficient information for each kernel segment.
     """
-    directory = f'physics/data/{kernel_name}'
-    if resource_exists('resonaate', directory) and resource_isdir('resonaate', directory):
-        directory = resource_filename('resonaate', directory)
-        kernel_segments = readKernelSegments(directory)
-    else:
-        raise FileNotFoundError(directory)
+    kernel_module = f"resonaate.physics.data.{kernel_name}"
+    kernel_segments = readKernelSegments(kernel_module)
 
     # Sort segments according to TBK enum
-    segment_map = KERNEL_MAP[kernel_name]
-    sorted_segments = sorted(kernel_segments, key=lambda segment: segment_map[(segment.center, segment.target)])
-    return tuple((segment.init_epoch, segment.interval, segment.coefficients) for segment in sorted_segments)
+    segment_map: Dict[Tuple[int, int], TBK] = KERNEL_MAP[kernel_name]
+    sorted_segments = sorted(
+        kernel_segments, key=lambda segment: segment_map[(segment.center, segment.target)]
+    )
+    return tuple(
+        (segment.init_epoch, segment.interval, segment.coefficients) for segment in sorted_segments
+    )
 
 
-THIRD_BODY_EPHEMS: Tuple[ndarray] = loadKernelData(THIRD_BODY_KERNEL)
-"""``tuple``: tuples containing initial epoch, interval, and coefficient information for each kernel segment. """
+THIRD_BODY_EPHEMS: Tuple[Tuple[float, float, ndarray], ...] = loadKernelData(THIRD_BODY_KERNEL)
+"""``tuple``: tuples containing initial epoch, interval, and coefficient information for each kernel segment."""
 
 
 IterFloatType = Union[float, Iterable[float]]
 """Type alias for parameter that can be either a float _or_ an iterable of floats."""
 
 
-def _scaleChebyshevInputs(jd: IterFloatType, init_jd: float, int_length: float) -> Tuple[ndarray, ndarray]:
+def _scaleChebyshevInputs(
+    jd: IterFloatType, init_jd: float, int_length: float
+) -> Tuple[ndarray, ndarray]:
     """Scale the input(s) for a Chebyshev series based to a domain of :math:`[-1, 1]`.
 
     If ``jd`` is an iterable, then the function returns the properly scaled points and corresponding indices
@@ -303,25 +313,53 @@ def getSegmentPosition(jd: IterFloatType, segment: TBK) -> ndarray:
     #   Chebyshev series coefficient sets are valid and therefore possibly different domains are needed. This
     #   requires looping rather than a direct call.
     if isinstance(scaled_jd, Iterable):
-        return array(tuple(chebval(jd, coefficients[:, ii, :].T) for jd, ii in zip(scaled_jd, idx)))
+        return array(
+            tuple(chebval(jd, coefficients[:, ii, :].T) for jd, ii in zip(scaled_jd, idx))
+        )
 
     # else
     return chebval(scaled_jd, coefficients[:, idx, :].T)
 
 
-class Sun:
-    r"""Sun third body class.
+@dataclass
+class ThirdBody(ABC):
+    r"""Base class for third body objects.
 
     Attributes:
         mu (``float``): gravitational parameter, (km^3/sec^2).
-        radius (``float``): mean equatorial radius (km).
-        mass (``float``): planet's mass, (km).
+    """
+
+    mu: float
+
+    @staticmethod
+    @abstractmethod
+    def getPosition(jd: float) -> ndarray:
+        """Calculate the ECI/J2000 position of the body's center at an epoch relative to the Earth.
+
+        Args:
+            jd (``float`` | ``Iterable``): :math:`N` epoch(s) at which the position is to be calculated (Julian date).
+
+        Returns:
+            ``ndarray``: 3x1 | Nx3 ECI position vector(s) of the body, where :math:`N` is the
+            number of ``jd`` values entered (km).
+        """
+        raise NotImplementedError
+
+
+class Sun(ThirdBody):
+    r"""Sun third body class.
+
+    Attributes:
+        mu (``float``): gravitational parameter (km^3/sec^2), from DE430.
+        radius (``float``): mean equatorial radius (km), from Vallado.
+        mass (``float``): sun's mass (kg), from Vallado.
 
     References:
         :cite:t:`vallado_2013_astro`, Appendix D.3, Table D-5.
+        :cite:t:`folkner_2014_planetary`, Table 8.
     """
 
-    mu: float = 1.32712428e11
+    mu: float = 1.32712440041939400e11
     radius: float = 696000.0
     mass: float = 1.9891e30
 
@@ -343,19 +381,20 @@ class Sun:
         return position
 
 
-class Moon:
+class Moon(ThirdBody):
     r"""Moon third body class.
 
     Attributes:
-        mu (``float``): gravitational parameter, (km^3/sec^2).
-        radius (``float``): mean equatorial radius (km).
-        mass (``float``): planet's mass, (km).
+        mu (``float``): gravitational parameter, (km^3/sec^2), from DE430.
+        radius (``float``): mean equatorial radius (km), from Vallado.
+        mass (``float``): moon's mass (kg), from Vallado.
 
     References:
         :cite:t:`vallado_2013_astro`, Appendix D.3, Table D-3.
+        :cite:t:`folkner_2014_planetary`, Table 8.
     """
 
-    mu: float = 4902.799
+    mu: float = 4902.800066
     radius: float = 1738.0
     mass: float = 7.3483e22
 
@@ -372,5 +411,110 @@ class Moon:
         """
         # Earth BC to Moon center - Earth BC to Earth Center
         position = getSegmentPosition(jd, TBK.EARTH_BC_2_MOON_CENTER)
+        position -= getSegmentPosition(jd, TBK.EARTH_BC_2_EARTH_CENTER)
+        return position
+
+
+class Jupiter(ThirdBody):
+    r"""Jupiter third body class.
+
+    Attributes:
+        mu (``float``): gravitational parameter, (km^3/sec^2), from DE430.
+        radius (``float``): mean equatorial radius (km), from Vallado.
+        mass (``float``): planet's mass (kg), from Vallado.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Appendix D.3, Table D-3.
+        :cite:t:`folkner_2014_planetary`, Table 8.
+    """
+
+    mu: float = 1.267127641e8
+    radius: float = 71492.0
+    mass: float = 18988e27
+
+    @staticmethod
+    def getPosition(jd: float) -> ndarray:
+        """Calculate the ECI/J2000 position of Jupiter's center at an epoch relative to the Earth.
+
+        Args:
+            jd (``float`` | ``Iterable``): :math:`N` epoch(s) at which the position is to be calculated (Julian date).
+
+        Returns:
+            ``ndarray``: 3x1 | Nx3 ECI position vector(s) of Jupiter, where :math:`N` is the
+            number of ``jd`` values entered (km).
+        """
+        # SS BC to Jupiter center - SS BC to Earth BC - Earth BC to Earth Center
+        position = getSegmentPosition(jd, TBK.SS_BC_2_JUPITER_BC)
+        position -= getSegmentPosition(jd, TBK.SS_BC_2_EARTH_BC)
+        position -= getSegmentPosition(jd, TBK.EARTH_BC_2_EARTH_CENTER)
+        return position
+
+
+class Saturn(ThirdBody):
+    r"""Saturn third body class.
+
+    Attributes:
+        mu (``float``): gravitational parameter, (km^3/sec^2), from DE430.
+        radius (``float``): mean equatorial radius (km), from Vallado.
+        mass (``float``): planet's mass (kg), from Vallado.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Appendix D.3, Table D-3.
+        :cite:t:`folkner_2014_planetary`, Table 8.
+    """
+
+    mu: float = 3.79405852e7
+    radius: float = 60268.0
+    mass: float = 5.685e26
+
+    @staticmethod
+    def getPosition(jd: float) -> ndarray:
+        """Calculate the ECI/J2000 position of Saturn's center at an epoch relative to the Earth.
+
+        Args:
+            jd (``float`` | ``Iterable``): :math:`N` epoch(s) at which the position is to be calculated (Julian date).
+
+        Returns:
+            ``ndarray``: 3x1 | Nx3 ECI position vector(s) of Saturn, where :math:`N` is the
+            number of ``jd`` values entered (km).
+        """
+        # SS BC to Saturn center - SS BC to Earth BC - Earth BC to Earth Center
+        position = getSegmentPosition(jd, TBK.SS_BC_2_SATURN_BC)
+        position -= getSegmentPosition(jd, TBK.SS_BC_2_EARTH_BC)
+        position -= getSegmentPosition(jd, TBK.EARTH_BC_2_EARTH_CENTER)
+        return position
+
+
+class Venus(ThirdBody):
+    r"""Venus third body class.
+
+    Attributes:
+        mu (``float``): gravitational parameter, (km^3/sec^2), from DE430.
+        radius (``float``): mean equatorial radius (km), from Vallado.
+        mass (``float``): planet's mass (kg), from Vallado.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Appendix D.3, Table D-3.
+        :cite:t:`folkner_2014_planetary`, Table 8.
+    """
+
+    mu: float = 3.24858592e5
+    radius: float = 6052.0
+    mass: float = 4.869e24
+
+    @staticmethod
+    def getPosition(jd: float) -> ndarray:
+        """Calculate the ECI/J2000 position of Venus's center at an epoch relative to the Earth.
+
+        Args:
+            jd (``float`` | ``Iterable``): :math:`N` epoch(s) at which the position is to be calculated (Julian date).
+
+        Returns:
+            ``ndarray``: 3x1 | Nx3 ECI position vector(s) of Venus, where :math:`N` is the
+            number of ``jd`` values entered (km).
+        """
+        # SS BC to Venus center - SS BC to Earth BC - Earth BC to Earth Center
+        position = getSegmentPosition(jd, TBK.SS_BC_2_VENUS_BC)
+        position -= getSegmentPosition(jd, TBK.SS_BC_2_EARTH_BC)
         position -= getSegmentPosition(jd, TBK.EARTH_BC_2_EARTH_CENTER)
         return position

@@ -1,11 +1,11 @@
 """Submodule defining the 'geopotential' configuration section.
 
-TODO:
+To Do:
     - add range of valid values for 'degree' and 'order'
 
 """
-# Package
-from .base import ConfigSection, ConfigOption, inclusiveRange
+# Local Imports
+from .base import ConfigOption, ConfigSection, inclusiveRange
 
 
 class GeopotentialConfig(ConfigSection):
@@ -16,9 +16,9 @@ class GeopotentialConfig(ConfigSection):
 
     def __init__(self):
         """Construct an instance of a :class:`.GeopotentialConfig`."""
-        self._model = ConfigOption("model", (str, ), default="egm96.txt")
-        self._degree = ConfigOption("degree", (int, ), default=4, valid_settings=inclusiveRange(80))
-        self._order = ConfigOption("order", (int, ), default=4, valid_settings=inclusiveRange(80))
+        self._model = ConfigOption("model", (str,), default="egm96.txt")
+        self._degree = ConfigOption("degree", (int,), default=4, valid_settings=inclusiveRange(80))
+        self._order = ConfigOption("order", (int,), default=4, valid_settings=inclusiveRange(80))
 
     @property
     def nested_items(self):

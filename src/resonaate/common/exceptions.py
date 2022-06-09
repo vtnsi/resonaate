@@ -1,7 +1,4 @@
 """Contains all the custom-defined exceptions used in RESONAATE."""
-# Standard Library Imports
-# Pip Package Imports
-# RESONAATE Imports
 
 
 class JobTimeoutError(Exception):
@@ -22,3 +19,11 @@ class ShapeError(Exception):
 
 class MissingEphemerisError(Exception):
     """Exception indicating that there is a missing :class:`.TruthEphemeris` in the database."""
+
+
+class DuplicateTargetError(Exception):
+    """Exception that occurs for conflicting duplicate targets."""
+
+
+class DuplicateSensorError(Exception):
+    """Exception that occurs for duplicate sensors."""

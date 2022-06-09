@@ -1,9 +1,10 @@
 """Encapsulation of event tracking using Redis with a :class:`.EventRecord` and :class:`.EventStack`."""
 # Standard Library Imports
-from collections import defaultdict
 import logging
+from collections import defaultdict
 from json import dumps, loads
-# Package
+
+# Local Imports
 from ...parallel import getRedisConnection
 
 
@@ -22,10 +23,7 @@ class EventRecord:
 
     def serialize(self):
         """Return a serialized string representation of this :class:`.EventRecord`."""
-        return dumps({
-            "event_type": self.event_type,
-            "performer": self.performer
-        })
+        return dumps({"event_type": self.event_type, "performer": self.performer})
 
     @classmethod
     def fromSerial(cls, serial):

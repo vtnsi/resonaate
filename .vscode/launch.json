@@ -5,12 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Resonaate Run - Save DB",
+            "name": "Resonaate Run",
             "type": "python",
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
             "args": ["configs/json/main_init.json", "-t", "1", "--debug"]
+        },
+        {
+            "name": "Test Run",
+            "type": "python",
+            "request": "launch",
+            "module": "resonaate",
+            "console": "integratedTerminal",
+            "args": ["configs/json/test_init.json", "-t", "1", "--debug"],
+        },
+        {
+            "name": "MMAE Run",
+            "type": "python",
+            "request": "launch",
+            "module": "resonaate",
+            "console": "integratedTerminal",
+            "args": ["configs/json/mmae_init.json", "-t", "8", "--debug"],
         },
         {
             "name": "Python Current File",

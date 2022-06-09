@@ -1,8 +1,8 @@
 """Defines the :class:`~.agent.Agent` data table class."""
-# Standard Library Imports
 # Third Party Imports
 from sqlalchemy import Column, Integer, String
-# RESONAATE Imports
+
+# Local Imports
 from . import Base, _DataMixin
 
 
@@ -19,5 +19,6 @@ class Agent(Base, _DataMixin):
     name = Column(String(128), nullable=False)
 
     MUTABLE_COLUMN_NAMES = (
-        'unique_id', 'name',
+        "unique_id",
+        "name",
     )

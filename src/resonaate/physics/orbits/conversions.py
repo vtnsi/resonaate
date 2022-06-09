@@ -1,27 +1,45 @@
 """Defines conversion functions between various orbital element models."""
 # Standard Library Imports
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
 # Third Party Imports
 from numpy import arccos, arctan2, array, concatenate, cos, ndarray, sin, sqrt, tan, vdot
 from scipy.linalg import norm
-# RESONAATE Imports
+
+# Local Imports
+from ..bodies import Earth
+from ..math import fpe_equals, rot1, rot3
 from . import isEccentric, isInclined
 from .anomaly import eccLong2MeanLong, meanLong2EccLong, meanLong2TrueAnom, trueAnom2MeanLong
 from .utils import (
-    getInclinationFromEQE, getEccentricityFromEQE, getEquinoctialBasisVectors, getSemiMajorAxis,
-    getAngularMomentum, getEccentricity, getMeanMotion, getLineOfNodes, getTrueAnomaly,
-    getTrueLongitude, getTrueLongitudePeriapsis, getRightAscension, getArgumentLatitude,
-    getArgumentPerigee, singularityCheck
+    getAngularMomentum,
+    getArgumentLatitude,
+    getArgumentPerigee,
+    getEccentricity,
+    getEccentricityFromEQE,
+    getEquinoctialBasisVectors,
+    getInclinationFromEQE,
+    getLineOfNodes,
+    getMeanMotion,
+    getRightAscension,
+    getSemiMajorAxis,
+    getTrueAnomaly,
+    getTrueLongitude,
+    getTrueLongitudePeriapsis,
+    singularityCheck,
 )
-from ..bodies import Earth
-from ..math import fpe_equals, rot1, rot3
-
 
 OrbitalElementTuple = Tuple[float, float, float, float, float, float]
 
 
 def coe2eci(
-    sma: float, ecc: float, inc: float, raan: float, argp: float, true_anom: float, mu: Optional[float] = Earth.mu
+    sma: float,
+    ecc: float,
+    inc: float,
+    raan: float,
+    argp: float,
+    true_anom: float,
+    mu: Optional[float] = Earth.mu,
 ) -> ndarray:
     r"""Convert a set of COEs to an ECI (J2000) position and velocity vector.
 
@@ -88,10 +106,7 @@ def eci2coe(eci_state: ndarray, mu: Optional[float] = Earth.mu) -> OrbitalElemen
     node_vec = getLineOfNodes(ang_momentum_vec)
 
     # Normalize the line of nodes vectors if orbit is inclined
-    if not fpe_equals(norm(node_vec), 0.0):
-        n_unit_vec = node_vec / norm(node_vec)
-    else:
-        n_unit_vec = node_vec
+    n_unit_vec = node_vec / norm(node_vec) if not fpe_equals(norm(node_vec), 0.0) else node_vec
 
     # Normalize the angular momentum vector
     h_unit_vec = ang_momentum_vec / norm(ang_momentum_vec)
@@ -110,26 +125,32 @@ def eci2coe(eci_state: ndarray, mu: Optional[float] = Earth.mu) -> OrbitalElemen
         true_anomaly = getTrueAnomaly(pos_vec, vel_vec, ecc_vec)
         return sma, ecc, inc, raan, argp, true_anomaly
 
-    elif not inclined and eccentric:
+    if not inclined and eccentric:
         true_long_periapsis = getTrueLongitudePeriapsis(ecc_vec)
         true_anomaly = getTrueAnomaly(pos_vec, vel_vec, ecc_vec)
         # RAAN, Ω, is undefined
         return sma, ecc, inc, 0.0, true_long_periapsis, true_anomaly
 
-    elif inclined and not eccentric:
+    if inclined and not eccentric:
         raan = getRightAscension(n_unit_vec)
         arg_lat = getArgumentLatitude(pos_vec, n_unit_vec)
         # Arg. Perigee, ω, is undefined
         return sma, ecc, inc, raan, 0.0, arg_lat
 
-    else:  # Circular and Equatorial
-        true_longitude = getTrueLongitude(pos_vec)
-        # RAAN, Ω, and Arg. Perigee, ω, are undefined
-        return sma, ecc, inc, 0.0, 0.0, true_longitude
+    # else:  # Circular and Equatorial
+    true_longitude = getTrueLongitude(pos_vec)
+    # RAAN, Ω, and Arg. Perigee, ω, are undefined
+    return sma, ecc, inc, 0.0, 0.0, true_longitude
 
 
 def coe2eqe(
-    sma: float, ecc: float, inc: float, raan: float, argp: float, true_anom: float, retro: bool = False
+    sma: float,
+    ecc: float,
+    inc: float,
+    raan: float,
+    argp: float,
+    true_anom: float,
+    retro: bool = False,
 ) -> OrbitalElementTuple:
     r"""Convert an orbit defined by a set of COEs into corresponding EQEs.
 
@@ -157,8 +178,8 @@ def coe2eqe(
     II = 1 if not retro else -1
     h = ecc * sin(argp + II * raan)
     k = ecc * cos(argp + II * raan)
-    p = tan(inc * 0.5)**II * sin(raan)
-    q = tan(inc * 0.5)**II * cos(raan)
+    p = tan(inc * 0.5) ** II * sin(raan)
+    q = tan(inc * 0.5) ** II * cos(raan)
     mean_long = trueAnom2MeanLong(true_anom, ecc, raan, argp, retro=retro)
     return sma, h, k, p, q, mean_long
 
@@ -203,7 +224,9 @@ def eqe2coe(
     return sma, ecc, inc, raan, argp, true_anom
 
 
-def eci2eqe(eci_state: ndarray, mu: Optional[float] = Earth.mu, retro: bool = False) -> OrbitalElementTuple:
+def eci2eqe(
+    eci_state: ndarray, mu: Optional[float] = Earth.mu, retro: bool = False
+) -> OrbitalElementTuple:
     r"""Define a set of COEs from a ECI (J2000) position and velocity vector.
 
     References:
@@ -268,8 +291,14 @@ def eci2eqe(eci_state: ndarray, mu: Optional[float] = Earth.mu, retro: bool = Fa
 
 
 def eqe2eci(
-    sma: float, h: float, k: float, p: float, q: float, mean_long: float,
-    mu: Optional[float] = Earth.mu, retro: bool = False
+    sma: float,
+    h: float,
+    k: float,
+    p: float,
+    q: float,
+    mean_long: float,
+    mu: Optional[float] = Earth.mu,
+    retro: bool = False,
 ) -> ndarray:
     r"""Convert a set of EQEs to an ECI (J2000) position and velocity vector.
 
@@ -319,5 +348,5 @@ def eqe2eci(
             x * f_hat + y * g_hat,  # Position vector
             x_dot * f_hat + y_dot * g_hat,  # Velocity vector
         ],
-        axis=0
+        axis=0,
     )

@@ -1,0 +1,23 @@
+# Dependabot configuration
+version: 2
+updates:
+  # pip configuration
+  - package-ecosystem: "pip"
+    # run daily, only for Dependabot service
+    schedule:
+      interval: "daily"
+    # Files stored in repository root
+    directory: "/"
+    # limits total merge requests
+    open-pull-requests-limit: 99
+    # use a forward slash for separating branch names
+    pull-request-branch-name:
+      separator: "/"
+    # apply labels to Mr
+    labels:
+      - "Type: Dependency"
+      - "1: High"
+    ignore:
+      # flake8 has broken dep, so keep until isolated somehow
+      - dependency-name: "flake8"
+        versions: [">=4"]

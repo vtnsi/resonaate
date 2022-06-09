@@ -1,16 +1,17 @@
-"""Defines the database models and classes for persistant data storage.
+"""Defines the database models and classes for persistent data storage.
 
 This module holds common functions and attributes used in many data modules.
 """
 # Standard Library Imports
 from datetime import datetime
 from os import getcwd, makedirs
-from os.path import normpath, abspath, exists, join, dirname
+from os.path import abspath, dirname, exists, join, normpath
+
 # Third Party Imports
 from sqlalchemy.ext.declarative import declarative_base
-# RESONAATE Imports
-from ..common.logger import resonaateLogError
 
+# Local Imports
+from ..common.logger import resonaateLogError
 
 # Base declarative class used by SQLAlchemy to track ORM's
 Base = declarative_base()  # pylint: disable=invalid-name
@@ -83,12 +84,9 @@ class _DataMixin:
         if not isinstance(self, other.__class__):
             raise TypeError(f"Can't compare {type(self)} object to {type(other)} object.")
 
-        # False if any of the columns aren't equal
-        for attribute in self.MUTABLE_COLUMN_NAMES:
-            if getattr(self, attribute) != getattr(other, attribute):
-                return False
-
-        return True
+        return not any(
+            getattr(self, attr) != getattr(other, attr) for attr in self.MUTABLE_COLUMN_NAMES
+        )
 
     def makeDictionary(self):
         """Return a dictionary representation of this :class:`.DataMixin` object.

@@ -1,17 +1,18 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 from copy import deepcopy
+
 # Third Party Imports
 import numpy as np
 from sqlalchemy.orm import Query
+
 # RESONAATE Library Imports
 try:
-    from resonaate.data.ephemeris import TruthEphemeris, EstimateEphemeris
-    from resonaate.data.resonaate_database import ResonaateDatabase
+    # RESONAATE Imports
+    from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -24,7 +25,7 @@ EXAMPLE_STATE = {
             2.6569219326775983e-06,
             2.8572329061974494e-06,
             7.608865602971146e-08,
-            3.148427436402753e-08
+            3.148427436402753e-08,
         ],
         [
             7.077473035630296e-06,
@@ -32,7 +33,7 @@ EXAMPLE_STATE = {
             4.744166300030342e-06,
             7.612786387301252e-08,
             2.948885588397417e-06,
-            5.552773026893281e-08
+            5.552773026893281e-08,
         ],
         [
             2.6569219326775983e-06,
@@ -40,7 +41,7 @@ EXAMPLE_STATE = {
             0.0004565441207723332,
             3.138196138795943e-08,
             5.531814945587278e-08,
-            2.837433422429151e-06
+            2.837433422429151e-06,
         ],
         [
             2.8572329061974494e-06,
@@ -48,7 +49,7 @@ EXAMPLE_STATE = {
             3.138196138795943e-08,
             2.3814900977709134e-08,
             6.340781281444123e-10,
-            2.716632627973775e-10
+            2.716632627973775e-10,
         ],
         [
             7.608865602971146e-08,
@@ -56,7 +57,7 @@ EXAMPLE_STATE = {
             5.531814945587278e-08,
             6.340781281444124e-10,
             2.4570879395801635e-08,
-            4.76786127886514e-10
+            4.76786127886514e-10,
         ],
         [
             3.148427436402753e-08,
@@ -64,9 +65,9 @@ EXAMPLE_STATE = {
             2.837433422429151e-06,
             2.716632627973775e-10,
             4.76786127886514e-10,
-            2.3661179498536405e-08
-        ]
-    ]
+            2.3661179498536405e-08,
+        ],
+    ],
 }
 
 
@@ -87,23 +88,17 @@ class TestTruthEphemerisTable(BaseTestCase):
             pos_z_km=-4175.978356,
             vel_x_km_p_sec=1.920657,
             vel_y_km_p_sec=2.399111,
-            vel_z_km_p_sec=0.090893
+            vel_z_km_p_sec=0.090893,
         )
 
     def testFromECIVector(self, epoch, target_agent):
         """Test initializing the kewards of the truth ephemeris table."""
-        _ = TruthEphemeris.fromECIVector(
-            epoch=epoch,
-            agent=target_agent,
-            eci=EXAMPLE_STATE["eci"]
-        )
+        _ = TruthEphemeris.fromECIVector(epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"])
 
     def testReprAndDict(self, epoch, target_agent):
         """Test printing DB table object & making into dict."""
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch,
-            agent=target_agent,
-            eci=EXAMPLE_STATE["eci"]
+            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
         )
         print(ephem)
         ephem.makeDictionary()
@@ -111,21 +106,17 @@ class TestTruthEphemerisTable(BaseTestCase):
     def testEquality(self, epoch, target_agent):
         """Test equals and not equals operators."""
         ephem1 = TruthEphemeris.fromECIVector(
-            epoch=epoch,
-            agent=target_agent,
-            eci=EXAMPLE_STATE["eci"]
+            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
         )
 
         ephem2 = TruthEphemeris.fromECIVector(
-            epoch=epoch,
-            agent=target_agent,
-            eci=EXAMPLE_STATE["eci"]
+            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
         )
 
         ephem3 = TruthEphemeris.fromECIVector(
             epoch=epoch,
             agent=target_agent,
-            eci=np.asarray(EXAMPLE_STATE["eci"]) + np.asarray([0, 0, 1, 2, 3, 4])
+            eci=np.asarray(EXAMPLE_STATE["eci"]) + np.asarray([0, 0, 1, 2, 3, 4]),
         )
 
         # Test equality and inequality
@@ -135,35 +126,26 @@ class TestTruthEphemerisTable(BaseTestCase):
     def testECIProperty(self, epoch, target_agent):
         """Test eci property."""
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch,
-            agent=target_agent,
-            eci=EXAMPLE_STATE["eci"]
+            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
         )
         assert isinstance(ephem.eci, list)
         assert len(ephem.eci) == 6
 
-    def testInsertWithRelationship(self, epoch, target_agent):
+    def testInsertWithRelationship(self, database, epoch, target_agent):
         """Test inserting ephemeris with related objects."""
-        database = ResonaateDatabase.getSharedInterface()
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch,
-            agent=target_agent,
-            eci=EXAMPLE_STATE["eci"]
+            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
         )
 
         # Test insert of object
         database.insertData(ephem)
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testInsertWithForeignKeys(self, epoch, target_agent):
+    def testInsertWithForeignKeys(self, database, epoch, target_agent):
         """Test inserting ephemeris with only foreign keys."""
-        database = ResonaateDatabase.getSharedInterface()
         ephem = TruthEphemeris.fromECIVector(
             julian_date=epoch.julian_date,
             agent_id=target_agent.unique_id,
-            eci=EXAMPLE_STATE["eci"]
+            eci=EXAMPLE_STATE["eci"],
         )
         # Pre-insert required objects
         database.insertData(epoch)
@@ -172,18 +154,12 @@ class TestTruthEphemerisTable(BaseTestCase):
         # Test insert of object via FK
         database.insertData(ephem)
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testManyToOneLazyLoading(self, epoch, target_agent):
+    def testManyToOneLazyLoading(self, database, epoch, target_agent):
         """Test many to one lazy-loading attributes."""
         julian_date = epoch.julian_date
         agent_id = target_agent.unique_id
-        database = ResonaateDatabase.getSharedInterface()
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch,
-            agent=target_agent,
-            eci=EXAMPLE_STATE["eci"]
+            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
         )
         database.insertData(ephem)
 
@@ -192,38 +168,25 @@ class TestTruthEphemerisTable(BaseTestCase):
         assert new_ephem.agent.unique_id == agent_id
         assert new_ephem.epoch.julian_date == julian_date
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testManyToOneQuery(self, epoch, target_agent):
+    def testManyToOneQuery(self, database, epoch, target_agent):
         """Test many to one relationship queries."""
         epoch_copy = deepcopy(epoch)
         agent_copy = deepcopy(target_agent)
 
-        database = ResonaateDatabase.getSharedInterface()
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch,
-            agent=target_agent,
-            eci=EXAMPLE_STATE["eci"]
+            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
         )
         database.insertData(ephem)
 
         # Test querying by Agent
-        query = Query(TruthEphemeris).filter(
-            TruthEphemeris.agent == agent_copy
-        )
+        query = Query(TruthEphemeris).filter(TruthEphemeris.agent == agent_copy)
         new_ephem = database.getData(query, multi=False)
         assert new_ephem.agent == agent_copy
 
         # Test querying by Epoch
-        query = Query(TruthEphemeris).filter(
-            TruthEphemeris.epoch == epoch_copy
-        )
+        query = Query(TruthEphemeris).filter(TruthEphemeris.epoch == epoch_copy)
         new_ephem = database.getData(query, multi=False)
         assert new_ephem.epoch == epoch_copy
-
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
 
 
 class TestEstimateEphemerisTable(BaseTestCase):
@@ -245,12 +208,42 @@ class TestEstimateEphemerisTable(BaseTestCase):
             vel_x_km_p_sec=1.920657,
             vel_y_km_p_sec=2.399111,
             vel_z_km_p_sec=0.090893,
-            covar_00=1.0, covar_01=0.0, covar_02=0.0, covar_03=0.0, covar_04=0.0, covar_05=0.0,
-            covar_10=0.0, covar_11=1.0, covar_12=0.0, covar_13=0.0, covar_14=0.0, covar_15=0.0,
-            covar_20=0.0, covar_21=0.0, covar_22=1.0, covar_23=0.0, covar_24=0.0, covar_25=0.0,
-            covar_30=0.0, covar_31=0.0, covar_32=0.0, covar_33=1.0, covar_34=0.0, covar_35=0.0,
-            covar_40=0.0, covar_41=0.0, covar_42=0.0, covar_43=0.0, covar_44=1.0, covar_45=0.0,
-            covar_50=0.0, covar_51=0.0, covar_52=0.0, covar_53=0.0, covar_54=0.0, covar_55=1.0
+            covar_00=1.0,
+            covar_01=0.0,
+            covar_02=0.0,
+            covar_03=0.0,
+            covar_04=0.0,
+            covar_05=0.0,
+            covar_10=0.0,
+            covar_11=1.0,
+            covar_12=0.0,
+            covar_13=0.0,
+            covar_14=0.0,
+            covar_15=0.0,
+            covar_20=0.0,
+            covar_21=0.0,
+            covar_22=1.0,
+            covar_23=0.0,
+            covar_24=0.0,
+            covar_25=0.0,
+            covar_30=0.0,
+            covar_31=0.0,
+            covar_32=0.0,
+            covar_33=1.0,
+            covar_34=0.0,
+            covar_35=0.0,
+            covar_40=0.0,
+            covar_41=0.0,
+            covar_42=0.0,
+            covar_43=0.0,
+            covar_44=1.0,
+            covar_45=0.0,
+            covar_50=0.0,
+            covar_51=0.0,
+            covar_52=0.0,
+            covar_53=0.0,
+            covar_54=0.0,
+            covar_55=1.0,
         )
 
     def testFromCovarianceMatrix(self, epoch, target_agent):
@@ -260,7 +253,7 @@ class TestEstimateEphemerisTable(BaseTestCase):
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
 
     def testReprAndDict(self, epoch, target_agent):
@@ -270,7 +263,7 @@ class TestEstimateEphemerisTable(BaseTestCase):
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
         print(ephem)
         ephem.makeDictionary()
@@ -282,7 +275,7 @@ class TestEstimateEphemerisTable(BaseTestCase):
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
 
         ephem2 = EstimateEphemeris.fromCovarianceMatrix(
@@ -290,7 +283,7 @@ class TestEstimateEphemerisTable(BaseTestCase):
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
 
         ephem3 = EstimateEphemeris.fromCovarianceMatrix(
@@ -298,7 +291,7 @@ class TestEstimateEphemerisTable(BaseTestCase):
             agent=target_agent,
             source="Propagation",
             eci=np.asarray(EXAMPLE_STATE["eci"]) + np.asarray([0, 0, 1, 2, 3, 4]),
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
         assert ephem1 == ephem2
         assert ephem1 != ephem3
@@ -310,7 +303,7 @@ class TestEstimateEphemerisTable(BaseTestCase):
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
         assert isinstance(ephem.eci, list)
         assert len(ephem.eci) == 6
@@ -322,38 +315,33 @@ class TestEstimateEphemerisTable(BaseTestCase):
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
         assert isinstance(ephem.covariance, list)
         assert len(ephem.covariance) == 6
         assert len(ephem.covariance[0]) == 6
 
-    def testInsertWithRelationship(self, epoch, target_agent):
+    def testInsertWithRelationship(self, database, epoch, target_agent):
         """Test inserting ephemeris with related objects."""
-        database = ResonaateDatabase.getSharedInterface()
         ephem = EstimateEphemeris.fromCovarianceMatrix(
             epoch=epoch,
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
 
         # Test insert of object
         database.insertData(ephem)
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testInsertWithForeignKeys(self, epoch, target_agent):
+    def testInsertWithForeignKeys(self, database, epoch, target_agent):
         """Test inserting ephemeris with only foreign keys."""
-        database = ResonaateDatabase.getSharedInterface()
         ephem = EstimateEphemeris.fromCovarianceMatrix(
             julian_date=epoch.julian_date,
             agent_id=target_agent.unique_id,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
         # Pre-insert required objects
         database.insertData(epoch)
@@ -362,20 +350,16 @@ class TestEstimateEphemerisTable(BaseTestCase):
         # Test insert of object via FK
         database.insertData(ephem)
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testManyToOneLazyLoading(self, epoch, target_agent):
+    def testManyToOneLazyLoading(self, database, epoch, target_agent):
         """Test many to one lazy-loading attributes."""
         julian_date = epoch.julian_date
         agent_id = target_agent.unique_id
-        database = ResonaateDatabase.getSharedInterface()
         ephem = EstimateEphemeris.fromCovarianceMatrix(
             epoch=epoch,
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
         database.insertData(ephem)
 
@@ -384,37 +368,26 @@ class TestEstimateEphemerisTable(BaseTestCase):
         assert new_ephem.agent.unique_id == agent_id
         assert new_ephem.epoch.julian_date == julian_date
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testManyToOneQuery(self, epoch, target_agent):
+    def testManyToOneQuery(self, database, epoch, target_agent):
         """Test many to one relationship queries."""
         epoch_copy = deepcopy(epoch)
         agent_copy = deepcopy(target_agent)
 
-        database = ResonaateDatabase.getSharedInterface()
         ephem = EstimateEphemeris.fromCovarianceMatrix(
             epoch=epoch,
             agent=target_agent,
             source="Propagation",
             eci=EXAMPLE_STATE["eci"],
-            covariance=EXAMPLE_STATE["covariance"]
+            covariance=EXAMPLE_STATE["covariance"],
         )
         database.insertData(ephem)
 
         # Test querying by Agent
-        query = Query(EstimateEphemeris).filter(
-            EstimateEphemeris.agent == agent_copy
-        )
+        query = Query(EstimateEphemeris).filter(EstimateEphemeris.agent == agent_copy)
         new_ephem = database.getData(query, multi=False)
         assert new_ephem.agent == agent_copy
 
         # Test querying by Epoch
-        query = Query(EstimateEphemeris).filter(
-            EstimateEphemeris.epoch == epoch_copy
-        )
+        query = Query(EstimateEphemeris).filter(EstimateEphemeris.epoch == epoch_copy)
         new_ephem = database.getData(query, multi=False)
         assert new_ephem.epoch == epoch_copy
-
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)

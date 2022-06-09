@@ -1,35 +1,41 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use, unused-argument
+# pylint: disable=attribute-defined-outside-init, unused-argument
 # Standard Library Imports
 import os
 import pickle
+
 # Third Party Imports
 import numpy as np
 import pytest
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     from resonaate.agents.estimate_agent import EstimateAgent
     from resonaate.agents.target_agent import TargetAgent
-    from resonaate.common.exceptions import MissingEphemerisError, AgentProcessingError, JobProcessingError
+    from resonaate.common.exceptions import (
+        AgentProcessingError,
+        JobProcessingError,
+        MissingEphemerisError,
+    )
     from resonaate.data.importer_database import ImporterDatabase
     from resonaate.dynamics.two_body import TwoBody
-    from resonaate.filters.unscented_kalman_filter import UnscentedKalmanFilter
-    from resonaate.filters.statistics import Nis
-    from resonaate.parallel.handlers.job_handler import JobHandler
+    from resonaate.estimation.maneuver_detection import StandardNis
+    from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
     from resonaate.parallel.handlers.agent_propagation import AgentPropagationJobHandler
+    from resonaate.parallel.handlers.job_handler import JobHandler
     from resonaate.parallel.job import CallbackRegistration
     from resonaate.physics.time.stardate import JulianDate, ScenarioTime
     from resonaate.scenario.clock import ScenarioClock
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
-from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
+from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
 
 
-@pytest.fixture(scope="function", name="job_handler")
+@pytest.fixture(name="job_handler")
 def createJobHandler(numpy_add_job, mocked_sensing_agent):
     """Create a valid JobHandler."""
+
     class GenericCallback(CallbackRegistration):
         """Dummy callback class for testing."""
 
@@ -65,7 +71,7 @@ def createJobHandler(numpy_add_job, mocked_sensing_agent):
     job_handler.queue_mgr.close()
 
 
-@pytest.mark.usefixtures("redis_setup")
+@pytest.mark.usefixtures("redis_setup", "worker_manager")
 class TestBaseJobHandler(BaseTestCase):
     """Tests related to job handlers."""
 
@@ -83,12 +89,13 @@ class TestBaseJobHandler(BaseTestCase):
         with pytest.raises(JobProcessingError):
             job_handler.handleProcessedJob(mocked_error_job)
 
-    def testValidJob(self, job_handler, worker_manager):
+    def testValidJob(self, job_handler):
         """Test executing a valid job."""
         job_handler.executeJobs()
 
-    def testLengthyJob(self, job_handler, worker_manager, sleep_job_6s):
+    def testLengthyJob(self, job_handler, sleep_job_6s):
         """Test executing a valid job, but longer than timeout."""
+
         class GenericCallback(CallbackRegistration):
             """Dummy callback class for testing."""
 
@@ -112,14 +119,13 @@ class TestBaseJobHandler(BaseTestCase):
         #     assert False
 
 
-@pytest.fixture(scope="function", name="scenario_clock")
-def createScenarioClock(reset_db):
+@pytest.fixture(name="scenario_clock")
+def createScenarioClock(reset_shared_db):
     """Create a :class:`.ScenarioClock` object for use in testing."""
-    clock = ScenarioClock(JulianDate(2458454.0), 300, 60)
-    yield clock
+    return ScenarioClock(JulianDate(2458454.0), 300, 60)
 
 
-@pytest.fixture(scope="function", name="target_agent")
+@pytest.fixture(name="target_agent")
 def createTargetAgent(scenario_clock):
     """Create valid target agent for testing propagate jobs."""
     agent = TargetAgent(
@@ -130,68 +136,97 @@ def createTargetAgent(scenario_clock):
         scenario_clock,
         TwoBody(),
         True,
-        np.diagflat([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        np.diagflat([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     )
-    yield agent
+    return agent
 
 
-@pytest.fixture(scope="function", name="estimate_agent")
+@pytest.fixture(name="estimate_agent")
 def createEstimateAgent(target_agent, scenario_clock):
     """Create valid estimate agent for testing propagate jobs."""
+    est_x = np.asarray([6378.0, 2.0, 10.0, 0.0, 0.0, 0.0])
+    est_p = np.diagflat([1.0, 2.0, 1.0, 0.001, 0.002, 0.001])
     agent = EstimateAgent(
         target_agent.simulation_id,
         target_agent.name,
         target_agent.agent_type,
         scenario_clock,
-        np.asarray([6378.0, 2.0, 10.0, 0.0, 0.0, 0.0]),
-        np.diagflat([1.0, 2.0, 1.0, 0.001, 0.002, 0.001]),
+        est_x,
+        est_p,
         UnscentedKalmanFilter(
+            target_agent.simulation_id,
+            scenario_clock.time,
+            est_x,
+            est_p,
             TwoBody(),
-            3 * np.diagflat([1.0, 2.0, 1.0, 0.001, 0.002, 0.001]),
-            Nis(0.01)
+            3 * est_p,
+            StandardNis(0.01),
+            None,
         ),
+        None,
     )
-    yield agent
+    return agent
 
 
-@pytest.mark.usefixtures("redis_setup")
+@pytest.mark.usefixtures("redis_setup", "worker_manager")
 class TestAgentPropagateHandler(BaseTestCase):
     """Tests related to job handlers."""
 
-    def testProblemTargetAgent(self, worker_manager, target_agent):
+    def testProblemTargetAgent(self, target_agent):
         """Test logging a bad agent when an error occurs."""
         handler = AgentPropagationJobHandler()
         handler.registerCallback(target_agent)
         target_scenario_time = ScenarioTime(60)
-        target_julian_date = target_scenario_time.convertToJulianDate(target_agent.julian_date_epoch)
+        target_julian_date = target_scenario_time.convertToJulianDate(
+            target_agent.julian_date_epoch
+        )
+        prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
 
         # Spacecraft collides with Earth
         with pytest.raises(AgentProcessingError):
-            handler.executeJobs(epoch_time=target_scenario_time, julian_date=target_julian_date)
+            handler.executeJobs(
+                epoch_time=target_scenario_time,
+                prior_julian_date=prior_julian_date,
+                julian_date=target_julian_date,
+            )
 
-    def testProblemEstimateAgent(self, redis, worker_manager, estimate_agent, target_agent):
+    def testProblemEstimateAgent(self, redis, estimate_agent, target_agent):
         """Test logging a bad estimate when an error occurs."""
-        redis.set('target_agents', pickle.dumps({target_agent.simulation_id: target_agent}))
+        redis.set("target_agents", pickle.dumps({target_agent.simulation_id: target_agent}))
         handler = AgentPropagationJobHandler()
         handler.registerCallback(estimate_agent)
         target_scenario_time = ScenarioTime(60)
-        target_julian_date = target_scenario_time.convertToJulianDate(target_agent.julian_date_epoch)
+        target_julian_date = target_scenario_time.convertToJulianDate(
+            target_agent.julian_date_epoch
+        )
+        prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
 
         # Spacecraft collides with Earth
         with pytest.raises(AgentProcessingError):
-            handler.executeJobs(epoch_time=target_scenario_time, julian_date=target_julian_date)
+            handler.executeJobs(
+                epoch_time=target_scenario_time,
+                prior_julian_date=prior_julian_date,
+                julian_date=target_julian_date,
+            )
 
-    def testProblemEstimateAgentNoMatch(self, redis, worker_manager, estimate_agent, target_agent):
+    def testProblemEstimateAgentNoMatch(self, redis, estimate_agent, target_agent):
         """Test logging a bad estimate when an error occurs, but with no matching target agent."""
-        redis.set('target_agents', pickle.dumps({target_agent.simulation_id + 1: target_agent}))
+        redis.set("target_agents", pickle.dumps({target_agent.simulation_id + 1: target_agent}))
         handler = AgentPropagationJobHandler()
         handler.registerCallback(estimate_agent)
         target_scenario_time = ScenarioTime(60)
-        target_julian_date = target_scenario_time.convertToJulianDate(target_agent.julian_date_epoch)
+        target_julian_date = target_scenario_time.convertToJulianDate(
+            target_agent.julian_date_epoch
+        )
+        prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
 
         # Spacecraft collides with Earth
         with pytest.raises(AgentProcessingError):
-            handler.executeJobs(epoch_time=target_scenario_time, julian_date=target_julian_date)
+            handler.executeJobs(
+                epoch_time=target_scenario_time,
+                prior_julian_date=prior_julian_date,
+                julian_date=target_julian_date,
+            )
 
         # Check for log, doesn't seem to work?
         # for record_tuple in caplog.record_tuples:
@@ -200,15 +235,16 @@ class TestAgentPropagateHandler(BaseTestCase):
         # else:
         #     assert False
 
-    def testNoImporterDB(self, worker_manager, target_agent):
+    def testNoImporterDB(self, target_agent):
         """Test registering importer model without Importer DB created."""
         target_agent._realtime = False  # pylint: disable=protected-access
         handler = AgentPropagationJobHandler()
-        with pytest.raises(ValueError):
+        error_msg = r"A valid ImporterDatabase was not established: \w+"
+        with pytest.raises(ValueError, match=error_msg):
             handler.registerCallback(target_agent)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testNoImporterData(self, datafiles, worker_manager, target_agent):
+    def testNoImporterData(self, datafiles, target_agent, reset_importer_db):
         """Test registering importer model without data for RSO in DB."""
         jd_start = JulianDate(2458454.0)
         epoch_time = ScenarioTime(60)
@@ -216,7 +252,7 @@ class TestAgentPropagateHandler(BaseTestCase):
         db_path = "sqlite:///" + os.path.join(datafiles, self.importer_db_path)
         importer_db = ImporterDatabase.getSharedInterface(db_path)
         importer_db.initDatabaseFromJSON(
-            os.path.join(FIXTURE_DATA_DIR, self.json_rso_truth, '11111-truth.json'),
+            os.path.join(FIXTURE_DATA_DIR, self.json_rso_truth, "11111-truth.json"),
             start=jd_start,
             stop=ScenarioTime(1200).convertToJulianDate(jd_start),
         )

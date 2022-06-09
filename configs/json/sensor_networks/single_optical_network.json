@@ -1,36 +1,21 @@
 [
-    {
-        "name": "Test Optical",
-        "id": 100000,
-        "covariance": [
-            [
-                2.388200571127795e-11,
-                0.0
-            ],
-            [
-                0.0,
-                2.388200571127795e-11
-            ]
-        ],
-        "slew_rate": 0.2617993877991494,
-        "azimuth_range": [
-            0.0,
-            6.283185132646661
-        ],
-        "elevation_range": [
-            0.0,
-            1.5707961522619713
-        ],
-        "efficiency": 0.98,
-        "aperture_area": 0.8107319665559964,
-        "sensor_type": "Optical",
-        "exemplar": [
-            0.0014320086173409336,
-            32500.0
-        ],
-        "lat": 0.1,
-        "lon": 1.1,
-        "alt": 1.0,
-        "host_type": "GroundFacility"
-    }
+  {
+    "name": "Test Optical",
+    "id": 100000,
+    "covariance": [
+      [2.388200571127795e-11, 0.0],
+      [0.0, 2.388200571127795e-11]
+    ],
+    "slew_rate": 0.2617993877991494,
+    "azimuth_range": [0.0, 6.283185132646661],
+    "elevation_range": [0.0, 1.5707961522619713],
+    "efficiency": 0.98,
+    "aperture_area": 0.8107319665559964,
+    "sensor_type": "Optical",
+    "exemplar": [0.0014320086173409336, 32500.0],
+    "lat": 0.1,
+    "lon": 1.1,
+    "alt": 1.0,
+    "host_type": "GroundFacility"
+  }
 ]

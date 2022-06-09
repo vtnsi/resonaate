@@ -1,11 +1,11 @@
 """:class:`.Job` handler class that manage task execution logic."""
-# Standard Library Imports
 # Third Party Imports
 from numpy import where
-# RESONAATE Imports
-from .job_handler import JobHandler
+
+# Local Imports
 from ..async_functions import asyncExecuteTasking
 from ..job import CallbackRegistration, Job
+from .job_handler import JobHandler
 
 
 class TaskExecutionRegistration(CallbackRegistration):
@@ -24,13 +24,7 @@ class TaskExecutionRegistration(CallbackRegistration):
         Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
-        return Job(
-            asyncExecuteTasking,
-            args=[
-                kwargs["tasked_sensors"],
-                kwargs["target_id"]
-            ]
-        )
+        return Job(asyncExecuteTasking, args=[kwargs["tasked_sensors"], kwargs["target_id"]])
 
     def jobCompleteCallback(self, job):
         """Save successful :class:`.Observation` objects of this target to be applied to it's estimate.
@@ -65,8 +59,7 @@ class TaskExecutionJobHandler(JobHandler):
 
                 if len(tasked_sensors) > 0:
                     job = registration.jobCreateCallback(
-                        tasked_sensors=tasked_sensors,
-                        target_id=target_id
+                        tasked_sensors=tasked_sensors, target_id=target_id
                     )
                     self.job_id_registration_dict[job.id] = registration
                     jobs.append(job)

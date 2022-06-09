@@ -2,17 +2,34 @@
 # Standard Library Imports
 from abc import ABCMeta
 from datetime import datetime
-# Third Party Libraries
+
+# Third Party Imports
 from sqlalchemy.orm import Query
-# Package
-from .base import (ConfigOption, ConfigObject, ConfigObjectList, NO_SETTING, BaseConfigError, ConfigError,
-                   ConfigValueError)
-from .agent_configs import TargetConfigObject, SensorConfigObject
-from ...data.data_interface import Agent, Epoch
-from ...data.events import (Event, EventScope, ScheduledImpulseEvent, ScheduledFiniteBurnEvent,
-                            ScheduledFiniteManeuverEvent, TargetTaskPriority, TargetAdditionEvent,
-                            SensorAdditionEvent, AgentRemovalEvent, SensorTimeBiasEvent)
-from ...physics.time.stardate import datetimeToJulianDate
+
+# Local Imports
+from ...data.data_interface import Agent
+from ...data.events import (
+    AgentRemovalEvent,
+    Event,
+    EventScope,
+    ScheduledFiniteBurnEvent,
+    ScheduledFiniteManeuverEvent,
+    ScheduledImpulseEvent,
+    SensorAdditionEvent,
+    SensorTimeBiasEvent,
+    TargetAdditionEvent,
+    TargetTaskPriority,
+)
+from .agent_configs import SensorConfigObject, TargetConfigObject
+from .base import (
+    NO_SETTING,
+    BaseConfigError,
+    ConfigError,
+    ConfigObject,
+    ConfigObjectList,
+    ConfigOption,
+    ConfigValueError,
+)
 
 
 class EventConfigObjectList(ConfigObjectList):
@@ -37,7 +54,9 @@ class EventConfigObjectList(ConfigObjectList):
 
         for config_dict in raw_config:
             if config_dict["event_type"] not in event_classes:
-                raise ConfigValueError("event_type", config_dict["event_type"], list(event_classes.keys()))
+                raise ConfigValueError(
+                    "event_type", config_dict["event_type"], list(event_classes.keys())
+                )
 
             obj_type = event_classes[config_dict["event_type"]]
             try:
@@ -91,11 +110,24 @@ class EventConfigObject(ConfigObject, metaclass=ABCMeta):
     def getFields():
         """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.EventConfigObject`."""
         return (
-            ConfigOption("scope", (str, ), valid_settings=[scope.value for scope in EventScope]),
-            ConfigOption("scope_instance_id", (int, )),
-            ConfigOption("start_time", (str, datetime, )),
-            ConfigOption("end_time", (str, datetime, ), default=NO_SETTING),
-            ConfigOption("event_type", (str, ), valid_settings=Event.eventTypes())
+            ConfigOption("scope", (str,), valid_settings=[scope.value for scope in EventScope]),
+            ConfigOption("scope_instance_id", (int,)),
+            ConfigOption(
+                "start_time",
+                (
+                    str,
+                    datetime,
+                ),
+            ),
+            ConfigOption(
+                "end_time",
+                (
+                    str,
+                    datetime,
+                ),
+                default=NO_SETTING,
+            ),
+            ConfigOption("event_type", (str,), valid_settings=Event.eventTypes()),
         )
 
     def validateScopeEventType(self):
@@ -115,16 +147,14 @@ class EventConfigObject(ConfigObject, metaclass=ABCMeta):
         This list is then used to verify that the data dependencies already exist in the database so no SQL errors are
         thrown.
 
+        [TODO]: this method is now kind of legacy, because not every event config object has a data dependency anymore.
+                There is probably a more elegant way to handle data dependencies, but it will require
+                significant changes.
+
         Returns:
             list: List of :class:`.DataDependency` objects.
         """
-        julian_start = datetimeToJulianDate(self.start_time)
-        return [
-            DataDependency(
-                Epoch,
-                Query(Epoch).filter(Epoch.julian_date == julian_start)
-            )
-        ]
+        return []
 
     @property
     def scope(self):
@@ -141,10 +171,9 @@ class EventConfigObject(ConfigObject, metaclass=ABCMeta):
         """datetime: Time for when this event needs to start being handled."""
         # pylint: disable=no-member
         if isinstance(self._start_time.setting, str):
-            self._start_time.readConfig(datetime.strptime(
-                self._start_time.setting,
-                "%Y-%m-%dT%H:%M:%S.%fZ"
-            ))
+            self._start_time.readConfig(
+                datetime.strptime(self._start_time.setting, "%Y-%m-%dT%H:%M:%S.%fZ")
+            )
         return self._start_time.setting
 
     @property
@@ -158,10 +187,9 @@ class EventConfigObject(ConfigObject, metaclass=ABCMeta):
         if self._end_time.setting == NO_SETTING:
             self._end_time.readConfig(self.start_time)
         if isinstance(self._end_time.setting, str):
-            self._end_time.readConfig(datetime.strptime(
-                self._end_time.setting,
-                "%Y-%m-%dT%H:%M:%S.%fZ"
-            ))
+            self._end_time.readConfig(
+                datetime.strptime(self._end_time.setting, "%Y-%m-%dT%H:%M:%S.%fZ")
+            )
         return self._end_time.setting
 
     @property
@@ -180,8 +208,11 @@ class ScheduledImpulseEventConfigObject(EventConfigObject):
     def getFields():
         """Return a tuple of required :class:`.ConfigOption` objects for a :class:`.ScheduledImpulseEventConfigObject`."""  # noqa: E501
         return EventConfigObject.getFields() + (
-            ConfigOption("thrust_vector", (list, )),
-            ConfigOption("thrust_frame", (str, ), valid_settings=ScheduledImpulseEvent.VALID_THRUST_FRAMES)
+            ConfigOption("thrust_vector", (list,)),
+            ConfigOption(
+                "thrust_frame", (str,), valid_settings=ScheduledImpulseEvent.VALID_THRUST_FRAMES
+            ),
+            ConfigOption("planned", (bool,), default=False),
         )
 
     def __init__(self, object_config):
@@ -208,6 +239,11 @@ class ScheduledImpulseEventConfigObject(EventConfigObject):
         """str: Label for frame that thrust vector should be applied in."""
         return self._thrust_frame.setting  # pylint: disable=no-member
 
+    @property
+    def planned(self):
+        """bool: Label for whether or not maneuver was planned."""
+        return self._planned.setting  # pylint: disable=no-member
+
 
 class ScheduledFiniteBurnConfigObject(EventConfigObject):
     """Defines the required fields of a scheduled finite thrust event configuration object."""
@@ -219,8 +255,11 @@ class ScheduledFiniteBurnConfigObject(EventConfigObject):
     def getFields():
         """Return a tuple of required :class:`.ConfigOption` objects for a :class:`.ScheduledFiniteManeuverConfigObject`."""  # noqa: E501
         return EventConfigObject.getFields() + (
-            ConfigOption("acc_vector", (list, )),
-            ConfigOption("thrust_frame", (str, ), valid_settings=ScheduledFiniteBurnEvent.VALID_THRUST_FRAMES)
+            ConfigOption("acc_vector", (list,)),
+            ConfigOption(
+                "thrust_frame", (str,), valid_settings=ScheduledFiniteBurnEvent.VALID_THRUST_FRAMES
+            ),
+            ConfigOption("planned", (bool,), default=False),
         )
 
     def __init__(self, object_config):
@@ -247,6 +286,11 @@ class ScheduledFiniteBurnConfigObject(EventConfigObject):
         """str: Label for frame that thrust vector should be applied in."""
         return self._thrust_frame.setting  # pylint: disable=no-member
 
+    @property
+    def planned(self):
+        """bool: Label for whether or not maneuver was planned."""
+        return self._planned.setting  # pylint: disable=no-member
+
 
 class ScheduledFiniteManeuverConfigObject(EventConfigObject):
     """Defines the required fields of a scheduled finite thrust event configuration object."""
@@ -259,7 +303,12 @@ class ScheduledFiniteManeuverConfigObject(EventConfigObject):
         """Return a tuple of required :class:`.ConfigOption` objects for a :class:`.ScheduledFiniteManeuverConfigObject`."""  # noqa: E501
         return EventConfigObject.getFields() + (
             ConfigOption("maneuver_mag", (int, float)),
-            ConfigOption("maneuver_type", (str, ), valid_settings=ScheduledFiniteManeuverEvent.VALID_MANEUVER_TYPES)
+            ConfigOption(
+                "maneuver_type",
+                (str,),
+                valid_settings=ScheduledFiniteManeuverEvent.VALID_MANEUVER_TYPES,
+            ),
+            ConfigOption("planned", (bool,), default=False),
         )
 
     def __init__(self, object_config):
@@ -281,6 +330,11 @@ class ScheduledFiniteManeuverConfigObject(EventConfigObject):
         """str: Label for maneuver type that corresponds to the thrust."""
         return self._maneuver_type.setting  # pylint: disable=no-member
 
+    @property
+    def planned(self):
+        """bool: Label for whether or not maneuver was planned."""
+        return self._planned.setting  # pylint: disable=no-member
+
 
 class TargetTaskPriorityConfigObject(EventConfigObject):
     """Defines the required fields of a target task priority event configuration object."""
@@ -292,10 +346,10 @@ class TargetTaskPriorityConfigObject(EventConfigObject):
     def getFields():
         """Return required :class:`.ConfigOption` objects for a :class:`.TargetTaskPriorityConfigObject`."""
         return EventConfigObject.getFields() + (
-            ConfigOption("target_id", (int, )),
-            ConfigOption("target_name", (str, )),
-            ConfigOption("priority", (float, )),
-            ConfigOption("is_dynamic", (bool, ), default=False)
+            ConfigOption("target_id", (int,)),
+            ConfigOption("target_name", (str,)),
+            ConfigOption("priority", (float,)),
+            ConfigOption("is_dynamic", (bool,), default=False),
         )
 
     def __init__(self, object_config):
@@ -318,7 +372,7 @@ class TargetTaskPriorityConfigObject(EventConfigObject):
             DataDependency(
                 Agent,
                 Query(Agent).filter(Agent.unique_id == self.target_id),
-                {"unique_id": self.target_id, "name": self.target_name}
+                {"unique_id": self.target_id, "name": self.target_name},
             )
         )
         return dependency_list
@@ -357,8 +411,10 @@ class TargetAdditionEventConfigObject(TargetConfigObject, EventConfigObject):
     @staticmethod
     def getFields():
         """Return required :class:`.ConfigOption` objects for a :class:`.TargetAdditionEventConfigObject`."""
-        return EventConfigObject.getFields() + TargetConfigObject.getFields() + (
-            ConfigOption("tasking_engine_id", (int, )),
+        return (
+            EventConfigObject.getFields()
+            + TargetConfigObject.getFields()
+            + (ConfigOption("tasking_engine_id", (int,)),)
         )
 
     def __init__(self, object_config):
@@ -381,7 +437,7 @@ class TargetAdditionEventConfigObject(TargetConfigObject, EventConfigObject):
             DataDependency(
                 Agent,
                 Query(Agent).filter(Agent.unique_id == self.sat_num),
-                {"unique_id": self.sat_num, "name": self.sat_name}
+                {"unique_id": self.sat_num, "name": self.sat_name},
             )
         )
         return dependency_list
@@ -401,8 +457,10 @@ class SensorAdditionEventConfigObject(SensorConfigObject, EventConfigObject):
     @staticmethod
     def getFields():
         """Return required :class:`.ConfigOption` objects for a :class:`.SensorAdditionEventConfigObject`."""
-        return EventConfigObject.getFields() + SensorConfigObject.getFields() + (
-            ConfigOption("tasking_engine_id", (int, )),
+        return (
+            EventConfigObject.getFields()
+            + SensorConfigObject.getFields()
+            + (ConfigOption("tasking_engine_id", (int,)),)
         )
 
     def __init__(self, object_config):
@@ -425,7 +483,7 @@ class SensorAdditionEventConfigObject(SensorConfigObject, EventConfigObject):
             DataDependency(
                 Agent,
                 Query(Agent).filter(Agent.unique_id == self.id),
-                {"unique_id": self.id, "name": self.name}
+                {"unique_id": self.id, "name": self.name},
             )
         )
         return dependency_list
@@ -446,9 +504,13 @@ class AgentRemovalEventConfigObject(EventConfigObject):
     def getFields():
         """Return required :class:`.ConfigOption` objects for a :class:`.AgentRemovalEventConfigObject`."""
         return EventConfigObject.getFields() + (
-            ConfigOption("tasking_engine_id", (int, )),
-            ConfigOption("agent_id", (int, )),
-            ConfigOption("agent_type", (str, ), valid_settings=[_type.value for _type in AgentRemovalEvent.AgentType])
+            ConfigOption("tasking_engine_id", (int,)),
+            ConfigOption("agent_id", (int,)),
+            ConfigOption(
+                "agent_type",
+                (str,),
+                valid_settings=[_type.value for _type in AgentRemovalEvent.AgentType],
+            ),
         )
 
     def __init__(self, object_config):
@@ -468,10 +530,7 @@ class AgentRemovalEventConfigObject(EventConfigObject):
         """
         dependency_list = super().getDataDependencies()
         dependency_list.append(
-            DataDependency(
-                Agent,
-                Query(Agent).filter(Agent.unique_id == self.agent_id)
-            )
+            DataDependency(Agent, Query(Agent).filter(Agent.unique_id == self.agent_id))
         )
         return dependency_list
 
@@ -500,9 +559,7 @@ class SensorTimeBiasEventConfigObject(EventConfigObject):
     @staticmethod
     def getFields():
         """Return a tuple of required :class:`.ConfigOption` objects for a :class:`.SensorTimeBiasEventConfigObject`."""
-        return EventConfigObject.getFields() + (
-            ConfigOption("applied_bias", (float, )),
-        )
+        return EventConfigObject.getFields() + (ConfigOption("applied_bias", (float,)),)
 
     def __init__(self, object_config):
         """Extend the inherited constructor.

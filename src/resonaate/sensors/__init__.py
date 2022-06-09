@@ -1,13 +1,12 @@
 """Defines the capabilities and operation of different types of sensors."""
-# Standard Imports
 # Third Party Imports
 from numpy import asarray, sqrt
-# Package Imports
+
+# Local Imports
+from ..physics import constants as const
 from .advanced_radar import AdvRadar
 from .optical import Optical
 from .radar import Radar
-from ..physics import constants as const
-
 
 OPTICAL_LABEL = "Optical"
 """str: Constant string used to describe optical sensors."""
@@ -39,7 +38,7 @@ def sensorFactory(configuration):
         "diameter": sqrt(configuration.aperture_area / const.PI) * 2.0,  # Assumes meters^2
         "efficiency": configuration.efficiency,
         "slew_rate": configuration.slew_rate * const.RAD2DEG,  # Assumes radians/sec
-        "exemplar": asarray(configuration.exemplar)
+        "exemplar": asarray(configuration.exemplar),
     }
 
     # Instantiate sensor object. Add extra params if needed

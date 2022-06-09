@@ -1,23 +1,26 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
-from numpy import deg2rad, sin, cos, tan
-# RESONAATE Imports
+from numpy import cos, deg2rad, sin, tan
+
 try:
+    # RESONAATE Imports
     from resonaate.physics.orbits import (
-        isInclined, isEccentric, InclinationError, EccentricityError
+        EccentricityError,
+        InclinationError,
+        isEccentric,
+        isInclined,
     )
     from resonaate.physics.orbits.elements import ClassicalElements, EquinoctialElements
-    from resonaate.physics.orbits.utils import getInclinationFromEQE, getEccentricityFromEQE
+    from resonaate.physics.orbits.utils import getEccentricityFromEQE, getInclinationFromEQE
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
-# Testing Imports
-from .conftest import LEO, SMA, ECC, INC, RAAN, ARGP, ANOM, H, K, P, Q
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 from ...conftest import BaseTestCase
 
+# Testing Imports
+from .conftest import ANOM, ARGP, ECC, INC, LEO, RAAN, SMA, H, K, P, Q
 
 COE_CONFIGS = [
     {
@@ -86,7 +89,7 @@ class TestOrbitElements(BaseTestCase):
         (LEO, 0.1, 0.1, 2, 10e10, ANOM[1]),
     ]
 
-    @pytest.mark.parametrize("sma, ecc, inc, raan, argp, anom", COE_SET)
+    @pytest.mark.parametrize(("sma", "ecc", "inc", "raan", "argp", "anom"), COE_SET)
     def testCOE(self, sma, ecc, inc, raan, argp, anom):
         """Test valid combos of COEs and the class methods."""
         coe = ClassicalElements(sma, ecc, inc, raan, argp, anom)
@@ -102,7 +105,7 @@ class TestOrbitElements(BaseTestCase):
         new_coe = ClassicalElements.fromECI(rv_eci)
         assert coe == new_coe
 
-    @pytest.mark.parametrize("sma, h, k, p, q, anom", EQE_SET)
+    @pytest.mark.parametrize(("sma", "h", "k", "p", "q", "anom"), EQE_SET)
     def testEQE(self, sma, h, k, p, q, anom):
         """Test valid combos of EQEs and the class methods."""
         # pylint: disable=invalid-name
@@ -121,7 +124,7 @@ class TestOrbitElements(BaseTestCase):
         new_eqe = EquinoctialElements.fromECI(rv_eci)
         assert eqe == new_eqe
 
-    @pytest.mark.parametrize("sma, ecc, inc, raan, argp, anom", COE_SET)
+    @pytest.mark.parametrize(("sma", "ecc", "inc", "raan", "argp", "anom"), COE_SET)
     def testConversions(self, sma, ecc, inc, raan, argp, anom):
         """Test conversion between element classes."""
         # pylint: disable=invalid-name
@@ -141,23 +144,21 @@ class TestOrbitElements(BaseTestCase):
         q = tan(coe.inc * 0.5) * cos(coe.raan) + 0.0001
         anomaly = coe.mean_anomaly + coe.argp + coe.raan + 0.01
         eqe = EquinoctialElements(coe.sma + 1, h, k, p, q, anomaly)
-        coe = ClassicalElements.fromEQE(
-            eqe.sma, h, k, p, q, anomaly
-        )
+        coe = ClassicalElements.fromEQE(eqe.sma, h, k, p, q, anomaly)
         new_eqe = EquinoctialElements.fromCOE(
             coe.sma, coe.ecc, coe.inc, coe.raan, coe.argp, coe.true_anomaly
         )
         assert eqe != coe
         assert new_eqe == eqe
 
-    @pytest.mark.parametrize("sma, ecc, inc, raan, argp, anom", BAD_COES)
+    @pytest.mark.parametrize(("sma", "ecc", "inc", "raan", "argp", "anom"), BAD_COES)
     def testBadCOE(self, sma, ecc, inc, raan, argp, anom):
         """Test bad values of COEs."""
         # pylint: disable=invalid-name
         with pytest.raises((InclinationError, EccentricityError)):
             ClassicalElements(sma, ecc, inc, raan, argp, anom)
 
-    @pytest.mark.parametrize("sma, h, k, p, q, anom", BAD_EQES)
+    @pytest.mark.parametrize(("sma", "h", "k", "p", "q", "anom"), BAD_EQES)
     def testBadEQE(self, sma, h, k, p, q, anom):
         """Test bad values of EQEs."""
         # pylint: disable=invalid-name
@@ -188,10 +189,12 @@ class TestOrbitElements(BaseTestCase):
             cir_eq_config = COE_CONFIGS[3]
             m_patch.delitem(cir_eq_config, "true_long")
             with pytest.raises(KeyError):
-                print(ecc_inc_config)
                 ClassicalElements.fromConfig(ecc_inc_config)
+            with pytest.raises(KeyError):
                 ClassicalElements.fromConfig(ecc_eq_config)
+            with pytest.raises(KeyError):
                 ClassicalElements.fromConfig(cir_inc_config)
+            with pytest.raises(KeyError):
                 ClassicalElements.fromConfig(cir_eq_config)
 
     @pytest.mark.parametrize("config", EQE_CONFIGS)

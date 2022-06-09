@@ -1,22 +1,31 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
 from numpy import cos, deg2rad, isclose, rad2deg, sin
-# RESONAATE Imports
+
 try:
-    from resonaate.physics.orbits.anomaly import (
-        eccAnom2MeanAnom, eccAnom2TrueAnom, eccLong2MeanLong, meanAnom2EccAnom, meanAnom2TrueAnom,
-        meanLong2EccLong, trueAnom2MeanAnom, trueAnom2EccAnom, meanLong2TrueAnom, trueAnom2MeanLong
-    )
+    # RESONAATE Imports
     from resonaate.physics.math import _ATOL, wrapAngle2Pi
+    from resonaate.physics.orbits.anomaly import (
+        eccAnom2MeanAnom,
+        eccAnom2TrueAnom,
+        eccLong2MeanLong,
+        meanAnom2EccAnom,
+        meanAnom2TrueAnom,
+        meanLong2EccLong,
+        meanLong2TrueAnom,
+        trueAnom2EccAnom,
+        trueAnom2MeanAnom,
+        trueAnom2MeanLong,
+    )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
-# Testing Imports
-from .conftest import H, K, VALLADO_AAS_COE, VALLADO_AAS_EQE
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 from ...conftest import BaseTestCase
+
+# Testing Imports
+from .conftest import VALLADO_AAS_COE, VALLADO_AAS_EQE, H, K
 
 
 class TestAnomalyConversions(BaseTestCase):
@@ -36,7 +45,7 @@ class TestAnomalyConversions(BaseTestCase):
     ANOM_TESTS = tuple(zip(MEAN_ANOM_CASES, ECC_CASES, ECC_ANOM_CASES))
 
     @pytest.mark.parametrize("anom", deg2rad([0, 1, 2, 5]))
-    @pytest.mark.parametrize("h, k, is_ecc", EQE_ANOM_ECC)
+    @pytest.mark.parametrize(("h", "k", "is_ecc"), EQE_ANOM_ECC)
     def testEQECircularCase(self, anom, h, k, is_ecc):
         """Test calculating true long of periapsis from ecc vector."""
         # pylint: disable=invalid-name
@@ -47,7 +56,7 @@ class TestAnomalyConversions(BaseTestCase):
             assert eccLong2MeanLong(anom, h, k) == anom
             assert meanLong2EccLong(anom, h, k) == anom
 
-    @pytest.mark.parametrize("M, ecc, E", ANOM_TESTS)
+    @pytest.mark.parametrize(("M", "ecc", "E"), ANOM_TESTS)
     def testMeanLong2EccLong(self, M, ecc, E):
         """Test anomaly conversion using Kepler's equation."""
         # pylint: disable=invalid-name
@@ -59,7 +68,7 @@ class TestAnomalyConversions(BaseTestCase):
         F = wrapAngle2Pi(E + raan + argp)
         assert isclose(F, meanLong2EccLong(lam, h, k), rtol=0, atol=_ATOL)
 
-    @pytest.mark.parametrize("M, ecc, E", ANOM_TESTS)
+    @pytest.mark.parametrize(("M", "ecc", "E"), ANOM_TESTS)
     def testEccLong2MeanLong(self, M, ecc, E):
         """Test anomaly conversion using Kepler's equation."""
         # pylint: disable=invalid-name
@@ -71,13 +80,13 @@ class TestAnomalyConversions(BaseTestCase):
         F = E + raan + argp
         assert isclose(lam, eccLong2MeanLong(F, h, k), rtol=0, atol=_ATOL)
 
-    @pytest.mark.parametrize("M, ecc, E", ANOM_TESTS)
+    @pytest.mark.parametrize(("M", "ecc", "E"), ANOM_TESTS)
     def testMeanAnom2EccAnom(self, M, ecc, E):
         """Test anomaly conversion using Kepler's equation."""
         # pylint: disable=invalid-name
         assert isclose(E, meanAnom2EccAnom(M, ecc), rtol=0, atol=_ATOL)
 
-    @pytest.mark.parametrize("M, ecc, E", ANOM_TESTS)
+    @pytest.mark.parametrize(("M", "ecc", "E"), ANOM_TESTS)
     def testEccAnom2MeanAnom(self, M, ecc, E):
         """Test anomaly conversion."""
         # pylint: disable=invalid-name

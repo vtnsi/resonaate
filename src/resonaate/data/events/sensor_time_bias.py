@@ -1,9 +1,10 @@
 """Defines the :class:`.SensorTimeBiasEvent` data table class."""
 # Third Party Imports
 from sqlalchemy import Column, Float
-# Package Imports
-from .base import Event, EventScope
+
+# Local Imports
 from ...physics.time.stardate import datetimeToJulianDate
+from .base import Event, EventScope
 
 
 class SensorTimeBiasEvent(Event):
@@ -15,9 +16,7 @@ class SensorTimeBiasEvent(Event):
     INTENDED_SCOPE = EventScope.OBSERVATION_GENERATION
     """EventScope: Scope where :class:`.SensorTimeBiasEvent` objects should be handled."""
 
-    __mapper_args__ = {
-        'polymorphic_identity': EVENT_TYPE
-    }
+    __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     applied_bias = Column(Float)
     """float: amount of time to bias the sensor (seconds)."""
@@ -49,5 +48,5 @@ class SensorTimeBiasEvent(Event):
             start_time_jd=datetimeToJulianDate(config.start_time),  # start timestamp
             end_time_jd=datetimeToJulianDate(config.end_time),  # end timestamp
             event_type=config.event_type,  # "sensor_time_bias"
-            applied_bias=config.applied_bias  # float of actual time bias
+            applied_bias=config.applied_bias,  # float of actual time bias
         )

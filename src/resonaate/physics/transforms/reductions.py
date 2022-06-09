@@ -6,20 +6,28 @@ to/from ECI (GCRF). However, this module may later hold multiple forms of this r
 # Standard Library Imports
 import datetime
 from pickle import dumps, loads
+
 # Third Party Imports
-from numpy import sin, cos, matmul, asarray, fmod, dot
-# RESONAATE Imports
-from .nutation import get1980NutationSeries
-from .eops import getEarthOrientationParameters
+from numpy import asarray, cos, dot, fmod, matmul, sin
+
+# Local Imports
+from ...parallel import getRedisConnection
 from .. import constants as const
 from ..math import rot1, rot2, rot3
-from ..time.conversions import JulianDate, utc2TerrestrialTime, greenwichApparentTime, dayOfYear
-from ...parallel import getRedisConnection
-
+from ..time.conversions import JulianDate, dayOfYear, greenwichApparentTime, utc2TerrestrialTime
+from .eops import getEarthOrientationParameters
+from .nutation import get1980NutationSeries
 
 REDUCTION_PARAMETER_LABELS = (
-    "rot_pn", "rot_pnr", "rot_rnp", "rot_w", "rot_wt",
-    "lod", "eq_equinox", "dut1", "julian_date",
+    "rot_pn",
+    "rot_pnr",
+    "rot_rnp",
+    "rot_w",
+    "rot_wt",
+    "lod",
+    "eq_equinox",
+    "dut1",
+    "julian_date",
 )
 """list: List of keys used to construct reduction parameter dictionary."""
 
@@ -38,8 +46,7 @@ def updateReductionParameters(julian_date, eops=None):
     """
     params = _updateFK5Parameters(julian_date, eops=eops)
     getRedisConnection().set(
-        REDUCTION_REDIS_KEY,
-        dumps(dict(zip(REDUCTION_PARAMETER_LABELS, params)))
+        REDUCTION_REDIS_KEY, dumps(dict(zip(REDUCTION_PARAMETER_LABELS, params)))
     )
 
 
@@ -91,20 +98,16 @@ def _updateFK5Parameters(julian_date, eops=None):  # pylint: disable=too-many-lo
     # Get nutation params. Use all 106 terms, and 2 extra terms in the Eq. of Equinoxes. IAU-76/FK5 Reduction.
     # [NOTE] EOP corrections not added when converting to mean J2000 according to Vallado
     #           They are added here because we are rotating to GCRF instead
-    delta_psi, true_eps, mean_eps, eq_equinox = _getNutationParameters(ttt, eops.d_delta_psi, eops.d_delta_eps)
+    delta_psi, true_eps, mean_eps, eq_equinox = _getNutationParameters(
+        ttt, eops.d_delta_psi, eops.d_delta_eps
+    )
 
     # Polar motion - Vallado 4th Ed. Eq 3-77 (full) & Eq 3-78 (simplified)
     c_x, s_x = cos(eops.x_p), sin(eops.x_p)
     c_y, s_y = cos(eops.y_p), sin(eops.y_p)
 
     # Complete polar motion matrix form
-    rot_w = asarray(
-        [
-            [c_x, 0, -s_x],
-            [s_x * s_y, c_y, c_x * s_y],
-            [s_x * c_y, -s_y, c_x * c_y]
-        ]
-    )
+    rot_w = asarray([[c_x, 0, -s_x], [s_x * s_y, c_y, c_x * s_y], [s_x * c_y, -s_y, c_x * c_y]])
     rot_wt = rot_w.T
 
     # Get seconds in UT1 & find days since Jan. 1, 0:0:0.0 (Fractional days minus 1)
@@ -127,8 +130,15 @@ def _updateFK5Parameters(julian_date, eops=None):  # pylint: disable=too-many-lo
     rot_rnp = rot_pnr.T
 
     return (
-        rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt,
-        eops.length_of_day, eq_equinox, eops.delta_ut1, julian_date
+        rot_pn,
+        rot_pnr,
+        rot_rnp,
+        rot_w,
+        rot_wt,
+        eops.length_of_day,
+        eq_equinox,
+        eops.delta_ut1,
+        julian_date,
     )
 
 
@@ -160,20 +170,33 @@ def _getNutationParameters(ttt, dd_psi, dd_eps, num=2):
 
     # Determine coefficients for IAU-80 nutation. Convert to between [0,2pi].
     # Vallado 4th Ed. Eqn 3-82 (From Errata)
-    mean_anom_l = 134.96298139 + (1325 * 360 + 198.8673981) * ttt + 0.0086972 * ttt2 + 1.78e-5 * ttt3
+    mean_anom_l = (
+        134.96298139 + (1325 * 360 + 198.8673981) * ttt + 0.0086972 * ttt2 + 1.78e-5 * ttt3
+    )
     mean_anom_s = 357.52772333 + (99 * 360 + 359.0503400) * ttt - 0.0001603 * ttt2 - 3.3e-6 * ttt3
-    mean_arg_lat_l = 93.27191028 + (1342 * 360 + 82.0175381) * ttt - 0.0036825 * ttt2 + 3.1e-6 * ttt3
-    elongation_s = 297.85036306 + (1236 * 360 + 307.1114800) * ttt - 0.0019142 * ttt2 + 5.3e-6 * ttt3
+    mean_arg_lat_l = (
+        93.27191028 + (1342 * 360 + 82.0175381) * ttt - 0.0036825 * ttt2 + 3.1e-6 * ttt3
+    )
+    elongation_s = (
+        297.85036306 + (1236 * 360 + 307.1114800) * ttt - 0.0019142 * ttt2 + 5.3e-6 * ttt3
+    )
     raan_l = 125.04452222 - (5 * 360 + 134.1362608) * ttt + 0.0020708 * ttt2 + 2.2e-6 * ttt3
-    corrected = fmod([mean_anom_l, mean_anom_s, mean_arg_lat_l, elongation_s, raan_l], 360) * const.DEG2RAD
+    corrected = (
+        fmod([mean_anom_l, mean_anom_s, mean_arg_lat_l, elongation_s, raan_l], 360) * const.DEG2RAD
+    )
 
     # Coefficients for longitude & obliquity correction
     rar_80, iar_80 = get1980NutationSeries()
 
     # Initialize & calculate nutation/obliquity corrections. Convert to between [0,2pi].
     # Vallado 4th Ed Eq 3-83
-    tempval = (iar_80[::, 0] * corrected[0] + iar_80[::, 1] * corrected[1] + iar_80[::, 2] * corrected[2]
-               + iar_80[::, 3] * corrected[3] + iar_80[::, 4] * corrected[4]).flatten()
+    tempval = (
+        iar_80[::, 0] * corrected[0]
+        + iar_80[::, 1] * corrected[1]
+        + iar_80[::, 2] * corrected[2]
+        + iar_80[::, 3] * corrected[3]
+        + iar_80[::, 4] * corrected[4]
+    ).flatten()
     delta_psi = dot((rar_80[::, 0] + rar_80[::, 1] * ttt).flatten(), sin(tempval))
     delta_eps = dot((rar_80[::, 2] + rar_80[::, 3] * ttt).flatten(), cos(tempval))
     # Corrections for FK5 - Makes consistent with GCRF.

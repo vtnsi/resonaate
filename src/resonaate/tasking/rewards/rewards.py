@@ -1,8 +1,8 @@
 """Define implemented reward functions used to evaluate sensor task opportunities."""
-# Standard Library Imports
 # Third Party Imports
 from numpy import sign
-# RESONAATE Imports
+
+# Local Imports
 from .reward_base import Reward
 
 
@@ -68,11 +68,7 @@ class CostConstrainedReward(Reward):
             ``numpy.ndarray``: calculated reward
         """
         metrics = self.calculateMetrics(
-            target_agents,
-            target_id,
-            sensor_agents,
-            sensor_id,
-            **kwargs
+            target_agents, target_id, sensor_agents, sensor_id, **kwargs
         )
         for metric, value in metrics.items():
             if metric.metric_type == "stability":
@@ -108,11 +104,7 @@ class SimpleSummationReward(Reward):
         """
         return sum(
             self.calculateMetrics(
-                target_agents,
-                target_id,
-                sensor_agents,
-                sensor_id,
-                **kwargs
+                target_agents, target_id, sensor_agents, sensor_id, **kwargs
             ).values()
         )
 
@@ -182,11 +174,7 @@ class CombinedReward(Reward):
             ``numpy.ndarray``: calculated reward
         """
         metrics = self.calculateMetrics(
-            target_agents,
-            target_id,
-            sensor_agents,
-            sensor_id,
-            **kwargs
+            target_agents, target_id, sensor_agents, sensor_id, **kwargs
         )
         for metric, value in metrics.items():
             if metric.metric_type == "stability":
@@ -198,4 +186,6 @@ class CombinedReward(Reward):
             if metric.metric_type == "behavior":
                 behavior = value
 
-        return (self._delta * (sign(stability) + information) - (1 - self._delta) * sensor) + behavior
+        return (
+            self._delta * (sign(stability) + information) - (1 - self._delta) * sensor
+        ) + behavior

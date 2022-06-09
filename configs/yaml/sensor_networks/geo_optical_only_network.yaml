@@ -1,4 +1,3 @@
-sensors:
 - name: test sensor 1
   id: 100001
   covariance: [[2.388200571127795e-11, 0.0], [0.0, 2.388200571127795e-11]]

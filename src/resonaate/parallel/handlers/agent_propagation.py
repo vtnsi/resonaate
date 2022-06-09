@@ -1,27 +1,32 @@
 """:class:`.Job` handler classes that manage agent propagation logic."""
 # Standard Library Imports
-import pickle
 import json
 import os.path
+import pickle
 from abc import ABCMeta
 from collections import defaultdict
-# Pip Package Imports
+from enum import Flag
+
+# Third Party Imports
 from numpy import ndarray
 from sqlalchemy.orm import Query
-# RESONAATE Imports
-from .job_handler import JobHandler
-from .. import getRedisConnection
-from ..async_functions import asyncPropagate
-from ..job import CallbackRegistration, Job
+
+# Local Imports
 from ...common.behavioral_config import BehavioralConfig
-from ...common.exceptions import MissingEphemerisError, AgentProcessingError
+from ...common.exceptions import AgentProcessingError, MissingEphemerisError
 from ...common.utilities import getTypeString
 from ...data.ephemeris import TruthEphemeris
 from ...data.events import EventScope, getRelevantEvents
 from ...data.importer_database import ImporterDatabase
-from ...data.resonaate_database import ResonaateDatabase
 from ...data.query_util import addAlmostEqualFilter
+from ...data.resonaate_database import ResonaateDatabase
+from ...estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from ...physics.time.stardate import JulianDate, ScenarioTime
+from ...physics.transforms.reductions import getReductionParameters
+from .. import getRedisConnection
+from ..async_functions import asyncPropagate
+from ..job import CallbackRegistration, Job
+from .job_handler import JobHandler
 
 
 class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
@@ -41,7 +46,7 @@ class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
         Raises:
             :class:`.AgentProcessingError`: raised if job completed in an error state.
         """
-        if job.status == 'processed':
+        if job.status == "processed":
             self.job_id_registration_dict[job.id].jobCompleteCallback(job)
 
         else:
@@ -88,22 +93,16 @@ class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
             registrant (:class:`~.agent_base.Agent`): registered agent corresponding to the bad job.
         """
         data = self._getProblemAgentInformation(job, registrant)
-        directory = os.path.join(
-            BehavioralConfig.getConfig().debugging.OutputDirectory,
-            'agents'
-        )
-        file_name = os.path.join(
-            directory,
-            f"error_{job.id}_{registrant.simulation_id}.json"
-        )
+        directory = os.path.join(BehavioralConfig.getConfig().debugging.OutputDirectory, "agents")
+        file_name = os.path.join(directory, f"error_{job.id}_{registrant.simulation_id}.json")
 
         if not os.path.isdir(directory):
             os.makedirs(directory)
 
-        with open(file_name, 'w', encoding="utf-8") as out_file:
+        with open(file_name, "w", encoding="utf-8") as out_file:
             json.dump(data, out_file)
 
-        if job.error[-len("KeyboardInterrupt\n"):] == "KeyboardInterrupt\n":
+        if job.error[-len("KeyboardInterrupt\n") :] == "KeyboardInterrupt\n":
             # job got interrupted because it took too long
             msg = f"Job hang: {file_name}"
             self.logger.error(msg)
@@ -121,15 +120,17 @@ class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
         data = {}
         data["error"] = job.error
         if getTypeString(registrant) in ("EstimateAgent", "TargetAgent"):
-            data.update({
-                "julian_date": registrant.julian_date_epoch,
-                "calendar_date": registrant.julian_date_epoch.calendar_date,
-                "target_id": registrant.simulation_id,
-                "name": registrant.name,
-                "eci": registrant.eci_state,
-            })
+            data.update(
+                {
+                    "julian_date": registrant.julian_date_epoch,
+                    "calendar_date": registrant.julian_date_epoch.calendar_date,
+                    "target_id": registrant.simulation_id,
+                    "name": registrant.name,
+                    "eci": registrant.eci_state,
+                }
+            )
         if getTypeString(registrant) == "EstimateAgent":
-            target_agents = pickle.loads(getRedisConnection().get('target_agents'))
+            target_agents = pickle.loads(getRedisConnection().get("target_agents"))
             tgt_agent = None
             for tgt_id, target in target_agents.items():
                 if tgt_id == registrant.simulation_id:
@@ -137,20 +138,29 @@ class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
                     break
 
             data.update(registrant.nominal_filter.getPredictionResult())
-            data.update({
-                "state_estimate": registrant.state_estimate,
-                "error_covariance": registrant.error_covariance,
-                "num_sigmas": registrant.nominal_filter.num_sigmas,
-                "x_dim": registrant.nominal_filter.x_dim,
-                "gamma": registrant.nominal_filter.gamma,
-                "source": registrant.nominal_filter.source,
-            })
+            data.update(
+                {
+                    "state_estimate": registrant.state_estimate,
+                    "error_covariance": registrant.error_covariance,
+                    "x_dim": registrant.nominal_filter.x_dim,
+                    "source": registrant.nominal_filter.source,
+                }
+            )
+            if isinstance(registrant.nominal_filter, UnscentedKalmanFilter):
+                data.update(
+                    {
+                        "gamma": registrant.nominal_filter.gamma,
+                        "num_sigmas": registrant.nominal_filter.num_sigmas,
+                    }
+                )
             if tgt_agent:
-                data.update({
-                    "truth_state": tgt_agent.eci_state,
-                    "truth_jd": tgt_agent.julian_date_epoch,
-                    "truth_calendar": tgt_agent.julian_date_epoch.calendar_date,
-                })
+                data.update(
+                    {
+                        "truth_state": tgt_agent.eci_state,
+                        "truth_jd": tgt_agent.julian_date_epoch,
+                        "truth_calendar": tgt_agent.julian_date_epoch.calendar_date,
+                    }
+                )
             else:
                 self.logger.error("No matching TargetAgent for problem EstimateAgent!")
 
@@ -160,6 +170,13 @@ class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
 
             elif isinstance(val, (JulianDate, ScenarioTime)):
                 data[key] = float(val)
+
+            elif isinstance(val, Flag):
+                data[key] = {
+                    "name": val.name,
+                    "value": val.value,
+                    "repr": repr(val),
+                }
 
         return data
 
@@ -180,19 +197,23 @@ class AgentPropagationRegistration(CallbackRegistration):
         """
         new_time = kwargs["new_time"]
         self.registrant.prunePropagateEvents()
+        reductions = getReductionParameters()
+        for item in self.registrant.station_keeping:
+            item.reductions = reductions
+
         job = Job(
             asyncPropagate,
             args=[
                 self.registrant.dynamics,
                 self.registrant.time,
                 new_time,
-                self.registrant.eci_state
+                self.registrant.eci_state,
             ],
             kwargs={
                 "station_keeping": self.registrant.station_keeping,
                 # [NOTE][parallel-maneuver-event-handling] Step three: pass the event queue to the propagation process.
-                "scheduled_events": self.registrant.propagate_event_queue
-            }
+                "scheduled_events": self.registrant.propagate_event_queue,
+            },
         )
         self.registrant.time = new_time
 
@@ -271,7 +292,9 @@ class AgentPropagationJobHandler(PropagationJobHandler):
 
         elif self._importer_db:
             # Realtime propagation is off, attempt to query database for valid `Ephemeris` objects
-            query = Query(TruthEphemeris).filter(TruthEphemeris.agent_id == registrant.simulation_id)
+            query = Query(TruthEphemeris).filter(
+                TruthEphemeris.agent_id == registrant.simulation_id
+            )
             truth_ephem = self._importer_db.getData(query, multi=False)
 
             # If minimal truth data exists in the database, use importer model, otherwise default to
@@ -285,8 +308,9 @@ class AgentPropagationJobHandler(PropagationJobHandler):
                 self._registerImporterCallback(registrant.simulation_id, registrant.importState)
 
         else:
-            self.logger.error("A valid ImporterDatabase was not established")
-            raise ValueError(self._importer_db)
+            msg = f"A valid ImporterDatabase was not established: {self._importer_db}"
+            self.logger.error(msg)
+            raise ValueError(msg)
 
     def _registerImporterCallback(self, agent_id, callback):
         """Register callback object that is used to update agents' states via imported data.
@@ -306,17 +330,21 @@ class AgentPropagationJobHandler(PropagationJobHandler):
 
         KeywordArgs:
             epoch_time (:class:`.ScenarioTime`): current simulation epoch.
+            julian_date (:class:`.JulianDate`): current simulation Julian Date
+            prior_julian_date (:class:`.JulianDate`): Julian Date at beginnning of timestep
 
         Returns:
             ``list``: :class:`.Job` objects that will be submitted
         """
         # [NOTE][parallel-maneuver-event-handling] Step one: query for events and "handle" them.
         julian_date = kwargs["julian_date"]
+        prior_julian_date = kwargs["prior_julian_date"]
         agent_propagation_events = defaultdict(list)
         relevant_events = getRelevantEvents(
             ResonaateDatabase.getSharedInterface(),
             EventScope.AGENT_PROPAGATION,
-            julian_date
+            prior_julian_date,
+            julian_date,
         )
         for event in relevant_events:
             agent_propagation_events[event.scope_instance_id].append(event)
@@ -370,7 +398,7 @@ class AgentPropagationJobHandler(PropagationJobHandler):
         """
         # This is the "Bulk Importer" implementation.
         query = Query([TruthEphemeris])
-        query = addAlmostEqualFilter(query, TruthEphemeris, 'julian_date', julian_date)
+        query = addAlmostEqualFilter(query, TruthEphemeris, "julian_date", julian_date)
         current_ephemerides = self._importer_db.getData(query)
 
         # Ensure we have at least as many ephems as register import callbacks

@@ -3,11 +3,13 @@
 import json
 import os
 from datetime import datetime
+
 # Third Party Imports
 import numpy as np
-import yaml
-# RESONAATE Imports
+
+# Local Imports
 from .behavioral_config import BehavioralConfig
+from .logger import resonaateLogError
 
 
 def getTypeString(class_instance):
@@ -21,37 +23,6 @@ def getTypeString(class_instance):
 
     """
     return class_instance.__class__.__name__
-
-
-def loadYAMLFile(file_name):
-    """Load in a YAML file into a Python dictionary.
-
-    Args:
-        file_name (``str``): name of YAML file to load
-
-    Raises:
-        ``FileNotFoundError``: helps with debugging bad filenames
-        ``yaml.YAMLError``: error parsing YAML file (bad syntax)
-        ``IOError``: valid YAML file is empty
-
-    Returns:
-        ``dict``: documents loaded from the YAML file
-    """
-    try:
-        with open(file_name, 'r', encoding="utf-8") as input_file:
-            yaml_data = yaml.safe_load(input_file)
-    except FileNotFoundError as err:
-        print(f"Could not find YAML file: {file_name}")
-        raise err
-    except yaml.YAMLError as err:
-        print(f"Parsing error reading YAML file: {file_name}")
-        raise err
-
-    if not yaml_data:
-        print(f"Empty YAML file: {file_name}")
-        raise IOError
-
-    return yaml_data
 
 
 def loadJSONFile(file_name):
@@ -69,18 +40,23 @@ def loadJSONFile(file_name):
         ``dict``: documents loaded from the JSON file
     """
     try:
-        with open(file_name, 'r', encoding="utf-8") as input_file:
+        with open(file_name, "r", encoding="utf-8") as input_file:
             json_data = json.load(input_file)
     except FileNotFoundError as err:
-        print(f"Could not find JSON file: {file_name}")
+        msg = f"Could not find JSON file: {file_name}"
+        resonaateLogError(msg)
+
         raise err
     except json.decoder.JSONDecodeError as err:
-        print(f"Decoding error reading JSON file: {file_name}")
+        msg = f"Decoding error reading JSON file: {file_name}"
+        resonaateLogError(msg)
+
         raise err
 
     if not json_data:
-        print(f"Empty JSON file: {file_name}")
-        raise IOError
+        msg = f"Empty JSON file: {file_name}"
+        resonaateLogError(msg)
+        raise IOError(msg)
 
     return json_data
 
@@ -105,20 +81,23 @@ def loadDatFile(file_name, delim=None):
         ``list``: nested list of float values of each row
     """
     try:
-        with open(file_name, 'r', encoding="utf-8") as data_file:
+        with open(file_name, "r", encoding="utf-8") as data_file:
             data = []
             for line in data_file:
                 data.append([float(x) for x in line.split(sep=delim)])
     except FileNotFoundError as err:
-        print(f"Could not find DAT file: {file_name}")
+        msg = f"Could not find DAT file: {file_name}"
+        resonaateLogError(msg)
         raise err
-    except ValueError:
-        print(f"Parsing error reading DAT file: {file_name}")
-        raise
+    except ValueError as err:
+        msg = f"Parsing error reading DAT file: {file_name}"
+        resonaateLogError(msg)
+        raise ValueError(msg) from err
 
     if not data:
-        print(f"Empty DAT file: {file_name}")
-        raise IOError
+        msg = f"Empty DAT file: {file_name}"
+        resonaateLogError(msg)
+        raise IOError(msg)
 
     return data
 
@@ -141,9 +120,7 @@ def saveMatrix(name, matrix, path=None):
     # Normalize path & use CWD if not specified
     if path is None:
         path = os.path.join(os.getcwd(), "matrix")
-    path = os.path.realpath(
-        os.path.abspath(path)
-    )
+    path = os.path.realpath(os.path.abspath(path))
 
     # Make directory
     if not os.path.isdir(path):
@@ -151,12 +128,9 @@ def saveMatrix(name, matrix, path=None):
 
     # Create timestamped filename
     now = datetime.utcnow()
-    file_name = os.path.join(
-        os.path.realpath(path),
-        f"{name}_{now.isoformat()}.json"
-    )
+    file_name = os.path.join(os.path.realpath(path), f"{name}_{now.isoformat()}.json")
     # Save to file, convert to list if `numpy.ndarray`
-    with open(file_name, 'w', encoding="utf-8") as out_file:
+    with open(file_name, "w", encoding="utf-8") as out_file:
         if isinstance(matrix, list):
             json.dump(matrix, out_file)
         elif isinstance(matrix, np.ndarray):
@@ -180,8 +154,8 @@ def getTimeout(num_jobs, multiplier=5):
     """
     if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
         return None
-    else:
-        return multiplier * num_jobs
+
+    return multiplier * num_jobs
 
 
 def checkTypes(_locals, _types):

@@ -1,18 +1,18 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     from resonaate.tasking.metrics.behavior import TimeSinceObservation
     from resonaate.tasking.metrics.information import FisherInformation, ShannonInformation
     from resonaate.tasking.metrics.metric_base import Metric
     from resonaate.tasking.metrics.sensor import DeltaPosition, SlewCycle, TimeToTransit
     from resonaate.tasking.metrics.stability import LyapunovStability
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -20,6 +20,7 @@ from ..conftest import BaseTestCase
 @pytest.fixture(name="mocked_metric_class")
 def mockedMetricClass():
     """Return reference to a minimal :class:`.Metric` class."""
+
     class MockedMetric(Metric):
         def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
             return 4

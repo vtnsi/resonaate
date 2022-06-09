@@ -1,24 +1,43 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
-from numpy import allclose, array, deg2rad, concatenate
+from numpy import allclose, array, concatenate, deg2rad
 from scipy.linalg import norm
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     from resonaate.physics.orbits.conversions import (
-        coe2eci, coe2eqe, eci2coe, eci2eqe, eqe2coe, eqe2eci
+        coe2eci,
+        coe2eqe,
+        eci2coe,
+        eci2eqe,
+        eqe2coe,
+        eqe2eci,
     )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
+from ...conftest import BaseTestCase
+
 # Testing Imports
 from .conftest import (
-    SMA, ECC, INC, RAAN, ARGP, ANOM, H, K, P, Q,
-    POS_TEST_CASES, VEL_TEST_CASES, VALLADO_AAS_COE, VALLADO_AAS_EQE, VALLADO_AAS_RV
+    ANOM,
+    ARGP,
+    ECC,
+    INC,
+    POS_TEST_CASES,
+    RAAN,
+    SMA,
+    VALLADO_AAS_COE,
+    VALLADO_AAS_EQE,
+    VALLADO_AAS_RV,
+    VEL_TEST_CASES,
+    H,
+    K,
+    P,
+    Q,
 )
-from ...conftest import BaseTestCase
 
 
 class TestOrbitElementConversions(BaseTestCase):
@@ -28,7 +47,7 @@ class TestOrbitElementConversions(BaseTestCase):
     EQE_SET = tuple(zip(SMA, H, K, P, Q, ANOM))
     RV_CASES = tuple(zip(POS_TEST_CASES, VEL_TEST_CASES))
 
-    @pytest.mark.parametrize("sma, ecc, inc, raan, argp, anom", COE_SET)
+    @pytest.mark.parametrize(("sma", "ecc", "inc", "raan", "argp", "anom"), COE_SET)
     def testCOE(self, sma, ecc, inc, raan, argp, anom):
         """Test COE conversion functions to make sure they are reversible."""
         orig_coe = [sma, ecc, inc, raan, argp, anom]
@@ -42,18 +61,32 @@ class TestOrbitElementConversions(BaseTestCase):
     def testCOE2RV(self):
         """Values from examples in Chapter 2 of Vallado: Examples 2-6."""
         eci = array([6525.368, 6861.532, 6449.119, 4.902279, 5.533140, -1.975710])
-        coe = (11067.790 / (1 - 0.83285**2), 0.83285, deg2rad(87.87), deg2rad(227.89), deg2rad(53.38), deg2rad(92.335))
+        coe = (
+            11067.790 / (1 - 0.83285**2),
+            0.83285,
+            deg2rad(87.87),
+            deg2rad(227.89),
+            deg2rad(53.38),
+            deg2rad(92.335),
+        )
         new_eci = coe2eci(*coe)
         assert allclose(new_eci, eci, rtol=1e-4, atol=1e-6)
 
     def testRV2COE(self):
         """Values from examples in Chapter 2 of Vallado: Examples 2-5."""
         eci = array([6524.834, 6862.875, 6448.296, 4.901327, 5.533756, -1.976341])
-        coe = (36127.343, 0.832853, deg2rad(87.870), deg2rad(227.898), deg2rad(53.38), deg2rad(92.335))
+        coe = (
+            36127.343,
+            0.832853,
+            deg2rad(87.870),
+            deg2rad(227.898),
+            deg2rad(53.38),
+            deg2rad(92.335),
+        )
         new_coe = eci2coe(eci, mu=398600.4418)
         assert allclose(new_coe, coe, rtol=1e-4, atol=1e-6)
 
-    @pytest.mark.parametrize("sma, h, k, p, q, anom", EQE_SET)
+    @pytest.mark.parametrize(("sma", "h", "k", "p", "q", "anom"), EQE_SET)
     def testEQE(self, sma, h, k, p, q, anom):
         """Test EQE conversion functions to make sure they are reversible."""
         # pylint: disable=invalid-name
@@ -65,7 +98,7 @@ class TestOrbitElementConversions(BaseTestCase):
         new_eqe = coe2eqe(*coe)
         assert allclose(orig_eqe, new_eqe, rtol=1e-8, atol=1e-8)
 
-    @pytest.mark.parametrize("pos, vel", RV_CASES)
+    @pytest.mark.parametrize(("pos", "vel"), RV_CASES)
     def testRVConversions(self, pos, vel):
         """Test converting from ECI to COE/EQE and back using cases from Vallado."""
         orig_eci = concatenate((pos, vel), axis=0)

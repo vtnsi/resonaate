@@ -1,13 +1,15 @@
 """Defines the :class:`.TargetAdditionEvent` data table class."""
 # Standard Library Imports
-from json import loads, dumps
+from json import dumps, loads
+
 # Third Party Imports
-from sqlalchemy import Column, Integer, Float, String, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
-# RESONAATE Imports
-from ...physics.time.stardate import datetimeToJulianDate
+from sqlalchemy.orm import relationship
+
+# Local Imports
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
+from ...physics.time.stardate import datetimeToJulianDate
 from .base import Event, EventScope
 
 
@@ -20,24 +22,20 @@ class TargetAdditionEvent(Event):
     INTENDED_SCOPE = EventScope.SCENARIO_STEP
     """EventScope: Scope where :class:`.TargetAdditionEvent` objects should be handled."""
 
-    __mapper_args__ = {
-        'polymorphic_identity': EVENT_TYPE
-    }
+    __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
     def agent_id(self):  # pylint: disable=invalid-name
         """int: Unique ID of the :class:`.Agent` being added to the scenario."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'agent_id',
-            Column(Integer, ForeignKey('agents.unique_id'))
+            "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
         )
 
     @declared_attr
     def tasking_engine_id(self):  # pylint: disable=invalid-name
         """int: Unique ID for the :class:`.TaskingEngine` that this target should be added to."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'tasking_engine_id',
-            Column(Integer)
+            "tasking_engine_id", Column(Integer)
         )
 
     agent = relationship("Agent", lazy="joined", innerjoin=True)
@@ -46,70 +44,62 @@ class TargetAdditionEvent(Event):
     @declared_attr
     def pos_x_km(self):  # pylint: disable=invalid-name
         """float: Cartesian x-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'pos_x_km',
-            Column(Float)
-        )
+        return Event.__table__.c.get("pos_x_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def pos_y_km(self):  # pylint: disable=invalid-name
         """float: Cartesian y-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'pos_y_km',
-            Column(Float)
-        )
+        return Event.__table__.c.get("pos_y_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def pos_z_km(self):  # pylint: disable=invalid-name
         """float: Cartesian z-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'pos_z_km',
-            Column(Float)
-        )
+        return Event.__table__.c.get("pos_z_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_x_km_p_sec(self):  # pylint: disable=invalid-name
         """float: Cartesian x-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'vel_x_km_p_sec',
-            Column(Float)
-        )
+        return Event.__table__.c.get("vel_x_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_y_km_p_sec(self):  # pylint: disable=invalid-name
         """float: Cartesian y-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'vel_y_km_p_sec',
-            Column(Float)
-        )
+        return Event.__table__.c.get("vel_y_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_z_km_p_sec(self):  # pylint: disable=invalid-name
         """float: Cartesian z-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            'vel_z_km_p_sec',
-            Column(Float)
-        )
+        return Event.__table__.c.get("vel_z_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def station_keeping_json(self):  # pylint: disable=invalid-name
         """str: JSON serialized list of station keeping key words for this target."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'station_keeping_json',
-            Column(String(128))
+            "station_keeping_json", Column(String(128))
         )
 
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
-        "agent_id", "tasking_engine_id", "pos_x_km", "pos_y_km", "pos_z_km", "vel_x_km_p_sec", "vel_y_km_p_sec",
-        "vel_z_km_p_sec", "station_keeping_json"
+        "agent_id",
+        "tasking_engine_id",
+        "pos_x_km",
+        "pos_y_km",
+        "pos_z_km",
+        "vel_x_km_p_sec",
+        "vel_y_km_p_sec",
+        "vel_z_km_p_sec",
+        "station_keeping_json",
     )
 
     @property
     def eci(self):
         """``list``: returns the formatted ECI state vector."""
         return [
-            self.pos_x_km, self.pos_y_km, self.pos_z_km,
-            self.vel_x_km_p_sec, self.vel_y_km_p_sec, self.vel_z_km_p_sec
+            self.pos_x_km,
+            self.pos_y_km,
+            self.pos_z_km,
+            self.vel_x_km_p_sec,
+            self.vel_y_km_p_sec,
+            self.vel_z_km_p_sec,
         ]
 
     @property
@@ -127,7 +117,7 @@ class TargetAdditionEvent(Event):
             "sat_num": self.agent_id,
             "sat_name": self.agent.name,
             "init_eci": self.eci,
-            "station_keeping": self.station_keeping
+            "station_keeping": self.station_keeping,
         }
         scope_instance.addTarget(target_spec, self.tasking_engine_id)
 
@@ -164,5 +154,5 @@ class TargetAdditionEvent(Event):
             vel_x_km_p_sec=initial_state[3],
             vel_y_km_p_sec=initial_state[4],
             vel_z_km_p_sec=initial_state[5],
-            station_keeping_json=dumps(config.station_keeping)
+            station_keeping_json=dumps(config.station_keeping.toJSON()),
         )

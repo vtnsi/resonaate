@@ -1,0 +1,13 @@
+{
+  "time": {
+    "start_timestamp": "2018-12-01T12:00:00.000Z",
+    "stop_timestamp": "2018-12-01T13:00:00.000Z"
+  },
+  "estimation": {
+    "sequential_filter": {
+      "name": "unscented_kalman_filter"
+    },
+    "adaptive_filter": null
+  },
+  "engines_files": ["../engines/test_engine.json"]
+}

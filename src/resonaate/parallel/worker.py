@@ -1,16 +1,25 @@
 """Control module for managing worker processes."""
 
-from multiprocessing import Process, Lock, cpu_count
-from threading import Thread
-from time import time, sleep
-from pickle import loads, dumps
-from os import kill, getpid
-from signal import SIGINT
+# Standard Library Imports
 from datetime import datetime
+from multiprocessing import Lock, Process, cpu_count
+from os import getpid, kill
+from pickle import dumps, loads
+from signal import SIGINT
+from threading import Thread
+from time import sleep, time
 
-from . import JOB_QUEUE_LIST, PROCESSED_QUEUE_NAME_PREFIX, MASTER_KEY_NAME
-from . import getRedisConnection, REDIS_QUEUE_LOGGER, masterExists, getMasterHash
+# Local Imports
 from ..common.behavioral_config import BehavioralConfig
+from . import (
+    JOB_QUEUE_LIST,
+    MASTER_KEY_NAME,
+    PROCESSED_QUEUE_NAME_PREFIX,
+    REDIS_QUEUE_LOGGER,
+    getMasterHash,
+    getRedisConnection,
+    masterExists,
+)
 
 
 class WorkerManager:
@@ -57,7 +66,7 @@ class WorkerManager:
 
         for item in range(proc_count):
             self._worker_locks.append(Lock())
-            worker_name = f'worker-{item}-{getMasterHash()[:8]}'
+            worker_name = f"worker-{item}-{getMasterHash()[:8]}"
 
             self._worker_processes.append(
                 Process(
@@ -65,7 +74,7 @@ class WorkerManager:
                     args=(worker_name, self._worker_locks[item], self._processing_queue_name),
                     kwargs={"logger": logger},
                     name=worker_name,
-                    daemon=daemonic
+                    daemon=daemonic,
                 )
             )
 
@@ -110,8 +119,8 @@ class WorkerManager:
         for lock in self._worker_locks:
             if not lock.acquire(block=False):
                 return True
-            else:
-                lock.release()
+
+            lock.release()
 
         return False
 
@@ -133,14 +142,15 @@ class WorkerManager:
             if jobs[0] is not None:
                 return time() - jobs[1]
 
-            else:
-                return 0.0
+            return 0.0
 
         total_proc_time = 0.0
         total_jobs_processed = 0
         last_average_log = 0.0
         while 1:
-            serialized = self._redis_conn.blpop(self._processing_queue_name, timeout=self.WATCHDOG_INTERVAL)
+            serialized = self._redis_conn.blpop(
+                self._processing_queue_name, timeout=self.WATCHDOG_INTERVAL
+            )
             if serialized is not None:
                 new_jobs = loads(serialized[1])
 
@@ -223,7 +233,7 @@ def workerLoop(name, lock, processing_queue_name, logger=None):
             if serialized:
                 with lock:
                     job_queue_name = serialized[0].decode()
-                    job_queue_id = job_queue_name.split('_')[-1]
+                    job_queue_id = job_queue_name.split("_")[-1]
                     job = loads(serialized[1])
 
                     redis_conn.rpush(processing_queue_name, dumps((name, job.id, time())))

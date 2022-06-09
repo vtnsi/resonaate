@@ -1,24 +1,27 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
 import pytest
-from numpy import isclose, deg2rad, cos, sin, allclose, concatenate, rad2deg, sqrt, array, isfinite
-# RESONAATE Imports
+from numpy import allclose, array, concatenate, cos, deg2rad, isclose, isfinite, rad2deg, sin, sqrt
+
 try:
-    from resonaate.physics.orbits.kepler import (
-        solveKeplerProblemUniversal, keplerSolveCOE, keplerSolveEQE, KeplerProblemError
-    )
-    from resonaate.physics.math import _ATOL, rot1, rot3
-    from resonaate.physics.bodies import Earth
+    # RESONAATE Imports
     from resonaate.physics import constants as const
+    from resonaate.physics.bodies import Earth
+    from resonaate.physics.math import _ATOL, rot1, rot3
+    from resonaate.physics.orbits.kepler import (
+        KeplerProblemError,
+        keplerSolveCOE,
+        keplerSolveEQE,
+        solveKeplerProblemUniversal,
+    )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
-# Testing Imports
-from .conftest import POS_TEST_CASES, VEL_TEST_CASES
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 from ...conftest import BaseTestCase
 
+# Testing Imports
+from .conftest import POS_TEST_CASES, VEL_TEST_CASES
 
 E_PAR = 1.0
 P_PAR = 25512.0
@@ -44,14 +47,11 @@ class TestKepler(BaseTestCase):
     # Testing circular orbit cases
     CIRCULAR_ANOM_CASES = (0, 90, 180, 360, -90, -270)
 
-    @pytest.mark.parametrize("M, ecc, E", KEPLER_EQN_TESTS)
+    @pytest.mark.parametrize(("M", "ecc", "E"), KEPLER_EQN_TESTS)
     def testKeplerCOE(self, M, ecc, E):
         """Test Kepler's equation accuracy using COE form."""
         # pylint: disable=invalid-name
-        if 0 > M > -const.PI or M > const.PI:
-            E_0 = M - ecc
-        else:
-            E_0 = M + ecc
+        E_0 = M - ecc if (0 > M > -const.PI or M > const.PI) else M + ecc
         assert isclose(E, keplerSolveCOE(E_0, M, ecc), rtol=0, atol=_ATOL)
 
     @pytest.mark.parametrize("M", CIRCULAR_ANOM_CASES)
@@ -59,13 +59,10 @@ class TestKepler(BaseTestCase):
         """Test Kepler's equation COE form for the circular orbit case."""
         # pylint: disable=invalid-name
         ecc = 0.0
-        if 0 > M > -const.PI or M > const.PI:
-            E_0 = M - ecc
-        else:
-            E_0 = M + ecc
+        E_0 = M - ecc if (0 > M > -const.PI or M > const.PI) else M + ecc
         assert isclose(M, keplerSolveCOE(E_0, M, ecc), rtol=0, atol=_ATOL)
 
-    @pytest.mark.parametrize("M, ecc, E", KEPLER_EQN_TESTS)
+    @pytest.mark.parametrize(("M", "ecc", "E"), KEPLER_EQN_TESTS)
     def testKeplerEQE(self, M, ecc, E):
         """Test Kepler's equation accuracy using EQE form."""
         # pylint: disable=invalid-name
@@ -100,7 +97,7 @@ class TestKepler(BaseTestCase):
         assert allclose(init_eci, solveKeplerProblemUniversal(final_eci, -tof), rtol=1e-6)
 
     @pytest.mark.parametrize("tof", TOF)
-    @pytest.mark.parametrize("pos, vel", tuple(zip(POS_TEST_CASES, VEL_TEST_CASES)))
+    @pytest.mark.parametrize(("pos", "vel"), tuple(zip(POS_TEST_CASES, VEL_TEST_CASES)))
     def testKeplerProblemCases(self, tof, pos, vel):
         """Test Kepler's problem forwards and then backwards is consistent."""
         # pylint: disable=invalid-name
@@ -108,7 +105,7 @@ class TestKepler(BaseTestCase):
         final_eci = solveKeplerProblemUniversal(init_eci, tof * 60, tol=1e-12)
         assert allclose(init_eci, solveKeplerProblemUniversal(final_eci, -tof * 60, tol=1e-12))
 
-    @pytest.mark.parametrize("p, e", (PAR_CASE, HYP_CASE))
+    @pytest.mark.parametrize(("p", "e"), [PAR_CASE, HYP_CASE])
     def testKeplerProblemParabolichyperbolic(self, p, e):
         """Test Kepler's problem raises error for parabolic case."""
         # pylint: disable=invalid-name

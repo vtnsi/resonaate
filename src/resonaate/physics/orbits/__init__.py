@@ -7,8 +7,11 @@ elements.
 References:
     :cite:t:`vallado_2003_aiaa_covariance`, Pg 11
 """
+# Standard Library Imports
 from functools import wraps
 from typing import Callable, Tuple
+
+# Local Imports
 from .. import constants as const
 from ..math import wrapAngle2Pi
 
@@ -108,7 +111,9 @@ def isInclined(inc: float, tol: float = INCLINATION_LIMIT) -> bool:
         ``bool``: whether the angle is inclined.
     """
     if inc < 0.0 or inc > const.PI:
-        raise InclinationError(f"Invalid inclination, must be in [0, 180]. inc={inc * const.RAD2DEG:.1f} deg")
+        raise InclinationError(
+            f"Invalid inclination, must be in [0, 180]. inc={inc * const.RAD2DEG:.1f} deg"
+        )
     return tol <= inc <= const.PI - tol
 
 

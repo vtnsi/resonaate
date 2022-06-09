@@ -1,18 +1,19 @@
 """Subpackage defining how a :class:`.Scenario` can be configured."""
 # Standard Library Imports
 import os
-# Package
+
+# Local Imports
 from ...common.logger import resonaateLogWarning
-from ...common.utilities import loadJSONFile, loadYAMLFile
-from .base import ConfigObjectList, ConfigMissingRequiredError
+from ...common.utilities import loadJSONFile
+from .base import ConfigMissingRequiredError, ConfigObjectList
+from .engine_config import EngineConfigObject
+from .estimation_config import EstimationConfig
+from .event_configs import EventConfigObjectList
 from .geopotential_config import GeopotentialConfig
 from .noise_config import NoiseConfig
+from .perturbations_config import PerturbationsConfig
 from .propagation_config import PropagationConfig
 from .time_config import TimeConfig
-from .perturbations_config import PerturbationsConfig
-from .event_configs import EventConfigObjectList
-from .engine_config import EngineConfigObject
-from .filter_config import FilterConfig
 
 
 class ScenarioConfig:
@@ -30,12 +31,18 @@ class ScenarioConfig:
         self.geopotential = GeopotentialConfig()
         self.engines = ConfigObjectList("engines", EngineConfigObject)
         self.perturbations = PerturbationsConfig()
-        self.filter = FilterConfig()
+        self.estimation = EstimationConfig()
         self.events = EventConfigObjectList()
 
         self.sections = (
-            self.time, self.noise, self.propagation, self.geopotential, self.engines,
-            self.perturbations, self.events, self.filter
+            self.time,
+            self.noise,
+            self.propagation,
+            self.geopotential,
+            self.engines,
+            self.perturbations,
+            self.events,
+            self.estimation,
         )
 
     @classmethod
@@ -74,7 +81,7 @@ class ScenarioConfig:
             resonaateLogWarning(msg)
 
     @staticmethod
-    def parseConfigFile(path):
+    def parseConfigFile(path, file_loader=loadJSONFile):
         """Parse out configuration from a given filepath.
 
         Args:
@@ -83,33 +90,28 @@ class ScenarioConfig:
         Returns:
             ``dict``: config dictionary object with the necessary fields
         """
-        if path.endswith("json"):
-            file_loader = loadJSONFile
-        elif path.endswith("yaml"):
-            file_loader = loadYAMLFile
-        else:
-            raise ValueError(path)
-
         # Load the main config, and save the path
-        config_file_path = os.path.dirname(os.path.abspath(path))
-        configuration = file_loader(path)
+        config_file_path = os.path.abspath(path)
+        config_directory = os.path.dirname(config_file_path)
+        configuration = file_loader(config_file_path)
 
         # Load the Tasking Engines
         engine_files = configuration.pop("engines_files")
         configuration["engines"] = []
         for engine_file in engine_files:
-            engine_config = file_loader(os.path.join(config_file_path, engine_file))
+            engine_config = file_loader(os.path.join(config_directory, engine_file))
 
             # Load the RSO target set
-            targets = file_loader(os.path.join(config_file_path, engine_config["targets_file"]))
+            targets = file_loader(
+                os.path.join(config_directory, engine_config.pop("targets_file"))
+            )
 
             # Load the sensor set
-            sensors = file_loader(os.path.join(config_file_path, engine_config["sensors_file"]))
+            sensors = file_loader(
+                os.path.join(config_directory, engine_config.pop("sensors_file"))
+            )
 
-            engine_config.update({
-                "targets": targets,
-                "sensors": sensors
-            })
+            engine_config.update({"targets": targets, "sensors": sensors})
             configuration["engines"].append(engine_config)
 
         return configuration

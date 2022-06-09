@@ -1,18 +1,21 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use, unused-argument
+# pylint: disable=attribute-defined-outside-init, unused-argument
 # Standard Library Imports
+import os.path
 from copy import deepcopy
+
 # Third Party Imports
 import pytest
-# RESONAATE Imports
+
 try:
-    from resonaate.scenario.config import ScenarioConfig, ConfigMissingRequiredError
+    # RESONAATE Imports
+    from resonaate.common.exceptions import DuplicateSensorError, DuplicateTargetError
+    from resonaate.scenario.config import ConfigMissingRequiredError, ScenarioConfig
     from resonaate.scenario.scenario_builder import ScenarioBuilder
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
-from ..conftest import BaseTestCase
+from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
 
 
 @pytest.fixture(name="scenario_config")
@@ -24,27 +27,36 @@ def getScenarioTestConfig():
 class TestScenarioConfig(BaseTestCase):
     """Test the :class:`.ScenarioConfig` class."""
 
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     @pytest.mark.parametrize("remove", ScenarioConfig().required_sections)
-    def testRequiredSection(self, scenario_config, remove):
+    def testRequiredSection(self, datafiles, remove):
         """Test removing each required sections in config."""
+        init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
+        scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         # Remove required key from the config dict
         del scenario_config[remove]
         # Ensure a ConfigMissingRequiredError is raised
         with pytest.raises(ConfigMissingRequiredError):
             ScenarioConfig().readConfig(scenario_config)
 
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     @pytest.mark.parametrize("remove", ScenarioConfig().optional_sections)
-    def testOptionalSection(self, scenario_config, remove):
+    def testOptionalSection(self, datafiles, remove):
         """Test removing each optional sections in config."""
+        init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
+        scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         # Remove required key from the config dict
         if scenario_config.get(remove):
             del scenario_config[remove]
         # Ensure a valid section was added
         ScenarioConfig().readConfig(scenario_config)
 
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     @pytest.mark.parametrize("remove", ScenarioConfig().required_sections)
-    def testRequiredFields(self, scenario_config, remove):
+    def testRequiredFields(self, datafiles, remove):
         """Test removing required fields in each config section."""
+        init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
+        scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         section = getattr(ScenarioConfig(), remove)
         for field in section.nested_items:
             if field.isRequired():
@@ -53,9 +65,12 @@ class TestScenarioConfig(BaseTestCase):
                 with pytest.raises(ConfigMissingRequiredError):
                     ScenarioConfig().readConfig(temp_config)
 
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     @pytest.mark.parametrize("remove", ScenarioConfig().optional_sections)
-    def testOptionalFields(self, scenario_config, remove):
+    def testOptionalFields(self, datafiles, remove):
         """Test removing optional fields in each config section."""
+        init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
+        scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         section = getattr(ScenarioConfig(), remove)
         for field in section.nested_items:
             if not field.isRequired():
@@ -70,8 +85,11 @@ class TestScenarioConfig(BaseTestCase):
         with pytest.raises(ConfigMissingRequiredError):
             ScenarioConfig().readConfig({})
 
-    def testSafeDuplicateTargets(self, scenario_config, reset_db):
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testSafeDuplicateTargets(self, datafiles, reset_shared_db):
         """Verify no errors are thrown if two engines are looking at the same target network."""
+        init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
+        scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         first_target_network = None
         for engine in scenario_config["engines"]:
             if not first_target_network:
@@ -83,8 +101,11 @@ class TestScenarioConfig(BaseTestCase):
         config.readConfig(scenario_config)
         ScenarioBuilder(config)
 
-    def testECICOEDuplicateTargets(self, scenario_config, reset_db):
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testECICOEDuplicateTargets(self, datafiles, reset_shared_db):
         """Verify errors are thrown if two engines are looking at the same target with different initial states."""
+        init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
+        scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         first_target_network = None
         for engine in scenario_config["engines"]:
             if not first_target_network:
@@ -102,11 +123,14 @@ class TestScenarioConfig(BaseTestCase):
         config = ScenarioConfig()
         config.readConfig(scenario_config)
 
-        with pytest.raises(Exception):
+        with pytest.raises(DuplicateTargetError):
             ScenarioBuilder(config)
 
-    def testDiffStateDuplicateTargets(self, scenario_config, reset_db):
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testDiffStateDuplicateTargets(self, datafiles, reset_shared_db):
         """Verify errors are thrown if two engines are looking at the same target with different initial states."""
+        init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
+        scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         first_target_network = None
         for engine in scenario_config["engines"]:
             if not first_target_network:
@@ -118,11 +142,14 @@ class TestScenarioConfig(BaseTestCase):
         config = ScenarioConfig()
         config.readConfig(scenario_config)
 
-        with pytest.raises(Exception):
+        with pytest.raises(DuplicateTargetError):
             ScenarioBuilder(config)
 
-    def testDuplicateSensors(self, scenario_config, reset_db):
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testDuplicateSensors(self, datafiles, reset_shared_db):
         """Verify errors are thrown if two engines are tasking the same sensors."""
+        init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
+        scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         first_sensor_network = None
         for engine in scenario_config["engines"]:
             if not first_sensor_network:
@@ -133,5 +160,5 @@ class TestScenarioConfig(BaseTestCase):
         config = ScenarioConfig()
         config.readConfig(scenario_config)
 
-        with pytest.raises(Exception):
+        with pytest.raises(DuplicateSensorError):
             ScenarioBuilder(config)

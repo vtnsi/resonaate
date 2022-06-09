@@ -1,7 +1,5 @@
 """Defines behavior-focused tasking metrics."""
-# Standard Library Imports
-# Third Party Imports
-# RESONAATE Imports
+# Local Imports
 from .metric_base import BehaviorMetric
 
 

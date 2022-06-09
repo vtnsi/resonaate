@@ -1,8 +1,19 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
-from .base import ConfigOption, ConfigObject, NO_SETTING, ConfigValueError, ConfigError
-from ...sensors import OPTICAL_LABEL, RADAR_LABEL, ADV_RADAR_LABEL
+# Local Imports
 from ...agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
-from ...dynamics.integration_events.station_keeping import StationKeeper
+from ...dynamics.integration_events.station_keeping import (
+    VALID_STATION_KEEPING_ROUTINES,
+    StationKeeper,
+)
+from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
+from .base import (
+    NO_SETTING,
+    ConfigError,
+    ConfigObject,
+    ConfigOption,
+    ConfigSection,
+    ConfigValueError,
+)
 
 
 def validateStationKeepingConfigs(conf_str_list):
@@ -26,12 +37,12 @@ class TargetConfigObject(ConfigObject):
     def getFields():
         """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.TargetConfigObject`."""
         return (
-            ConfigOption("sat_num", (int, )),
-            ConfigOption("sat_name", (str, )),
-            ConfigOption("init_eci", (list, ), default=NO_SETTING),
-            ConfigOption("init_coe", (dict, ), default=NO_SETTING),
-            ConfigOption("init_eqe", (dict, ), default=NO_SETTING),
-            ConfigOption("station_keeping", (list, ), default=[])
+            ConfigOption("sat_num", (int,)),
+            ConfigOption("sat_name", (str,)),
+            ConfigOption("init_eci", (list,), default=NO_SETTING),
+            ConfigOption("init_coe", (dict,), default=NO_SETTING),
+            ConfigOption("init_eqe", (dict,), default=NO_SETTING),
+            StationKeepingConfig(),
         )
 
     def __init__(self, object_config):
@@ -66,8 +77,6 @@ class TargetConfigObject(ConfigObject):
             if len(self.init_coe) < 4:
                 err = f"Target {self.sat_num}: COE set should have at least 4 elements, not {len(self.init_coe)}"
                 raise ConfigError(self.__class__.__name__, err)
-
-        validateStationKeepingConfigs(self.station_keeping)
 
     @property
     def sat_num(self):
@@ -106,7 +115,7 @@ class TargetConfigObject(ConfigObject):
     @property
     def station_keeping(self):
         """str: listing what type of station keeping this RSO is doing."""
-        return self._station_keeping.setting  # pylint: disable=no-member
+        return self._station_keeping  # pylint: disable=no-member
 
     @property
     def eci_set(self):
@@ -131,26 +140,41 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
     def getFields():
         """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.SensorConfigObject`."""
         return (
-            ConfigOption("id", (int, )),
-            ConfigOption("name", (str, )),
-            ConfigOption("host_type", (str, ), valid_settings=(GROUND_FACILITY_LABEL, SPACECRAFT_LABEL, )),
-            ConfigOption("lat", (float, ), default=NO_SETTING),
-            ConfigOption("lon", (float, ), default=NO_SETTING),
-            ConfigOption("alt", (float, ), default=NO_SETTING),
-            ConfigOption("init_eci", (list, ), default=NO_SETTING),
-            ConfigOption("init_coe", (dict, ), default=NO_SETTING),
-            ConfigOption("init_eqe", (dict, ), default=NO_SETTING),
-            ConfigOption("azimuth_range", (list, )),
-            ConfigOption("elevation_range", (list, )),
-            ConfigOption("covariance", (list, )),
-            ConfigOption("aperture_area", (float, )),
-            ConfigOption("efficiency", (float, )),
-            ConfigOption("slew_rate", (float, )),
-            ConfigOption("exemplar", (list, )),
-            ConfigOption("sensor_type", (str, ), valid_settings=(OPTICAL_LABEL, RADAR_LABEL, ADV_RADAR_LABEL, )),
-            ConfigOption("tx_power", (float, ), default=NO_SETTING),
-            ConfigOption("tx_frequency", (float, ), default=NO_SETTING),
-            ConfigOption("station_keeping", (list, ), default=[])
+            ConfigOption("id", (int,)),
+            ConfigOption("name", (str,)),
+            ConfigOption(
+                "host_type",
+                (str,),
+                valid_settings=(
+                    GROUND_FACILITY_LABEL,
+                    SPACECRAFT_LABEL,
+                ),
+            ),
+            ConfigOption("lat", (float,), default=NO_SETTING),
+            ConfigOption("lon", (float,), default=NO_SETTING),
+            ConfigOption("alt", (float,), default=NO_SETTING),
+            ConfigOption("init_eci", (list,), default=NO_SETTING),
+            ConfigOption("init_coe", (dict,), default=NO_SETTING),
+            ConfigOption("init_eqe", (dict,), default=NO_SETTING),
+            ConfigOption("azimuth_range", (list,)),
+            ConfigOption("elevation_range", (list,)),
+            ConfigOption("covariance", (list,)),
+            ConfigOption("aperture_area", (float,)),
+            ConfigOption("efficiency", (float,)),
+            ConfigOption("slew_rate", (float,)),
+            ConfigOption("exemplar", (list,)),
+            ConfigOption(
+                "sensor_type",
+                (str,),
+                valid_settings=(
+                    OPTICAL_LABEL,
+                    RADAR_LABEL,
+                    ADV_RADAR_LABEL,
+                ),
+            ),
+            ConfigOption("tx_power", (float,), default=NO_SETTING),
+            ConfigOption("tx_frequency", (float,), default=NO_SETTING),
+            StationKeepingConfig(),
         )
 
     def __init__(self, object_config):
@@ -192,14 +216,12 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             err = f"Sensor {self.id}: Radar transmit parameters not set: {object_config}"
             raise ConfigError(self.__class__.__name__, err)
 
-        if self.host_type is GROUND_FACILITY_LABEL and self.station_keeping:
+        if self.host_type is GROUND_FACILITY_LABEL and self.station_keeping.routines:
             err = "Ground based sensors cannot perform station keeping"
             raise ConfigError(self.__class__.__name__, err)
 
-        validateStationKeepingConfigs(self.station_keeping)
-
     @property  # noqa: A003
-    def id(self):  # pylint: disable=invalid-name
+    def id(self):  # noqa: A003 pylint: disable=invalid-name
         """int: Unique identifier for this sensor."""
         return self._id.setting  # pylint: disable=no-member
 
@@ -343,4 +365,34 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
 
         Default to type(None), asserted to be None if host_type is `GROUND_FACILITY_LABEL`.
         """
-        return self._station_keeping.setting  # pylint: disable=no-member
+        return self._station_keeping  # pylint: disable=no-member
+
+
+class StationKeepingConfig(ConfigSection):
+    """Configuration setting defining station keeping options."""
+
+    CONFIG_LABEL = "station_keeping"
+    """``str``: Key where settings are stored in the configuration dictionary read from file."""
+
+    def __init__(self):
+        """Construct an instance of a :class:`.StationKeepingConfig`."""
+        self._routines = ConfigOption(
+            "routines",
+            (list,),
+            default=[],
+            valid_settings=(NO_SETTING,) + VALID_STATION_KEEPING_ROUTINES,
+        )
+
+    @property
+    def routines(self):
+        """Return settings for routines."""
+        return self._routines.setting
+
+    @property
+    def nested_items(self):
+        """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
+        return [self._routines]
+
+    def toJSON(self):
+        """Convert station keeping config section to JSON-serializable format."""
+        return {"routines": self.routines}

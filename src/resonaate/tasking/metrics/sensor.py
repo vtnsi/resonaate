@@ -1,9 +1,7 @@
 """Defines sensor usage-focused tasking metrics."""
-# Standard Library Imports
-# Third Party Imports
-# RESONAATE Imports
-from .metric_base import SensorMetric
+# Local Imports
 from ...physics import constants as const
+from .metric_base import SensorMetric
 
 
 class DeltaPosition(SensorMetric):
@@ -38,7 +36,10 @@ class SlewCycle(SensorMetric):
         Returns:
             (float): Slew cycle metric
         """
-        return sensor_agents[sensor_id].sensors.slew_rate / sensor_agents[sensor_id].sensors.delta_boresight
+        return (
+            sensor_agents[sensor_id].sensors.slew_rate
+            / sensor_agents[sensor_id].sensors.delta_boresight
+        )
 
 
 class TimeToTransit(SensorMetric):
@@ -63,5 +64,6 @@ class TimeToTransit(SensorMetric):
             (float): Time to transit metric
         """
         return (
-            sensor_agents[sensor_id].sensors.delta_boresight / sensor_agents[sensor_id].sensors.slew_rate
+            sensor_agents[sensor_id].sensors.delta_boresight
+            / sensor_agents[sensor_id].sensors.slew_rate
         ) / self._norm_factor

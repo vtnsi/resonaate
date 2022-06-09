@@ -2,8 +2,8 @@
 # Standard Library Imports
 import argparse
 import os.path
-# Third Party Imports
-# RESONAATE Imports
+
+# Local Imports
 from .logger import resonaateLogError
 
 
@@ -39,7 +39,7 @@ def getCommandLineParser():
         "init_msg",
         metavar="INIT_FILE",
         type=fileChecker,
-        help="Path to RESONAATE initialization message file"
+        help="Path to RESONAATE initialization message file",
     )
 
     parser.add_argument(
@@ -49,7 +49,7 @@ def getCommandLineParser():
         metavar="HOURS",
         default=0.5,
         type=float,
-        help="Time in hours to simulate. DEFAULT: 1/2 hour"
+        help="Time in hours to simulate. DEFAULT: 1/2 hour",
     )
 
     parser.add_argument(
@@ -57,7 +57,7 @@ def getCommandLineParser():
         dest="debug_mode",
         action="store_true",
         default=False,
-        help="Turns on parallel debug mode"
+        help="Turns on parallel debug mode",
     )
 
     db_group.add_argument(
@@ -67,7 +67,7 @@ def getCommandLineParser():
         metavar="DB_PATH",
         default=None,
         type=str,
-        help="Path to RESONAATE database"
+        help="Path to RESONAATE database",
     )
 
     db_group.add_argument(
@@ -77,7 +77,7 @@ def getCommandLineParser():
         metavar="IMPORTER_DB_PATH",
         default=None,
         type=fileChecker,
-        help="Path to Importer database"
+        help="Path to Importer database",
     )
 
     return parser

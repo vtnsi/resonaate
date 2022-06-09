@@ -3,15 +3,32 @@
 This module is for calculating values of EOPs for different dates. This was split out from the
 reductions.py module for later expansion/customization of how this works.
 """
+from __future__ import annotations
+
 # Standard Library Imports
 import datetime
 from dataclasses import dataclass
 from functools import lru_cache
-from pkg_resources import resource_filename
-# Third Party Imports
-# RESONAATE Imports
-import resonaate.physics.constants as const
+from importlib import resources
+from typing import TYPE_CHECKING
+
+# Local Imports
 from ...common.utilities import loadDatFile
+from .. import constants as const
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from pathlib import Path
+    from typing import Dict, Optional, Union
+
+
+EOP_MODULE: str = "resonaate.physics.data.eop"
+"""``str``: defines EOP data module location."""
+
+
+DEFAULT_EOP_DATA: str = "EOPdata.dat"
+"""``str``: defines default EOP data file."""
 
 
 @dataclass(frozen=True)
@@ -44,7 +61,9 @@ class EarthOrientationParameter:
 
 
 @lru_cache(maxsize=5)
-def getEarthOrientationParameters(eop_date, filename=None):
+def getEarthOrientationParameters(
+    eop_date: datetime.date, filename: Optional[Union[str, Path]] = None
+) -> EarthOrientationParameter:
     """Return the :class:`.EarthOrientationParameter` based on the current calendar date.
 
     Args:
@@ -69,7 +88,9 @@ def getEarthOrientationParameters(eop_date, filename=None):
 
 
 @lru_cache(maxsize=5)
-def _readEOPFile(filename=None):
+def _readEOPFile(
+    filename: Optional[Union[str, Path]] = None
+) -> Dict[datetime.date, EarthOrientationParameter]:
     """Read EOPs from a file and return them as a formatted ``dict``.
 
     Args:
@@ -87,8 +108,10 @@ def _readEOPFile(filename=None):
     """
     # Load raw data from file
     if filename is None:
-        filename = resource_filename('resonaate', 'physics/data/eop/EOPdata.dat')
-    raw_data = loadDatFile(filename)
+        with resources.path(EOP_MODULE, DEFAULT_EOP_DATA) as file_resource:
+            raw_data = loadDatFile(file_resource)
+    else:
+        raw_data = loadDatFile(filename)
 
     # Create dictionary of EOPs
     formatted_data = {}
@@ -96,9 +119,13 @@ def _readEOPFile(filename=None):
         eop_date = datetime.date(int(eop[0]), int(eop[1]), int(eop[2]))
         formatted_data[eop_date] = EarthOrientationParameter(
             date=eop_date,
-            x_p=eop[4] * const.ARCSEC2RAD, y_p=eop[5] * const.ARCSEC2RAD,
-            d_delta_psi=eop[8] * const.ARCSEC2RAD, d_delta_eps=eop[9] * const.ARCSEC2RAD,
-            delta_ut1=eop[6], length_of_day=eop[7], delta_atomic_time=int(eop[12])
+            x_p=eop[4] * const.ARCSEC2RAD,
+            y_p=eop[5] * const.ARCSEC2RAD,
+            d_delta_psi=eop[8] * const.ARCSEC2RAD,
+            d_delta_eps=eop[9] * const.ARCSEC2RAD,
+            delta_ut1=eop[6],
+            length_of_day=eop[7],
+            delta_atomic_time=int(eop[12]),
         )
 
     return formatted_data

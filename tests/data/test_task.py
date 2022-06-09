@@ -1,16 +1,16 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 from copy import deepcopy
+
 # Third Party Imports
 from sqlalchemy.orm import Query
-# RESONAATE Imports
+
 try:
-    from resonaate.data.resonaate_database import ResonaateDatabase
+    # RESONAATE Imports
     from resonaate.data.task import Task
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -80,9 +80,8 @@ class TestTaskTable(BaseTestCase):
         assert task1 == task2
         assert task1 != task3
 
-    def testInsertWithRelationship(self, epoch, target_agent, sensor_agent):
+    def testInsertWithRelationship(self, database, epoch, target_agent, sensor_agent):
         """Test inserting task with related objects."""
-        database = ResonaateDatabase.getSharedInterface()
         task = Task(
             target=target_agent,
             epoch=epoch,
@@ -95,12 +94,8 @@ class TestTaskTable(BaseTestCase):
         # Test insert of object
         database.insertData(task)
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testInsertWithForeignKeys(self, epoch, target_agent, sensor_agent):
+    def testInsertWithForeignKeys(self, database, epoch, target_agent, sensor_agent):
         """Test inserting task with only foreign keys."""
-        database = ResonaateDatabase.getSharedInterface()
         task = Task(
             target_id=target_agent.unique_id,
             julian_date=epoch.julian_date,
@@ -117,15 +112,11 @@ class TestTaskTable(BaseTestCase):
         # Test insert of object via FK
         database.insertData(task)
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testManyToOneLazyLoading(self, epoch, target_agent, sensor_agent):
+    def testManyToOneLazyLoading(self, database, epoch, target_agent, sensor_agent):
         """Test many to one lazy-loading attributes."""
         julian_date = epoch.julian_date
         target_id = target_agent.unique_id
         sensor_id = sensor_agent.unique_id
-        database = ResonaateDatabase.getSharedInterface()
         task = Task(
             target=target_agent,
             epoch=epoch,
@@ -142,16 +133,12 @@ class TestTaskTable(BaseTestCase):
         assert new_task.target.unique_id == target_id
         assert new_task.sensor.unique_id == sensor_id
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testManyToOneQuery(self, epoch, target_agent, sensor_agent):
+    def testManyToOneQuery(self, database, epoch, target_agent, sensor_agent):
         """Test many to one relationship queries."""
         epoch_copy = deepcopy(epoch)
         target_copy = deepcopy(target_agent)
         sensor_copy = deepcopy(sensor_agent)
 
-        database = ResonaateDatabase.getSharedInterface()
         task = Task(
             target=target_agent,
             epoch=epoch,
@@ -163,25 +150,16 @@ class TestTaskTable(BaseTestCase):
         database.insertData(task)
 
         # Test querying by Target
-        query = Query(Task).filter(
-            Task.target == target_copy
-        )
+        query = Query(Task).filter(Task.target == target_copy)
         new_task = database.getData(query, multi=False)
         assert new_task.target == target_copy
 
         # Test querying by Sensor
-        query = Query(Task).filter(
-            Task.sensor == sensor_copy
-        )
+        query = Query(Task).filter(Task.sensor == sensor_copy)
         new_task = database.getData(query, multi=False)
         assert new_task.sensor == sensor_copy
 
         # Test querying by epoch
-        query = Query(Task).filter(
-            Task.epoch == epoch_copy
-        )
+        query = Query(Task).filter(Task.epoch == epoch_copy)
         new_task = database.getData(query, multi=False)
         assert new_task.epoch == epoch_copy
-
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)

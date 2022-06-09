@@ -1,29 +1,46 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use, too-many-public-methods
+# pylint: disable=attribute-defined-outside-init, too-many-public-methods
 # Standard Library Imports
 # Third Party Imports
 import pytest
-from numpy import allclose, array, deg2rad, fabs, isclose, sin, cos, sqrt, tan
+from numpy import allclose, array, cos, deg2rad, fabs, isclose, sin, sqrt, tan
 from scipy.linalg import norm
-# RESONAATE Imports
+
 try:
-    from resonaate.physics.orbits import EccentricityError, InclinationError
-    from resonaate.physics.orbits.utils import (
-        universalC2C3, singularityCheck, retrogradeFactor, getSemiMajorAxis, getOrbitalEnergy,
-        getPeriod, getEccentricity, getLineOfNodes, getAngularMomentum, getTrueLongitude,
-        getArgumentLatitude, getTrueLongitudePeriapsis, getRightAscension, getArgumentPerigee,
-        getTrueAnomaly, getAngularMomentumFromEQE, getEccentricityFromEQE, getInclinationFromEQE,
-        getEquinoctialBasisVectors, getMeanMotion, getFlightPathAngle
-    )
-    from resonaate.physics.orbits.anomaly import meanLong2EccLong
+    # RESONAATE Imports
     from resonaate.physics.constants import TWOPI
+    from resonaate.physics.orbits import EccentricityError, InclinationError
+    from resonaate.physics.orbits.anomaly import meanLong2EccLong
+    from resonaate.physics.orbits.utils import (
+        getAngularMomentum,
+        getAngularMomentumFromEQE,
+        getArgumentLatitude,
+        getArgumentPerigee,
+        getEccentricity,
+        getEccentricityFromEQE,
+        getEquinoctialBasisVectors,
+        getFlightPathAngle,
+        getInclinationFromEQE,
+        getLineOfNodes,
+        getMeanMotion,
+        getOrbitalEnergy,
+        getPeriod,
+        getRightAscension,
+        getSemiMajorAxis,
+        getTrueAnomaly,
+        getTrueLongitude,
+        getTrueLongitudePeriapsis,
+        retrogradeFactor,
+        singularityCheck,
+        universalC2C3,
+    )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
+from ...conftest import BaseTestCase
+
 # Testing Imports
 # from .conftest import SMA, ECC, INC, RAAN, ARGP, ANOM, H, K, P, Q
-from .conftest import INCLINCATIONS, VALLADO_AAS_RV, VALLADO_AAS_EQE, VALLADO_AAS_COE
-from ...conftest import BaseTestCase
+from .conftest import INCLINCATIONS, VALLADO_AAS_COE, VALLADO_AAS_EQE, VALLADO_AAS_RV
 
 
 class TestOrbitUtilities(BaseTestCase):
@@ -62,25 +79,24 @@ class TestOrbitUtilities(BaseTestCase):
             assert c2 != 0.5
             assert c3 != 1.0 / 6.0
 
-    @pytest.mark.parametrize("is_retro, inc", tuple(zip(IS_RETRO, INCLINCATIONS[:-4])))
+    @pytest.mark.parametrize(("is_retro", "inc"), tuple(zip(IS_RETRO, INCLINCATIONS[:-4])))
     def testRetrogradeFactor(self, is_retro, inc):
         """Test retrograde factor calculation."""
         assert is_retro == retrogradeFactor(inc)
 
-    @pytest.mark.parametrize("ecc, inc, adjusted", tuple(zip(ECC, INC, ADJUSTED_COE)))
+    @pytest.mark.parametrize(("ecc", "inc", "adjusted"), tuple(zip(ECC, INC, ADJUSTED_COE)))
     def testSingularityCheck(self, ecc, inc, adjusted):
         """Test COE singularity check for adjusting singular angles."""
         assert allclose(
-            adjusted, singularityCheck(ecc, inc, *self.SINGULAR_COE),
-            rtol=1e-12, atol=1e-12
+            adjusted, singularityCheck(ecc, inc, *self.SINGULAR_COE), rtol=1e-12, atol=1e-12
         )
 
-    @pytest.mark.parametrize("eci, sma", tuple(zip(RV_SET, SMA)))
+    @pytest.mark.parametrize(("eci", "sma"), tuple(zip(RV_SET, SMA)))
     def testGetSMA(self, eci, sma):
         """Test calculating SMA from ECI pos, vel."""
         assert isclose(getSemiMajorAxis(norm(eci[:3]), norm(eci[3:])), sma)
 
-    @pytest.mark.parametrize("eci, energy", tuple(zip(RV_SET, ENERGY)))
+    @pytest.mark.parametrize(("eci", "energy"), tuple(zip(RV_SET, ENERGY)))
     def testGetEnergy(self, eci, energy):
         """Test calculating energy from ECI pos, vel."""
         assert isclose(getOrbitalEnergy(norm(eci[:3]), norm(eci[3:])), energy)
@@ -172,12 +188,12 @@ class TestOrbitUtilities(BaseTestCase):
     def testGetIncFromEQEBadVal(self):
         """Test bad inclination value."""
         # Equal to 180 deg, but retro=False
+        inc = deg2rad(180)
         with pytest.raises(InclinationError):
-            inc = deg2rad(180)
             getInclinationFromEQE(0, tan(inc / 2), retro=False)
         # Above inc limit, but retro=False
+        inc = deg2rad(180 - 0.99e-7)
         with pytest.raises(InclinationError):
-            inc = deg2rad(180 - 0.99e-7)
             getInclinationFromEQE(0, tan(inc / 2), retro=False)
 
     def testGetEccFromEQE(self):

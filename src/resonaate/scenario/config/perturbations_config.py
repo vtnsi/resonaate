@@ -1,6 +1,6 @@
 """Submodule defining the 'perturbations' configuration section."""
-# Package
-from .base import ConfigSection, ConfigOption
+# Local Imports
+from .base import ConfigOption, ConfigSection
 
 
 class PerturbationsConfig(ConfigSection):
@@ -11,9 +11,11 @@ class PerturbationsConfig(ConfigSection):
 
     def __init__(self):
         """Construct an instance of a :class:`.PerturbationsConfig`."""
-        self._third_bodies = ConfigOption("third_bodies", (list, ), default=[])
-        self._solar_radiation_pressure = ConfigOption("solar_radiation_pressure", (bool, ), default=False)
-        self._general_relativity = ConfigOption("general_relativity", (bool, ), default=False)
+        self._third_bodies = ConfigOption("third_bodies", (list,), default=[])
+        self._solar_radiation_pressure = ConfigOption(
+            "solar_radiation_pressure", (bool,), default=False
+        )
+        self._general_relativity = ConfigOption("general_relativity", (bool,), default=False)
 
     @property
     def nested_items(self):

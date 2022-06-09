@@ -1,0 +1,8 @@
+[
+  {
+    "sat_num": 40001,
+    "sat_name": "GEO Satellite1",
+    "init_eci": [15166.4, -39243.4, 0, 2.87262, 1.11018, 0],
+    "station_keeping": {}
+  }
+]

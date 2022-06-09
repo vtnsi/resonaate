@@ -8,10 +8,8 @@ References:
     #. :cite:t:`montenbruck_2012_orbits`, Eqn 3.67
     #. :cite:t:`vallado_2013_astro`
 """
-# Standard library imports
 # Third Party Imports
 from numpy import pi
-# RESONAATE Imports
 
 # Conversion constants
 PI = pi
@@ -29,6 +27,6 @@ ARCSEC2SEC = 1 / SEC2ARCSEC
 AU2KM = 1.49599 * 10**8  # Astronomical Unit to kilometer
 
 # Physics constants
-SOLAR_FLUX = 1367.  # Solar flux at Earth's orbit, (W/m^2)
+SOLAR_FLUX = 1367.0  # Solar flux at Earth's orbit, (W/m^2)
 SPEED_OF_LIGHT = 2.99792458e8  # Speed of Light, (m/s)
 SOLAR_PRESSURE = SOLAR_FLUX / SPEED_OF_LIGHT  # Solar Energy Density, (N/m^2), Montenbruck Eq. 3.67

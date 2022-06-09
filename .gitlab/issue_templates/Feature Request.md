@@ -20,8 +20,6 @@ Explain how this new feature would benefit the project.
 
 Explain what modules or processes would need to change and how much work/time this equates to.
 
-> (Optional)
-
 ## Concerns
 
 Potential issues that could arise with this feature update.

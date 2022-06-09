@@ -35,10 +35,9 @@ to.
 """
 # Standard Library Imports
 from datetime import datetime, timedelta
+
 # Third Party Imports
 from numpy import floor, remainder
-# RESONAATE Imports
-
 
 # [TODO] Add descriptions for both classes and their methods
 # [TODO] Remove all the operator overload methods. Can be replaced more succinctly
@@ -198,21 +197,26 @@ class JulianDate(float):
         """
         # Make sure we have correct inputs for months and days
         if month > 12 or month < 1:
-            raise ValueError('JulianDate: Month must be an integer (1-12).')
+            raise ValueError("JulianDate: Month must be an integer (1-12).")
         if day > 31 or day < 1:
-            raise ValueError('JulianDate: Day must be an integer (1-31).')
+            raise ValueError("JulianDate: Day must be an integer (1-31).")
 
         # Determine the integer portion of the Julian date. Equation is easily
         # changed to determine modified Julian date (mjd) by subtracting 2400000.5
         m_day = day + 1721013.5
-        julian_day = 367 * year - floor((7 * (year + floor((month + 9) / 12))) * 0.25) + floor(275 * month / 9) + m_day
+        julian_day = (
+            367 * year
+            - floor((7 * (year + floor((month + 9) / 12))) * 0.25)
+            + floor(275 * month / 9)
+            + m_day
+        )
         # Ensure hr/min/sec are properly input
         if hour > 24.0 or hour < 0.0:
-            raise ValueError('JulianDate: Hour must be a float (0-24).')
+            raise ValueError("JulianDate: Hour must be a float (0-24).")
         if minute > 60.0 or minute < 0.0:
-            raise ValueError('JulianDate: Minute must be a float (0-60).')
+            raise ValueError("JulianDate: Minute must be a float (0-60).")
         if second > 60.0 or second < 0.0:
-            raise ValueError('JulianDate: Second must be a float (0-60).')
+            raise ValueError("JulianDate: Second must be a float (0-60).")
 
         # Calculate decimal portion of Julian date
         julian_day_fraction = (second + minute * 60 + hour * 3600) / 86400
@@ -255,7 +259,7 @@ def datetimeToJulianDate(date_time):
         date_time.day,
         date_time.hour,
         date_time.minute,
-        date_time.second
+        date_time.second,
     )
 
 

@@ -1,18 +1,19 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 from copy import deepcopy
 from os.path import join
+
 # Third Party Imports
 import pytest
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     from resonaate.data import createDatabasePath
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
-from ..conftest import BaseTestCase, FIXTURE_DATA_DIR
+from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
 
 
 class TestDataModule(BaseTestCase):

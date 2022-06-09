@@ -1,22 +1,36 @@
 """Defines station-keeping events that allow satellites to control their orbit "autonomously"."""
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from typing import Tuple
+
 # Third Party Imports
-from numpy import sin, cos, asarray
+from numpy import asarray, cos, sin
 from scipy.linalg import norm
-# RESONAATE Imports
+
+# Local Imports
 from ...physics.constants import DEG2RAD
-from ...physics.orbits.elements import ClassicalElements
 from ...physics.math import safeArccos
-from ...physics.transforms.methods import ntw2eci, eci2ecef, ecef2lla
+from ...physics.orbits.elements import ClassicalElements
+from ...physics.time.stardate import JulianDate
+from ...physics.transforms.methods import ecef2lla, eci2ecef, ntw2eci
+from ..special_perturbations import _getRotationMatrix
 from .discrete_state_change_event import DiscreteStateChangeEvent
-from .event_stack import EventStack, EventRecord
+from .event_stack import EventRecord, EventStack
+
+VALID_STATION_KEEPING_ROUTINES: Tuple[list] = (
+    ["GEO NS"],
+    ["GEO EW"],
+    ["GEO NS", "GEO EW"],
+    ["GEO EW", "GEO NS"],
+    ["LEO"],
+    [],
+)
 
 
 class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
-    """Abstract base class defining shared functionality for staion keeping objects."""
+    """Abstract base class defining shared functionality for station keeping objects."""
 
-    CONF_STR_REGISTRY = None
+    CONF_STR_REGISTRY: dict = None
     """dict: Correlates concrete classes' string configurations to their implementations."""
 
     def __init__(self, rso_id):
@@ -28,10 +42,11 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
         self._integration_time = None
         self._integration_state = None
         self._rso_id = rso_id
+        self.reductions = None
 
     @classmethod
     @abstractmethod
-    def fromInitECI(cls, rso_id, initial_eci):
+    def fromInitECI(cls, rso_id, initial_eci, julian_date_start):
         """Instantiate a :class:`.StationKeeper` object.
 
         This abstract method defines a uniform way to instantiate :class:`.StationKeeper` objects.
@@ -39,6 +54,7 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
         Args:
             rso_id (int): Identifier for the RSO that's performing these station keeping maneuvers
             initial_eci (``numpy.ndarray``): (6, ) initial ECI vector of the satellite, (km, km/s)
+            julian_date_start (:class:`.JulianDate`): Julian date of initial epoch, for later reference.
         """
         raise NotImplementedError()
 
@@ -52,7 +68,7 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
     def _generateRegistry(cls):
         """Populate :attr:`.CONF_STR_REGISTRY` based on subclasses."""
         if cls.CONF_STR_REGISTRY is None:
-            cls.CONF_STR_REGISTRY = dict()
+            cls.CONF_STR_REGISTRY = {}
             for subclass in cls.__subclasses__():
                 cls.CONF_STR_REGISTRY[subclass.getConfigString()] = subclass
 
@@ -63,7 +79,7 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
         return list(cls.CONF_STR_REGISTRY.keys())
 
     @classmethod
-    def factory(cls, conf_str, rso_id, initial_eci):
+    def factory(cls, conf_str, rso_id, initial_eci, julian_date_start):
         """Construct a concrete :class:`.StationKeeper` object based on specified parameters.
 
         Args:
@@ -75,7 +91,7 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
             StationKeeper: A concrete :class:`.StationKeeper` object based on specified parameters.
         """
         cls._generateRegistry()
-        return cls.CONF_STR_REGISTRY[conf_str].fromInitECI(rso_id, initial_eci)
+        return cls.CONF_STR_REGISTRY[conf_str].fromInitECI(rso_id, initial_eci, julian_date_start)
 
     @abstractmethod
     def interruptRequired(self, time, state):
@@ -129,7 +145,7 @@ class KeepGeoEastWest(StationKeeper):
     BURN_THRESHOLD = 0.0000010  # km/s
     """float: Minimum magnitude of burn to apply."""
 
-    def __init__(self, rso_id, initial_eci, initial_lon, initial_coe):
+    def __init__(self, rso_id, initial_eci, initial_lon, initial_coe, julian_date_start):
         """Instantiate a :class:`.KeepGeoEastWest` object.
 
         Args:
@@ -137,8 +153,10 @@ class KeepGeoEastWest(StationKeeper):
             initial_eci (numpy.ndarray): (6, ) initial ECI vector of the satellite, (km, km/s)
             initial_lon (float): initial longitude of the satellite
             initial_coe (ClassicalElements): classical orbital element set describing satellite's initial orbit
+            julian_date_start (:class:`.JulianDate`): Julian date of initial epoch, for later reference.
         """
         super().__init__(rso_id)
+        self.julian_date_start = julian_date_start
         self.initial_eci = initial_eci
         self.initial_lon = initial_lon
         self.initial_coe = initial_coe
@@ -147,7 +165,7 @@ class KeepGeoEastWest(StationKeeper):
         self._integration_result = None  # for testing purposes mainly
 
     @classmethod
-    def fromInitECI(cls, rso_id, initial_eci):
+    def fromInitECI(cls, rso_id, initial_eci, julian_date_start):
         """Factory method.
 
         See Also:
@@ -155,7 +173,7 @@ class KeepGeoEastWest(StationKeeper):
         """
         initial_lon = ecef2lla(eci2ecef(initial_eci))[1]  # radians
         initial_coe = ClassicalElements.fromECI(initial_eci)
-        return cls(rso_id, initial_eci, initial_lon, initial_coe)
+        return cls(rso_id, initial_eci, initial_lon, initial_coe, julian_date_start)
 
     @classmethod
     def getConfigString(cls):
@@ -173,7 +191,9 @@ class KeepGeoEastWest(StationKeeper):
             bool: Indication of whether this :class:`.StationKeeper` needs to activate.
         """
         self.ntw_delta_v = 0
-        delta_lon = self.initial_lon - ecef2lla(eci2ecef(state))[1]  # radians
+        julian_date = JulianDate(self.julian_date_start + time / 86400)
+        matrix = _getRotationMatrix(julian_date, self.reductions).T
+        delta_lon = self.initial_lon - ecef2lla(matrix.dot(state[:3]))[1]  # radians
         if abs(delta_lon) >= self.LON_DRIFT_THRESHOLD:
             current_coe = ClassicalElements.fromECI(state)
             delta_a = self.initial_coe.sma - current_coe.sma  # km
@@ -223,7 +243,7 @@ class KeepGeoNorthSouth(StationKeeper):
     BURN_THRESHOLD = 0.0010  # km/s
     """float: Minimum magnitude of burn to apply."""
 
-    def __init__(self, rso_id, initial_eci, initial_lat, initial_coe):
+    def __init__(self, rso_id, initial_eci, initial_lat, initial_coe, julian_date_start):
         """Instantiate a :class:`.KeepGeoNorthSouth` object.
 
         Args:
@@ -231,15 +251,17 @@ class KeepGeoNorthSouth(StationKeeper):
             initial_eci (numpy.ndarray): (6, ) initial ECI vector of the satellite, (km, km/s)
             initial_lat (float): initial latitude of the satellite
             initial_coe (ClassicalElements): classical orbital element set describing satellite's initial orbit
+            julian_date_start (:class:`.JulianDate`): Julian date of initial epoch, for later reference.
         """
         super().__init__(rso_id)
+        self.julian_date_start = julian_date_start
         self.initial_eci = initial_eci
         self.initial_lat = initial_lat
         self.initial_coe = initial_coe
         self.ntw_delta_v = 0.0
 
     @classmethod
-    def fromInitECI(cls, rso_id, initial_eci):
+    def fromInitECI(cls, rso_id, initial_eci, julian_date_start):
         """Factory method.
 
         See Also:
@@ -247,7 +269,7 @@ class KeepGeoNorthSouth(StationKeeper):
         """
         initial_lat = ecef2lla(eci2ecef(initial_eci))[0]  # radians
         initial_coe = ClassicalElements.fromECI(initial_eci)
-        return cls(rso_id, initial_eci, initial_lat, initial_coe)
+        return cls(rso_id, initial_eci, initial_lat, initial_coe, julian_date_start)
 
     @classmethod
     def getConfigString(cls):
@@ -265,12 +287,15 @@ class KeepGeoNorthSouth(StationKeeper):
             bool: Indication of whether this :class:`.StationKeeper` needs to activate.
         """
         self.ntw_delta_v = 0
-        delta_lat = self.initial_lat - ecef2lla(eci2ecef(state))[0]
+        julian_date = JulianDate(self.julian_date_start + time / 86400)
+        matrix = _getRotationMatrix(julian_date, self.reductions).T
+        delta_lat = self.initial_lat - ecef2lla(matrix.dot(state[:3]))[0]  # radians
         if abs(delta_lat) >= self.LAT_DRIFT_THRESHOLD:
             current_vel = norm(state[3:])  # km/s
             current_coe = ClassicalElements.fromECI(state)
             delta_theta = safeArccos(
-                (sin(current_coe.inc)**2) * cos(current_coe.raan - self.initial_coe.raan) + cos(current_coe.inc)**2
+                (sin(current_coe.inc) ** 2) * cos(current_coe.raan - self.initial_coe.raan)
+                + cos(current_coe.inc) ** 2
             )
             ntw_delta_v = 2 * current_vel * sin(delta_theta)  # km/s (sin assumes radians)
             if abs(ntw_delta_v) >= self.BURN_THRESHOLD:
@@ -309,37 +334,39 @@ class KeepLeoUp(StationKeeper):
     """Encapsulation of LEO maneuvers to compensate for gravity / drag / 3rd body effects.
 
     References:
-        :cite:t:`chao_2005_perturbations`, Section 7.1.1, Eqn 7.6
+        :cite:t:`chao_2005_perturbations`, Section 7.1.1, Eqn 7.7
     """
 
-    ALT_DRIFT_THRESHOLD = 2.  # km
+    ALT_DRIFT_THRESHOLD = 2.0  # km
     """float: Threshold of altitude drift that indicates a station keeping maneuver might take place."""
 
     BURN_THRESHOLD = 0.0000010  # km/s
     """float: Minimum magnitude of burn to apply."""
 
-    def __init__(self, rso_id, initial_eci, initial_coe):
+    def __init__(self, rso_id, initial_eci, initial_coe, julian_date_start):
         """Instantiate a :class:`.KeepGeoNorthSouth` object.
 
         Args:
             rso_id (int): Identifier for the RSO that's performing these station keeping maneuvers
             initial_eci (numpy.ndarray): (6, ) initial ECI vector of the satellite, (km, km/s)
             initial_coe (ClassicalElements): classical orbital element set describing satellite's initial orbit
+            julian_date_start (:class:`.JulianDate`): Julian date of initial epoch, for later reference.
         """
         super().__init__(rso_id)
+        self.julian_date_start = julian_date_start
         self.initial_eci = initial_eci
         self.initial_coe = initial_coe
         self.ntw_delta_v = 0.0
 
     @classmethod
-    def fromInitECI(cls, rso_id, initial_eci):
+    def fromInitECI(cls, rso_id, initial_eci, julian_date_start):
         """Factory method.
 
         See Also:
             :meth:`.StationKeeper.fromInitECI()`
         """
         initial_coe = ClassicalElements.fromECI(initial_eci)
-        return cls(rso_id, initial_eci, initial_coe)
+        return cls(rso_id, initial_eci, initial_coe, julian_date_start)
 
     @classmethod
     def getConfigString(cls):
@@ -357,6 +384,9 @@ class KeepLeoUp(StationKeeper):
             bool: Indication of whether this :class:`.StationKeeper` needs to activate.
         """
         self.ntw_delta_v = 0
+        # [FIXME]: Disabling LEO Station Keeping for initially eccentric RSO
+        if self.initial_coe.is_eccentric:
+            return False
         current_coe = ClassicalElements.fromECI(state)
         delta_a = self.initial_coe.sma - current_coe.sma  # km
         if delta_a >= self.ALT_DRIFT_THRESHOLD:

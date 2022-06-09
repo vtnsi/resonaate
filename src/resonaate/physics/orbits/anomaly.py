@@ -1,13 +1,13 @@
 """Defines common orbital anomaly conversions."""
-# Standard Library Imports
 # Third Party Imports
 from numpy import arctan2, cos, sin, sqrt
-# RESONAATE Imports
-from . import check_ecc, wrap_anomaly, isEccentric
-from .kepler import keplerSolveCOE, keplerSolveEQE
-from .utils import getEccentricityFromEQE
+
+# Local Imports
 from ..constants import PI
 from ..math import wrapAngle2Pi
+from . import check_ecc, isEccentric, wrap_anomaly
+from .kepler import keplerSolveCOE, keplerSolveEQE
+from .utils import getEccentricityFromEQE
 
 
 @wrap_anomaly
@@ -210,7 +210,9 @@ def meanLong2EccLong(lam: float, h: float, k: float) -> float:
 
 
 @wrap_anomaly
-def meanLong2TrueAnom(lam: float, ecc: float, raan: float, argp: float, retro: bool = False) -> float:
+def meanLong2TrueAnom(
+    lam: float, ecc: float, raan: float, argp: float, retro: bool = False
+) -> float:
     r"""Convert mean longitude to true anomaly.
 
     This requires solving Kepler's equation via iteration. Only valid for elliptical orbits: :math:`e < 1`.
@@ -234,7 +236,9 @@ def meanLong2TrueAnom(lam: float, ecc: float, raan: float, argp: float, retro: b
 
 
 @wrap_anomaly
-def trueAnom2MeanLong(nu: float, ecc: float, raan: float, argp: float, retro: bool = False) -> float:
+def trueAnom2MeanLong(
+    nu: float, ecc: float, raan: float, argp: float, retro: bool = False
+) -> float:
     r"""Convert mean longitude to true anomaly.
 
     This requires solving Kepler's equation via iteration. Only valid for elliptical orbits: :math:`e < 1`.

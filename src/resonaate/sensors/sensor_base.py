@@ -2,20 +2,21 @@
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
+
 # Third Party Imports
-from numpy import asarray, matmul, diagflat, sin, cos, arccos, real, fix, random, dot
+from numpy import arccos, asarray, cos, diagflat, dot, fix, matmul, random, real, sin
 from scipy.linalg import norm, sqrtm
-# RESONAATE Imports
-from .measurements import getAzimuth, getElevation, getRange
+
+# Local Imports
 from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
 from ..data.observation import Observation
 from ..physics import constants as const
 from ..physics.sensor_utils import lineOfSight
 from ..physics.transforms.methods import getSlantRangeVector
+from .measurements import getAzimuth, getElevation, getRange
 
-
-ObservationTuple = namedtuple('ObservationTuple', ['observation', 'agent', 'angles'])
+ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles"])
 """Named tuple for correlating an observation, the sensing agent, and its angular values.
 
 Attributes:
@@ -46,7 +47,7 @@ class Sensor(metaclass=ABCMeta):
         self.az_mask = const.DEG2RAD * az_mask
         self.el_mask = const.DEG2RAD * el_mask
         self.r_matrix = r_matrix
-        self.aperture_area = const.PI * ((diameter / 2.0)**2)
+        self.aperture_area = const.PI * ((diameter / 2.0) ** 2)
         self.efficiency = efficiency
         self.slew_rate = const.DEG2RAD * slew_rate
 
@@ -103,29 +104,48 @@ class Sensor(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def makeObservation(self, tgt_id, tgt_eci_state, viz_cross_section, noisy=False, check_viz=True):
+    def buildSigmaObs(self, target_id, tgt_eci_state):
+        """Calculate the measurement data for a sigma point observation.
+
+        Args:
+            target_id (``int``): simulation ID associated with current target.
+            tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target (km; km/sec).
+
+        Returns:
+            :class:`.Observation`: observation data object.
+        """
+        slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state)
+        julian_date = self.host.julian_date_epoch
+        return Observation.fromSEZVector(
+            sensor_type=getTypeString(self),
+            sensor_id=self.host.simulation_id,
+            target_id=target_id,
+            julian_date=julian_date,
+            sez=slant_range_sez,
+            sensor_position=self.host.lla_state,
+            **self.getMeasurements(slant_range_sez),
+        )
+
+    def makeObservation(self, tgt_id, tgt_eci_state, viz_cross_section, real_obs=False):
         """Calculate the measurement data for a single observation.
 
         Args:
             tgt_id (``int``): simulation ID associated with current target
             tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target (km; km/sec)
             viz_cross_section (``float``): visible cross-sectional area of the target (m^2)
-            noisy (``bool``, optional): whether observation should include noisy measurements. Defaults to ``False``.
-            check_viz (``bool``, optional): whether to check visibility constraints. Defaults to ``True``.
+            real_obs (``bool``, optional): whether observation should include noisy measurements. Defaults to ``False``.
 
         Returns:
             :class:`.ObservationTuple`: observation tuple object
         """
         # Calculate common values
-        self._current_target = tgt_id
         slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state)
         julian_date = self.host.julian_date_epoch
 
         # Construct observations
-        observation = None
-        if noisy:
+        if self.isVisible(tgt_eci_state, viz_cross_section, slant_range_sez):
             # Make a real observation once tasked -> add noise to the measurement
-            if self.isVisible(tgt_eci_state, viz_cross_section, slant_range_sez):
+            if real_obs:
                 observation = Observation.fromSEZVector(
                     sensor_type=getTypeString(self),
                     sensor_id=self.host.simulation_id,
@@ -133,35 +153,18 @@ class Sensor(metaclass=ABCMeta):
                     julian_date=julian_date,
                     sez=slant_range_sez,
                     sensor_position=self.host.lla_state,
-                    **self.getNoisyMeasurements(slant_range_sez)
+                    **self.getNoisyMeasurements(slant_range_sez),
                 )
                 self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
                 self.time_last_ob = self.host.time
+                self._current_target = tgt_id
 
-        elif check_viz:
-            # Forecasting an observation for reward matrix purposes
-            if self.isVisible(tgt_eci_state, viz_cross_section, slant_range_sez):
-                observation = Observation.fromSEZVector(
-                    sensor_type=getTypeString(self),
-                    sensor_id=self.host.simulation_id,
-                    target_id=tgt_id,
-                    julian_date=julian_date,
-                    sez=slant_range_sez,
-                    sensor_position=self.host.lla_state,
-                    **self.getMeasurements(slant_range_sez)
-                )
+            else:
+                # Forecasting an observation for reward matrix purposes
+                observation = self.buildSigmaObs(tgt_id, tgt_eci_state)
 
         else:
-            # Predicting/estimating observations for filtering
-            observation = Observation.fromSEZVector(
-                sensor_type=getTypeString(self),
-                sensor_id=self.host.simulation_id,
-                target_id=tgt_id,
-                julian_date=julian_date,
-                sez=slant_range_sez,
-                sensor_position=self.host.lla_state,
-                **self.getMeasurements(slant_range_sez)
-            )
+            observation = None
 
         return ObservationTuple(observation, self.host, self.angle_measurements)
 
@@ -177,19 +180,25 @@ class Sensor(metaclass=ABCMeta):
         # [NOTE][parallel-time-bias-event-handling] Step three: Check if a sensor has bias events
         tgt_eci_state = target_agent.eci_state
         if len(self.host.sensor_time_bias_event_queue):
-            if abs(self.host.sensor_time_bias_event_queue[0].applied_bias) > abs(target_agent.dt_step):
+            if abs(self.host.sensor_time_bias_event_queue[0].applied_bias) > abs(
+                target_agent.dt_step
+            ):
                 raise ValueError("Time bias cannot be larger than the dt_step")
             tgt_eci_state = target_agent.dynamics.propagate(
                 target_agent.time - target_agent.dt_step,
                 target_agent.time + self.host.sensor_time_bias_event_queue[0].applied_bias,
-                target_agent.previous_state
+                target_agent.previous_state,
             )
-            msg = f'Sensor time bias of {self.host.sensor_time_bias_event_queue[0].applied_bias} '
-            msg += f'seconds applied to sensor {self.host.simulation_id}'
+            msg = f"Sensor time bias of {self.host.sensor_time_bias_event_queue[0].applied_bias} "
+            msg += f"seconds applied to sensor {self.host.simulation_id}"
             resonaateLogInfo(msg)
 
-        return self.makeObservation(target_agent.simulation_id, tgt_eci_state,
-                                    target_agent.visual_cross_section, noisy=True)
+        return self.makeObservation(
+            target_agent.simulation_id,
+            tgt_eci_state,
+            target_agent.visual_cross_section,
+            real_obs=True,
+        )
 
     def getNoisyMeasurements(self, slant_range_sez):
         """Return noisy measurements.
@@ -219,7 +228,8 @@ class Sensor(metaclass=ABCMeta):
         # Early exit if target not in sensor's range, or a LOS doesn't exist
         if getRange(slant_range_sez) > self.maximumRangeTo(viz_cross_section, tgt_eci_state):
             return False
-        elif not lineOfSight(tgt_eci_state[:3], self.host.eci_state[:3]):
+
+        if not lineOfSight(tgt_eci_state[:3], self.host.eci_state[:3]):
             return False
 
         # Get the azimuth and elevation angles
@@ -248,12 +258,14 @@ class Sensor(metaclass=ABCMeta):
             # [NOTE]: Azimuth check requires two versions:
             #   - az_0 <= az_1 for normal situations
             #   - az_0 > az_1 for when mask transits the 360deg/True North line
-            if self.az_mask[0] <= self.az_mask[1]:
-                if self.az_mask[0] <= azimuth <= self.az_mask[1]:
-                    return True
-            else:
-                if azimuth >= self.az_mask[0] or azimuth <= self.az_mask[1]:
-                    return True
+            if (
+                self.az_mask[0] <= self.az_mask[1]
+                and self.az_mask[0] <= azimuth <= self.az_mask[1]
+            ):
+                return True
+
+            if azimuth >= self.az_mask[0] or azimuth <= self.az_mask[1]:
+                return True
 
         # Default: target satellite is not in view
         return False
@@ -268,13 +280,15 @@ class Sensor(metaclass=ABCMeta):
         """Ensure the azimuth mask is between [0, 2*pi].
 
         Args:
-            az_mask (``np.ndarray``): azimuth mask for a particular sensor
+            new_az_mask (``np.ndarray``): azimuth mask for a particular sensor
         """
         if isinstance(new_az_mask[0], (float, int)):
             if new_az_mask.all() >= 0 and new_az_mask.all() <= 2 * const.PI:
                 self._az_mask = new_az_mask.reshape(2)
             else:
-                raise ValueError(f"Sensor: Invalid shape for az_mask property: {new_az_mask.shape}")
+                raise ValueError(
+                    f"Sensor: Invalid shape for az_mask property: {new_az_mask.shape}"
+                )
         else:
             raise TypeError(f"Sensor: Invalid type for az_mask property: {type(new_az_mask[0])}")
 
@@ -288,13 +302,15 @@ class Sensor(metaclass=ABCMeta):
         """Ensure the elevation mask is between [-pi, pi].
 
         Args:
-            el_mask (``np.ndarray``): elevation mask for a particular sensor
+            new_el_mask (``np.ndarray``): elevation mask for a particular sensor
         """
         if isinstance(new_el_mask[0], (float, int)):
             if new_el_mask.all() >= -const.PI and new_el_mask.all() <= const.PI:
                 self._el_mask = new_el_mask.reshape(2)
             else:
-                raise ValueError(f"Sensor: Invalid shape for el_mask property: {new_el_mask.shape}")
+                raise ValueError(
+                    f"Sensor: Invalid shape for el_mask property: {new_el_mask.shape}"
+                )
         else:
             raise TypeError(f"Sensor: Invalid type for el_mask property: {type(new_el_mask[0])}")
 
@@ -308,17 +324,19 @@ class Sensor(metaclass=ABCMeta):
         """Ensure the measurement noise matrix is a square matrix.
 
         Args:
-            ``np.ndarray``: measurement noise matrix for a particular sensor
+            new_specs (``np.ndarray``): measurement noise matrix for a particular sensor
         """
-        if (new_specs.shape[1] == 1 or new_specs.shape[0] == 1):
-            self._r_matrix = diagflat(new_specs.ravel())**2.0
+        if new_specs.shape[1] == 1 or new_specs.shape[0] == 1:
+            self._r_matrix = diagflat(new_specs.ravel()) ** 2.0
         elif new_specs.shape[0] == new_specs.shape[1]:
             self._r_matrix = new_specs
         else:
             raise ValueError(f"Sensor: Invalid shape for r_matrix property: {new_specs.shape}")
         # Save the sqrt form of the R matrix to save computation time
         # [FIXME]: not initialized as `None` in `__init__` because variable not overwritten by this line...
-        self._sqrt_noise_covar = real(sqrtm(self._r_matrix))  # pylint: disable=attribute-defined-outside-init
+        self._sqrt_noise_covar = real(
+            sqrtm(self._r_matrix)
+        )  # pylint: disable=attribute-defined-outside-init
 
     @property
     def host(self):
@@ -345,7 +363,9 @@ class Sensor(metaclass=ABCMeta):
         else:
             mid_el = self.el_mask[1] + (self.el_mask[0] - self.el_mask[1]) / 2.0
 
-        self.boresight = asarray([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
+        self.boresight = asarray(
+            [cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)]
+        )
 
     @property
     def measurement_noise(self):
@@ -364,7 +384,7 @@ class Sensor(metaclass=ABCMeta):
             "efficiency": self.efficiency,
             "aperture_area": self.aperture_area,
             "sensor_type": getTypeString(self),
-            "exemplar": self.exemplar.tolist()
+            "exemplar": self.exemplar.tolist(),
         }
         if getTypeString(self.host) == "Spacecraft":
             output_dict["init_eci"] = self.host.truth_state.tolist()
@@ -379,6 +399,8 @@ class Sensor(metaclass=ABCMeta):
             pass
         else:
             output_dict["tx_power"] = self.tx_power  # pylint: disable=no-member
-            output_dict["tx_frequency"] = const.SPEED_OF_LIGHT / self.wavelength  # pylint: disable=no-member
+            output_dict["tx_frequency"] = (
+                const.SPEED_OF_LIGHT / self.wavelength  # pylint: disable=no-member
+            )
 
         return output_dict

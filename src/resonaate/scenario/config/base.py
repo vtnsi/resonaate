@@ -1,5 +1,7 @@
 """Submodule defining base classes for use in the ``scenario.config`` module."""
+# Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from typing import Tuple
 
 
 class BaseConfigError(Exception, metaclass=ABCMeta):
@@ -137,7 +139,7 @@ class NoSettingType:
     @classmethod
     def getSingleton(cls):
         """Return a reference to :attr:`.__SINGLETON`."""
-        if not cls.__SINGLETON:
+        if cls.__SINGLETON is None:
             cls.__SINGLETON = cls()
         return cls.__SINGLETON
 
@@ -151,6 +153,14 @@ class NoSettingType:
             NoSettingType: Singleton reference.
         """
         return self.getSingleton()
+
+    def __bool__(self):
+        """``bool``: Allows settings to be tested for truthiness."""
+        return False
+
+    def __len__(self):
+        """``int``: Allows settings to be tested for truthiness."""
+        return 0
 
 
 NO_SETTING = NoSettingType.getSingleton()
@@ -188,7 +198,7 @@ class ConfigOption(ConfigItem):
             ValueError: If :attr:`.valid_settings` is not ``None`` and `default` isn't in it.
         """
         self._config_label = config_label
-        self.types = types + (NoSettingType, )
+        self.types = types + (NoSettingType,)
         self.valid_settings = valid_settings
         if default is not None:
             self._validateSetting(default)
@@ -200,7 +210,7 @@ class ConfigOption(ConfigItem):
         """any: The current setting for this :class:`.ConfigOption`."""
         if self._setting is not None:
             return self._setting
-        elif self.default is not None:
+        if self.default is not None:
             return self.default
         # else:
         raise ConfigMissingRequiredError("config", self.config_label)
@@ -271,11 +281,11 @@ class ConfigObject(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def getFields():
+    def getFields() -> Tuple[ConfigItem]:
         """Returns tuple of :class:`.ConfigOption` defining the fields required for this :class:`.ConfigObject`."""
         raise NotImplementedError()
 
-    def __init__(self, object_config):
+    def __init__(self, object_config: dict):
         """Construct an instance of a :class:`.ConfigObject`.
 
         Args:
@@ -348,7 +358,7 @@ class ConfigObjectList(ConfigItem):
             ValueError: If `raw_config` is empty, but :attr:`.default_empty` is ``False``.
         """
         if not isinstance(raw_config, list):
-            raise ConfigTypeError(self.config_label, raw_config, (list, ))
+            raise ConfigTypeError(self.config_label, raw_config, (list,))
 
         if not raw_config:
             if not self.default_empty:
@@ -357,7 +367,7 @@ class ConfigObjectList(ConfigItem):
 
         for config_dict in raw_config:
             if not isinstance(config_dict, dict):
-                raise ConfigTypeError(self.config_label, config_dict, (dict, ))
+                raise ConfigTypeError(self.config_label, config_dict, (dict,))
 
     def readConfig(self, raw_config):
         """Parse of list of object dictionaries and store them as :class:`.ConfigObject` objects.

@@ -1,23 +1,49 @@
 """Defines the :class:`.TargetAgent` class."""
+from __future__ import annotations
+
 # Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
-from numpy import ndarray, array
+from numpy import array, ndarray
 from numpy.random import default_rng
-# RESONAATE Imports
-from .agent_base import Agent, DEFAULT_VIS_X_SECTION
-from ..data.ephemeris import TruthEphemeris
+
+# Local Imports
 from ..common.exceptions import ShapeError
+from ..data.ephemeris import TruthEphemeris
+from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
-from ..dynamics.integration_events.station_keeping import StationKeeper
+from .agent_base import DEFAULT_VIS_X_SECTION, Agent
+
+# Type checking
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Union
+
+    # Local Imports
+    from ..data.ephemeris import EstimateEphemeris
+    from ..dynamics.dynamics_base import Dynamics
+    from ..scenario.clock import ScenarioClock
 
 
 class TargetAgent(Agent):
     """Define the behavior of the **true** target agents in the simulation."""
 
-    def __init__(self, _id, name, agent_type, initial_state, clock, dynamics,
-                 realtime, process_noise, seed=None, station_keeping=None):
+    def __init__(
+        self,
+        _id: int,
+        name: str,
+        agent_type: str,
+        initial_state: ndarray,
+        clock: ScenarioClock,
+        dynamics: Dynamics,
+        realtime: bool,
+        process_noise: ndarray,
+        seed: int = None,
+        station_keeping: list[StationKeeper] = None,
+    ):
         """Construct a TargetAgent object.
 
         Args:
@@ -38,8 +64,15 @@ class TargetAgent(Agent):
             ShapeError: raised if process noise is not a 6x6 matrix
         """
         super().__init__(
-            _id, name, agent_type, initial_state, clock, dynamics, realtime, DEFAULT_VIS_X_SECTION,
-            station_keeping=station_keeping
+            _id,
+            name,
+            agent_type,
+            initial_state,
+            clock,
+            dynamics,
+            realtime,
+            DEFAULT_VIS_X_SECTION,
+            station_keeping=station_keeping,
         )
         if not isinstance(process_noise, ndarray):
             self._logger.error("Incorrect type for process_noise param")
@@ -64,7 +97,7 @@ class TargetAgent(Agent):
         self._lla_state = ecef2lla(self._ecef_state)
         self._previous_state = array(initial_state, copy=True)
 
-    def getCurrentEphemeris(self):
+    def getCurrentEphemeris(self) -> TruthEphemeris:
         """Returns the TargetAgent's current ephemeris information.
 
         This is used for bulk-updating the output database with state information.
@@ -75,20 +108,26 @@ class TargetAgent(Agent):
         return TruthEphemeris.fromECIVector(
             agent_id=self.simulation_id,
             julian_date=self.julian_date_epoch,
-            eci=self.eci_state.tolist()
+            eci=self.eci_state.tolist(),
         )
 
-    def importState(self, ephemeris):
+    def importState(self, ephemeris: Union[TruthEphemeris, EstimateEphemeris]) -> None:
         """Set the state of this TargetAgent based on a given :class:`.Ephemeris` object.
 
         Args:
             ephemeris (:class:`.Ephemeris`): data object to update this TargetAgent's state with
         """
         self.eci_state = array(ephemeris.eci)
-        self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(self.julian_date_start)
+        self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(
+            self.julian_date_start
+        )
 
     @classmethod
-    def fromConfig(cls, config, events):
+    def fromConfig(
+        cls,
+        config: dict,
+        events: dict,
+    ) -> TargetAgent:
         """Factory to initialize `TargetAgent` objects based on given configuration.
 
         Args:
@@ -111,12 +150,21 @@ class TargetAgent(Agent):
             orbit = EquinoctialElements.fromConfig(tgt.init_eqe)
             initial_state = orbit.toECI()
         else:
-            raise ValueError(f"TargetAgent config doesn't contain initial state information: {tgt}")
+            raise ValueError(
+                f"TargetAgent config doesn't contain initial state information: {tgt}"
+            )
 
         station_keeping = []
-        if config['station_keeping']:
-            for config_str in tgt.station_keeping:
-                station_keeping.append(StationKeeper.factory(config_str, tgt.sat_num, initial_state))
+        if config["station_keeping"]:
+            for config_str in tgt.station_keeping.routines:
+                station_keeping.append(
+                    StationKeeper.factory(
+                        conf_str=config_str,
+                        rso_id=tgt.sat_num,
+                        initial_eci=initial_state,
+                        julian_date_start=config["clock"].julian_date_start,
+                    )
+                )
 
         return cls(
             tgt.sat_num,
@@ -128,16 +176,19 @@ class TargetAgent(Agent):
             config["realtime"],
             config["noise"],
             seed=config["random_seed"],
-            station_keeping=station_keeping
+            station_keeping=station_keeping,
         )
 
     @property
-    def eci_state(self):
+    def eci_state(self) -> ndarray:
         """``numpy.ndarray``: Returns the 6x1 ECI current state vector."""
         return self._truth_state
 
     @eci_state.setter
-    def eci_state(self, new_state):
+    def eci_state(
+        self,
+        new_state: ndarray,
+    ) -> None:
         """Set the TargetAgent's new 6x1 ECI state vector.
 
         Args:
@@ -149,26 +200,26 @@ class TargetAgent(Agent):
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property
-    def previous_state(self):
+    def previous_state(self) -> ndarray:
         """``numpy.ndarray``: Returns the 6x1 ECI previous state vector."""
         return self._previous_state
 
     @property
-    def ecef_state(self):
+    def ecef_state(self) -> ndarray:
         """``numpy.ndarray``: Returns the 6x1 ECEF current state vector."""
         return self._ecef_state
 
     @property
-    def lla_state(self):
+    def lla_state(self) -> ndarray:
         """``numpy.ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
         return self._lla_state
 
     @property
-    def process_noise(self):
+    def process_noise(self) -> ndarray:
         """``numpy.ndarray``: Returns the 6x1 scaled process noise vector."""
         return self._rng.multivariate_normal(self.eci_state, self.process_noise_covariance)
 
     @property
-    def process_noise_covariance(self):
+    def process_noise_covariance(self) -> ndarray:
         """``numpy.ndarray``: Returns the 6x6 process noise matrix."""
         return self._process_noise_covar

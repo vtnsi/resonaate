@@ -1,8 +1,8 @@
 """Defines stability-focused tasking metrics."""
-# Standard Library Imports
 # Third Party Imports
-from numpy import log2, trace, sqrt
-# RESONAATE Imports
+from numpy import log2, sqrt, trace
+
+# Local Imports
 from .metric_base import StabilityMetric
 
 

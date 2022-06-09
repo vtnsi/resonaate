@@ -1,20 +1,21 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use, unused-argument
+# pylint: disable=attribute-defined-outside-init, unused-argument
 # Standard Library Imports
 import time
+
 # Third Party Imports
 import numpy as np
 import pytest
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     from resonaate.common.exceptions import JobTimeoutError
-    from resonaate.parallel.worker import WorkerManager
     from resonaate.parallel import REDIS_QUEUE_LOGGER
     from resonaate.parallel.job import Job
     from resonaate.parallel.producer import QueueManager
+    from resonaate.parallel.worker import WorkerManager
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -24,17 +25,17 @@ def testJobClass():
     func = np.abs
     val = -10.5433
     job = Job(func, [val])
-    assert job.status == 'unprocessed'
+    assert job.status == "unprocessed"
     assert job.error is None
     job.process()
-    assert job.status == 'processed'
+    assert job.status == "processed"
     assert job.error is None
     assert job.retval == func(val)
 
     # Bad value, returns error
     job = Job(func, [None])
     job.process()
-    assert job.status == 'failed'
+    assert job.status == "failed"
     assert job.error is not None
 
     # Bad function, error raised
@@ -62,7 +63,7 @@ class TestWorkerManager(BaseTestCase):
         """Test deleting a WorkerManager."""
         worker_manager = WorkerManager(proc_count=1, daemonic=True, logger=REDIS_QUEUE_LOGGER)
         worker_manager.startWorkers()
-        worker_manager.__del__()
+        del worker_manager
 
     def testLongJob(self, worker_manager, queue_manager, sleep_job_1s):
         """Test a job that takes some nontrivial amount of time."""
@@ -74,8 +75,8 @@ class TestWorkerManager(BaseTestCase):
     def testTooLongJob(self, monkeypatch, worker_manager, queue_manager, sleep_job_6s):
         """Test doing a job longer than interval and timeout with WorkerManager."""
         with monkeypatch.context() as m_patch:
-            m_patch.setattr(worker_manager, 'WATCHDOG_INTERVAL', 1)
-            m_patch.setattr(worker_manager, 'WATCHDOG_TERMINATE_AFTER', 1)
+            m_patch.setattr(worker_manager, "WATCHDOG_INTERVAL", 1)
+            m_patch.setattr(worker_manager, "WATCHDOG_TERMINATE_AFTER", 1)
 
             # Start workers and queue sleep job
             queue_manager.queueJobs(sleep_job_6s)
@@ -91,7 +92,7 @@ class TestWorkerManager(BaseTestCase):
             #     assert False
 
 
-@pytest.mark.usefixtures("redis_setup")
+@pytest.mark.usefixtures("redis_setup", "worker_manager")
 class TestQueueManager(BaseTestCase):
     """Test proper usage of QueueManager class."""
 
@@ -117,9 +118,9 @@ class TestQueueManager(BaseTestCase):
 
     def testDeletion(self, queue_manager):
         """Test deleting a QueueManager."""
-        queue_manager.__del__()
+        del queue_manager
 
-    def testCompletedJobNoCallback(self, worker_manager, queue_manager, numpy_add_job):
+    def testCompletedJobNoCallback(self, queue_manager, numpy_add_job):
         """Test completing job with no callback, use getResults()."""
         queue_manager.queueJobs(numpy_add_job)
         assert len(queue_manager.queued_job_ids) > 0
@@ -127,42 +128,38 @@ class TestQueueManager(BaseTestCase):
         assert queue_manager.getResults()[0].retval == 1 + 2
         assert queue_manager.queued_jobs_processed
 
-    def testCompletedJobCallback(self, worker_manager, numpy_add_job):
+    def testCompletedJobCallback(self, numpy_add_job):
         """Test completing job with a callback function."""
         queue_manager = QueueManager(
-            processed_callback=self.jobCallback,
-            logger=REDIS_QUEUE_LOGGER
+            processed_callback=self.jobCallback, logger=REDIS_QUEUE_LOGGER
         )
         queue_manager.queueJobs(numpy_add_job)
         assert len(queue_manager.queued_job_ids) > 0
         queue_manager.blockUntilProcessed()
         assert queue_manager.queued_jobs_processed
 
-    def testBadJobCallback(self, worker_manager, numpy_add_job):
+    def testBadJobCallback(self, numpy_add_job):
         """Test completing job with a poorly formed callback function."""
-        queue_manager = QueueManager(
-            processed_callback=np.dot,
-            logger=REDIS_QUEUE_LOGGER
-        )
+        queue_manager = QueueManager(processed_callback=np.dot, logger=REDIS_QUEUE_LOGGER)
         queue_manager.queueJobs(numpy_add_job)
         assert len(queue_manager.queued_job_ids) > 0
 
         # timeout
-        with pytest.raises(Exception):
+        with pytest.raises(TypeError):
             queue_manager.blockUntilProcessed()
 
         # no timeout
-        with pytest.raises(Exception):
+        with pytest.raises(TypeError):
             queue_manager.blockUntilProcessed(timeout=0.1)
 
-    def testTimeout(self, worker_manager, queue_manager, sleep_job_1s):
+    def testTimeout(self, queue_manager, sleep_job_1s):
         """Test calling blockUntilProcessed with a timeout."""
         queue_manager.queueJobs(sleep_job_1s)
         assert len(queue_manager.queued_job_ids) > 0
         queue_manager.blockUntilProcessed(timeout=5)
         assert queue_manager.queued_jobs_processed
 
-    def testTimeoutError(self, queue_manager, worker_manager, sleep_job_3s):
+    def testTimeoutError(self, queue_manager, sleep_job_3s):
         """Test calling blockUntilProcessed with a short timeout."""
         queue_manager.queueJobs(sleep_job_3s)
         assert len(queue_manager.queued_job_ids) > 0

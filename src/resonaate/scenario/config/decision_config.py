@@ -1,7 +1,7 @@
 """Submodule defining the 'decision' configuration section."""
-# Package
-from .base import ConfigSection, ConfigOption
+# Local Imports
 from ...tasking.decisions import VALID_DECISIONS
+from .base import ConfigOption, ConfigSection
 
 
 class DecisionConfig(ConfigSection):
@@ -12,12 +12,8 @@ class DecisionConfig(ConfigSection):
 
     def __init__(self):
         """Construct an instance of a :class:`.DecisionConfig`."""
-        self._name = ConfigOption(
-            "name",
-            (str, ),
-            valid_settings=VALID_DECISIONS
-        )
-        self._parameters = ConfigOption("parameters", (dict, ), default=dict())
+        self._name = ConfigOption("name", (str,), valid_settings=VALID_DECISIONS)
+        self._parameters = ConfigOption("parameters", (dict,), default={})
 
     @property
     def nested_items(self):

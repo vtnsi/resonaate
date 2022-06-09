@@ -1,10 +1,13 @@
 """:class:`.Job` handler class that manages estimate prediction logic."""
 # Standard Library Imports
-# Pip Package Imports
-# RESONAATE Imports
-from .agent_propagation import PropagationJobHandler
+from collections import defaultdict
+
+# Local Imports
+from ...data.events import EventScope, getRelevantEvents
+from ...data.resonaate_database import ResonaateDatabase
 from ..async_functions import asyncPredict
 from ..job import CallbackRegistration, Job
+from .agent_propagation import PropagationJobHandler
 
 
 class EstimatePredictionRegistration(CallbackRegistration):
@@ -24,10 +27,11 @@ class EstimatePredictionRegistration(CallbackRegistration):
         new_time = kwargs["new_time"]
         job = Job(
             asyncPredict,
-            args=[
-                self.registrant.nominal_filter,
-                new_time
-            ]
+            args=[self.registrant.nominal_filter, new_time],
+            kwargs={
+                # [NOTE][parallel-maneuver-event-handling] Step three: pass the event queue to the propagation process.
+                "scheduled_events": self.registrant.propagate_event_queue
+            },
         )
         self.registrant.time = new_time
 
@@ -48,3 +52,39 @@ class EstimatePredictionJobHandler(PropagationJobHandler):
     """Handle the parallel jobs during the :class:`.Estimate` prediction step of the simulation."""
 
     callback_class = EstimatePredictionRegistration
+
+    def generateJobs(self, **kwargs):
+        """Generate list of propagation jobs to submit to the :class:`.QueueManager`.
+
+        KeywordArgs:
+            epoch_time (:class:`.ScenarioTime`): current simulation epoch.
+            julian_date (:class:`.JulianDate`): current simulation Julian Date
+            prior_julian_date (:class:`.JulianDate`): Julian Date at beginnning of timestep
+
+        Returns:
+            ``list``: :class:`.Job` objects that will be submitted
+        """
+        # [NOTE][parallel-maneuver-event-handling] Step one: query for events and "handle" them.
+        agent_propagation_events = defaultdict(list)
+        relevant_events = getRelevantEvents(
+            ResonaateDatabase.getSharedInterface(),
+            EventScope.AGENT_PROPAGATION,
+            kwargs["prior_julian_date"],
+            kwargs["julian_date"],
+        )
+        for event in relevant_events:
+            if event.planned:
+                agent_propagation_events[event.scope_instance_id].append(event)
+
+        jobs = []
+        epoch_time = kwargs["epoch_time"]
+        for registration in self.callback_registry:
+            registrant_events = agent_propagation_events[registration.registrant.simulation_id]
+            for event in registrant_events:
+                event.handleEvent(registration.registrant)
+
+            job = registration.jobCreateCallback(new_time=epoch_time)
+            self.job_id_registration_dict[job.id] = registration
+            jobs.append(job)
+
+        return jobs

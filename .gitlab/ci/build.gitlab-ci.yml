@@ -1,0 +1,59 @@
+#####################
+# Base Job Settings #
+#####################
+
+include:
+  - local: /.gitlab/ci/common.gitlab-ci.yml
+
+##################
+# Script Aliases #
+##################
+
+# pip install base RESONAATE packages
+.pip-base: &pip-base
+  - python3 -m pip install .
+  - python3 -m pip install build[virtualenv]
+
+# build commands
+.build-package: &build-package
+  - RESONAATE_VERSION=$(python -c "import resonaate; print(resonaate.__version__)")
+  - echo RESONAATE_VERSION="${RESONAATE_VERSION}" > $CI_PROJECT_DIR/variables.env
+  - python3 -m build
+
+##################
+# Base Build Job #
+##################
+
+.build-base:
+  stage: build
+  before_script:
+    - !reference [.apt-update]
+    - !reference [.create-venv]
+    - echo -e "\e[0Ksection_start:`date +%s`:pip_base[collapsed=true]\r\e[0K Install resonaate via pip"
+    - *pip-base
+    - echo -e "\e[0Ksection_end:`date +%s`:pip_base\r\e[0K"
+  artifacts:
+    expire_in: 1 week
+  when: on_success
+
+#####################
+# Package Build Job #
+#####################
+
+# Build the package in source & binary form, only runs when test stage succeeds
+# Saves RESONAATE_VERSION env variable for later usage in subsequent jobs
+build:
+  extends: .build-base
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:build_pkg[collapsed=true]\r\e[0K Build RESONAATE source & wheel packages"
+    - *build-package
+    - echo -e "\e[0Ksection_end:`date +%s`:build_pkg\r\e[0K"
+  artifacts:
+    paths:
+      - dist/*.tar.gz
+      - dist/*.whl
+    reports:
+      dotenv: variables.env
+  needs:
+    - job: manifest
+      artifacts: false

@@ -1,11 +1,13 @@
 """Defines the :class:`.AgentRemovalEvent` data table class."""
 # Standard Library Imports
 from enum import Enum
+
 # Third Party Imports
-from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
-# RESONAATE Imports
+from sqlalchemy.orm import relationship
+
+# Local Imports
 from ...physics.time.stardate import datetimeToJulianDate
 from .base import Event, EventScope
 
@@ -20,7 +22,7 @@ class AgentRemovalEvent(Event):
     """EventScope: Scope where :class:`.AgentRemovalEvent` objects should be handled."""
 
     class AgentType(Enum):
-        """Defines the valid types of agents for the :attr:`.agent_type` attribute."""
+        """Defines the valid types of agents for the :attr:`~.AgentRemovalEvent.agent_type` attribute."""
 
         TARGET = "target"
         """str: Label for target agents."""
@@ -28,24 +30,20 @@ class AgentRemovalEvent(Event):
         SENSOR = "sensor"
         """str: Label for sensor agents."""
 
-    __mapper_args__ = {
-        'polymorphic_identity': EVENT_TYPE
-    }
+    __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
     def agent_id(self):  # pylint: disable=invalid-name
         """int: Unique ID of the :class:`~.agent_base.Agent` being removed from the scenario."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'agent_id',
-            Column(Integer, ForeignKey('agents.unique_id'))
+            "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
         )
 
     @declared_attr
     def tasking_engine_id(self):  # pylint: disable=invalid-name
         """int: Unique ID for the :class:`.TaskingEngine` that this agent should be removed from."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'tasking_engine_id',
-            Column(Integer)
+            "tasking_engine_id", Column(Integer)
         )
 
     agent = relationship("Agent", lazy="joined", innerjoin=True)
@@ -55,7 +53,9 @@ class AgentRemovalEvent(Event):
     """str: Type of agent that's being removed."""
 
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
-        "agent_id", "tasking_engine_id", "agent_type",
+        "agent_id",
+        "tasking_engine_id",
+        "agent_type",
     )
 
     def handleEvent(self, scope_instance):
@@ -90,5 +90,5 @@ class AgentRemovalEvent(Event):
             event_type=config.event_type,
             tasking_engine_id=config.tasking_engine_id,
             agent_id=config.agent_id,
-            agent_type=config.agent_type
+            agent_type=config.agent_type,
         )

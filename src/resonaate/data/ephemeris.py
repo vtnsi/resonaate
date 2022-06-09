@@ -1,9 +1,9 @@
 """Defines `Ephemeris` data table classes."""
-# Standard Library Imports
 # Third Party Imports
-from sqlalchemy import Column, Integer, Float, String, ForeignKey
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
-# RESONAATE Imports
+
+# Local Imports
 from . import Base, _DataMixin
 
 
@@ -33,8 +33,12 @@ class _EphemerisMixin(_DataMixin):
     def eci(self):
         """``list``: returns formatted ECI state vector."""
         return [
-            self.pos_x_km, self.pos_y_km, self.pos_z_km,
-            self.vel_x_km_p_sec, self.vel_y_km_p_sec, self.vel_z_km_p_sec
+            self.pos_x_km,
+            self.pos_y_km,
+            self.pos_z_km,
+            self.vel_x_km_p_sec,
+            self.vel_y_km_p_sec,
+            self.vel_z_km_p_sec,
         ]
 
 
@@ -44,16 +48,21 @@ class TruthEphemeris(Base, _EphemerisMixin):
     __tablename__ = "truth_ephemerides"
     ## Defines the epoch associated with the given data
     # Many to one relation with :class:`.Epoch`
-    julian_date = Column(Float, ForeignKey('epochs.julian_date'), nullable=False)
-    epoch = relationship("Epoch", lazy='joined', innerjoin=True)
+    julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     # Many to one relation with :class:`.Agent`
-    agent_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
-    agent = relationship("Agent", lazy='joined', innerjoin=True)
+    agent_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    agent = relationship("Agent", lazy="joined", innerjoin=True)
 
     MUTABLE_COLUMN_NAMES = (
-        'julian_date', 'agent_id',
-        'pos_x_km', 'pos_y_km', 'pos_z_km',
-        'vel_x_km_p_sec', 'vel_y_km_p_sec', 'vel_z_km_p_sec'
+        "julian_date",
+        "agent_id",
+        "pos_x_km",
+        "pos_y_km",
+        "pos_z_km",
+        "vel_x_km_p_sec",
+        "vel_y_km_p_sec",
+        "vel_z_km_p_sec",
     )
 
     @classmethod
@@ -63,7 +72,9 @@ class TruthEphemeris(Base, _EphemerisMixin):
         An `eci` keyword is provided as a 6x1 vector instead of the `pos[dimension]` and
         `vel[dimension]` keywords.
         """
-        assert kwargs.get("eci") is not None, "[Ephemeris.fromECIArray()] Missing keyword argument 'eci'."
+        assert (
+            kwargs.get("eci") is not None
+        ), "[Ephemeris.fromECIArray()] Missing keyword argument 'eci'."
 
         # Parse state vector into separate columns, one for each element
         kwargs["pos_x_km"] = kwargs["eci"][0]
@@ -85,11 +96,11 @@ class EstimateEphemeris(Base, _EphemerisMixin):
     __tablename__ = "estimate_ephemerides"
     ## Defines the epoch associated with the given data
     # Many to one relation with :class:`.Epoch`
-    julian_date = Column(Float, ForeignKey('epochs.julian_date'), nullable=False)
-    epoch = relationship("Epoch", lazy='joined', innerjoin=True)
+    julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     # Many to one relation with :class:`.Agent`
-    agent_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
-    agent = relationship("Agent", lazy='joined', innerjoin=True)
+    agent_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    agent = relationship("Agent", lazy="joined", innerjoin=True)
 
     # Source of Estimate (Observation or Propagation)
     source = Column(String, nullable=False)
@@ -139,15 +150,51 @@ class EstimateEphemeris(Base, _EphemerisMixin):
     covar_55 = Column(Float)
 
     MUTABLE_COLUMN_NAMES = (
-        'julian_date', 'agent_id', 'source',
-        'pos_x_km', 'pos_y_km', 'pos_z_km',
-        'vel_x_km_p_sec', 'vel_y_km_p_sec', 'vel_z_km_p_sec',
-        'covar_00', 'covar_01', 'covar_02', 'covar_03', 'covar_04', 'covar_05',
-        'covar_10', 'covar_11', 'covar_12', 'covar_13', 'covar_14', 'covar_15',
-        'covar_20', 'covar_21', 'covar_22', 'covar_23', 'covar_24', 'covar_25',
-        'covar_30', 'covar_31', 'covar_32', 'covar_33', 'covar_34', 'covar_35',
-        'covar_40', 'covar_41', 'covar_42', 'covar_43', 'covar_44', 'covar_45',
-        'covar_50', 'covar_51', 'covar_52', 'covar_53', 'covar_54', 'covar_55'
+        "julian_date",
+        "agent_id",
+        "source",
+        "pos_x_km",
+        "pos_y_km",
+        "pos_z_km",
+        "vel_x_km_p_sec",
+        "vel_y_km_p_sec",
+        "vel_z_km_p_sec",
+        "covar_00",
+        "covar_01",
+        "covar_02",
+        "covar_03",
+        "covar_04",
+        "covar_05",
+        "covar_10",
+        "covar_11",
+        "covar_12",
+        "covar_13",
+        "covar_14",
+        "covar_15",
+        "covar_20",
+        "covar_21",
+        "covar_22",
+        "covar_23",
+        "covar_24",
+        "covar_25",
+        "covar_30",
+        "covar_31",
+        "covar_32",
+        "covar_33",
+        "covar_34",
+        "covar_35",
+        "covar_40",
+        "covar_41",
+        "covar_42",
+        "covar_43",
+        "covar_44",
+        "covar_45",
+        "covar_50",
+        "covar_51",
+        "covar_52",
+        "covar_53",
+        "covar_54",
+        "covar_55",
     )
 
     @classmethod
@@ -156,7 +203,9 @@ class EstimateEphemeris(Base, _EphemerisMixin):
 
         A `covariance` keyword is provided as a 6x6 matrix instead of the `covar_[]` keywords.
         """
-        assert kwargs.get("covariance") is not None, "[Ephemeris.fromCovarianceMatrix()] Missing keyword argument"
+        assert (
+            kwargs.get("covariance") is not None
+        ), "[Ephemeris.fromCovarianceMatrix()] Missing keyword argument"
 
         # Parse covariance matrix into separate columns, one for each matrix element
         kwargs["covar_00"] = kwargs["covariance"][0][0]
@@ -200,7 +249,9 @@ class EstimateEphemeris(Base, _EphemerisMixin):
         del kwargs["covariance"]
 
         # Parse state vector into separate columns, one for each element
-        assert kwargs.get("eci") is not None, "[Ephemeris.fromECIArray()] Missing keyword argument 'eci'."
+        assert (
+            kwargs.get("eci") is not None
+        ), "[Ephemeris.fromECIArray()] Missing keyword argument 'eci'."
         kwargs["pos_x_km"] = kwargs["eci"][0]
         kwargs["pos_y_km"] = kwargs["eci"][1]
         kwargs["pos_z_km"] = kwargs["eci"][2]
@@ -215,12 +266,54 @@ class EstimateEphemeris(Base, _EphemerisMixin):
 
     @property
     def covariance(self):
-        """``list (``list``) ``: returns formatted covariance matrix."""
+        """``list``: returns formatted covariance matrix."""
         return [
-            [self.covar_00, self.covar_01, self.covar_02, self.covar_03, self.covar_04, self.covar_05],
-            [self.covar_10, self.covar_11, self.covar_12, self.covar_13, self.covar_14, self.covar_15],
-            [self.covar_20, self.covar_21, self.covar_22, self.covar_23, self.covar_24, self.covar_25],
-            [self.covar_30, self.covar_31, self.covar_32, self.covar_33, self.covar_34, self.covar_35],
-            [self.covar_40, self.covar_41, self.covar_42, self.covar_43, self.covar_44, self.covar_45],
-            [self.covar_50, self.covar_51, self.covar_52, self.covar_53, self.covar_54, self.covar_55]
+            [
+                self.covar_00,
+                self.covar_01,
+                self.covar_02,
+                self.covar_03,
+                self.covar_04,
+                self.covar_05,
+            ],
+            [
+                self.covar_10,
+                self.covar_11,
+                self.covar_12,
+                self.covar_13,
+                self.covar_14,
+                self.covar_15,
+            ],
+            [
+                self.covar_20,
+                self.covar_21,
+                self.covar_22,
+                self.covar_23,
+                self.covar_24,
+                self.covar_25,
+            ],
+            [
+                self.covar_30,
+                self.covar_31,
+                self.covar_32,
+                self.covar_33,
+                self.covar_34,
+                self.covar_35,
+            ],
+            [
+                self.covar_40,
+                self.covar_41,
+                self.covar_42,
+                self.covar_43,
+                self.covar_44,
+                self.covar_45,
+            ],
+            [
+                self.covar_50,
+                self.covar_51,
+                self.covar_52,
+                self.covar_53,
+                self.covar_54,
+                self.covar_55,
+            ],
         ]

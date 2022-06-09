@@ -1,0 +1,72 @@
+{
+  "time": {
+    "start_timestamp": "2021-03-30T16:00:00.000Z",
+    "physics_step_sec": 600,
+    "output_step_sec": 600,
+    "stop_timestamp": "2021-03-31T00:00:00.000Z"
+  },
+  "noise": {
+    "init_position_std_km": 1e-3,
+    "init_velocity_std_km_p_sec": 1e-6,
+    "dynamics_noise_type": "simple_noise",
+    "dynamics_noise_magnitude": 1e-25,
+    "filter_noise_type": "continuous_white_noise",
+    "filter_noise_magnitude": 3.0e-14,
+    "random_seed": "os"
+  },
+  "propagation": {
+    "propagation_model": "two_body",
+    "integration_method": "RK45",
+    "station_keeping": false,
+    "target_realtime_propagation": true,
+    "sensor_realtime_propagation": true,
+    "realtime_observation": true,
+    "truth_simulation_only": false
+  },
+  "geopotential": {
+    "model": "egm96.txt",
+    "degree": 4,
+    "order": 4
+  },
+  "perturbations": {
+    "third_bodies": ["sun", "moon"],
+    "solar_radiation_pressure": true,
+    "general_relativity": true
+  },
+  "estimation": {
+    "sequential_filter": {
+      "name": "unscented_kalman_filter",
+      "parameters": {
+        "alpha": 0.05,
+        "beta": 2.0
+      },
+      "dynamics_model": "two_body",
+      "maneuver_detection": {
+        "name": "standard_nis",
+        "maneuver_gate_val": 0.01,
+        "parameters": {}
+      },
+      "adaptive_estimation": true
+    },
+    "adaptive_filter": {
+      "name": "gpb1",
+      "orbit_determination": "lambert_universal",
+      "model_interval": 60,
+      "stacking_method": "eci_stack",
+      "observation_window": 1,
+      "prune_threshold": 1e-10,
+      "prune_percentage": 0.995
+    }
+  },
+  "engines_files": ["../engines/mmae_engine.json"],
+  "events": [
+    {
+      "scope": "agent_propagation",
+      "scope_instance_id": 20001,
+      "start_time": "2021-03-30T18:00:00.000Z",
+      "event_type": "impulse",
+      "thrust_vector": [0.0, 5.0e-3, 0.0],
+      "thrust_frame": "ntw"
+    }
+  ]
+}

@@ -6,10 +6,10 @@ Todo:
     - Document :attr:`.RewardConfig.parameters`
 
 """
-# Package
-from .base import ConfigSection, ConfigOption, ConfigObject, ConfigObjectList
-from ...tasking.rewards import VALID_REWARDS
+# Local Imports
 from ...tasking.metrics import VALID_METRICS
+from ...tasking.rewards import VALID_REWARDS
+from .base import ConfigObject, ConfigObjectList, ConfigOption, ConfigSection
 
 
 class RewardConfig(ConfigSection):
@@ -20,8 +20,8 @@ class RewardConfig(ConfigSection):
 
     def __init__(self):
         """Construct an instance of a :class:`.RewardConfig`."""
-        self._name = ConfigOption("name", (str, ), valid_settings=VALID_REWARDS)
-        self._parameters = ConfigOption("parameters", (dict, ), default=dict())
+        self._name = ConfigOption("name", (str,), valid_settings=VALID_REWARDS)
+        self._parameters = ConfigOption("parameters", (dict,), default={})
         self._metrics = ConfigObjectList("metrics", MetricConfigObject)
 
     @property
@@ -52,8 +52,8 @@ class MetricConfigObject(ConfigObject):
     def getFields():
         """Return a tuple :class:`.ConfigOption` objects required for a :class:`.MetricConfigObject`."""
         return (
-            ConfigOption("name", (str, ), valid_settings=VALID_METRICS),
-            ConfigOption("parameters", (dict, ), default={})
+            ConfigOption("name", (str,), valid_settings=VALID_METRICS),
+            ConfigOption("parameters", (dict,), default={}),
         )
 
     @property

@@ -1,8 +1,8 @@
 """Abstract :class:`.Reward` base class defining the reward API."""
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
-# Third Party Imports
-# RESONAATE Imports
+
+# Local Imports
 from ..metrics.metric_base import Metric
 
 
@@ -62,11 +62,7 @@ class Reward(metaclass=ABCMeta):
         metric_solutions = {}
         for metric in self.metrics:
             metric_solutions[metric] = metric(
-                target_agents,
-                target_id,
-                sensor_agents,
-                sensor_id,
-                **kwargs
+                target_agents, target_id, sensor_agents, sensor_id, **kwargs
             )
 
         return metric_solutions

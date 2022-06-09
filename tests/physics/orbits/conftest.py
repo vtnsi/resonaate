@@ -1,11 +1,11 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
-from numpy import finfo, deg2rad, array
+from numpy import array, deg2rad, finfo
+
 # RESONAATE Imports
 from resonaate.physics.bodies import Earth
-from resonaate.physics.orbits import INCLINATION_LIMIT, ECCENTRICITY_LIMIT
-
+from resonaate.physics.orbits import ECCENTRICITY_LIMIT, INCLINATION_LIMIT
 
 # Valid and invalid Inc/Ecc for testing edge cases
 
@@ -27,8 +27,21 @@ INCLINCATIONS = (
     deg2rad(-5),
 )
 INCLINED = (
-    False, False, True, True, True, True, True, True, True,
-    True, True, False, False, None, None,
+    False,
+    False,
+    True,
+    True,
+    True,
+    True,
+    True,
+    True,
+    True,
+    True,
+    True,
+    False,
+    False,
+    None,
+    None,
 )
 
 
@@ -50,8 +63,21 @@ ECCENTRICITIES = (
     -0.1,
 )
 ECCENTRIC = (
-    False, False, True, True, True, True, True, True, True,
-    True, True, None, None, None, None,
+    False,
+    False,
+    True,
+    True,
+    True,
+    True,
+    True,
+    True,
+    True,
+    True,
+    True,
+    None,
+    None,
+    None,
+    None,
 )
 
 
@@ -77,13 +103,25 @@ Q = [1, 2, 3, 4, 2, 2, 3, 4, 3, 3, 3, 4, 6, 1]
 
 # VALLADO AAS RV/COE/EQE Sets
 # Example from "Updated Analytical Partials for Covariance Transformations and Optimizations", Vallado
-VALLADO_AAS_RV = array([-605.7922166, -5870.2295111, 3493.0531990, -1.568254290, -3.702348910, -6.479483950])
+VALLADO_AAS_RV = array(
+    [-605.7922166, -5870.2295111, 3493.0531990, -1.568254290, -3.702348910, -6.479483950]
+)
 VALLADO_AAS_COE = (
-    6860.7631, 0.0010640, deg2rad(97.65184), deg2rad(79.54701), deg2rad(83.86041), deg2rad(65.21303)
+    6860.7631,
+    0.0010640,
+    deg2rad(97.65184),
+    deg2rad(79.54701),
+    deg2rad(83.86041),
+    deg2rad(65.21303),
 )
 VALLADO_AAS_EQE = (
     # SMA,         h = a_g    k = a_f    p = chi    q = psi    lambda_M
-    6860.7631490, 0.0000800, 0.0010610, 0.8601197, 0.1586839, deg2rad(69.4157838)
+    6860.7631490,
+    0.0000800,
+    0.0010610,
+    0.8601197,
+    0.1586839,
+    deg2rad(69.4157838),
 )
 
 POS_TEST_CASES = (

@@ -1,8 +1,8 @@
 """Defines the :class:`.Epoch` data table class."""
-# Standard Library Imports
 # Third Party Imports
-from sqlalchemy import Column, Float, String, Integer
-# RESONAATE Imports
+from sqlalchemy import Column, Float, Integer, String
+
+# Local Imports
 from . import Base, _DataMixin
 
 
@@ -23,5 +23,6 @@ class Epoch(Base, _DataMixin):
     julian_date = Column(Float, index=True, unique=True, nullable=False)
 
     MUTABLE_COLUMN_NAMES = (
-        'julian_date', "timestampISO",
+        "julian_date",
+        "timestampISO",
     )

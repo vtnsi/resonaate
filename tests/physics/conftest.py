@@ -1,7 +1,7 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 import os
-# Third Party Imports
+
 # RESONAATE Library Imports
 
 PHYSICS_DATA_DIR = os.path.join(

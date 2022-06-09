@@ -1,20 +1,21 @@
-# pylint: disable=no-self-use, unused-argument
+# pylint: disable=unused-argument
 # Standard Library Imports
 from datetime import datetime
 from unittest.mock import create_autospec
+
 # Third Party Imports
 import pytest
-# RESONAATE Imports
+
 try:
-    from resonaate.scenario.config.event_configs import ScheduledFiniteBurnConfigObject
-    from resonaate.scenario.config.base import ConfigError
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.data.events import EventScope, ScheduledFiniteBurnEvent
+    # RESONAATE Imports
     from resonaate.agents.target_agent import TargetAgent
+    from resonaate.data.events import EventScope, ScheduledFiniteBurnEvent
+    from resonaate.physics.time.stardate import datetimeToJulianDate
+    from resonaate.scenario.config.base import ConfigError
+    from resonaate.scenario.config.event_configs import ScheduledFiniteBurnConfigObject
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ...conftest import BaseTestCase
 
@@ -24,42 +25,51 @@ class TestFiniteBurnEventConfig(BaseTestCase):
 
     def testInitGoodArgs(self):
         """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with good arguments."""
-        assert ScheduledFiniteBurnConfigObject({
-            "scope": ScheduledFiniteBurnConfigObject.EVENT_CLASS.INTENDED_SCOPE.value,
-            "scope_instance_id": 28868,
-            "start_time": datetime(2019, 2, 1, 15, 20),
-            "end_time": datetime(2019, 2, 1, 15, 22),
-            "event_type": ScheduledFiniteBurnConfigObject.EVENT_CLASS.EVENT_TYPE,
-            "acc_vector": [0.0, 0.0, 0.00123],
-            "thrust_frame": "ntw"
-        })
-
-    def testInitBadScope(self):
-        """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with bad ``scope`` argument."""
-        expected_err = f"{ScheduledFiniteBurnEvent} must have scope set to {ScheduledFiniteBurnEvent.INTENDED_SCOPE}"
-        with pytest.raises(ConfigError, match=expected_err):
-            ScheduledFiniteBurnConfigObject({
-                "scope": EventScope.SCENARIO_STEP.value,  # pylint: disable=no-member
-                "scope_instance_id": 28868,
-                "start_time": datetime(2019, 2, 1, 15, 20),
-                "end_time": datetime(2019, 2, 1, 15, 22),
-                "event_type": ScheduledFiniteBurnEvent.EVENT_TYPE,
-                "acc_vector": [0.0, 0.0, 0.00123],
-                "thrust_frame": "ntw"
-            })
-
-    def testInitBadThrustType(self):
-        """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with bad ``applied_bias`` type."""
-        with pytest.raises(ConfigError):
-            ScheduledFiniteBurnConfigObject({
+        assert ScheduledFiniteBurnConfigObject(
+            {
                 "scope": ScheduledFiniteBurnConfigObject.EVENT_CLASS.INTENDED_SCOPE.value,
                 "scope_instance_id": 28868,
                 "start_time": datetime(2019, 2, 1, 15, 20),
                 "end_time": datetime(2019, 2, 1, 15, 22),
                 "event_type": ScheduledFiniteBurnConfigObject.EVENT_CLASS.EVENT_TYPE,
                 "acc_vector": [0.0, 0.0, 0.00123],
-                "thrust_frame": True
-            })
+                "thrust_frame": "ntw",
+                "planned": True,
+            }
+        )
+
+    def testInitBadScope(self):
+        """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with bad ``scope`` argument."""
+        expected_err = f"{ScheduledFiniteBurnEvent} must have scope set to {ScheduledFiniteBurnEvent.INTENDED_SCOPE}"
+        with pytest.raises(ConfigError, match=expected_err):
+            ScheduledFiniteBurnConfigObject(
+                {
+                    "scope": EventScope.SCENARIO_STEP.value,  # pylint: disable=no-member
+                    "scope_instance_id": 28868,
+                    "start_time": datetime(2019, 2, 1, 15, 20),
+                    "end_time": datetime(2019, 2, 1, 15, 22),
+                    "event_type": ScheduledFiniteBurnEvent.EVENT_TYPE,
+                    "acc_vector": [0.0, 0.0, 0.00123],
+                    "thrust_frame": "ntw",
+                    "planned": True,
+                }
+            )
+
+    def testInitBadThrustType(self):
+        """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with bad ``applied_bias`` type."""
+        with pytest.raises(ConfigError):
+            ScheduledFiniteBurnConfigObject(
+                {
+                    "scope": ScheduledFiniteBurnConfigObject.EVENT_CLASS.INTENDED_SCOPE.value,
+                    "scope_instance_id": 28868,
+                    "start_time": datetime(2019, 2, 1, 15, 20),
+                    "end_time": datetime(2019, 2, 1, 15, 22),
+                    "event_type": ScheduledFiniteBurnConfigObject.EVENT_CLASS.EVENT_TYPE,
+                    "acc_vector": [0.0, 0.0, 0.00123],
+                    "thrust_frame": True,
+                    "planned": True,
+                }
+            )
 
 
 @pytest.fixture(name="mocked_target")
@@ -75,15 +85,18 @@ class TestFiniteBurnEvent(BaseTestCase):
 
     def testFromConfig(self):
         """Test :meth:`.ScheduledFiniteBurnEvent.fromConfig()`."""
-        burn_config = ScheduledFiniteBurnConfigObject({
-            "scope": ScheduledFiniteBurnEvent.INTENDED_SCOPE.value,
-            "scope_instance_id": 28868,
-            "start_time": datetime(2019, 2, 1, 15, 20),
-            "end_time": datetime(2019, 2, 1, 15, 22),
-            "event_type": ScheduledFiniteBurnEvent.EVENT_TYPE,
-            "acc_vector": [0.0, 0.0, 0.00123],
-            "thrust_frame": "ntw"
-        })
+        burn_config = ScheduledFiniteBurnConfigObject(
+            {
+                "scope": ScheduledFiniteBurnEvent.INTENDED_SCOPE.value,
+                "scope_instance_id": 28868,
+                "start_time": datetime(2019, 2, 1, 15, 20),
+                "end_time": datetime(2019, 2, 1, 15, 22),
+                "event_type": ScheduledFiniteBurnEvent.EVENT_TYPE,
+                "acc_vector": [0.0, 0.0, 0.00123],
+                "thrust_frame": "ntw",
+                "planned": True,
+            }
+        )
         assert ScheduledFiniteBurnEvent.fromConfig(burn_config)
 
     def testHandleNTWEvent(self, mocked_target):
@@ -97,7 +110,8 @@ class TestFiniteBurnEvent(BaseTestCase):
             acc_vec_0=0.0,
             acc_vec_1=0.0,
             acc_vec_2=0.00123,
-            thrust_frame="ntw"
+            thrust_frame="ntw",
+            planned=True,
         )
         burn_event.handleEvent(mocked_target)
 
@@ -112,7 +126,8 @@ class TestFiniteBurnEvent(BaseTestCase):
             acc_vec_0=0.0,
             acc_vec_1=0.0,
             acc_vec_2=0.00123,
-            thrust_frame="eci"
+            thrust_frame="eci",
+            planned=True,
         )
         burn_event.handleEvent(mocked_target)
 
@@ -127,7 +142,8 @@ class TestFiniteBurnEvent(BaseTestCase):
             acc_vec_0=0.0,
             acc_vec_1=0.0,
             acc_vec_2=0.00123,
-            thrust_frame="bad"
+            thrust_frame="bad",
+            planned=True,
         )
         expected_err = f"{burn_event.thrust_frame} is not a valid coordinate frame."
         with pytest.raises(ValueError, match=expected_err):

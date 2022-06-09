@@ -1,32 +1,32 @@
 """Defines the :class:`.Observation` data table class."""
-# Standard Library Imports
 # Third Party Imports
-from sqlalchemy import Column, Integer, Float, String, ForeignKey
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
-# RESONAATE Imports
+
+# Local Imports
 from . import Base, _DataMixin
 
 
 class Observation(Base, _DataMixin):
     """Represents singular observation information in database."""
 
-    __tablename__ = 'observations'
+    __tablename__ = "observations"
     id = Column(Integer, primary_key=True)  # noqa: A003
 
     ## Defines the epoch associated with the observation data
     # Many to one relation with :class:`.Epoch`
-    julian_date = Column(Float, ForeignKey('epochs.julian_date'), nullable=False)
-    epoch = relationship("Epoch", lazy='joined', innerjoin=True)
+    julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    epoch = relationship("Epoch", lazy="joined", innerjoin=True)
 
     ## Defines the associated sensor agent with the observation data
     # Many to one relation with :class:`.Agent`
-    sensor_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
-    sensor = relationship("Agent", foreign_keys=[sensor_id], lazy='joined', innerjoin=True)
+    sensor_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    sensor = relationship("Agent", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
 
     ## Defines the associated target agent with the observation data
     # Many to one relation with :class:`.Agent`
-    target_id = Column(Integer, ForeignKey('agents.unique_id'), nullable=False)
-    target = relationship("Agent", foreign_keys=[target_id], lazy='joined', innerjoin=True)
+    target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    target = relationship("Agent", foreign_keys=[target_id], lazy="joined", innerjoin=True)
 
     # Type of the observing sensor (Optical, Radar, AdvRadar)
     sensor_type = Column(String(128), nullable=False)
@@ -62,10 +62,20 @@ class Observation(Base, _DataMixin):
     position_altitude_km = Column(Float)
 
     MUTABLE_COLUMN_NAMES = (
-        "julian_date", "sensor_id", "target_id", "sensor_type",
-        "azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec",
-        "sez_state_s_km", "sez_state_e_km", "sez_state_z_km",
-        "position_lat_rad", "position_long_rad", "position_altitude_km"
+        "julian_date",
+        "sensor_id",
+        "target_id",
+        "sensor_type",
+        "azimuth_rad",
+        "elevation_rad",
+        "range_km",
+        "range_rate_km_p_sec",
+        "sez_state_s_km",
+        "sez_state_e_km",
+        "sez_state_z_km",
+        "position_lat_rad",
+        "position_long_rad",
+        "position_altitude_km",
     )
 
     @classmethod
@@ -75,7 +85,9 @@ class Observation(Base, _DataMixin):
         An `eci` keyword is provided as a 6x1 vector instead of the `pos[dimension]` and
         `vel[dimension]` keywords.
         """
-        assert kwargs.get("sez") is not None, "[Ephemeris.fromSEZVector()] Missing keyword argument 'xSEZ'."
+        assert (
+            kwargs.get("sez") is not None
+        ), "[Ephemeris.fromSEZVector()] Missing keyword argument 'xSEZ'."
 
         # Parse SEZ position vector into separate columns
         kwargs["sez_state_s_km"] = kwargs["sez"][0]
@@ -109,5 +121,4 @@ class Observation(Base, _DataMixin):
         if self.range_rate_km_p_sec and self.range_km:
             return [self.azimuth_rad, self.elevation_rad, self.range_km, self.range_rate_km_p_sec]
 
-        else:
-            return [self.azimuth_rad, self.elevation_rad]
+        return [self.azimuth_rad, self.elevation_rad]

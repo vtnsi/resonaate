@@ -1,21 +1,29 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 # Third Party Imports
-from numpy import array, allclose, dot, any as np_any
-from numpy.linalg import norm
 import pytest
-# RESONAATE Imports
+from numpy import allclose
+from numpy import any as np_any
+from numpy import array, dot
+from numpy.linalg import norm
+
 try:
-    from resonaate.physics.bodies import Earth
-    from resonaate.physics.bodies.gravitational_potential import loadGeopotentialCoefficients, nonSphericalAcceleration
-    from resonaate.physics.time.stardate import JulianDate
-    from resonaate.physics.transforms.reductions import updateReductionParameters, getReductionParameters
-    from resonaate.physics.transforms.methods import eci2ecef
+    # RESONAATE Imports
     from resonaate.dynamics.special_perturbations import _getRotationMatrix
+    from resonaate.physics.bodies import Earth
+    from resonaate.physics.bodies.gravitational_potential import (
+        loadGeopotentialCoefficients,
+        nonSphericalAcceleration,
+    )
+    from resonaate.physics.time.stardate import JulianDate
+    from resonaate.physics.transforms.methods import eci2ecef
+    from resonaate.physics.transforms.reductions import (
+        getReductionParameters,
+        updateReductionParameters,
+    )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -36,18 +44,20 @@ class TestGravitationalPotential(BaseTestCase):
 
     GRAVITY_MODELS = [
         # (model, is_valid)
-        ('GGM03S.txt', True),
-        ('egm96.txt', True),
-        ('egm2008.txt', True),
-        ('jgm3.txt', True),
-        ('jgm1.txt', False),
+        ("GGM03S.txt", True),
+        ("egm96.txt", True),
+        ("egm2008.txt", True),
+        ("jgm3.txt", True),
+        ("jgm1.txt", False),
     ]
 
-    @pytest.mark.parametrize("degree, order, truth", TEST_CASES)
+    @pytest.mark.parametrize(("degree", "order", "truth"), TEST_CASES)
     def testGeoPotentialFunction(self, degree, order, truth):
         """Test the non-spherical geopotential acceleration function."""
         c_nm, s_nm = loadGeopotentialCoefficients("egm96.txt")
-        accelerations = nonSphericalAcceleration(self.ITRF_POSITION, Earth.mu, Earth.radius, c_nm, s_nm, degree, order)
+        accelerations = nonSphericalAcceleration(
+            self.ITRF_POSITION, Earth.mu, Earth.radius, c_nm, s_nm, degree, order
+        )
         assert allclose(accelerations, array(truth) * 1e-5, atol=1e-10, rtol=1e-8)
 
     def testNonsphericalAcceleration(self):
@@ -56,7 +66,16 @@ class TestGravitationalPotential(BaseTestCase):
         jd = JulianDate.getJulianDate(2020, 3, 30, 16, 0, 0.0)
         updateReductionParameters(jd)
         # Initial state vector
-        eci_state = array([-1775.038314593, 5669.031509330, 3035.224600923, -7.108806806, -2.822740035, 1.130313493])
+        eci_state = array(
+            [
+                -1775.038314593,
+                5669.031509330,
+                3035.224600923,
+                -7.108806806,
+                -2.822740035,
+                1.130313493,
+            ]
+        )
         # Full acceleration values
         eci_accel = array([2.383405021e-03, -7.611372878e-03, -4.087216625e-03])
         ecef_state = eci2ecef(eci_state)
@@ -65,23 +84,24 @@ class TestGravitationalPotential(BaseTestCase):
         c_nm, s_nm = loadGeopotentialCoefficients("egm96.txt")
 
         # Subtract Keplerian motion acceleration to retrieve nonspherical terms only.
-        tb_accel = - 1. * Earth.mu / (norm(eci_state[:3])**3.0) * eci_state[:3]
+        tb_accel = -1.0 * Earth.mu / (norm(eci_state[:3]) ** 3.0) * eci_state[:3]
         truth_accel = eci_accel - tb_accel
 
         # Calculate nonspherical acceleration using RESONAATE algorithm
         ns_accel = dot(
             ecef2eci,
-            nonSphericalAcceleration(ecef_state[:3], Earth.mu, Earth.radius, c_nm, s_nm, 4, 4)
+            nonSphericalAcceleration(ecef_state[:3], Earth.mu, Earth.radius, c_nm, s_nm, 4, 4),
         )
 
         assert allclose(ns_accel, truth_accel, atol=1e-10, rtol=1e-8)
 
-    @pytest.mark.parametrize("model, is_valid", GRAVITY_MODELS)
+    @pytest.mark.parametrize(("model", "is_valid"), GRAVITY_MODELS)
     def testLoadingGravityModels(self, model, is_valid):
         """Testing loading valid/invalid gravity models."""
         if is_valid:
             c_nm, s_nm = loadGeopotentialCoefficients(model)
-            assert np_any(c_nm) and np_any(s_nm)
+            assert np_any(c_nm)
+            assert np_any(s_nm)
 
         else:  # invalid
             with pytest.raises(FileNotFoundError):

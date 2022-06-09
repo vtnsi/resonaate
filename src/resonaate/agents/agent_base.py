@@ -2,16 +2,20 @@
 # Standard Library Imports
 import logging
 from abc import ABCMeta, abstractmethod
+
 # Third Party Imports
 from numpy import ndarray
-# RESONAATE Imports
+
+# Local Imports
 from ..common.utilities import checkTypes
 from ..dynamics.dynamics_base import Dynamics
-from ..scenario.clock import ScenarioClock
-from ..physics.math import fpe_equals
+from ..dynamics.integration_events.finite_thrust import (
+    ScheduledFiniteBurn,
+    ScheduledFiniteManeuver,
+)
 from ..dynamics.integration_events.station_keeping import StationKeeper
-from ..dynamics.integration_events.finite_thrust import ScheduledFiniteBurn, ScheduledFiniteManeuver
-
+from ..physics.math import fpe_equals
+from ..scenario.clock import ScenarioClock
 
 DEFAULT_VIS_X_SECTION = 25.0
 """float: Default value for `visual_cross_section`.
@@ -32,11 +36,21 @@ class Agent(metaclass=ABCMeta):
         "dynamics": Dynamics,
         "realtime": bool,
         "visual_cross_section": (int, float),
-        "station_keeping": (list, type(None))
+        "station_keeping": (list, type(None)),
     }
 
-    def __init__(self, _id, name, agent_type, initial_state, clock, dynamics,
-                 realtime, visual_cross_section, station_keeping=None):
+    def __init__(
+        self,
+        _id,
+        name,
+        agent_type,
+        initial_state,
+        clock,
+        dynamics,
+        realtime,
+        visual_cross_section,
+        station_keeping=None,
+    ):
         """Construct an Agent object.
 
         Args:
@@ -110,12 +124,15 @@ class Agent(metaclass=ABCMeta):
         relevant_events = []
         for itr_event in self.propagate_event_queue:
             if isinstance(itr_event, (ScheduledFiniteManeuver, ScheduledFiniteBurn)):
-                if self._time < itr_event.end_time or fpe_equals(itr_event.end_time, self._time):
-                    if itr_event not in relevant_events:
-                        relevant_events.append(itr_event)
-            else:
-                if self._time < itr_event.time or fpe_equals(itr_event.time, self._time):
-                    relevant_events.append(itr_event)
+                if not self._time < itr_event.end_time or fpe_equals(
+                    itr_event.end_time, self._time
+                ):
+                    continue
+                if itr_event in relevant_events:
+                    continue
+                relevant_events.append(itr_event)
+            elif self._time < itr_event.time or fpe_equals(itr_event.time, self._time):
+                relevant_events.append(itr_event)
         self.propagate_event_queue = relevant_events
 
     ### Abstract Methods & Properties ###

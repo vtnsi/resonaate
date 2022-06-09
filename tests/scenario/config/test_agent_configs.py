@@ -1,21 +1,23 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use, unused-argument
+# pylint: disable=attribute-defined-outside-init, unused-argument
 # Standard Library Imports
 # Third Party Imports
 import pytest
-# RESONAATE Imports
+
 try:
-    from resonaate.scenario.config.agent_configs import (
-        ConfigError, ConfigValueError, SensorConfigObject, TargetConfigObject,
-    )
+    # RESONAATE Imports
     from resonaate.agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
-    from resonaate.sensors import OPTICAL_LABEL, RADAR_LABEL, ADV_RADAR_LABEL
+    from resonaate.scenario.config.agent_configs import (
+        ConfigError,
+        SensorConfigObject,
+        TargetConfigObject,
+    )
+    from resonaate.sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ...conftest import BaseTestCase
-from .conftest import GEO_TARGETS, LEO_TARGETS, EARTH_SENSORS, SPACE_SENSORS
+from .conftest import EARTH_SENSORS, GEO_TARGETS, LEO_TARGETS, SPACE_SENSORS
 
 
 class TestTargetConfig(BaseTestCase):
@@ -27,7 +29,7 @@ class TestTargetConfig(BaseTestCase):
         tgt_cfg_obj = TargetConfigObject(tgt_dict)
         assert tgt_cfg_obj.sat_num == tgt_dict["sat_num"]
         assert tgt_cfg_obj.sat_name == tgt_dict["sat_name"]
-        assert tgt_cfg_obj.station_keeping == tgt_dict["station_keeping"]
+        assert tgt_cfg_obj.station_keeping.routines == tgt_dict["station_keeping"]["routines"]
         if tgt_cfg_obj.eci_set:
             assert tgt_cfg_obj.init_eci == tgt_dict["init_eci"]
         elif tgt_cfg_obj.coe_set:
@@ -86,11 +88,11 @@ class TestTargetConfig(BaseTestCase):
     def testInvalidStationKeepingConfig(self, monkeypatch, tgt_dict):
         """Test invalid station keeping config."""
         with monkeypatch.context() as m_patch:
-            m_patch.setitem(tgt_dict, "station_keeping", ["INVALID"])
-            with pytest.raises(ConfigValueError):
+            m_patch.setitem(tgt_dict, "station_keeping", {"routines": ["INVALID"]})
+            with pytest.raises(ConfigError):
                 _ = TargetConfigObject(tgt_dict)
-            m_patch.setitem(tgt_dict, "station_keeping", [20])
-            with pytest.raises(ConfigValueError):
+            m_patch.setitem(tgt_dict, "station_keeping", {"routines": [20]})
+            with pytest.raises(ConfigError):
                 _ = TargetConfigObject(tgt_dict)
 
     @pytest.mark.parametrize("tgt_dict", GEO_TARGETS + LEO_TARGETS)
@@ -250,9 +252,9 @@ class TestSensorConfig(BaseTestCase):
     def testInvalidStationKeepingConfig(self, monkeypatch, sen_dict):
         """Test invalid station keeping config."""
         with monkeypatch.context() as m_patch:
-            m_patch.setitem(sen_dict, "station_keeping", ["INVALID"])
-            with pytest.raises(ConfigValueError):
+            m_patch.setitem(sen_dict, "station_keeping", {"routines": ["INVALID"]})
+            with pytest.raises(ConfigError):
                 _ = SensorConfigObject(sen_dict)
-            m_patch.setitem(sen_dict, "station_keeping", [20])
-            with pytest.raises(ConfigValueError):
+            m_patch.setitem(sen_dict, "station_keeping", {"routines": [20]})
+            with pytest.raises(ConfigError):
                 _ = SensorConfigObject(sen_dict)

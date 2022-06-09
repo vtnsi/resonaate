@@ -10,9 +10,9 @@ Succinctly describe what currently happens.
 
 ## Steps to Reproduce the Problem
 
-  1.
-  1.
-  1.
+1.
+1.
+1.
 
 ## Possible Solution
 
@@ -22,8 +22,8 @@ Succinctly describe what currently happens.
 
 ## Specifications
 
-  - Version:
-  - Platform:
+- Version:
+- Platform:
 
 > Optional
 

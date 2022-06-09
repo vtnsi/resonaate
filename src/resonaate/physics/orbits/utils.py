@@ -1,14 +1,23 @@
 """Define a collection of common functions used across the orbits package."""
 # Standard Library Imports
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
 # Third Party Imports
 from numpy import arctan, arctan2, array, cos, cosh, cross, ndarray, sin, sinh, sqrt, vdot
 from scipy.linalg import norm
-# RESONAATE Imports
-from . import fixAngleQuadrant, isInclined, isEccentric, InclinationError, EccentricityError, wrap_anomaly
-from ..constants import PI, TWOPI, RAD2DEG
+
+# Local Imports
 from ..bodies import Earth
-from ..math import fpe_equals, wrapAngle2Pi, safeArccos
+from ..constants import PI, RAD2DEG, TWOPI
+from ..math import fpe_equals, safeArccos, wrapAngle2Pi
+from . import (
+    EccentricityError,
+    InclinationError,
+    fixAngleQuadrant,
+    isEccentric,
+    isInclined,
+    wrap_anomaly,
+)
 
 
 def getTrueAnomaly(r_vec: ndarray, v_vec: ndarray, e_unit_vec: ndarray) -> float:
@@ -176,7 +185,6 @@ def getEquinoctialBasisVectors(p: float, q: float, retro: bool = False) -> Tuple
     """
     # pylint: disable=invalid-name
     II = 1 if not retro else -1
-    # pylint: disable=invalid-name
     p_sq, q_sq = p**2, q**2
     # Vector normalization term
     norm_term = 1 / (1 + p_sq + q_sq)
@@ -239,7 +247,9 @@ def getLineOfNodes(ang_momentum_vec: ndarray) -> ndarray:
     return cross(array([0, 0, 1]), ang_momentum_vec)
 
 
-def getEccentricity(r_vec: ndarray, v_vec: ndarray, mu: Optional[float] = Earth.mu) -> Tuple[float, ndarray]:
+def getEccentricity(
+    r_vec: ndarray, v_vec: ndarray, mu: Optional[float] = Earth.mu
+) -> Tuple[float, ndarray]:
     r"""Get the eccentricity magnitude & unit vector from position & velocity vectors.
 
     References:
@@ -336,7 +346,9 @@ def getMeanMotion(sma: float, mu: Optional[float] = Earth.mu) -> float:
     return sqrt(mu / sma**3)
 
 
-def singularityCheck(ecc: float, inc: float, raan: float, argp: float, anomaly: float) -> Tuple[float, float, float]:
+def singularityCheck(
+    ecc: float, inc: float, raan: float, argp: float, anomaly: float
+) -> Tuple[float, float, float]:
     r"""Check and convert angular elements, accounting for COE singularities.
 
     Args:
@@ -355,20 +367,20 @@ def singularityCheck(ecc: float, inc: float, raan: float, argp: float, anomaly: 
     if inclined and eccentric:
         return wrapAngle2Pi(raan), wrapAngle2Pi(argp), wrapAngle2Pi(anomaly)
 
-    elif not inclined and eccentric:
+    if not inclined and eccentric:
         # RAAN, Ω, is undefined
         true_long_rp = wrapAngle2Pi(raan + argp)
         return 0.0, true_long_rp, wrapAngle2Pi(anomaly)
 
-    elif inclined and not eccentric:
+    if inclined and not eccentric:
         # Arg. Perigee, ω, is undefined
         arg_lat = wrapAngle2Pi(anomaly + argp)
         return wrapAngle2Pi(raan), 0.0, arg_lat
 
-    else:  # Circular and Equatorial
-        # RAAN, Ω, and Arg. Perigee, ω, are undefined
-        true_long = wrapAngle2Pi(anomaly + argp + raan)
-        return 0.0, 0.0, true_long
+    # else; Circular and Equatorial
+    # RAAN, Ω, and Arg. Perigee, ω, are undefined
+    true_long = wrapAngle2Pi(anomaly + argp + raan)
+    return 0.0, 0.0, true_long
 
 
 def retrogradeFactor(inc: float) -> float:
@@ -423,12 +435,12 @@ def universalC2C3(psi: float) -> Tuple[float, float]:
     # Default values: abs(psi) <= 1e-6 ()
     c2: float = 0.5
     c3: float = 1.0 / 6.0
-    if psi > 1e-6:      # Elliptical
+    if psi > 1e-6:  # Elliptical
         c2 = (1 - cos(sqrt(psi))) / psi
         c3 = (sqrt(psi) - sin(sqrt(psi))) / sqrt(psi**3)
-    elif psi < -1e-6:   # Hyperbolic
+    elif psi < -1e-6:  # Hyperbolic
         c2 = (1 - cosh(sqrt(-psi))) / psi
-        c3 = (sinh(sqrt(-psi)) - sqrt(-psi)) / sqrt(-psi**3)
+        c3 = (sinh(sqrt(-psi)) - sqrt(-psi)) / sqrt(-(psi**3))
 
     return c2, c3
 

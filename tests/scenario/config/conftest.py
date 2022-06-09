@@ -1,11 +1,9 @@
-
-
 GEO_TARGETS = [
     {
         "sat_name": "RSO 1 ECI",
         "sat_num": 40000,
         "init_eci": [41574.6, 6681.53, 0, -0.485045, 3.03858, 0],
-        "station_keeping": ["GEO EW", "GEO NS"]
+        "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
     },
     {
         "sat_name": "RSO 1 COE",
@@ -16,9 +14,9 @@ GEO_TARGETS = [
             "inc": 0.0,
             "raan": 0.0,
             "argp": 290.9860783770488,
-            "true_anom": 78.14396088197543
+            "true_anom": 78.14396088197543,
         },
-        "station_keeping": ["GEO EW", "GEO NS"]
+        "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
     },
     {
         "sat_name": "RSO 1 EQE",
@@ -29,15 +27,15 @@ GEO_TARGETS = [
             "k": 0.00038649032806085476,
             "p": 0.0,
             "q": 0.0,
-            "lam": 9.009035264696305
+            "lam": 9.009035264696305,
         },
-        "station_keeping": ["GEO EW", "GEO NS"]
+        "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
     },
     {
         "sat_name": "RSO 2 ECI",
         "sat_num": 40010,
         "init_eci": [42166.7, 2e-08, 0, 1e-17, 3.07457, 0],
-        "station_keeping": ["GEO EW", "GEO NS"]
+        "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
     },
     {
         "sat_name": "RSO 2 COE",
@@ -48,9 +46,9 @@ GEO_TARGETS = [
             "inc": 0.0,
             "raan": 0.0,
             "argp": 360.0,
-            "true_anom": 0.0
+            "true_anom": 0.0,
         },
-        "station_keeping": ["GEO EW", "GEO NS"]
+        "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
     },
     {
         "sat_name": "RSO 2 EQE",
@@ -61,9 +59,9 @@ GEO_TARGETS = [
             "k": 1.4027730893946884e-06,
             "p": 0.0,
             "q": -0.0,
-            "lam": 360.0
+            "lam": 360.0,
         },
-        "station_keeping": ["GEO EW", "GEO NS"]
+        "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
     },
 ]
 
@@ -73,7 +71,7 @@ LEO_TARGETS = [
         "sat_name": "RSO 1 ECI",
         "sat_num": 10000,
         "init_eci": [6388.234341, 1504.29079, 816.763258, -1.999674, 6.626409, 3.597847],
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
     {
         "sat_name": "RSO 1 COE",
@@ -84,9 +82,9 @@ LEO_TARGETS = [
             "inc": 28.50000290050255,
             "raan": 0.0,
             "argp": 0.0,
-            "true_anom": 14.999917601783988
+            "true_anom": 14.999917601783988,
         },
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
     {
         "sat_name": "RSO 1 EQE",
@@ -97,15 +95,15 @@ LEO_TARGETS = [
             "k": 0.009999976546418285,
             "p": 7.244885985651323e-09,
             "q": 0.2539676734191944,
-            "lam": 14.705552881677345
+            "lam": 14.705552881677345,
         },
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
     {
         "sat_name": "RSO 2",
         "sat_num": 10010,
         "init_eci": [6611.355635, 0, 0, 0, 6.857768, 3.723464],
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
     {
         "sat_name": "RSO 2 COE",
@@ -116,9 +114,9 @@ LEO_TARGETS = [
             "inc": 28.499998564947134,
             "raan": 0.0,
             "argp": 0.0,
-            "true_anom": 0.0
+            "true_anom": 0.0,
         },
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
     {
         "sat_name": "RSO 2 EQE",
@@ -129,9 +127,9 @@ LEO_TARGETS = [
             "k": 0.00999982669520115,
             "p": 0.0,
             "q": 0.25396763314400406,
-            "lam": 0.0
+            "lam": 0.0,
         },
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
 ]
 
@@ -144,7 +142,7 @@ EARTH_SENSORS = [
             [7.0e-12, 0.0, 0.0, 0.0],
             [0.0, 6.5e-12, 0.0, 0.0],
             [0.0, 0.0, 9.0e-10, 0.0],
-            [0.0, 0.0, 0.0, 1.0e-14]
+            [0.0, 0.0, 0.0, 1.0e-14],
         ],
         "slew_rate": 3.141592653589793,
         "azimuth_range": [0, 6.283185132646661],
@@ -158,26 +156,23 @@ EARTH_SENSORS = [
         "alt": 0.360,
         "host_type": "GroundFacility",
         "tx_power": 32e6,
-        "tx_frequency": 410e6
+        "tx_frequency": 410e6,
     },
     {
         "name": "GROUND SENSOR 2",
         "id": 120002,
-        "covariance": [
-            [2.30e-11,0.0],
-            [0.0, 2.30e-11]
-        ],
+        "covariance": [[2.30e-11, 0.0], [0.0, 2.30e-11]],
         "slew_rate": 0.25,
         "azimuth_range": [0.0, 6.283185132646661],
         "elevation_range": [0.0, 1.5707961522619713],
         "efficiency": 0.98,
         "aperture_area": 1.0,
         "sensor_type": "Optical",
-        "exemplar": [0.10,32500.0],
+        "exemplar": [0.10, 32500.0],
         "lat": 0.35,
         "lon": -2.70,
         "alt": 3.0,
-        "host_type": "GroundFacility"
+        "host_type": "GroundFacility",
     },
     {
         "name": "GROUND SENSOR 3",
@@ -186,7 +181,7 @@ EARTH_SENSORS = [
             [7.0e-12, 0.0, 0.0, 0.0],
             [0.0, 6.5e-12, 0.0, 0.0],
             [0.0, 0.0, 9.0e-10, 0.0],
-            [0.0, 0.0, 0.0, 1.0e-14]
+            [0.0, 0.0, 0.0, 1.0e-14],
         ],
         "slew_rate": 0.30,
         "azimuth_range": [0, 6.283185132646661],
@@ -200,7 +195,7 @@ EARTH_SENSORS = [
         "alt": 0.360,
         "host_type": "GroundFacility",
         "tx_power": 3e6,
-        "tx_frequency": 40e6
+        "tx_frequency": 40e6,
     },
 ]
 
@@ -208,10 +203,7 @@ SPACE_SENSORS = [
     {
         "name": "Space Sensor 1",
         "id": 50001,
-        "covariance": [
-            [9.80e-14, 0.0],
-            [0.0, 9.80e-14]
-        ],
+        "covariance": [[9.80e-14, 0.0], [0.0, 9.80e-14]],
         "slew_rate": 0.04363323129985824,
         "azimuth_range": [0.0, 6.283185132646661],
         "elevation_range": [-1.5707961522619713, 1.5707961522619713],
@@ -224,19 +216,16 @@ SPACE_SENSORS = [
             -447.53287804600023,
             0.48666918798751624,
             1.0600865385159703,
-            -7.448488839044817
+            -7.448488839044817,
         ],
         "exemplar": [1.0, 30000],
         "host_type": "Spacecraft",
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
     {
         "name": "Space Sensor 2",
         "id": 50002,
-        "covariance": [
-            [9.80e-14, 0.0],
-            [0.0, 9.80e-14]
-        ],
+        "covariance": [[9.80e-14, 0.0], [0.0, 9.80e-14]],
         "slew_rate": 0.04363323129985824,
         "azimuth_range": [0.0, 6.283185132646661],
         "elevation_range": [-1.5707961522619713, 1.5707961522619713],
@@ -247,22 +236,19 @@ SPACE_SENSORS = [
             "sma": 6678.135836007083,
             "ecc": 0.00999982669520115,
             "inc": 28.499998564947134,
-            "true_long": 0.0
+            "true_long": 0.0,
         },
         "exemplar": [1.0, 30000],
         "host_type": "Spacecraft",
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
     {
         "name": "Space Sensor 3",
         "id": 50003,
-        "covariance": [
-            [9.80e-14, 0.0],
-            [0.0, 9.80e-14]
-        ],
+        "covariance": [[9.80e-14, 0.0], [0.0, 9.80e-14]],
         "slew_rate": 0.04363323129985824,
         "azimuth_range": [0.0, 6.283185132646661],
-        "elevation_range": [-1.5707961522619713,1.5707961522619713],
+        "elevation_range": [-1.5707961522619713, 1.5707961522619713],
         "efficiency": 0.99,
         "aperture_area": 0.030,
         "sensor_type": "Optical",
@@ -272,10 +258,10 @@ SPACE_SENSORS = [
             "k": 1.4027730893946884e-06,
             "p": 0.0,
             "q": -0.0,
-            "lam": 360.0
+            "lam": 360.0,
         },
         "exemplar": [1.0, 30000],
         "host_type": "Spacecraft",
-        "station_keeping": ["LEO"]
+        "station_keeping": {"routines": ["LEO"]},
     },
 ]

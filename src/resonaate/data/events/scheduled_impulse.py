@@ -1,12 +1,16 @@
 """Defines the :class:`.ScheduledImpulseEvent` data table class."""
 # Third Party Imports
-from sqlalchemy import Column, Float, String
+from numpy import array
+from sqlalchemy import Boolean, Column, Float, String
 from sqlalchemy.ext.declarative import declared_attr
-from numpy import asarray
-# Package
-from .base import Event, EventScope
+
+# Local Imports
+from ...dynamics.integration_events.scheduled_impulse import (
+    ScheduledECIImpulse,
+    ScheduledNTWImpulse,
+)
 from ...physics.time.stardate import JulianDate, datetimeToJulianDate
-from ...dynamics.integration_events.scheduled_impulse import ScheduledECIImpulse, ScheduledNTWImpulse
+from .base import Event, EventScope
 
 
 class ScheduledImpulseEvent(Event):
@@ -24,12 +28,13 @@ class ScheduledImpulseEvent(Event):
     THRUST_FRAME_NTW = "ntw"
     """str: Configuration string used to delineate using the NTW frame to apply this impulse."""
 
-    VALID_THRUST_FRAMES = (THRUST_FRAME_ECI, THRUST_FRAME_NTW, )
+    VALID_THRUST_FRAMES = (
+        THRUST_FRAME_ECI,
+        THRUST_FRAME_NTW,
+    )
     """tuple: Valid values for :attr:`~.ScheduledImpulseEvent.thrust_frame`."""
 
-    __mapper_args__ = {
-        'polymorphic_identity': EVENT_TYPE
-    }
+    __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     thrust_vec_0 = Column(Float)
     """float: First element of impulse vector in km/s."""
@@ -44,12 +49,20 @@ class ScheduledImpulseEvent(Event):
     def thrust_frame(self):  # pylint: disable=invalid-name
         """str: Label for frame that thrust should be applied in."""
         return Event.__table__.c.get(  # pylint: disable=no-member
-            'thrust_frame',
-            Column(String(10))
+            "thrust_frame", Column(String(10))
         )
 
+    @declared_attr
+    def planned(self):  # pylint: disable=invalid-name
+        """bool: Flag indicating whether this task is expected by the filter or not."""
+        return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
+
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
-        "thrust_vec_0", "thrust_vec_1", "thrust_vec_2", "thrust_frame"
+        "thrust_vec_0",
+        "thrust_vec_1",
+        "thrust_vec_2",
+        "thrust_frame",
+        "planned",
     )
 
     def handleEvent(self, scope_instance):
@@ -61,12 +74,16 @@ class ScheduledImpulseEvent(Event):
         start_jd = JulianDate(self.start_time_jd)
         start_sim_time = start_jd.convertToScenarioTime(scope_instance.julian_date_start)
 
-        burn_vector = asarray([self.thrust_vec_0, self.thrust_vec_1, self.thrust_vec_2])
+        burn_vector = array([self.thrust_vec_0, self.thrust_vec_1, self.thrust_vec_2])
         impulse = None
         if str(self.thrust_frame).lower() == self.THRUST_FRAME_ECI:
-            impulse = ScheduledECIImpulse(start_sim_time, burn_vector)
+            impulse = ScheduledECIImpulse(
+                start_sim_time, burn_vector, scope_instance.simulation_id
+            )
         elif str(self.thrust_frame).lower() == self.THRUST_FRAME_NTW:
-            impulse = ScheduledNTWImpulse(start_sim_time, burn_vector)
+            impulse = ScheduledNTWImpulse(
+                start_sim_time, burn_vector, scope_instance.simulation_id
+            )
         else:
             err = f"{self.thrust_frame} is not a valid coordinate frame."
             raise ValueError(err)
@@ -90,8 +107,9 @@ class ScheduledImpulseEvent(Event):
             start_time_jd=datetimeToJulianDate(config.start_time),
             end_time_jd=datetimeToJulianDate(config.end_time),
             event_type=config.event_type,
+            planned=config.planned,
             thrust_vec_0=config.thrust_vector[0],
             thrust_vec_1=config.thrust_vector[1],
             thrust_vec_2=config.thrust_vector[2],
-            thrust_frame=config.thrust_frame
+            thrust_frame=config.thrust_frame,
         )

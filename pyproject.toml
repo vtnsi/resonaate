@@ -1,0 +1,78 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel>=0.29.0",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+# Nice summary at end, & make output "quiet"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.black]
+# Line length recommendation
+line-length = 99
+# Python versions to target
+target-version = [
+    "py37",
+    "py38",
+    "py39",
+]
+
+[tool.isort]
+# Play nicely with black
+profile = "black"
+# Specific directory includes
+src_paths = [
+    "src",
+    "tests",
+    "docs",
+    "setup.py",
+]
+# Add to skip list
+extend_skip = [
+    ".dat",
+    ".md",
+    ".json",
+    ".rst",
+    ".txt",
+    ".yaml",
+    ".yml",
+    "coverage*",
+    ".gitlab/",
+    ".vscode/",
+    ".mypy_cache/",
+    ".pytest_cache/",
+    "__pycache__/",
+    ".coverage*",
+    "configs/",
+    "coverage/",
+    "db/",
+    "debugging/",
+    "plots/",
+    "build/",
+    "dist/",
+    "docs/build/",
+    "docs/source/gen/",
+]
+# Use .gitingore to skip files
+skip_gitignore = true
+# git_ignore = true
+# Line length rules
+line_length = 99
+# Enforce Unix line endings
+line_ending = "\n"
+# Whitelist first party imports
+known_first_party = [
+    "resonaate",
+    "respect",
+]
+# Import headers
+import_heading_stdlib = "Standard Library Imports"
+import_heading_thirdparty = "Third Party Imports"
+import_heading_firstparty = "RESONAATE Imports"
+import_heading_localfolder = "Local Imports"

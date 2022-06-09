@@ -1,20 +1,25 @@
 """Defines the :class:`.SpecialPerturbations` class for high fidelity astrodynamics models."""
-# Standard Library Imports
 # Third Party Imports
-from numpy import vdot, matmul, array, sum as np_sum, empty_like, cross
+from numpy import array, concatenate, cross, empty_like, matmul
+from numpy import sum as np_sum
+from numpy import vdot
 from numpy.linalg import multi_dot
 from scipy.linalg import norm
-# RESONAATE Imports
-from .constants import RK45_LABEL
-from .celestial import Celestial, checkEarthCollision
+
+# Local Imports
 from ..physics import constants as const
-from ..physics.bodies import Earth, Moon, Sun
-from ..physics.bodies.gravitational_potential import loadGeopotentialCoefficients, nonSphericalAcceleration
+from ..physics.bodies import Earth, Jupiter, Moon, Saturn, Sun, Venus
+from ..physics.bodies.gravitational_potential import (
+    loadGeopotentialCoefficients,
+    nonSphericalAcceleration,
+)
 from ..physics.math import rot3
 from ..physics.sensor_utils import calculateSunVizFraction
 from ..physics.time.conversions import dayOfYear, greenwichApparentTime
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.reductions import getReductionParameters
+from .celestial import Celestial, checkEarthCollision
+from .constants import RK45_LABEL
 
 
 class SpecialPerturbations(Celestial):
@@ -75,10 +80,10 @@ class SpecialPerturbations(Celestial):
             # pylint: disable=unsupported-assignment-operation
 
             # Determine the position vectors in J2000 frame
-            r_eci = state[jj:jj + half:step]
+            r_eci = state[jj : jj + half : step]
 
             # Determine the velocity vectors in J2000 frame
-            v_eci = state[jj + half::step]
+            v_eci = state[jj + half :: step]
 
             # Check if an RSO crashed into the Earth
             checkEarthCollision(norm(r_eci))
@@ -91,13 +96,16 @@ class SpecialPerturbations(Celestial):
                 ecef_2_eci,
                 nonSphericalAcceleration(
                     r_ecef, Earth.mu, Earth.radius, self.c_nm, self.s_nm, self.degree, self.order
-                )
+                ),
             )
 
             # Third body accelerations
             a_third_body = np_sum(
-                [body.mu * _getThirdBodyAcceleration(r_eci, position) for body, position in positions.items()],
-                axis=0
+                [
+                    body.mu * _getThirdBodyAcceleration(r_eci, position)
+                    for body, position in positions.items()
+                ],
+                axis=0,
             )
 
             # Solar Radiation Pressure accelerations
@@ -112,18 +120,17 @@ class SpecialPerturbations(Celestial):
             else:
                 a_gr = 0.0
 
-            # Thrust acceleration
-            if self.fin_t:
-                a_thrust = self.fin_t(state)[:3]
-            else:
-                a_thrust = array([0, 0, 0])
-
             # Add all the perturbations together
-            a_perturbations = a_nonspherical + a_third_body + a_srp + a_gr + a_thrust
+            a_perturbations = a_nonspherical + a_third_body + a_srp + a_gr
+            # Add thrust acceleration if applicable
+            if self.finite_thrust:
+                a_perturbations += self.finite_thrust(concatenate((r_eci, v_eci)))[:3]
 
             # Save state derivative for this state vector
-            derivative[jj:jj + half:step] = state[jj + half::step]
-            derivative[jj + half::step] = -1. * Earth.mu / (norm(r_eci)**3.0) * r_eci + a_perturbations
+            derivative[jj : jj + half : step] = state[jj + half :: step]
+            derivative[jj + half :: step] = (
+                -1.0 * Earth.mu / (norm(r_eci) ** 3.0) * r_eci + a_perturbations
+            )
 
         return derivative
 
@@ -144,7 +151,9 @@ def _getRotationMatrix(julian_date, reduction):
     # Convert year and epoch to mdhms form. Time always in UTC
     year, month, day, hours, minutes, seconds = julian_date.calendar_date
     elapsed_days = dayOfYear(year, month, day, hours, minutes, seconds + reduction["dut1"]) - 1
-    greenwich_apparent_sidereal_time = greenwichApparentTime(year, elapsed_days, reduction["eq_equinox"])
+    greenwich_apparent_sidereal_time = greenwichApparentTime(
+        year, elapsed_days, reduction["eq_equinox"]
+    )
     return multi_dot(
         [reduction["rot_pn"], rot3(-1.0 * greenwich_apparent_sidereal_time), reduction["rot_w"]]
     )
@@ -178,8 +187,9 @@ def _getThirdBodyAcceleration(sat_position, third_body_position):
     r_sat_3_norm = norm(r_sat_3)
 
     # Convenient intermediate term
-    denominator = (r_e_sat_norm**2 + 2 * vdot(r_e_sat, r_sat_3)) *\
-                  (r_e_3_norm**2 + r_e_3_norm * r_sat_3_norm + r_sat_3_norm**2)
+    denominator = (r_e_sat_norm**2 + 2 * vdot(r_e_sat, r_sat_3)) * (
+        r_e_3_norm**2 + r_e_3_norm * r_sat_3_norm + r_sat_3_norm**2
+    )
     q_3 = denominator / (r_e_3_norm**3 * r_sat_3_norm**3 * (r_e_3_norm + r_sat_3_norm))
 
     # Compile the un-scaled acceleration
@@ -203,6 +213,12 @@ def thirdBodyFactory(configuration):
             third_bodies[Sun] = "sun"
         elif body.lower() == "moon":
             third_bodies[Moon] = "moon"
+        elif body.lower() == "jupiter":
+            third_bodies[Jupiter] = "jupiter"
+        elif body.lower() == "saturn":
+            third_bodies[Saturn] = "saturn"
+        elif body.lower() == "venus":
+            third_bodies[Venus] = "venus"
         else:
             raise ValueError(f"Incorrect option for 'third_bodies' in config: {body}")
 
@@ -234,7 +250,13 @@ def _getSolarRadiationPressureAcceleration(sat_position, sun_eci_position):
     # Vector from satellite to the Sun
     position = sun_eci_position - sat_position
     # SRP acceleration in m/s^2, Montenbruck Eq. 3.75, modified
-    a_srp = -const.SOLAR_PRESSURE * sat_ratio * (const.AU2KM / norm(position))**2 * position / norm(position)
+    a_srp = (
+        -const.SOLAR_PRESSURE
+        * sat_ratio
+        * (const.AU2KM / norm(position)) ** 2
+        * position
+        / norm(position)
+    )
 
     # Multiply SRP acceleration by the percentage of the Sun that is visible, convert to km/s^2
     return a_srp * calculateSunVizFraction(sat_position, sun_eci_position) / 1000.0
@@ -258,10 +280,12 @@ def _getGeneralRelativityAcceleration(r_eci, v_eci):
     # Earth Gravitational constant (km^3/sec^2)
     mu = Earth.mu
     # speed of light squared (km/s)^2
-    c_sq = (const.SPEED_OF_LIGHT / 1000)**2
+    c_sq = (const.SPEED_OF_LIGHT / 1000) ** 2
     # Intermediate term
     tmp = v_norm**2 / c_sq
-    return (mu / r_norm**2) * (((4 * mu) / (c_sq * r_norm) - tmp) * e_r + (4 * tmp) * (vdot(e_r, e_v) * e_v))
+    return (mu / r_norm**2) * (
+        ((4 * mu) / (c_sq * r_norm) - tmp) * e_r + (4 * tmp) * (vdot(e_r, e_v) * e_v)
+    )
 
 
 def _getGeneralRelativityAccelerationIERS(r_eci, v_eci, sun_eci, beta=1.0, gamma=1.0):
@@ -288,12 +312,20 @@ def _getGeneralRelativityAccelerationIERS(r_eci, v_eci, sun_eci, beta=1.0, gamma
     # Earth's angular momentum per unit mass (km^2/s)
     j_e = array([0.0, 0.0, 980])
     # speed of light squared (km/s)^2
-    c_sq = (const.SPEED_OF_LIGHT / 1000)**2
+    c_sq = (const.SPEED_OF_LIGHT / 1000) ** 2
     # Intermediate terms
     tmp1 = gme / r_norm
     tmp2 = tmp1 / (c_sq * r_norm**2)
-    line_1 = tmp2 * ((2 * (beta + gamma) * tmp1 - gamma * vdot(v_eci, v_eci)) * r_eci
-                     + 2 * (1 + gamma) * vdot(r_eci, v_eci) * v_eci)
-    line_2 = (1 + gamma) * tmp2 * ((3 / r_norm**2) * cross(r_eci, v_eci) * vdot(r_eci, j_e) + cross(v_eci, j_e))
-    line_3 = (1 + 2 * gamma) * cross(sun_eci[3:], cross((-gms * sun_eci[:3]) / (c_sq * norm(sun_eci[:3])**3), v_eci))
+    line_1 = tmp2 * (
+        (2 * (beta + gamma) * tmp1 - gamma * vdot(v_eci, v_eci)) * r_eci
+        + 2 * (1 + gamma) * vdot(r_eci, v_eci) * v_eci
+    )
+    line_2 = (
+        (1 + gamma)
+        * tmp2
+        * ((3 / r_norm**2) * cross(r_eci, v_eci) * vdot(r_eci, j_e) + cross(v_eci, j_e))
+    )
+    line_3 = (1 + 2 * gamma) * cross(
+        sun_eci[3:], cross((-gms * sun_eci[:3]) / (c_sq * norm(sun_eci[:3]) ** 3), v_eci)
+    )
     return line_1 + line_2 + line_3

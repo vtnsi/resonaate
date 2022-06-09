@@ -1,20 +1,24 @@
-# pylint: disable=attribute-defined-outside-init, no-self-use
+# pylint: disable=attribute-defined-outside-init
 # Standard Library Imports
 import datetime
+
 # Third Party Imports
 import numpy as np
 import pytest
-# RESONAATE Imports
+
 try:
+    # RESONAATE Imports
     import resonaate.physics.constants as const
-    from resonaate.physics.time.stardate import JulianDate
     from resonaate.physics.time.conversions import utc2TerrestrialTime
+    from resonaate.physics.time.stardate import JulianDate
     from resonaate.physics.transforms.eops import EarthOrientationParameter
-    from resonaate.physics.transforms.reductions import updateReductionParameters, getReductionParameters
+    from resonaate.physics.transforms.reductions import (
+        getReductionParameters,
+        updateReductionParameters,
+    )
 except ImportError as error:
-    raise Exception(
-        f"Please ensure you have appropriate packages installed:\n {error}"
-    ) from error
+    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# Local Imports
 # Testing Imports
 from ..conftest import BaseTestCase
 
@@ -90,24 +94,9 @@ class TestReductions(BaseTestCase):
         full_mat = np.matmul(rot_wt, rot_rnp)
 
         # Compare versus results given in document
-        assert np.allclose(
-            correct_np_mat,
-            rot_np,
-            atol=1e-10,
-            rtol=1e-9
-        )
-        assert np.allclose(
-            correct_rnp_mat,
-            rot_rnp,
-            atol=1e-10,
-            rtol=1e-9
-        )
-        assert np.allclose(
-            correct_full_mat,
-            full_mat,
-            atol=1e-10,
-            rtol=1e-9
-        )
+        assert np.allclose(correct_np_mat, rot_np, atol=1e-10, rtol=1e-9)
+        assert np.allclose(correct_rnp_mat, rot_rnp, atol=1e-10, rtol=1e-9)
+        assert np.allclose(correct_full_mat, full_mat, atol=1e-10, rtol=1e-9)
 
     def testValidJulianDate(self):
         """Test reduction algorithm using only :class:`.JulianDate` as input."""
@@ -129,7 +118,8 @@ class TestReductions(BaseTestCase):
         """Test catching a bad :class:`.JulianDate` objects."""
         # Ridiculous Julian date
         julian_date = JulianDate(3)
-        with pytest.raises(ValueError):
+        error_msg = r"year [-]*\d+ is out of range"
+        with pytest.raises(ValueError, match=error_msg):
             updateReductionParameters(julian_date)
 
         # Less ridiculous Julian date, but before range of EOPs
