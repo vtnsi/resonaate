@@ -78,8 +78,8 @@ Open a new branch based on the latest **develop** commit, and start working!
   - Assign a reviewer to check your work, a code review may be requested
   - This ensures `develop` is stable enough for "continuous development"
 - Once `develop` is deemed stable enough, it can become a release candidate
-  - Open a merge request into `master` for the release candidate
-  - This ensures `master` remains "production-ready" as much as possible
+  - Open a merge request into `main` for the release candidate
+  - This ensures `main` remains "production-ready" as much as possible
 
 ## Developer Tools
 
@@ -212,7 +212,7 @@ Once the **resonaate** submodule is updated & tested, and once the repository is
 The continuous integration/deployment configuration is located in **.gitlab/.gitlab-ci.yml**.
 This is the main CI config file, and it includes other CI config files from **.gitlab/ci/**.
 The CI configs are split across multiple files to make it easier to understand the different stages.
-The pipeline is run for all updates to Merge Requests or direct pushes to the **develop** & **master** branches.
+The pipeline is run for all updates to Merge Requests or direct pushes to the **develop** & **main** branches.
 
 The **.gitlab/ci/common.gitlab-ci.yml** file defines the workflow, default configs, environment variables, stages, & aliases used by many job definitions.
 All jobs will inherit these attributes unless explicitly refusing it or overwriting the configuration values.
@@ -248,7 +248,7 @@ The build stage defines tasks that build the source code package distributions.
 The deploy stage uploads package distributions & containers to the GitLab package & container registries as well as any deployments to specific environments.
 
 - **pages** deploys built documentation to the correct path for GitLab Pages SSG. This doesn't work and needs a new option. This job relies on **sphinx** succeeding.
-- **publish** uploads package distributions to the GitLab registry. It is only run when releases are merged into the **master** branch, and it relies on the **build** job succeeding.
+- **publish** uploads package distributions to the GitLab registry. It is only run when releases are merged into the **main** branch, and it relies on the **build** job succeeding.
 
 ### Release Stage
 

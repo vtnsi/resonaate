@@ -22,7 +22,7 @@ include:
     expire_in: 1 week
   when: on_success
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
       when: on_success
 # Job to auto-bump version
 
