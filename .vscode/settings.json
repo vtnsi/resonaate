@@ -8,76 +8,57 @@
     // Formatting options
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [
-        "--fast",
+      "--fast",
     ],
     // Python settings
     "[python]": {
-        "editor.autoIndent": "full",
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": true,
-        },
-        "editor.formatOnSave": true,
-        "editor.insertSpaces": true,
-        "editor.tabSize": 4,
-        "editor.wordBasedSuggestions": false,
-        "editor.wordWrap": "on",
-        "gitlens.codeLens.symbolScopes": [
-            "!Module"
-        ]
+      "editor.autoIndent": "full",
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": true,
+      },
+      "editor.formatOnSave": true,
+      "editor.insertSpaces": true,
+      "editor.tabSize": 4,
+      "editor.wordBasedSuggestions": false,
+      "editor.wordWrap": "on",
+      "gitlens.codeLens.symbolScopes": ["!Module"]
     },
     // Configure prettier formatter
     "prettier.enable": true,
     "prettier.configPath": ".prettierrc.yaml",
     // Markdown settings
     "[markdown]": {
-        "editor.unicodeHighlight.ambiguousCharacters": false,
-        "editor.unicodeHighlight.invisibleCharacters": false,
-        "editor.autoIndent": "full",
-        "editor.formatOnSave": false,
-        "editor.insertSpaces": true,
-        "editor.quickSuggestions": {
-            "comments": "off",
-            "strings": "off",
-            "other": "off"
-        },
-        "editor.tabSize": 2,
-        "editor.wordWrap": "on",
-        "gitlens.codeLens.scopes": [
-            "document"
-        ]
+      "editor.unicodeHighlight.ambiguousCharacters": false,
+      "editor.unicodeHighlight.invisibleCharacters": false,
+      "editor.autoIndent": "full",
+      "editor.formatOnSave": false,
+      "editor.insertSpaces": true,
+      "editor.quickSuggestions": false,
+      "editor.tabSize": 2,
+      "editor.wordWrap": "on",
+      "gitlens.codeLens.scopes": ["document"]
     },
     // YAML settings
     "[yaml]": {
-        "editor.autoIndent": "full",
-        "editor.insertSpaces": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.formatOnSave": true,
-        "editor.quickSuggestions": {
-            "comments": "off",
-            "strings": "off",
-            "other": "off"
-        },
-        "editor.tabSize": 2,
-        "editor.wordWrap": "on",
-        "gitlens.codeLens.scopes": [
-            "document"
-        ]
+      "editor.autoIndent": "full",
+      "editor.insertSpaces": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.formatOnSave": true,
+      "editor.quickSuggestions": false,
+      "editor.tabSize": 2,
+      "editor.wordWrap": "on",
+      "gitlens.codeLens.scopes": ["document"]
     },
     // JSON settings
     "[json]": {
-        "editor.autoIndent": "full",
-        "editor.insertSpaces": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.formatOnSave": true,
-        "editor.quickSuggestions": {
-            "comments": "off",
-            "strings": "off",
-            "other": "off"
-        },
-        "editor.tabSize": 2,
-        "editor.wordWrap": "on",
-        "gitlens.codeLens.scopes": [
-            "document"
-        ]
+      "editor.autoIndent": "full",
+      "editor.insertSpaces": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.formatOnSave": true,
+      "editor.quickSuggestions": false,
+      "editor.tabSize": 2,
+      "editor.wordWrap": "on",
+      "gitlens.codeLens.scopes": ["document"]
     }
-}
+  }
+  
