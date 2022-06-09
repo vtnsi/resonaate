@@ -1,6 +1,6 @@
 """Defines the :class:`.Radar` sensor class."""
 # Third Party Imports
-from numpy import asarray, squeeze
+from numpy import array, squeeze
 
 # Local Imports
 from ..physics import constants as const
@@ -27,6 +27,7 @@ class Radar(Sensor):
         power_tx,
         frequency,
         slew_rate,
+        field_of_view,
         **sensor_args,
     ):  # noqa: E501
         """Construct a `Radar` sensor object.
@@ -42,10 +43,18 @@ class Radar(Sensor):
             power_tx (``float``): radar's transmit power (W)
             frequency (``float``|``str``): radar's operating frequency (Hz)
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
+            field_of_view (``float``): Angular field of view of sensor (deg)
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         super().__init__(
-            az_mask, el_mask, r_matrix, diameter, efficiency, slew_rate, **sensor_args
+            az_mask,
+            el_mask,
+            r_matrix,
+            diameter,
+            efficiency,
+            slew_rate,
+            field_of_view,
+            **sensor_args,
         )
 
         # Save extra class variables
@@ -106,7 +115,7 @@ class Radar(Sensor):
     @property
     def angle_measurements(self):
         """``np.ndarray``: Returns 4x1 integer array of which measurements are angles."""
-        return asarray(
+        return array(
             [IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI, IsAngle.NOT_ANGLE, IsAngle.NOT_ANGLE],
             dtype=int,
         )

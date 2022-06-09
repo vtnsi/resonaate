@@ -2,9 +2,10 @@
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
+from typing import List
 
 # Third Party Imports
-from numpy import arccos, asarray, cos, diagflat, dot, fix, matmul, random, real, sin
+from numpy import arccos, array, cos, diagflat, dot, fix, matmul, random, real, sin
 from scipy.linalg import norm, sqrtm
 
 # Local Imports
@@ -12,6 +13,7 @@ from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
 from ..data.observation import Observation
 from ..physics import constants as const
+from ..physics.math import safeArccos, subtendedAngle
 from ..physics.sensor_utils import lineOfSight
 from ..physics.transforms.methods import getSlantRangeVector
 from .measurements import getAzimuth, getElevation, getRange
@@ -29,7 +31,17 @@ Attributes:
 class Sensor(metaclass=ABCMeta):
     """Abstract base class for a generic Sensor object."""
 
-    def __init__(self, az_mask, el_mask, r_matrix, diameter, efficiency, slew_rate, **sensor_args):
+    def __init__(
+        self,
+        az_mask,
+        el_mask,
+        r_matrix,
+        diameter,
+        efficiency,
+        slew_rate,
+        field_of_view,
+        **sensor_args,
+    ):
         """Construct a generic `Sensor` object.
 
         Args:
@@ -39,6 +51,7 @@ class Sensor(metaclass=ABCMeta):
             diameter (``float``): diameter of sensor dish (m)
             efficiency (``float``): efficiency percentage of the sensor
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
+            field_of_view (``float``): Angular field of view of sensor (deg)
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         self._az_mask = None
@@ -50,6 +63,7 @@ class Sensor(metaclass=ABCMeta):
         self.aperture_area = const.PI * ((diameter / 2.0) ** 2)
         self.efficiency = efficiency
         self.slew_rate = const.DEG2RAD * slew_rate
+        self.field_of_view = field_of_view
 
         # Derived properties initialization
         self.exemplar = None
@@ -104,6 +118,72 @@ class Sensor(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
+    def collectObservations(self, pointing_agent, background_agents) -> List[ObservationTuple]:
+        """Collect observations on all targets within the sensor's FOV.
+
+        [NOTE]: an observation is not made on the pointing agent
+
+        Args:
+            pointing_agent (:class:`.EstimateAgent`): agent that sensor is pointing at
+            background_agents (``list``): list of possible agents in FOV
+
+        Returns:
+            obs_list (``list``): list of observation tuples
+        """
+        obs_list = []
+        # Check if sensor will slew to point in time
+        slant_range_sez = getSlantRangeVector(self.host.ecef_state, pointing_agent.eci_state)
+        if self.canSlew(slant_range_sez):
+            targets_in_fov = self.checkTargetsInView(pointing_agent, background_agents)
+            obs_list = list(
+                filter(  # pylint:disable=bad-builtin
+                    lambda x: x.observation,
+                    (
+                        self.makeNoisyObservation(
+                            tgt,
+                        )
+                        for tgt in targets_in_fov
+                    ),
+                )
+            )  # pylint:disable=bad-builtin
+        self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
+        self.time_last_ob = self.host.time
+        return obs_list
+
+    def checkTargetsInView(self, pointing_agent, background_agents):
+        """Perform bulk FOV check on all RSOs.
+
+        Args:
+            pointing_position (``ndarray``): position that sensor is pointing to
+            object_position (``ndarray``): position of object to check in FOV
+
+        Returns:
+            ``float``: angle subtended by boresight and object position
+        """
+        # filter out targets outside of FOV
+        agents_in_fov = list(
+            filter(  # pylint:disable=bad-builtin
+                lambda x: self.inFOV(pointing_agent.eci_state[:3], x.eci_state[:3]),
+                background_agents,
+            )
+        )  # pylint:disable=bad-builtin
+        return agents_in_fov
+
+    def inFOV(self, pointing_position, background_position):
+        """Perform bulk FOV check on all RSOs.
+
+        Args:
+            pointing_position (``ndarray``): 3x1 position vector that sensor is pointing towards
+            background_position (``ndarray``): 3x1 position vector of possible agent in FOV
+
+        Returns:
+            ``list``: Satellite `.Agent` objects in sensor FOV
+        """
+        pointing_boresight = pointing_position - self.host.eci_state[:3]
+        background_boresight = background_position - self.host.eci_state[:3]
+        angle = subtendedAngle(background_boresight, pointing_boresight)
+        return angle * const.RAD2DEG <= self.field_of_view
+
     def buildSigmaObs(self, target_id, tgt_eci_state):
         """Calculate the measurement data for a sigma point observation.
 
@@ -156,7 +236,6 @@ class Sensor(metaclass=ABCMeta):
                     **self.getNoisyMeasurements(slant_range_sez),
                 )
                 self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
-                self.time_last_ob = self.host.time
                 self._current_target = tgt_id
 
             else:
@@ -270,6 +349,23 @@ class Sensor(metaclass=ABCMeta):
         # Default: target satellite is not in view
         return False
 
+    def canSlew(self, slant_range_sez):
+        """Check if sensor can slew to target in the allotted time.
+
+        Args:
+            slant_range_sez (``ndarray``): slant range vector
+
+        Returns:
+            ``bool``: whether target can be slewed to in time
+        """
+        # [NOTE]: When `slant_range_sez` and `self.boresight` are colinear, lost precision creates a value
+        # __slightly__ larger than 1.0 or smaller than -1.0. This results in domain errors with `numpy::arccos()`.
+        # This statement ensures to round to either 1 or -1 appropriately.
+        arg = dot(slant_range_sez[:3] / norm(slant_range_sez[:3]), self.boresight)
+        self.delta_boresight = safeArccos(arg)
+        # Boolean if you are able to slew to the new target
+        return self.slew_rate * (self.host.time - self.time_last_ob) >= self.delta_boresight
+
     @property
     def az_mask(self):
         """``np.ndarray``: Returns the azimuth visibility mask."""
@@ -363,9 +459,7 @@ class Sensor(metaclass=ABCMeta):
         else:
             mid_el = self.el_mask[1] + (self.el_mask[0] - self.el_mask[1]) / 2.0
 
-        self.boresight = asarray(
-            [cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)]
-        )
+        self.boresight = array([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
 
     @property
     def measurement_noise(self):
@@ -385,6 +479,7 @@ class Sensor(metaclass=ABCMeta):
             "aperture_area": self.aperture_area,
             "sensor_type": getTypeString(self),
             "exemplar": self.exemplar.tolist(),
+            "field_of_view": self.field_of_view,
         }
         if getTypeString(self.host) == "Spacecraft":
             output_dict["init_eci"] = self.host.truth_state.tolist()

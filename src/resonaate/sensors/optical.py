@@ -1,6 +1,6 @@
 """Defines the :class:`.Optical` sensor class."""
 # Third Party Imports
-from numpy import asarray, sqrt, squeeze
+from numpy import array, sqrt, squeeze
 from scipy.linalg import norm
 
 # Local Imports
@@ -28,7 +28,16 @@ class Optical(Sensor):
     """
 
     def __init__(
-        self, az_mask, el_mask, r_matrix, diameter, efficiency, exemplar, slew_rate, **sensor_args
+        self,
+        az_mask,
+        el_mask,
+        r_matrix,
+        diameter,
+        efficiency,
+        exemplar,
+        slew_rate,
+        field_of_view,
+        **sensor_args,
     ):
         """Construct a `Optical` sensor object.
 
@@ -41,10 +50,18 @@ class Optical(Sensor):
             exemplar (``np.ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation
                     [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
+            field_of_view (``float``): Angular field of view of sensor (deg)
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         super().__init__(
-            az_mask, el_mask, r_matrix, diameter, efficiency, slew_rate, **sensor_args
+            az_mask,
+            el_mask,
+            r_matrix,
+            diameter,
+            efficiency,
+            slew_rate,
+            field_of_view,
+            **sensor_args,
         )
 
         # Calculate minimum detectable power & maximum auxiliary range
@@ -92,7 +109,7 @@ class Optical(Sensor):
     @property
     def angle_measurements(self):
         """``np.ndarray``: Returns 2x1 integer array of which measurements are angles."""
-        return asarray([IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI], dtype=int)
+        return array([IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI], dtype=int)
 
     def getMeasurements(self, slant_range_sez, noisy=False):
         """Return the measurement state of the measurement.

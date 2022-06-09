@@ -92,12 +92,12 @@ class TestResonaateService(BaseTestCase):
         self.service.enqueueMessage(time_target_message)
         assert self.service.waitForHandler(timeout=30) is True
 
-    @pytest.mark.importer()
+    @pytest.mark.skip()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testImporterPropagation(
         self, datafiles, reset_importer_db
     ):  # pylint: disable=unused-argument
-        """Make sure that an initailzed model will propagate forward to a time target.
+        """Make sure that an initialized model will propagate forward to a time target.
 
         Use importer model propagation.
         """
@@ -128,7 +128,7 @@ class TestResonaateService(BaseTestCase):
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testFastForward(self, datafiles):
-        """Make sure sending an init message to an running service will result in a fast-froward."""
+        """Make sure sending an init message to an running service will result in a fast-forward."""
         self.service.logger.debug("[testFastForward]")
         init_message = InitMessage(
             ScenarioConfig.parseConfigFile(os.path.join(datafiles, self.init_msg_realtime))
