@@ -29,7 +29,21 @@ ______________________________________________________________________
 # \[Unreleased\]
 
 - Added
+  
+  - `fov` input variable to `sensorFactory()`
+  - EOPs from 06-10-2021 to 17-03-2022
+  - `subtendedAngle()` in `physics/math`
+  - `observation` variable to `scenario/config/__init__/`
+  - `field_of_view` variable to `config/agent_config/`
+  - `config/observation_config`
+  - `field_of_view` variable to `sensors/sensor_base/` in the `**sensor_args`
+  - `collectObservations()`, `checkTargetsInView()`, `inFOV()`, `canSlew()` to `sensors/sensor_base/`
+  - `tests/sensor/test_fov`
+
 - Changed
+
+  - `AsyncExecuteTasking()` now calls `collectObservations` instead of `makeNoisyObservation`
+
 - Deprecated
 - Removed
 - Fixed
