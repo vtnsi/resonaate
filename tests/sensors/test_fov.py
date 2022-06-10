@@ -52,10 +52,7 @@ class TestFieldOfView(BaseTestCase):
         "agent": SensorConfigObject(SENSOR_CONFIG),
         "realtime": True,
         "clock": clock,
-<<<<<<< HEAD
         "field_of_view_calculation": True,
-=======
->>>>>>> Testing FoV functions now, tests as a whole don't work because tests/datafiles/db/ is not yet in repo
     }
     sensor_agent = SensingAgent.fromConfig(sensor_config, {})
     nominal_filter = UnscentedKalmanFilter(
