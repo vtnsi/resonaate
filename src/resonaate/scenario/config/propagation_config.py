@@ -72,12 +72,12 @@ class PropagationConfig(ConfigSection):
 
     @property
     def target_realtime_propagation(self):
-        """bool: Whether to use the internal propgation for the truth model."""
+        """bool: Whether to use the internal propagation for the truth model."""
         return self._target_realtime_propagation.setting
 
     @property
     def sensor_realtime_propagation(self):
-        """bool: Whether to use the internal propgation for the truth model."""
+        """bool: Whether to use the internal propagation for the truth model."""
         return self._sensor_realtime_propagation.setting
 
     @property

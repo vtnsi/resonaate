@@ -65,6 +65,7 @@ class Sensor(metaclass=ABCMeta):
         self.efficiency = efficiency
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view
+        self.calculate_field_of_view = sensor_args["calculate_fov"]
 
         # Derived properties initialization
         self.exemplar = None
@@ -132,24 +133,27 @@ class Sensor(metaclass=ABCMeta):
             obs_list (``list``): list of `.ObservationTuple`
         """
         obs_list = []
-        # Check if sensor will slew to point in time
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, pointing_agent.eci_state)
-        if self.canSlew(slant_range_sez):
-            targets_in_fov = self.checkTargetsInView(pointing_agent, background_agents)
-            obs_list = list(
-                filter(  # pylint:disable=bad-builtin
-                    lambda x: x.observation,
-                    (
-                        self.makeNoisyObservation(
-                            tgt,
-                        )
-                        for tgt in targets_in_fov
-                    ),
-                )
-            )  # pylint:disable=bad-builtin
-            self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
-            if obs_list:  # only update time_last_ob if obs are made
-                self.time_last_ob = self.host.time
+        if self.calculate_field_of_view:
+            # Check if sensor will slew to point in time
+            slant_range_sez = getSlantRangeVector(self.host.ecef_state, pointing_agent.eci_state)
+            if self.canSlew(slant_range_sez):
+                targets_in_fov = self.checkTargetsInView(pointing_agent, background_agents)
+                obs_list = list(
+                    filter(  # pylint:disable=bad-builtin
+                        lambda x: x.observation,
+                        (
+                            self.makeNoisyObservation(
+                                tgt,
+                            )
+                            for tgt in targets_in_fov
+                        ),
+                    )
+                )  # pylint:disable=bad-builtin
+                self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
+                if obs_list:  # only update time_last_ob if obs are made
+                    self.time_last_ob = self.host.time
+        else:
+            obs_list.append(self.makeNoisyObservation(pointing_agent))
         return obs_list
 
     def checkTargetsInView(self, pointing_agent, background_agents) -> list:
