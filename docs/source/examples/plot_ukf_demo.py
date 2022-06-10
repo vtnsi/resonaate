@@ -173,7 +173,6 @@ radar_sensor = Radar(
     diameter,
     efficiency,
     exemplar,
-    field_of_view,
     tx_power,
     tx_frequency,
     np.radians(slew_rate),
