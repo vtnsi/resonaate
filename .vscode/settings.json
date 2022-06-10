@@ -8,20 +8,22 @@
     // Formatting options
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [
-      "--fast",
+        "--fast",
     ],
     // Python settings
     "[python]": {
-      "editor.autoIndent": "full",
-      "editor.codeActionsOnSave": {
-        "source.organizeImports": true,
-      },
-      "editor.formatOnSave": true,
-      "editor.insertSpaces": true,
-      "editor.tabSize": 4,
-      "editor.wordBasedSuggestions": false,
-      "editor.wordWrap": "on",
-      "gitlens.codeLens.symbolScopes": ["!Module"]
+        "editor.autoIndent": "full",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true,
+        },
+        "editor.formatOnSave": true,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.wordBasedSuggestions": false,
+        "editor.wordWrap": "on",
+        "gitlens.codeLens.symbolScopes": [
+            "!Module"
+        ]
     },
     // Configure prettier formatter
     "prettier.enable": true,
