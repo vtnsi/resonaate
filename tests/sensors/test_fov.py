@@ -52,6 +52,7 @@ class TestFieldOfView(BaseTestCase):
         "agent": SensorConfigObject(SENSOR_CONFIG),
         "realtime": True,
         "clock": clock,
+        "field_of_view_calculation": True,
     }
     sensor_agent = SensingAgent.fromConfig(sensor_config, {})
     nominal_filter = UnscentedKalmanFilter(
