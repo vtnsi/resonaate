@@ -32,7 +32,6 @@ VALID_SENSOR_FOV_LABELS: Tuple[str] = (
 )
 """list: Contains list of valid sensor Field of View configurations."""
 
-
 def sensorFactory(configuration, fov=True):
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
 
