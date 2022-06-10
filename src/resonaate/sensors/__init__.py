@@ -18,7 +18,7 @@ ADV_RADAR_LABEL = "AdvRadar"
 """str: Constant string used to describe advanced radar sensors."""
 
 
-def sensorFactory(configuration):
+def sensorFactory(configuration, fov=True):
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
 
     Args:
@@ -40,6 +40,7 @@ def sensorFactory(configuration):
         "slew_rate": configuration.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(configuration.exemplar),
         "field_of_view": asarray(configuration.field_of_view),  # Assumes degrees
+        "calculate_fov": fov,
     }
 
     # Instantiate sensor object. Add extra params if needed
