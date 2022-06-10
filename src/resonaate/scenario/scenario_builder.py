@@ -154,6 +154,7 @@ class ScenarioBuilder:
                     method=self.propagation.integration_method,
                 ),
                 "realtime": self.propagation.sensor_realtime_propagation,
+                "field_of_view_calculation": self.observation.field_of_view,
             }
 
             self.sensor_network.append(SensingAgent.fromConfig(config, events=[]))
@@ -299,3 +300,8 @@ class ScenarioBuilder:
     def time_step(self):
         """TimeConfig: returns "time_step" section of the configuration."""
         return self.time.physics_step_sec
+
+    @property
+    def observation(self):
+        """ObservationConfig: returns "observation" section of the configuration."""
+        return self._config.observation

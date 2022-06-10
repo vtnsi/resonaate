@@ -178,7 +178,7 @@ class SensingAgent(Agent):
         agent = config["agent"]
 
         # Build the sensor based on the agent configuration
-        sensor = sensorFactory(agent)
+        sensor = sensorFactory(agent, config["field_of_view_calculation"])
 
         station_keeping = []
         use_realtime = config["realtime"]
