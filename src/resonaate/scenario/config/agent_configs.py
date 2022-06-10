@@ -346,7 +346,7 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
 
     @property
     def field_of_view(self):
-        """float: angle (degrees) of visibility of this sensor."""
+        """float: cone angle (degrees) of visibility of this sensor."""
         return self._field_of_view.setting  # pylint: disable=no-member
 
     @property
