@@ -21,6 +21,12 @@ if TYPE_CHECKING:
     from . import FieldOfView
 
 
+RADAR_MIN_DETECTABLE_VISMAG = 25.0  # Default minimum observable visual magnitude (unitless)
+RADAR_MIN_RANGE = 0  # Default minimum range an RSO must be at to be observable (km)
+RADAR_MAX_RANGE = 99000  # Default maximum range an RSO must be at to be observable (km)
+RADAR_DEFAULT_FOV = 0.000279  # Default Field of View of a radar sensor (degrees)
+
+
 class Radar(Sensor):
     """Radar sensor class.
 

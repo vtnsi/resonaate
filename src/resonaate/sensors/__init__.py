@@ -9,9 +9,27 @@ from numpy import asarray, sqrt
 
 # Local Imports
 from ..physics import constants as const
-from .advanced_radar import AdvRadar
-from .optical import Optical
-from .radar import Radar
+from .advanced_radar import (
+    ADV_RADAR_DEFAULT_FOV,
+    ADV_RADAR_MAX_RANGE,
+    ADV_RADAR_MIN_DETECTABLE_VISMAG,
+    ADV_RADAR_MIN_RANGE,
+    AdvRadar,
+)
+from .optical import (
+    OPTICAL_DEFAULT_FOV,
+    OPTICAL_MAX_RANGE,
+    OPTICAL_MIN_DETECTABLE_VISMAG,
+    OPTICAL_MIN_RANGE,
+    Optical,
+)
+from .radar import (
+    RADAR_DEFAULT_FOV,
+    RADAR_MAX_RANGE,
+    RADAR_MIN_DETECTABLE_VISMAG,
+    RADAR_MIN_RANGE,
+    Radar,
+)
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -48,6 +66,64 @@ def sensorFactory(configuration):
     Returns:
         :class:`.Sensor`: properly constructed `Sensor` object
     """
+    # Local Imports
+    from ..scenario.config.base import NO_SETTING, ConfigError
+
+    if configuration.field_of_view is NO_SETTING:
+        if configuration.sensor_type in OPTICAL_LABEL:
+            field_of_view = OPTICAL_DEFAULT_FOV
+        elif configuration.sensor_type in RADAR_LABEL:
+            field_of_view = RADAR_DEFAULT_FOV
+        elif configuration.sensor_type in ADV_RADAR_LABEL:
+            field_of_view = ADV_RADAR_DEFAULT_FOV
+        else:
+            err = "Incorrect Sensor Type Setting"
+            raise ConfigError(str(configuration.field_of_view), err)
+    else:
+        field_of_view = configuration.field_of_view
+
+    if configuration.minimum_range is NO_SETTING:
+        if configuration.sensor_type in OPTICAL_LABEL:
+            minimum_range = OPTICAL_MIN_RANGE
+        elif configuration.sensor_type in RADAR_LABEL:
+            minimum_range = RADAR_MIN_RANGE
+        elif configuration.sensor_type in ADV_RADAR_LABEL:
+            minimum_range = ADV_RADAR_MIN_RANGE
+        else:
+            err = "Incorrect Sensor Type Setting"
+            raise ConfigError(str(configuration.minimum_range), err)
+
+    else:
+        minimum_range = configuration.minimum_range
+
+    if configuration.maximum_range is NO_SETTING:
+        if configuration.sensor_type in OPTICAL_LABEL:
+            maximum_range = OPTICAL_MAX_RANGE
+        elif configuration.sensor_type in RADAR_LABEL:
+            maximum_range = RADAR_MAX_RANGE
+        elif configuration.sensor_type in ADV_RADAR_LABEL:
+            maximum_range = ADV_RADAR_MAX_RANGE
+        else:
+            err = "Incorrect Sensor Type Setting"
+            raise ConfigError(str(configuration.maximum_range), err)
+
+    else:
+        maximum_range = configuration.maximum_range
+
+    if configuration.detectable_vismag is NO_SETTING:
+        if configuration.sensor_type in OPTICAL_LABEL:
+            detectable_vismag = OPTICAL_MIN_DETECTABLE_VISMAG
+        elif configuration.sensor_type in RADAR_LABEL:
+            detectable_vismag = RADAR_MIN_DETECTABLE_VISMAG
+        elif configuration.sensor_type in ADV_RADAR_LABEL:
+            detectable_vismag = ADV_RADAR_MIN_DETECTABLE_VISMAG
+        else:
+            err = "Incorrect Sensor Type Setting"
+            raise ConfigError(str(configuration.detectable_vismag), err)
+
+    else:
+        detectable_vismag = configuration.detectable_vismag
+
     # Build generic sensor kwargs
     sensor_args = {
         "az_mask": asarray(configuration.azimuth_range) * const.RAD2DEG,  # Assumes radians
@@ -59,6 +135,9 @@ def sensorFactory(configuration):
         "exemplar": asarray(configuration.exemplar),
         "field_of_view": fieldOfViewFactory(configuration.field_of_view),
         "calculate_fov": configuration.calculate_fov,
+        "minimum_range": minimum_range,
+        "maximum_range": maximum_range,
+        "detectable_vismag": detectable_vismag,
     }
 
     # Instantiate sensor object. Add extra params if needed

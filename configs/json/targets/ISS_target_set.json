@@ -5,6 +5,9 @@
     "init_eci": [-2872.57438, 3128.21583, -5311.55207, -5.250942201, -5.547484592, -0.428942173],
     "station_keeping": {
       "routines": ["LEO"]
-    }
+    },
+    "mass": 444615.0,
+    "visual_cross_section": 7957,
+    "reflectivity": 0.21
   }
 ]

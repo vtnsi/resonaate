@@ -28,6 +28,12 @@ if TYPE_CHECKING:
     from . import FieldOfView
 
 
+OPTICAL_MIN_DETECTABLE_VISMAG = 25.0  # Default minimum observable visual magnitude (unitless)
+OPTICAL_MIN_RANGE = 30000  # Default minimum range an RSO must be at to be observable (km)
+OPTICAL_MAX_RANGE = 99000  # Default maximum range an RSO must be at to be observable (km)
+OPTICAL_DEFAULT_FOV = 0.000279  # Default Field of View of an optical sensor (degrees)
+
+
 class Optical(Sensor):
     """Electro-Optical sensor class.
 

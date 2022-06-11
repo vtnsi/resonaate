@@ -17,7 +17,7 @@ from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2eci, ecef2lla, eci2ecef, lla2ecef
 from ..sensors import sensorFactory
 from ..sensors.sensor_base import Sensor
-from .agent_base import DEFAULT_VIS_X_SECTION, Agent
+from .agent_base import Agent
 
 # Type checking
 if TYPE_CHECKING:

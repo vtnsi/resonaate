@@ -15,7 +15,7 @@ from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
-from .agent_base import DEFAULT_VIS_X_SECTION, Agent
+from .agent_base import Agent
 
 # Type checking
 if TYPE_CHECKING:
@@ -26,6 +26,15 @@ if TYPE_CHECKING:
     from ..data.ephemeris import EstimateEphemeris
     from ..dynamics.dynamics_base import Dynamics
     from ..scenario.clock import ScenarioClock
+
+
+LEO_DEFAULT_MASS = 295.0  # Default mass of LEO RSO (km)
+MEO_DEFAULT_MASS = 2861.0  # Default mass of MEO RSO (km)
+GEO_DEFAULT_MASS = 6200.0  # Default mass of LEO RSO (km)
+
+LEO_DEFAULT_VCS = 10.0  # Default visual cross section of LEO RSO (m^2)
+MEO_DEFAULT_VCS = 37.5  # Default visual cross section of MEO RSO (m^2)
+GEO_DEFAULT_VCS = 90.0  # Default visual cross section of LEO RSO (m^2)
 
 
 class TargetAgent(Agent):
@@ -41,6 +50,9 @@ class TargetAgent(Agent):
         dynamics: Dynamics,
         realtime: bool,
         process_noise: ndarray,
+        visual_cross_section: Union[float, int],
+        mass: Union[float, int],
+        reflectivity: float,
         seed: int = None,
         station_keeping: list[StationKeeper] = None,
     ):
@@ -71,7 +83,9 @@ class TargetAgent(Agent):
             clock,
             dynamics,
             realtime,
-            DEFAULT_VIS_X_SECTION,
+            visual_cross_section,
+            mass,
+            reflectivity,
             station_keeping=station_keeping,
         )
         if not isinstance(process_noise, ndarray):
@@ -174,6 +188,9 @@ class TargetAgent(Agent):
             config["clock"],
             config["dynamics"],
             config["realtime"],
+            tgt.visual_cross_section,
+            tgt.mass,
+            tgt.reflectivity,
             config["noise"],
             seed=config["random_seed"],
             station_keeping=station_keeping,

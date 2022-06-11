@@ -2,6 +2,7 @@
 # Standard Library Imports
 import logging
 from abc import ABCMeta, abstractmethod
+from typing import Union
 
 # Third Party Imports
 from numpy import ndarray
@@ -17,12 +18,6 @@ from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.math import fpe_equals
 from ..scenario.clock import ScenarioClock
 
-DEFAULT_VIS_X_SECTION = 25.0
-"""float: Default value for `visual_cross_section`.
-
-TODO: Make this better
-"""
-
 
 class Agent(metaclass=ABCMeta):
     """Abstract base class for a generic Agent object, i.e. an actor in the simulation."""
@@ -36,19 +31,23 @@ class Agent(metaclass=ABCMeta):
         "dynamics": Dynamics,
         "realtime": bool,
         "visual_cross_section": (int, float),
+        "mass": (int, float),
+        "reflectivity": float,
         "station_keeping": (list, type(None)),
     }
 
     def __init__(
         self,
-        _id,
-        name,
-        agent_type,
-        initial_state,
-        clock,
-        dynamics,
-        realtime,
-        visual_cross_section,
+        _id: int,
+        name: str,
+        agent_type: str,
+        initial_state: ndarray,
+        clock: ScenarioClock,
+        dynamics: Dynamics,
+        realtime: bool,
+        visual_cross_section: Union[float, int],
+        mass: Union[float, int],
+        reflectivity: float,
         station_keeping=None,
     ):
         """Construct an Agent object.
@@ -97,6 +96,12 @@ class Agent(metaclass=ABCMeta):
             raise ValueError(visual_cross_section)
         # Visible cross sectional area (m^2)
         self._visual_cross_section = visual_cross_section
+
+        # Mass (kg)
+        self._mass = mass
+
+        # Reflectivity (unitless)
+        self._reflectivity = reflectivity
 
         if station_keeping:
             self._station_keeping = station_keeping
@@ -250,5 +255,15 @@ class Agent(metaclass=ABCMeta):
 
     @property
     def visual_cross_section(self):
-        """``float``: Returns the visual cross-sectional area."""
+        """``float, int``: Returns the visual cross-sectional area."""
         return self._visual_cross_section
+
+    @property
+    def mass(self):
+        """``float, int``: Returns the mass."""
+        return self._mass
+
+    @property
+    def reflectivity(self):
+        """``float``: Returns the reflectivity."""
+        return self._reflectivity

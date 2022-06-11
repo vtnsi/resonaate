@@ -20,7 +20,7 @@ from ..estimation.debug_utils import checkThreeSigmaObs, logFilterStep
 from ..estimation.sequential.sequential_filter import FilterDebugFlag, SequentialFilter
 from ..physics.noise import initialEstimateNoise
 from ..physics.transforms.methods import ecef2lla, eci2ecef
-from .agent_base import DEFAULT_VIS_X_SECTION, Agent
+from .agent_base import Agent
 
 # Type Checking Imports
 if TYPE_CHECKING:
