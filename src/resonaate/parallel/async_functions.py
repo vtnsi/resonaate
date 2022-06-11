@@ -75,7 +75,7 @@ def asyncCalculateReward(estimate_id, reward, sensor_list):
         sensor_list (``list``): sensor `unique_id` values assigned to the current tasking engine.
 
     Returns:
-        ``dict``: reward result dictionary containts:
+        ``dict``: reward result dictionary contents:
 
         :``"visibility"``: (``numpy.ndarray``): boolean array of whether each sensor can see the estimate.
         :``"reward_matrix"``: (``numpy.ndarray``): numeric reward array for each sensor.
