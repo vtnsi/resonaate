@@ -1,5 +1,8 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
 
+# Standard Library Imports
+from copy import deepcopy
+
 # Third Party Imports
 from numpy.linalg import norm
 
@@ -61,8 +64,8 @@ class TargetConfigObject(ConfigObject):
             ConfigOption("init_eci", (list,), default=NO_SETTING),
             ConfigOption("init_coe", (dict,), default=NO_SETTING),
             ConfigOption("init_eqe", (dict,), default=NO_SETTING),
-            ConfigOption("mass", (float, int), default=NO_SETTING),
             ConfigOption("visual_cross_section", (float, int), default=NO_SETTING),
+            ConfigOption("mass", (float, int), default=NO_SETTING),
             ConfigOption("reflectivity", (float,), default=0.21),  # Solar Panel Reflectivity
             StationKeepingConfig(),
         )
@@ -253,6 +256,9 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ),
             ConfigOption("tx_power", (float,), default=NO_SETTING),
             ConfigOption("tx_frequency", (float,), default=NO_SETTING),
+            ConfigOption("visual_cross_section", (float, int), default=25.0),
+            ConfigOption("mass", (float, int), default=500.0),
+            ConfigOption("reflectivity", (float,), default=0.21),  # Solar Panel Reflectivity
             StationKeepingConfig(),
         )
 
@@ -477,6 +483,21 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         Will only be set if :attr:`~.Observation.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
         """
         return self._tx_frequency.setting  # pylint: disable=no-member
+
+    @property
+    def mass(self):
+        """float: Mass of RSO."""
+        return self._mass.setting
+
+    @property
+    def visual_cross_section(self):
+        """float: visual_cross_section of RSO."""
+        return self._visual_cross_section.setting
+
+    @property
+    def reflectivity(self):
+        """float: reflectivity of RSO."""
+        return self._reflectivity.setting
 
     @property
     def station_keeping(self):

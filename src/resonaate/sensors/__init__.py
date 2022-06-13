@@ -35,11 +35,6 @@ RADAR_LABEL = "Radar"
 ADV_RADAR_LABEL = "AdvRadar"
 """str: Constant string used to describe advanced radar sensors."""
 
-ADV_RADAR_MIN_DETECTABLE_VISMAG = 25.0  # Default minimum observable visual magnitude (unitless)
-ADV_RADAR_MIN_RANGE = 0  # Default minimum range an RSO must be at to be observable (km)
-ADV_RADAR_MAX_RANGE = 10000  # Default maximum range an RSO must be at to be observable (km)
-ADV_RADAR_DEFAULT_FOV = 179  # Default Field of View of an advanced radar sensor (degrees)
-
 
 def sensorFactory(configuration, fov=True):
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.

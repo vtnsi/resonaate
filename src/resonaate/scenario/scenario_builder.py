@@ -17,6 +17,7 @@ from ..data.data_interface import Agent
 from ..data.events import Event
 from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import spacecraftDynamicsFactory
+from ..dynamics.special_perturbations import calcSatRatio
 from ..physics.noise import noiseCovarianceFactory
 from ..scenario.clock import ScenarioClock
 from ..tasking.decisions import decisionFactory
@@ -52,14 +53,6 @@ class ScenarioBuilder:
         # Instantiate clock based on config's start time and class variables
         self.clock = ScenarioClock.fromConfig(self.time)
 
-        # Create the base estimation filter for nominal operation
-        filter_dynamics = spacecraftDynamicsFactory(
-            self.config.estimation.sequential_filter.dynamics,
-            self.clock,
-            self.geopotential,
-            self.perturbations,
-            method=self.propagation.integration_method,
-        )
         q_matrix = noiseCovarianceFactory(
             self.noise.filter_noise_type,
             self.time.physics_step_sec,
@@ -125,6 +118,23 @@ class ScenarioBuilder:
         # Build estimate set
         self.estimate_agents = {}
         for target_id, target_agent in self.target_agents.items():
+
+            sat_ratio = calcSatRatio(
+                target_agent.visual_cross_section,
+                target_agent.mass,
+                target_agent.reflectivity,
+            )
+
+            # Create the base estimation filter for nominal operation
+            filter_dynamics = spacecraftDynamicsFactory(
+                self.config.estimation.sequential_filter.dynamics,
+                self.clock,
+                self.geopotential,
+                self.perturbations,
+                sat_ratio,
+                method=self.propagation.integration_method,
+            )
+
             config = {
                 "target": target_agent,
                 "position_std": self.noise.init_position_std_km,
@@ -143,6 +153,8 @@ class ScenarioBuilder:
 
         self.sensor_network = []
         for agent in sensor_configs.values():
+            sat_ratio = calcSatRatio(agent.visual_cross_section, agent.mass, agent.reflectivity)
+
             config = {
                 "agent": agent,
                 "clock": self.clock,
@@ -151,6 +163,7 @@ class ScenarioBuilder:
                     self.clock,
                     self.geopotential,
                     self.perturbations,
+                    sat_ratio,
                     method=self.propagation.integration_method,
                 ),
                 "realtime": self.propagation.sensor_realtime_propagation,
@@ -240,11 +253,18 @@ class ScenarioBuilder:
         """
         targets = {}
         for target_conf in target_configs:
+            sat_ratio = calcSatRatio(
+                target_conf._visual_cross_section,
+                target_conf._mass,
+                target_conf.reflectivity,
+            )
+
             dynamics_method = spacecraftDynamicsFactory(
                 self.propagation.propagation_model,
                 self.clock,
                 self.geopotential,
                 self.perturbations,
+                sat_ratio,
                 method=self.propagation.integration_method,
             )
 

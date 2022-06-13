@@ -5,7 +5,9 @@ from .special_perturbations import SpecialPerturbations
 from .two_body import TwoBody
 
 
-def spacecraftDynamicsFactory(model, clock, geopotential, perturbations, method=RK45_LABEL):
+def spacecraftDynamicsFactory(
+    model, clock, geopotential, perturbations, sat_ratio=None, method=RK45_LABEL
+):
     """Build a :class:`.Dynamics` object for RSO propagation.
 
     Args:
@@ -13,6 +15,7 @@ def spacecraftDynamicsFactory(model, clock, geopotential, perturbations, method=
         clock (:class:`.ScenarioClock`): clock for tracking time
         geopotential (GeopotentialConfig): describes the Earth's geopotential model
         perturbations (PerturbationsConfig): describes the dynamics' perturbational accelerations
+        sat_ratio (``float``): RSO specific parameter needed for SRP calculations
         method (``str``, optional): Defaults to ``'RK45'``. Which ODE integration method to use
 
     Note:
@@ -31,7 +34,7 @@ def spacecraftDynamicsFactory(model, clock, geopotential, perturbations, method=
         dynamics = TwoBody(method=method)
     elif model.lower() == SPECIAL_PERTURBATIONS_LABEL:
         dynamics = SpecialPerturbations(
-            clock.julian_date_start, geopotential, perturbations, method=method
+            clock.julian_date_start, geopotential, perturbations, sat_ratio, method=method
         )
     else:
         raise ValueError(model)

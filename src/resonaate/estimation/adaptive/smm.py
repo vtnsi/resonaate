@@ -38,7 +38,7 @@ class StaticMultipleModel(AdaptiveFilter):
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
             julian_date_start (:class:`.JulianDate`): julian date at the start of the scenario
-            visual_cross_section (``float``): visual cross section of estimate agent, Default is 25m
+            visual_cross_section (``float``): visual cross section of estimate agent
 
         Returns:
             ``bool``: Whether or not enough observations and estimates were in the database to start MMAE
