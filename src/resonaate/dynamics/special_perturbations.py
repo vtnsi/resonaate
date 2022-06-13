@@ -29,7 +29,7 @@ class SpecialPerturbations(Celestial):
     reference frame) using the Special Perturbations method of numerical integration.
     """
 
-    def __init__(self, jd_start, geopotential, perturbations, method=RK45_LABEL):
+    def __init__(self, jd_start, geopotential, perturbations, sat_ratio, method=RK45_LABEL):
         """Construct a SpecialPerturbations object.
 
         Args:
@@ -45,6 +45,7 @@ class SpecialPerturbations(Celestial):
         self.order = geopotential.order
         self.third_bodies = thirdBodyFactory(perturbations.third_bodies)
         self.use_srp = perturbations.solar_radiation_pressure
+        self.sat_ratio = sat_ratio
         self.use_gr = perturbations.general_relativity
 
     def _differentialEquation(self, time, state):
@@ -110,7 +111,7 @@ class SpecialPerturbations(Celestial):
 
             # Solar Radiation Pressure accelerations
             if self.use_srp:
-                a_srp = _getSolarRadiationPressureAcceleration(r_eci, array(positions[Sun]))
+                a_srp = self._getSolarRadiationPressureAcceleration(r_eci, array(positions[Sun]))
             else:
                 a_srp = 0.0
 
@@ -133,6 +134,29 @@ class SpecialPerturbations(Celestial):
             )
 
         return derivative
+
+    def _getSolarRadiationPressureAcceleration(self, sat_position, sun_eci_position):
+        """Calculate the acceleration on the spacecraft due to solar radiation pressure.
+
+        Args:
+            sat_position (`ndarray`): 3x1 ECI position vector of the satellite, km
+
+        Returns:
+            `ndarray`: 3x1 ECI acceleration vector due to SRP, km/s^2
+        """
+        # Vector from satellite to the Sun
+        position = sun_eci_position - sat_position
+        # SRP acceleration in m/s^2, Montenbruck Eq. 3.75, modified
+        a_srp = (
+            -const.SOLAR_PRESSURE
+            * self.sat_ratio
+            * (const.AU2KM / norm(position)) ** 2
+            * position
+            / norm(position)
+        )
+
+        # Multiply SRP acceleration by the percentage of the Sun that is visible, convert to km/s^2
+        return a_srp * calculateSunVizFraction(sat_position, sun_eci_position) / 1000.0
 
 
 def _getRotationMatrix(julian_date, reduction):
@@ -198,6 +222,27 @@ def _getThirdBodyAcceleration(sat_position, third_body_position):
     return acceleration
 
 
+def calcSatRatio(visual_cross_section, mass, reflectivity):
+    """Calculate RSO specific value needed for SRP.
+
+    References:
+        :cite:t:`montenbruck_2012_orbits`, Eqn 3.75 - 3.76, Table 3.5
+
+    Args:
+        visual_cross_section
+        mass
+        reflectivity
+
+    Returns:
+        ``float``:
+    """
+    # Radiation Pressure Coefficient (1 + epsilon) (Montenbruck, Eq. 3.76)
+    c_r = 1.0 + reflectivity
+
+    # combine into single variable for simpler code
+    return c_r * (visual_cross_section / mass)
+
+
 def thirdBodyFactory(configuration):
     """Create third body perturbations based on a config.
 
@@ -223,43 +268,6 @@ def thirdBodyFactory(configuration):
             raise ValueError(f"Incorrect option for 'third_bodies' in config: {body}")
 
     return third_bodies
-
-
-def _getSolarRadiationPressureAcceleration(sat_position, sun_eci_position):
-    """Calculate the acceleration on the spacecraft due to solar radiation pressure.
-
-    TODO:
-        - Remove hardcoded constants
-
-    References:
-        :cite:t:`montenbruck_2012_orbits`, Eqn 3.75 - 3.76, Table 3.5
-
-    Args:
-        sat_position (`ndarray`): 3x1 ECI position vector of the satellite, km
-
-    Returns:
-        `ndarray`: 3x1 ECI acceleration vector due to SRP, km/s^2
-    """
-    # Satellite Constants
-    viz_cross_section = 25.0  # (m^2)
-    mass = 150.0  # Satellite mass (kg)
-    # Assuming solar panel reflectivity where epsilon = 0.21 (Montenbruck, Table 3.5)
-    c_r = 1.21  # Radiation Pressure Coefficient (1 + epsilon) (Montenbruck, Eq. 3.76)
-    sat_ratio = c_r * (viz_cross_section / mass)  # combine into single variable for simpler code
-
-    # Vector from satellite to the Sun
-    position = sun_eci_position - sat_position
-    # SRP acceleration in m/s^2, Montenbruck Eq. 3.75, modified
-    a_srp = (
-        -const.SOLAR_PRESSURE
-        * sat_ratio
-        * (const.AU2KM / norm(position)) ** 2
-        * position
-        / norm(position)
-    )
-
-    # Multiply SRP acceleration by the percentage of the Sun that is visible, convert to km/s^2
-    return a_srp * calculateSunVizFraction(sat_position, sun_eci_position) / 1000.0
 
 
 def _getGeneralRelativityAcceleration(r_eci, v_eci):

@@ -73,7 +73,7 @@ class SensingAgent(Agent):
         Raises:
             TypeError: raised on incompatible types for input params
         """
-        # [TODO]: Make visual cross-section better
+
         super().__init__(
             _id,
             name,
@@ -82,7 +82,9 @@ class SensingAgent(Agent):
             clock,
             dynamics,
             realtime,
-            DEFAULT_VIS_X_SECTION,
+            0.0,
+            0.0,
+            0.0,
             station_keeping=station_keeping,
         )
         # [TODO]: Make sensors attribute a collection, so we can attach multiple sensors to an agent

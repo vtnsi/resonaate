@@ -25,7 +25,7 @@ from .agent_base import Agent
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Optional
+    from typing import Any, Optional, Union
 
     # Third Party Imports
     from numpy import ndarray
@@ -50,6 +50,9 @@ class EstimateAgent(Agent):
         initial_covariance: ndarray,
         _filter: SequentialFilter,
         adaptive_filter_config: AdaptiveEstimationConfig,
+        visual_cross_section: Union[float, int],
+        mass: Union[float, int],
+        reflectivity: float,
         seed: Optional[int] = None,
         station_keeping: Optional[list[StationKeeper]] = None,
     ):
@@ -80,7 +83,9 @@ class EstimateAgent(Agent):
             clock,
             _filter.dynamics,
             True,
-            DEFAULT_VIS_X_SECTION,
+            visual_cross_section,
+            mass,
+            reflectivity,
             station_keeping=station_keeping,
         )
 
@@ -382,6 +387,9 @@ class EstimateAgent(Agent):
             init_p,
             nominal_filter,
             config["adaptive_filter"],
+            tgt.visual_cross_section,
+            tgt.mass,
+            tgt.reflectivity,
             config["seed"],
         )
 
@@ -469,3 +477,18 @@ class EstimateAgent(Agent):
     def nominal_filter(self):
         """:class:`.SequentialFilter`: Returns the EstimateAgent's associated filter instance."""
         return self._filter
+
+    @property
+    def visual_cross_section(self):
+        """``float``: Returns the EstimateAgent's associated visual cross section."""
+        return self._visual_cross_section
+
+    @property
+    def mass(self):
+        """``float``: Returns the EstimateAgent's associated mass."""
+        return self._mass
+
+    @property
+    def reflectivity(self):
+        """``float``: Returns the EstimateAgent's associated reflectivity."""
+        return self._reflectivity

@@ -188,10 +188,10 @@ class TargetAgent(Agent):
             config["clock"],
             config["dynamics"],
             config["realtime"],
-            tgt.visual_cross_section,
-            tgt.mass,
-            tgt.reflectivity,
             config["noise"],
+            tgt._visual_cross_section,  # TODO: Figure out how to make this tgt.visual_cross_section
+            tgt._mass,  # TODO: Figure out how to make this tgt.mass
+            tgt.reflectivity,
             seed=config["random_seed"],
             station_keeping=station_keeping,
         )
