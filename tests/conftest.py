@@ -269,7 +269,7 @@ def getPerturbationsConfig():
 @pytest.fixture(name="dynamics")
 def getDynamics(perturbations_config, geopotential_config):
     """Return a :class:`.SpecialPerturbations` object based on configurations."""
-    return SpecialPerturbations(TEST_START_JD, geopotential_config, perturbations_config)
+    return SpecialPerturbations(TEST_START_JD, geopotential_config, perturbations_config, 0.0)
 
 
 def pytest_addoption(parser):

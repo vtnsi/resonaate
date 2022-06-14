@@ -273,6 +273,10 @@ def getTestEarthSensor():
         power_tx=120000.0,
         frequency=10000000000.0,
         slew_rate=3.0000000000000004,
+        calculate_fov=False,
+        detectable_vismag=25.0,
+        minimum_range=0.0,
+        maximum_range=99000,
     )
     return earth_sensor
 

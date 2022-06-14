@@ -395,6 +395,9 @@ class TestEventIntegration(BaseTestCase):
                         "fov_shape": "conic",
                     },
                     "calculate_fov": False,
+                    "detectable_vismag": 25.0,
+                    "minimum_range": 0.0,
+                    "maximum_range": 99000,
                     "host_type": "Spacecraft",
                     "tasking_engine_id": tasking_engine.unique_id,
                 }

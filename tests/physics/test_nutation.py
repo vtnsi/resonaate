@@ -13,7 +13,7 @@ from ..conftest import BaseTestCase
 
 
 class TestNutationModel(BaseTestCase):
-    """Test cases for validating the `physics.transformas` package."""
+    """Test cases for validating the `physics.transforms` package."""
 
     def testNutation(self):
         """Test loading nutation files."""
