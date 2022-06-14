@@ -137,6 +137,9 @@ def createTargetAgent(scenario_clock):
         TwoBody(),
         True,
         np.diagflat([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        25.0,
+        500.0,
+        0.21,
     )
     return agent
 
@@ -164,6 +167,9 @@ def createEstimateAgent(target_agent, scenario_clock):
             None,
         ),
         None,
+        25.0,
+        500.0,
+        0.21,
     )
     return agent
 
