@@ -1,6 +1,6 @@
 """Functions that define physics related to sensors."""
 # Third Party Imports
-from numpy import arccos, arcsin, dot, sqrt
+from numpy import arccos, arcsin, cos, dot, log10, ndarray, sin, sqrt
 from scipy.linalg import norm
 
 # Local Imports
@@ -212,3 +212,57 @@ def getWavelengthFromString(freq):
         "V": SPEED_OF_LIGHT / (60.0 * (1e9)),
         "W": SPEED_OF_LIGHT / (15.0 * (1e9)),
     }[freq]
+
+
+def apparentVisualMagnitude(
+    visual_cross_section: float, reflectivity: float, phase_function: float, rso_range: float
+):
+    """Calculate apparent visual magnitude of an RSO.
+
+    Args:
+        visual_cross_section
+        reflectivity
+        phase_function
+        rso_range
+
+    Returns:
+        ``float``: apparent visual magnitude (unitless)
+    """
+    return Sun.absolute_magnitude - 2.5 * log10(
+        (visual_cross_section * reflectivity * phase_function) / rso_range**2
+    )
+
+
+def lambertianPhaseFunction(phi: float):
+    """Reflection off a spherical Lambertian reflector.
+
+    Args:
+        phi (``float``): phase angle
+
+    Returns
+        (``float``): phase angle
+    """
+    return 2 * ((PI - phi) * cos(phi) + sin(phi)) / (3 * PI**2)
+
+
+def calculatePhaseAngle(emitter: ndarray, reflector: ndarray, observer: ndarray):
+    """Angle between the light incident onto an observed object and the light reflected from the object.
+
+
+    Args:
+        emitter (ndarray): ECI position of emitting body
+        reflector (ndarray): ECI position reflection body
+        observer (ndarray): ECI position of observer
+
+    Returns:
+        ``float``: angle between the light incident onto an observed object and the light reflected from the object
+    """
+    reflector_emitter_vector = emitter - reflector
+    reflector_observer_vector = observer - reflector
+
+    phase_angle = arccos(
+        dot(reflector_emitter_vector, reflector_observer_vector)
+        / (norm(reflector_emitter_vector) * norm(reflector_observer_vector))
+    )
+
+    return phase_angle

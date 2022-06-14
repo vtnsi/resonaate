@@ -12,10 +12,13 @@ from scipy.linalg import norm
 from ..physics import constants as const
 from ..physics.bodies import Sun
 from ..physics.sensor_utils import (
+    apparentVisualMagnitude,
     calculateIncidentSolarFlux,
+    calculatePhaseAngle,
     checkGroundSensorLightingConditions,
     checkSpaceSensorLightingConditions,
     getEarthLimbConeAngle,
+    lambertianPhaseFunction,
 )
 from .measurements import IsAngle, getAzimuth, getElevation
 from .sensor_base import Sensor
@@ -52,11 +55,14 @@ class Optical(Sensor):
         r_matrix: ndarray,
         diameter: float,
         efficiency: float,
-        exemplar,
-        slew_rate,
-        field_of_view,
-        calculate_fov,
-        **sensor_args,
+        exemplar: ndarray,
+        slew_rate: float,
+        field_of_view: FieldOfView,
+        calculate_fov: bool,
+        detectable_vismag: float,
+        minimum_range: float,
+        maximum_range: float,
+        **sensor_args: dict,
     ):
         """Construct a `Optical` sensor object.
 
@@ -82,6 +88,9 @@ class Optical(Sensor):
             slew_rate,
             field_of_view,
             calculate_fov,
+            detectable_vismag,
+            minimum_range,
+            maximum_range,
             **sensor_args,
         )
 
@@ -156,9 +165,7 @@ class Optical(Sensor):
 
         return measurements
 
-    def isVisible(
-        self, tgt_eci_state: ndarray, viz_cross_section: float, slant_range_sez: ndarray
-    ) -> float:
+    def isVisible(self, tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez):
         """Determine if the target is in view of the sensor.
 
         This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical
@@ -171,6 +178,7 @@ class Optical(Sensor):
         Args:
             tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
             viz_cross_section (``float``): area of the target facing the sun (m^2)
+            reflectivity (``float``): Reflectivity of RSO (unitless)
             slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
 
         Returns:
@@ -178,6 +186,20 @@ class Optical(Sensor):
         """
         jd = self.host.julian_date_epoch
         sun_eci_position = Sun.getPosition(jd)
+        boresight_eci = tgt_eci_state - self.host.eci_state
+
+        # Early Exit if RSO is too dim
+        solar_phase_angle = calculatePhaseAngle(
+            sun_eci_position, tgt_eci_state[:3], self.host.eci_state[:3]
+        )
+        rso_apparent_vismag = apparentVisualMagnitude(
+            viz_cross_section,
+            reflectivity,
+            lambertianPhaseFunction(solar_phase_angle),
+            norm(boresight_eci),
+        )
+        if rso_apparent_vismag > self.detectable_vismag:
+            return False
 
         # Calculate the illumination of the target object
         tgt_solar_flux = calculateIncidentSolarFlux(
@@ -186,7 +208,6 @@ class Optical(Sensor):
 
         if self.host.agent_type == "Spacecraft":
             # Check if sensor is pointed at the Sun
-            boresight_eci = tgt_eci_state - self.host.eci_state
             lighting = checkSpaceSensorLightingConditions(
                 boresight_eci[:3], sun_eci_position / norm(sun_eci_position)
             )
@@ -210,7 +231,9 @@ class Optical(Sensor):
         # Check if target is illuminated & if sensor has good lighting conditions
         if tgt_solar_flux > 0 and can_observe:
             # Call base class' visibility check
-            return super().isVisible(tgt_eci_state, viz_cross_section, slant_range_sez)
+            return super().isVisible(
+                tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
+            )
 
         return False
 

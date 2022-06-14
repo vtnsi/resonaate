@@ -47,6 +47,9 @@ class Radar(Sensor):
         slew_rate: float,
         field_of_view: FieldOfView,
         calculate_fov: bool,
+        detectable_vismag: float,
+        minimum_range: float,
+        maximum_range: float,
         **sensor_args: dict,
     ):  # noqa: E501
         """Construct a `Radar` sensor object.
@@ -75,6 +78,9 @@ class Radar(Sensor):
             slew_rate,
             field_of_view,
             calculate_fov,
+            detectable_vismag,
+            minimum_range,
+            maximum_range,
             **sensor_args,
         )
 

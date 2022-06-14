@@ -1,8 +1,5 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
 
-# Standard Library Imports
-from copy import deepcopy
-
 # Third Party Imports
 from numpy.linalg import norm
 
@@ -20,6 +17,8 @@ from ...dynamics.integration_events.station_keeping import (
     VALID_STATION_KEEPING_ROUTINES,
     StationKeeper,
 )
+from ...physics.bodies.earth import Earth
+from ...physics.orbits import GEO_ALTITUDE_LIMIT, LEO_ALTITUDE_LIMIT, MEO_ALTITUDE_LIMIT
 from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL, VALID_SENSOR_FOV_LABELS
 from .base import (
     NO_SETTING,
@@ -97,33 +96,33 @@ class TargetConfigObject(ConfigObject):
                 err = f"Target {self.sat_num}: EQE set should have 6 elements, not {len(self.init_eqe)}"
                 raise ConfigError(self.__class__.__name__, err)
 
-            altitude = norm(eqe2eci(self.init_eqe)[:3]) - Earth.radius
+            altitude = self.init_eqe["sma"] - Earth.radius
 
         if self.coe_set:
             if len(self.init_coe) < 4:
                 err = f"Target {self.sat_num}: COE set should have at least 4 elements, not {len(self.init_coe)}"
                 raise ConfigError(self.__class__.__name__, err)
 
-            altitude = norm(coe2eci(self.init_coe)[:3]) - Earth.radius
+            altitude = self.init_coe["sma"] - Earth.radius
 
         if self.mass is NO_SETTING:
             if altitude <= LEO_ALTITUDE_LIMIT:
-                self.mass = LEO_DEFAULT_MASS
+                self._mass._setting = LEO_DEFAULT_MASS
             elif altitude <= MEO_ALTITUDE_LIMIT:
-                self.mass = MEO_DEFAULT_MASS
+                self._mass._setting = MEO_DEFAULT_MASS
             elif altitude <= GEO_ALTITUDE_LIMIT:
-                self.mass = GEO_DEFAULT_MASS
+                self._mass._setting = GEO_DEFAULT_MASS
             else:
                 err = "RSO altitude above GEO, unable to set a default mass value"
                 raise ValueError(self.__class__.__name__, err)
 
         if self.visual_cross_section is NO_SETTING:
             if altitude <= LEO_ALTITUDE_LIMIT:
-                self.visual_cross_section = LEO_DEFAULT_VCS
+                self._visual_cross_section._setting = LEO_DEFAULT_VCS
             elif altitude <= MEO_ALTITUDE_LIMIT:
-                self.visual_cross_section = MEO_DEFAULT_VCS
+                self._visual_cross_section._setting = MEO_DEFAULT_VCS
             elif altitude <= GEO_ALTITUDE_LIMIT:
-                self.visual_cross_section = GEO_DEFAULT_VCS
+                self._visual_cross_section._setting = GEO_DEFAULT_VCS
             else:
                 err = "RSO altitude above GEO, unable to set a default visual cross section value"
                 raise ValueError(self.__class__.__name__, err)
@@ -167,20 +166,10 @@ class TargetConfigObject(ConfigObject):
         """float: Mass of RSO."""
         return self._mass.setting
 
-    @mass.setter
-    def mass(self, new_mass):
-        """float: Set Mass of RSO."""
-        self._mass = new_mass
-
     @property
     def visual_cross_section(self):
         """float: visual_cross_section of RSO."""
         return self._visual_cross_section.setting
-
-    @visual_cross_section.setter
-    def visual_cross_section(self, new_visual_cross_section):
-        """float: Set visual cross section of RSO."""
-        self._visual_cross_section = new_visual_cross_section
 
     @property
     def reflectivity(self):
@@ -445,40 +434,20 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         """
         self._calculate_fov = new_calc_fov
 
-    # @field_of_view.setter
-    # def field_of_view(self, new_field_of_view):
-    #     """float: Set field of view of this sensor."""
-    #     self._field_of_view = new_field_of_view
-
     @property
     def minimum_range(self):
         """float, int: minimum range visibility of this sensor."""
         return self._minimum_range.setting  # pylint: disable=no-member
-
-    # @minimum_range.setter
-    # def minimum_range(self, new_minimum_range):
-    #     """float, int: Set minimum range visibility of this sensor."""
-    #     self._minimum_range = new_minimum_range
 
     @property
     def maximum_range(self):
         """float, int: maximum range visibility of this sensor."""
         return self._maximum_range.setting  # pylint: disable=no-member
 
-    # @maximum_range.setter
-    # def maximum_range(self, new_maximum_range):
-    #     """float, int: Set maximum range visibility of this sensor."""
-    #     self._maximum_range = new_maximum_range
-
     @property
     def detectable_vismag(self):
         """float, int: maximum detectable visual magnitude of this sensor."""
         return self._detectable_vismag.setting  # pylint: disable=no-member
-
-    # @detectable_vismag.setter
-    # def detectable_vismag(self, new_detectable_vismag):
-    #     """float, int: Set maximum detectable visual magnitude of this sensor."""
-    #     self._detectable_vismag = new_detectable_vismag
 
     @property
     def tx_power(self):

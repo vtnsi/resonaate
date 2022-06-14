@@ -67,6 +67,9 @@ class EstimateAgent(Agent):
             initial_covariance (``ndarray``): 6x6 initial covariance or uncertainty
             _filter (:class:`.SequentialFilter`): tracks the estimate's state throughout the simulation
             adaptive_filter_config (:class:`.ConfigOption`): adaptive filter configuration to be used if needed
+            visual_cross_section (``float, int``): constant visual cross-section of the agent
+            mass (``float, int``): constant mass of the agent
+            reflectivity (``float``): constant reflectivity of the agent
             seed (``int``, optional): number to seed random number generator. Defaults to ``None``.
             station_keeping (``list``, optional): list of :class:`.StationKeeper` objects describing the station
                 keeping to be performed. Defaults to ``None``.
@@ -76,16 +79,16 @@ class EstimateAgent(Agent):
             - ``ShapeError`` raised if process noise is not a 6x6 matrix
         """
         super().__init__(
-            _id,
-            name,
-            agent_type,
-            initial_state,
-            clock,
-            _filter.dynamics,
-            True,
-            visual_cross_section,
-            mass,
-            reflectivity,
+            _id=_id,
+            name=name,
+            agent_type=agent_type,
+            initial_state=initial_state,
+            clock=clock,
+            dynamics=_filter.dynamics,
+            realtime=True,
+            visual_cross_section=visual_cross_section,
+            mass=mass,
+            reflectivity=reflectivity,
             station_keeping=station_keeping,
         )
 
