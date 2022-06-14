@@ -33,6 +33,10 @@ class Radar(Sensor):
         frequency,
         slew_rate,
         field_of_view,
+        calculate_fov,
+        detectable_vismag,
+        minimum_range,
+        maximum_range,
         **sensor_args,
     ):  # noqa: E501
         """Construct a `Radar` sensor object.
@@ -59,6 +63,10 @@ class Radar(Sensor):
             efficiency,
             slew_rate,
             field_of_view,
+            calculate_fov,
+            detectable_vismag,
+            minimum_range,
+            maximum_range,
             **sensor_args,
         )
 

@@ -353,6 +353,7 @@ class Sun(ThirdBody):
         mu (``float``): gravitational parameter (km^3/sec^2), from DE430.
         radius (``float``): mean equatorial radius (km), from Vallado.
         mass (``float``): sun's mass (kg), from Vallado.
+        absolute_magnitude (``float``): sun's absolute visual magnitude (unitless), from Google
 
     References:
         :cite:t:`vallado_2013_astro`, Appendix D.3, Table D-5.
@@ -362,6 +363,7 @@ class Sun(ThirdBody):
     mu: float = 1.32712440041939400e11
     radius: float = 696000.0
     mass: float = 1.9891e30
+    absolute_magnitude = -26.74
 
     @staticmethod
     def getPosition(jd: float) -> ndarray:

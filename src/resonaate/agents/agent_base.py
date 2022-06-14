@@ -56,11 +56,13 @@ class Agent(metaclass=ABCMeta):
             _id (``int``): unique identification number
             name (``str``): unique identification name
             agent_type (``str``): name signifying the type of agent `('Spacecraft', 'GroundFacility', )`
-            initial_state (``numpy.ndarray``): 6x1 ECI initial state vector
+            initial_state (``ndarray``): 6x1 ECI initial state vector
             clock (:class:`.ScenarioClock`): clock instance for retrieving proper times
             dynamics (:class:`.Dynamics`): Agent's simulation dynamics
             realtime (``bool``): whether to use :attr:`.dynamics` or import data for propagation
-            visual_cross_section (``float``): constant visual cross-section of the agent
+            visual_cross_section (``float, int``): constant visual cross-section of the agent
+            mass (``float, int``): constant mass of the agent
+            reflectivity (``float``): constant reflectivity of the agent
             station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station keeping to
                 be performed
 

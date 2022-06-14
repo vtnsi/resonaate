@@ -99,6 +99,7 @@ def asyncCalculateReward(estimate_id, reward, sensor_list):
             estimate_id,
             estimate.state_estimate,
             estimate.visual_cross_section,
+            estimate.reflectivity,
             real_obs=False,  # Don't add noise for prospective observations
         )
 

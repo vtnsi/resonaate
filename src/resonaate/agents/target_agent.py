@@ -62,11 +62,14 @@ class TargetAgent(Agent):
             _id (``int``): unique identification number
             name (``str``): unique identification name
             agent_type (``str``): name signifying the type of agent `('Spacecraft', 'GroundFacility', )`
-            initial_state (``numpy.ndarray``): 6x1 ECI initial state vector
+            initial_state (``ndarray``): 6x1 ECI initial state vector
             clock (:class:`.ScenarioClock`): clock instance for retrieving proper times
             dynamics (:class:`.Dynamics`): TargetAgent's simulation dynamics
             realtime (``bool``): whether to use :attr:`dynamics` or import data for propagation
-            process_noise (``numpy.ndarray``): 6x6 process noise covariance
+            process_noise (``ndarray``): 6x6 process noise covariance
+            visual_cross_section (``float, int``): constant visual cross-section of the agent
+            mass (``float, int``): constant mass of the agent
+            reflectivity (``float``): constant reflectivity of the agent
             seed (int, optional): number to seed random number generator. Defaults to ``None``.
             station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station keeping to
                 be performed
@@ -76,16 +79,16 @@ class TargetAgent(Agent):
             ShapeError: raised if process noise is not a 6x6 matrix
         """
         super().__init__(
-            _id,
-            name,
-            agent_type,
-            initial_state,
-            clock,
-            dynamics,
-            realtime,
-            visual_cross_section,
-            mass,
-            reflectivity,
+            _id=_id,
+            name=name,
+            agent_type=agent_type,
+            initial_state=initial_state,
+            clock=clock,
+            dynamics=dynamics,
+            realtime=realtime,
+            visual_cross_section=visual_cross_section,
+            mass=mass,
+            reflectivity=reflectivity,
             station_keeping=station_keeping,
         )
         if not isinstance(process_noise, ndarray):
@@ -189,8 +192,8 @@ class TargetAgent(Agent):
             config["dynamics"],
             config["realtime"],
             config["noise"],
-            tgt._visual_cross_section,  # TODO: Figure out how to make this tgt.visual_cross_section
-            tgt._mass,  # TODO: Figure out how to make this tgt.mass
+            tgt.visual_cross_section,
+            tgt.mass,
             tgt.reflectivity,
             seed=config["random_seed"],
             station_keeping=station_keeping,

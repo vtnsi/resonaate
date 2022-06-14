@@ -254,8 +254,8 @@ class ScenarioBuilder:
         targets = {}
         for target_conf in target_configs:
             sat_ratio = calcSatRatio(
-                target_conf._visual_cross_section,
-                target_conf._mass,
+                target_conf.visual_cross_section,
+                target_conf.mass,
                 target_conf.reflectivity,
             )
 
