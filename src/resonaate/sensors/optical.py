@@ -37,6 +37,7 @@ class Optical(Sensor):
         exemplar,
         slew_rate,
         field_of_view,
+        calculate_fov,
         **sensor_args,
     ):
         """Construct a `Optical` sensor object.
@@ -61,6 +62,7 @@ class Optical(Sensor):
             efficiency,
             slew_rate,
             field_of_view,
+            calculate_fov,
             **sensor_args,
         )
 
