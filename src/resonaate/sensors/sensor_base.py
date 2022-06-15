@@ -41,6 +41,7 @@ class Sensor(metaclass=ABCMeta):
         efficiency,
         slew_rate,
         field_of_view,
+        calculate_fov,
         **sensor_args,
     ):
         """Construct a generic `Sensor` object.
@@ -53,6 +54,7 @@ class Sensor(metaclass=ABCMeta):
             efficiency (``float``): efficiency percentage of the sensor
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
+            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         self._az_mask = None
@@ -65,7 +67,7 @@ class Sensor(metaclass=ABCMeta):
         self.efficiency = efficiency
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view
-        self.calculate_field_of_view = sensor_args["calculate_fov"]
+        self.calculate_field_of_view = calculate_fov
 
         # Derived properties initialization
         self.exemplar = None
@@ -188,7 +190,15 @@ class Sensor(metaclass=ABCMeta):
         pointing_boresight = pointing_position - self.host.eci_state[:3]
         background_boresight = background_position - self.host.eci_state[:3]
         angle = subtendedAngle(background_boresight, pointing_boresight)
-        return angle * const.RAD2DEG <= self.field_of_view
+        if self.field_of_view.type == "conic":
+            return angle * const.RAD2DEG <= self.field_of_view.cone_angle
+        elif self.field_of_view.type == "rectangular":
+            return (
+                angle * const.RAD2DEG <= self.field_of_view.x_fov
+                and angle * const.RAD2DEG <= self.field_of_view.y_fov
+            )
+        else:
+            raise ValueError("Wrong Import for FoV Type")
 
     def buildSigmaObs(self, target_id: int, tgt_eci_state: ndarray) -> Observation:
         """Calculate the measurement data for a sigma point observation.

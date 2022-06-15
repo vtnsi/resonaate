@@ -5,7 +5,7 @@ from ...dynamics.integration_events.station_keeping import (
     VALID_STATION_KEEPING_ROUTINES,
     StationKeeper,
 )
-from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
+from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL, VALID_SENSOR_FOV_LABELS
 from .base import (
     NO_SETTING,
     ConfigError,
@@ -163,7 +163,7 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ConfigOption("efficiency", (float,)),
             ConfigOption("slew_rate", (float,)),
             ConfigOption("exemplar", (list,)),
-            ConfigOption("field_of_view", (float,), default=10.0),
+            FieldOfViewConfig(),
             ConfigOption(
                 "sensor_type",
                 (str,),
@@ -346,8 +346,8 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
 
     @property
     def field_of_view(self):
-        """float: cone angle (degrees) of visibility of this sensor."""
-        return self._field_of_view.setting  # pylint: disable=no-member
+        """FieldOfViewConfig: visibility of this sensor."""
+        return self._field_of_view
 
     @property
     def tx_power(self):
@@ -372,6 +372,43 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         Default to type(None), asserted to be None if host_type is `GROUND_FACILITY_LABEL`.
         """
         return self._station_keeping  # pylint: disable=no-member
+
+
+class FieldOfViewConfig(ConfigSection):
+
+    CONFIG_LABEL = "field_of_view"
+
+    def __init__(self) -> None:
+        self._type = ConfigOption(
+            "type",
+            (str,),
+            default="conic",
+            valid_settings=(NO_SETTING,) + VALID_SENSOR_FOV_LABELS,
+        )
+        self._cone_angle = ConfigOption("cone_angle", (float,), default=1.0)  # degrees
+        self._x_degrees = ConfigOption("x", (float,), default=1.0)  # degrees
+        self._y_degrees = ConfigOption("y", (float,), default=1.0)  # degrees
+
+    @property
+    def nested_items(self):
+        """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
+        return [self._type, self._cone_angle, self._x_degrees, self._y_degrees]
+
+    @property
+    def type(self):
+        return self._type.setting
+
+    @property
+    def cone_angle(self):
+        return self._cone_angle.setting
+
+    @property
+    def x_degrees(self):
+        return self._x_degrees.setting
+
+    @property
+    def y_degrees(self):
+        return self._y_degrees.setting
 
 
 class StationKeepingConfig(ConfigSection):
