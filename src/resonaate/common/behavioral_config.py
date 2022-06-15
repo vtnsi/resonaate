@@ -210,7 +210,7 @@ class BehavioralConfig:
         BehavioralConfig.__shared_inst = self  # pylint: disable=unused-private-member
 
     @classmethod
-    def getConfig(cls, config_file_path=DEFAULT_CONFIG_FILE) -> BehavioralConfig:
+    def getConfig(cls, config_file_path=None) -> BehavioralConfig:
         """Return a reference to the singleton shared config."""
         if cls.__shared_inst is None:
             if not config_file_path:
