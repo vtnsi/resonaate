@@ -28,6 +28,7 @@ class Radar(Sensor):
         frequency,
         slew_rate,
         field_of_view,
+        calculate_fov,
         **sensor_args,
     ):  # noqa: E501
         """Construct a `Radar` sensor object.
@@ -54,6 +55,7 @@ class Radar(Sensor):
             efficiency,
             slew_rate,
             field_of_view,
+            calculate_fov,
             **sensor_args,
         )
 

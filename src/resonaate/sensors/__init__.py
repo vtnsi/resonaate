@@ -1,4 +1,9 @@
 """Defines the capabilities and operation of different types of sensors."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import asarray, sqrt
 
@@ -8,14 +13,24 @@ from .advanced_radar import AdvRadar
 from .optical import Optical
 from .radar import Radar
 
-OPTICAL_LABEL = "Optical"
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Tuple
+
+OPTICAL_LABEL: str = "Optical"
 """str: Constant string used to describe optical sensors."""
 
-RADAR_LABEL = "Radar"
+RADAR_LABEL: str = "Radar"
 """str: Constant string used to describe radar sensors."""
 
-ADV_RADAR_LABEL = "AdvRadar"
+ADV_RADAR_LABEL: str = "AdvRadar"
 """str: Constant string used to describe advanced radar sensors."""
+
+VALID_SENSOR_FOV_LABELS: Tuple[str] = (
+    "conic",
+    "rectangular",
+)
+"""list: Contains list of valid sensor Field of View configurations."""
 
 
 def sensorFactory(configuration, fov=True):
@@ -40,7 +55,7 @@ def sensorFactory(configuration, fov=True):
         "efficiency": configuration.efficiency,
         "slew_rate": configuration.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(configuration.exemplar),
-        "field_of_view": asarray(configuration.field_of_view),  # Assumes degrees
+        "field_of_view": fieldOfViewFactory(configuration.field_of_view),
         "calculate_fov": fov,
     }
 
@@ -60,3 +75,38 @@ def sensorFactory(configuration, fov=True):
         raise ValueError(sensor_type)
 
     return sensor
+
+
+def fieldOfViewFactory(configuration):
+    """_summary_
+
+    Args:
+        configuration (_type_): _description_
+
+    Returns:
+        :class:`.FieldOfView`
+    """
+    if configuration.type == "conic":
+        return ConicFoV(configuration)
+    elif configuration.type == "rectangular":
+        return RectangularFoV(configuration)
+    else:
+        raise ValueError("wrong FoV type input")
+
+
+class FieldOfView:
+    def __init__(self, config) -> None:
+        self.type = config.type
+
+
+class ConicFoV(FieldOfView):
+    def __init__(self, config) -> None:
+        super().__init__(config)
+        self.cone_angle = config.cone_angle
+
+
+class RectangularFoV(FieldOfView):
+    def __init__(self, config) -> None:
+        super().__init__(config)
+        self.x_fov = config.x_degrees
+        self.y_fov = config.y_degrees
