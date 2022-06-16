@@ -120,7 +120,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
 
         # Sequential filter products
         # [NOTE]: Need to save maneuver detection information for proper logging & saving to DB
-        self.maneuver_detected = False
+        self.maneuver_detected = True
         self.maneuver_metric = nominal_filter.maneuver_detection.metric
 
         # MMAE uninitialized attributes

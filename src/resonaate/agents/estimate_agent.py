@@ -292,15 +292,15 @@ class EstimateAgent(Agent):
             obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
             truth (``ndarray``, optional): 6x1 ECI state vector for the true target agent
         """
+        if truth is not None:
+            self._logFilterEvents(obs_tuples, truth)
+
         if obs_tuples:
             self.last_observed_at = self.julian_date_epoch
             self._saveFilterStep()
             if self.nominal_filter.maneuver_detected:
                 self._saveDetectedManeuver(obs_tuples)
                 self._attemptAdaptiveEstimation(obs_tuples)
-
-        if truth is not None:
-            self._logFilterEvents(obs_tuples, truth)
 
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
