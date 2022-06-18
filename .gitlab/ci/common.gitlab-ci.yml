@@ -14,13 +14,11 @@ workflow:
 ########################
 
 default:
-  # Python 3.7 Docker image by default
-  image: python:3.7
-  # These tags allow jobs to be run on DFARS shared runners
+  # Python 3.9 Docker image by default
+  image: python:3.9
   tags:
     - docker
-    - cpu
-    - dfars
+    - linux
   # Cache the pip libraries. Only update if different branch, or requirements.txt changed.
   cache:
     key:
