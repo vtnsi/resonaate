@@ -38,9 +38,9 @@ setuptools.setup(
             "flake8-plugin-utils==1.3.2",
             "flake8-pytest-style==1.6.0",
             "flake8-rst-docstrings==0.2.6",
-            "pylint==2.14.0",
+            "pylint==2.14.3",
             # Type Checking
-            "mypy==0.960",
+            "mypy==0.961",
             "types-redis==4.2.6",
             "types-sqlalchemy==1.4.38",
             "typing_extensions==4.1.1; python_version < '3.10'",
@@ -62,9 +62,9 @@ setuptools.setup(
             "coverage==6.4.1",
         ],
         "doc": [
-            "sphinx==4.5.0",
+            "sphinx==5.0.2",
             "sphinx_rtd_theme==1.0.0",
-            "myst-parser==0.17.2",
+            "myst-parser==0.18.0",
             "sphinx-copybutton==0.5.0",
             "sphinxcontrib-bibtex==2.4.2",
             "sphinxcontrib-mermaid==0.7.1",
