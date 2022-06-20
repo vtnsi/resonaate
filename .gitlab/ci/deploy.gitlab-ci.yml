@@ -95,7 +95,6 @@ publish-container:
     IMAGE_NAME: "resonaate"
   needs:
     - build
-  when: never
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      when: on_success
+      when: never
