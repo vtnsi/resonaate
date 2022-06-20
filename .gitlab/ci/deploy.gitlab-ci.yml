@@ -47,9 +47,9 @@ pages:
     paths:
       - public
     expose_as: "Documentation"
-    rules:
-      - if: '$CI_COMMIT_BRANCH == "main"'
-        when: never
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: never
 
 ######################
 # Publish Deploy Job #
