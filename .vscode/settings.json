@@ -33,7 +33,11 @@
       "editor.autoIndent": "full",
       "editor.formatOnSave": false,
       "editor.insertSpaces": true,
-      "editor.quickSuggestions": false,
+      "editor.quickSuggestions": {
+        "comments": "off",
+        "strings": "off",
+        "other": "off"
+      },
       "editor.tabSize": 2,
       "editor.wordWrap": "on",
       "gitlens.codeLens.scopes": ["document"]
@@ -44,7 +48,11 @@
       "editor.insertSpaces": true,
       "editor.defaultFormatter": "esbenp.prettier-vscode",
       "editor.formatOnSave": true,
-      "editor.quickSuggestions": false,
+      "editor.quickSuggestions": {
+        "comments": "off",
+        "strings": "off",
+        "other": "off"
+      },
       "editor.tabSize": 2,
       "editor.wordWrap": "on",
       "gitlens.codeLens.scopes": ["document"]
@@ -55,10 +63,13 @@
       "editor.insertSpaces": true,
       "editor.defaultFormatter": "esbenp.prettier-vscode",
       "editor.formatOnSave": true,
-      "editor.quickSuggestions": false,
+      "editor.quickSuggestions": {
+        "comments": "off",
+        "strings": "off",
+        "other": "off"
+      },
       "editor.tabSize": 2,
       "editor.wordWrap": "on",
       "gitlens.codeLens.scopes": ["document"]
     }
   }
-  
