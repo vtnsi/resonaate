@@ -62,7 +62,7 @@ setuptools.setup(
             "coverage==6.4.1",
         ],
         "doc": [
-            "sphinx==4.5.0",
+            "sphinx==5.0.2",
             "sphinx_rtd_theme==1.0.0",
             "myst-parser==0.18.0",
             "sphinx-copybutton==0.5.0",
