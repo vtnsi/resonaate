@@ -347,7 +347,7 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
     @property
     def field_of_view(self):
         """FieldOfViewConfig: visibility of this sensor."""
-        return self._field_of_view
+        return self._field_of_view  # pylint: disable=no-member
 
     @property
     def tx_power(self):
@@ -375,12 +375,14 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
 
 
 class FieldOfViewConfig(ConfigSection):
+    """Field of View config class."""
 
     CONFIG_LABEL = "field_of_view"
 
     def __init__(self) -> None:
-        self._type = ConfigOption(
-            "type",
+        """Initialize FieldOfViewConfig."""
+        self._image_type = ConfigOption(
+            "image_type",
             (str,),
             default="conic",
             valid_settings=(NO_SETTING,) + VALID_SENSOR_FOV_LABELS,
@@ -392,22 +394,26 @@ class FieldOfViewConfig(ConfigSection):
     @property
     def nested_items(self):
         """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._type, self._cone_angle, self._x_degrees, self._y_degrees]
+        return [self._image_type, self._cone_angle, self._x_degrees, self._y_degrees]
 
     @property
-    def type(self):
-        return self._type.setting
+    def image_type(self):
+        """String: Type of Field of View being used."""
+        return self._image_type.setting
 
     @property
     def cone_angle(self):
+        """float: cone angle for `conic` Field of View (degrees)."""
         return self._cone_angle.setting
 
     @property
     def x_degrees(self):
+        """float: horizontal angular resolution for `rectangular` Field of View (degrees)."""
         return self._x_degrees.setting
 
     @property
     def y_degrees(self):
+        """float: vertical angular resolution for `rectangular` Field of View (degrees)."""
         return self._y_degrees.setting
 
 

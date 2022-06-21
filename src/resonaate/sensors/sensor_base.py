@@ -198,15 +198,17 @@ class Sensor(metaclass=ABCMeta):
         pointing_boresight = pointing_position - self.host.eci_state[:3]
         background_boresight = background_position - self.host.eci_state[:3]
         angle = subtendedAngle(background_boresight, pointing_boresight)
-        if self.field_of_view.type == "conic":
-            return angle * const.RAD2DEG <= self.field_of_view.cone_angle
-        elif self.field_of_view.type == "rectangular":
+
+        if self.field_of_view.image_type == "conic":
+            return angle <= self.field_of_view.cone_angle * const.DEG2RAD
+
+        if self.field_of_view.image_type == "rectangular":
             return (
-                angle * const.RAD2DEG <= self.field_of_view.x_fov
-                and angle * const.RAD2DEG <= self.field_of_view.y_fov
+                angle <= self.field_of_view.x_fov * const.DEG2RAD
+                and angle <= self.field_of_view.y_fov * const.DEG2RAD
             )
-        else:
-            raise ValueError("Wrong Import for FoV Type")
+
+        raise ValueError("Wrong Import for FoV Type")
 
     def buildSigmaObs(self, target_id: int, tgt_eci_state: ndarray) -> Observation:
         """Calculate the measurement data for a sigma point observation.
@@ -357,7 +359,8 @@ class Sensor(metaclass=ABCMeta):
             self.delta_boresight = arccos(arg)
 
         # Check if you are able to slew to the new target
-        if self.slew_rate * self.host.dt_step >= self.delta_boresight:
+        # [TODO]: This breaks the Markovian nature of the tool and needs to be rectified. 
+        if self.slew_rate * (self.host.time - self.time_last_ob) >= self.delta_boresight:
             # Check if the elevation is within sensor bounds
             if elevation <= self.el_mask[0] or elevation >= self.el_mask[1]:
                 return False

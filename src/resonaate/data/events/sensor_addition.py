@@ -4,7 +4,7 @@ from json import dumps, loads
 
 # Third Party Imports
 from numpy import array
-from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.time.stardate import datetimeToJulianDate
 from ...physics.transforms.methods import ecef2eci, lla2ecef
-from ...sensors import ADV_RADAR_LABEL, RADAR_LABEL
+from ...sensors import ADV_RADAR_LABEL, RADAR_LABEL, fieldOfViewFactory
 from .base import Event, EventScope
 
 
@@ -110,8 +110,17 @@ class SensorAdditionEvent(Event):
     exemplar_range = Column(Float)
     """float: Range (km) exemplar capability."""
 
-    field_of_view = Column(Float)
-    """float: Field of View (degrees)."""
+    # field_of_view_image_type = Column(String(64))
+    # """String: image_type string."""
+
+    # fov_angle_1 = Column(float)
+    # """float: first angle (only angle for `conic`, horizontal angle for `rectangular`."""
+
+    # fov_angle_2 = Column(float, nullable=True)
+    # """float: Second angle (vertical angle for `rectangular`."""
+
+    calculate_fov = Column(Boolean)
+    """bool: whether to do FoV calcs."""
 
     tx_power = Column(Float)
     """float: Transmit power of radar sensor.
@@ -153,7 +162,10 @@ class SensorAdditionEvent(Event):
         "sensor_type",
         "exemplar_cross_section",
         "exemplar_range",
-        "field_of_view",
+        "field_of_view_image_type",
+        "fov_angle_1",
+        "fov_angle_2",
+        "calculate_fov",
         "tx_power",
         "tx_frequency",
         "station_keeping_json",
@@ -282,6 +294,7 @@ class SensorAdditionEvent(Event):
             exemplar_cross_section=config.exemplar[0],
             exemplar_range=config.exemplar[1],
             field_of_view=config.field_of_view,
+            calculate_fov=config.calculate_fov,
             tx_power=tx_power,
             tx_frequency=tx_frequency,
             station_keeping_json=dumps(config.station_keeping.toJSON()),

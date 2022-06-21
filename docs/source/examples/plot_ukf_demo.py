@@ -178,7 +178,6 @@ radar_sensor = Radar(
     np.radians(slew_rate),
     field_of_view,
     calc_field_of_view,
-    **sensor_args,
 )
 
 # Lat, Lon, Alt for sensor near VT

@@ -15,7 +15,7 @@ from .radar import Radar
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Tuple
+    from typing import Dict, Tuple
 
 OPTICAL_LABEL: str = "Optical"
 """str: Constant string used to describe optical sensors."""
@@ -77,36 +77,58 @@ def sensorFactory(configuration, fov=True):
     return sensor
 
 
-def fieldOfViewFactory(configuration):
-    """_summary_
+def fieldOfViewFactory(configuration: Dict) -> FieldOfView:
+    """Field of View factory method.
 
     Args:
-        configuration (_type_): _description_
+        configuration (``Dict``): field of view config
 
     Returns:
         :class:`.FieldOfView`
     """
-    if configuration.type == "conic":
+    if configuration.image_type == "conic":
         return ConicFoV(configuration)
-    elif configuration.type == "rectangular":
+
+    if configuration.image_type == "rectangular":
         return RectangularFoV(configuration)
-    else:
-        raise ValueError("wrong FoV type input")
+
+    raise ValueError("wrong FoV type input")
 
 
 class FieldOfView:
-    def __init__(self, config) -> None:
-        self.type = config.type
+    """Field of View base class."""
+
+    def __init__(self, config: Dict) -> None:
+        """Initialize a Field of View object.
+
+        Args:
+            config (``Dict``): Field of View config object
+        """
+        self.image_type = config.image_type
 
 
 class ConicFoV(FieldOfView):
-    def __init__(self, config) -> None:
+    """Conic Field of View Subclass."""
+
+    def __init__(self, config: Dict) -> None:
+        """Initialize A ConicFoV object.
+
+        Args:
+            config (``Dict``): Field of View config object
+        """
         super().__init__(config)
         self.cone_angle = config.cone_angle
 
 
 class RectangularFoV(FieldOfView):
-    def __init__(self, config) -> None:
+    """Rectangular Field of View Subclass."""
+
+    def __init__(self, config: Dict) -> None:
+        """Initialize A RectangularFoV object.
+
+        Args:
+            config (``Dict``): Field of View config object
+        """
         super().__init__(config)
         self.x_fov = config.x_degrees
         self.y_fov = config.y_degrees

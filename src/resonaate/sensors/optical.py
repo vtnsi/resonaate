@@ -52,6 +52,7 @@ class Optical(Sensor):
                     [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
+            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         super().__init__(

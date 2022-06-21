@@ -102,7 +102,7 @@ def _resetDatabase():
     """Reset the database tables to avoid data integrity errors.
 
     Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instanitated so that the "epochs"
+        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated so that the "epochs"
         table is reset.
     """
     yield
@@ -114,7 +114,7 @@ def _resetImporterDatabase():
     """Reset the database tables to avoid data integrity errors.
 
     Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instanitated so that the "epochs"
+        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated so that the "epochs"
         table is reset.
     """
     yield
@@ -285,7 +285,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "service: mark test as a service layer integration test")
     config.addinivalue_line("markers", "realtime: mark test as using real time propagation")
     config.addinivalue_line(
-        "markers", "importer: mark test as using imported data rather than propgation"
+        "markers", "importer: mark test as using imported data rather than propagation"
     )
     config.addinivalue_line("markers", "datafiles: creates tmpdirs for required data")
 
