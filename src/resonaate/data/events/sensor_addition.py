@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.time.stardate import datetimeToJulianDate
 from ...physics.transforms.methods import ecef2eci, lla2ecef
-from ...sensors import ADV_RADAR_LABEL, RADAR_LABEL, fieldOfViewFactory
+from ...sensors import ADV_RADAR_LABEL, RADAR_LABEL
 from .base import Event, EventScope
 
 
@@ -207,6 +207,24 @@ class SensorAdditionEvent(Event):
     def station_keeping(self):
         """list: List of station keeping key words for this target."""
         return loads(self.station_keeping_json)
+
+    @property
+    def field_of_view(self):
+        """Dict: Field of view dictionary object."""
+        if self.field_of_view_image_type == "conic":
+            return {
+                "image_type": self.field_of_view_image_type,
+                "cone_angle": self.fov_angle_1
+            }
+
+        if self.field_of_view_image_type == "rectangular":
+            return {
+                "image_type": self.field_of_view_image_type,
+                "x_fov": self.fov_angle_1,
+                "y_fov": self.fov_angle_2
+            }
+
+        raise ValueError("Incorrect field of view image type")
 
     def handleEvent(self, scope_instance):
         """Add the node described by this :class:`.NodeAdditionEvent` to the appropriate tasking engine.
