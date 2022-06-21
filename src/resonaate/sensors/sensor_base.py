@@ -1,11 +1,13 @@
 """Abstract :class:`.Sensor` base class which defines the common sensor interface."""
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
-from typing import Dict, List
+from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import arccos, array, cos, diagflat, dot, fix, matmul, ndarray, random, real, sin
+from numpy import arccos, array, cos, diagflat, dot, fix, matmul, random, real, sin
 from scipy.linalg import norm, sqrtm
 
 # Local Imports
@@ -18,6 +20,14 @@ from ..physics.sensor_utils import lineOfSight
 from ..physics.time.stardate import ScenarioTime
 from ..physics.transforms.methods import getSlantRangeVector
 from .measurements import getAzimuth, getElevation, getRange
+
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Dict, List
+
+    # Third Party Imports
+    from numpy import ndarray
+
 
 ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles"])
 """Named tuple for correlating an observation, the sensing agent, and its angular values.
@@ -124,8 +134,6 @@ class Sensor(metaclass=ABCMeta):
 
     def collectObservations(self, pointing_agent, background_agents) -> List[ObservationTuple]:
         """Collect observations on all targets within the sensor's FOV.
-
-        [NOTE]: an observation is not made on the pointing agent
 
         Args:
             pointing_agent (:class:`.EstimateAgent`): agent that sensor is pointing at
