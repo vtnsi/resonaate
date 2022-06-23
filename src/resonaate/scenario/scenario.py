@@ -511,7 +511,6 @@ class Scenario:
             "clock": self.clock,
             "satellite_dynamics": dynamics_method,
             "realtime": self.scenario_config.propagation.sensor_realtime_propagation,
-            "field_of_view_calculation": self.scenario_config.observation.field_of_view,
         }
 
         sensing_agent = SensingAgent.fromConfig(config, events=[])

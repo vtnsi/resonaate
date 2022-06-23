@@ -18,10 +18,11 @@ from ..data.events import Event
 from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import spacecraftDynamicsFactory
 from ..physics.noise import noiseCovarianceFactory
-from ..scenario.clock import ScenarioClock
 from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
 from ..tasking.rewards import rewardsFactory
+from .clock import ScenarioClock
+from .config.base import NO_SETTING
 from .config.event_configs import MissingDataDependency
 
 
@@ -143,6 +144,9 @@ class ScenarioBuilder:
 
         self.sensor_network = []
         for agent in sensor_configs.values():
+            # Assign Sensor FoV from init if not set
+            if agent.calculate_fov is NO_SETTING:
+                agent._calculate_fov._setting = self.observation.field_of_view
             config = {
                 "agent": agent,
                 "clock": self.clock,
@@ -154,7 +158,6 @@ class ScenarioBuilder:
                     method=self.propagation.integration_method,
                 ),
                 "realtime": self.propagation.sensor_realtime_propagation,
-                "field_of_view_calculation": self.observation.field_of_view,
             }
 
             self.sensor_network.append(SensingAgent.fromConfig(config, events=[]))
