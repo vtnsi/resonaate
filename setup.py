@@ -42,7 +42,7 @@ setuptools.setup(
             # Type Checking
             "mypy==0.961",
             "types-redis==4.3.1",
-            "types-sqlalchemy==1.4.39",
+            "types-sqlalchemy==1.4.40",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
             "black==22.3.0",
