@@ -38,7 +38,6 @@ def sensorFactory(configuration):
 
     Args:
         configuration (``dict``): describes the sensor and its capabilities
-        fov (``bool``): Indicator whether or not this sensor should observe all objects in it's FoV
 
     Raises:
         ValueError: raised if invalid option is designate for `"sensor_type"`
