@@ -380,7 +380,7 @@ class Sensor(metaclass=ABCMeta):
             self.delta_boresight = arccos(arg)
 
         # Check if you are able to slew to the new target
-        # [TODO]: This breaks the Markovian nature of the tool and needs to be rectified.
+        # [TODO]: We are artificially increasing a sensor's slewing ability if it is not tasked at every timestep.
         if self.slew_rate * (self.host.time - self.time_last_ob) >= self.delta_boresight:
             # Check if the elevation is within sensor bounds
             if elevation <= self.el_mask[0] or elevation >= self.el_mask[1]:

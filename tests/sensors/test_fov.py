@@ -114,15 +114,3 @@ class TestFieldOfView(BaseTestCase):
             self.primary_rso.eci_state[:3], array([0, 0, 0])
         )
         assert bool(not_in_fov) is False
-
-    def testRectangularFoV(self):
-        """Test Rectangular FoV setup, since conic is being tested by default."""
-        rectangular_fov = deepcopy(SENSOR_CONFIG)
-        rectangular_fov["field_of_view"]["fov_shape"] = "rectangular"
-        sensor_config = {
-            "agent": SensorConfigObject(SENSOR_CONFIG),
-            "realtime": True,
-            "clock": self.clock,
-        }
-        sensor_agent = SensingAgent.fromConfig(sensor_config, {})
-        assert sensor_agent is not None
