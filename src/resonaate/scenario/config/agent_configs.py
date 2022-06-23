@@ -164,6 +164,7 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ConfigOption("slew_rate", (float,)),
             ConfigOption("exemplar", (list,)),
             FieldOfViewConfig(),
+            ConfigOption("calculate_fov", (bool,), default=True),
             ConfigOption(
                 "sensor_type",
                 (str,),
@@ -348,6 +349,11 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
     def field_of_view(self):
         """FieldOfViewConfig: visibility of this sensor."""
         return self._field_of_view  # pylint: disable=no-member
+
+    @property
+    def calculate_fov(self):
+        """bool: decision to do FoV calcs with this sensor."""
+        return self._calculate_fov.setting  # pylint: disable=no-member
 
     @property
     def tx_power(self):

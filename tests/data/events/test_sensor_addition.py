@@ -328,7 +328,7 @@ class TestSensorAdditionEvent(BaseTestCase):
                 "sensor_type": "Optical",
                 "exemplar": [0.0014320086173409336, 32500.0],
                 "field_of_view": {
-                    "type": "conic"
+                    "image_type": "conic",
                 },
                 "calculate_fov": False,
                 "lat": 0.1,
@@ -369,6 +369,8 @@ class TestSensorAdditionEvent(BaseTestCase):
             sensor_type="Optical",
             exemplar_cross_section=0.0014320086173409336,
             exemplar_range=32500.0,
+            field_of_view_image_type="conic",
+            calculate_fov=False,
             station_keeping_json=dumps([]),
         )
         impulse_event.handleEvent(mocked_scenario)
