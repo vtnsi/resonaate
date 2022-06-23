@@ -86,10 +86,10 @@ def fieldOfViewFactory(configuration: Dict) -> FieldOfView:
     Returns:
         :class:`.FieldOfView`
     """
-    if configuration.image_type == "conic":
+    if configuration.fov_shape == "conic":
         return ConicFoV(configuration)
 
-    if configuration.image_type == "rectangular":
+    if configuration.fov_shape == "rectangular":
         return RectangularFoV(configuration)
 
     raise ValueError("wrong FoV type input")
@@ -104,7 +104,7 @@ class FieldOfView:
         Args:
             config (``Dict``): Field of View config object
         """
-        self.image_type = config.image_type
+        self.fov_shape = config.fov_shape
 
 
 class ConicFoV(FieldOfView):
@@ -117,7 +117,7 @@ class ConicFoV(FieldOfView):
             config (``Dict``): Field of View config object
         """
         super().__init__(config)
-        self.cone_angle = config.cone_angle
+        self.cone_angle = config.cone_angle * const.DEG2RAD
 
 
 class RectangularFoV(FieldOfView):
@@ -130,5 +130,5 @@ class RectangularFoV(FieldOfView):
             config (``Dict``): Field of View config object
         """
         super().__init__(config)
-        self.x_fov = config.x_degrees
-        self.y_fov = config.y_degrees
+        self.azimuth_angle = config.azimuth_angle * const.DEG2RAD
+        self.elevation_angle = config.elevation_angle * const.DEG2RAD

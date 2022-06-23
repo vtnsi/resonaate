@@ -4,7 +4,7 @@ from json import dumps, loads
 
 # Third Party Imports
 from numpy import array
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, Boolean
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
@@ -110,8 +110,8 @@ class SensorAdditionEvent(Event):
     exemplar_range = Column(Float)
     """float: Range (km) exemplar capability."""
 
-    field_of_view_image_type = Column(String(64))
-    """String: image_type string."""
+    fov_shape = Column(String(64))
+    """String: fov_shape string."""
 
     fov_angle_1 = Column(Float)
     """float: first angle (only angle for `conic`, horizontal angle for `rectangular`."""
@@ -162,7 +162,7 @@ class SensorAdditionEvent(Event):
         "sensor_type",
         "exemplar_cross_section",
         "exemplar_range",
-        "field_of_view_image_type",
+        "fov_shape",
         "fov_angle_1",
         "fov_angle_2",
         "calculate_fov",
@@ -211,17 +211,14 @@ class SensorAdditionEvent(Event):
     @property
     def field_of_view(self):
         """Dict: Field of view dictionary object."""
-        if self.field_of_view_image_type == "conic":
-            return {
-                "image_type": self.field_of_view_image_type,
-                "cone_angle": self.fov_angle_1
-            }
+        if self.fov_shape == "conic":
+            return {"fov_shape": self.fov_shape, "cone_angle": self.fov_angle_1}
 
-        if self.field_of_view_image_type == "rectangular":
+        if self.fov_shape == "rectangular":
             return {
-                "image_type": self.field_of_view_image_type,
-                "x_fov": self.fov_angle_1,
-                "y_fov": self.fov_angle_2
+                "fov_shape": self.fov_shape,
+                "azimuth_angle": self.fov_angle_1,
+                "elevation_angle": self.fov_angle_2,
             }
 
         raise ValueError("Incorrect field of view image type")
@@ -285,12 +282,12 @@ class SensorAdditionEvent(Event):
             tx_power = 0.0
             tx_frequency = 0.0
 
-        if config.field_of_view.image_type == "conic":
+        if config.field_of_view.fov_shape == "conic":
             fov_angle_1 = config.field_of_view.cone_angle
             fov_angle_2 = 0.0
-        elif config.field_of_view.image_type == "rectangular":
-            fov_angle_1 = config.field_of_view.x_degrees
-            fov_angle_2 = config.field_of_view.y_degrees
+        elif config.field_of_view.fov_shape == "rectangular":
+            fov_angle_1 = config.field_of_view.azimuth_angle
+            fov_angle_2 = config.field_of_view.elevation_angle
         else:
             raise ValueError(f"Field of View config has incorrect type {config.field_of_view}")
 
@@ -320,7 +317,7 @@ class SensorAdditionEvent(Event):
             sensor_type=config.sensor_type,
             exemplar_cross_section=config.exemplar[0],
             exemplar_range=config.exemplar[1],
-            field_of_view_image_type=config.field_of_view.image_type,
+            fov_shape=config.field_of_view.fov_shape,
             fov_angle_1=fov_angle_1,
             fov_angle_2=fov_angle_2,
             calculate_fov=config.calculate_fov,

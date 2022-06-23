@@ -15,9 +15,6 @@
     "aperture_area": 572.5552611167398,
     "sensor_type": "AdvRadar",
     "exemplar": [1, 40744],
-    "field_of_view": {
-      "type": "conic"
-    },
     "lat": 1.2281347875532986,
     "lon": 0.5432822498364406,
     "alt": 0.063,

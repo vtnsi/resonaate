@@ -392,7 +392,7 @@ class TestEventIntegration(BaseTestCase):
                     ],
                     "exemplar": [1, 10000],
                     "field_of_view": {
-                        "image_type": "conic",
+                        "fov_shape": "conic",
                     },
                     "calculate_fov": False,
                     "host_type": "Spacecraft",

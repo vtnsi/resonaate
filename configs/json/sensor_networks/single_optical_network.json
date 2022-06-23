@@ -14,7 +14,7 @@
     "sensor_type": "Optical",
     "exemplar": [0.0014320086173409336, 32500.0],
     "field_of_view": {
-      "type": "rectangular"
+      "fov_shape": "rectangular"
     },
     "lat": 0.1,
     "lon": 1.1,

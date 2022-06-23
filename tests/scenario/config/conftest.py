@@ -152,7 +152,7 @@ EARTH_SENSORS = [
         "sensor_type": "AdvRadar",
         "exemplar": [0.01, 5000.0],
         "field_of_view": {
-            "type": "conic"
+            "fov_shape": "conic"
         },
         "calculate_fov": False,
         "lat": 0.5,
@@ -174,7 +174,7 @@ EARTH_SENSORS = [
         "sensor_type": "Optical",
         "exemplar": [0.10, 32500.0],
         "field_of_view": {
-            "type": "conic"
+            "fov_shape": "conic"
         },
         "calculate_fov": False,
         "lat": 0.35,
@@ -199,7 +199,7 @@ EARTH_SENSORS = [
         "sensor_type": "Radar",
         "exemplar": [0.1, 10000.0],
         "field_of_view": {
-            "type": "conic"
+            "fov_shape": "conic"
         },
         "calculate_fov": False,
         "lat": 0.5,
@@ -232,7 +232,7 @@ SPACE_SENSORS = [
         ],
         "exemplar": [1.0, 30000],
         "field_of_view": {
-            "type": "conic"
+            "fov_shape": "conic"
         },
         "calculate_fov": False,
         "host_type": "Spacecraft",
@@ -256,7 +256,7 @@ SPACE_SENSORS = [
         },
         "exemplar": [1.0, 30000],
         "field_of_view": {
-            "type": "conic"
+            "fov_shape": "conic"
         },
         "calculate_fov": False,
         "host_type": "Spacecraft",
@@ -282,7 +282,7 @@ SPACE_SENSORS = [
         },
         "exemplar": [1.0, 30000],
         "field_of_view": {
-            "type": "conic"
+            "fov_shape": "conic"
         },
         "calculate_fov": False,
         "host_type": "Spacecraft",

@@ -7,7 +7,20 @@ from collections import namedtuple
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import arccos, array, cos, diagflat, dot, fix, matmul, random, real, sin
+from numpy import (
+    arccos,
+    array,
+    concatenate,
+    cos,
+    diagflat,
+    dot,
+    fix,
+    matmul,
+    random,
+    real,
+    sin,
+    zeros,
+)
 from scipy.linalg import norm, sqrtm
 
 # Local Imports
@@ -18,7 +31,7 @@ from ..physics import constants as const
 from ..physics.math import safeArccos, subtendedAngle
 from ..physics.sensor_utils import lineOfSight
 from ..physics.time.stardate import ScenarioTime
-from ..physics.transforms.methods import getSlantRangeVector
+from ..physics.transforms.methods import eci2razel, getSlantRangeVector
 from .measurements import getAzimuth, getElevation, getRange
 
 if TYPE_CHECKING:
@@ -197,15 +210,23 @@ class Sensor(metaclass=ABCMeta):
         """
         pointing_boresight = pointing_position - self.host.eci_state[:3]
         background_boresight = background_position - self.host.eci_state[:3]
-        angle = subtendedAngle(background_boresight, pointing_boresight)
 
-        if self.field_of_view.image_type == "conic":
-            return angle <= self.field_of_view.cone_angle * const.DEG2RAD
+        if self.field_of_view.fov_shape == "conic":
+            angle = subtendedAngle(background_boresight, pointing_boresight)
+            return angle <= self.field_of_view.cone_angle / 2
 
-        if self.field_of_view.image_type == "rectangular":
+        if self.field_of_view.fov_shape == "rectangular":
+            _, pointing_elevation, pointing_azimuth, _, _, _ = eci2razel(
+                concatenate((pointing_boresight, zeros((3)))), self.host.eci_state
+            )
+            _, background_elevation, background_azimuth, _, _, _ = eci2razel(
+                concatenate((background_boresight, zeros((3)))), self.host.eci_state
+            )
+            azimuth_angle = abs(pointing_azimuth - background_azimuth)
+            elevation_angle = abs(pointing_elevation - background_elevation)
             return (
-                angle <= self.field_of_view.x_fov * const.DEG2RAD
-                and angle <= self.field_of_view.y_fov * const.DEG2RAD
+                azimuth_angle <= self.field_of_view.azimuth_angle / 2
+                and elevation_angle <= self.field_of_view.elevation_angle / 2
             )
 
         raise ValueError("Wrong Import for FoV Type")

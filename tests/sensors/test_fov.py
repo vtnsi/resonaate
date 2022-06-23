@@ -1,3 +1,6 @@
+# Standard Library Imports
+from copy import deepcopy
+
 # Third Party Imports
 from numpy import array, zeros
 
@@ -34,9 +37,7 @@ SENSOR_CONFIG = {
     "aperture_area": 530.929158456675,
     "sensor_type": "Radar",
     "exemplar": [0.04908738521234052, 40500.0],
-    "field_of_view": {
-        "image_type": "conic"
-    },
+    "field_of_view": {"fov_shape": "conic"},
     "calculate_fov": True,
     "lat": 0.2281347875532986,
     "lon": 0.5432822498364406,
@@ -55,7 +56,6 @@ class TestFieldOfView(BaseTestCase):
         "agent": SensorConfigObject(SENSOR_CONFIG),
         "realtime": True,
         "clock": clock,
-        "field_of_view_calculation": True,
     }
     sensor_agent = SensingAgent.fromConfig(sensor_config, {})
     nominal_filter = UnscentedKalmanFilter(
@@ -114,3 +114,15 @@ class TestFieldOfView(BaseTestCase):
             self.primary_rso.eci_state[:3], array([0, 0, 0])
         )
         assert bool(not_in_fov) is False
+
+    def testRectangularFoV(self):
+        """Test Rectangular FoV setup, since conic is being tested by default."""
+        rectangular_fov = deepcopy(SENSOR_CONFIG)
+        rectangular_fov["field_of_view"]["fov_shape"] = "rectangular"
+        sensor_config = {
+            "agent": SensorConfigObject(SENSOR_CONFIG),
+            "realtime": True,
+            "clock": self.clock,
+        }
+        sensor_agent = SensingAgent.fromConfig(sensor_config, {})
+        assert sensor_agent is not None

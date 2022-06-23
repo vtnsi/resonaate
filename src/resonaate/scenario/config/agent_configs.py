@@ -396,25 +396,25 @@ class FieldOfViewConfig(ConfigSection):
 
     def __init__(self) -> None:
         """Initialize FieldOfViewConfig."""
-        self._image_type = ConfigOption(
-            "image_type",
+        self._fov_shape = ConfigOption(
+            "fov_shape",
             (str,),
             default="conic",
             valid_settings=(NO_SETTING,) + VALID_SENSOR_FOV_LABELS,
         )
         self._cone_angle = ConfigOption("cone_angle", (float,), default=1.0)  # degrees
-        self._x_degrees = ConfigOption("x", (float,), default=1.0)  # degrees
-        self._y_degrees = ConfigOption("y", (float,), default=1.0)  # degrees
+        self._azimuth_angle = ConfigOption("azimuth_angle", (float,), default=1.0)  # degrees
+        self._elevation_angle = ConfigOption("elevation_angle", (float,), default=1.0)  # degrees
 
     @property
     def nested_items(self):
         """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._image_type, self._cone_angle, self._x_degrees, self._y_degrees]
+        return [self._fov_shape, self._cone_angle, self._azimuth_angle, self._elevation_angle]
 
     @property
-    def image_type(self):
+    def fov_shape(self):
         """String: Type of Field of View being used."""
-        return self._image_type.setting
+        return self._fov_shape.setting
 
     @property
     def cone_angle(self):
@@ -422,14 +422,14 @@ class FieldOfViewConfig(ConfigSection):
         return self._cone_angle.setting
 
     @property
-    def x_degrees(self):
+    def azimuth_angle(self):
         """float: horizontal angular resolution for `rectangular` Field of View (degrees)."""
-        return self._x_degrees.setting
+        return self._azimuth_angle.setting
 
     @property
-    def y_degrees(self):
+    def elevation_angle(self):
         """float: vertical angular resolution for `rectangular` Field of View (degrees)."""
-        return self._y_degrees.setting
+        return self._elevation_angle.setting
 
 
 class StationKeepingConfig(ConfigSection):

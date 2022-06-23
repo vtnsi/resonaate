@@ -43,9 +43,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
                 "aperture_area": 0.8107319665559964,
                 "sensor_type": "Optical",
                 "exemplar": [0.0014320086173409336, 32500.0],
-                "field_of_view": {
-                    "type": "conic"
-                },
+                "field_of_view": {"fov_shape": "conic"},
                 "calculate_fov": False,
                 "lat": 0.1,
                 "lon": 1.1,
@@ -81,9 +79,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
                     -7.448488839044817,
                 ],
                 "exemplar": [1, 36000],
-                "field_of_view": {
-                    "type": "conic"
-                },
+                "field_of_view": {"fov_shape": "conic"},
                 "calculate_fov": False,
                 "host_type": "Spacecraft",
                 "station_keeping": {"routines": ["LEO"]},
@@ -112,9 +108,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
                     "aperture_area": 0.8107319665559964,
                     "sensor_type": "Optical",
                     "exemplar": [0.0014320086173409336, 32500.0],
-                    "field_of_view": {
-                         "type": "conic"
-                    },
+                    "field_of_view": {"fov_shape": "conic"},
                     "calculate_fov": False,
                     "host_type": "GroundFacility",
                 }
@@ -142,9 +136,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
                     "aperture_area": 0.8107319665559964,
                     "sensor_type": "Optical",
                     "exemplar": [0.0014320086173409336, 32500.0],
-                    "field_of_view": {
-                         "type": "conic"
-                    },
+                    "field_of_view": {"fov_shape": "conic"},
                     "calculate_fov": False,
                     "lat": 0.1,
                     "lon": 1.1,
@@ -184,9 +176,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
                     "sensor_type": "Optical",
                     "init_eci": bad_eci,
                     "exemplar": [1, 36000],
-                    "field_of_view": {
-                         "type": "conic"
-                    },
+                    "field_of_view": {"fov_shape": "conic"},
                     "calculate_fov": False,
                     "host_type": "Spacecraft",
                     "station_keeping": {"routines": ["LEO"]},
@@ -223,9 +213,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
                         -7.448488839044817,
                     ],
                     "exemplar": [1, 36000],
-                    "field_of_view": {
-                         "type": "conic"
-                    },
+                    "field_of_view": {"fov_shape": "conic"},
                     "calculate_fov": False,
                     "host_type": "Spacecraft",
                     "station_keeping": {"routines": ["LEO"]},
@@ -253,9 +241,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
                     "aperture_area": 0.8107319665559964,
                     "sensor_type": "Optical",
                     "exemplar": [0.0014320086173409336, 32500.0],
-                    "field_of_view": {
-                         "type": "conic"
-                    },
+                    "field_of_view": {"fov_shape": "conic"},
                     "calculate_fov": False,
                     "lat": 0.1,
                     "lon": 1.1,
@@ -284,9 +270,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
                 "aperture_area": 0.8107319665559964,
                 "sensor_type": "Optical",
                 "exemplar": [0.0014320086173409336, 32500.0],
-                "field_of_view": {
-                    "type": "conic"
-                },
+                "field_of_view": {"fov_shape": "conic"},
                 "calculate_fov": False,
                 "lat": 0.1,
                 "lon": 1.1,
@@ -328,7 +312,7 @@ class TestSensorAdditionEvent(BaseTestCase):
                 "sensor_type": "Optical",
                 "exemplar": [0.0014320086173409336, 32500.0],
                 "field_of_view": {
-                    "image_type": "conic",
+                    "fov_shape": "conic",
                 },
                 "calculate_fov": False,
                 "lat": 0.1,
@@ -369,7 +353,7 @@ class TestSensorAdditionEvent(BaseTestCase):
             sensor_type="Optical",
             exemplar_cross_section=0.0014320086173409336,
             exemplar_range=32500.0,
-            field_of_view_image_type="conic",
+            fov_shape="conic",
             calculate_fov=False,
             station_keeping_json=dumps([]),
         )
