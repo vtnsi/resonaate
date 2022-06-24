@@ -29,7 +29,12 @@ ______________________________________________________________________
 # \[Unreleased\]
 
 - Added
+  - `getStandardDeviation` and `getConfidenceRegion` functions in `resonaate.physics.statistics`
+
 - Changed
+  
+  - chi-square test functions now accept `ndarray` as inputs
+
 - Deprecated
 - Removed
 - Fixed
