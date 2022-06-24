@@ -32,7 +32,7 @@ setuptools.setup(
         "dev": [
             # Linting
             "flake8<4.0",  # Keep flake8 below 4.0 b/c of dep conflict
-            "flake8-bugbear==22.4.25",
+            "flake8-bugbear==22.6.22",
             "flake8-builtins==1.5.3",
             "flake8-docstrings==1.6.0",
             "flake8-plugin-utils==1.3.2",
@@ -41,8 +41,8 @@ setuptools.setup(
             "pylint==2.14.3",
             # Type Checking
             "mypy==0.961",
-            "types-redis==4.2.8",
-            "types-sqlalchemy==1.4.39",
+            "types-redis==4.3.2",
+            "types-sqlalchemy==1.4.40",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
             "black==22.3.0",

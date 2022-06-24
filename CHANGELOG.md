@@ -29,7 +29,7 @@ ______________________________________________________________________
 # \[Unreleased\]
 
 - Added
-  
+
   - `fov` input variable to `sensorFactory()`
   - EOPs from 06-10-2021 to 17-03-2022
   - `subtendedAngle()` in `physics/math`
@@ -43,6 +43,8 @@ ______________________________________________________________________
 - Changed
 
   - `AsyncExecuteTasking()` now calls `collectObservations` instead of `makeNoisyObservation`
+  - `getStandardDeviation` and `getConfidenceRegion` functions in `resonaate.physics.statistics`
+  - chi-square test functions now accept `ndarray` as inputs
 
 - Deprecated
 - Removed
