@@ -59,7 +59,7 @@ def coe2eci(
         ``ndarray``: 6x1 ECI state vector (km; km/sec).
     """
     # pylint: disable=invalid-name
-    # Save cos(), sin() of anomaly angle, semiparameter rectum
+    # Save cos(), sin() of anomaly angle, semi-parameter rectum
     cos_anom, sin_anom = cos(true_anom), sin(true_anom)
     p = sma * (1.0 - ecc**2)
 

@@ -179,7 +179,7 @@ class ImporterDatabase(DataInterface):
         if ephemerides:
             valid_ephemerides = []
             for ephemeris in ephemerides:
-                # Check to make sure ephemerides are in the correct timeframe, if specified
+                # Check to make sure ephemerides are in the correct time frame, if specified
                 if start and JulianDate(ephemeris["julian_date"]) < start:
                     continue
                 if stop and JulianDate(ephemeris["julian_date"]) > stop:
@@ -261,7 +261,7 @@ class ImporterDatabase(DataInterface):
         if observations:
             valid_observations = []
             for observation in observations:
-                # Check to make sure observations are in the correct timeframe, if specified
+                # Check to make sure observations are in the correct time frame, if specified
                 if start and JulianDate(observation["julian_date"]) < start:
                     continue
                 if stop and JulianDate(observation["julian_date"]) > stop:

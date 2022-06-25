@@ -28,7 +28,7 @@ Examples:
             def jobCompleteCallback(self, job):
                 self.registrant.state = job.retval
 
-    Here is a demonstration of how to implement a new :class:`.Jobhandler` class using the
+    Here is a demonstration of how to implement a new :class:`.JobHandler` class using the
     previously defined `NewCallback` class.
 
     .. sourcecode:: python

@@ -240,7 +240,7 @@ class EstimateAgent(Agent):
 
     @property
     def maneuver_detected(self):
-        """``bool``: Returns whether detected manevers are stored for this estimate agent."""
+        """``bool``: Returns whether detected maneuvers are stored for this estimate agent."""
         return bool(self._detected_maneuvers)
 
     def _logFilterEvents(self, obs_tuples: list[ObservationTuple], truth: ndarray):

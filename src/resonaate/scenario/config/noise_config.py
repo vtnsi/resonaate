@@ -123,7 +123,7 @@ class NoiseConfig(ConfigSection):
 
     @property
     def random_seed(self):
-        """int|None: Psuedo-random number generator (PRNG) seed value.
+        """int|None: Pseudo-random number generator (PRNG) seed value.
 
         Setting this value to :attr:`.RNG_SEED_OS` will seed the PRNG with the OS's entropy.
         """

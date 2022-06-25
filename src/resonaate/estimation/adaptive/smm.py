@@ -94,7 +94,7 @@ class StaticMultipleModel(AdaptiveFilter):
         if self._convergedToSingleModel(obs_tuples):
             return
 
-        # MMAE continues without pruning or convergeing to one model
+        # MMAE continues without pruning or converging to one model
         msg = f"Continuing SMM for {self.target_id} at {self.time} with {len(self.model_weights)} models"
         self.logger.debug(msg)
 

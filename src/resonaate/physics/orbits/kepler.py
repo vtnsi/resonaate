@@ -212,14 +212,14 @@ def solveKeplerProblemUniversal(
 ) -> ndarray:
     r"""Solver Kepler's problem using the universal variables formulation.
 
-    Kepler's problem is that of propgating an initial state vector forward in time given a time of flight.
+    Kepler's problem is that of propagating an initial state vector forward in time given a time of flight.
     This problem assumes a Two Body (Keplerian) dynamics model.
 
     References:
         #. :cite:t:`vallado_2013_astro`, Algorithm 8
 
     Raises:
-        :class:`.KeplerProblemError`: if the Netwon iteration doesn't converge before ``maxiter``
+        :class:`.KeplerProblemError`: if the Newton iteration doesn't converge before ``maxiter``
             iterations or if the converged solution fails an angular momentum check.
 
     Args:
@@ -231,7 +231,7 @@ def solveKeplerProblemUniversal(
             non-convergence. Defaults to :data:`._MAX_ITER`.
 
     Returns:
-        ``ndarray``: 6x1 ECI state vector after propgating through the time of flight (km; km/sec).
+        ``ndarray``: 6x1 ECI state vector after propagating through the time of flight (km; km/sec).
     """
     # pylint: disable=invalid-name, too-many-locals
     r0, v0 = array(init_state[:3], copy=True), array(init_state[3:], copy=True)

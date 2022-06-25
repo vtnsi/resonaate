@@ -237,7 +237,7 @@ DEFAULT_REDIS_LOGGER_LOCATION = BehavioralConfig.getConfig().logging.OutputLocat
 
 
 def setUpLogger(destination=DEFAULT_REDIS_LOGGER_LOCATION):
-    """Set up the default loggin instance.
+    """Set up the default logging instance.
 
     Note:
         It's necessary to call this method before making any logging calls to

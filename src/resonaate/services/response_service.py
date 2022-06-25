@@ -411,7 +411,7 @@ class ResponseService:
             estimate_data (``list``): cached :class:`.EstimateMessage` objects.
             observation_data (``list``): cached :class:`.Observation` objects.
 
-        Retruns:
+        Returns:
             ``dict``: observation response message.
         """
         # Grab timestamps and estimates from cached data

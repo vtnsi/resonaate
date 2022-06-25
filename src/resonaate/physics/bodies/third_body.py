@@ -252,7 +252,7 @@ def _scaleChebyshevInputs(
 
     Note:
         JPL Horizons kernel segments are split into many Chebyshev series in order to best approximate positions
-        over very long timeframes. Therefore, this scaling function is unique to this module, so we may scale
+        over very long time frames. Therefore, this scaling function is unique to this module, so we may scale
         multiple input values at once that aren't necessarily in the same series set (and therefore aren't in
         the same domain).
 
@@ -305,7 +305,7 @@ def getSegmentPosition(jd: IterFloatType, segment: TBK) -> ndarray:
     # Unpack metadata from desired ephemeris segment
     jd0, interval, coefficients = THIRD_BODY_EPHEMS[segment.value]
 
-    # Calculate the correpsonding index to retrieve the correct set of coefficients.
+    # Calculate the corresponding index to retrieve the correct set of coefficients.
     scaled_jd, idx = _scaleChebyshevInputs(jd, jd0, interval)
 
     # [NOTE]: Coefficient (degree) index must be first for `chebval()`, so coefficient matrices are transposed.
