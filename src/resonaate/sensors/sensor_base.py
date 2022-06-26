@@ -22,9 +22,6 @@ from ..physics.transforms.methods import getSlantRangeVector
 from .measurements import getAzimuth, getElevation, getRange
 
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import List
-
     # Third Party Imports
     from numpy import ndarray
 
@@ -121,6 +118,12 @@ class Sensor(metaclass=ABCMeta):
 
         Returns:
             ``dict``: measurements made by the sensor
+
+            :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
+            :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
+            If not Optical:
+            :``"range_km"``: (``float``): range measurement (km)
+            :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
         """
         raise NotImplementedError
 
@@ -140,8 +143,8 @@ class Sensor(metaclass=ABCMeta):
         raise NotImplementedError
 
     def collectObservations(
-        self, pointing_agent: EstimateAgent, background_agents: List[TargetAgent]
-    ) -> List[ObservationTuple]:
+        self, pointing_agent: EstimateAgent, background_agents: list[TargetAgent]
+    ) -> list[ObservationTuple]:
         """Collect observations on all targets within the sensor's FOV.
 
         Args:
@@ -179,12 +182,12 @@ class Sensor(metaclass=ABCMeta):
         return obs_list
 
     def checkTargetsInView(
-        self, slant_range_sez: EstimateAgent, background_agents: List[TargetAgent]
-    ) -> List[TargetAgent]:
+        self, slant_range_sez: float, background_agents: list[TargetAgent]
+    ) -> list[TargetAgent]:
         """Perform bulk FOV check on all RSOs.
 
         Args:
-            pointing_agent (:class:`.EstimateAgent`): Estimate that sensor is pointing to
+            slant_range_sez (``ndarray``): 3x1 slant range vector that sensor is pointing towards
             background_agents (``list``): list of all `.TargetAgents` in scenario
 
         Returns:
@@ -336,6 +339,12 @@ class Sensor(metaclass=ABCMeta):
 
         Returns:
             ``dict``: noisy measurements made by the sensor
+
+            :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
+            :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
+            If not Optical:
+            :``"range_km"``: (``float``): range measurement (km)
+            :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
         """
         return self.getMeasurements(slant_range_sez, noisy=True)
 
@@ -362,33 +371,26 @@ class Sensor(metaclass=ABCMeta):
         if not lineOfSight(tgt_eci_state[:3], self.host.eci_state[:3]):
             return False
 
-        # Check if you are able to slew to the new target
-        # [TODO]: We are artificially increasing a sensor's slewing ability if it is not tasked at every timestep.
-        if self.canSlew(slant_range_sez):
+        # Get the azimuth and elevation angles
+        # [NOTE]: These are assumed to always be in the following ranges:
+        #           - [0, 2*pi]
+        #           - [-pi/2, pi/2]
+        #   This should suffice to cover all necessary/required conditions
+        azimuth = getAzimuth(slant_range_sez)
+        elevation = getElevation(slant_range_sez)
 
-            # Get the azimuth and elevation angles
-            # [NOTE]: These are assumed to always be in the following ranges:
-            #           - [0, 2*pi]
-            #           - [-pi/2, pi/2]
-            #   This should suffice to cover all necessary/required conditions
-            azimuth = getAzimuth(slant_range_sez)
-            elevation = getElevation(slant_range_sez)
+        # Check if the elevation is within sensor bounds
+        if elevation <= self.el_mask[0] or elevation >= self.el_mask[1]:
+            return False
 
-            # Check if the elevation is within sensor bounds
-            if elevation <= self.el_mask[0] or elevation >= self.el_mask[1]:
-                return False
+        # [NOTE]: Azimuth check requires two versions:
+        #   - az_0 <= az_1 for normal situations
+        #   - az_0 > az_1 for when mask transits the 360deg/True North line
+        if self.az_mask[0] <= self.az_mask[1] and self.az_mask[0] <= azimuth <= self.az_mask[1]:
+            return True
 
-            # [NOTE]: Azimuth check requires two versions:
-            #   - az_0 <= az_1 for normal situations
-            #   - az_0 > az_1 for when mask transits the 360deg/True North line
-            if (
-                self.az_mask[0] <= self.az_mask[1]
-                and self.az_mask[0] <= azimuth <= self.az_mask[1]
-            ):
-                return True
-
-            if azimuth >= self.az_mask[0] or azimuth <= self.az_mask[1]:
-                return True
+        if azimuth >= self.az_mask[0] or azimuth <= self.az_mask[1]:
+            return True
 
         # Default: target satellite is not in view
         return False
@@ -408,6 +410,7 @@ class Sensor(metaclass=ABCMeta):
         arg = dot(slant_range_sez[:3] / norm(slant_range_sez[:3]), self.boresight)
         self.delta_boresight = safeArccos(arg)
         # Boolean if you are able to slew to the new target
+        # [TODO]: We are artificially increasing a sensor's slewing ability if it is not tasked at every timestep.
         return self.slew_rate * (self.host.time - self.time_last_ob) >= self.delta_boresight
 
     @property

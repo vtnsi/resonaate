@@ -8,9 +8,11 @@ try:
     from resonaate.dynamics.two_body import TwoBody
     from resonaate.estimation.maneuver_detection import StandardNis
     from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-    from resonaate.physics.time.stardate import JulianDate
+    from resonaate.physics.time.stardate import JulianDate, ScenarioTime
+    from resonaate.physics.transforms.methods import getSlantRangeVector
     from resonaate.scenario.clock import ScenarioClock
     from resonaate.scenario.config.agent_configs import SensorConfigObject
+
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 
@@ -55,6 +57,7 @@ class TestFieldOfView(BaseTestCase):
         "clock": clock,
     }
     sensor_agent = SensingAgent.fromConfig(sensor_config, {})
+    sensor_agent.sensors.host.time = ScenarioTime(30)
     nominal_filter = UnscentedKalmanFilter(
         10001, 0.0, zeros((6,)), zeros((6, 6)), TwoBody(), zeros((6, 6)), StandardNis(0.01), None
     )
@@ -96,8 +99,11 @@ class TestFieldOfView(BaseTestCase):
 
     def testCheckTargetsInView(self):
         """Test if multiple targets are in the Field of View."""
+        slant_range_sez = getSlantRangeVector(
+            self.sensor_agent.sensors.host.ecef_state, self.primary_rso.eci_state
+        )
         agents = self.sensor_agent.sensors.checkTargetsInView(
-            self.primary_rso, [self.primary_rso, self.secondary_rso]
+            slant_range_sez, [self.primary_rso, self.secondary_rso]
         )
         assert len(agents) == 2
 

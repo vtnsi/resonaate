@@ -416,4 +416,8 @@ def subtendedAngle(vector1, vector2):
     Returns:
         ``float``: angle subtended by input vectors, in radians
     """
+    # Ensure primary RSO are observed
+    if vector1.all() == vector2.all():
+        return 0.0
+
     return arccos(vdot(vector1, vector2) / (norm(vector1) * norm(vector2)))
