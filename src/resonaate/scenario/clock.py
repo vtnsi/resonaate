@@ -25,7 +25,7 @@ class ScenarioClock:
     def __init__(self, start_date, time_span, dt_step):
         """Construct a `ScenarioClock` object."""
         if not isinstance(start_date, JulianDate):
-            raise TypeError("ScenarioClock: startdate argument must be a `JulianDate` object.")
+            raise TypeError("ScenarioClock: start date argument must be a `JulianDate` object.")
 
         self.julian_date_start = start_date
         self.julian_date_stop = start_date + time_span * const.SEC2DAYS

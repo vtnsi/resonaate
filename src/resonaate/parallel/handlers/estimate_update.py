@@ -64,7 +64,7 @@ class EstimateUpdateJobHandler(JobHandler):
     def generateJobs(self, **kwargs):
         """Generate list of update jobs to submit to the :class:`.QueueManager`.
 
-        KewordArgs:
+        KeywordArgs:
             observations (``list``): :class:`.Observation` objects with which to update the
                 :class:`EstimateAgent`.
 

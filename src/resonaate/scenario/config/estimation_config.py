@@ -206,12 +206,12 @@ class AdaptiveEstimationConfig(ConfigSection):
 
     @property
     def prune_threshold(self):
-        """``float``: likelyhood that a model has to be less than to be pruned off."""
+        """``float``: likelihood that a model has to be less than to be pruned off."""
         return self._prune_threshold.setting
 
     @property
     def prune_percentage(self):
-        """``float``: percent likelyhood a model has to meet to trigger mmae convergence."""
+        """``float``: percent likelihood a model has to meet to trigger mmae convergence."""
         return self._prune_percentage.setting
 
     @property

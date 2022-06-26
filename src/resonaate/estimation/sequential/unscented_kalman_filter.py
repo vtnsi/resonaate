@@ -259,7 +259,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             # STEP 4: Maneuver detection
             self.checkManeuverDetection()
 
-            # Check error inflation, and write debuggin info if needed
+            # Check error inflation, and write debugging info if needed
             if BehavioralConfig.getConfig().debugging.EstimateErrorInflation:
                 self._flags |= FilterDebugFlag.ERROR_INFLATION
 

@@ -59,7 +59,7 @@ class EstimatePredictionJobHandler(PropagationJobHandler):
         KeywordArgs:
             epoch_time (:class:`.ScenarioTime`): current simulation epoch.
             julian_date (:class:`.JulianDate`): current simulation Julian Date
-            prior_julian_date (:class:`.JulianDate`): Julian Date at beginnning of timestep
+            prior_julian_date (:class:`.JulianDate`): Julian Date at beginning of timestep
 
         Returns:
             ``list``: :class:`.Job` objects that will be submitted

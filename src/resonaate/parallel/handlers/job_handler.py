@@ -54,7 +54,7 @@ class JobHandler(metaclass=ABCMeta):
         """Register callback object that is used in parallel job creation and post-processing.
 
         The callback is specifically used by :meth:`~.JobHandler.executeJobs` and
-        :meth:`~.Jobhandler.handleProcessedJob`.
+        :meth:`~.JobHandler.handleProcessedJob`.
 
         Args:
             registrant (``object``): reference to the registration's calling object

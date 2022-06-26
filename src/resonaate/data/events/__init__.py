@@ -38,7 +38,7 @@ def getRelevantEvents(
     """Return a list of :class:`.Event` objects for the current time step and scope.
 
     Args:
-        database (:class:`.ResonaateDatabase`): Database for retreiving events from.
+        database (:class:`.ResonaateDatabase`): Database for retrieving events from.
         event_scope (:class:`.EventScope`): Relevant scope to query events for.
         julian_date_lb (:class:`JulianDate`): Lower bound on Julian Date to search.
         julian_date_ub (:class:`JulianDate`): Upper bound on Julian Date to search.
@@ -72,7 +72,7 @@ def handleRelevantEvents(
 
     Args:
         scope_instance (any): Scope object that will handle the relevant events.
-        database (:class:`.ResonaateDatabase`): Database for retreiving events from.
+        database (:class:`.ResonaateDatabase`): Database for retrieving events from.
         event_scope (:class:`.EventScope`): Relevant scope to query events for.
         julian_date_lb (:class:`JulianDate`): Lower bound on Julian Date to search.
         julian_date_ub (:class:`JulianDate`): Upper bound on Julian Date to search.

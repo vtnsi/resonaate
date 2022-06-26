@@ -18,7 +18,7 @@ Each merge has the following fields defined:
     leader (int): Unique ID of RSO who's output is used for each docking (follower) RSO.
     follower (int): Unique ID of RSO that's docked with the leader RSO.
     start_merge (float): Julian date of when to merge the outputs of the docking RSOs.
-    end_merge (float): Julian date of when to stop mergin the outputs of the docking RSOs.
+    end_merge (float): Julian date of when to stop merging the outputs of the docking RSOs.
 """
 
 

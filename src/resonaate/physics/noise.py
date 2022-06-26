@@ -15,7 +15,7 @@ Process noise can be modeled as an :math:`n\mathrm{th}` order kinematic model wh
 derivative of position is equal to white noise.
 This can be done in two primary ways:
 
-1. A discretize a continuous time model (see :func:`.continuousWhiteNoise`)
+1. A discretized continuous time model (see :func:`.continuousWhiteNoise`)
 
 2. A direct definition of the process noise in discrete time (see :func:`.discreteWhiteNoise`)
 """

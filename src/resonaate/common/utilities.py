@@ -74,7 +74,7 @@ def loadDatFile(file_name, delim=None):
 
     Raises:
         ``FileNotFoundError``: helps with debugging bad filenames
-        ``ValueError``: error parsing dat file, likely because values are convertable to ``float``
+        ``ValueError``: error parsing dat file, likely because values are convertible to ``float``
         ``IOError``: valid dat file is empty
 
     Returns:

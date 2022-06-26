@@ -1,4 +1,4 @@
-"""Defines scheduled impulsive burn events to control spaceraft."""
+"""Defines scheduled impulsive burn events to control spacecraft."""
 # Standard Library Imports
 from abc import ABCMeta
 

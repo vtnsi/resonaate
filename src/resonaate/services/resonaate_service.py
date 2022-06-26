@@ -584,7 +584,7 @@ class ResonaateService:
                 float(message.time_target - self._scenario.clock.julian_date_epoch) * 24 * 60 * 60
             )
 
-            # Occurs if we fast-forward with new init, old TimeTarget mesages will be in the past
+            # Occurs if we fast-forward with new init, old TimeTarget messages will be in the past
             if message.time_target < self._scenario.clock.julian_date_epoch:
                 self._dropMessage(message)
 
