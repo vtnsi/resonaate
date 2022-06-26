@@ -23,7 +23,7 @@ include:
   - local: /.gitlab/ci/common.gitlab-ci.yml
 
 variables:
-  DEPENDABOT_IMAGE: andrcuns/dependabot-gitlab:0.17.2
+  DEPENDABOT_IMAGE: andrcuns/dependabot-gitlab:latest
 
 .dependabot-gitlab:
   stage: check
