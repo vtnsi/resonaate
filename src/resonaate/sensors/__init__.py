@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     # Standard Library Imports
     from typing import Dict, Tuple
 
+    # RESONAATE Imports
+    from resonaate.scenario.config.agent_configs import FieldOfViewConfig
+
 OPTICAL_LABEL: str = "Optical"
 """str: Constant string used to describe optical sensors."""
 
@@ -97,11 +100,11 @@ def fieldOfViewFactory(configuration: Dict) -> FieldOfView:
 class FieldOfView:
     """Field of View base class."""
 
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, config: FieldOfViewConfig) -> None:
         """Initialize a Field of View object.
 
         Args:
-            config (``Dict``): Field of View config object
+            config (:class:`.FieldOfViewConfig`): Field of View config object
         """
         self.fov_shape = config.fov_shape
 
@@ -109,11 +112,11 @@ class FieldOfView:
 class ConicFoV(FieldOfView):
     """Conic Field of View Subclass."""
 
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, config: FieldOfViewConfig) -> None:
         """Initialize A ConicFoV object.
 
         Args:
-            config (``Dict``): Field of View config object
+            config (:class:`.FieldOfViewConfig`): Field of View config object
         """
         super().__init__(config)
         self.cone_angle = config.cone_angle * const.DEG2RAD
@@ -122,11 +125,11 @@ class ConicFoV(FieldOfView):
 class RectangularFoV(FieldOfView):
     """Rectangular Field of View Subclass."""
 
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, config: FieldOfViewConfig) -> None:
         """Initialize A RectangularFoV object.
 
         Args:
-            config (``Dict``): Field of View config object
+            config (:class:`.FieldOfViewConfig`): Field of View config object
         """
         super().__init__(config)
         self.azimuth_angle = config.azimuth_angle * const.DEG2RAD

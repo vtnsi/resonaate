@@ -1,6 +1,11 @@
 """Defines the :class:`.Optical` sensor class."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
-from numpy import array, sqrt, squeeze
+from numpy import array, sqrt
 from scipy.linalg import norm
 
 # Local Imports
@@ -14,6 +19,13 @@ from ..physics.sensor_utils import (
 )
 from .measurements import IsAngle, getAzimuth, getElevation
 from .sensor_base import Sensor
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from . import FieldOfView
 
 
 class Optical(Sensor):
@@ -29,11 +41,11 @@ class Optical(Sensor):
 
     def __init__(
         self,
-        az_mask,
-        el_mask,
-        r_matrix,
-        diameter,
-        efficiency,
+        az_mask: ndarray,
+        el_mask: ndarray,
+        r_matrix: ndarray,
+        diameter: float,
+        efficiency: float,
         exemplar,
         slew_rate,
         field_of_view,
@@ -43,13 +55,12 @@ class Optical(Sensor):
         """Construct a `Optical` sensor object.
 
         Args:
-            az_mask (``list``): azimuth mask for visibility conditions
-            el_mask (``list``): elevation mask for visibility conditions
-            r_matrix (``np.ndarray``): measurement noise covariance matrix
+            az_mask (``ndarray``): azimuth mask for visibility conditions
+            el_mask (``ndarray``): elevation mask for visibility conditions
+            r_matrix (``ndarray``): measurement noise covariance matrix
             diameter (``float``): size of sensor (m)
             efficiency (``float``): efficiency percentage of the sensor
-            exemplar (``np.ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation
-                    [cross sectional area (m^2), range (km)]
+            exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
             calculate_fov (``bool``): whether or not to calculate Field of View, default=True
@@ -61,6 +72,7 @@ class Optical(Sensor):
             r_matrix,
             diameter,
             efficiency,
+            exemplar,
             slew_rate,
             field_of_view,
             calculate_fov,
@@ -68,13 +80,14 @@ class Optical(Sensor):
         )
 
         # Calculate minimum detectable power & maximum auxiliary range
-        self.exemplar = squeeze(exemplar)
         self.min_detect = self._minPowerFromExemplar(
             diameter, self.exemplar[0], self.exemplar[1] * 1000
         )
         self.max_range_aux = self._maxRangeFromExemplar(diameter, self.min_detect)
 
-    def _minPowerFromExemplar(self, diameter, exemplar_area, exemplar_range):
+    def _minPowerFromExemplar(
+        self, diameter: float, exemplar_area: float, exemplar_range: float
+    ) -> float:
         """Calculate the minimum detectable power based on exemplar criterion.
 
         References:
@@ -92,7 +105,7 @@ class Optical(Sensor):
             16 * exemplar_range**2
         )
 
-    def _maxRangeFromExemplar(self, diameter, min_detect_power):
+    def _maxRangeFromExemplar(self, diameter: float, min_detect_power: float) -> float:
         """Calculate the auxiliary maximum range for a detection.
 
         This is an intermediate calculation for simplifying when `maximumRangeTo()` is called.
@@ -111,14 +124,14 @@ class Optical(Sensor):
 
     @property
     def angle_measurements(self):
-        """``np.ndarray``: Returns 2x1 integer array of which measurements are angles."""
+        """``ndarray``: Returns 2x1 integer array of which measurements are angles."""
         return array([IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI], dtype=int)
 
-    def getMeasurements(self, slant_range_sez, noisy=False):
+    def getMeasurements(self, slant_range_sez: float, noisy=False) -> dict:
         """Return the measurement state of the measurement.
 
         Args:
-            slant_range_sez (``np.ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
             noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
 
         Returns:
@@ -137,7 +150,9 @@ class Optical(Sensor):
 
         return measurements
 
-    def isVisible(self, tgt_eci_state, viz_cross_section, slant_range_sez):
+    def isVisible(
+        self, tgt_eci_state: ndarray, viz_cross_section: float, slant_range_sez: ndarray
+    ) -> float:
         """Determine if the target is in view of the sensor.
 
         This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical
@@ -148,9 +163,9 @@ class Optical(Sensor):
             :cite:t:`vallado_2013_astro`, Sections 4.1 - 4.4 and 5 - 5.3.5.
 
         Args:
-            tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target agent
+            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
             viz_cross_section (``float``): area of the target facing the sun (m^2)
-            slant_range_sez (``np.ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
 
         Returns:
             ``bool``: True if target is visible; False if target is not visible
@@ -193,12 +208,12 @@ class Optical(Sensor):
 
         return False
 
-    def maximumRangeTo(self, viz_cross_section, tgt_eci_state):
+    def maximumRangeTo(self, viz_cross_section: float, tgt_eci_state: ndarray) -> float:
         """Calculate the maximum possible range based on a target's visible area.
 
         Args:
             viz_cross_section (``float``): area of the target facing the sun (m^2)
-            tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target agent
+            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
 
         Returns:
             ``float``: maximum possible range to target at which this sensor can make valid observations (km)
