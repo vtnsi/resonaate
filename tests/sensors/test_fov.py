@@ -20,7 +20,7 @@ except ImportError as error:
 # Testing Imports
 from ..conftest import BaseTestCase
 
-SENSOR_CONFIG = {
+CONIC_SENSOR_CONFIG = {
     "name": "Test Radar",
     "id": 200000,
     "covariance": [
@@ -51,13 +51,23 @@ class TestFieldOfView(BaseTestCase):
     """Test observation of multiple objects in a field of view."""
 
     clock = ScenarioClock(JulianDate(2459006.5), 60.0, 30.0)
-    sensor_config = {
-        "agent": SensorConfigObject(SENSOR_CONFIG),
+    conic_sensor_config = {
+        "agent": SensorConfigObject(CONIC_SENSOR_CONFIG),
         "realtime": True,
         "clock": clock,
     }
-    sensor_agent = SensingAgent.fromConfig(sensor_config, {})
-    sensor_agent.sensors.host.time = ScenarioTime(30)
+    conic_sensor_agent = SensingAgent.fromConfig(conic_sensor_config, {})
+    conic_sensor_agent.sensors.host.time = ScenarioTime(30)
+
+    CONIC_SENSOR_CONFIG["field_of_view"]["fov_shape"] = "rectangular"
+    rectangular_sensor_config = {
+        "agent": SensorConfigObject(CONIC_SENSOR_CONFIG),
+        "realtime": True,
+        "clock": clock,
+    }
+    rectangular_sensor_agent = SensingAgent.fromConfig(rectangular_sensor_config, {})
+    rectangular_sensor_agent.sensors.host.time = ScenarioTime(30)
+
     nominal_filter = UnscentedKalmanFilter(
         10001, 0.0, zeros((6,)), zeros((6, 6)), TwoBody(), zeros((6, 6)), StandardNis(0.01), None
     )
@@ -94,26 +104,31 @@ class TestFieldOfView(BaseTestCase):
                 2.16300407e-04,
             ]
         )
-        val = self.sensor_agent.sensors.canSlew(good_slant)
+        val = self.conic_sensor_agent.sensors.canSlew(good_slant)
         assert bool(val) is True
 
     def testCheckTargetsInView(self):
         """Test if multiple targets are in the Field of View."""
         slant_range_sez = getSlantRangeVector(
-            self.sensor_agent.sensors.host.ecef_state, self.primary_rso.eci_state
+            self.conic_sensor_agent.sensors.host.ecef_state, self.primary_rso.eci_state
         )
-        agents = self.sensor_agent.sensors.checkTargetsInView(
+        agents = self.conic_sensor_agent.sensors.checkTargetsInView(
             slant_range_sez, [self.primary_rso, self.secondary_rso]
         )
         assert len(agents) == 2
 
     def testInFoV(self):
         """Test observations of two RSO with a single sensor at one time."""
-        in_fov = self.sensor_agent.sensors.inFOV(
+        in_fov = self.conic_sensor_agent.sensors.inFOV(
             self.primary_rso.eci_state[:3], self.secondary_rso.eci_state[:3]
         )
         assert bool(in_fov) is True
-        not_in_fov = self.sensor_agent.sensors.inFOV(
+        not_in_fov = self.conic_sensor_agent.sensors.inFOV(
             self.primary_rso.eci_state[:3], array([0, 0, 0])
         )
         assert bool(not_in_fov) is False
+
+        rectangle_in_fov = self.rectangular_sensor_agent.sensors.inFOV(
+            self.primary_rso.eci_state[:3], self.secondary_rso.eci_state[:3]
+        )
+        assert bool(rectangle_in_fov) is True

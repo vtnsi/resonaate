@@ -8,6 +8,7 @@ from typing import Optional
 
 # Third Party Imports
 from numpy import (
+    allclose,
     amin,
     arccos,
     arctan2,
@@ -417,7 +418,7 @@ def subtendedAngle(vector1, vector2):
         ``float``: angle subtended by input vectors, in radians
     """
     # Ensure primary RSO are observed
-    if vector1.all() == vector2.all():
+    if allclose(vector1, vector2, rtol=1e-8, atol=1e-10):
         return 0.0
 
     return arccos(vdot(vector1, vector2) / (norm(vector1) * norm(vector2)))
