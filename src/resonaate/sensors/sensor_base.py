@@ -7,8 +7,7 @@ from collections import namedtuple
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, cos, diagflat, dot, matmul, real, sin, squeeze
-from numpy.random import randn
+from numpy import array, cos, diagflat, dot, matmul, random, real, sin, squeeze
 from scipy.linalg import norm, sqrtm
 
 # Local Imports
@@ -509,7 +508,7 @@ class Sensor(metaclass=ABCMeta):
     @property
     def measurement_noise(self):
         """``ndarray``: Returns randomly-generated measurement noise as v_k ~ N(0; r_matrix)."""
-        return matmul(self._sqrt_noise_covar, randn(self._r_matrix.shape[0]))
+        return matmul(self._sqrt_noise_covar, random.randn(self._r_matrix.shape[0]))
 
     def getSensorData(self):
         """``dict``: Returns a this sensor's formatted information."""
