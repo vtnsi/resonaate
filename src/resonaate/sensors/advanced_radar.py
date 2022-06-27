@@ -3,9 +3,12 @@
 from .radar import Radar
 
 ADV_RADAR_MIN_DETECTABLE_VISMAG = 25.0  # Default minimum observable visual magnitude (unitless)
-ADV_RADAR_MIN_RANGE = 0  # Default minimum range an RSO must be at to be observable (km)
-ADV_RADAR_MAX_RANGE = 10000  # Default maximum range an RSO must be at to be observable (km)
-ADV_RADAR_DEFAULT_FOV = 179  # Default Field of View of an advanced radar sensor (degrees)
+ADV_RADAR_MIN_RANGE = 0.0  # Default minimum range an RSO must be at to be observable (km)
+ADV_RADAR_MAX_RANGE = 10000.0  # Default maximum range an RSO must be at to be observable (km)
+ADV_RADAR_DEFAULT_FOV = {
+    "fov_shape": "conic",
+    "cone_angle": 179.0,
+}  # Default Field of View of an advanced radar sensor (degrees)
 
 
 class AdvRadar(Radar):

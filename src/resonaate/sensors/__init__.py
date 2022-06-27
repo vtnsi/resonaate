@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from copy import copy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -35,8 +36,8 @@ if TYPE_CHECKING:
     # Standard Library Imports
     from typing import Dict, Tuple
 
-    # RESONAATE Imports
-    from resonaate.scenario.config.agent_configs import FieldOfViewConfig
+    # Local Imports
+    from ..scenario.config.agent_configs import FieldOfViewConfig
 
 OPTICAL_LABEL: str = "Optical"
 """str: Constant string used to describe optical sensors."""
@@ -54,7 +55,7 @@ VALID_SENSOR_FOV_LABELS: Tuple[str] = (
 """list: Contains list of valid sensor Field of View configurations."""
 
 
-def sensorFactory(configuration):
+def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-branches
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
 
     Args:
@@ -66,16 +67,23 @@ def sensorFactory(configuration):
     Returns:
         :class:`.Sensor`: properly constructed `Sensor` object
     """
+    # pylint:disable=import-outside-toplevel
     # Local Imports
+    from ..scenario.config.agent_configs import FieldOfViewConfig
     from ..scenario.config.base import NO_SETTING, ConfigError
 
-    if configuration.field_of_view is NO_SETTING:
+    fov_config = FieldOfViewConfig()
+
+    if configuration.field_of_view.fov_shape is NO_SETTING:
         if configuration.sensor_type in OPTICAL_LABEL:
-            field_of_view = OPTICAL_DEFAULT_FOV
+            fov_config.readConfig(OPTICAL_DEFAULT_FOV)
+            field_of_view = copy(fov_config)
         elif configuration.sensor_type in RADAR_LABEL:
-            field_of_view = RADAR_DEFAULT_FOV
+            fov_config.readConfig(RADAR_DEFAULT_FOV)
+            field_of_view = copy(fov_config)
         elif configuration.sensor_type in ADV_RADAR_LABEL:
-            field_of_view = ADV_RADAR_DEFAULT_FOV
+            fov_config.readConfig(ADV_RADAR_DEFAULT_FOV)
+            field_of_view = copy(fov_config)
         else:
             err = "Incorrect Sensor Type Setting"
             raise ConfigError(str(configuration.field_of_view), err)
@@ -133,7 +141,7 @@ def sensorFactory(configuration):
         "efficiency": configuration.efficiency,
         "slew_rate": configuration.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(configuration.exemplar),
-        "field_of_view": fieldOfViewFactory(configuration.field_of_view),
+        "field_of_view": fieldOfViewFactory(field_of_view),
         "calculate_fov": configuration.calculate_fov,
         "minimum_range": minimum_range,
         "maximum_range": maximum_range,

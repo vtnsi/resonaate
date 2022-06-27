@@ -19,7 +19,7 @@ from ..physics.math import fpe_equals
 from ..scenario.clock import ScenarioClock
 
 
-class Agent(metaclass=ABCMeta):
+class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
     """Abstract base class for a generic Agent object, i.e. an actor in the simulation."""
 
     TYPES = {

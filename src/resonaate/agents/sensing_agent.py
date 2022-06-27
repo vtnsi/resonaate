@@ -79,7 +79,6 @@ class SensingAgent(Agent):
         Raises:
             TypeError: raised on incompatible types for input params
         """
-
         super().__init__(
             _id=_id,
             name=name,

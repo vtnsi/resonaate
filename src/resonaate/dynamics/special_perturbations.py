@@ -1,4 +1,9 @@
 """Defines the :class:`.SpecialPerturbations` class for high fidelity astrodynamics models."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import array, concatenate, cross, empty_like, matmul
 from numpy import sum as np_sum
@@ -21,6 +26,15 @@ from ..physics.transforms.reductions import getReductionParameters
 from .celestial import Celestial, checkEarthCollision
 from .constants import RK45_LABEL
 
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from ..physics.time.stardate import ScenarioTime
+    from ..scenario.config.geopotential_config import GeopotentialConfig
+    from ..scenario.config.perturbations_config import PerturbationsConfig
+
 
 class SpecialPerturbations(Celestial):
     """SpecialPerturbations class.
@@ -29,13 +43,21 @@ class SpecialPerturbations(Celestial):
     reference frame) using the Special Perturbations method of numerical integration.
     """
 
-    def __init__(self, jd_start, geopotential, perturbations, sat_ratio, method=RK45_LABEL):
+    def __init__(
+        self,
+        jd_start: JulianDate,
+        geopotential: GeopotentialConfig,
+        perturbations: PerturbationsConfig,
+        sat_ratio: float,
+        method=RK45_LABEL,
+    ):
         """Construct a SpecialPerturbations object.
 
         Args:
             jd_start (:class:`.JulianDate`): Julian date of the scenario's initial epoch
             geopotential (:class:`.GeopotentialConfig`): config describing the geopotential model and the accuracy
             perturbations (:class:`.PerturbationsConfig`): config describing which perturbations to include
+            sat_ratio (``float``): A/M ratio of RSO w/ reflectivity calculation
             method (``str``, optional): Defaults to ``'RK45'``. Which ODE integration method to use
         """
         super().__init__(method=method)
@@ -48,7 +70,7 @@ class SpecialPerturbations(Celestial):
         self.sat_ratio = sat_ratio
         self.use_gr = perturbations.general_relativity
 
-    def _differentialEquation(self, time, state):
+    def _differentialEquation(self, time: ScenarioTime, state: ndarray) -> ndarray:
         """Calculate the first time derivative of the state for numerical integration.
 
         Uses Cowell's formulation.
@@ -135,11 +157,14 @@ class SpecialPerturbations(Celestial):
 
         return derivative
 
-    def _getSolarRadiationPressureAcceleration(self, sat_position, sun_eci_position):
+    def _getSolarRadiationPressureAcceleration(
+        self, sat_position: ndarray, sun_eci_position: ndarray
+    ) -> ndarray:
         """Calculate the acceleration on the spacecraft due to solar radiation pressure.
 
         Args:
-            sat_position (`ndarray`): 3x1 ECI position vector of the satellite, km
+            sat_position (``ndarray``): 3x1 ECI position vector of the satellite, km
+            sun_eci_position (``ndarray``): 3x1 ECI position vector of the Sun, km
 
         Returns:
             `ndarray`: 3x1 ECI acceleration vector due to SRP, km/s^2
@@ -159,7 +184,7 @@ class SpecialPerturbations(Celestial):
         return a_srp * calculateSunVizFraction(sat_position, sun_eci_position) / 1000.0
 
 
-def _getRotationMatrix(julian_date, reduction):
+def _getRotationMatrix(julian_date: JulianDate, reduction: dict) -> ndarray:
     """Determine the current ECEF -> ECI rotation matrix.
 
     References:
@@ -183,7 +208,7 @@ def _getRotationMatrix(julian_date, reduction):
     )
 
 
-def _getThirdBodyAcceleration(sat_position, third_body_position):
+def _getThirdBodyAcceleration(sat_position: ndarray, third_body_position: ndarray) -> ndarray:
     """Determine the acceleration of a satellite due to a third body.
 
     Follows Vallado section 8.6.3 equations (8-35) to compute the un-scaled acceleration (the LHS of 8-35).
@@ -222,19 +247,19 @@ def _getThirdBodyAcceleration(sat_position, third_body_position):
     return acceleration
 
 
-def calcSatRatio(visual_cross_section, mass, reflectivity):
+def calcSatRatio(visual_cross_section: float, mass: float, reflectivity: float) -> float:
     """Calculate RSO specific value needed for SRP.
 
     References:
         :cite:t:`montenbruck_2012_orbits`, Eqn 3.75 - 3.76, Table 3.5
 
     Args:
-        visual_cross_section
-        mass
-        reflectivity
+            visual_cross_section (``float, int``): constant visual cross-section of the agent
+            mass (``float, int``): constant mass of the agent
+            reflectivity (``float``): constant reflectivity of the agent
 
     Returns:
-        ``float``:
+        ``float``: Satellite Ratio of reflectivity to Area / Mass
     """
     # Radiation Pressure Coefficient (1 + epsilon) (Montenbruck, Eq. 3.76)
     c_r = 1.0 + reflectivity
@@ -243,7 +268,7 @@ def calcSatRatio(visual_cross_section, mass, reflectivity):
     return c_r * (visual_cross_section / mass)
 
 
-def thirdBodyFactory(configuration):
+def thirdBodyFactory(configuration: list[str]) -> dict:
     """Create third body perturbations based on a config.
 
     Args:
@@ -270,7 +295,7 @@ def thirdBodyFactory(configuration):
     return third_bodies
 
 
-def _getGeneralRelativityAcceleration(r_eci, v_eci):
+def _getGeneralRelativityAcceleration(r_eci: ndarray, v_eci: ndarray) -> ndarray:
     """Calculate the acceleration on the spacecraft due to general relativity.
 
     References:
@@ -296,7 +321,9 @@ def _getGeneralRelativityAcceleration(r_eci, v_eci):
     )
 
 
-def _getGeneralRelativityAccelerationIERS(r_eci, v_eci, sun_eci, beta=1.0, gamma=1.0):
+def _getGeneralRelativityAccelerationIERS(
+    r_eci: ndarray, v_eci: ndarray, sun_eci: ndarray, beta: float = 1.0, gamma: float = 1.0
+) -> ndarray:
     """Calculate the relativistic acceleration term of an Earth orbiting satellite.
 
     This is the method cited by STK and is derived from the IERS equations.

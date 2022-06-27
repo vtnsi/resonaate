@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ..agents.estimate_agent import EstimateAgent
+    from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from . import FieldOfView
 
@@ -72,6 +73,9 @@ class Sensor(metaclass=ABCMeta):
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (:class:`.FieldOfView`): field of view of sensor
             calculate_fov (``bool``): whether or not to calculate Field of View, default=True
+            detectable_vismag (``float``): minimum vismag of RSO needed for visibility
+            minimum_range (``float``): minimum RSO range needed for visibility
+            maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         self._az_mask = None
@@ -92,7 +96,7 @@ class Sensor(metaclass=ABCMeta):
 
         # Derived properties initialization
         self.time_last_ob = ScenarioTime(0.0)
-        self.delta_boresight = 0.0
+        self.delta_boresight = None
         self._host = None
         self.boresight = None
         self._current_target = None
@@ -310,7 +314,7 @@ class Sensor(metaclass=ABCMeta):
 
         return ObservationTuple(observation, self.host, self.angle_measurements)
 
-    def makeNoisyObservation(self, target_agent) -> ObservationTuple:
+    def makeNoisyObservation(self, target_agent: TargetAgent) -> ObservationTuple:
         """Calculate the measurement data for a single observation with noisy measurements.
 
         Args:
@@ -380,6 +384,7 @@ class Sensor(metaclass=ABCMeta):
         Returns:
             ``bool``: True if target is visible; False if target is not visible
         """
+        # pylint:disable=unused-argument
         # Early exit if target not in sensor's range
         if not self.minimum_range < getRange(slant_range_sez) < self.maximum_range:
             return False
@@ -504,7 +509,7 @@ class Sensor(metaclass=ABCMeta):
         return self._host
 
     @host.setter
-    def host(self, new_host):
+    def host(self, new_host: SensingAgent):
         """Assign host to an attribute, and sets other relevant properties accordingly.
 
         Args:

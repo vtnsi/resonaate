@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from ..sensors.sensor_base import ObservationTuple
 
 
-class EstimateAgent(Agent):
+class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
     """Define the behavior of the **estimated** target agents in the simulation."""
 
     def __init__(

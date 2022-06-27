@@ -24,7 +24,10 @@ if TYPE_CHECKING:
 RADAR_MIN_DETECTABLE_VISMAG = 25.0  # Default minimum observable visual magnitude (unitless)
 RADAR_MIN_RANGE = 0  # Default minimum range an RSO must be at to be observable (km)
 RADAR_MAX_RANGE = 99000  # Default maximum range an RSO must be at to be observable (km)
-RADAR_DEFAULT_FOV = 0.000279  # Default Field of View of a radar sensor (degrees)
+RADAR_DEFAULT_FOV = {
+    "fov_shape": "conic",
+    "cone_angle": 1.0,
+}  # Default Field of View of a radar sensor (degrees)
 
 
 class Radar(Sensor):
@@ -66,6 +69,9 @@ class Radar(Sensor):
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
             calculate_fov (``bool``): whether or not to calculate Field of View, default=True
+            detectable_vismag (``float``): minimum vismag of RSO needed for visibility
+            minimum_range (``float``): minimum RSO range needed for visibility
+            maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         super().__init__(

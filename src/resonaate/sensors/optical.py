@@ -34,7 +34,11 @@ if TYPE_CHECKING:
 OPTICAL_MIN_DETECTABLE_VISMAG = 25.0  # Default minimum observable visual magnitude (unitless)
 OPTICAL_MIN_RANGE = 30000  # Default minimum range an RSO must be at to be observable (km)
 OPTICAL_MAX_RANGE = 99000  # Default maximum range an RSO must be at to be observable (km)
-OPTICAL_DEFAULT_FOV = 0.000279  # Default Field of View of an optical sensor (degrees)
+OPTICAL_DEFAULT_FOV = {
+    "fov_shape": "rectangular",
+    "azimuth_angle": 1.0,
+    "elevation_angle": 1.0,
+}  # Default Field of View of an optical sensor (degrees)
 
 
 class Optical(Sensor):
@@ -76,6 +80,9 @@ class Optical(Sensor):
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
             calculate_fov (``bool``): whether or not to calculate Field of View, default=True
+            detectable_vismag (``float``): minimum vismag of RSO needed for visibility
+            minimum_range (``float``): minimum RSO range needed for visibility
+            maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         super().__init__(
@@ -165,7 +172,13 @@ class Optical(Sensor):
 
         return measurements
 
-    def isVisible(self, tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez):
+    def isVisible(
+        self,
+        tgt_eci_state: ndarray,
+        viz_cross_section: float,
+        reflectivity: float,
+        slant_range_sez: ndarray,
+    ):
         """Determine if the target is in view of the sensor.
 
         This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical

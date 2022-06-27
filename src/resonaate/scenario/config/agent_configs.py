@@ -66,7 +66,7 @@ class TargetConfigObject(ConfigObject):
             StationKeepingConfig(),
         )
 
-    def __init__(self, object_config):
+    def __init__(self, object_config):  # noqa: C901, pylint: disable=too-many-branches
         """Construct an instance of a :class:`.TargetConfigObject`.
 
         Args:
@@ -107,22 +107,22 @@ class TargetConfigObject(ConfigObject):
 
         if self.mass is NO_SETTING:
             if altitude <= LEO_ALTITUDE_LIMIT:
-                self._mass._setting = LEO_DEFAULT_MASS
+                self._mass._setting = LEO_DEFAULT_MASS  # pylint:disable=no-member
             elif altitude <= MEO_ALTITUDE_LIMIT:
-                self._mass._setting = MEO_DEFAULT_MASS
+                self._mass._setting = MEO_DEFAULT_MASS  # pylint:disable=no-member
             elif altitude <= GEO_ALTITUDE_LIMIT:
-                self._mass._setting = GEO_DEFAULT_MASS
+                self._mass._setting = GEO_DEFAULT_MASS  # pylint:disable=no-member
             else:
                 err = "RSO altitude above GEO, unable to set a default mass value"
                 raise ValueError(self.__class__.__name__, err)
 
         if self.visual_cross_section is NO_SETTING:
             if altitude <= LEO_ALTITUDE_LIMIT:
-                self._visual_cross_section._setting = LEO_DEFAULT_VCS
+                self._visual_cross_section._setting = LEO_DEFAULT_VCS  # pylint:disable=no-member
             elif altitude <= MEO_ALTITUDE_LIMIT:
-                self._visual_cross_section._setting = MEO_DEFAULT_VCS
+                self._visual_cross_section._setting = MEO_DEFAULT_VCS  # pylint:disable=no-member
             elif altitude <= GEO_ALTITUDE_LIMIT:
-                self._visual_cross_section._setting = GEO_DEFAULT_VCS
+                self._visual_cross_section._setting = GEO_DEFAULT_VCS  # pylint:disable=no-member
             else:
                 err = "RSO altitude above GEO, unable to set a default visual cross section value"
                 raise ValueError(self.__class__.__name__, err)
@@ -164,17 +164,17 @@ class TargetConfigObject(ConfigObject):
     @property
     def mass(self):
         """float: Mass of RSO."""
-        return self._mass.setting
+        return self._mass.setting  # pylint:disable=no-member
 
     @property
     def visual_cross_section(self):
         """float: visual_cross_section of RSO."""
-        return self._visual_cross_section.setting
+        return self._visual_cross_section.setting  # pylint:disable=no-member
 
     @property
     def reflectivity(self):
         """float: reflectivity of RSO."""
-        return self._reflectivity.setting
+        return self._reflectivity.setting  # pylint:disable=no-member
 
     @property
     def station_keeping(self):
@@ -450,21 +450,6 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         return self._detectable_vismag.setting  # pylint: disable=no-member
 
     @property
-    def minimum_range(self):
-        """float, int: minimum range visibility of this sensor."""
-        return self._minimum_range.setting  # pylint: disable=no-member
-
-    @property
-    def maximum_range(self):
-        """float, int: maximum range visibility of this sensor."""
-        return self._maximum_range.setting  # pylint: disable=no-member
-
-    @property
-    def detectable_vismag(self):
-        """float, int: maximum detectable visual magnitude of this sensor."""
-        return self._detectable_vismag.setting  # pylint: disable=no-member
-
-    @property
     def tx_power(self):
         """float: Transmit power of radar sensor.
 
@@ -483,17 +468,17 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
     @property
     def mass(self):
         """float: Mass of RSO."""
-        return self._mass.setting
+        return self._mass.setting  # pylint: disable=no-member
 
     @property
     def visual_cross_section(self):
         """float: visual_cross_section of RSO."""
-        return self._visual_cross_section.setting
+        return self._visual_cross_section.setting  # pylint: disable=no-member
 
     @property
     def reflectivity(self):
         """float: reflectivity of RSO."""
-        return self._reflectivity.setting
+        return self._reflectivity.setting  # pylint: disable=no-member
 
     @property
     def station_keeping(self):
@@ -514,12 +499,14 @@ class FieldOfViewConfig(ConfigSection):
         self._fov_shape = ConfigOption(
             "fov_shape",
             (str,),
-            default="conic",
+            default=NO_SETTING,
             valid_settings=(NO_SETTING,) + VALID_SENSOR_FOV_LABELS,
         )
-        self._cone_angle = ConfigOption("cone_angle", (float,), default=1.0)  # degrees
-        self._azimuth_angle = ConfigOption("azimuth_angle", (float,), default=1.0)  # degrees
-        self._elevation_angle = ConfigOption("elevation_angle", (float,), default=1.0)  # degrees
+        self._cone_angle = ConfigOption("cone_angle", (float, int), default=1.0)  # degrees
+        self._azimuth_angle = ConfigOption("azimuth_angle", (float, int), default=1.0)  # degrees
+        self._elevation_angle = ConfigOption(
+            "elevation_angle", (float, int), default=1.0
+        )  # degrees
 
     @property
     def nested_items(self):
