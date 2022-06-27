@@ -450,6 +450,21 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         return self._detectable_vismag.setting  # pylint: disable=no-member
 
     @property
+    def minimum_range(self):
+        """float, int: minimum range visibility of this sensor."""
+        return self._minimum_range.setting  # pylint: disable=no-member
+
+    @property
+    def maximum_range(self):
+        """float, int: maximum range visibility of this sensor."""
+        return self._maximum_range.setting  # pylint: disable=no-member
+
+    @property
+    def detectable_vismag(self):
+        """float, int: maximum detectable visual magnitude of this sensor."""
+        return self._detectable_vismag.setting  # pylint: disable=no-member
+
+    @property
     def tx_power(self):
         """float: Transmit power of radar sensor.
 
