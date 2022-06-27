@@ -96,7 +96,7 @@ class Sensor(metaclass=ABCMeta):
 
         # Derived properties initialization
         self.time_last_ob = ScenarioTime(0.0)
-        self.delta_boresight = None
+        self.delta_boresight = 0.0
         self._host = None
         self.boresight = None
         self._current_target = None
