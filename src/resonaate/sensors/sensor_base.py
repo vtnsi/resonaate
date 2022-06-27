@@ -121,7 +121,6 @@ class Sensor(metaclass=ABCMeta):
 
             :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
             :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
-            If not Optical:
             :``"range_km"``: (``float``): range measurement (km)
             :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
         """
@@ -342,7 +341,6 @@ class Sensor(metaclass=ABCMeta):
 
             :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
             :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
-            If not Optical:
             :``"range_km"``: (``float``): range measurement (km)
             :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
         """
