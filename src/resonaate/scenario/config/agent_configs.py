@@ -5,7 +5,7 @@ from ...dynamics.integration_events.station_keeping import (
     VALID_STATION_KEEPING_ROUTINES,
     StationKeeper,
 )
-from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
+from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL, VALID_SENSOR_FOV_LABELS
 from .base import (
     NO_SETTING,
     ConfigError,
@@ -163,6 +163,8 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ConfigOption("efficiency", (float,)),
             ConfigOption("slew_rate", (float,)),
             ConfigOption("exemplar", (list,)),
+            FieldOfViewConfig(),
+            ConfigOption("calculate_fov", (bool,), default=NO_SETTING),
             ConfigOption(
                 "sensor_type",
                 (str,),
@@ -344,6 +346,25 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         return self._exemplar.setting  # pylint: disable=no-member
 
     @property
+    def field_of_view(self):
+        """FieldOfViewConfig: visibility of this sensor."""
+        return self._field_of_view  # pylint: disable=no-member
+
+    @property
+    def calculate_fov(self):
+        """bool: decision to do FoV calcs with this sensor."""
+        return self._calculate_fov.setting  # pylint: disable=no-member
+
+    @calculate_fov.setter
+    def calculate_fov(self, new_calc_fov: bool):
+        """Set new Field of View.
+
+        Args:
+            new_calc_fov (``bool``): global FoV setting
+        """
+        self._calculate_fov = new_calc_fov
+
+    @property
     def tx_power(self):
         """float: Transmit power of radar sensor.
 
@@ -366,6 +387,49 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         Default to type(None), asserted to be None if host_type is `GROUND_FACILITY_LABEL`.
         """
         return self._station_keeping  # pylint: disable=no-member
+
+
+class FieldOfViewConfig(ConfigSection):
+    """Field of View config class."""
+
+    CONFIG_LABEL = "field_of_view"
+
+    def __init__(self) -> None:
+        """Initialize FieldOfViewConfig."""
+        self._fov_shape = ConfigOption(
+            "fov_shape",
+            (str,),
+            default="conic",
+            valid_settings=(NO_SETTING,) + VALID_SENSOR_FOV_LABELS,
+        )
+        self._cone_angle = ConfigOption("cone_angle", (float,), default=1.0)  # degrees
+        self._azimuth_angle = ConfigOption("azimuth_angle", (float,), default=1.0)  # degrees
+        self._elevation_angle = ConfigOption("elevation_angle", (float,), default=1.0)  # degrees
+
+    @property
+    def nested_items(self):
+        """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
+        return [self._fov_shape, self._cone_angle, self._azimuth_angle, self._elevation_angle]
+
+    @property
+    def fov_shape(self):
+        """String: Type of Field of View being used."""
+        return self._fov_shape.setting
+
+    @property
+    def cone_angle(self):
+        """float: cone angle for `conic` Field of View (degrees)."""
+        return self._cone_angle.setting
+
+    @property
+    def azimuth_angle(self):
+        """float: horizontal angular resolution for `rectangular` Field of View (degrees)."""
+        return self._azimuth_angle.setting
+
+    @property
+    def elevation_angle(self):
+        """float: vertical angular resolution for `rectangular` Field of View (degrees)."""
+        return self._elevation_angle.setting
 
 
 class StationKeepingConfig(ConfigSection):

@@ -1,12 +1,24 @@
 """Defines the :class:`.Radar` sensor class."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
-from numpy import asarray, squeeze
+from numpy import array
 
 # Local Imports
 from ..physics import constants as const
 from ..physics.sensor_utils import calculateRadarCrossSection, getWavelengthFromString
 from .measurements import IsAngle, getAzimuth, getElevation, getRange, getRangeRate
 from .sensor_base import Sensor
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from . import FieldOfView
 
 
 class Radar(Sensor):
@@ -18,34 +30,46 @@ class Radar(Sensor):
 
     def __init__(
         self,
-        az_mask,
-        el_mask,
-        r_matrix,
-        diameter,
-        efficiency,
-        exemplar,
-        power_tx,
-        frequency,
-        slew_rate,
-        **sensor_args,
+        az_mask: ndarray,
+        el_mask: ndarray,
+        r_matrix: ndarray,
+        diameter: float,
+        efficiency: float,
+        exemplar: ndarray,
+        power_tx: float,
+        frequency: float,
+        slew_rate: float,
+        field_of_view: FieldOfView,
+        calculate_fov: bool,
+        **sensor_args: dict,
     ):  # noqa: E501
         """Construct a `Radar` sensor object.
 
         Args:
-            az_mask (``list``): azimuth mask for visibility conditions
-            el_mask (``list``): elevation mask for visibility conditions
-            r_matrix (``np.ndarray``): measurement noise covariance matrix
+            az_mask (``ndarray``): azimuth mask for visibility conditions
+            el_mask (``ndarray``): elevation mask for visibility conditions
+            r_matrix (``ndarray``): measurement noise covariance matrix
             diameter (``float``): size of sensor (m)
             efficiency (``float``): efficiency percentage of the sensor
-            exemplar (``np.ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation
-                    [cross sectional area (m^2), range (km)]
+            exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation [cross sectional area (m^2), range (km)]
             power_tx (``float``): radar's transmit power (W)
             frequency (``float``|``str``): radar's operating frequency (Hz)
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
+            field_of_view (``float``): Angular field of view of sensor (deg)
+            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         super().__init__(
-            az_mask, el_mask, r_matrix, diameter, efficiency, slew_rate, **sensor_args
+            az_mask,
+            el_mask,
+            r_matrix,
+            diameter,
+            efficiency,
+            exemplar,
+            slew_rate,
+            field_of_view,
+            calculate_fov,
+            **sensor_args,
         )
 
         # Save extra class variables
@@ -56,11 +80,10 @@ class Radar(Sensor):
         self.tx_power = power_tx
 
         # Calculate minimum detectable power & maximum auxiliary range
-        self.exemplar = squeeze(exemplar)
         self.min_detect = self._minPowerFromExemplar(self.exemplar[0], self.exemplar[1] * 1000)
         self.max_range_aux = self._maxRangeFromExemplar(diameter, self.min_detect)
 
-    def _minPowerFromExemplar(self, exemplar_area, exemplar_range):
+    def _minPowerFromExemplar(self, exemplar_area: float, exemplar_range: float) -> float:
         """Calculate the minimum detectable power based on exemplar criterion.
 
         References:
@@ -84,7 +107,7 @@ class Radar(Sensor):
             * (four_pi * exemplar_area**2 / lam_sq)
         ) / (lam_sq * (four_pi * exemplar_range**2.0) ** 2.0)
 
-    def _maxRangeFromExemplar(self, diameter, min_detect_power):
+    def _maxRangeFromExemplar(self, diameter: float, min_detect_power: float) -> float:
         """Calculate the auxiliary maximum range for a detection.
 
         This is an intermediate calculation for simplifying when `maximumRangeTo()` is called.
@@ -105,17 +128,17 @@ class Radar(Sensor):
 
     @property
     def angle_measurements(self):
-        """``np.ndarray``: Returns 4x1 integer array of which measurements are angles."""
-        return asarray(
+        """``ndarray``: Returns 4x1 integer array of which measurements are angles."""
+        return array(
             [IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI, IsAngle.NOT_ANGLE, IsAngle.NOT_ANGLE],
             dtype=int,
         )
 
-    def getMeasurements(self, slant_range_sez, noisy=False):
+    def getMeasurements(self, slant_range_sez: float, noisy=False) -> dict:
         """Return the measurement state of the measurement.
 
         Args:
-            slant_range_sez (``np.ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
             noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
 
         Returns:
@@ -140,12 +163,12 @@ class Radar(Sensor):
 
         return measurements
 
-    def maximumRangeTo(self, viz_cross_section, tgt_eci_state):
+    def maximumRangeTo(self, viz_cross_section: float, tgt_eci_state: ndarray) -> float:
         """Calculate the maximum possible range based on a target's visible area.
 
         Args:
             viz_cross_section (``float``): area of the target facing the sun (m^2)
-            tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target agent
+            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
 
         Returns:
             ``float``: maximum possible range to target at which this sensor can make valid observations (km)

@@ -88,6 +88,7 @@ For example, if the configuration below was in **/app/init.json**, it would poin
     "time": {...},
     "noise": {...},
     "propagation": {...},
+    "observation": {...},
     "geopotential": {...},
     "perturbations": {...},
     "engines": ["engines/taskable.json", "engines/all_visible.json"],
@@ -173,6 +174,7 @@ The definition of the main configuration file is as follows:
     "time": <time_obj>,                     # Req: scenario time properties
     "noise": <noise_obj>,                   # Opt: noise characteristics
     "propagation": <propagation_obj>,       # Opt: defines how RSOs are propagated
+    "observation" <observation_obj>         # Opt: Defines Observation Field of View option
     "geopotential": <geopotential_obj>,     # Opt: Earth geopotential model
     "perturbations": <perturbations_obj>,   # Opt: orbital perturbations
     "estimation": <estimation_obj>,         # Req: filter types and parameters
@@ -266,6 +268,18 @@ Optional object defining how RSOs are propagated.
 - `"realtime_observation"`: defines to generate observations during the simulation
 
 (ref-cfg-subsec-geopotential-object)=
+
+### Observation Object Definition
+
+Optional object defining Field of View preference.
+
+### Field Types
+
+```python
+<observation_obj>: {
+  "field_of_view": <boolean>,   # Opt: default is "True"
+}
+```
 
 ### Geopotential Object Definition
 
@@ -621,8 +635,24 @@ These are the required fields defined for all types of sensor objects.
     "azimuth_range": [<decimal>, <decimal>],    # Min/max az sensor limits (rad, rad)
     "elevation_range": [<decimal>, <decimal>],  # Min/max el sensor limits (rad, rad)
     "exemplar": [<decimal>, <decimal>]          # Ideal target area & range (m^2, km)
+    "field_of_view": <FieldOfView>              # Field of view config object
+    "calculate_fov": <boolean>                  # Toggle Field of View calculations
 }
 ```
+
+#### Field of View
+
+Defines type and parameters of `"field_of_view"` field.
+
+```python
+<fov_obj>: {
+    "fov_shape": <string>,               # Shape of Sensor FoV, Options are: ["conic", "rectangular"]. Defaults to "conic" 
+    "cone_angle": <decimal>,             # Half Cone, only set if "fov_shape" is "conic". Defaults to 1.0 (deg)
+    "azimuth_angle": <decimal>           # azimuth view angle, only set if "fov_shape" is "rectangular". Defaults to 1.0 (deg)
+    "elevation_angle": <decimal>         # elevation view angle, only set if "fov_shape" is "rectangular". Defaults to 1.0 (deg)
+}
+```
+
 
 #### Sensor Types
 

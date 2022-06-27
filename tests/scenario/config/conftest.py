@@ -151,6 +151,10 @@ EARTH_SENSORS = [
         "aperture_area": 200.0,
         "sensor_type": "AdvRadar",
         "exemplar": [0.01, 5000.0],
+        "field_of_view": {
+            "fov_shape": "conic"
+        },
+        "calculate_fov": False,
         "lat": 0.5,
         "lon": -1.0,
         "alt": 0.360,
@@ -169,6 +173,10 @@ EARTH_SENSORS = [
         "aperture_area": 1.0,
         "sensor_type": "Optical",
         "exemplar": [0.10, 32500.0],
+        "field_of_view": {
+            "fov_shape": "conic"
+        },
+        "calculate_fov": False,
         "lat": 0.35,
         "lon": -2.70,
         "alt": 3.0,
@@ -190,6 +198,10 @@ EARTH_SENSORS = [
         "aperture_area": 50.0,
         "sensor_type": "Radar",
         "exemplar": [0.1, 10000.0],
+        "field_of_view": {
+            "fov_shape": "conic"
+        },
+        "calculate_fov": False,
         "lat": 0.5,
         "lon": -1.0,
         "alt": 0.360,
@@ -219,6 +231,10 @@ SPACE_SENSORS = [
             -7.448488839044817,
         ],
         "exemplar": [1.0, 30000],
+        "field_of_view": {
+            "fov_shape": "conic"
+        },
+        "calculate_fov": False,
         "host_type": "Spacecraft",
         "station_keeping": {"routines": ["LEO"]},
     },
@@ -239,6 +255,10 @@ SPACE_SENSORS = [
             "true_long": 0.0,
         },
         "exemplar": [1.0, 30000],
+        "field_of_view": {
+            "fov_shape": "conic"
+        },
+        "calculate_fov": False,
         "host_type": "Spacecraft",
         "station_keeping": {"routines": ["LEO"]},
     },
@@ -261,6 +281,10 @@ SPACE_SENSORS = [
             "lam": 360.0,
         },
         "exemplar": [1.0, 30000],
+        "field_of_view": {
+            "fov_shape": "conic"
+        },
+        "calculate_fov": False,
         "host_type": "Spacecraft",
         "station_keeping": {"routines": ["LEO"]},
     },

@@ -391,6 +391,10 @@ class TestEventIntegration(BaseTestCase):
                         0.08063602923669937,
                     ],
                     "exemplar": [1, 10000],
+                    "field_of_view": {
+                        "fov_shape": "conic",
+                    },
+                    "calculate_fov": False,
                     "host_type": "Spacecraft",
                     "tasking_engine_id": tasking_engine.unique_id,
                 }

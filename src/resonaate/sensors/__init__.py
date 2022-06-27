@@ -1,4 +1,9 @@
 """Defines the capabilities and operation of different types of sensors."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import asarray, sqrt
 
@@ -8,14 +13,27 @@ from .advanced_radar import AdvRadar
 from .optical import Optical
 from .radar import Radar
 
-OPTICAL_LABEL = "Optical"
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Dict, Tuple
+
+    # RESONAATE Imports
+    from resonaate.scenario.config.agent_configs import FieldOfViewConfig
+
+OPTICAL_LABEL: str = "Optical"
 """str: Constant string used to describe optical sensors."""
 
-RADAR_LABEL = "Radar"
+RADAR_LABEL: str = "Radar"
 """str: Constant string used to describe radar sensors."""
 
-ADV_RADAR_LABEL = "AdvRadar"
+ADV_RADAR_LABEL: str = "AdvRadar"
 """str: Constant string used to describe advanced radar sensors."""
+
+VALID_SENSOR_FOV_LABELS: Tuple[str] = (
+    "conic",
+    "rectangular",
+)
+"""list: Contains list of valid sensor Field of View configurations."""
 
 
 def sensorFactory(configuration):
@@ -39,6 +57,8 @@ def sensorFactory(configuration):
         "efficiency": configuration.efficiency,
         "slew_rate": configuration.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(configuration.exemplar),
+        "field_of_view": fieldOfViewFactory(configuration.field_of_view),
+        "calculate_fov": configuration.calculate_fov,
     }
 
     # Instantiate sensor object. Add extra params if needed
@@ -57,3 +77,60 @@ def sensorFactory(configuration):
         raise ValueError(sensor_type)
 
     return sensor
+
+
+def fieldOfViewFactory(configuration: Dict) -> FieldOfView:
+    """Field of View factory method.
+
+    Args:
+        configuration (``Dict``): field of view config
+
+    Returns:
+        :class:`.FieldOfView`
+    """
+    if configuration.fov_shape == "conic":
+        return ConicFoV(configuration)
+
+    if configuration.fov_shape == "rectangular":
+        return RectangularFoV(configuration)
+
+    raise ValueError("wrong FoV type input")
+
+
+class FieldOfView:
+    """Field of View base class."""
+
+    def __init__(self, config: FieldOfViewConfig) -> None:
+        """Initialize a Field of View object.
+
+        Args:
+            config (:class:`.FieldOfViewConfig`): Field of View config object
+        """
+        self.fov_shape = config.fov_shape
+
+
+class ConicFoV(FieldOfView):
+    """Conic Field of View Subclass."""
+
+    def __init__(self, config: FieldOfViewConfig) -> None:
+        """Initialize A ConicFoV object.
+
+        Args:
+            config (:class:`.FieldOfViewConfig`): Field of View config object
+        """
+        super().__init__(config)
+        self.cone_angle = config.cone_angle * const.DEG2RAD
+
+
+class RectangularFoV(FieldOfView):
+    """Rectangular Field of View Subclass."""
+
+    def __init__(self, config: FieldOfViewConfig) -> None:
+        """Initialize A RectangularFoV object.
+
+        Args:
+            config (:class:`.FieldOfViewConfig`): Field of View config object
+        """
+        super().__init__(config)
+        self.azimuth_angle = config.azimuth_angle * const.DEG2RAD
+        self.elevation_angle = config.elevation_angle * const.DEG2RAD

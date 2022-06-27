@@ -11,6 +11,7 @@ from .estimation_config import EstimationConfig
 from .event_configs import EventConfigObjectList
 from .geopotential_config import GeopotentialConfig
 from .noise_config import NoiseConfig
+from .observation_config import ObservationConfig
 from .perturbations_config import PerturbationsConfig
 from .propagation_config import PropagationConfig
 from .time_config import TimeConfig
@@ -33,11 +34,13 @@ class ScenarioConfig:
         self.perturbations = PerturbationsConfig()
         self.estimation = EstimationConfig()
         self.events = EventConfigObjectList()
+        self.observation = ObservationConfig()
 
         self.sections = (
             self.time,
             self.noise,
             self.propagation,
+            self.observation,
             self.geopotential,
             self.engines,
             self.perturbations,

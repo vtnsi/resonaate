@@ -4,7 +4,7 @@ from json import dumps, loads
 
 # Third Party Imports
 from numpy import array
-from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
@@ -110,6 +110,18 @@ class SensorAdditionEvent(Event):
     exemplar_range = Column(Float)
     """float: Range (km) exemplar capability."""
 
+    fov_shape = Column(String(64))
+    """String: fov_shape string."""
+
+    fov_angle_1 = Column(Float)
+    """float: first angle (only angle for `conic`, horizontal angle for `rectangular`."""
+
+    fov_angle_2 = Column(Float, nullable=True)
+    """float: Second angle (vertical angle for `rectangular`."""
+
+    calculate_fov = Column(Boolean)
+    """bool: whether to do FoV calcs."""
+
     tx_power = Column(Float)
     """float: Transmit power of radar sensor.
 
@@ -150,6 +162,10 @@ class SensorAdditionEvent(Event):
         "sensor_type",
         "exemplar_cross_section",
         "exemplar_range",
+        "fov_shape",
+        "fov_angle_1",
+        "fov_angle_2",
+        "calculate_fov",
         "tx_power",
         "tx_frequency",
         "station_keeping_json",
@@ -192,6 +208,21 @@ class SensorAdditionEvent(Event):
         """list: List of station keeping key words for this target."""
         return loads(self.station_keeping_json)
 
+    @property
+    def field_of_view(self):
+        """Dict: Field of view dictionary object."""
+        if self.fov_shape == "conic":
+            return {"fov_shape": self.fov_shape, "cone_angle": self.fov_angle_1}
+
+        if self.fov_shape == "rectangular":
+            return {
+                "fov_shape": self.fov_shape,
+                "azimuth_angle": self.fov_angle_1,
+                "elevation_angle": self.fov_angle_2,
+            }
+
+        raise ValueError("Incorrect field of view image type")
+
     def handleEvent(self, scope_instance):
         """Add the node described by this :class:`.NodeAdditionEvent` to the appropriate tasking engine.
 
@@ -210,6 +241,7 @@ class SensorAdditionEvent(Event):
             "efficiency": self.efficiency,
             "slew_rate": self.slew_rate,
             "exemplar": self.exemplar,
+            "field_of_view": self.field_of_view,
             "sensor_type": self.sensor_type,
             "tx_power": self.tx_power,
             "tx_frequency": self.tx_frequency,
@@ -250,6 +282,15 @@ class SensorAdditionEvent(Event):
             tx_power = 0.0
             tx_frequency = 0.0
 
+        if config.field_of_view.fov_shape == "conic":
+            fov_angle_1 = config.field_of_view.cone_angle
+            fov_angle_2 = 0.0
+        elif config.field_of_view.fov_shape == "rectangular":
+            fov_angle_1 = config.field_of_view.azimuth_angle
+            fov_angle_2 = config.field_of_view.elevation_angle
+        else:
+            raise ValueError(f"Field of View config has incorrect type {config.field_of_view}")
+
         return cls(
             scope=config.scope,
             scope_instance_id=config.scope_instance_id,
@@ -276,6 +317,10 @@ class SensorAdditionEvent(Event):
             sensor_type=config.sensor_type,
             exemplar_cross_section=config.exemplar[0],
             exemplar_range=config.exemplar[1],
+            fov_shape=config.field_of_view.fov_shape,
+            fov_angle_1=fov_angle_1,
+            fov_angle_2=fov_angle_2,
+            calculate_fov=config.calculate_fov,
             tx_power=tx_power,
             tx_frequency=tx_frequency,
             station_keeping_json=dumps(config.station_keeping.toJSON()),
