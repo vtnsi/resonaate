@@ -251,9 +251,9 @@ def calculatePhaseAngle(emitter: ndarray, reflector: ndarray, observer: ndarray)
     """Angle between the light incident onto an observed object and the light reflected from the object.
 
     Args:
-        emitter (``ndarray``): ECI position of emitting body
-        reflector (``ndarray``): ECI position reflection body
-        observer (``ndarray``): ECI position of observer
+        emitter (``ndarray``): 3x1 ECI position of emitting body
+        reflector (``ndarray``): 3x1 ECI position reflection body
+        observer (``ndarray``): 3x1 ECI position of observer
 
     Returns:
         ``float``: angle between the light incident onto an observed object and the light reflected from the object
