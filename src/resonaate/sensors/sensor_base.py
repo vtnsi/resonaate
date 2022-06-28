@@ -55,7 +55,7 @@ class Sensor(metaclass=ABCMeta):
         slew_rate: float,
         field_of_view: FieldOfView,
         calculate_fov: bool,
-        **sensor_args,
+        **sensor_args: dict,
     ):
         """Construct a generic `Sensor` object.
 

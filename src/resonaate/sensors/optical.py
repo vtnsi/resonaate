@@ -46,11 +46,11 @@ class Optical(Sensor):
         r_matrix: ndarray,
         diameter: float,
         efficiency: float,
-        exemplar,
-        slew_rate,
-        field_of_view,
-        calculate_fov,
-        **sensor_args,
+        exemplar: ndarray,
+        slew_rate: float,
+        field_of_view: FieldOfView,
+        calculate_fov: bool,
+        **sensor_args: dict,
     ):
         """Construct a `Optical` sensor object.
 
