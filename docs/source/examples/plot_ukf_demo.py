@@ -217,9 +217,9 @@ sensor_agent = SensingAgent(
     radar_sensor,
     sensor_dynamics,
     True,  # real time propagation
-    0.0,
-    0.0,
-    0.0,
+    25.0,
+    100.0,
+    0.21,
 )
 
 # %%
