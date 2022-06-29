@@ -12,7 +12,7 @@ from numpy import asarray, sqrt
 from ..physics import constants as const
 from .advanced_radar import (
     ADV_RADAR_DEFAULT_FOV,
-    ADV_RADAR_DETECTABLE_VISMAG,
+    ADV_RADAR_DETECTABLE_SNR,
     ADV_RADAR_MAX_RANGE,
     ADV_RADAR_MIN_RANGE,
     AdvRadar,
@@ -26,7 +26,7 @@ from .optical import (
 )
 from .radar import (
     RADAR_DEFAULT_FOV,
-    RADAR_DETECTABLE_VISMAG,
+    RADAR_DETECTABLE_SNR,
     RADAR_MAX_RANGE,
     RADAR_MIN_RANGE,
     Radar,
@@ -111,8 +111,8 @@ def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-bran
     if configuration.detectable_vismag is NO_SETTING:
         detectable_vismag_dict = {
             OPTICAL_LABEL: OPTICAL_DETECTABLE_VISMAG,
-            RADAR_LABEL: RADAR_DETECTABLE_VISMAG,
-            ADV_RADAR_LABEL: ADV_RADAR_DETECTABLE_VISMAG,
+            RADAR_LABEL: RADAR_DETECTABLE_SNR,
+            ADV_RADAR_LABEL: ADV_RADAR_DETECTABLE_SNR,
         }
         detectable_vismag = detectable_vismag_dict[configuration.sensor_type]
     else:
