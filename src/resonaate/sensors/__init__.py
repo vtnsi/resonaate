@@ -12,22 +12,22 @@ from numpy import asarray, sqrt
 from ..physics import constants as const
 from .advanced_radar import (
     ADV_RADAR_DEFAULT_FOV,
+    ADV_RADAR_DETECTABLE_VISMAG,
     ADV_RADAR_MAX_RANGE,
-    ADV_RADAR_MIN_DETECTABLE_VISMAG,
     ADV_RADAR_MIN_RANGE,
     AdvRadar,
 )
 from .optical import (
     OPTICAL_DEFAULT_FOV,
+    OPTICAL_DETECTABLE_VISMAG,
     OPTICAL_MAX_RANGE,
-    OPTICAL_MIN_DETECTABLE_VISMAG,
     OPTICAL_MIN_RANGE,
     Optical,
 )
 from .radar import (
     RADAR_DEFAULT_FOV,
+    RADAR_DETECTABLE_VISMAG,
     RADAR_MAX_RANGE,
-    RADAR_MIN_DETECTABLE_VISMAG,
     RADAR_MIN_RANGE,
     Radar,
 )
@@ -70,65 +70,51 @@ def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-bran
     # pylint:disable=import-outside-toplevel
     # Local Imports
     from ..scenario.config.agent_configs import FieldOfViewConfig
-    from ..scenario.config.base import NO_SETTING, ConfigError
+    from ..scenario.config.base import NO_SETTING
 
-    fov_config = FieldOfViewConfig()
-
+    # Set field of view
     if configuration.field_of_view.fov_shape is NO_SETTING:
-        if configuration.sensor_type in OPTICAL_LABEL:
-            fov_config.readConfig(OPTICAL_DEFAULT_FOV)
-            field_of_view = copy(fov_config)
-        elif configuration.sensor_type in RADAR_LABEL:
-            fov_config.readConfig(RADAR_DEFAULT_FOV)
-            field_of_view = copy(fov_config)
-        elif configuration.sensor_type in ADV_RADAR_LABEL:
-            fov_config.readConfig(ADV_RADAR_DEFAULT_FOV)
-            field_of_view = copy(fov_config)
-        else:
-            err = "Incorrect Sensor Type Setting"
-            raise ConfigError(str(configuration.field_of_view), err)
+        fov_dict = {
+            OPTICAL_LABEL: OPTICAL_DEFAULT_FOV,
+            RADAR_LABEL: RADAR_DEFAULT_FOV,
+            ADV_RADAR_LABEL: ADV_RADAR_DEFAULT_FOV,
+        }
+        fov_config = FieldOfViewConfig()
+        fov_config.readConfig(fov_dict[configuration.sensor_type])
+        field_of_view = copy(fov_config)
     else:
         field_of_view = configuration.field_of_view
 
+    # Set minimum observable range
     if configuration.minimum_range is NO_SETTING:
-        if configuration.sensor_type in OPTICAL_LABEL:
-            minimum_range = OPTICAL_MIN_RANGE
-        elif configuration.sensor_type in RADAR_LABEL:
-            minimum_range = RADAR_MIN_RANGE
-        elif configuration.sensor_type in ADV_RADAR_LABEL:
-            minimum_range = ADV_RADAR_MIN_RANGE
-        else:
-            err = "Incorrect Sensor Type Setting"
-            raise ConfigError(str(configuration.minimum_range), err)
-
+        min_range_dict = {
+            OPTICAL_LABEL: OPTICAL_MIN_RANGE,
+            RADAR_LABEL: RADAR_MIN_RANGE,
+            ADV_RADAR_LABEL: ADV_RADAR_MIN_RANGE,
+        }
+        minimum_range = min_range_dict[configuration.sensor_type]
     else:
         minimum_range = configuration.minimum_range
 
+    # Set maximum observable range
     if configuration.maximum_range is NO_SETTING:
-        if configuration.sensor_type in OPTICAL_LABEL:
-            maximum_range = OPTICAL_MAX_RANGE
-        elif configuration.sensor_type in RADAR_LABEL:
-            maximum_range = RADAR_MAX_RANGE
-        elif configuration.sensor_type in ADV_RADAR_LABEL:
-            maximum_range = ADV_RADAR_MAX_RANGE
-        else:
-            err = "Incorrect Sensor Type Setting"
-            raise ConfigError(str(configuration.maximum_range), err)
-
+        max_range_dict = {
+            OPTICAL_LABEL: OPTICAL_MAX_RANGE,
+            RADAR_LABEL: RADAR_MAX_RANGE,
+            ADV_RADAR_LABEL: ADV_RADAR_MAX_RANGE,
+        }
+        maximum_range = max_range_dict[configuration.sensor_type]
     else:
         maximum_range = configuration.maximum_range
 
+    # Set detectable vismag
     if configuration.detectable_vismag is NO_SETTING:
-        if configuration.sensor_type in OPTICAL_LABEL:
-            detectable_vismag = OPTICAL_MIN_DETECTABLE_VISMAG
-        elif configuration.sensor_type in RADAR_LABEL:
-            detectable_vismag = RADAR_MIN_DETECTABLE_VISMAG
-        elif configuration.sensor_type in ADV_RADAR_LABEL:
-            detectable_vismag = ADV_RADAR_MIN_DETECTABLE_VISMAG
-        else:
-            err = "Incorrect Sensor Type Setting"
-            raise ConfigError(str(configuration.detectable_vismag), err)
-
+        detectable_vismag_dict = {
+            OPTICAL_LABEL: OPTICAL_DETECTABLE_VISMAG,
+            RADAR_LABEL: RADAR_DETECTABLE_VISMAG,
+            ADV_RADAR_LABEL: ADV_RADAR_DETECTABLE_VISMAG,
+        }
+        detectable_vismag = detectable_vismag_dict[configuration.sensor_type]
     else:
         detectable_vismag = configuration.detectable_vismag
 

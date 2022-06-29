@@ -105,27 +105,35 @@ class TargetConfigObject(ConfigObject):
 
             altitude = self.init_coe["sma"] - Earth.radius
 
-        if self.mass is NO_SETTING:
-            if altitude <= LEO_ALTITUDE_LIMIT:
-                self._mass._setting = LEO_DEFAULT_MASS  # pylint:disable=no-member
-            elif altitude <= MEO_ALTITUDE_LIMIT:
-                self._mass._setting = MEO_DEFAULT_MASS  # pylint:disable=no-member
-            elif altitude <= GEO_ALTITUDE_LIMIT:
-                self._mass._setting = GEO_DEFAULT_MASS  # pylint:disable=no-member
-            else:
-                err = "RSO altitude above GEO, unable to set a default mass value"
-                raise ValueError(self.__class__.__name__, err)
+        if altitude <= LEO_ALTITUDE_LIMIT:
+            orbital_regime = "leo"
+        elif altitude <= MEO_ALTITUDE_LIMIT:
+            orbital_regime = "meo"
+        elif altitude <= GEO_ALTITUDE_LIMIT:
+            orbital_regime = "geo"
+        else:
+            err = "RSO altitude above GEO, unable to set a default mass value"
+            raise ValueError(self.__class__.__name__, err)
 
+        # Set mass
+        if self.mass is NO_SETTING:
+            mass_dict = {
+                "leo": LEO_DEFAULT_MASS,
+                "meo": MEO_DEFAULT_MASS,
+                "geo": GEO_DEFAULT_MASS,
+            }
+            self._mass._setting = mass_dict[orbital_regime]  # pylint:disable=no-member
+
+        # Set Visual Cross Section
         if self.visual_cross_section is NO_SETTING:
-            if altitude <= LEO_ALTITUDE_LIMIT:
-                self._visual_cross_section._setting = LEO_DEFAULT_VCS  # pylint:disable=no-member
-            elif altitude <= MEO_ALTITUDE_LIMIT:
-                self._visual_cross_section._setting = MEO_DEFAULT_VCS  # pylint:disable=no-member
-            elif altitude <= GEO_ALTITUDE_LIMIT:
-                self._visual_cross_section._setting = GEO_DEFAULT_VCS  # pylint:disable=no-member
-            else:
-                err = "RSO altitude above GEO, unable to set a default visual cross section value"
-                raise ValueError(self.__class__.__name__, err)
+            vcs_dict = {
+                "leo": LEO_DEFAULT_VCS,
+                "meo": MEO_DEFAULT_VCS,
+                "geo": GEO_DEFAULT_VCS,
+            }
+            self._visual_cross_section._setting = vcs_dict[  # pylint:disable=no-member
+                orbital_regime
+            ]
 
     @property
     def sat_num(self):
@@ -243,13 +251,13 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ),
             ConfigOption("tx_power", (float,), default=NO_SETTING),
             ConfigOption("tx_frequency", (float,), default=NO_SETTING),
-            ConfigOption("visual_cross_section", (float, int), default=25.0),
-            ConfigOption("mass", (float, int), default=500.0),
+            ConfigOption("visual_cross_section", (float, int), default=NO_SETTING),
+            ConfigOption("mass", (float, int), default=NO_SETTING),
             ConfigOption("reflectivity", (float,), default=0.21),  # Solar Panel Reflectivity
             StationKeepingConfig(),
         )
 
-    def __init__(self, object_config):
+    def __init__(self, object_config):  # noqa: C901, pylint:disable=too-many-branches
         """Construct an instance of a :class:`.SensorConfigObject`.
 
         Args:
@@ -267,20 +275,29 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             err = f"Sensor {self.id}: Duplicate state specified: {object_config}"
             raise ConfigError(self.__class__.__name__, err)
 
+        if self.lla_set:
+            altitude = self.alt
+
         if self.eci_set:
             if len(self.init_eci) != 6:
                 err = f"Sensor {self.id}: ECI vector should have 6 elements, not {len(self.init_eci)}"
                 raise ConfigError(self.__class__.__name__, err)
+
+            altitude = norm(self.init_eci[:3]) - Earth.radius
 
         if self.eqe_set:
             if len(self.init_eqe) != 6:
                 err = f"Target {self.id}: EQE set should have 6 elements, not {len(self.init_eqe)}"
                 raise ConfigError(self.__class__.__name__, err)
 
+            altitude = self.init_eqe["sma"] - Earth.radius
+
         if self.coe_set:
             if len(self.init_coe) < 4:
                 err = f"Target {self.id}: COE set should have at least 4 elements, not {len(self.init_coe)}"
                 raise ConfigError(self.__class__.__name__, err)
+
+            altitude = self.init_coe["sma"] - Earth.radius
 
         is_radar = self.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL)
         tx_not_set = self.tx_power is NO_SETTING or self.tx_frequency is NO_SETTING
@@ -291,6 +308,36 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         if self.host_type is GROUND_FACILITY_LABEL and self.station_keeping.routines:
             err = "Ground based sensors cannot perform station keeping"
             raise ConfigError(self.__class__.__name__, err)
+
+        if altitude <= LEO_ALTITUDE_LIMIT:
+            orbital_regime = "leo"
+        elif altitude <= MEO_ALTITUDE_LIMIT:
+            orbital_regime = "meo"
+        elif altitude <= GEO_ALTITUDE_LIMIT:
+            orbital_regime = "geo"
+        else:
+            err = "RSO altitude above GEO, unable to set a default mass value"
+            raise ValueError(self.__class__.__name__, err)
+
+        # Set mass
+        if self.mass is NO_SETTING:
+            mass_dict = {
+                "leo": LEO_DEFAULT_MASS,
+                "meo": MEO_DEFAULT_MASS,
+                "geo": GEO_DEFAULT_MASS,
+            }
+            self._mass._setting = mass_dict[orbital_regime]  # pylint:disable=no-member
+
+        # Set Visual Cross Section
+        if self.visual_cross_section is NO_SETTING:
+            vcs_dict = {
+                "leo": LEO_DEFAULT_VCS,
+                "meo": MEO_DEFAULT_VCS,
+                "geo": GEO_DEFAULT_VCS,
+            }
+            self._visual_cross_section._setting = vcs_dict[  # pylint:disable=no-member
+                orbital_regime
+            ]
 
     @property  # noqa: A003
     def id(self):  # noqa: A003 pylint: disable=invalid-name

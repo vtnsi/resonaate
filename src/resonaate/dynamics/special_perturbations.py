@@ -57,7 +57,7 @@ class SpecialPerturbations(Celestial):
             jd_start (:class:`.JulianDate`): Julian date of the scenario's initial epoch
             geopotential (:class:`.GeopotentialConfig`): config describing the geopotential model and the accuracy
             perturbations (:class:`.PerturbationsConfig`): config describing which perturbations to include
-            sat_ratio (``float``): A/M ratio of RSO w/ reflectivity calculation
+            sat_ratio (``float``): Satellite Ratio of reflectivity to Area / Mass (m^2/kg)
             method (``str``, optional): Defaults to ``'RK45'``. Which ODE integration method to use
         """
         super().__init__(method=method)
@@ -254,12 +254,12 @@ def calcSatRatio(visual_cross_section: float, mass: float, reflectivity: float) 
         :cite:t:`montenbruck_2012_orbits`, Eqn 3.75 - 3.76, Table 3.5
 
     Args:
-            visual_cross_section (``float, int``): constant visual cross-section of the agent
-            mass (``float, int``): constant mass of the agent
-            reflectivity (``float``): constant reflectivity of the agent
+            visual_cross_section (``float, int``): constant visual cross-section of the agent (m^2)
+            mass (``float, int``): constant mass of the agent (kg)
+            reflectivity (``float``): constant reflectivity of the agent (unit-less)
 
     Returns:
-        ``float``: Satellite Ratio of reflectivity to Area / Mass
+        ``float``: Satellite Ratio of reflectivity to Area / Mass (m^2/kg)
     """
     # Radiation Pressure Coefficient (1 + epsilon) (Montenbruck, Eq. 3.76)
     c_r = 1.0 + reflectivity
@@ -339,7 +339,7 @@ def _getGeneralRelativityAccelerationIERS(
         gamma (``float``, optional): PPN parameter for General Relativity. Defaults to 1.0.
 
     Returns:
-        ``ndarray``: 3x1 ECI acceleration vector due to general relativity
+        ``ndarray``: 3x1 ECI acceleration vector due to general relativity, km/s^2
     """
     r_norm = norm(r_eci)
     # Earth & Sun Gravitational constants (km^3/sec^2)
