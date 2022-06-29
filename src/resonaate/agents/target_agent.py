@@ -28,13 +28,19 @@ if TYPE_CHECKING:
     from ..scenario.clock import ScenarioClock
 
 
-LEO_DEFAULT_MASS = 295.0  # Default mass of LEO RSO (km)
-MEO_DEFAULT_MASS = 2861.0  # Default mass of MEO RSO (km)
-GEO_DEFAULT_MASS = 6200.0  # Default mass of GEO RSO (km)
+LEO_DEFAULT_MASS = 295.0  # Default mass of LEO RSO (km)  #.  :cite:t:`LEO_RSO_2022_stats`
+MEO_DEFAULT_MASS = (
+    2861.0  # Default mass of MEO RSO (km)  #.  :cite:t:`steigenberger_MEO_RSO_2022_stats`
+)
+GEO_DEFAULT_MASS = 6200.0  # Default mass of GEO RSO (km)  #.  :cite:t:`GEO_RSO_2022_stats`
 
-LEO_DEFAULT_VCS = 10.0  # Default visual cross section of LEO RSO (m^2)
-MEO_DEFAULT_VCS = 37.5  # Default visual cross section of MEO RSO (m^2)
-GEO_DEFAULT_VCS = 90.0  # Default visual cross section of GEO RSO (m^2)
+LEO_DEFAULT_VCS = (
+    10.0  # Default visual cross section of LEO RSO (m^2)  #.  :cite:t:`LEO_RSO_2022_stats`
+)
+MEO_DEFAULT_VCS = 37.5  # Default visual cross section of MEO RSO (m^2)  #.  :cite:t:`steigenberger_MEO_RSO_2022_stats`
+GEO_DEFAULT_VCS = (
+    90.0  # Default visual cross section of GEO RSO (m^2)  #.  :cite:t:`GEO_RSO_2022_stats`
+)
 
 
 class TargetAgent(Agent):

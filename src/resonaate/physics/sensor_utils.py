@@ -1,6 +1,11 @@
 """Functions that define physics related to sensors."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
-from numpy import arccos, arcsin, cos, dot, log10, ndarray, sin, sqrt
+from numpy import arccos, arcsin, cos, dot, log10, sin, sqrt
 from scipy.linalg import norm
 
 # Local Imports
@@ -8,6 +13,10 @@ from .bodies import Earth
 from .bodies.third_body import Sun
 from .constants import PI, SOLAR_FLUX, SPEED_OF_LIGHT
 from .math import subtendedAngle
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
 
 
 def getEarthLimbConeAngle(eci_state: ndarray) -> float:
@@ -230,6 +239,9 @@ def apparentVisualMagnitude(
 
     Returns:
         ``float``: apparent visual magnitude (unitless)
+
+    References:
+        :cite:t:`cognion_2013_amos`, Eqn 3
     """
     return Sun.absolute_magnitude - 2.5 * log10(
         (visual_cross_section * reflectivity * phase_function) / rso_range**2
@@ -244,6 +256,9 @@ def lambertianPhaseFunction(phi: float) -> float:
 
     Returns
         (``float``): phase angle
+
+    References:
+        :cite:t:`cognion_2013_amos`, Eqn 1
     """
     return 2 * ((PI - phi) * cos(phi) + sin(phi)) / (3 * PI**2)
 
