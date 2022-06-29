@@ -99,6 +99,9 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         # Visible cross sectional area (m^2)
         self._visual_cross_section = visual_cross_section
 
+        if mass <= 0.0:
+            self._logger.error("Invalid value for mass param")
+            raise ValueError(mass)
         # Mass (kg)
         self._mass = mass
 

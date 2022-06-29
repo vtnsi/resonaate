@@ -38,7 +38,14 @@ GEO_DEFAULT_VCS = 90.0  # Default visual cross section of LEO RSO (m^2)
 
 
 class TargetAgent(Agent):
-    """Define the behavior of the **true** target agents in the simulation."""
+    """Define the behavior of the **true** target agents in the simulation.
+
+    References:
+        #.  :cite:t:`ISS_2022_stats`
+        #.  :cite:t:`LEO_RSO_2022_stats`
+        #.  :cite:t:`steigenberger_MEO_RSO_2022_stats`
+        #.  :cite:t:`GEO_RSO_2022_stats`
+    """
 
     def __init__(
         self,

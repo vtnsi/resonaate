@@ -50,6 +50,9 @@ class Optical(Sensor):
     Facility objects with optical sensors must be in eclipse while the target is in sunlight.
     Spacecraft objects with optical sensors must be viewing the target against empty space, and not
     the Earth.
+
+    References:
+        #  :cite:t:`vallado_2016_aiaa_covariance`
     """
 
     def __init__(

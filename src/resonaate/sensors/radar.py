@@ -35,6 +35,9 @@ class Radar(Sensor):
 
     The Radar sensor class provides the framework and functionality for radar sensor payloads,
     which provide azimuth, elevation, & range measurements with each observation.
+
+    References:
+        #  :cite:t:`vallado_2016_aiaa_covariance`
     """
 
     def __init__(

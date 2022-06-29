@@ -18,4 +18,7 @@ class AdvRadar(Radar):
     take range, azimuth, elevation, and range rate measurements for each observation. This is a
     specialization of the :class:`.Radar` class, overriding methods for adding extra measurements
     into the observation.
+
+    References:
+        #  :cite:t:`vallado_2016_aiaa_covariance`
     """
