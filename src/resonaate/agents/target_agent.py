@@ -30,11 +30,11 @@ if TYPE_CHECKING:
 
 LEO_DEFAULT_MASS = 295.0  # Default mass of LEO RSO (km)
 MEO_DEFAULT_MASS = 2861.0  # Default mass of MEO RSO (km)
-GEO_DEFAULT_MASS = 6200.0  # Default mass of LEO RSO (km)
+GEO_DEFAULT_MASS = 6200.0  # Default mass of GEO RSO (km)
 
 LEO_DEFAULT_VCS = 10.0  # Default visual cross section of LEO RSO (m^2)
 MEO_DEFAULT_VCS = 37.5  # Default visual cross section of MEO RSO (m^2)
-GEO_DEFAULT_VCS = 90.0  # Default visual cross section of LEO RSO (m^2)
+GEO_DEFAULT_VCS = 90.0  # Default visual cross section of GEO RSO (m^2)
 
 
 class TargetAgent(Agent):

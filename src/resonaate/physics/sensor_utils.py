@@ -7,6 +7,7 @@ from scipy.linalg import norm
 from .bodies import Earth
 from .bodies.third_body import Sun
 from .constants import PI, SOLAR_FLUX, SPEED_OF_LIGHT
+from .math import subtendedAngle
 
 
 def getEarthLimbConeAngle(eci_state: ndarray) -> float:
@@ -258,12 +259,9 @@ def calculatePhaseAngle(emitter: ndarray, reflector: ndarray, observer: ndarray)
     Returns:
         ``float``: angle between the light incident onto an observed object and the light reflected from the object
     """
-    reflector_emitter_vector = emitter - reflector
-    reflector_observer_vector = observer - reflector
-
-    phase_angle = arccos(
-        dot(reflector_emitter_vector, reflector_observer_vector)
-        / (norm(reflector_emitter_vector) * norm(reflector_observer_vector))
+    phase_angle = subtendedAngle(
+        emitter - reflector,
+        observer - reflector,
     )
 
     return phase_angle

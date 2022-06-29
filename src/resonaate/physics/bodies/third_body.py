@@ -353,7 +353,7 @@ class Sun(ThirdBody):
         mu (``float``): gravitational parameter (km^3/sec^2), from DE430.
         radius (``float``): mean equatorial radius (km), from Vallado.
         mass (``float``): sun's mass (kg), from Vallado.
-        absolute_magnitude (``float``): sun's absolute visual magnitude (unitless), from Google
+        absolute_magnitude (``float``): sun's absolute visual magnitude (unitless), from https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html
 
     References:
         :cite:t:`vallado_2013_astro`, Appendix D.3, Table D-5.
