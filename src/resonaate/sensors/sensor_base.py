@@ -56,7 +56,6 @@ class Sensor(metaclass=ABCMeta):
         slew_rate: float,
         field_of_view: FieldOfView,
         calculate_fov: bool,
-        detectable_vismag: float,
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
@@ -90,7 +89,6 @@ class Sensor(metaclass=ABCMeta):
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view
         self.calculate_field_of_view = calculate_fov
-        self.detectable_vismag = detectable_vismag
         self.minimum_range = minimum_range
         self.maximum_range = maximum_range
 
@@ -99,24 +97,7 @@ class Sensor(metaclass=ABCMeta):
         self.delta_boresight = 0.0
         self._host = None
         self.boresight = None
-        self._current_target = None
-        """``float``: For tracking the current target agent and help with debugging purposes."""
-        self.min_detect = None
-        self.max_range_aux = None
         self._sensor_args = sensor_args
-
-    @abstractmethod
-    def maximumRangeTo(self, viz_cross_section: float, tgt_eci_state: ndarray) -> float:
-        """Calculate the maximum possible range based on a target's visible area.
-
-        Args:
-            viz_cross_section (``float``): area of the target facing the sun (m^2)
-            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
-
-        Returns:
-            ``float``: maximum possible range to target at which this sensor can make valid observations (km)
-        """
-        raise NotImplementedError
 
     @abstractmethod
     def getMeasurements(self, slant_range_sez: ndarray, noisy=False) -> dict:
@@ -303,7 +284,6 @@ class Sensor(metaclass=ABCMeta):
                     **self.getNoisyMeasurements(slant_range_sez),
                 )
                 self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
-                self._current_target = tgt_id
 
             else:
                 # Forecasting an observation for reward matrix purposes
@@ -363,7 +343,7 @@ class Sensor(metaclass=ABCMeta):
         """
         return self.getMeasurements(slant_range_sez, noisy=True)
 
-    def isVisible(
+    def isVisible(  # pylint:disable=too-many-return-statements
         self,
         tgt_eci_state: ndarray,
         viz_cross_section: float,
@@ -385,8 +365,12 @@ class Sensor(metaclass=ABCMeta):
             ``bool``: True if target is visible; False if target is not visible
         """
         # pylint:disable=unused-argument
-        # Early exit if target not in sensor's range
-        if not self.minimum_range < getRange(slant_range_sez) < self.maximum_range:
+        # Early exit if target not in sensor's minimum range
+        if self.minimum_range and getRange(slant_range_sez) < self.minimum_range:
+            return False
+
+        # Early exit if target not in sensor's maximum range
+        if self.maximum_range and getRange(slant_range_sez) < self.maximum_range:
             return False
 
         # Early exit if a Line of Sight doesn't exist

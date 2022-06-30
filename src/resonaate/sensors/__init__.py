@@ -10,27 +10,9 @@ from numpy import asarray, sqrt
 
 # Local Imports
 from ..physics import constants as const
-from .advanced_radar import (
-    ADV_RADAR_DEFAULT_FOV,
-    ADV_RADAR_DETECTABLE_SNR,
-    ADV_RADAR_MAX_RANGE,
-    ADV_RADAR_MIN_RANGE,
-    AdvRadar,
-)
-from .optical import (
-    OPTICAL_DEFAULT_FOV,
-    OPTICAL_DETECTABLE_VISMAG,
-    OPTICAL_MAX_RANGE,
-    OPTICAL_MIN_RANGE,
-    Optical,
-)
-from .radar import (
-    RADAR_DEFAULT_FOV,
-    RADAR_DETECTABLE_SNR,
-    RADAR_MAX_RANGE,
-    RADAR_MIN_RANGE,
-    Radar,
-)
+from .advanced_radar import ADV_RADAR_DEFAULT_FOV, AdvRadar
+from .optical import OPTICAL_DEFAULT_FOV, OPTICAL_DETECTABLE_VISMAG, Optical
+from .radar import RADAR_DEFAULT_FOV, Radar
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -87,34 +69,18 @@ def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-bran
 
     # Set minimum observable range
     if configuration.minimum_range is NO_SETTING:
-        min_range_dict = {
-            OPTICAL_LABEL: OPTICAL_MIN_RANGE,
-            RADAR_LABEL: RADAR_MIN_RANGE,
-            ADV_RADAR_LABEL: ADV_RADAR_MIN_RANGE,
-        }
-        minimum_range = min_range_dict[configuration.sensor_type]
-    else:
-        minimum_range = configuration.minimum_range
+        minimum_range = None
 
     # Set maximum observable range
     if configuration.maximum_range is NO_SETTING:
-        max_range_dict = {
-            OPTICAL_LABEL: OPTICAL_MAX_RANGE,
-            RADAR_LABEL: RADAR_MAX_RANGE,
-            ADV_RADAR_LABEL: ADV_RADAR_MAX_RANGE,
-        }
-        maximum_range = max_range_dict[configuration.sensor_type]
-    else:
-        maximum_range = configuration.maximum_range
+        maximum_range = None
 
     # Set detectable vismag
-    if configuration.detectable_vismag is NO_SETTING:
-        detectable_vismag_dict = {
-            OPTICAL_LABEL: OPTICAL_DETECTABLE_VISMAG,
-            RADAR_LABEL: RADAR_DETECTABLE_SNR,
-            ADV_RADAR_LABEL: ADV_RADAR_DETECTABLE_SNR,
-        }
-        detectable_vismag = detectable_vismag_dict[configuration.sensor_type]
+    if (
+        configuration.detectable_vismag is NO_SETTING
+        and configuration.sensor_type is OPTICAL_LABEL
+    ):
+        detectable_vismag = OPTICAL_DETECTABLE_VISMAG
     else:
         detectable_vismag = configuration.detectable_vismag
 
@@ -131,23 +97,22 @@ def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-bran
         "calculate_fov": configuration.calculate_fov,
         "minimum_range": minimum_range,
         "maximum_range": maximum_range,
-        "detectable_vismag": detectable_vismag,
     }
 
     # Instantiate sensor object. Add extra params if needed
-    sensor_type = configuration.sensor_type
-    if sensor_type == OPTICAL_LABEL:
+    if configuration.sensor_type == OPTICAL_LABEL:
+        sensor_args["detectable_vismag"] = detectable_vismag
         sensor = Optical(**sensor_args)
-    elif sensor_type == RADAR_LABEL:
+    elif configuration.sensor_type == RADAR_LABEL:
         sensor_args["power_tx"] = configuration.tx_power
         sensor_args["frequency"] = configuration.tx_frequency
         sensor = Radar(**sensor_args)
-    elif sensor_type == ADV_RADAR_LABEL:
+    elif configuration.sensor_type == ADV_RADAR_LABEL:
         sensor_args["power_tx"] = configuration.tx_power
         sensor_args["frequency"] = configuration.tx_frequency
         sensor = AdvRadar(**sensor_args)
     else:
-        raise ValueError(sensor_type)
+        raise ValueError(configuration.sensor_type)
 
     return sensor
 

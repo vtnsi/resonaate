@@ -21,9 +21,6 @@ if TYPE_CHECKING:
     from . import FieldOfView
 
 
-RADAR_DETECTABLE_SNR = 25.0  # Default minimum observable visual magnitude (unitless)
-RADAR_MIN_RANGE = 0  # Default minimum range an RSO must be at to be observable (km)
-RADAR_MAX_RANGE = 99000  # Default maximum range an RSO must be at to be observable (km)
 RADAR_DEFAULT_FOV = {
     "fov_shape": "conic",
     "cone_angle": 1.0,
@@ -53,7 +50,6 @@ class Radar(Sensor):
         slew_rate: float,
         field_of_view: FieldOfView,
         calculate_fov: bool,
-        detectable_vismag: float,
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
@@ -72,7 +68,6 @@ class Radar(Sensor):
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
             calculate_fov (``bool``): whether or not to calculate Field of View, default=True
-            detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
@@ -87,7 +82,6 @@ class Radar(Sensor):
             slew_rate,
             field_of_view,
             calculate_fov,
-            detectable_vismag,
             minimum_range,
             maximum_range,
             **sensor_args,
@@ -101,10 +95,10 @@ class Radar(Sensor):
         self.tx_power = power_tx
 
         # Calculate minimum detectable power & maximum auxiliary range
-        self.min_detect = self._minPowerFromExemplar(self.exemplar[0], self.exemplar[1] * 1000)
-        self.max_range_aux = self._maxRangeFromExemplar(diameter, self.min_detect)
+        min_detect = self._minimumDetectablePower(self.exemplar[0], self.exemplar[1] * 1000)
+        self.max_range_aux = self._maximumDetectableRange(diameter, min_detect)
 
-    def _minPowerFromExemplar(self, exemplar_area: float, exemplar_range: float) -> float:
+    def _minimumDetectablePower(self, exemplar_area: float, exemplar_range: float) -> float:
         """Calculate the minimum detectable power based on exemplar criterion.
 
         References:
@@ -128,7 +122,7 @@ class Radar(Sensor):
             * (four_pi * exemplar_area**2 / lam_sq)
         ) / (lam_sq * (four_pi * exemplar_range**2.0) ** 2.0)
 
-    def _maxRangeFromExemplar(self, diameter: float, min_detect_power: float) -> float:
+    def _maximumDetectableRange(self, diameter: float, min_detect_power: float) -> float:
         """Calculate the auxiliary maximum range for a detection.
 
         This is an intermediate calculation for simplifying when `maximumRangeTo()` is called.
@@ -184,12 +178,35 @@ class Radar(Sensor):
 
         return measurements
 
-    def maximumRangeTo(self, viz_cross_section: float, tgt_eci_state: ndarray) -> float:
+    def isVisible(
+        self,
+        tgt_eci_state: ndarray,
+        viz_cross_section: float,
+        reflectivity: float,
+        slant_range_sez: ndarray,
+    ) -> bool:
+        """Determine if the target is in view of the sensor.
+
+        Args:
+            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
+            viz_cross_section (``float``): area of the target facing the sun (m^2)
+            reflectivity (``float``): Reflectivity of RSO (unitless)
+            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+
+        Returns:
+            bool: ``bool``: True if target is visible; False if target is not visible
+        """
+        # Early exit if target not in radar sensor's range, or a LOS doesn't exist
+        if getRange(slant_range_sez) > self.maximumRangeTo(viz_cross_section):
+            return False
+
+        return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)
+
+    def maximumRangeTo(self, viz_cross_section: float) -> float:
         """Calculate the maximum possible range based on a target's visible area.
 
         Args:
             viz_cross_section (``float``): area of the target facing the sun (m^2)
-            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
 
         Returns:
             ``float``: maximum possible range to target at which this sensor can make valid observations (km)

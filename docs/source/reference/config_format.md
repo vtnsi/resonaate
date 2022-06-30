@@ -646,9 +646,8 @@ These are the required fields defined for all types of sensor objects.
     "exemplar": [<decimal>, <decimal>],         # Ideal target area & range (m^2, km)
     "field_of_view": <FieldOfView>,             # Field of view config object
     "calculate_fov": <boolean>,                 # Toggle Field of View calculations
-    "minimum_range": <decimal>,                 # Minimum RSO range needed for observation, default dependant on sensor type
-    "maximum_range": <decimal>,                 # Maximum RSO range needed for observation, default dependant on sensor type
-    "detectable_vismag": <decimal>,             # Minimum vismag needed for observation, default dependant on sensor type
+    "minimum_range": <decimal>,                 # Opt: Minimum RSO range needed for observation
+    "maximum_range": <decimal>,                 # Opt: Maximum RSO range needed for observation
     "visual_cross_section": <decimal>, # Sensor VCS (unit-less), default 25.0
     "mass": <decimal>,                 # Sensor mass (kg), default 500
     "reflectivity": <decimal>,         # Sensor reflectivity (unit-less), default=0.21 (solar panel reflectivity)
@@ -673,8 +672,13 @@ Defines type and parameters of `"field_of_view"` field.
 
 Different types of sensors (`"sensor_type"` field) require different extra fields in the sensor object.
 
-1. `"Optical"` requires no extra fields
-1. `"Radar"` and `"AdvRadar"` require:
+1. `"Optical"` require:
+   ```python
+   <sensor_obj>: {
+      "detectable_vismag": <decimal>,    # Minimum vismag needed for observation, default is 25.0
+   }
+   ```
+2. `"Radar"` and `"AdvRadar"` require:
    ```python
    <sensor_obj>: {
        ...

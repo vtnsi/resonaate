@@ -5,11 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, sqrt
+from numpy import array
 from scipy.linalg import norm
 
 # Local Imports
-from ..physics import constants as const
 from ..physics.bodies import Sun
 from ..physics.sensor_utils import (
     apparentVisualMagnitude,
@@ -32,8 +31,6 @@ if TYPE_CHECKING:
 
 
 OPTICAL_DETECTABLE_VISMAG = 25.0  # Default minimum observable visual magnitude (unitless)
-OPTICAL_MIN_RANGE = 30000  # Default minimum range an RSO must be at to be observable (km)
-OPTICAL_MAX_RANGE = 99000  # Default maximum range an RSO must be at to be observable (km)
 OPTICAL_DEFAULT_FOV = {
     "fov_shape": "rectangular",
     "azimuth_angle": 1.0,
@@ -98,54 +95,12 @@ class Optical(Sensor):
             slew_rate,
             field_of_view,
             calculate_fov,
-            detectable_vismag,
             minimum_range,
             maximum_range,
             **sensor_args,
         )
 
-        # Calculate minimum detectable power & maximum auxiliary range
-        self.min_detect = self._minPowerFromExemplar(
-            diameter, self.exemplar[0], self.exemplar[1] * 1000
-        )
-        self.max_range_aux = self._maxRangeFromExemplar(diameter, self.min_detect)
-
-    def _minPowerFromExemplar(
-        self, diameter: float, exemplar_area: float, exemplar_range: float
-    ) -> float:
-        """Calculate the minimum detectable power based on exemplar criterion.
-
-        References:
-            :cite:t:`nastasi_2018_diss`, Pg 48, Eqn 3.10
-
-        Args:
-            diameter (``float``): aperture diameter, m^2
-            exemplar_area (``float``): cross-sectional area of the exemplar target, m^2
-            exemplar_range (``float``): range to exemplar target, m
-
-        Returns:
-            ``float``: minimum detectable power for this sensors, W
-        """
-        return (const.SOLAR_FLUX * exemplar_area * diameter**2 * self.efficiency) / (
-            16 * exemplar_range**2
-        )
-
-    def _maxRangeFromExemplar(self, diameter: float, min_detect_power: float) -> float:
-        """Calculate the auxiliary maximum range for a detection.
-
-        This is an intermediate calculation for simplifying when `maximumRangeTo()` is called.
-
-        References:
-            :cite:t:`nastasi_2018_diss`, Pg 48, Eqn 3.11
-
-        Args:
-            diameter (``float``): aperture diameter, m^2
-            min_detect_power (``float``): minimum detectable power of the sensor, W
-
-        Returns:
-            ``float``: auxiliary maximum range, (mW-1)^1/2
-        """
-        return sqrt((diameter**2 * self.efficiency) / (16 * min_detect_power))
+        self.detectable_vismag = detectable_vismag
 
     @property
     def angle_measurements(self):
@@ -252,20 +207,3 @@ class Optical(Sensor):
             )
 
         return False
-
-    def maximumRangeTo(self, viz_cross_section: float, tgt_eci_state: ndarray) -> float:
-        """Calculate the maximum possible range based on a target's visible area.
-
-        Args:
-            viz_cross_section (``float``): area of the target facing the sun (m^2)
-            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
-
-        Returns:
-            ``float``: maximum possible range to target at which this sensor can make valid observations (km)
-        """
-        jd = self.host.julian_date_epoch
-        sun_eci_position = Sun.getPosition(jd)
-        solar_flux = calculateIncidentSolarFlux(
-            viz_cross_section, tgt_eci_state[:3], sun_eci_position
-        )
-        return sqrt(solar_flux) * self.max_range_aux / 1000.0
