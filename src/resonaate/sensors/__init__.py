@@ -78,7 +78,7 @@ def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-bran
     # Set detectable vismag
     if (
         configuration.detectable_vismag is NO_SETTING
-        and configuration.sensor_type is OPTICAL_LABEL
+        and configuration.sensor_type == OPTICAL_LABEL
     ):
         detectable_vismag = OPTICAL_DETECTABLE_VISMAG
     else:
