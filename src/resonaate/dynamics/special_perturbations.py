@@ -57,7 +57,7 @@ class SpecialPerturbations(Celestial):
             jd_start (:class:`.JulianDate`): Julian date of the scenario's initial epoch
             geopotential (:class:`.GeopotentialConfig`): config describing the geopotential model and the accuracy
             perturbations (:class:`.PerturbationsConfig`): config describing which perturbations to include
-            sat_ratio (``float``): Satellite Ratio of reflectivity to Area / Mass (m^2/kg)
+            sat_ratio (``float``): area-to-mass ratio times the coefficient of solar radiation pressure, see :func:.calculateSatRatio for details.
             method (``str``, optional): Defaults to ``'RK45'``. Which ODE integration method to use
         """
         super().__init__(method=method)
@@ -248,7 +248,11 @@ def _getThirdBodyAcceleration(sat_position: ndarray, third_body_position: ndarra
 
 
 def calcSatRatio(visual_cross_section: float, mass: float, reflectivity: float) -> float:
-    """Calculate RSO specific value needed for SRP.
+    r"""Calculate RSO specific value needed for SRP.
+
+    .. math::
+
+        (1.0 + reflectivity) * (\frac{vcs}{mass})
 
     References:
         :cite:t:`montenbruck_2012_orbits`, Eqn 3.75 - 3.76, Table 3.5
