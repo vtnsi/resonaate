@@ -19,7 +19,14 @@ from ...dynamics.integration_events.station_keeping import (
 )
 from ...physics.bodies.earth import Earth
 from ...physics.orbits import GEO_ALTITUDE_LIMIT, LEO_ALTITUDE_LIMIT, MEO_ALTITUDE_LIMIT
-from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL, VALID_SENSOR_FOV_LABELS
+from ...sensors import (
+    ADV_RADAR_LABEL,
+    DEFAULT_VIEWING_ANGLE,
+    OPTICAL_LABEL,
+    RADAR_LABEL,
+    SOLAR_PANEL_REFLECTIVITY,
+    VALID_SENSOR_FOV_LABELS,
+)
 from .base import (
     NO_SETTING,
     ConfigError,
@@ -62,7 +69,7 @@ class TargetConfigObject(ConfigObject):
             ConfigOption("init_eqe", (dict,), default=NO_SETTING),
             ConfigOption("visual_cross_section", (float, int), default=NO_SETTING),
             ConfigOption("mass", (float, int), default=NO_SETTING),
-            ConfigOption("reflectivity", (float,), default=0.21),  # Solar Panel Reflectivity
+            ConfigOption("reflectivity", (float,), default=SOLAR_PANEL_REFLECTIVITY),
             StationKeepingConfig(),
         )
 
@@ -253,7 +260,7 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ConfigOption("tx_frequency", (float,), default=NO_SETTING),
             ConfigOption("visual_cross_section", (float, int), default=NO_SETTING),
             ConfigOption("mass", (float, int), default=NO_SETTING),
-            ConfigOption("reflectivity", (float,), default=0.21),  # Solar Panel Reflectivity
+            ConfigOption("reflectivity", (float,), default=SOLAR_PANEL_REFLECTIVITY),
             StationKeepingConfig(),
         )
 
@@ -549,10 +556,14 @@ class FieldOfViewConfig(ConfigSection):
             default=NO_SETTING,
             valid_settings=(NO_SETTING,) + VALID_SENSOR_FOV_LABELS,
         )
-        self._cone_angle = ConfigOption("cone_angle", (float, int), default=1.0)  # degrees
-        self._azimuth_angle = ConfigOption("azimuth_angle", (float, int), default=1.0)  # degrees
+        self._cone_angle = ConfigOption(
+            "cone_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
+        )  # degrees
+        self._azimuth_angle = ConfigOption(
+            "azimuth_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
+        )  # degrees
         self._elevation_angle = ConfigOption(
-            "elevation_angle", (float, int), default=1.0
+            "elevation_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
         )  # degrees
 
     @property

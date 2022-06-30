@@ -36,6 +36,12 @@ VALID_SENSOR_FOV_LABELS: Tuple[str] = (
 )
 """list: Contains list of valid sensor Field of View configurations."""
 
+SOLAR_PANEL_REFLECTIVITY: float = 0.21
+"""float: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`."""
+
+DEFAULT_VIEWING_ANGLE: float = 1.0
+"""float: default angle for a sensor's FoV."""
+
 
 def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-branches
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
