@@ -1,11 +1,32 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
+
+# Third Party Imports
+from numpy.linalg import norm
+
 # Local Imports
 from ...agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
+from ...agents.target_agent import (
+    GEO_DEFAULT_MASS,
+    GEO_DEFAULT_VCS,
+    LEO_DEFAULT_MASS,
+    LEO_DEFAULT_VCS,
+    MEO_DEFAULT_MASS,
+    MEO_DEFAULT_VCS,
+)
 from ...dynamics.integration_events.station_keeping import (
     VALID_STATION_KEEPING_ROUTINES,
     StationKeeper,
 )
-from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL, VALID_SENSOR_FOV_LABELS
+from ...physics.bodies.earth import Earth
+from ...physics.orbits import GEO_ALTITUDE_LIMIT, LEO_ALTITUDE_LIMIT, MEO_ALTITUDE_LIMIT
+from ...sensors import (
+    ADV_RADAR_LABEL,
+    DEFAULT_VIEWING_ANGLE,
+    OPTICAL_LABEL,
+    RADAR_LABEL,
+    SOLAR_PANEL_REFLECTIVITY,
+    VALID_SENSOR_FOV_LABELS,
+)
 from .base import (
     NO_SETTING,
     ConfigError,
@@ -35,17 +56,24 @@ class TargetConfigObject(ConfigObject):
 
     @staticmethod
     def getFields():
-        """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.TargetConfigObject`."""
+        """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.TargetConfigObject`.
+
+        References:
+            :cite:t:`montenbruck_2012_orbits`, Eqn 3.75 - 3.76, Table 3.5
+        """
         return (
             ConfigOption("sat_num", (int,)),
             ConfigOption("sat_name", (str,)),
             ConfigOption("init_eci", (list,), default=NO_SETTING),
             ConfigOption("init_coe", (dict,), default=NO_SETTING),
             ConfigOption("init_eqe", (dict,), default=NO_SETTING),
+            ConfigOption("visual_cross_section", (float, int), default=NO_SETTING),
+            ConfigOption("mass", (float, int), default=NO_SETTING),
+            ConfigOption("reflectivity", (float,), default=SOLAR_PANEL_REFLECTIVITY),
             StationKeepingConfig(),
         )
 
-    def __init__(self, object_config):
+    def __init__(self, object_config):  # noqa: C901, pylint: disable=too-many-branches
         """Construct an instance of a :class:`.TargetConfigObject`.
 
         Args:
@@ -68,15 +96,51 @@ class TargetConfigObject(ConfigObject):
                 err = f"Target {self.sat_num}: ECI vector should have 6 elements, not {len(self.init_eci)}"
                 raise ConfigError(self.__class__.__name__, err)
 
+            altitude = norm(self.init_eci[:3]) - Earth.radius
+
         if self.eqe_set:
             if len(self.init_eqe) != 6:
                 err = f"Target {self.sat_num}: EQE set should have 6 elements, not {len(self.init_eqe)}"
                 raise ConfigError(self.__class__.__name__, err)
 
+            altitude = self.init_eqe["sma"] - Earth.radius
+
         if self.coe_set:
             if len(self.init_coe) < 4:
                 err = f"Target {self.sat_num}: COE set should have at least 4 elements, not {len(self.init_coe)}"
                 raise ConfigError(self.__class__.__name__, err)
+
+            altitude = self.init_coe["sma"] - Earth.radius
+
+        if altitude <= LEO_ALTITUDE_LIMIT:
+            orbital_regime = "leo"
+        elif altitude <= MEO_ALTITUDE_LIMIT:
+            orbital_regime = "meo"
+        elif altitude <= GEO_ALTITUDE_LIMIT:
+            orbital_regime = "geo"
+        else:
+            err = "RSO altitude above GEO, unable to set a default mass value"
+            raise ValueError(self.__class__.__name__, err)
+
+        # Set mass
+        if self.mass is NO_SETTING:
+            mass_dict = {
+                "leo": LEO_DEFAULT_MASS,
+                "meo": MEO_DEFAULT_MASS,
+                "geo": GEO_DEFAULT_MASS,
+            }
+            self._mass._setting = mass_dict[orbital_regime]  # pylint:disable=no-member
+
+        # Set Visual Cross Section
+        if self.visual_cross_section is NO_SETTING:
+            vcs_dict = {
+                "leo": LEO_DEFAULT_VCS,
+                "meo": MEO_DEFAULT_VCS,
+                "geo": GEO_DEFAULT_VCS,
+            }
+            self._visual_cross_section._setting = vcs_dict[  # pylint:disable=no-member
+                orbital_regime
+            ]
 
     @property
     def sat_num(self):
@@ -111,6 +175,21 @@ class TargetConfigObject(ConfigObject):
         See :meth:`.EquinoctialElements.fromConfig()` for rules on defining a set of equinoctial orbital elements.
         """
         return self._init_eqe.setting  # pylint: disable=no-member
+
+    @property
+    def mass(self):
+        """float: Mass of RSO."""
+        return self._mass.setting  # pylint:disable=no-member
+
+    @property
+    def visual_cross_section(self):
+        """float: visual_cross_section of RSO."""
+        return self._visual_cross_section.setting  # pylint:disable=no-member
+
+    @property
+    def reflectivity(self):
+        """float: reflectivity of RSO."""
+        return self._reflectivity.setting  # pylint:disable=no-member
 
     @property
     def station_keeping(self):
@@ -165,6 +244,9 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ConfigOption("exemplar", (list,)),
             FieldOfViewConfig(),
             ConfigOption("calculate_fov", (bool,), default=NO_SETTING),
+            ConfigOption("detectable_vismag", (float, int), default=NO_SETTING),
+            ConfigOption("minimum_range", (float, int), default=NO_SETTING),
+            ConfigOption("maximum_range", (float, int), default=NO_SETTING),
             ConfigOption(
                 "sensor_type",
                 (str,),
@@ -176,10 +258,13 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             ),
             ConfigOption("tx_power", (float,), default=NO_SETTING),
             ConfigOption("tx_frequency", (float,), default=NO_SETTING),
+            ConfigOption("visual_cross_section", (float, int), default=NO_SETTING),
+            ConfigOption("mass", (float, int), default=NO_SETTING),
+            ConfigOption("reflectivity", (float,), default=SOLAR_PANEL_REFLECTIVITY),
             StationKeepingConfig(),
         )
 
-    def __init__(self, object_config):
+    def __init__(self, object_config):  # noqa: C901, pylint:disable=too-many-branches
         """Construct an instance of a :class:`.SensorConfigObject`.
 
         Args:
@@ -197,20 +282,29 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             err = f"Sensor {self.id}: Duplicate state specified: {object_config}"
             raise ConfigError(self.__class__.__name__, err)
 
+        if self.lla_set:
+            altitude = self.alt
+
         if self.eci_set:
             if len(self.init_eci) != 6:
                 err = f"Sensor {self.id}: ECI vector should have 6 elements, not {len(self.init_eci)}"
                 raise ConfigError(self.__class__.__name__, err)
+
+            altitude = norm(self.init_eci[:3]) - Earth.radius
 
         if self.eqe_set:
             if len(self.init_eqe) != 6:
                 err = f"Target {self.id}: EQE set should have 6 elements, not {len(self.init_eqe)}"
                 raise ConfigError(self.__class__.__name__, err)
 
+            altitude = self.init_eqe["sma"] - Earth.radius
+
         if self.coe_set:
             if len(self.init_coe) < 4:
                 err = f"Target {self.id}: COE set should have at least 4 elements, not {len(self.init_coe)}"
                 raise ConfigError(self.__class__.__name__, err)
+
+            altitude = self.init_coe["sma"] - Earth.radius
 
         is_radar = self.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL)
         tx_not_set = self.tx_power is NO_SETTING or self.tx_frequency is NO_SETTING
@@ -221,6 +315,36 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         if self.host_type is GROUND_FACILITY_LABEL and self.station_keeping.routines:
             err = "Ground based sensors cannot perform station keeping"
             raise ConfigError(self.__class__.__name__, err)
+
+        if altitude <= LEO_ALTITUDE_LIMIT:
+            orbital_regime = "leo"
+        elif altitude <= MEO_ALTITUDE_LIMIT:
+            orbital_regime = "meo"
+        elif altitude <= GEO_ALTITUDE_LIMIT:
+            orbital_regime = "geo"
+        else:
+            err = "RSO altitude above GEO, unable to set a default mass value"
+            raise ValueError(self.__class__.__name__, err)
+
+        # Set mass
+        if self.mass is NO_SETTING:
+            mass_dict = {
+                "leo": LEO_DEFAULT_MASS,
+                "meo": MEO_DEFAULT_MASS,
+                "geo": GEO_DEFAULT_MASS,
+            }
+            self._mass._setting = mass_dict[orbital_regime]  # pylint:disable=no-member
+
+        # Set Visual Cross Section
+        if self.visual_cross_section is NO_SETTING:
+            vcs_dict = {
+                "leo": LEO_DEFAULT_VCS,
+                "meo": MEO_DEFAULT_VCS,
+                "geo": GEO_DEFAULT_VCS,
+            }
+            self._visual_cross_section._setting = vcs_dict[  # pylint:disable=no-member
+                orbital_regime
+            ]
 
     @property  # noqa: A003
     def id(self):  # noqa: A003 pylint: disable=invalid-name
@@ -365,6 +489,21 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         self._calculate_fov = new_calc_fov
 
     @property
+    def minimum_range(self):
+        """float, int: minimum range visibility of this sensor."""
+        return self._minimum_range.setting  # pylint: disable=no-member
+
+    @property
+    def maximum_range(self):
+        """float, int: maximum range visibility of this sensor."""
+        return self._maximum_range.setting  # pylint: disable=no-member
+
+    @property
+    def detectable_vismag(self):
+        """float, int: maximum detectable visual magnitude of this sensor."""
+        return self._detectable_vismag.setting  # pylint: disable=no-member
+
+    @property
     def tx_power(self):
         """float: Transmit power of radar sensor.
 
@@ -379,6 +518,21 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
         Will only be set if :attr:`~.Observation.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
         """
         return self._tx_frequency.setting  # pylint: disable=no-member
+
+    @property
+    def mass(self):
+        """float: Mass of RSO."""
+        return self._mass.setting  # pylint: disable=no-member
+
+    @property
+    def visual_cross_section(self):
+        """float: visual_cross_section of RSO."""
+        return self._visual_cross_section.setting  # pylint: disable=no-member
+
+    @property
+    def reflectivity(self):
+        """float: reflectivity of RSO."""
+        return self._reflectivity.setting  # pylint: disable=no-member
 
     @property
     def station_keeping(self):
@@ -399,12 +553,18 @@ class FieldOfViewConfig(ConfigSection):
         self._fov_shape = ConfigOption(
             "fov_shape",
             (str,),
-            default="conic",
+            default=NO_SETTING,
             valid_settings=(NO_SETTING,) + VALID_SENSOR_FOV_LABELS,
         )
-        self._cone_angle = ConfigOption("cone_angle", (float,), default=1.0)  # degrees
-        self._azimuth_angle = ConfigOption("azimuth_angle", (float,), default=1.0)  # degrees
-        self._elevation_angle = ConfigOption("elevation_angle", (float,), default=1.0)  # degrees
+        self._cone_angle = ConfigOption(
+            "cone_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
+        )  # degrees
+        self._azimuth_angle = ConfigOption(
+            "azimuth_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
+        )  # degrees
+        self._elevation_angle = ConfigOption(
+            "elevation_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
+        )  # degrees
 
     @property
     def nested_items(self):

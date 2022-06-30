@@ -17,7 +17,7 @@ from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2eci, ecef2lla, eci2ecef, lla2ecef
 from ..sensors import sensorFactory
 from ..sensors.sensor_base import Sensor
-from .agent_base import DEFAULT_VIS_X_SECTION, Agent
+from .agent_base import Agent
 
 # Type checking
 if TYPE_CHECKING:
@@ -54,6 +54,9 @@ class SensingAgent(Agent):
         sensors: Sensor,
         dynamics: Dynamics,
         realtime: bool,
+        visual_cross_section: Union[float, int],
+        mass: Union[float, int],
+        reflectivity: float,
         station_keeping: list[StationKeeper] = None,
     ):
         """Construct a SensingAgent object.
@@ -67,22 +70,26 @@ class SensingAgent(Agent):
             sensors (:class:`.Sensor`): sensor object associated this SensingAgent object
             dynamics (:class:`.Dynamics`): SensingAgent's simulation dynamics
             realtime (``bool``): whether to use :attr:`dynamics` or import data for propagation
+            visual_cross_section (``float, int``): constant visual cross-section of the agent
+            mass (``float, int``): constant mass of the agent
+            reflectivity (``float``): constant reflectivity of the agent
             station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station
                 keeping to be performed
 
         Raises:
             TypeError: raised on incompatible types for input params
         """
-        # [TODO]: Make visual cross-section better
         super().__init__(
-            _id,
-            name,
-            agent_type,
-            initial_state,
-            clock,
-            dynamics,
-            realtime,
-            DEFAULT_VIS_X_SECTION,
+            _id=_id,
+            name=name,
+            agent_type=agent_type,
+            initial_state=initial_state,
+            clock=clock,
+            dynamics=dynamics,
+            realtime=realtime,
+            visual_cross_section=visual_cross_section,
+            mass=mass,
+            reflectivity=reflectivity,
             station_keeping=station_keeping,
         )
         # [TODO]: Make sensors attribute a collection, so we can attach multiple sensors to an agent
@@ -226,6 +233,9 @@ class SensingAgent(Agent):
             sensor,
             dynamics,
             use_realtime,
+            agent.visual_cross_section,
+            agent.mass,
+            agent.reflectivity,
             station_keeping,
         )
 

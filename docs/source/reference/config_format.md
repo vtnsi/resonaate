@@ -515,14 +515,17 @@ Target agents' initial states are assumed to be defined at the epoch defined by 
 1. ECI state vector
    ```python
    <target_obj>: {
-       "sat_num": <integer>, # NORAD catalog number or unique simulation ID
-       "sat_name": <string>, # Unique simulation name or SATCAT name
-       "init_eci": [         # J2000 initial state vector defined at "start_timestamp"
+       "sat_num": <integer>,              # NORAD catalog number or unique simulation ID
+       "sat_name": <string>,              # Unique simulation name or SATCAT name
+       "init_eci": [                      # J2000 initial state vector defined at "start_timestamp"
            # ECI "x", "y", and "z" positions  (km)
            <decimal>, <decimal>, <decimal>,
            # ECI "x", "y", and "z" velocities (km/sec)
            <decimal>, <decimal>, <decimal>
-       ]
+       ],
+       "visual_cross_section": <decimal>, # RSO VCS (unit-less), default dependant on Orbital Regime
+       "mass": <decimal>,                 # RSO mass (kg), default dependant on Orbital Regime
+       "reflectivity": <decimal>,         # RSO reflectivity (unit-less), default=0.21 (solar panel reflectivity)
    }
    ```
 1. Classical orbital elements (COE), see {ref}`ref-cfg-subsec-target-coe-object`
@@ -531,6 +534,9 @@ Target agents' initial states are assumed to be defined at the epoch defined by 
        "sat_num": <integer>,    # NORAD catalog number or unique simulation ID
        "sat_name": <string>,    # Unique simulation name, or SATCAT name
        "init_coe": <coe_object> # COE object defined at "start_timestamp"
+       "visual_cross_section": <decimal>, # RSO VCS (unit-less), default dependant on Orbital Regime
+       "mass": <decimal>,                 # RSO mass (kg), default dependant on Orbital Regime
+       "reflectivity": <decimal>,         # RSO reflectivity (unit-less), default=0.21 (solar panel reflectivity)
    }
    ```
 1. Equinoctial orbital elements (EQE), see {ref}`ref-cfg-subsec-target-eqe-object`
@@ -539,6 +545,9 @@ Target agents' initial states are assumed to be defined at the epoch defined by 
        "sat_num": <integer>,    # NORAD catalog number or unique simulation ID
        "sat_name": <string>,    # Unique simulation name, or SATCAT name
        "init_eqe": <eqe_object> # EQE object defined at "start_timestamp"
+       "visual_cross_section": <decimal>, # RSO VCS (unit-less), default dependant on Orbital Regime
+       "mass": <decimal>,                 # RSO mass (kg), default dependant on Orbital Regime
+       "reflectivity": <decimal>,         # RSO reflectivity (unit-less), default=0.21 (solar panel reflectivity)
    }
    ```
 
@@ -634,9 +643,14 @@ These are the required fields defined for all types of sensor objects.
     "host_type": <string>,                      # Type of agent
     "azimuth_range": [<decimal>, <decimal>],    # Min/max az sensor limits (rad, rad)
     "elevation_range": [<decimal>, <decimal>],  # Min/max el sensor limits (rad, rad)
-    "exemplar": [<decimal>, <decimal>]          # Ideal target area & range (m^2, km)
-    "field_of_view": <FieldOfView>              # Field of view config object
-    "calculate_fov": <boolean>                  # Toggle Field of View calculations
+    "exemplar": [<decimal>, <decimal>],         # Ideal target area & range (m^2, km)
+    "field_of_view": <FieldOfView>,             # Field of view config object
+    "calculate_fov": <boolean>,                 # Toggle Field of View calculations
+    "minimum_range": <decimal>,                 # Opt: Minimum RSO range needed for observation
+    "maximum_range": <decimal>,                 # Opt: Maximum RSO range needed for observation
+    "visual_cross_section": <decimal>, # Sensor VCS (unit-less), default 25.0
+    "mass": <decimal>,                 # Sensor mass (kg), default 500
+    "reflectivity": <decimal>,         # Sensor reflectivity (unit-less), default=0.21 (solar panel reflectivity)
 }
 ```
 
@@ -658,8 +672,13 @@ Defines type and parameters of `"field_of_view"` field.
 
 Different types of sensors (`"sensor_type"` field) require different extra fields in the sensor object.
 
-1. `"Optical"` requires no extra fields
-1. `"Radar"` and `"AdvRadar"` require:
+1. `"Optical"` require:
+   ```python
+   <sensor_obj>: {
+      "detectable_vismag": <decimal>,    # Minimum vismag needed for observation, default is 25.0
+   }
+   ```
+2. `"Radar"` and `"AdvRadar"` require:
    ```python
    <sensor_obj>: {
        ...

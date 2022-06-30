@@ -20,12 +20,12 @@ from ..estimation.debug_utils import checkThreeSigmaObs, logFilterStep
 from ..estimation.sequential.sequential_filter import FilterDebugFlag, SequentialFilter
 from ..physics.noise import initialEstimateNoise
 from ..physics.transforms.methods import ecef2lla, eci2ecef
-from .agent_base import DEFAULT_VIS_X_SECTION, Agent
+from .agent_base import Agent
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Optional
+    from typing import Any, Optional, Union
 
     # Third Party Imports
     from numpy import ndarray
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from ..sensors.sensor_base import ObservationTuple
 
 
-class EstimateAgent(Agent):
+class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
     """Define the behavior of the **estimated** target agents in the simulation."""
 
     def __init__(
@@ -50,6 +50,9 @@ class EstimateAgent(Agent):
         initial_covariance: ndarray,
         _filter: SequentialFilter,
         adaptive_filter_config: AdaptiveEstimationConfig,
+        visual_cross_section: Union[float, int],
+        mass: Union[float, int],
+        reflectivity: float,
         seed: Optional[int] = None,
         station_keeping: Optional[list[StationKeeper]] = None,
     ):
@@ -64,6 +67,9 @@ class EstimateAgent(Agent):
             initial_covariance (``ndarray``): 6x6 initial covariance or uncertainty
             _filter (:class:`.SequentialFilter`): tracks the estimate's state throughout the simulation
             adaptive_filter_config (:class:`.ConfigOption`): adaptive filter configuration to be used if needed
+            visual_cross_section (``float, int``): constant visual cross-section of the agent
+            mass (``float, int``): constant mass of the agent
+            reflectivity (``float``): constant reflectivity of the agent
             seed (``int``, optional): number to seed random number generator. Defaults to ``None``.
             station_keeping (``list``, optional): list of :class:`.StationKeeper` objects describing the station
                 keeping to be performed. Defaults to ``None``.
@@ -73,14 +79,16 @@ class EstimateAgent(Agent):
             - ``ShapeError`` raised if process noise is not a 6x6 matrix
         """
         super().__init__(
-            _id,
-            name,
-            agent_type,
-            initial_state,
-            clock,
-            _filter.dynamics,
-            True,
-            DEFAULT_VIS_X_SECTION,
+            _id=_id,
+            name=name,
+            agent_type=agent_type,
+            initial_state=initial_state,
+            clock=clock,
+            dynamics=_filter.dynamics,
+            realtime=True,
+            visual_cross_section=visual_cross_section,
+            mass=mass,
+            reflectivity=reflectivity,
             station_keeping=station_keeping,
         )
 
@@ -382,6 +390,9 @@ class EstimateAgent(Agent):
             init_p,
             nominal_filter,
             config["adaptive_filter"],
+            tgt.visual_cross_section,
+            tgt.mass,
+            tgt.reflectivity,
             config["seed"],
         )
 
@@ -469,3 +480,18 @@ class EstimateAgent(Agent):
     def nominal_filter(self):
         """:class:`.SequentialFilter`: Returns the EstimateAgent's associated filter instance."""
         return self._filter
+
+    @property
+    def visual_cross_section(self):
+        """``float``: Returns the EstimateAgent's associated visual cross section."""
+        return self._visual_cross_section
+
+    @property
+    def mass(self):
+        """``float``: Returns the EstimateAgent's associated mass."""
+        return self._mass
+
+    @property
+    def reflectivity(self):
+        """``float``: Returns the EstimateAgent's associated reflectivity."""
+        return self._reflectivity

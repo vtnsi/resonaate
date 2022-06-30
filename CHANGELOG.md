@@ -40,14 +40,23 @@ ______________________________________________________________________
   - `field_of_view` variable to `sensors/sensor_base/` in the `**sensor_args`
   - `collectObservations()`, `checkTargetsInView()`, `inFOV()`, `canSlew()` to `sensors/sensor_base/`
   - `tests/sensor/test_fov`
+  - `visual_cross_section`, `mass`, `reflectivity` config options for `Agent` objects
+  - `detectable_vismag`, `min_range`, `max_range` sensor config options
+  - Default values on a per-sensor basis for sensor `detectable_vismag`, `min_range`, `max_range`
+  - `Optical.isVisible()` now checks solar phase angle and apparent vismag
+  - Unit tests for `sensor_utils.py`
 
 - Changed
 
   - `AsyncExecuteTasking()` now calls `collectObservations` instead of `makeNoisyObservation`
   - chi-square test functions now accept `ndarray` as inputs
+  - `_getSolarRadiationPressureAcceleration()` is now a class function of `SpecialPerturbations`
 
 - Deprecated
 - Removed
+
+  - `DEFAULT_VIZ_X_SECTION` and all references to it
+
 - Fixed
 
 # \[1.4.0 - 2022-06-06\]

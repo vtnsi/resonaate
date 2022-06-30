@@ -1,7 +1,10 @@
 """Abstract base class that defines a common interface for all `Agent` classes."""
+from __future__ import annotations
+
 # Standard Library Imports
 import logging
 from abc import ABCMeta, abstractmethod
+from typing import Union
 
 # Third Party Imports
 from numpy import ndarray
@@ -17,14 +20,8 @@ from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.math import fpe_equals
 from ..scenario.clock import ScenarioClock
 
-DEFAULT_VIS_X_SECTION = 25.0
-"""float: Default value for `visual_cross_section`.
 
-TODO: Make this better
-"""
-
-
-class Agent(metaclass=ABCMeta):
+class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
     """Abstract base class for a generic Agent object, i.e. an actor in the simulation."""
 
     TYPES = {
@@ -36,19 +33,23 @@ class Agent(metaclass=ABCMeta):
         "dynamics": Dynamics,
         "realtime": bool,
         "visual_cross_section": (int, float),
+        "mass": (int, float),
+        "reflectivity": float,
         "station_keeping": (list, type(None)),
     }
 
     def __init__(
         self,
-        _id,
-        name,
-        agent_type,
-        initial_state,
-        clock,
-        dynamics,
-        realtime,
-        visual_cross_section,
+        _id: int,
+        name: str,
+        agent_type: str,
+        initial_state: ndarray,
+        clock: ScenarioClock,
+        dynamics: Dynamics,
+        realtime: bool,
+        visual_cross_section: Union[float, int],
+        mass: Union[float, int],
+        reflectivity: float,
         station_keeping=None,
     ):
         """Construct an Agent object.
@@ -57,11 +58,13 @@ class Agent(metaclass=ABCMeta):
             _id (``int``): unique identification number
             name (``str``): unique identification name
             agent_type (``str``): name signifying the type of agent `('Spacecraft', 'GroundFacility', )`
-            initial_state (``numpy.ndarray``): 6x1 ECI initial state vector
+            initial_state (``ndarray``): 6x1 ECI initial state vector
             clock (:class:`.ScenarioClock`): clock instance for retrieving proper times
             dynamics (:class:`.Dynamics`): Agent's simulation dynamics
             realtime (``bool``): whether to use :attr:`.dynamics` or import data for propagation
-            visual_cross_section (``float``): constant visual cross-section of the agent
+            visual_cross_section (``float, int``): constant visual cross-section of the agent
+            mass (``float, int``): constant mass of the agent
+            reflectivity (``float``): constant reflectivity of the agent
             station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station keeping to
                 be performed
 
@@ -97,6 +100,15 @@ class Agent(metaclass=ABCMeta):
             raise ValueError(visual_cross_section)
         # Visible cross sectional area (m^2)
         self._visual_cross_section = visual_cross_section
+
+        if mass <= 0.0:
+            self._logger.error("Invalid value for mass param")
+            raise ValueError(mass)
+        # Mass (kg)
+        self._mass = mass
+
+        # Reflectivity (unitless)
+        self._reflectivity = reflectivity
 
         if station_keeping:
             self._station_keeping = station_keeping
@@ -250,5 +262,15 @@ class Agent(metaclass=ABCMeta):
 
     @property
     def visual_cross_section(self):
-        """``float``: Returns the visual cross-sectional area."""
+        """``float, int``: Returns the visual cross-sectional area."""
         return self._visual_cross_section
+
+    @property
+    def mass(self):
+        """``float, int``: Returns the mass."""
+        return self._mass
+
+    @property
+    def reflectivity(self):
+        """``float``: Returns the reflectivity."""
+        return self._reflectivity

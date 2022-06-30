@@ -80,6 +80,9 @@ class TestFieldOfView(BaseTestCase):
         zeros((6, 6)),
         nominal_filter,
         None,
+        25.0,
+        100.0,
+        0.21,
     )
     secondary_rso = EstimateAgent(
         10002,
@@ -90,6 +93,9 @@ class TestFieldOfView(BaseTestCase):
         zeros((6, 6)),
         nominal_filter,
         None,
+        25.0,
+        100.0,
+        0.21,
     )
 
     def testCanSlew(self):

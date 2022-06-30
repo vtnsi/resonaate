@@ -91,7 +91,17 @@ two_body_noise = simpleNoise(dt, 1e-25)
 
 # Construct the satellite object
 sat1_agent = TargetAgent(
-    sat1_id, sat1_name, sat1_type, sat1_x0, clock, two_body_dynamics, realtime, two_body_noise
+    sat1_id,
+    sat1_name,
+    sat1_type,
+    sat1_x0,
+    clock,
+    two_body_dynamics,
+    realtime,
+    two_body_noise,
+    25.0,
+    100,
+    0.21,
 )
 
 # RESONAATE Imports
@@ -122,7 +132,7 @@ ukf = UnscentedKalmanFilter(
 
 # Create an EstimateAgent object to track the actual TargetAgent satellite
 sat1_estimate_agent = EstimateAgent(
-    sat1_id, sat1_name, sat1_type, clock, sat1_est0, sat1_cov0, ukf, None
+    sat1_id, sat1_name, sat1_type, clock, sat1_est0, sat1_cov0, ukf, None, 25.0, 100, 0.21
 )
 
 # RESONAATE Imports
@@ -178,6 +188,8 @@ radar_sensor = Radar(
     np.radians(slew_rate),
     field_of_view,
     calc_field_of_view,
+    None,
+    None,
 )
 
 # Lat, Lon, Alt for sensor near VT
@@ -204,6 +216,9 @@ sensor_agent = SensingAgent(
     radar_sensor,
     sensor_dynamics,
     True,  # real time propagation
+    25.0,
+    100.0,
+    0.21,
 )
 
 # %%

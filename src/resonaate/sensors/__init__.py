@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from copy import copy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -9,16 +10,16 @@ from numpy import asarray, sqrt
 
 # Local Imports
 from ..physics import constants as const
-from .advanced_radar import AdvRadar
-from .optical import Optical
-from .radar import Radar
+from .advanced_radar import ADV_RADAR_DEFAULT_FOV, AdvRadar
+from .optical import OPTICAL_DEFAULT_FOV, OPTICAL_DETECTABLE_VISMAG, Optical
+from .radar import RADAR_DEFAULT_FOV, Radar
 
 if TYPE_CHECKING:
     # Standard Library Imports
     from typing import Dict, Tuple
 
-    # RESONAATE Imports
-    from resonaate.scenario.config.agent_configs import FieldOfViewConfig
+    # Local Imports
+    from ..scenario.config.agent_configs import FieldOfViewConfig
 
 OPTICAL_LABEL: str = "Optical"
 """str: Constant string used to describe optical sensors."""
@@ -35,8 +36,14 @@ VALID_SENSOR_FOV_LABELS: Tuple[str] = (
 )
 """list: Contains list of valid sensor Field of View configurations."""
 
+SOLAR_PANEL_REFLECTIVITY: float = 0.21
+"""float: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`."""
 
-def sensorFactory(configuration):
+DEFAULT_VIEWING_ANGLE: float = 1.0
+"""float: default angle for a sensor's FoV."""
+
+
+def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-branches
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
 
     Args:
@@ -48,6 +55,41 @@ def sensorFactory(configuration):
     Returns:
         :class:`.Sensor`: properly constructed `Sensor` object
     """
+    # pylint:disable=import-outside-toplevel
+    # Local Imports
+    from ..scenario.config.agent_configs import FieldOfViewConfig
+    from ..scenario.config.base import NO_SETTING
+
+    # Set field of view
+    if configuration.field_of_view.fov_shape is NO_SETTING:
+        fov_dict = {
+            OPTICAL_LABEL: OPTICAL_DEFAULT_FOV,
+            RADAR_LABEL: RADAR_DEFAULT_FOV,
+            ADV_RADAR_LABEL: ADV_RADAR_DEFAULT_FOV,
+        }
+        fov_config = FieldOfViewConfig()
+        fov_config.readConfig(fov_dict[configuration.sensor_type])
+        field_of_view = copy(fov_config)
+    else:
+        field_of_view = configuration.field_of_view
+
+    # Set minimum observable range
+    if configuration.minimum_range is NO_SETTING:
+        minimum_range = None
+
+    # Set maximum observable range
+    if configuration.maximum_range is NO_SETTING:
+        maximum_range = None
+
+    # Set detectable vismag
+    if (
+        configuration.detectable_vismag is NO_SETTING
+        and configuration.sensor_type == OPTICAL_LABEL
+    ):
+        detectable_vismag = OPTICAL_DETECTABLE_VISMAG
+    else:
+        detectable_vismag = configuration.detectable_vismag
+
     # Build generic sensor kwargs
     sensor_args = {
         "az_mask": asarray(configuration.azimuth_range) * const.RAD2DEG,  # Assumes radians
@@ -57,24 +99,26 @@ def sensorFactory(configuration):
         "efficiency": configuration.efficiency,
         "slew_rate": configuration.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(configuration.exemplar),
-        "field_of_view": fieldOfViewFactory(configuration.field_of_view),
+        "field_of_view": fieldOfViewFactory(field_of_view),
         "calculate_fov": configuration.calculate_fov,
+        "minimum_range": minimum_range,
+        "maximum_range": maximum_range,
     }
 
     # Instantiate sensor object. Add extra params if needed
-    sensor_type = configuration.sensor_type
-    if sensor_type == OPTICAL_LABEL:
+    if configuration.sensor_type == OPTICAL_LABEL:
+        sensor_args["detectable_vismag"] = detectable_vismag
         sensor = Optical(**sensor_args)
-    elif sensor_type == RADAR_LABEL:
+    elif configuration.sensor_type == RADAR_LABEL:
         sensor_args["power_tx"] = configuration.tx_power
         sensor_args["frequency"] = configuration.tx_frequency
         sensor = Radar(**sensor_args)
-    elif sensor_type == ADV_RADAR_LABEL:
+    elif configuration.sensor_type == ADV_RADAR_LABEL:
         sensor_args["power_tx"] = configuration.tx_power
         sensor_args["frequency"] = configuration.tx_frequency
         sensor = AdvRadar(**sensor_args)
     else:
-        raise ValueError(sensor_type)
+        raise ValueError(configuration.sensor_type)
 
     return sensor
 
