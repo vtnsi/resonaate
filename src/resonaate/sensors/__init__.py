@@ -76,10 +76,14 @@ def sensorFactory(configuration):  # noqa: C901, # pylint: disable=too-many-bran
     # Set minimum observable range
     if configuration.minimum_range is NO_SETTING:
         minimum_range = None
+    else:
+        minimum_range = configuration.minimum_range
 
     # Set maximum observable range
     if configuration.maximum_range is NO_SETTING:
         maximum_range = None
+    else:
+        maximum_range = configuration.maximum_range
 
     # Set detectable vismag
     if (
