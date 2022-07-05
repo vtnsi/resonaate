@@ -32,7 +32,7 @@ setuptools.setup(
         "dev": [
             # Linting
             "flake8<4.0",  # Keep flake8 below 4.0 b/c of dep conflict
-            "flake8-bugbear==22.6.22",
+            "flake8-bugbear==22.7.1",
             "flake8-builtins==1.5.3",
             "flake8-docstrings==1.6.0",
             "flake8-plugin-utils==1.3.2",
