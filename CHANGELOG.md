@@ -51,6 +51,7 @@ ______________________________________________________________________
   - `AsyncExecuteTasking()` now calls `collectObservations` instead of `makeNoisyObservation`
   - chi-square test functions now accept `ndarray` as inputs
   - `_getSolarRadiationPressureAcceleration()` is now a class function of `SpecialPerturbations`
+  - Metric calculations only take in 1 estimate agent and sensor agent
 
 - Deprecated
 - Removed

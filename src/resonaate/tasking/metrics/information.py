@@ -1,4 +1,9 @@
 """Defines information-focused tasking metrics."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import log, matmul
 from numpy.linalg import LinAlgError
@@ -7,6 +12,11 @@ from scipy.linalg import det, inv
 # Local Imports
 from ...common.logger import resonaateLogError
 from .metric_base import InformationMetric
+
+if TYPE_CHECKING:
+    # Local Imports
+    from ...agents.estimate_agent import EstimateAgent
+    from ...agents.sensing_agent import SensingAgent
 
 
 class FisherInformation(InformationMetric):
@@ -19,21 +29,21 @@ class FisherInformation(InformationMetric):
         #. :cite:t:`williams_2012_diss`
     """
 
-    def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateMetric(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Calculate the determinant of the Fisher information gain.
 
         Args:
-            cross_covar (``numpy.ndarray``): UKF cross-covariance
-            predicted_covar (``numpy.ndarray``): UKF a priori covariance
-            r_matrix (``numpy.ndarray``): measurement noise covariance of sensor
-            filter_type (str): the type of filter used
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            (float): Fisher information gain metric.
+            ``float``: Fisher information gain metric.
         """
-        cross_covar = target_agents[target_id].nominal_filter.cross_cvr
-        predicted_covar = target_agents[target_id].nominal_filter.pred_p
-        r_matrix = sensor_agents[sensor_id].sensors.r_matrix
+        cross_covar = estimate_agent.nominal_filter.cross_cvr
+        predicted_covar = estimate_agent.nominal_filter.pred_p
+        r_matrix = sensor_agent.sensors.r_matrix
 
         try:
             nu_var = matmul(cross_covar.T, inv(predicted_covar))
@@ -54,18 +64,20 @@ class ShannonInformation(InformationMetric):
         #. :cite:t:`williams_2012_diss`
     """
 
-    def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateMetric(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Calculate the log of the Shannon Information gain.
 
         Args:
-            predicted_covar (``numpy.ndarray``): UKF a priori covariance
-            estimated_covar (``numpy.ndarray``): UKF a posteriori covariance
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            (float): Shannon information gain metric.
+            ``float``: Shannon information gain metric.
         """
-        predicted_covar = target_agents[target_id].nominal_filter.pred_p
-        estimated_covar = target_agents[target_id].nominal_filter.est_p
+        predicted_covar = estimate_agent.nominal_filter.pred_p
+        estimated_covar = estimate_agent.nominal_filter.est_p
         shannon_info = 0.5 * log(det(predicted_covar) / det(estimated_covar))
 
         return shannon_info
@@ -74,21 +86,23 @@ class ShannonInformation(InformationMetric):
 class KLDivergence(InformationMetric):
     """Kullback-Leibler Divergence metric."""
 
-    def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateMetric(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Calculate the Kullback-Leibler Divergence.
 
         References:
             :cite:t:`kullback_jstor_1951_info`
 
         Args:
-            predicted_covar (``numpy.ndarray``): UKF a priori covariance
-            estimated_covar (``numpy.ndarray``): UKF a posteriori covariance
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            (float): Kullback-Leibler Divergence metric.
+            ``float``: Kullback-Leibler Divergence metric.
         """
-        predicted_covar = target_agents[target_id].nominal_filter.pred_p
-        estimated_covar = target_agents[target_id].nominal_filter.est_p
+        predicted_covar = estimate_agent.nominal_filter.pred_p
+        estimated_covar = estimate_agent.nominal_filter.est_p
         kld = det(predicted_covar) * log(det(predicted_covar) / det(estimated_covar))
 
         return kld

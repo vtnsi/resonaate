@@ -1,4 +1,9 @@
 """Defines the :class:`.CentralizedTaskingEngine` class."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import zeros
 from sqlalchemy.orm import Query
@@ -13,6 +18,13 @@ from ...parallel.handlers.task_execution import TaskExecutionJobHandler
 from ...parallel.handlers.task_prediction import TaskPredictionJobHandler
 from .engine_base import TaskingEngine
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...physics.time.stardate import JulianDate
+    from ..decisions import Decision
+    from ..rewards import Reward
+
 
 class CentralizedTaskingEngine(TaskingEngine):
     """Centralized implementation of a tasking engine.
@@ -23,17 +35,24 @@ class CentralizedTaskingEngine(TaskingEngine):
     """
 
     def __init__(
-        self, engine_id, sensor_ids, target_ids, reward, decision, importer_db_path, realtime_obs
+        self,
+        engine_id: int,
+        sensor_ids: list[int],
+        target_ids: list[int],
+        reward: Reward,
+        decision: Decision,
+        importer_db_path: str | None,
+        realtime_obs: bool,
     ):
         """Initialize a centralized tasking engine.
 
         Args:
-            engine_id (int): Unique ID for this :class:`.TaskingEngine`
+            engine_id (``int``): Unique ID for this :class:`.TaskingEngine`
             sensor_ids (``list``): list of sensor agent ID numbers
             target_ids (``list``): list of target agent ID numbers
             reward (:class:`.Reward`): callable reward object for determining tasking priority
             decision (:class:`.Decision`): callable decision object for optimizing tasking
-            importer_db_path (``str``): path to external importer database for pre-canned data.
+            importer_db_path (``str`` | ``None``): path to external importer database for pre-canned data.
             realtime_obs (``bool``): whether to execute realtime observations
         """
         super().__init__(
@@ -48,7 +67,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         self._execute_handler = TaskExecutionJobHandler()
         self._execute_handler.registerCallback(self)
 
-    def assess(self, prior_julian_date, julian_date):
+    def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
         """Perform a set of analysis operations on the current simulation state.
 
         #. The rewards for all possible tasks are computed
@@ -95,11 +114,11 @@ class CentralizedTaskingEngine(TaskingEngine):
         msg += f" on {len(observed_targets)} targets {observed_targets}"
         self.logger.info(msg)
 
-    def generateTasking(self):
+    def generateTasking(self) -> None:
         """Create tasking solution based on the current simulation state."""
         self.decision_matrix = self._decision(self.reward_matrix)
 
-    def loadImportedObservations(self, epoch):
+    def loadImportedObservations(self, epoch: JulianDate) -> list[Observation]:
         """Load imported :class:`.Observation` objects from :class:`.ImporterDatabase`.
 
         Args:
@@ -133,7 +152,7 @@ class CentralizedTaskingEngine(TaskingEngine):
 
         return imported_observations
 
-    def getCurrentTasking(self, julian_date):
+    def getCurrentTasking(self, julian_date: JulianDate) -> Task:
         """Return current tasking solution.
 
         Args:
