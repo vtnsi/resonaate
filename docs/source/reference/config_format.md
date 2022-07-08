@@ -660,13 +660,12 @@ Defines type and parameters of `"field_of_view"` field.
 
 ```python
 <fov_obj>: {
-    "fov_shape": <string>,               # Shape of Sensor FoV, Options are: ["conic", "rectangular"]. Defaults to "conic" 
+    "fov_shape": <string>,               # Shape of Sensor FoV, Options are: ["conic", "rectangular"]. Defaults to "conic"
     "cone_angle": <decimal>,             # Half Cone, only set if "fov_shape" is "conic". Defaults to 1.0 (deg)
     "azimuth_angle": <decimal>           # azimuth view angle, only set if "fov_shape" is "rectangular". Defaults to 1.0 (deg)
     "elevation_angle": <decimal>         # elevation view angle, only set if "fov_shape" is "rectangular". Defaults to 1.0 (deg)
 }
 ```
-
 
 #### Sensor Types
 
@@ -678,7 +677,7 @@ Different types of sensors (`"sensor_type"` field) require different extra field
       "detectable_vismag": <decimal>,    # Minimum vismag needed for observation, default is 25.0
    }
    ```
-2. `"Radar"` and `"AdvRadar"` require:
+1. `"Radar"` and `"AdvRadar"` require:
    ```python
    <sensor_obj>: {
        ...

@@ -29,7 +29,7 @@ ______________________________________________________________________
 # \[Unreleased\]
 
 - Added
-  
+
   - `getStandardDeviation` and `getConfidenceRegion` functions in `resonaate.physics.statistics`
   - `fov` input variable to `sensorFactory()`
   - EOPs from 06-10-2021 to 17-03-2022
@@ -54,11 +54,14 @@ ______________________________________________________________________
   - Metric calculations only take in 1 estimate agent and sensor agent
 
 - Deprecated
+
 - Removed
 
   - `DEFAULT_VIZ_X_SECTION` and all references to it
 
 - Fixed
+
+  - FOV tests now reliably pass, properly call `updateReductionParameters`
 
 # \[1.4.0 - 2022-06-06\]
 

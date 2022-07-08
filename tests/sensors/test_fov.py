@@ -10,6 +10,7 @@ try:
     from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
     from resonaate.physics.time.stardate import JulianDate, ScenarioTime
     from resonaate.physics.transforms.methods import getSlantRangeVector
+    from resonaate.physics.transforms.reductions import updateReductionParameters
     from resonaate.scenario.clock import ScenarioClock
     from resonaate.scenario.config.agent_configs import SensorConfigObject
 
@@ -50,7 +51,8 @@ CONIC_SENSOR_CONFIG = {
 class TestFieldOfView(BaseTestCase):
     """Test observation of multiple objects in a field of view."""
 
-    clock = ScenarioClock(JulianDate(2459006.5), 60.0, 30.0)
+    julian_date = JulianDate(2459006.5)
+    clock = ScenarioClock(julian_date, 60.0, 30.0)
     conic_sensor_config = {
         "agent": SensorConfigObject(CONIC_SENSOR_CONFIG),
         "realtime": True,
@@ -115,6 +117,7 @@ class TestFieldOfView(BaseTestCase):
 
     def testCheckTargetsInView(self):
         """Test if multiple targets are in the Field of View."""
+        updateReductionParameters(self.julian_date)
         slant_range_sez = getSlantRangeVector(
             self.conic_sensor_agent.sensors.host.ecef_state, self.primary_rso.eci_state
         )
