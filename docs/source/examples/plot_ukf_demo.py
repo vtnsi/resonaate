@@ -244,7 +244,7 @@ sat1_estimate_agent.nominal_filter.predict(t1)
 obs = []
 truth_state = sat1_agent.eci_state  # [NOTE]: only used for debugging purposes!
 # Apply filter prediction step to estimate's state
-sat1_estimate_agent.updateEstimate(obs, truth_state)
+sat1_estimate_agent.updateEstimate(obs)
 
 # Magnitude of true error (true - estimate) after prediction step
 prior_error = np.linalg.norm(truth_state[:3] - sat1_estimate_agent.eci_state[:3])

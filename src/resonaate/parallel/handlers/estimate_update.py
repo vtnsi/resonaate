@@ -35,7 +35,6 @@ class EstimateUpdateRegistration(CallbackRegistration):
             asyncUpdateEstimate,
             args=[
                 self.registrant.estimate_agents[estimate_id],
-                self.registrant.target_agents[estimate_id].eci_state,
                 kwargs["observations"],
             ],
         )

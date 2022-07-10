@@ -20,7 +20,7 @@ from ...dynamics.celestial import EarthCollision
 from ...parallel import getRedisConnection
 from ...physics.time.stardate import JulianDate, ScenarioTime
 from ...physics.transforms.methods import radarObs2eciPosition
-from ..sequential.sequential_filter import FilterDebugFlag, SequentialFilter
+from ..sequential.sequential_filter import FilterFlag, SequentialFilter
 from .initialization import lambertInitializationFactory
 from .mmae_stacking_utils import stackingFactory
 
@@ -221,7 +221,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             self.logger.warning(msg)
             return False
 
-        self.flags |= FilterDebugFlag.ADAPTIVE_ESTIMATION_START
+        self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_START
         msg = f"{self.__class__.__name__} beginning for {self.target_id} at {self.time} with {self.num_models} models"
         self.logger.info(msg)
 
@@ -706,8 +706,8 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
     def _resumeSequentialFiltering(self):
         """The adaptive filter has converged, so create a nominal filter from the converged model."""
         # Reset adaptive estimation flags
-        self.flags ^= FilterDebugFlag.ADAPTIVE_ESTIMATION_START
-        self.flags |= FilterDebugFlag.ADAPTIVE_ESTIMATION_CLOSE
+        self.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
+        self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_CLOSE
 
         # Set the converged filter attribute
         self._converged_filter = self._filter_class(

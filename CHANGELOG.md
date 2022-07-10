@@ -52,6 +52,7 @@ ______________________________________________________________________
   - chi-square test functions now accept `ndarray` as inputs
   - `_getSolarRadiationPressureAcceleration()` is now a class function of `SpecialPerturbations`
   - Metric calculations only take in 1 estimate agent and sensor agent
+  - `FilterDebugFlag` is now `FilterFlag` and all filter debugging is handled in `SequentialFilter._debugChecks`
 
 - Deprecated
 
@@ -59,6 +60,7 @@ ______________________________________________________________________
 
   - `DEFAULT_VIZ_X_SECTION` and all references to it
   - `services` sub-package as well as all corresponding tests, documentation, & references
+  - argument `truth` in `EstimateAgent._update()`
 
 - Fixed
 
