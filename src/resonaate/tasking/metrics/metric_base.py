@@ -1,23 +1,31 @@
 """Abstract :class:`.Metric` base class defining the metric API."""
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Local Imports
+    from ...agents.estimate_agent import EstimateAgent
+    from ...agents.sensing_agent import SensingAgent
 
 
 class Metric(metaclass=ABCMeta):
     """Abstract base class to encapsulate behavior of general metrics."""
 
-    METRIC_TYPE = "base"
-    """Type of metric in str format, for reward logic."""
+    METRIC_TYPE: str = "base"
+    """``str``: Type of metric in str format, for reward logic."""
 
-    REGISTRY = {}
-    """Global metric object registry."""
+    REGISTRY: dict[str, "Metric"] = {}
+    """``dict``: Global metric object registry."""
 
     @classmethod
-    def register(cls, name, metric):
+    def register(cls, name: str, metric: "Metric") -> None:
         """Register an implemented metric class in the global registry.
 
         Args:
-            name (str): name to store as the key in the registry
+            name (``str``): name to store as the key in the registry
             metric (:class:`.Metric`): metric object to register
 
         Raises:
@@ -29,45 +37,45 @@ class Metric(metaclass=ABCMeta):
         cls.REGISTRY[name] = metric
 
     @property
-    def is_registered(self):
-        """bool: return if an implemented metric class is registered."""
+    def is_registered(self) -> bool:
+        """``bool``: return if an implemented metric class is registered."""
         return self.__class__.__name__ in self.REGISTRY
 
     @abstractmethod
-    def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateMetric(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Abstract function for calculating the metric based on the set of targets & sensors.
 
         Note:
             Must be overridden by implementors.
 
         Args:
-            target_agents (dict): current target agents set
-            target_id (int): unique id of target corresponding to the metric
-            sensor_agents (dict): current sensor agents set
-            sensor_id (int): unique id of sensor corresponding to the metric
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            float: single, target-sensor paired metric value
+            ``float``: single, target-sensor paired metric value
         """
         raise NotImplementedError
 
-    def __call__(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def __call__(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Call operator '()' for metric objects.
 
         Args:
-            target_agents (dict): current target agents set
-            target_id (int): unique id of target corresponding to the metric
-            sensor_agents (dict): current sensor agents set
-            sensor_id (int): unique id of sensor corresponding to the metric
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            float: single, target-sensor paired metric value
+            ``float``: single, target-sensor paired metric value
         """
-        return self._calculateMetric(target_agents, target_id, sensor_agents, sensor_id, **kwargs)
+        return self._calculateMetric(estimate_agent, sensor_agent, **kwargs)
 
     @property
-    def metric_type(self):
-        """str: return the type of metric in str format, for convenience."""
+    def metric_type(self) -> str:
+        """``str``: return the type of metric in str format, for convenience."""
         return self.METRIC_TYPE
 
 
@@ -78,10 +86,13 @@ class InformationMetric(Metric):
     predicted observations/estimates. These prioritize pure estimation performance.
     """
 
-    METRIC_TYPE = "information"
+    METRIC_TYPE: str = "information"
+    """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
-    def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateMetric(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Define logic for calculating metrics based on the given target/sensor sets.
 
         Must be overridden by implementors.
@@ -96,10 +107,13 @@ class StabilityMetric(Metric):
     well-estimated/observed targets.
     """
 
-    METRIC_TYPE = "stability"
+    METRIC_TYPE: str = "stability"
+    """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
-    def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateMetric(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Define logic for calculating metrics based on the given target/sensor sets.
 
         Must be overridden by implementors.
@@ -114,10 +128,13 @@ class SensorMetric(Metric):
     limit "costly" collections.
     """
 
-    METRIC_TYPE = "sensor"
+    METRIC_TYPE: str = "sensor"
+    """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
-    def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateMetric(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Define logic for calculating metrics based on the given target/sensor sets.
 
         Must be overridden by implementors.
@@ -132,10 +149,13 @@ class BehaviorMetric(Metric):
     prioritize specific behaviors of the sensors/estimates.
     """
 
-    METRIC_TYPE = "behavior"
+    METRIC_TYPE: str = "behavior"
+    """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
-    def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateMetric(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> float:
         """Define logic for calculating metrics based on the given target/sensor sets.
 
         Must be overridden by implementors.

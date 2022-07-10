@@ -20,7 +20,7 @@ def mockedRewardClass():
     """Return reference to a minimal :class:`.Reward` class."""
 
     class MockedReward(Reward):
-        def _calculateReward(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+        def _calculateReward(self, estimate_agent, sensor_agent, **kwargs):
             return 3
 
     return MockedReward
@@ -31,7 +31,7 @@ def mockedMetricClass():
     """Return reference to a minimal :class:`.Metric` class."""
 
     class MockedMetric(Metric):
-        def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+        def _calculateMetric(self, estimate_agent, sensor_agent, **kwargs):
             return 3
 
     return MockedMetric
@@ -55,7 +55,7 @@ class TestRewardBase(BaseTestCase):
             Reward.register("MockedReward", [True, False])
 
     def testCreation(self, mocked_metric):
-        """Test creating a Decsion Object."""
+        """Test creating a Decision Object."""
         with pytest.raises(TypeError):
             Reward(mocked_metric)  # pylint: disable=abstract-class-instantiated
 
@@ -68,7 +68,7 @@ class TestRewardBase(BaseTestCase):
         sensor_agents = {"sensor": mocked_sensor}
         sensor_id = "sensor"
         reward = mocked_reward_class(mocked_metric)
-        reward(target_agents, target_id, sensor_agents, sensor_id)
+        reward(target_agents[target_id], sensor_agents[sensor_id])
 
 
 class TestCostConstrainedReward(BaseTestCase):
@@ -97,7 +97,7 @@ class TestCostConstrainedReward(BaseTestCase):
         sensor_agents = {"sensor": mocked_sensor}
         sensor_id = "sensor"
         reward = CostConstrainedReward(metric_list)
-        reward(target_agents, target_id, sensor_agents, sensor_id)
+        reward(target_agents[target_id], sensor_agents[sensor_id])
 
 
 class TestSimpleSummationReward(BaseTestCase):
@@ -128,4 +128,4 @@ class TestSimpleSummationReward(BaseTestCase):
         sensor_agents = {"sensor": mocked_sensor}
         sensor_id = "sensor"
         reward = SimpleSummationReward(metric_list)
-        reward(target_agents, target_id, sensor_agents, sensor_id)
+        reward(target_agents[target_id], sensor_agents[sensor_id])

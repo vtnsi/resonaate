@@ -1,6 +1,11 @@
 """Defines the decisions algorithms available in RESONAATE."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Local Imports
-from .decision_base import Decision as _BaseDecision
+from .decision_base import Decision
 from .decisions import (
     AllVisibleDecision,
     MunkresDecision,
@@ -8,23 +13,30 @@ from .decisions import (
     RandomDecision,
 )
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...scenario.config.decision_config import DecisionConfig
+
+
 # Register each reward class to global registry
-_BaseDecision.register("MunkresDecision", MunkresDecision)
-_BaseDecision.register("MyopicNaiveGreedyDecision", MyopicNaiveGreedyDecision)
-_BaseDecision.register("RandomDecision", RandomDecision)
-_BaseDecision.register("AllVisibleDecision", AllVisibleDecision)
-
-VALID_DECISIONS = list(_BaseDecision.REGISTRY.keys())
-"""list: List of valid decision labels."""
+Decision.register("MunkresDecision", MunkresDecision)
+Decision.register("MyopicNaiveGreedyDecision", MyopicNaiveGreedyDecision)
+Decision.register("RandomDecision", RandomDecision)
+Decision.register("AllVisibleDecision", AllVisibleDecision)
 
 
-def decisionFactory(configuration):
+VALID_DECISIONS: list[str] = list(Decision.REGISTRY.keys())
+"""``list``: List of valid decision labels."""
+
+
+def decisionFactory(configuration: DecisionConfig) -> Decision:
     """Build a :class:`.Decision` object from a configuration dict.
 
     Args:
-        configuration (DecisionConfig): describes the decision to be built
+        configuration (:class:`.DecisionConfig`): describes the decision to be built.
 
     Returns:
-        :class:`.Decision`: constructed decision object
+        :class:`.Decision`: constructed decision object.
     """
-    return _BaseDecision.REGISTRY.get(configuration.name)(**configuration.parameters)
+    return Decision.REGISTRY.get(configuration.name)(**configuration.parameters)

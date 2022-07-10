@@ -1,4 +1,9 @@
 """Define implemented decision algorithms used to optimize tasked sensors."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import any as np_any
 from numpy import argmax, where, zeros
@@ -8,11 +13,16 @@ from scipy.optimize import linear_sum_assignment
 # Local Imports
 from .decision_base import Decision
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
 
 class MyopicNaiveGreedyDecision(Decision):
     """Optimizes for each sensor independently."""
 
-    def _makeDecision(self, reward_matrix, **kwargs):
+    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Select the optimal tasking for each sensor, disregarding the effect on other sensors.
 
         References:
@@ -20,10 +30,10 @@ class MyopicNaiveGreedyDecision(Decision):
             #. :cite:t:`krishnamurthy_2016`
 
         Args:
-            reward_matrix (``numpy.ndarray``): reward matrix to optimize
+            reward_matrix (``ndarray``): reward matrix to optimize
 
         Returns:
-            ``numpy.ndarray``: unconstrained optimal decision set
+            ``ndarray``: optimal decision set
         """
         decision = zeros(reward_matrix.shape, dtype=bool)
         for sen_ind in range(reward_matrix.shape[1]):
@@ -39,17 +49,17 @@ class MyopicNaiveGreedyDecision(Decision):
 class MunkresDecision(Decision):
     """Optimizes the reward matrix as a bipartite graph using the Hungarian algorithm."""
 
-    def _makeDecision(self, reward_matrix, **kwargs):
+    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Select optimal tasking for each sensor, constrained to "perfect matching".
 
         References:
             :cite:t:`crouse_taes_2016_assignment`
 
         Args:
-            reward_matrix (``numpy.ndarray``): reward matrix to optimize
+            reward_matrix (``ndarray``): reward matrix to optimize
 
         Returns:
-            ``numpy.ndarray``: unconstrained optimal decision set
+            ``ndarray``: optimal decision set
         """
         decision = zeros(reward_matrix.shape, dtype=bool)
 
@@ -64,24 +74,24 @@ class MunkresDecision(Decision):
 
 
 class RandomDecision(Decision):
-    """Completely random set decision-making.
+    """Completely random set decision-making."""
 
-    References:
-        CORE ALGORITHM
-    """
+    def __init__(self, seed: int | None = None):
+        """Create :class:`.RandomDecision` object with an RNG seed.
 
-    def __init__(self, seed):
-        """Override init to explicitly set the seed for randomization."""
+        Args:
+            seed (``int`` | ``None``): RNG seed value.
+        """
         self._seed = default_rng(seed)
 
-    def _makeDecision(self, reward_matrix, **kwargs):
+    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Select random tasking for each sensor.
 
         Args:
-            reward_matrix (``numpy.ndarray``): reward matrix to optimize
+            reward_matrix (``ndarray``): reward matrix to optimize
 
         Returns:
-            ``numpy.ndarray``: random decision set
+            ``ndarray``: random decision set
         """
         decision = zeros(reward_matrix.shape, dtype=bool)
 
@@ -97,13 +107,13 @@ class RandomDecision(Decision):
 class AllVisibleDecision(Decision):
     """Optimizes for each sensor independently and tasks all AllVisibleDecision options."""
 
-    def _makeDecision(self, reward_matrix, **kwargs):
+    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Task each sensor to every available target.
 
         Args:
-            reward_matrix (``numpy.ndarray``): reward matrix to optimize
+            reward_matrix (``ndarray``): reward matrix to optimize
 
         Returns:
-            ``numpy.ndarray``: unconstrained optimal decision set
+            ``ndarray``: decision set of all visible targets
         """
         return where(reward_matrix > 0.0, True, False)

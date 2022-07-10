@@ -308,10 +308,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             self._saveFilterStep()
             if self.nominal_filter.maneuver_detected:
                 self._saveDetectedManeuver(obs_tuples)
-                if (
-                    FilterDebugFlag.ADAPTIVE_ESTIMATION_CLOSE
-                    in self.nominal_filter.flags
-                ):
+                if FilterDebugFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
                     self.resetFilter(self.nominal_filter.converged_filter)
                 self._attemptAdaptiveEstimation(obs_tuples)
 

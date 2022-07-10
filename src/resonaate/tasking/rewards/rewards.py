@@ -1,9 +1,23 @@
 """Define implemented reward functions used to evaluate sensor task opportunities."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import sign
 
 # Local Imports
 from .reward_base import Reward
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from ...agents.estimate_agent import EstimateAgent
+    from ...agents.sensing_agent import SensingAgent
+    from ..metrics import Metric
 
 
 class CostConstrainedReward(Reward):
@@ -16,7 +30,7 @@ class CostConstrainedReward(Reward):
         :cite:t:`nastasi_2018_diss`, Section 5.3.3
     """
 
-    def __init__(self, metrics, delta=0.85, **kwargs):
+    def __init__(self, metrics: list[Metric], delta: float = 0.85, **kwargs):
         """Construct a cost-constrained reward function.
 
         Note:
@@ -26,8 +40,8 @@ class CostConstrainedReward(Reward):
                 - :class:`.Sensor`
 
         Args:
-            metrics (list): metrics instances for calculating the reward
-            delta (float, optional): ratio of information reward to sensor reward.
+            metrics (``list``): metrics instances for calculating the reward
+            delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
 
         Raises:
@@ -51,7 +65,9 @@ class CostConstrainedReward(Reward):
         if not all([stability, information, sensor]):
             raise TypeError("Incorrect assignment of metrics")
 
-    def _calculateReward(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateReward(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> ndarray:
         """Calculate the cost-constrained reward.
 
         Note:
@@ -59,17 +75,13 @@ class CostConstrainedReward(Reward):
                 r = delta * (sign(stab) + info) - (1 - delta) * sens
 
         Args:
-            target_agents (dict): current target agents set
-            target_id (int): unique id of target corresponding to the metric
-            sensor_agents (dict): current sensor agents set
-            sensor_id (int): unique id of sensor corresponding to the metric
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            ``numpy.ndarray``: calculated reward
+            ``ndarray``: calculated reward
         """
-        metrics = self.calculateMetrics(
-            target_agents, target_id, sensor_agents, sensor_id, **kwargs
-        )
+        metrics = self.calculateMetrics(estimate_agent, sensor_agent, **kwargs)
         for metric, value in metrics.items():
             if metric.metric_type == "stability":
                 stability = value
@@ -87,26 +99,22 @@ class SimpleSummationReward(Reward):
     This function takes any range of metrics, and sums them all together.
     """
 
-    def _calculateReward(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateReward(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> ndarray:
         """Calculate the reward as the direct sum of each metric.
 
         References:
             :cite:t:`kadan_2021_scitech_parametric`
 
         Args:
-            target_agents (dict): current target agents set
-            target_id (int): unique id of target corresponding to the metric
-            sensor_agents (dict): current sensor agents set
-            sensor_id (int): unique id of sensor corresponding to the metric
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            ``numpy.ndarray``: summed reward
+            ``ndarray``: summed reward
         """
-        return sum(
-            self.calculateMetrics(
-                target_agents, target_id, sensor_agents, sensor_id, **kwargs
-            ).values()
-        )
+        return sum(self.calculateMetrics(estimate_agent, sensor_agent, **kwargs).values())
 
 
 class CombinedReward(Reward):
@@ -116,7 +124,7 @@ class CombinedReward(Reward):
     of the stability metric, and subtracting the sensor metric.
     """
 
-    def __init__(self, metrics, delta=0.85, **kwargs):
+    def __init__(self, metrics: list[Metric], delta: float = 0.85, **kwargs):
         """Construct a cost-constrained reward function.
 
         Note:
@@ -127,8 +135,8 @@ class CombinedReward(Reward):
                 - :class:`.Behavior`
 
         Args:
-            metrics (list): metrics instances for calculating the reward
-            delta (float, optional): ratio of information reward to sensor reward.
+            metrics (``list``): metrics instances for calculating the reward
+            delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
 
         Raises:
@@ -154,7 +162,9 @@ class CombinedReward(Reward):
         if not all([stability, information, sensor, behavior]):
             raise TypeError("Incorrect assignment of metrics")
 
-    def _calculateReward(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+    def _calculateReward(
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    ) -> ndarray:
         """Calculate the Combined cost-constrained staleness reward.
 
         References:
@@ -165,17 +175,13 @@ class CombinedReward(Reward):
                 r = delta * (sign(stab) + info) - (1 - delta) * sens + staleness
 
         Args:
-            target_agents (dict): current target agents set
-            target_id (int): unique id of target corresponding to the metric
-            sensor_agents (dict): current sensor agents set
-            sensor_id (int): unique id of sensor corresponding to the metric
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            ``numpy.ndarray``: calculated reward
+            ``ndarray``: calculated reward
         """
-        metrics = self.calculateMetrics(
-            target_agents, target_id, sensor_agents, sensor_id, **kwargs
-        )
+        metrics = self.calculateMetrics(estimate_agent, sensor_agent, **kwargs)
         for metric, value in metrics.items():
             if metric.metric_type == "stability":
                 stability = value

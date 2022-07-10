@@ -108,9 +108,7 @@ def asyncCalculateReward(estimate_id, reward, sensor_list):
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation_tuple])
             visibility[sensor_index] = True
-            reward_matrix[sensor_index] = reward(
-                estimate_agents, estimate_id, sensor_agents, sensor_id
-            )
+            reward_matrix[sensor_index] = reward(estimate, sensor_agent)
 
     return {
         "estimate_id": estimate_id,

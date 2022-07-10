@@ -22,7 +22,7 @@ def mockedMetricClass():
     """Return reference to a minimal :class:`.Metric` class."""
 
     class MockedMetric(Metric):
-        def _calculateMetric(self, target_agents, target_id, sensor_agents, sensor_id, **kwargs):
+        def _calculateMetric(self, estimate_agent, sensor_agent, **kwargs):
             return 4
 
     return MockedMetric
@@ -57,7 +57,7 @@ class TestMetricsBase(BaseTestCase):
         target_id = 11111
         sensor_agents = {"sensor": mocked_sensing_agent}
         sensor_id = "sensor"
-        metric(target_agents, target_id, sensor_agents, sensor_id)
+        metric(target_agents[target_id], sensor_agents[sensor_id])
 
 
 class TestInformationMetric(BaseTestCase):
@@ -70,9 +70,9 @@ class TestInformationMetric(BaseTestCase):
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
         shannon_metric = ShannonInformation()
-        shannon_metric(target_agents, target_id, sensor_agents, sensor_id)
+        shannon_metric(target_agents[target_id], sensor_agents[sensor_id])
         fisher_metric = FisherInformation()
-        fisher_metric(target_agents, target_id, sensor_agents, sensor_id)
+        fisher_metric(target_agents[target_id], sensor_agents[sensor_id])
 
 
 class TestStabilityMetric(BaseTestCase):
@@ -85,7 +85,7 @@ class TestStabilityMetric(BaseTestCase):
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
         lyapunov_metric = LyapunovStability()
-        lyapunov_metric(target_agents, target_id, sensor_agents, sensor_id)
+        lyapunov_metric(target_agents[target_id], sensor_agents[sensor_id])
 
 
 class TestSensorMetric(BaseTestCase):
@@ -98,11 +98,11 @@ class TestSensorMetric(BaseTestCase):
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
         delta_position = DeltaPosition()
-        delta_position(target_agents, target_id, sensor_agents, sensor_id)
+        delta_position(target_agents[target_id], sensor_agents[sensor_id])
         slew_cycle = SlewCycle()
-        slew_cycle(target_agents, target_id, sensor_agents, sensor_id)
+        slew_cycle(target_agents[target_id], sensor_agents[sensor_id])
         time_to_transit = TimeToTransit(norm_factor=10)
-        time_to_transit(target_agents, target_id, sensor_agents, sensor_id)
+        time_to_transit(target_agents[target_id], sensor_agents[sensor_id])
 
 
 class TestBehaviorMetric(BaseTestCase):
@@ -115,4 +115,4 @@ class TestBehaviorMetric(BaseTestCase):
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
         time_since_observation = TimeSinceObservation()
-        time_since_observation(target_agents, target_id, sensor_agents, sensor_id)
+        time_since_observation(target_agents[target_id], sensor_agents[sensor_id])
