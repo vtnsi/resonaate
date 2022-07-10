@@ -155,7 +155,7 @@ pytest
 This does take a decent amount of time because it includes integration tests. To run a quicker, but still large percentage of tests run the following command:
 
 ```shell
-pytest -xm "not (service or event or scenario)"
+pytest -xm "not (event or scenario)"
 ```
 
 This runs only the unit tests which are much faster to run.
@@ -163,7 +163,7 @@ This runs only the unit tests which are much faster to run.
 To determine coverage statistics:
 
 ```shell
-coverage run -m pytest -m "not (service or event or scenario)"
+coverage run -m pytest -m "not (event or scenario)"
 coverage combine
 coverage report
 coverage html

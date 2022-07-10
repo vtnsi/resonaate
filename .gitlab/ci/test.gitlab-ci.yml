@@ -17,7 +17,7 @@ include:
 
 # pytest unit test command
 .pytest-unit: &pytest-unit
-  - COVERAGE_FILE=.coverage.unit coverage run -m pytest --junitxml=unit.xml -m "not (scenario or service or event)" --durations=5
+  - COVERAGE_FILE=.coverage.unit coverage run -m pytest --junitxml=unit.xml -m "not (scenario or event)" --durations=5
 
 # pytest scenario integration test command
 .pytest-scenario: &pytest-scenario
@@ -26,10 +26,6 @@ include:
 # pytest event integration test command
 .pytest-event: &pytest-event
   - COVERAGE_FILE=.coverage.event coverage run -m pytest --junitxml=event.xml -m "event" --durations=5
-
-# pytest service integration test command
-.pytest-service: &pytest-service
-  - COVERAGE_FILE=.coverage.service coverage run -m pytest --junitxml=service.xml -m "service" --durations=5
 
 # coverage combine command
 .coverage-combine: &coverage-combine
@@ -114,24 +110,6 @@ pytest:event:
       junit:
         - event.xml
 
-####################
-# Service Test Job #
-####################
-
-pytest:service:
-  extends: .test-base
-  script:
-    - echo -e "\e[0Ksection_start:`date +%s`:pytest_service[collapsed=true]\r\e[0K Service integration tests"
-    - *pytest-service
-    - echo -e "\e[0Ksection_end:`date +%s`:pytest_service\r\e[0K"
-    - !reference [.stop-redis]
-  artifacts:
-    paths:
-      - .coverage.service*
-    reports:
-      junit:
-        - service.xml
-
 #########################
 # Coverage Analysis Job #
 #########################
@@ -155,6 +133,5 @@ coverage-report:
   needs:
     - pytest:unit
     - pytest:scenario
-    - pytest:service
     - pytest:event
   coverage: /TOTAL.*\s+(\d+\%)/

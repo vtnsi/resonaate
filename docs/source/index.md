@@ -115,7 +115,7 @@ ______________________________________________________________________
 {ref}`main-index-started` goes over basic information on how to install, setup, and use the RESONAATE tool and library.
 This section is the main jumping off point for new users or anyone trying to get a general understanding of the RESONAATE use cases.
 
-{ref}`main-index-ref` details specific information on how RESONAATE works such as the JSON config format, the service layer interface, and the library API documentation.
+{ref}`main-index-ref` details specific information on how RESONAATE works such as the JSON config format and the library API documentation.
 This section targets users and developers alike for quickly and efficiently finding out more information on how to use various features of RESONAATE.
 
 {ref}`main-index-tech` is meant for in-depth description of the mathematics, physics, and software engineering that RESONAATE is built upon.
@@ -157,7 +157,6 @@ includehidden:
 hidden:
 ---
 reference/config_format
-reference/service
 reference/api
 
 ```

@@ -58,6 +58,7 @@ ______________________________________________________________________
 - Removed
 
   - `DEFAULT_VIZ_X_SECTION` and all references to it
+  - `services` sub-package as well as all corresponding tests, documentation, & references
 
 - Fixed
 
@@ -71,11 +72,11 @@ ______________________________________________________________________
   - configurations for `black`, `isort`, `prettier`, `mdformat`, & `pre-commit`
   - `Manifest.in` for source dist & CI job for checking
   - `pyproject.toml` for build requirements
-  - `shutdown()` methods to `Scenario` & `ResonaateService` for gracefully shutting down, fixes bug #106
+  - `shutdown()` methods to `Scenario` for gracefully shutting down, fixes bug #106
   - `physics.statistics` with chi-square statistic tests
   - Test coverage pipeline job
   - `FilterDebugFlag` to `SequentialFilter` for tracking debug
-  - Debugging logic fo filters now directly handled by `EstimateAgent`
+  - Debugging logic for filters now directly handled by `EstimateAgent`
   - Unit tests for maneuver detection and `filters` factory
   - `julian_date_start` variable to `StationKeeping.fromInitECI()`
   - Check if initial orbit is eccentric to `KeepLeoUp` Station Keeping class
@@ -347,23 +348,22 @@ Update that includes LPAR sensors and multiple sensor networks.
 
 # \[1.0.1\] - 2021-01-21
 
-Small fixes to the `ResonaateService` class and supporting API. Also updated documentation for new formats.
+Added new `Scenario` factor methods. Also updated documentation for new formats.
 
 - Added
 
   - `Scenario.parseConfigFile()` static method for automatically parsing main the scenario configuration file
-  - `Scenario.fromConfigFile()` factory method for creating `Scenario` from a given filepath
+  - `Scenario.fromConfigFile()` factory method for creating `Scenario` from a given file path
 
 - Changed
 
   - Added old updates to CHANGELOG for better repo tracking
   - `Scenario.fromConfig()` factory method to accept only properly built JSON objects/dictionaries
-  - `scenario` & `services` unit tests fixed for new factory methods
+  - `scenario` unit tests fixed for new factory methods
 
 - Fixed
 
   - Outdated scenario configuration documentation in `initialization.md`
-  - Outdated RESONAATE service ICD in `interface.md`
 
 # \[1.0.0\] - 2021-01-14
 
@@ -418,7 +418,6 @@ Mostly config/refactoring updates since the initial port.
 
 - Added
 
-  - Unit tests for `resonaate_service` sub-package
   - Empty db files for testing
 
 - Changed
@@ -445,7 +444,6 @@ Initial version ported to a new repository.
   - KLDivergence metric for comparing information gains
   - Unit test for all modules in the tasking package
   - De-duplication of imported observations
-  - `services` package for various service-layer related modules
   - Database interface for outputting data, rather than writing to JSON files
   - Tasking information to a new DB table
 

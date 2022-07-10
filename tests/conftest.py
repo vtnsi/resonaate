@@ -282,7 +282,6 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line("markers", "scenario: mark test as a scenario integration test")
     config.addinivalue_line("markers", "event: mark test as an event integration test")
-    config.addinivalue_line("markers", "service: mark test as a service layer integration test")
     config.addinivalue_line("markers", "realtime: mark test as using real time propagation")
     config.addinivalue_line(
         "markers", "importer: mark test as using imported data rather than propagation"

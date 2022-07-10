@@ -34,11 +34,7 @@ class TargetTaskPriority(Event):
     """float: Scalar that indicates how important it is that this target be observed."""
 
     is_dynamic = Column(Boolean)
-    """bool: Flag indicating whether this task is pre-canned or dynamically created.
-
-    Note:
-        This facilitated logic in the service layer of resonaate.
-    """
+    """bool: Flag indicating whether this task is pre-canned or dynamically created."""
 
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + ("agent_id", "priority", "is_dynamic")
 
