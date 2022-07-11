@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import fabs
 from numpy.random import default_rng
-from scipy.linalg import norm
 
 # Local Imports
 from ..common.exceptions import ShapeError
@@ -16,8 +14,7 @@ from ..data.detected_maneuver import DetectedManeuver
 from ..data.ephemeris import EstimateEphemeris
 from ..data.filter_step import FilterStep
 from ..estimation import adaptiveEstimationFactory, sequentialFilterFactory
-from ..estimation.debug_utils import checkThreeSigmaObs, logFilterStep
-from ..estimation.sequential.sequential_filter import FilterDebugFlag, SequentialFilter
+from ..estimation.sequential.sequential_filter import FilterFlag, SequentialFilter
 from ..physics.noise import initialEstimateNoise
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from .agent_base import Agent
@@ -132,7 +129,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         # Apply None value to estimate station_keeping
         assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
 
-    def updateEstimate(self, obs_tuples: list[ObservationTuple], truth: ndarray):
+    def updateEstimate(self, obs_tuples: list[ObservationTuple]) -> None:
         """Update the :attr:`nominal_filter`, state estimate, & covariance.
 
         This is the local update function. See :meth:`.updateFromAsyncUpdateEstimate` for details
@@ -143,12 +140,11 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` objects associated with this timestep
-            truth (``ndarray``): 6x1 ECI state vector for the true target agent
         """
         self.nominal_filter.update(obs_tuples)
-        self._update(obs_tuples, truth=truth)
+        self._update(obs_tuples)
 
-    def updateFromAsyncPredict(self, async_result: dict[str, Any]):
+    def updateFromAsyncPredict(self, async_result: dict[str, Any]) -> None:
         """Perform predict using EstimateAgent's :attr:`nominal_filter`'s async result.
 
         Save the *a priori* :attr:`.state_estimate` and :attr:`.error_covariance`. This occurs
@@ -162,10 +158,6 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             async_result (``dict``): Result from parallel :attr:`nominal_filter` predict.
         """
         self.nominal_filter.updateFromAsyncResult(async_result)
-
-        if FilterDebugFlag.NEAREST_PD in self.nominal_filter.flags:
-            msg = f"`nearestPD()` function was used in predict: {self.name}"
-            self._logger.warning(msg)
 
         self.state_estimate = self.nominal_filter.pred_x
         self.error_covariance = self.nominal_filter.pred_p
@@ -251,46 +243,21 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         """``bool``: Returns whether detected maneuvers are stored for this estimate agent."""
         return bool(self._detected_maneuvers)
 
-    def _logFilterEvents(self, obs_tuples: list[ObservationTuple], truth: ndarray):
+    def _logFilterEvents(self, obs_tuples: list[ObservationTuple]) -> None:
         """Log filter events and perform debugging steps.
 
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` made of the agent during the timestep.
-            truth (``ndarray``): 6x1, ECI truth_state of the target
         """
-        # Check if error inflation is too large
-        if FilterDebugFlag.ERROR_INFLATION in self.nominal_filter.flags:
-            tol_km = 5  # Estimate inflation error tolerance (km)
-            pred_error = fabs(norm(truth[:3] - self.nominal_filter.pred_x[:3]))
-            est_error = fabs(norm(truth[:3] - self.nominal_filter.est_x[:3]))
-
-            # If error increase is larger than desired log the debug information
-            if est_error > pred_error + tol_km:
-                file_name = logFilterStep(self.nominal_filter, obs_tuples, truth)
-                msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
-                self._logger.warning(msg)
-
-        # Check if nearestPD() was called on the filter
-        if FilterDebugFlag.NEAREST_PD in self.nominal_filter.flags:
-            msg = f"`nearestPD()` function was used on {self.name} EstimateAgent"
-            self._logger.warning(msg)
-
-        # Check the three sigma distance of observations & log if needed
-        if FilterDebugFlag.THREE_SIGMA_OBS in self.nominal_filter.flags:
-            filenames = checkThreeSigmaObs(obs_tuples, sigma=3)
-            msg = "Made bad observation, debugging info:\n\t"
-            for filename in filenames:
-                self._logger.warning(msg + f"{filename}")
-
         # Check if a maneuver was detected
-        if FilterDebugFlag.MANEUVER_DETECTION in self.nominal_filter.flags:
+        if FilterFlag.MANEUVER_DETECTION in self.nominal_filter.flags:
             sensor_nums = {ob.agent.simulation_id for ob in obs_tuples}
             tgt = self.simulation_id
             jd = self.julian_date_epoch
             msg = f"Maneuver Detected for RSO {tgt} by sensors {sensor_nums} at time {jd}"
             self._logger.info(msg)
 
-    def _update(self, obs_tuples: list[ObservationTuple], truth: Optional[ndarray] = None):
+    def _update(self, obs_tuples: list[ObservationTuple]) -> None:
         """Perform update of :attr:`nominal_filter`, state estimate, & covariance.
 
         Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. Also, log
@@ -298,17 +265,15 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
-            truth (``ndarray``, optional): 6x1 ECI state vector for the true target agent
         """
-        if truth is not None:
-            self._logFilterEvents(obs_tuples, truth)
+        self._logFilterEvents(obs_tuples)
 
         if obs_tuples:
             self.last_observed_at = self.julian_date_epoch
             self._saveFilterStep()
             if self.nominal_filter.maneuver_detected:
                 self._saveDetectedManeuver(obs_tuples)
-                if FilterDebugFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
+                if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
                     self.resetFilter(self.nominal_filter.converged_filter)
                 self._attemptAdaptiveEstimation(obs_tuples)
 
@@ -333,8 +298,8 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
         """
         # MMAE initialization checks
-        if FilterDebugFlag.ADAPTIVE_ESTIMATION_START in self.nominal_filter.flags:
-            self.nominal_filter.flags ^= FilterDebugFlag.ADAPTIVE_ESTIMATION_START
+        if FilterFlag.ADAPTIVE_ESTIMATION_START in self.nominal_filter.flags:
+            self.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
             adaptive_filter = adaptiveEstimationFactory(
                 self.adaptive_filter, self.nominal_filter, self.dt_step
             )

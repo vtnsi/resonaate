@@ -15,7 +15,7 @@ from ...physics.math import angularMean, wrapAngleNegPiPi
 from ...physics.statistics import chiSquareQuadraticForm
 from ...sensors.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ..debug_utils import findNearestPositiveDefiniteMatrix
-from .sequential_filter import FilterDebugFlag, SequentialFilter
+from .sequential_filter import FilterFlag, SequentialFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -184,7 +184,8 @@ class UnscentedKalmanFilter(SequentialFilter):
             sqrt_cov = sqrt_func(cov)
         except LinAlgError:
             if BehavioralConfig.getConfig().debugging.NearestPD:
-                self._flags |= FilterDebugFlag.NEAREST_PD
+                msg = f"`nearestPD()` function was used on RSO {self.target_id}"
+                self._logger.warning(msg)
                 sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
             else:
                 raise
@@ -207,7 +208,7 @@ class UnscentedKalmanFilter(SequentialFilter):
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
         """
-        self._flags = FilterDebugFlag.NONE
+        self._flags = FilterFlag.NONE
         # STEP 1: Calculate the predicted state estimate at t(k) (X(k + 1|k))
         self.predictStateEstimate(final_time, scheduled_events=scheduled_events)
         # STEP 2: Calculate the predicted covariance at t(k) (P(k + 1|k))
@@ -221,7 +222,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the UKF step
         """
-        self._flags = FilterDebugFlag.NONE
+        self._flags = FilterFlag.NONE
         # STEP 1: Re-sample the sigma points around predicted (sampled) state estimate
         self.sigma_points = self.generateSigmaPoints(self.pred_x, self.pred_p)
         # STEP 2: Calculate the Measurement Matrix (H)
@@ -259,12 +260,8 @@ class UnscentedKalmanFilter(SequentialFilter):
             # STEP 4: Maneuver detection
             self.checkManeuverDetection()
 
-            # Check error inflation, and write debugging info if needed
-            if BehavioralConfig.getConfig().debugging.EstimateErrorInflation:
-                self._flags |= FilterDebugFlag.ERROR_INFLATION
-
-            if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
-                self._flags |= FilterDebugFlag.THREE_SIGMA_OBS
+            # Check and write debugging info if needed
+            self._debugChecks(obs_tuples)
 
     def predictStateEstimate(
         self,
