@@ -252,7 +252,7 @@ pylint *.py tests src/resonaate docs
 - Run unit tests only
 
   ```bash
-  pytest -xm "not (service or event or scenario)"
+  pytest -xm "not (event or scenario)"
 
   ```
 

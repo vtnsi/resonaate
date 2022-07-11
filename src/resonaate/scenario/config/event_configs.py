@@ -394,11 +394,7 @@ class TargetTaskPriorityConfigObject(EventConfigObject):
 
     @property
     def is_dynamic(self):
-        """bool: Flag indicating whether this task is pre-canned or dynamically created.
-
-        Note:
-            This facilitated logic in the service layer of resonaate.
-        """
+        """bool: Flag indicating whether this task is pre-canned or dynamically created."""
         return self._is_dynamic.setting  # pylint: disable=no-member
 
 
