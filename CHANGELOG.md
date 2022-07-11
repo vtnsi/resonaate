@@ -105,6 +105,9 @@ ______________________________________________________________________
 
 ### CI
 
+- Automated release job for creating release notes and publishing a release on GitLab (see #24)
+- Improved CI pipeline/job organization into more reuseable portions
+
 ## [1.4.0][v1.4.0] - 2022-06-06
 
 ### Added

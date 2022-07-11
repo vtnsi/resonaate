@@ -1,29 +1,94 @@
-#####################
-# Base Job Settings #
-#####################
+# ==========================================
+# Includes
+# ==========================================
 
 include:
-  - local: /.gitlab/ci/common.gitlab-ci.yml
+  - local: .gitlab/ci/base.gitlab-ci.yml
+  - local: .gitlab/ci/rules.gitlab-ci.yml
+  - local: .gitlab/ci/scripts.gitlab-ci.yml
 
-##################
-# Script Aliases #
-##################
-
-####################
-# Base Release Job #
-####################
+# ==========================================
+# Base Release Job
+# ==========================================
 
 .release-base:
   stage: release
-  before_script:
-    - !reference [.apt-update]
-    - !reference [.create-venv]
-  artifacts:
-    expire_in: 1 week
+  extends:
+    - .rules:tag
+  variables:
+    RELEASE_NOTES_FILE: release_notes.md
+  # Only run after successful build stage
   when: on_success
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: on_success
-# Job to auto-bump version
 
-# Job to auto-release to Gitlab
+# ==========================================
+# Version Bump Job
+# ==========================================
+
+# [NOTE]: TBD - Manual right now
+
+# ==========================================
+# Prepare Release Notes Job
+# ==========================================
+
+# Prepares release notes on tag creation
+# [NOTE]: Release notes preparation taken from:
+#     https://www.silverdreamracer.me/gitlab-generate-release-notes-automatically-on-the-tag-creation-CICD.html
+release-notes:
+  extends:
+    - .release-base
+  image: alpine/git:latest
+  script:
+    - echo "Creating release notes for the ${CI_COMMIT_TAG} tag"
+    - echo RELEASE_TAG=$CI_COMMIT_TAG >> variables.env
+    # Title
+    - echo "# RESONAATE Release Notes\n" >> $RELEASE_NOTES_FILE
+    # Get release annotation
+    - git tag -l --format='%(subject)' -n0 $CI_COMMIT_TAG >> $RELEASE_NOTES_FILE
+    # Generate ToC
+    - echo "\n---\n## Table of Contents\n" >> $RELEASE_NOTES_FILE
+    - echo "- [Commits](#commits)" >> $RELEASE_NOTES_FILE
+    - echo "- [Merges](#merges)" >> $RELEASE_NOTES_FILE
+    - echo "- [Authors](#authors)" >> $RELEASE_NOTES_FILE
+    - echo "\n---" >> $RELEASE_NOTES_FILE
+    # Get all the regular commits
+    - echo "\n## Commits\n" >> $RELEASE_NOTES_FILE
+    - git log --no-merges --pretty="- %s (%h)" $(git tag --sort=-creatordate | head -2)...$(git tag --sort=-creatordate | head -1) >> $RELEASE_NOTES_FILE
+    # Get all the merge commits
+    - echo "\n## Merges\n" >> $RELEASE_NOTES_FILE
+    - git log --merges --pretty="- %s (%h)" $(git tag --sort=-creatordate | head -2)...$(git tag --sort=-creatordate | head -1) >> $RELEASE_NOTES_FILE
+    # Get all the commit authors - remove "Dependabot"
+    - echo "\n## Authors\n" >> $RELEASE_NOTES_FILE
+    - git log --pretty="- %an%n- %cn" $(git tag --sort=-creatordate | head -2)...$(git tag --sort=-creatordate | head -1) | sort | uniq | grep -v "Dependabot" >> $RELEASE_NOTES_FILE
+  artifacts:
+    paths:
+      - $RELEASE_NOTES_FILE
+      - variables.env
+    expire_in: 3 days
+    reports:
+      dotenv: variables.env
+
+# ==========================================
+# Create Release Job
+# ==========================================
+
+# Create release on Gitlab
+# [NOTE]: The dummy "script" is currently required:
+#     https://gitlab.com/gitlab-org/gitlab/-/issues/223856
+release:
+  extends:
+    - .release-base
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - echo "Creating the release for the ${CI_COMMIT_TAG} tag with the release notes from ${RELEASE_NOTES_FILE}:"
+    - cat "${RELEASE_NOTES_FILE}"
+  release:
+    name: "Release ${CI_COMMIT_TAG}"
+    description: $RELEASE_NOTES_FILE
+    tag_name: $CI_COMMIT_TAG
+  artifacts:
+    name: release_notes
+    paths:
+      - $RELEASE_NOTES_FILE
+    expire_in: never
+  needs:
+    - release-notes

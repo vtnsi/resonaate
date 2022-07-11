@@ -19,16 +19,14 @@
 # https://gitlab.com/dependabot-gitlab/dependabot
 # https://docs.gitlab.com/ee/ci/yaml/
 
-include:
-  - local: /.gitlab/ci/common.gitlab-ci.yml
-
-variables:
-  DEPENDABOT_IMAGE: andrcuns/dependabot-gitlab:latest
+# ==========================================
+# Base Dependabot Job
+# ==========================================
 
 .dependabot-gitlab:
   stage: check
   image:
-    name: $DEPENDABOT_IMAGE
+    name: andrcuns/dependabot-gitlab:latest
     entrypoint: [""]
   variables:
     GIT_STRATEGY: none
@@ -42,6 +40,10 @@ variables:
     - cd /home/dependabot/app
     - bundle exec rake "dependabot:update[$PROJECT_PATH,$PACKAGE_MANAGER,$DIRECTORY]"
   needs: []
+
+# ==========================================
+# Dependabot Jobs
+# ==========================================
 
 bundler:
   extends: .dependabot-gitlab

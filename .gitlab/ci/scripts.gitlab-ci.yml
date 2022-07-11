@@ -1,0 +1,119 @@
+# ==========================================
+# Common Scripts
+# ==========================================
+
+# Get `resonaate` version
+# [NOTE]: requires RESONAATE to be installed!
+.get-version:
+  script:
+    - RESONAATE_VERSION=$(python -c "import resonaate; print(resonaate.__version__)")
+    - echo RESONAATE_VERSION="${RESONAATE_VERSION}" >> $CI_PROJECT_DIR/variables.env
+
+# ==========================================
+# `pip` Install Scripts
+# ==========================================
+
+# Create virtual environment in '.venv' using `virtualenv`
+.create-venv:
+  before_script:
+    - echo -e "\e[0Ksection_start:`date +%s`:venv[collapsed=true]\r\e[0K Create venv, install dependencies"
+    - python3 -V
+    - python3 -m pip install --upgrade pip virtualenv
+    - virtualenv .venv
+    - source .venv/bin/activate
+    - echo -e "\e[0Ksection_end:`date +%s`:venv\r\e[0K"
+
+# `pip install` RESONAATE only
+.pip-base:
+  before_script:
+    - !reference [.create-venv, before_script]
+    - echo -e "\e[0Ksection_start:`date +%s`:pip_base[collapsed=true]\r\e[0K Install resonaate via pip"
+    - python3 -m pip install .
+    - echo -e "\e[0Ksection_end:`date +%s`:pip_base\r\e[0K"
+
+# `pip install` development tools
+.pip-dev:
+  before_script:
+    - !reference [.create-venv, before_script]
+    - echo -e "\e[0Ksection_start:`date +%s`:pip_dev[collapsed=true]\r\e[0K Install resonaate & dev dependencies via pip"
+    - python3 -m pip install .[dev]
+    - echo -e "\e[0Ksection_end:`date +%s`:pip_dev\r\e[0K"
+
+# `pip install` documentation tools
+.pip-doc:
+  before_script:
+    - !reference [.create-venv, before_script]
+    - echo -e "\e[0Ksection_start:`date +%s`:pip_doc[collapsed=true]\r\e[0K Install resonaate & doc dependencies via pip"
+    - python3 -m pip install .[doc]
+    - echo -e "\e[0Ksection_end:`date +%s`:pip_doc\r\e[0K"
+
+# `pip install` testing tools
+# [NOTE]: This has to be an editable install for coverage to work!
+.pip-test:
+  before_script:
+    - !reference [.create-venv, before_script]
+    - echo -e "\e[0Ksection_start:`date +%s`:pip_test[collapsed=true]\r\e[0K Install resonaate & test dependencies via pip"
+    - python3 -m pip install -e .[test]
+    - echo -e "\e[0Ksection_end:`date +%s`:pip_test\r\e[0K"
+
+# ==========================================
+# `apt` Install Scripts
+# ==========================================
+
+# Update `apt` repositories
+.apt-update:
+  before_script:
+    - echo -e "\e[0Ksection_start:`date +%s`:apt_update[collapsed=true]\r\e[0K Update apt packages"
+    - apt-get update -qq
+    - echo -e "\e[0Ksection_end:`date +%s`:apt_update\r\e[0K"
+
+# Install `curl` to image using `apt`
+.install-curl:
+  before_script:
+    - echo -e "\e[0Ksection_start:`date +%s`:install_curl[collapsed=true]\r\e[0K Install curl"
+    - apt-get install -y -qq curl
+    - echo -e "\e[0Ksection_end:`date +%s`:install_curl\r\e[0K"
+
+# Install `buildah` to image using `apt`
+.install-buildah:
+  before_script:
+    - echo -e "\e[0Ksection_start:`date +%s`:install_buildah[collapsed=true]\r\e[0K Install buildah "
+    - apt-get -y -qq install buildah
+    - echo -e "\e[0Ksection_end:`date +%s`:install_buildah\r\e[0K"
+
+# Add `redis` repository to `apt`
+.add-redis-repo:
+  before_script:
+    - echo -e "\e[0Ksection_start:`date +%s`:add_redis_repo[collapsed=true]\r\e[0K Add redis repository to apt"
+    - apt-get install -y -qq lsb-release
+    - curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+    - echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list
+    - echo -e "\e[0Ksection_end:`date +%s`:add_redis_repo\r\e[0K"
+
+# Install redis to image using `apt` - should be in the 'before_script' key
+# [NOTE]: https://redis.io/docs/getting-started/installation/install-redis-on-linux/
+.install-redis:
+  before_script:
+    - !reference [.apt-update, before_script]
+    - !reference [.install-curl, before_script]
+    - !reference [.add-redis-repo, before_script]
+    - !reference [.apt-update, before_script]
+    - echo -e "\e[0Ksection_start:`date +%s`:install_redis[collapsed=true]\r\e[0K Install redis"
+    - apt-get install -y -qq redis
+    - echo -e "\e[0Ksection_end:`date +%s`:install_redis\r\e[0K"
+
+# ==========================================
+# Redis Scripts
+# ==========================================
+
+# Start redis - must include in the 'script' key before job commands are run
+# [NOTE]: Relies on '.install-redis'
+.start-redis:
+  script:
+    - redis-server 2>&1 > redis.log &
+
+# Stop redis - must include in the 'script' key after job commands are run
+# [NOTE]: Relies on '.install-redis'
+.stop-redis:
+  script:
+    - redis-cli shutdown
