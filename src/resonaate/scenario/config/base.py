@@ -4,7 +4,7 @@ from __future__ import annotations
 # Standard Library Imports
 from abc import ABC, abstractmethod
 from dataclasses import InitVar, dataclass, field, fields
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Sequence
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -128,13 +128,13 @@ class ConfigObject(ABC):
 
 
 @dataclass
-class ConfigObjectList(ConfigObject):
+class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
     """Class for defining a configuration item that is a list of :class:`.ConfigObject` objects."""
 
     config_label: str
     """``str``: Label that this configuration item falls under in the raw configuration dictionary."""
 
-    config_type: InitVar[Type]
+    config_type: InitVar[ConfigObject]
     """``type``: type of the objects in this list."""
 
     _config_objects: list[ConfigObject] = field(default_factory=list)
@@ -143,7 +143,7 @@ class ConfigObjectList(ConfigObject):
     default_empty: bool = False
     """``bool``: whether this list is empty by default. If ``False``, this list is required to be populated."""
 
-    def __post_init__(self, config_type: Type) -> None:
+    def __post_init__(self, config_type: ConfigObject) -> None:
         """Runs after the constructor has finished."""
         # [TODO]: Is this necessary?
         self._validateRawConfig(self._config_objects)
@@ -186,6 +186,19 @@ class ConfigObjectList(ConfigObject):
         for config_dict in raw_config:
             if not isinstance(config_dict, dict):
                 raise ConfigTypeError(self.config_label, config_dict, (dict,))
+
+    def __iter__(self) -> ConfigObject:
+        """:class:`.ConfigObject`: iterates over the stored config objects."""
+        for config_object in self.config_objects:
+            yield config_object
+
+    def __getitem__(self, index: int) -> ConfigObject:
+        """:class:`.ConfigObject`: returns the config object at the given index."""
+        return self.config_objects[index]
+
+    def __len__(self) -> int:
+        """``int``: number of config objects in this list."""
+        return len(self.config_objects)
 
     @property
     def config_objects(self) -> list[ConfigObject]:
