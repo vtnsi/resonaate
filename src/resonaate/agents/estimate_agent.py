@@ -22,14 +22,17 @@ from .agent_base import Agent
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Optional, Union
+    from typing import Any, NoReturn
 
     # Third Party Imports
     from numpy import ndarray
+    from typing_extensions import Self
 
     # Local Imports
+    from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
+    from ..scenario.config.agent_configs import TargetConfigObject
     from ..scenario.config.estimation_config import AdaptiveEstimationConfig
     from ..sensors.sensor_base import ObservationTuple
 
@@ -47,12 +50,12 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         initial_covariance: ndarray,
         _filter: SequentialFilter,
         adaptive_filter_config: AdaptiveEstimationConfig,
-        visual_cross_section: Union[float, int],
-        mass: Union[float, int],
+        visual_cross_section: float | int,
+        mass: float | int,
         reflectivity: float,
-        seed: Optional[int] = None,
-        station_keeping: Optional[list[StationKeeper]] = None,
-    ):
+        seed: int | None = None,
+        station_keeping: list[StationKeeper] | None = None,
+    ) -> None:
         R"""Construct an EstimateAgent object.
 
         Args:
@@ -129,6 +132,53 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         # Apply None value to estimate station_keeping
         assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
 
+    @classmethod
+    def fromConfig(cls, config: dict[str, Any]) -> Self:
+        """Factory to initialize :class:`.EstimateAgent` objects based on given configuration.
+
+        Args:
+            config (``dict``): formatted configuration parameters
+
+        Returns:
+            :class:`.EstimateAgent`: properly constructed `EstimateAgent` object
+        """
+        # Grab multiple objects required for creating estimate agents
+        tgt_config: TargetConfigObject = config["target"]
+        clock: ScenarioClock = config["clock"]
+        # Create the initial state & covariance
+        init_x, init_p = initialEstimateNoise(
+            tgt_config.init_eci, config["position_std"], config["velocity_std"], config["rng"]
+        )
+
+        nominal_filter = sequentialFilterFactory(
+            config["sequential_filter"],
+            tgt_config.sat_num,
+            clock.time,
+            init_x,
+            init_p,
+            config["dynamics"],
+            config["q_matrix"],
+        )
+
+        # Create the `EstimateAgent` and initialize its filter object
+        est = cls(
+            tgt_config.sat_num,
+            tgt_config.sat_name,
+            config["agent_type"],
+            clock,
+            init_x,
+            init_p,
+            nominal_filter,
+            config["adaptive_filter"],
+            tgt_config.visual_cross_section,
+            tgt_config.mass,
+            tgt_config.reflectivity,
+            config["seed"],
+        )
+
+        # Return properly initialized `EstimateAgent`
+        return est
+
     def updateEstimate(self, obs_tuples: list[ObservationTuple]) -> None:
         """Update the :attr:`nominal_filter`, state estimate, & covariance.
 
@@ -162,7 +212,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self.state_estimate = self.nominal_filter.pred_x
         self.error_covariance = self.nominal_filter.pred_p
 
-    def updateFromAsyncUpdateEstimate(self, async_result: dict[str, Any]):
+    def updateFromAsyncUpdateEstimate(self, async_result: dict[str, Any]) -> None:
         """Update the :attr:`nominal_filter`, state estimate, & covariance from an async result.
 
         This is the parallel result update function. See :meth:`.updateEstimate` for details
@@ -193,7 +243,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             covariance=self.error_covariance.tolist(),
         )
 
-    def _saveDetectedManeuver(self, obs_tuples: list[ObservationTuple]):
+    def _saveDetectedManeuver(self, obs_tuples: list[ObservationTuple]) -> None:
         """Save :class:`.DetectedManeuver` events to insert into the DB later.
 
         Args:
@@ -220,7 +270,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         return detections
 
-    def _saveFilterStep(self):
+    def _saveFilterStep(self) -> None:
         """Save :class:`.FilterStep` events to insert into the DB later."""
         self._filter_info.append(
             FilterStep.recordFilterStep(
@@ -239,7 +289,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         return filter_steps
 
     @property
-    def maneuver_detected(self):
+    def maneuver_detected(self) -> bool:
         """``bool``: Returns whether detected maneuvers are stored for this estimate agent."""
         return bool(self._detected_maneuvers)
 
@@ -280,18 +330,18 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
 
-    def importState(self, ephemeris):
+    def importState(self, ephemeris: _EphemerisMixin) -> NoReturn:
         """Set the state of this EstimateAgent based on a given :class:`.Ephemeris` object.
 
         Warning:
             This method is not implemented because EstimateAgent's cannot load data for propagation.
 
         Args:
-            ephemeris (:class:`.Ephemeris`): data object to update this SensingAgent's state with
+            ephemeris (:class:`._EphemerisMixin`): data object to update this SensingAgent's state with
         """
         raise NotImplementedError("Cannot load state estimates directly into simulation")
 
-    def _attemptAdaptiveEstimation(self, obs_tuples: list[ObservationTuple]):
+    def _attemptAdaptiveEstimation(self, obs_tuples: list[ObservationTuple]) -> None:
         """Try to start adaptive estimation on this RSO.
 
         Args:
@@ -313,55 +363,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             if mmae_started:
                 self.resetFilter(adaptive_filter)
 
-    @classmethod
-    def fromConfig(cls, config: dict[str, Any], events: dict[str, Any]):
-        """Factory to initialize :class:`.EstimateAgent` objects based on given configuration.
-
-        Args:
-            config (``dict``): formatted configuration parameters
-            events (``dict``): corresponding formatted events
-
-        Returns:
-            :class:`.EstimateAgent`: properly constructed `EstimateAgent` object
-        """
-        # Grab multiple objects required for creating estimate agents
-        tgt = config["target"]
-        clock = config["clock"]
-        # Create the initial state & covariance
-        init_x, init_p = initialEstimateNoise(
-            tgt.eci_state, config["position_std"], config["velocity_std"], config["rng"]
-        )
-
-        nominal_filter = sequentialFilterFactory(
-            config["sequential_filter"],
-            tgt.simulation_id,
-            clock.time,
-            init_x,
-            init_p,
-            config["dynamics"],
-            config["q_matrix"],
-        )
-
-        # Create the `EstimateAgent` and initialize its filter object
-        est = cls(
-            tgt.simulation_id,
-            tgt.name,
-            tgt.agent_type,
-            clock,
-            init_x,
-            init_p,
-            nominal_filter,
-            config["adaptive_filter"],
-            tgt.visual_cross_section,
-            tgt.mass,
-            tgt.reflectivity,
-            config["seed"],
-        )
-
-        # Return properly initialized `EstimateAgent`
-        return est
-
-    def resetFilter(self, new_filter: SequentialFilter):
+    def resetFilter(self, new_filter: SequentialFilter) -> None:
         """Overwrite the agent's filter object with a new filter instance.
 
         Args:
@@ -377,37 +379,37 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self._filter = new_filter
 
     @property
-    def eci_state(self):
+    def eci_state(self) -> ndarray:
         """``ndarray``: Returns the 6x1 ECI current state estimate."""
         return self._state_estimate
 
     @property
-    def ecef_state(self):
+    def ecef_state(self) -> ndarray:
         """``ndarray``: Returns the 6x1 ECEF current state estimate."""
         return self._ecef_state
 
     @property
-    def lla_state(self):
+    def lla_state(self) -> ndarray:
         """``ndarray``: Returns the 3x1 current position estimate in lat, lon, & alt."""
         return self._lla_state
 
     @property
-    def process_noise_covariance(self):
+    def process_noise_covariance(self) -> ndarray:
         """``ndarray``: Returns the 6x6 process noise matrix."""
         return self._filter.q_matrix
 
     @property
-    def initial_covariance(self):
+    def initial_covariance(self) -> ndarray:
         """``ndarray``: Returns the 6x6 original error covariance matrix."""
         return self._initial_covariance
 
     @property
-    def error_covariance(self):
+    def error_covariance(self) -> ndarray:
         """``ndarray``: Returns the 6x6 current error covariance (uncertainty) matrix."""
         return self._error_covariance
 
     @error_covariance.setter
-    def error_covariance(self, new_covar: ndarray):
+    def error_covariance(self, new_covar: ndarray) -> None:
         """Properly set the error covariance matrix.
 
         Args:
@@ -423,12 +425,12 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self._error_covariance = new_covar
 
     @property
-    def state_estimate(self):
+    def state_estimate(self) -> ndarray:
         """``ndarray``: Returns the 6x1 ECI current state estimate."""
         return self._state_estimate
 
     @state_estimate.setter
-    def state_estimate(self, new_state):
+    def state_estimate(self, new_state) -> None:
         """Set the EstimateAgent's new 6x1 ECI state vector.
 
         Args:
@@ -439,21 +441,21 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property
-    def nominal_filter(self):
+    def nominal_filter(self) -> SequentialFilter:
         """:class:`.SequentialFilter`: Returns the EstimateAgent's associated filter instance."""
         return self._filter
 
     @property
-    def visual_cross_section(self):
+    def visual_cross_section(self) -> float:
         """``float``: Returns the EstimateAgent's associated visual cross section."""
         return self._visual_cross_section
 
     @property
-    def mass(self):
+    def mass(self) -> float:
         """``float``: Returns the EstimateAgent's associated mass."""
         return self._mass
 
     @property
-    def reflectivity(self):
+    def reflectivity(self) -> float:
         """``float``: Returns the EstimateAgent's associated reflectivity."""
         return self._reflectivity

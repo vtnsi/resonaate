@@ -1,6 +1,9 @@
 """Defines the :class:`.ScenarioClock` class to track simulation time."""
+from __future__ import annotations
+
 # Standard Library Imports
 import logging
+from typing import TYPE_CHECKING
 
 # Local Imports
 from ..data.epoch import Epoch
@@ -14,6 +17,11 @@ from ..physics.time.stardate import (
 )
 from ..physics.transforms.reductions import updateReductionParameters
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from .config.time_config import TimeConfig
+
 
 class ScenarioClock:
     """The ScenarioClock Class instantiates a ScenarioClock object.
@@ -22,13 +30,24 @@ class ScenarioClock:
     broadcasts the current time stamp to all Agents and Estimator.
     """
 
-    def __init__(self, start_date, time_span, dt_step):
-        """Construct a `ScenarioClock` object."""
+    def __init__(
+        self,
+        start_date: JulianDate,
+        time_span: ScenarioTime | float,
+        dt_step: ScenarioTime | float,
+    ) -> None:
+        """Construct a `ScenarioClock` object.
+
+        Args:
+            start_date (:class:`.JulianDate`): starting Julian date of the simulation.
+            time_span (:class:`.ScenarioTime` | ``float``): total simulation time span, seconds.
+            dt_step (:class:`.ScenarioTime` | ``float``): simulation internal time step, seconds.
+        """
         if not isinstance(start_date, JulianDate):
             raise TypeError("ScenarioClock: start date argument must be a `JulianDate` object.")
 
         self.julian_date_start = start_date
-        self.julian_date_stop = start_date + time_span * const.SEC2DAYS
+        self.julian_date_stop = JulianDate(start_date + time_span * const.SEC2DAYS)
         self.julian_date_epoch = start_date
         self.initial_time = ScenarioTime(0)
         self.time_span = ScenarioTime(time_span)
@@ -53,13 +72,18 @@ class ScenarioClock:
         database = ResonaateDatabase.getSharedInterface()
         database.insertData(*epochs)
 
-    def ticToc(self, *args):  # noqa: C901
-        """Increment the time property by one step, update class variables, and execute require callbacks."""
-        if not args:
+    def ticToc(self, dt: ScenarioTime | float | None = None) -> None:  # noqa: C901
+        r"""Increment the time property by one step.
+
+        Args:
+            dt (:class:`.ScenarioTime` | ``float`` | ``None``, optional): :math:`\Delta t` to step the simulation
+                forward by, in seconds. Defaults to ``None``, which then uses :attr:`~.ScenarioClock.dt_step`.
+        """
+        if not dt:
             self.time += self.dt_step
             self.julian_date_epoch = self.time.convertToJulianDate(self.julian_date_start)
         else:
-            self.time += ScenarioTime(args[0])
+            self.time += ScenarioTime(dt)
             self.julian_date_epoch = self.time.convertToJulianDate(self.julian_date_start)
 
         # EOP params & third body positions updated
@@ -69,11 +93,11 @@ class ScenarioClock:
         updateReductionParameters(self.julian_date_epoch)
 
     @classmethod
-    def fromConfig(cls, config):
+    def fromConfig(cls, config: TimeConfig) -> ScenarioClock:
         """Factory to create a valid :class:`.ScenarioClock` object from a config dictionary.
 
         Args:
-            config (TimeConfig): corresponding configuration
+            config (:class:`.TimeConfig`): corresponding configuration
 
         Returns:
             :class:`.ScenarioClock`: properly constructed `ScenarioClock` object

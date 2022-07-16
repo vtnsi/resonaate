@@ -9,7 +9,7 @@ from numpy import array
 
 # Local Imports
 from ..common.logger import resonaateLogError
-from ..data.ephemeris import EstimateEphemeris, TruthEphemeris
+from ..data.ephemeris import TruthEphemeris
 from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..dynamics.terrestrial import Terrestrial
 from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
@@ -23,15 +23,18 @@ from .agent_base import Agent
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Collection
-    from typing import Union
+    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
+    from typing_extensions import Self
 
     # Local Imports
+    from ..data.ephemeris import _EphemerisMixin
     from ..data.events.sensor_time_bias import SensorTimeBiasEvent
     from ..dynamics.dynamics_base import Dynamics
     from ..scenario.clock import ScenarioClock
+    from ..scenario.config.agent_configs import SensorConfigObject
 
 
 GROUND_FACILITY_LABEL = "GroundFacility"
@@ -54,10 +57,10 @@ class SensingAgent(Agent):
         sensors: Sensor,
         dynamics: Dynamics,
         realtime: bool,
-        visual_cross_section: Union[float, int],
-        mass: Union[float, int],
+        visual_cross_section: float | int,
+        mass: float | int,
         reflectivity: float,
-        station_keeping: list[StationKeeper] = None,
+        station_keeping: list[StationKeeper] | None = None,
     ):
         """Construct a SensingAgent object.
 
@@ -110,14 +113,81 @@ class SensingAgent(Agent):
 
         self.sensor_time_bias_event_queue = []
 
-    def appendTimeBiasEvent(
-        self,
-        time_bias_event: SensorTimeBiasEvent,
-    ) -> None:
+    @classmethod
+    def fromConfig(cls, config: dict[str, Any]) -> Self:
+        """Factory to initialize `SensingAgent` objects based on given configuration.
+
+        Args:
+            config (``dict``): formatted configuration parameters
+
+        Returns:
+            :class:`.SensingAgent`: properly constructed `SensingAgent` object
+        """
+        agent_config: SensorConfigObject = config["agent"]
+
+        # Build the sensor based on the agent configuration
+        sensor = sensorFactory(agent_config)
+
+        station_keeping = []
+        use_realtime = config["realtime"]
+        if agent_config.lla_set:
+            lla_orig = array(
+                [agent_config.lat, agent_config.lon, agent_config.alt]
+            )  # radians, radians, km
+            initial_state = ecef2eci(lla2ecef(lla_orig))
+        elif agent_config.eci_set:
+            initial_state = array(agent_config.init_eci)
+        elif agent_config.coe_set:
+            orbit = ClassicalElements.fromConfig(agent_config.init_coe)
+            initial_state = orbit.toECI()
+        elif agent_config.eqe_set:
+            orbit = EquinoctialElements.fromConfig(agent_config.init_eqe)
+            initial_state = orbit.toECI()
+        else:
+            raise ValueError(
+                f"SensorAgent config doesn't contain initial state information: {agent_config}"
+            )
+
+        if agent_config.host_type == GROUND_FACILITY_LABEL:
+            dynamics = Terrestrial(config["clock"].julian_date_start, eci2ecef(initial_state))
+        elif agent_config.host_type == SPACECRAFT_LABEL:
+            # [TODO]: Find a way to pass down dynamics config?
+            dynamics = config["satellite_dynamics"]
+            if agent_config.station_keeping:
+                for config_str in agent_config.station_keeping.routines:
+                    station_keeping.append(
+                        StationKeeper.factory(
+                            conf_str=config_str,
+                            rso_id=agent_config.id,
+                            initial_eci=initial_state,
+                            julian_date_start=config["clock"].julian_date_start,
+                        )
+                    )
+        else:
+            msg = f'Invalid value for `host_type` key for sensor agent `{agent_config["name"]}`'
+            resonaateLogError(msg)
+            raise ValueError(agent_config.host_type)
+
+        return cls(
+            agent_config.id,
+            agent_config.name,
+            agent_config.host_type,
+            initial_state,
+            config["clock"],
+            sensor,
+            dynamics,
+            use_realtime,
+            agent_config.visual_cross_section,
+            agent_config.mass,
+            agent_config.reflectivity,
+            station_keeping,
+        )
+
+    def appendTimeBiasEvent(self, time_bias_event: SensorTimeBiasEvent) -> None:
         """Queue up a sensor time bias event to happen on the next tasking.
 
         Args:
-            time_bias_event (SensorTimeBiasEvent): Event that will take place during the next tasking.
+            time_bias_event (:class:`.SensorTimeBiasEvent`): Event that will take place during the next tasking.
         """
         # [NOTE][parallel-time-bias-event-handling] Step two: call this method via the event handler to queue the
         # relevant :class:`.SensorTimeBiasEvent`.
@@ -153,106 +223,28 @@ class SensingAgent(Agent):
             eci=self.eci_state.tolist(),
         )
 
-    def importState(
-        self,
-        ephemeris: Union[TruthEphemeris, EstimateEphemeris],
-    ) -> None:
+    def importState(self, ephemeris: _EphemerisMixin) -> None:
         """Set the state of this SensingAgent based on a given :class:`.Ephemeris` object.
 
         Args:
-            ephemeris (:class:`.Ephemeris`): data object to update this SensingAgent's state with
+            ephemeris (:class:`._EphemerisMixin`): data object to update this SensingAgent's state with
         """
         self.eci_state = array(ephemeris.eci)
         self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(
             self.julian_date_start
         )
 
-    @classmethod
-    def fromConfig(
-        cls,
-        config: dict,
-        events: dict,
-    ) -> SensingAgent:
-        """Factory to initialize `SensingAgent` objects based on given configuration.
-
-        Args:
-            config (``dict``): formatted configuration parameters
-            events (``dict``): corresponding formatted events
-
-        Returns:
-            :class:`.SensingAgent`: properly constructed `SensingAgent` object
-        """
-        agent = config["agent"]
-
-        # Build the sensor based on the agent configuration
-        sensor = sensorFactory(agent)
-
-        station_keeping = []
-        use_realtime = config["realtime"]
-        if agent.lla_set:
-            lla_orig = array([agent.lat, agent.lon, agent.alt])  # radians, radians, km
-            initial_state = ecef2eci(lla2ecef(lla_orig))
-        elif agent.eci_set:
-            initial_state = array(agent.init_eci)
-        elif agent.coe_set:
-            orbit = ClassicalElements.fromConfig(agent.init_coe)
-            initial_state = orbit.toECI()
-        elif agent.eqe_set:
-            orbit = EquinoctialElements.fromConfig(agent.init_eqe)
-            initial_state = orbit.toECI()
-        else:
-            raise ValueError(
-                f"SensorAgent config doesn't contain initial state information: {agent}"
-            )
-
-        if agent.host_type == GROUND_FACILITY_LABEL:
-            dynamics = Terrestrial(config["clock"].julian_date_start, eci2ecef(initial_state))
-        elif agent.host_type == SPACECRAFT_LABEL:
-            # [TODO]: Find a way to pass down dynamics config?
-            dynamics = config["satellite_dynamics"]
-            for config_str in agent.station_keeping.routines:
-                station_keeping.append(
-                    StationKeeper.factory(
-                        conf_str=config_str,
-                        rso_id=agent.id,
-                        initial_eci=initial_state,
-                        julian_date_start=config["clock"].julian_date_start,
-                    )
-                )
-        else:
-            msg = f'Invalid value for `host_type` key for sensor agent `{agent["name"]}`'
-            resonaateLogError(msg)
-            raise ValueError(agent.host_type)
-
-        return cls(
-            agent.id,
-            agent.name,
-            agent.host_type,
-            initial_state,
-            config["clock"],
-            sensor,
-            dynamics,
-            use_realtime,
-            agent.visual_cross_section,
-            agent.mass,
-            agent.reflectivity,
-            station_keeping,
-        )
-
     @property
     def eci_state(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 6x1 ECI current state vector."""
+        """``ndarray``: Returns the 6x1 ECI current state vector."""
         return self._truth_state
 
     @eci_state.setter
-    def eci_state(
-        self,
-        new_state: ndarray,
-    ) -> None:
+    def eci_state(self, new_state: ndarray) -> None:
         """Set the SensingAgent's new 6x1 ECI state vector.
 
         Args:
-            new_state (``numpy.ndarray``): 6x1 ECI state vector
+            new_state (``ndarray``): 6x1 ECI state vector
         """
         self._truth_state = new_state
         self._ecef_state = eci2ecef(new_state)
@@ -260,15 +252,15 @@ class SensingAgent(Agent):
 
     @property
     def ecef_state(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 6x1 ECEF current state vector."""
+        """``ndarray``: Returns the 6x1 ECEF current state vector."""
         return self._ecef_state
 
     @property
     def lla_state(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
+        """``ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
         return self._lla_state
 
     @property
-    def sensors(self) -> Collection:
+    def sensors(self) -> Collection[Sensor]:
         """``collections.abc.Collection``: Returns the collection of sensors associated with this SensingAgent."""
         return self._sensors

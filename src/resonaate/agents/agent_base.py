@@ -4,7 +4,7 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Union
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import ndarray
@@ -19,6 +19,18 @@ from ..dynamics.integration_events.finite_thrust import (
 from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.math import fpe_equals
 from ..scenario.clock import ScenarioClock
+
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
+    # Third Party Imports
+    from typing_extensions import Self
+
+    # Local Imports
+    from ..data.ephemeris import _EphemerisMixin
+    from ..data.events import Event
+    from ..physics.time.stardate import JulianDate, ScenarioTime
 
 
 class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
@@ -47,10 +59,10 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         clock: ScenarioClock,
         dynamics: Dynamics,
         realtime: bool,
-        visual_cross_section: Union[float, int],
-        mass: Union[float, int],
+        visual_cross_section: float | int,
+        mass: float | int,
         reflectivity: float,
-        station_keeping=None,
+        station_keeping: list[StationKeeper] | None = None,
     ):
         """Construct an Agent object.
 
@@ -65,7 +77,7 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
             visual_cross_section (``float, int``): constant visual cross-section of the agent
             mass (``float, int``): constant mass of the agent
             reflectivity (``float``): constant reflectivity of the agent
-            station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station keeping to
+            station_keeping (``list``, optional): list of :class:`.StationKeeper` objects describing the station keeping to
                 be performed
 
         Raises:
@@ -121,17 +133,17 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
 
         self.propagate_event_queue = []
 
-    def appendPropagateEvent(self, event):
+    def appendPropagateEvent(self, event: Event) -> None:
         """Queue up a propagation event to happen on the next propagation.
 
         Args:
-            event (DiscreteStateChangeEvent): Event that will take place during the next propagation.
+            event (:class:`.Event`): Event that will take place during the next propagation.
         """
         # [NOTE][parallel-maneuver-event-handling] Step two: call this method via the event handler to queue the
         # relevant :class:`.DiscreteStateChangeEvent`.
         self.propagate_event_queue.append(event)
 
-    def prunePropagateEvents(self):
+    def prunePropagateEvents(self) -> None:
         """Remove events from the queue that happened in the past."""
         relevant_events = []
         for itr_event in self.propagate_event_queue:
@@ -150,7 +162,7 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
     ### Abstract Methods & Properties ###
 
     @abstractmethod
-    def getCurrentEphemeris(self):
+    def getCurrentEphemeris(self) -> _EphemerisMixin:
         """Retrieve the Agent's current state for publishing to the DB.
 
         Returns:
@@ -159,80 +171,79 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         raise NotImplementedError
 
     @abstractmethod
-    def importState(self, ephemeris):
+    def importState(self, ephemeris: _EphemerisMixin) -> None:
         """Set the state of this Agent based on a given :class:`.Ephemeris` object.
 
         Args:
-            ephemeris (:class:`.Ephemeris`): data object to update this Agent's state with
+            ephemeris (:class:`._EphemerisMixin`): data object to update this Agent's state with
         """
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def eci_state(self):
-        """``numpy.ndarray``: Returns the 6x1 ECI current state vector."""
+    def eci_state(self) -> ndarray:
+        """``ndarray``: Returns the 6x1 ECI current state vector."""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def ecef_state(self):
-        """``numpy.ndarray``: Returns the 6x1 ECEF current state vector."""
+    def ecef_state(self) -> ndarray:
+        """``ndarray``: Returns the 6x1 ECEF current state vector."""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def lla_state(self):
-        """``numpy.ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
+    def lla_state(self) -> ndarray:
+        """``ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def fromConfig(cls, config, events):
+    def fromConfig(cls, config: dict[str, Any]) -> Self:
         """Factory to initialize `Agent` objects based on given configuration.
 
         Args:
             config (``dict``): formatted configuration parameters
-            events (``dict``): corresponding formatted events
 
         Returns:
-            `Agent`: properly constructed `Agent` object
+            :class:`.Agent`: properly constructed `Agent` object
         """
         raise NotImplementedError
 
     ### Read-Only Instance Properties ###
 
     @property
-    def initial_state(self):
-        """``numpy.ndarray``: Returns the 6x1 initial ECI state vector."""
+    def initial_state(self) -> ndarray:
+        """``ndarray``: Returns the 6x1 initial ECI state vector."""
         return self._initial_state
 
     @property
-    def julian_date_epoch(self):
+    def julian_date_epoch(self) -> JulianDate:
         """:class:`.JulianDate`: Returns the current Julian date."""
         return self._time.convertToJulianDate(self.julian_date_start)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """``str``: Returns an Agent's name."""
         return self._name
 
     @property
-    def agent_type(self):
+    def agent_type(self) -> str:
         """``str``: Returns an Agent's type."""
         return self._type
 
     @property
-    def dynamics(self):
+    def dynamics(self) -> Dynamics:
         """:class:`.Dynamics`: Returns an Agent's dynamics class instance."""
         return self._dynamics
 
     @property
-    def realtime(self):
+    def realtime(self) -> bool:
         """``bool``: Returns whether this Agent is being propagated in realtime, or if an importer model is used."""
         return self._realtime
 
     @property
-    def simulation_id(self):
+    def simulation_id(self) -> int:
         """``int``: Returns an ID number associated with the Agent.
 
         - Spacecraft: SATCAT ID
@@ -241,36 +252,36 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         return self._id
 
     @property
-    def time(self):
+    def time(self) -> ScenarioTime:
         """:class:`.ScenarioTime`: Returns current epoch seconds."""
         return self._time
 
     @time.setter
-    def time(self, new_time):
+    def time(self, new_time: ScenarioTime) -> None:
         """:class:`.ScenarioTime`: Returns current epoch seconds."""
         self._time = new_time
 
     @property
-    def dt_step(self):
+    def dt_step(self) -> ScenarioTime:
         """:class:`.ScenarioTime`: Returns the delta T of the scenario."""
         return self._dt_step
 
     @property
-    def station_keeping(self):
+    def station_keeping(self) -> list[StationKeeper]:
         """``list``: Returns the station_keeping list."""
         return self._station_keeping
 
     @property
-    def visual_cross_section(self):
+    def visual_cross_section(self) -> float:
         """``float, int``: Returns the visual cross-sectional area."""
         return self._visual_cross_section
 
     @property
-    def mass(self):
+    def mass(self) -> float:
         """``float, int``: Returns the mass."""
         return self._mass
 
     @property
-    def reflectivity(self):
+    def reflectivity(self) -> float:
         """``float``: Returns the reflectivity."""
         return self._reflectivity

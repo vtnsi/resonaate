@@ -20,10 +20,13 @@ from .agent_base import Agent
 # Type checking
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Union
+    from typing import Any
+
+    # Third Party Imports
+    from typing_extensions import Self
 
     # Local Imports
-    from ..data.ephemeris import EstimateEphemeris
+    from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.dynamics_base import Dynamics
     from ..scenario.clock import ScenarioClock
 
@@ -63,11 +66,11 @@ class TargetAgent(Agent):
         dynamics: Dynamics,
         realtime: bool,
         process_noise: ndarray,
-        visual_cross_section: Union[float, int],
-        mass: Union[float, int],
+        visual_cross_section: float | int,
+        mass: float | int,
         reflectivity: float,
-        seed: int = None,
-        station_keeping: list[StationKeeper] = None,
+        seed: int | None = None,
+        station_keeping: list[StationKeeper] | None = None,
     ):
         """Construct a TargetAgent object.
 
@@ -127,42 +130,12 @@ class TargetAgent(Agent):
         self._lla_state = ecef2lla(self._ecef_state)
         self._previous_state = array(initial_state, copy=True)
 
-    def getCurrentEphemeris(self) -> TruthEphemeris:
-        """Returns the TargetAgent's current ephemeris information.
-
-        This is used for bulk-updating the output database with state information.
-
-        Returns:
-            :class:`.TruthEphemeris`: valid data object for insertion into output database.
-        """
-        return TruthEphemeris.fromECIVector(
-            agent_id=self.simulation_id,
-            julian_date=self.julian_date_epoch,
-            eci=self.eci_state.tolist(),
-        )
-
-    def importState(self, ephemeris: Union[TruthEphemeris, EstimateEphemeris]) -> None:
-        """Set the state of this TargetAgent based on a given :class:`.Ephemeris` object.
-
-        Args:
-            ephemeris (:class:`.Ephemeris`): data object to update this TargetAgent's state with
-        """
-        self.eci_state = array(ephemeris.eci)
-        self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(
-            self.julian_date_start
-        )
-
     @classmethod
-    def fromConfig(
-        cls,
-        config: dict,
-        events: dict,
-    ) -> TargetAgent:
+    def fromConfig(cls, config: dict) -> Self:
         """Factory to initialize `TargetAgent` objects based on given configuration.
 
         Args:
             config (``dict``): formatted configuration parameters
-            events (``dict``): corresponding formatted events
 
         Returns:
             :class:`.TargetAgent`: properly constructed `TargetAgent` object
@@ -212,20 +185,42 @@ class TargetAgent(Agent):
             station_keeping=station_keeping,
         )
 
+    def getCurrentEphemeris(self) -> TruthEphemeris:
+        """Returns the TargetAgent's current ephemeris information.
+
+        This is used for bulk-updating the output database with state information.
+
+        Returns:
+            :class:`.TruthEphemeris`: valid data object for insertion into output database.
+        """
+        return TruthEphemeris.fromECIVector(
+            agent_id=self.simulation_id,
+            julian_date=self.julian_date_epoch,
+            eci=self.eci_state.tolist(),
+        )
+
+    def importState(self, ephemeris: _EphemerisMixin) -> None:
+        """Set the state of this TargetAgent based on a given :class:`.Ephemeris` object.
+
+        Args:
+            ephemeris (:class:`._EphemerisMixin`): data object to update this TargetAgent's state with
+        """
+        self.eci_state = array(ephemeris.eci)
+        self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(
+            self.julian_date_start
+        )
+
     @property
     def eci_state(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 6x1 ECI current state vector."""
+        """``ndarray``: Returns the 6x1 ECI current state vector."""
         return self._truth_state
 
     @eci_state.setter
-    def eci_state(
-        self,
-        new_state: ndarray,
-    ) -> None:
+    def eci_state(self, new_state: ndarray) -> None:
         """Set the TargetAgent's new 6x1 ECI state vector.
 
         Args:
-            new_state (``numpy.ndarray``): 6x1 ECI state vector
+            new_state (``ndarray``): 6x1 ECI state vector
         """
         self._previous_state = self._truth_state
         self._truth_state = new_state
@@ -234,25 +229,25 @@ class TargetAgent(Agent):
 
     @property
     def previous_state(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 6x1 ECI previous state vector."""
+        """``ndarray``: Returns the 6x1 ECI previous state vector."""
         return self._previous_state
 
     @property
     def ecef_state(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 6x1 ECEF current state vector."""
+        """``ndarray``: Returns the 6x1 ECEF current state vector."""
         return self._ecef_state
 
     @property
     def lla_state(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
+        """``ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
         return self._lla_state
 
     @property
     def process_noise(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 6x1 scaled process noise vector."""
+        """``ndarray``: Returns the 6x1 scaled process noise vector."""
         return self._rng.multivariate_normal(self.eci_state, self.process_noise_covariance)
 
     @property
     def process_noise_covariance(self) -> ndarray:
-        """``numpy.ndarray``: Returns the 6x6 process noise matrix."""
+        """``ndarray``: Returns the 6x6 process noise matrix."""
         return self._process_noise_covar
