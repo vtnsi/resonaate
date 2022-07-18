@@ -370,7 +370,7 @@ class Sensor(metaclass=ABCMeta):
             return False
 
         # Early exit if target not in sensor's maximum range
-        if self.maximum_range and getRange(slant_range_sez) < self.maximum_range:
+        if self.maximum_range and getRange(slant_range_sez) > self.maximum_range:
             return False
 
         # Early exit if a Line of Sight doesn't exist
