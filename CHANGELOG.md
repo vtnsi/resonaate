@@ -11,22 +11,22 @@ ______________________________________________________________________
 **Table of Contents**
 
 - [Release History](#release-history)
-- [\[Unreleased\]](#unreleased)
-- [\[1.4.0 - 2022-06-06\]](#140---2022-06-06)
-- [\[1.3.0 - 2022-03-04\]](#130---2022-03-04)
-- [\[1.2.0\] - 2021-06-14](#120---2021-06-14)
-- [\[1.1.1\] - 2021-03-25](#111---2021-03-25)
-- [\[1.1.0\] - 2021-03-24](#110---2021-03-24)
-- [\[1.0.1\] - 2021-01-21](#101---2021-01-21)
-- [\[1.0.0\] - 2021-01-14](#100---2021-01-14)
-- [\[0.9.0\] - 2020-10-20](#090---2020-10-20)
-- [\[0.0.0\] - 2020-05-08](#000---2020-05-08)
+  - [\[Unreleased\]](#unreleased)
+  - [\[1.4.0 - 2022-06-06\]](#140---2022-06-06)
+  - [\[1.3.0 - 2022-03-04\]](#130---2022-03-04)
+  - [\[1.2.0\] - 2021-06-14](#120---2021-06-14)
+  - [\[1.1.1\] - 2021-03-25](#111---2021-03-25)
+  - [\[1.1.0\] - 2021-03-24](#110---2021-03-24)
+  - [\[1.0.1\] - 2021-01-21](#101---2021-01-21)
+  - [\[1.0.0\] - 2021-01-14](#100---2021-01-14)
+  - [\[0.9.0\] - 2020-10-20](#090---2020-10-20)
+  - [\[0.0.0\] - 2020-05-08](#000---2020-05-08)
 
 ______________________________________________________________________
 
 <!-- END TOC -->
 
-# \[Unreleased\]
+## \[Unreleased\]
 
 - Added
 
@@ -45,6 +45,7 @@ ______________________________________________________________________
   - Default values on a per-sensor basis for sensor `detectable_vismag`, `min_range`, `max_range`
   - `Optical.isVisible()` now checks solar phase angle and apparent vismag
   - Unit tests for `sensor_utils.py`
+  - Unit tests for `Sensor`
 
 - Changed
 
@@ -65,8 +66,9 @@ ______________________________________________________________________
 - Fixed
 
   - FOV tests now reliably pass, properly call `updateReductionParameters`
+  - Incorrect `Sensor.maximum_range` check, fixes #40 along with other small errors
 
-# \[1.4.0 - 2022-06-06\]
+## \[1.4.0 - 2022-06-06\]
 
 - Added
 
@@ -130,7 +132,7 @@ ______________________________________________________________________
   - Small bug with how `calcMeasurementMean` corrected for different angular domains
   - GitLab runner, so we can use pipelines again
 
-# \[1.3.0 - 2022-03-04\]
+## \[1.3.0 - 2022-03-04\]
 
 - Added
 
@@ -228,7 +230,7 @@ ______________________________________________________________________
   - Tasking engine unit tests by removing the mocked classes. Pickling mocked objects doesn't behave well.
   - `JobTimeoutError` bug (#103) introduced by !47, fixed by !56
 
-# \[1.2.0\] - 2021-06-14
+## \[1.2.0\] - 2021-06-14
 
 - Added
 
@@ -308,7 +310,7 @@ ______________________________________________________________________
   - DB table equality operator (commit 7df42e9a5)
   - Fix issue with `JulianDate` subtraction & comparison operators (commits a1a6f2489 and 31f29420b)
 
-# \[1.1.1\] - 2021-03-25
+## \[1.1.1\] - 2021-03-25
 
 Fix environment variable reading security issue and change Git workflow docs.
 
@@ -320,7 +322,7 @@ Fix environment variable reading security issue and change Git workflow docs.
 
   - Feature to read environment variable pointing to config file (#62)
 
-# \[1.1.0\] - 2021-03-24
+## \[1.1.0\] - 2021-03-24
 
 Update that includes LPAR sensors and multiple sensor networks.
 
@@ -348,7 +350,7 @@ Update that includes LPAR sensors and multiple sensor networks.
 
   - new pylint & flake8 errors
 
-# \[1.0.1\] - 2021-01-21
+## \[1.0.1\] - 2021-01-21
 
 Added new `Scenario` factor methods. Also updated documentation for new formats.
 
@@ -367,7 +369,7 @@ Added new `Scenario` factor methods. Also updated documentation for new formats.
 
   - Outdated scenario configuration documentation in `initialization.md`
 
-# \[1.0.0\] - 2021-01-14
+## \[1.0.0\] - 2021-01-14
 
 Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard stop where main architectural changes and major features were completed and introduced bugs were fixed.
 
@@ -414,7 +416,7 @@ Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard st
   - Small corner-case sign errors in reference frame rotations
   - Incorrect lighting conditions
 
-# \[0.9.0\] - 2020-10-20
+## \[0.9.0\] - 2020-10-20
 
 Mostly config/refactoring updates since the initial port.
 
@@ -434,7 +436,7 @@ Mostly config/refactoring updates since the initial port.
   - `KLDivergence` hotfix
   - `UKF` bugs
 
-# \[0.0.0\] - 2020-05-08
+## \[0.0.0\] - 2020-05-08
 
 Initial version ported to a new repository.
 

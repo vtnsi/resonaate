@@ -2,20 +2,21 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from collections import namedtuple
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, cos, diagflat, dot, matmul, random, real, sin, squeeze
+from numpy import array, cos, diagflat, matmul, random, real, sin, squeeze, zeros_like
 from scipy.linalg import norm, sqrtm
 
 # Local Imports
+from ..common.exceptions import ShapeError
 from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
 from ..data.observation import Observation
 from ..physics import constants as const
-from ..physics.math import safeArccos, subtendedAngle
+from ..physics.math import isPD, subtendedAngle
 from ..physics.sensor_utils import lineOfSight
 from ..physics.time.stardate import ScenarioTime
 from ..physics.transforms.methods import getSlantRangeVector
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from . import FieldOfView
+    from .measurements import IsAngle
 
 
 ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles"])
@@ -42,7 +44,7 @@ Attributes:
 """
 
 
-class Sensor(metaclass=ABCMeta):
+class Sensor(ABC):
     """Abstract base class for a generic Sensor object."""
 
     def __init__(
@@ -77,9 +79,10 @@ class Sensor(metaclass=ABCMeta):
             maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
-        self._az_mask = None
-        self._el_mask = None
-        self._r_matrix = None
+        self._az_mask = zeros_like(az_mask)
+        self._el_mask = zeros_like(el_mask)
+        self._r_matrix = zeros_like(r_matrix)
+        self._sqrt_noise_covar = zeros_like(r_matrix)
         self.az_mask = const.DEG2RAD * az_mask
         self.el_mask = const.DEG2RAD * el_mask
         self.r_matrix = r_matrix
@@ -95,12 +98,12 @@ class Sensor(metaclass=ABCMeta):
         # Derived properties initialization
         self.time_last_ob = ScenarioTime(0.0)
         self.delta_boresight = 0.0
+        self.boresight = self._setInitialBoresight()
         self._host = None
-        self.boresight = None
         self._sensor_args = sensor_args
 
     @abstractmethod
-    def getMeasurements(self, slant_range_sez: ndarray, noisy=False) -> dict:
+    def getMeasurements(self, slant_range_sez: ndarray, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:
@@ -119,7 +122,7 @@ class Sensor(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def angle_measurements(self):
+    def angle_measurements(self) -> ndarray:
         """Returns which measurements are angles as integer values.
 
         The following values are valid:
@@ -131,6 +134,20 @@ class Sensor(metaclass=ABCMeta):
             ``ndarray``: integer array defining angular measurements
         """
         raise NotImplementedError
+
+    def _setInitialBoresight(self) -> ndarray:
+        """Determine the initial boresight vector as the center of the field of regard."""
+        if self.az_mask[0] < self.az_mask[1]:
+            mid_az = self.az_mask[0] + (self.az_mask[1] - self.az_mask[0]) / 2.0
+        else:
+            mid_az = self.az_mask[1] + (self.az_mask[0] - self.az_mask[1]) / 2.0
+
+        if self.el_mask[0] < self.el_mask[1]:
+            mid_el = self.el_mask[0] + (self.el_mask[1] - self.el_mask[0]) / 2.0
+        else:
+            mid_el = self.el_mask[1] + (self.el_mask[0] - self.el_mask[1]) / 2.0
+
+        return array([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
 
     def collectObservations(
         self, pointing_agent: EstimateAgent, background_agents: list[TargetAgent]
@@ -152,13 +169,8 @@ class Sensor(metaclass=ABCMeta):
                 targets_in_fov = self.checkTargetsInView(slant_range_sez, background_agents)
                 obs_list = list(
                     filter(  # pylint:disable=bad-builtin
-                        lambda x: x.observation,
-                        (
-                            self.makeNoisyObservation(
-                                tgt,
-                            )
-                            for tgt in targets_in_fov
-                        ),
+                        lambda ob_tuple: ob_tuple.observation,
+                        (self.makeNoisyObservation(tgt) for tgt in targets_in_fov),
                     )
                 )  # pylint:disable=bad-builtin
 
@@ -186,8 +198,8 @@ class Sensor(metaclass=ABCMeta):
         # filter out targets outside of FOV
         agents_in_fov = list(
             filter(  # pylint:disable=bad-builtin
-                lambda x: self.inFOV(
-                    slant_range_sez, getSlantRangeVector(self.host.ecef_state, x.eci_state)
+                lambda agent: self.inFOV(
+                    slant_range_sez, getSlantRangeVector(self.host.ecef_state, agent.eci_state)
                 ),
                 background_agents,
             )
@@ -205,7 +217,7 @@ class Sensor(metaclass=ABCMeta):
             ``bool``: whether or not a `.TargetAgent` object is within sensor FoV
         """
         if self.field_of_view.fov_shape == "conic":
-            angle = subtendedAngle(background_sez, pointing_sez)
+            angle = subtendedAngle(background_sez[:3], pointing_sez[:3])
             return angle <= self.field_of_view.cone_angle / 2
 
         if self.field_of_view.fov_shape == "rectangular":
@@ -222,7 +234,7 @@ class Sensor(metaclass=ABCMeta):
                 and elevation_angle <= self.field_of_view.elevation_angle / 2
             )
 
-        raise ValueError("Wrong Import for FoV Type")
+        raise ValueError(f"Wrong FoV shape: {self.field_of_view.fov_shape}")
 
     def buildSigmaObs(self, target_id: int, tgt_eci_state: ndarray) -> Observation:
         """Calculate the measurement data for a sigma point observation.
@@ -327,7 +339,7 @@ class Sensor(metaclass=ABCMeta):
             real_obs=True,
         )
 
-    def getNoisyMeasurements(self, slant_range_sez: ndarray) -> dict:
+    def getNoisyMeasurements(self, slant_range_sez: ndarray) -> dict[str, float]:
         """Return noisy measurements.
 
         Args:
@@ -366,11 +378,11 @@ class Sensor(metaclass=ABCMeta):
         """
         # pylint:disable=unused-argument
         # Early exit if target not in sensor's minimum range
-        if self.minimum_range and getRange(slant_range_sez) < self.minimum_range:
+        if self.minimum_range is not None and getRange(slant_range_sez) < self.minimum_range:
             return False
 
         # Early exit if target not in sensor's maximum range
-        if self.maximum_range and getRange(slant_range_sez) > self.maximum_range:
+        if self.maximum_range is not None and getRange(slant_range_sez) > self.maximum_range:
             return False
 
         # Early exit if a Line of Sight doesn't exist
@@ -386,7 +398,7 @@ class Sensor(metaclass=ABCMeta):
         elevation = getElevation(slant_range_sez)
 
         # Check if the elevation is within sensor bounds
-        if elevation <= self.el_mask[0] or elevation >= self.el_mask[1]:
+        if elevation < self.el_mask[0] or elevation > self.el_mask[1]:
             return False
 
         # [NOTE]: Azimuth check requires two versions:
@@ -395,7 +407,9 @@ class Sensor(metaclass=ABCMeta):
         if self.az_mask[0] <= self.az_mask[1] and self.az_mask[0] <= azimuth <= self.az_mask[1]:
             return True
 
-        if azimuth >= self.az_mask[0] or azimuth <= self.az_mask[1]:
+        if self.az_mask[0] > self.az_mask[1] and (
+            azimuth >= self.az_mask[0] or azimuth <= self.az_mask[1]
+        ):
             return True
 
         # Default: target satellite is not in view
@@ -405,121 +419,109 @@ class Sensor(metaclass=ABCMeta):
         """Check if sensor can slew to target in the allotted time.
 
         Args:
-            slant_range_sez (``ndarray``): slant range vector
+            slant_range_sez (``ndarray``): 3x1, slant range vector, (km; km/sec)
 
         Returns:
             ``bool``: whether target can be slewed to in time
         """
-        # [NOTE]: When `slant_range_sez` and `self.boresight` are colinear, lost precision creates a value
-        # __slightly__ larger than 1.0 or smaller than -1.0. This results in domain errors with `numpy::arccos()`.
-        # This statement ensures to round to either 1 or -1 appropriately.
-        arg = dot(slant_range_sez[:3] / norm(slant_range_sez[:3]), self.boresight)
-        self.delta_boresight = safeArccos(arg)
+        self.delta_boresight = subtendedAngle(slant_range_sez[:3], self.boresight)
         # Boolean if you are able to slew to the new target
         # [TODO]: We are artificially increasing a sensor's slewing ability if it is not tasked at every timestep.
         return self.slew_rate * (self.host.time - self.time_last_ob) >= self.delta_boresight
 
     @property
-    def az_mask(self):
-        """``ndarray``: Returns the azimuth visibility mask."""
+    def az_mask(self) -> ndarray:
+        r"""``ndarray``: Returns the azimuth visibility mask, :math:`\in[0, 2\pi]`."""
         return self._az_mask
 
     @az_mask.setter
-    def az_mask(self, new_az_mask: ndarray):
-        """Ensure the azimuth mask is between [0, 2*pi].
+    def az_mask(self, az_mask: ndarray):
+        r"""Ensure the azimuth mask is between :math:`[0, 2\pi]`.
 
         Args:
-            new_az_mask (``ndarray``): azimuth mask for a particular sensor
+            az_mask (``ndarray``): azimuth mask for a particular sensor
         """
-        if isinstance(new_az_mask[0], (float, int)):
-            if new_az_mask.all() >= 0 and new_az_mask.all() <= 2 * const.PI:
-                self._az_mask = new_az_mask.reshape(2)
+        if az_mask.shape in ((2,), (2, 1)):
+            if all(az_mask >= 0) and all(az_mask <= 2 * const.PI):
+                self._az_mask = az_mask.reshape(2)
             else:
-                raise ValueError(
-                    f"Sensor: Invalid shape for az_mask property: {new_az_mask.shape}"
-                )
+                raise ValueError(f"Sensor: Invalid value [0, 2π] for az_mask: {az_mask}")
         else:
-            raise TypeError(f"Sensor: Invalid type for az_mask property: {type(new_az_mask[0])}")
+            raise ShapeError(f"Sensor: Invalid shape for az_mask: {az_mask.shape}")
 
     @property
-    def el_mask(self):
-        """``ndarray``: Returns the elevation visibility mask."""
+    def el_mask(self) -> ndarray:
+        r"""``ndarray``: Returns the elevation visibility mask, :math:`\in[-\frac{\pi}{2}, \frac{\pi}{2}]`."""
         return self._el_mask
 
     @el_mask.setter
-    def el_mask(self, new_el_mask: ndarray):
-        """Ensure the elevation mask is between [-pi, pi].
+    def el_mask(self, el_mask: ndarray):
+        r"""Ensure the elevation mask is between :math:`[-\frac{\pi}{2}, \frac{\pi}{2}]`.
 
         Args:
-            new_el_mask (``ndarray``): elevation mask for a particular sensor
+            el_mask (``ndarray``): elevation mask for a particular sensor
         """
-        if isinstance(new_el_mask[0], (float, int)):
-            if new_el_mask.all() >= -const.PI and new_el_mask.all() <= const.PI:
-                self._el_mask = new_el_mask.reshape(2)
+        if el_mask.shape in ((2,), (2, 1)):
+            if all(el_mask >= -const.PI / 2) and all(el_mask <= const.PI / 2):
+                self._el_mask = el_mask.reshape(2)
             else:
-                raise ValueError(
-                    f"Sensor: Invalid shape for el_mask property: {new_el_mask.shape}"
-                )
+                raise ValueError(f"Sensor: Invalid value [-π/2, π/2] for el_mask: {el_mask}")
         else:
-            raise TypeError(f"Sensor: Invalid type for el_mask property: {type(new_el_mask[0])}")
+            raise ShapeError(f"Sensor: Invalid shape for el_mask: {el_mask.shape}")
 
     @property
-    def r_matrix(self):
-        """``ndarray``: Returns the measurement noise covariance matrix."""
+    def r_matrix(self) -> ndarray:
+        r"""``ndarray``: Returns the :math:`n_z \times n_z` measurement noise covariance matrix."""
         return self._r_matrix
 
     @r_matrix.setter
-    def r_matrix(self, new_specs: ndarray):
-        """Ensure the measurement noise matrix is a square matrix.
+    def r_matrix(self, r_matrix: ndarray):
+        r"""Ensure the measurement noise matrix is a square matrix.
 
         Args:
-            new_specs (``ndarray``): measurement noise matrix for a particular sensor
+            r_matrix (``ndarray``): measurement noise matrix for a particular sensor
         """
-        if new_specs.shape[1] == 1 or new_specs.shape[0] == 1:
-            self._r_matrix = diagflat(new_specs.ravel()) ** 2.0
-        elif new_specs.shape[0] == new_specs.shape[1]:
-            self._r_matrix = new_specs
+        if r_matrix.ndim == 1:
+            self._r_matrix = diagflat(r_matrix.ravel()) ** 2.0
+        elif r_matrix.shape[0] == r_matrix.shape[1]:
+            self._r_matrix = r_matrix
         else:
-            raise ValueError(f"Sensor: Invalid shape for r_matrix property: {new_specs.shape}")
+            raise ShapeError(f"Sensor: Invalid shape for r_matrix: {r_matrix.shape}")
+
+        if not isPD(self._r_matrix):
+            raise ValueError(f"Sensor: non-positive definite r_matrix: {r_matrix}")
+
         # Save the sqrt form of the R matrix to save computation time
         # [FIXME]: not initialized as `None` in `__init__` because variable not overwritten by this line...
-        self._sqrt_noise_covar = real(
-            sqrtm(self._r_matrix)
-        )  # pylint: disable=attribute-defined-outside-init
+        self._sqrt_noise_covar = real(sqrtm(self._r_matrix))
 
     @property
-    def host(self):
-        """:class:`.SensingAgent`: Returns reference to agent that contains this sensor."""
+    def host(self) -> SensingAgent:
+        r""":class:`.SensingAgent`: Returns reference to agent that contains this sensor."""
         return self._host
 
     @host.setter
-    def host(self, new_host: SensingAgent):
-        """Assign host to an attribute, and sets other relevant properties accordingly.
+    def host(self, host: SensingAgent):
+        r"""Assign host to an attribute, and sets other relevant properties accordingly.
 
         Args:
-            new_host (:class:`.SensingAgent`): containing `SensingAgent` object
+            host (:class:`.SensingAgent`): containing `SensingAgent` object
         """
-        self._host = new_host
-        self.time_last_ob = new_host.time
-
-        if self.az_mask[0] < self.az_mask[1]:
-            mid_az = self.az_mask[0] + (self.az_mask[1] - self.az_mask[0]) / 2.0
-        else:
-            mid_az = self.az_mask[1] + (self.az_mask[0] - self.az_mask[1]) / 2.0
-
-        if self.el_mask[0] < self.el_mask[1]:
-            mid_el = self.el_mask[0] + (self.el_mask[1] - self.el_mask[0]) / 2.0
-        else:
-            mid_el = self.el_mask[1] + (self.el_mask[0] - self.el_mask[1]) / 2.0
-
-        self.boresight = array([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
+        self._host = host
+        self.time_last_ob = host.time
 
     @property
-    def measurement_noise(self):
-        """``ndarray``: Returns randomly-generated measurement noise as v_k ~ N(0; r_matrix)."""
+    def measurement_noise(self) -> ndarray:
+        r"""``ndarray``: Return randomly-generated measurement :math:`n_z \times 1` noise vector.
+
+        .. math::
+
+            v_k \simeq N(0; R)
+
+        """
         return matmul(self._sqrt_noise_covar, random.randn(self._r_matrix.shape[0]))
 
-    def getSensorData(self):
+    def getSensorData(self) -> dict:
         """``dict``: Returns a this sensor's formatted information."""
         output_dict = {
             "name": self.host.name,
@@ -534,7 +536,7 @@ class Sensor(metaclass=ABCMeta):
             "exemplar": self.exemplar.tolist(),
             "field_of_view": self.field_of_view,
         }
-        if getTypeString(self.host) == "Spacecraft":
+        if self.host.agent_type == "Spacecraft":
             output_dict["init_eci"] = self.host.truth_state.tolist()
             output_dict["host_type"] = "Spacecraft"
         else:
@@ -543,12 +545,5 @@ class Sensor(metaclass=ABCMeta):
             output_dict["lon"] = latlon[1]
             output_dict["alt"] = latlon[2]
             output_dict["host_type"] = "GroundFacility"
-        if getTypeString(self) == "Optical":
-            pass
-        else:
-            output_dict["tx_power"] = self.tx_power  # pylint: disable=no-member
-            output_dict["tx_frequency"] = (
-                const.SPEED_OF_LIGHT / self.wavelength  # pylint: disable=no-member
-            )
 
         return output_dict

@@ -142,14 +142,14 @@ class Radar(Sensor):
         return (numerator / denominator) ** 0.25
 
     @property
-    def angle_measurements(self):
+    def angle_measurements(self) -> ndarray:
         """``ndarray``: Returns 4x1 integer array of which measurements are angles."""
         return array(
             [IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI, IsAngle.NOT_ANGLE, IsAngle.NOT_ANGLE],
             dtype=int,
         )
 
-    def getMeasurements(self, slant_range_sez: float, noisy=False) -> dict:
+    def getMeasurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:
@@ -171,10 +171,11 @@ class Radar(Sensor):
             "range_rate_km_p_sec": getRangeRate(slant_range_sez),
         }
         if noisy:
-            measurements["azimuth_rad"] += self.measurement_noise[0]
-            measurements["elevation_rad"] += self.measurement_noise[1]
-            measurements["range_km"] += self.measurement_noise[2]
-            measurements["range_rate_km_p_sec"] += self.measurement_noise[3]
+            meas_noise = self.measurement_noise
+            measurements["azimuth_rad"] += meas_noise[0]
+            measurements["elevation_rad"] += meas_noise[1]
+            measurements["range_km"] += meas_noise[2]
+            measurements["range_rate_km_p_sec"] += meas_noise[3]
 
         return measurements
 
@@ -215,6 +216,15 @@ class Radar(Sensor):
         return rcs**0.25 * self.max_range_aux / 1000.0
 
     @property
-    def wavelength(self):
+    def wavelength(self) -> float:
         """``float``: Returns wavelength of sensor's operating center frequency (m)."""
         return self._wavelength
+
+    def getSensorData(self) -> dict:
+        """``dict``: Returns a this sensor's formatted information."""
+        result = super().getSensorData()
+        result["tx_power"] = self.tx_power  # pylint: disable=no-member
+        result["tx_frequency"] = (
+            const.SPEED_OF_LIGHT / self.wavelength  # pylint: disable=no-member
+        )
+        return result
