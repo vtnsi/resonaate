@@ -6,7 +6,7 @@ import pytest
 # RESONAATE Library Imports
 try:
     # RESONAATE Imports
-    from resonaate.data.agent import Agent
+    from resonaate.data.agent import AgentModel
     from resonaate.data.epoch import Epoch
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
@@ -39,8 +39,8 @@ def getEpoch():
 
 @pytest.fixture(name="target_agent")
 def getTargetAgent():
-    """Create a valid :class:`.Agent` object."""
-    return Agent(
+    """Create a valid :class:`.AgentModel` object."""
+    return AgentModel(
         unique_id=EXAMPLE_RSO["unique_id"],
         name=EXAMPLE_RSO["name"],
     )
@@ -48,8 +48,8 @@ def getTargetAgent():
 
 @pytest.fixture(name="sensor_agent")
 def getSensorAgent():
-    """Create a valid :class:`.Agent` object."""
-    return Agent(
+    """Create a valid :class:`.AgentModel` object."""
+    return AgentModel(
         unique_id=EXAMPLE_SENSOR_AGENT["unique_id"],
         name=EXAMPLE_SENSOR_AGENT["name"],
     )

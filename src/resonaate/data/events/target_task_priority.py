@@ -33,13 +33,13 @@ class TargetTaskPriority(Event):
 
     @declared_attr
     def agent_id(self):  # pylint: disable=invalid-name
-        """``int``: Unique ID of the :class:`.Agent` with the observation priority."""
+        """``int``: Unique ID of the :class:`.AgentModel` with the observation priority."""
         return Event.__table__.c.get(  # pylint: disable=no-member
             "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
         )
 
-    agent = relationship("Agent", lazy="joined", innerjoin=True)
-    """:class:`~.agent.Agent`: The `Agent` that has increased observation priority."""
+    agent = relationship("AgentModel", lazy="joined", innerjoin=True)
+    """:class:`~.agent.AgentModel`: The `AgentModel` that has increased observation priority."""
 
     priority = Column(Float)
     """``float``: Scalar that indicates how important it is that this target be observed."""

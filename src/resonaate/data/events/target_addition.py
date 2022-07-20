@@ -35,7 +35,7 @@ class TargetAdditionEvent(Event):
 
     @declared_attr
     def agent_id(self):  # pylint: disable=invalid-name
-        """``int``: Unique ID of the :class:`.Agent` being added to the scenario."""
+        """``int``: Unique ID of the :class:`.AgentModel` being added to the scenario."""
         return Event.__table__.c.get(  # pylint: disable=no-member
             "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
         )
@@ -47,8 +47,8 @@ class TargetAdditionEvent(Event):
             "tasking_engine_id", Column(Integer)
         )
 
-    agent = relationship("Agent", lazy="joined", innerjoin=True)
-    """:class:`~.agent.Agent`: The `Agent` object being added to the scenario."""
+    agent = relationship("AgentModel", lazy="joined", innerjoin=True)
+    """:class:`~.agent.AgentModel`: The `AgentModel` object being added to the scenario."""
 
     @declared_attr
     def pos_x_km(self):  # pylint: disable=invalid-name

@@ -19,14 +19,14 @@ class Task(Base, _DataMixin):
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
 
     ## Defines the associated sensor agent with the task data
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     sensor_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    sensor = relationship("Agent", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
+    sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
 
     ## Defines the associated target agent with the task data
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    target = relationship("Agent", foreign_keys=[target_id], lazy="joined", innerjoin=True)
+    target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
 
     ## Boolean visibility value
     visibility = Column(Boolean)

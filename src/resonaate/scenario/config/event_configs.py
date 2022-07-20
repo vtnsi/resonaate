@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, ClassVar
 from sqlalchemy.orm import Query
 
 # Local Imports
-from ...data.data_interface import Agent
+from ...data.data_interface import AgentModel
 from ...data.events import (
     AgentRemovalEvent,
     Event,
@@ -294,8 +294,8 @@ class TargetTaskPriorityConfig(EventConfig):
         dependency_list = super().getDataDependencies()
         dependency_list.append(
             DataDependency(
-                Agent,
-                Query(Agent).filter(Agent.unique_id == self.target_id),
+                AgentModel,
+                Query(AgentModel).filter(AgentModel.unique_id == self.target_id),
                 {"unique_id": self.target_id, "name": self.target_name},
             )
         )
@@ -330,8 +330,8 @@ class TargetAdditionEventConfig(EventConfig):
         dependency_list = super().getDataDependencies()
         dependency_list.append(
             DataDependency(
-                Agent,
-                Query(Agent).filter(Agent.unique_id == self.target.sat_num),
+                AgentModel,
+                Query(AgentModel).filter(AgentModel.unique_id == self.target.sat_num),
                 {"unique_id": self.target.sat_num, "name": self.target.sat_name},
             )
         )
@@ -366,8 +366,8 @@ class SensorAdditionEventConfig(EventConfig):
         dependency_list = super().getDataDependencies()
         dependency_list.append(
             DataDependency(
-                Agent,
-                Query(Agent).filter(Agent.unique_id == self.sensor.id),
+                AgentModel,
+                Query(AgentModel).filter(AgentModel.unique_id == self.sensor.id),
                 {"unique_id": self.sensor.id, "name": self.sensor.name},
             )
         )
@@ -404,7 +404,9 @@ class AgentRemovalEventConfig(EventConfig):
         """
         dependency_list = super().getDataDependencies()
         dependency_list.append(
-            DataDependency(Agent, Query(Agent).filter(Agent.unique_id == self.agent_id))
+            DataDependency(
+                AgentModel, Query(AgentModel).filter(AgentModel.unique_id == self.agent_id)
+            )
         )
         return dependency_list
 

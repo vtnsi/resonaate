@@ -8,7 +8,7 @@ from sqlalchemy.orm import Query
 
 try:
     # RESONAATE Imports
-    from resonaate.data.agent import Agent
+    from resonaate.data.agent import AgentModel
     from resonaate.data.resonaate_database import ResonaateDatabase
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config import ScenarioConfig
@@ -92,9 +92,9 @@ class TestEventIntegration(BaseTestCase):
         _ = ScenarioBuilder(minimal_config)
         shared_db = ResonaateDatabase.getSharedInterface()
         assert shared_db.getData(
-            Query([Agent]).filter(
-                Agent.unique_id == priority_agent["unique_id"],
-                Agent.name == priority_agent["name"],
+            Query([AgentModel]).filter(
+                AgentModel.unique_id == priority_agent["unique_id"],
+                AgentModel.name == priority_agent["name"],
             ),
             multi=False,
         )

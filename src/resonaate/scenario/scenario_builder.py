@@ -16,7 +16,7 @@ from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
 from ..common.exceptions import DuplicateSensorError, DuplicateTargetError
 from ..common.logger import Logger
-from ..data.data_interface import Agent
+from ..data.data_interface import AgentModel
 from ..data.events import Event
 from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import spacecraftDynamicsFactory
@@ -196,9 +196,13 @@ class ScenarioBuilder:
         # Store agent data in the database for events that rely on them
         agent_data = []
         for target_agent in self.target_agents.values():
-            agent_data.append(Agent(unique_id=target_agent.simulation_id, name=target_agent.name))
+            agent_data.append(
+                AgentModel(unique_id=target_agent.simulation_id, name=target_agent.name)
+            )
         for sensor_agent in self.sensor_network:
-            agent_data.append(Agent(unique_id=sensor_agent.simulation_id, name=sensor_agent.name))
+            agent_data.append(
+                AgentModel(unique_id=sensor_agent.simulation_id, name=sensor_agent.name)
+            )
 
         shared_interface = ResonaateDatabase.getSharedInterface()
         shared_interface.bulkSave(agent_data)

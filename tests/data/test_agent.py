@@ -4,7 +4,7 @@
 # RESONAATE Imports
 try:
     # RESONAATE Imports
-    from resonaate.data.agent import Agent
+    from resonaate.data.agent import AgentModel
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Local Imports
@@ -13,22 +13,22 @@ from ..conftest import BaseTestCase
 
 
 class TestAgentTable(BaseTestCase):
-    """Test class for :class:`.Agent` database table class."""
+    """Test class for :class:`.AgentModel` database table class."""
 
     def testInit(self):
-        """Test the init of Agent database table."""
-        _ = Agent()
+        """Test the init of AgentModel database table."""
+        _ = AgentModel()
 
     def testInitKwargs(self):
         """Test initializing the kewards of the table."""
-        _ = Agent(
+        _ = AgentModel(
             unique_id=11111,
             name="Test Agent",
         )
 
     def testReprAndDict(self):
         """Test printing DB table object & making into dict."""
-        agent = Agent(
+        agent = AgentModel(
             unique_id=11111,
             name="Test Agent",
         )
@@ -37,17 +37,17 @@ class TestAgentTable(BaseTestCase):
 
     def testEquality(self):
         """Test equals and not equals operators."""
-        agent1 = Agent(
+        agent1 = AgentModel(
             unique_id=11111,
             name="Test Agent",
         )
 
-        agent2 = Agent(
+        agent2 = AgentModel(
             unique_id=11111,
             name="Test Agent",
         )
 
-        agent3 = Agent(
+        agent3 = AgentModel(
             unique_id=11111,
             name="Test Agent",
         )

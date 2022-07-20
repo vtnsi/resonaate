@@ -310,7 +310,7 @@ class Sensor(ABC):
         """Calculate the measurement data for a single observation with noisy measurements.
 
         Args:
-            target_agent (`TargetAgent`): Target Agent being observed
+            target_agent (`:class:.TargetAgent`): Target Agent being observed
 
         Returns:
             :class:`.ObservationTuple`: observation tuple object

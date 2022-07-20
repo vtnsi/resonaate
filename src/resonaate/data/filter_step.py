@@ -21,9 +21,9 @@ class FilterStep(
     julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
 
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    target = relationship("Agent", foreign_keys=[target_id], lazy="joined", innerjoin=True)
+    target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
 
     # Measurement Residuals Corresponding to Observation
     # Size is adjustable based upon sensor type (i.e. radar or optical)

@@ -12,7 +12,7 @@ from resonaate.physics.time.stardate import JulianDate
 
 try:
     # RESONAATE Imports
-    from resonaate.data.data_interface import Agent
+    from resonaate.data.data_interface import AgentModel
     from resonaate.data.events import TargetTaskPriority
     from resonaate.scenario.config.event_configs import TargetTaskPriorityConfig
     from resonaate.tasking.engine.engine_base import TaskingEngine
@@ -53,7 +53,7 @@ class TestTargetTaskPriorityConfig(BaseTestCase):
         assert len(priority_dependencies) == 1
 
         agent_dependency = priority_dependencies[0]
-        assert agent_dependency.data_type == Agent
+        assert agent_dependency.data_type == AgentModel
         assert agent_dependency.attributes == {
             "unique_id": priority_config.target_id,
             "name": priority_config.target_name,

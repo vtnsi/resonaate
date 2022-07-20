@@ -9,7 +9,7 @@ import pytest
 
 try:
     # RESONAATE Imports
-    from resonaate.data.data_interface import Agent
+    from resonaate.data.data_interface import AgentModel
     from resonaate.data.events import TargetAdditionEvent
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config.base import ConfigError
@@ -120,7 +120,7 @@ class TestTargetAdditionEventConfig(BaseTestCase):
         assert len(addition_dependencies) == 1
 
         agent_dependency = addition_dependencies[0]
-        assert agent_dependency.data_type == Agent
+        assert agent_dependency.data_type == AgentModel
         assert agent_dependency.attributes == {
             "unique_id": addition_config.target.sat_num,
             "name": addition_config.target.sat_name,
@@ -143,7 +143,7 @@ class TestTargetAdditionEvent(BaseTestCase):
 
     def testHandleEvent(self, mocked_scenario):
         """Test :meth:`.TargetAdditionEvent.handleEvent()`."""
-        agent_obj = Agent(unique_id=12345, name="additional sat")
+        agent_obj = AgentModel(unique_id=12345, name="additional sat")
         impulse_event = TargetAdditionEvent(
             scope=TargetAdditionEvent.INTENDED_SCOPE.value,
             scope_instance_id=123,

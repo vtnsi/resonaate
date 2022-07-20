@@ -43,7 +43,7 @@ class AgentRemovalEvent(Event):
 
     @declared_attr
     def agent_id(self):  # pylint: disable=invalid-name
-        """``int``: Unique ID of the :class:`~.agent_base.Agent` being removed from the scenario."""
+        """``int``: Unique ID of the :class:`~.agent_base.AgentModel` being removed from the scenario."""
         return Event.__table__.c.get(  # pylint: disable=no-member
             "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
         )
@@ -55,8 +55,8 @@ class AgentRemovalEvent(Event):
             "tasking_engine_id", Column(Integer)
         )
 
-    agent = relationship("Agent", lazy="joined", innerjoin=True)
-    """:class:`~.agent.Agent`: The `Agent` object being removed from the scenario."""
+    agent = relationship("AgentModel", lazy="joined", innerjoin=True)
+    """:class:`~.agent.AgentModel`: The `AgentModel` object being removed from the scenario."""
 
     agent_type = Column(String(32))
     """``str``: Type of agent that's being removed."""

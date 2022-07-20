@@ -7,7 +7,7 @@ import pytest
 
 try:
     # RESONAATE Imports
-    from resonaate.data.data_interface import Agent
+    from resonaate.data.data_interface import AgentModel
     from resonaate.data.events import AgentRemovalEvent
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config.event_configs import AgentRemovalEventConfig
@@ -47,7 +47,7 @@ class TestAgentRemovalEventConfig(BaseTestCase):
         assert len(removal_dependencies) == 1
 
         agent_dependency = removal_dependencies[0]
-        assert agent_dependency.data_type == Agent
+        assert agent_dependency.data_type == AgentModel
         assert agent_dependency.attributes is None
 
 
