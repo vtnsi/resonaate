@@ -1,4 +1,6 @@
 # pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
 import datetime
 
@@ -6,43 +8,37 @@ import datetime
 import numpy as np
 import pytest
 
-try:
-    # RESONAATE Imports
-    import resonaate.physics.constants as const
-    from resonaate.physics.math import rot1, rot3
-    from resonaate.physics.orbits.elements import ClassicalElements
-    from resonaate.physics.orbits.utils import getFlightPathAngle
-    from resonaate.physics.time.stardate import JulianDate
-    from resonaate.physics.transforms.eops import EarthOrientationParameter
-    from resonaate.physics.transforms.methods import (
-        cartesian2spherical,
-        ecef2eci,
-        ecef2lla,
-        eci2ecef,
-        eci2razel,
-        eci2sez,
-        geocentric2geodetic,
-        geodetic2geocentric,
-        getSlantRangeVector,
-        lla2ecef,
-        ntw2eci,
-        radec2razel,
-        razel2radec,
-        razel2sez,
-        rsw2eci,
-        sez2ecef,
-        sez2eci,
-        spherical2cartesian,
-    )
-    from resonaate.physics.transforms.reductions import updateReductionParameters
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+import resonaate.physics.constants as const
+from resonaate.physics.math import rot1, rot3
+from resonaate.physics.orbits.elements import ClassicalElements
+from resonaate.physics.orbits.utils import getFlightPathAngle
+from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.transforms.eops import EarthOrientationParameter
+from resonaate.physics.transforms.methods import (
+    cartesian2spherical,
+    ecef2eci,
+    ecef2lla,
+    eci2ecef,
+    eci2razel,
+    eci2sez,
+    geocentric2geodetic,
+    geodetic2geocentric,
+    getSlantRangeVector,
+    lla2ecef,
+    ntw2eci,
+    radec2razel,
+    razel2radec,
+    razel2sez,
+    rsw2eci,
+    sez2ecef,
+    sez2eci,
+    spherical2cartesian,
+)
+from resonaate.physics.transforms.reductions import updateReductionParameters
 
 
-class TestECI(BaseTestCase):
+class TestECI:
     """Test cases for validating the ECI transforms."""
 
     @pytest.fixture(autouse=True)
@@ -97,7 +93,7 @@ class TestECI(BaseTestCase):
         assert np.allclose(eci_state[3:], self.v_gcrf, atol=1e-9, rtol=1e-6)
 
 
-class TestSatelliteFrames(BaseTestCase):
+class TestSatelliteFrames:
     """Test cases for validating the transforms for satellite-defined frames."""
 
     ORBITAL_ELEMENTS = np.asarray(
@@ -159,7 +155,7 @@ class TestSatelliteFrames(BaseTestCase):
         )
 
 
-class TestLLA(BaseTestCase):
+class TestLLA:
     """Test cases for validating the LLA transforms."""
 
     LLA_EDGE_CASES = np.asarray(
@@ -219,7 +215,7 @@ class TestLLA(BaseTestCase):
         assert np.allclose(ecef2lla(ecef), self.lla, atol=1e-9, rtol=1e-6)
 
 
-class TestRaDecRazelSEZ(BaseTestCase):
+class TestRaDecRazelSEZ:
     """Test cases for validating the radec & razel transforms."""
 
     SPHERICAL_2_CARTESIAN = np.asarray(

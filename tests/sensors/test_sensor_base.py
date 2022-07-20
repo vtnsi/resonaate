@@ -10,14 +10,10 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.common.exceptions import ShapeError
-    from resonaate.physics.time.stardate import ScenarioTime
-    from resonaate.sensors.sensor_base import Sensor
-
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.common.exceptions import ShapeError
+from resonaate.physics.time.stardate import ScenarioTime
+from resonaate.sensors.sensor_base import Sensor
 
 # Type Checking Imports
 if TYPE_CHECKING:

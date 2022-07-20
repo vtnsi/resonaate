@@ -1,24 +1,20 @@
-# Standard Library Imports
+from __future__ import annotations
+
 # Third Party Imports
 import pytest
 from numpy import allclose, array, isclose
 from numpy.random import random_sample
 
-try:
-    # RESONAATE Imports
-    from resonaate.physics.statistics import (
-        chiSquareQuadraticForm,
-        getConfidenceRegion,
-        getStandardDeviation,
-        oneSidedChiSquareTest,
-        twoSidedChiSquareTest,
-    )
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Testing Imports
+# RESONAATE Imports
+from resonaate.physics.statistics import (
+    chiSquareQuadraticForm,
+    getConfidenceRegion,
+    getStandardDeviation,
+    oneSidedChiSquareTest,
+    twoSidedChiSquareTest,
+)
 
-
-ONE_SIDED_TESTS = [
+ONE_SIDED_TESTS: list[tuple[float, float, int, int, bool]] = [
     (6, 0.05, 2, 1, False),
     (5.9, 0.05, 2, 1, True),
     (2.4, 0.05, 2, 100, False),
@@ -26,7 +22,7 @@ ONE_SIDED_TESTS = [
 ]
 
 
-TWO_SIDED_TESTS = [
+TWO_SIDED_TESTS: list[tuple[float, float, int, int, bool]] = [
     (30, 0.05, 50, 1, False),
     (55, 0.05, 50, 1, True),
     (72, 0.05, 50, 1, False),
@@ -42,7 +38,7 @@ TWO_SIDED_TESTS = [
 ]
 
 
-CONFIDENCE_SIGMA_DOF = [
+CONFIDENCE_SIGMA_DOF: list[tuple[float, int, int]] = [
     (0.682689492137086, 1, 1),
     (0.954499736103642, 2, 1),
     (0.997300203936740, 3, 1),
@@ -72,13 +68,13 @@ def testChiSquareQuadraticForm():
 
 
 @pytest.mark.parametrize(("metric", "alpha", "dof", "runs", "passes"), ONE_SIDED_TESTS)
-def testOneSidedChiSquare(metric, alpha, dof, runs, passes):
+def testOneSidedChiSquare(metric: float, alpha: float, dof: int, runs: int, passes: bool):
     """Test one-sided chi-square hypothesis test."""
     assert passes == oneSidedChiSquareTest(metric, alpha, dof, runs=runs)
 
 
 @pytest.mark.parametrize(("start_idx", "stop_idx"), [(0, 2), (2, 4)])
-def testOneSidedChiSquareArray(start_idx, stop_idx):
+def testOneSidedChiSquareArray(start_idx: int, stop_idx: int):
     """Test one-sided chi-square hypothesis test with array inputs."""
     data = array(ONE_SIDED_TESTS)
     res = oneSidedChiSquareTest(
@@ -91,13 +87,13 @@ def testOneSidedChiSquareArray(start_idx, stop_idx):
 
 
 @pytest.mark.parametrize(("metric", "alpha", "dof", "runs", "passes"), TWO_SIDED_TESTS)
-def testTwoSidedChiSquare(metric, alpha, dof, runs, passes):
+def testTwoSidedChiSquare(metric: float, alpha: float, dof: int, runs: int, passes: bool):
     """Test two-sided chi-square hypothesis test."""
     assert passes == twoSidedChiSquareTest(metric, alpha, dof, runs=runs)
 
 
 @pytest.mark.parametrize(("start_idx", "stop_idx"), [(0, 3), (3, 6), (6, 9), (9, 12)])
-def testTwoSidedChiSquareArray(start_idx, stop_idx):
+def testTwoSidedChiSquareArray(start_idx: int, stop_idx: int):
     """Test two-sided chi-square hypothesis test with array inputs."""
     data = array(TWO_SIDED_TESTS)
     res = twoSidedChiSquareTest(
@@ -110,7 +106,7 @@ def testTwoSidedChiSquareArray(start_idx, stop_idx):
 
 
 @pytest.mark.parametrize(("confidence", "sigma", "dof"), CONFIDENCE_SIGMA_DOF)
-def testStandardDeviation(confidence, sigma, dof):
+def testStandardDeviation(confidence: float, sigma: int, dof: int):
     """Test the N-dimensional standard deviation function with array inputs."""
     assert isclose(sigma, getStandardDeviation(confidence, dof))
 
@@ -124,7 +120,7 @@ def testStandardDeviationArray():
 
 
 @pytest.mark.parametrize(("confidence", "sigma", "dof"), CONFIDENCE_SIGMA_DOF)
-def testConfidenceRegion(confidence, sigma, dof):
+def testConfidenceRegion(confidence: float, sigma: int, dof: int):
     """Test the N-dimensional confidence region function."""
     assert isclose(confidence, getConfidenceRegion(sigma, dof))
 

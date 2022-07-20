@@ -1,21 +1,16 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 
 # Third Party Imports
 from sqlalchemy.orm import Query
 
-try:
-    # RESONAATE Imports
-    from resonaate.data.observation import Observation
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.data.observation import Observation
 
 
-class TestObservationTable(BaseTestCase):
+class TestObservationTable:
     """Test class for :class:`.Observation` database table class."""
 
     sez = [
@@ -32,7 +27,7 @@ class TestObservationTable(BaseTestCase):
         _ = Observation()
 
     def testInitKwargs(self, epoch, target_agent, sensor_agent):
-        """Test initializing the kewards of thetable."""
+        """Test initializing the keywords of the table."""
         _ = Observation(
             epoch=epoch,
             sensor=sensor_agent,
@@ -49,7 +44,7 @@ class TestObservationTable(BaseTestCase):
         )
 
     def testfromSEZVector(self, epoch, target_agent, sensor_agent):
-        """Test initializing the kewards of the table."""
+        """Test initializing the keywords of the table."""
         _ = Observation.fromSEZVector(
             epoch=epoch,
             sensor=sensor_agent,

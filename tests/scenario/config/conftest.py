@@ -1,4 +1,6 @@
-GEO_TARGETS = [
+from __future__ import annotations
+
+GEO_TARGETS: list[dict] = [
     {
         "sat_name": "RSO 1 ECI",
         "sat_num": 40000,
@@ -66,7 +68,7 @@ GEO_TARGETS = [
 ]
 
 
-LEO_TARGETS = [
+LEO_TARGETS: list[dict] = [
     {
         "sat_name": "RSO 1 ECI",
         "sat_num": 10000,
@@ -134,7 +136,7 @@ LEO_TARGETS = [
 ]
 
 
-EARTH_SENSORS = [
+EARTH_SENSORS: list[dict] = [
     {
         "name": "GROUND SENSOR 1",
         "id": 120001,
@@ -214,7 +216,7 @@ EARTH_SENSORS = [
     },
 ]
 
-SPACE_SENSORS = [
+SPACE_SENSORS: list[dict] = [
     {
         "name": "Space Sensor 1",
         "id": 50001,

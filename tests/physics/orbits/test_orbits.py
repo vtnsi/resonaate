@@ -1,34 +1,42 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 import pytest
 from numpy import deg2rad, linspace
 
-try:
-    # RESONAATE Imports
-    import resonaate.physics.constants as const
-    from resonaate.physics.math import wrapAngle2Pi
-    from resonaate.physics.orbits import (
-        EccentricityError,
-        InclinationError,
-        check_ecc,
-        fixAngleQuadrant,
-        isEccentric,
-        isInclined,
-        wrap_anomaly,
-    )
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from .conftest import ECCENTRIC, ECCENTRICITIES, INCLINCATIONS, INCLINED
+# RESONAATE Imports
+import resonaate.physics.constants as const
+from resonaate.physics.math import wrapAngle2Pi
+from resonaate.physics.orbits import (
+    EccentricityError,
+    InclinationError,
+    check_ecc,
+    fixAngleQuadrant,
+    isEccentric,
+    isInclined,
+    wrap_anomaly,
+)
 
-INCLINED_TEST = tuple(zip(INCLINCATIONS, INCLINED))
-ECCENTRIC_TEST = tuple(zip(ECCENTRICITIES, ECCENTRIC))
+# Local Imports
+from .conftest import ECCENTRIC, ECCENTRICITIES, INCLINATIONS, INCLINED
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Callable
+
+    # Third Party Imports
+    from numpy import ndarray
+
+INCLINED_TEST: tuple[tuple[float, bool]] = tuple(zip(INCLINATIONS, INCLINED))
+ECCENTRIC_TEST: tuple[tuple[float, bool]] = tuple(zip(ECCENTRICITIES, ECCENTRIC))
 
 
 @pytest.mark.parametrize(("angle", "is_inclined"), INCLINED_TEST)
-def testIsInclined(angle, is_inclined):
+def testIsInclined(angle: float, is_inclined: bool):
     """Test isInclined function for bad/good values."""
     if is_inclined is not None:
         assert isInclined(angle) == is_inclined
@@ -38,7 +46,7 @@ def testIsInclined(angle, is_inclined):
 
 
 @pytest.mark.parametrize(("ecc", "is_eccentric"), ECCENTRIC_TEST)
-def testIsEccentric(ecc, is_eccentric):
+def testIsEccentric(ecc: float, is_eccentric: bool):
     """Test isInclined function for bad/good values."""
     if is_eccentric is not None:
         assert isEccentric(ecc) == is_eccentric
@@ -47,19 +55,19 @@ def testIsEccentric(ecc, is_eccentric):
             isEccentric(ecc)
 
 
-def _dummyAnomCheckFunc(angle, ecc):
+def _dummyAnomCheckFunc(angle: float, ecc: float) -> float:
     return angle - ecc
 
 
-def _dummyAnomFunc(angle):
+def _dummyAnomFunc(angle: float) -> float:
     return angle + 1
 
 
-wrappedEccCheck = check_ecc(_dummyAnomCheckFunc)
-wrappedAnomWrap = wrap_anomaly(_dummyAnomFunc)
+wrappedEccCheck: Callable[..., float] = check_ecc(_dummyAnomCheckFunc)
+wrappedAnomWrap: Callable[..., float] = wrap_anomaly(_dummyAnomFunc)
 
 
-QUAD_CHECK_TEST = list(
+QUAD_CHECK_TEST: list[tuple[float, float]] = list(
     zip(
         deg2rad(
             [
@@ -118,7 +126,7 @@ QUAD_CHECK_TEST = list(
     )
 )
 
-ECC_CHECK_TEST = list(
+ECC_CHECK_TEST: list[tuple[float, float]] = list(
     zip(
         deg2rad(
             [
@@ -161,11 +169,11 @@ ECC_CHECK_TEST = list(
     )
 )
 
-ANOM_WRAP_TEST = linspace(-5, 5, 21) * const.PI
+ANOM_WRAP_TEST: ndarray = linspace(-5, 5, 21) * const.PI
 
 
 @pytest.mark.parametrize(("angle", "check"), QUAD_CHECK_TEST)
-def testQuadCheckDecorator(angle, check):
+def testQuadCheckDecorator(angle: float, check: float):
     """Test quadarant check function."""
     if check >= 0:
         assert fixAngleQuadrant(angle, check) == angle
@@ -174,7 +182,7 @@ def testQuadCheckDecorator(angle, check):
 
 
 @pytest.mark.parametrize(("anom", "ecc"), ECC_CHECK_TEST)
-def testEccCheckDecorator(anom, ecc):
+def testEccCheckDecorator(anom: float, ecc: float):
     """Test eccentricity check decorator function."""
     if isEccentric(ecc) >= 0:
         assert wrappedEccCheck(anom, ecc) == anom - ecc
@@ -183,6 +191,6 @@ def testEccCheckDecorator(anom, ecc):
 
 
 @pytest.mark.parametrize("angle", ANOM_WRAP_TEST)
-def testAnomWrapDecorator(angle):
+def testAnomWrapDecorator(angle: float):
     """Test anomaly wrap decorator function."""
     assert wrappedAnomWrap(angle) == wrapAngle2Pi(angle + 1)

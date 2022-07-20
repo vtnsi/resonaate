@@ -1,51 +1,58 @@
+from __future__ import annotations
+
 # Standard Library Imports
 import os.path
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
 from sqlalchemy.orm import Query
 
-try:
-    # RESONAATE Imports
-    from resonaate.data.agent import AgentModel
-    from resonaate.data.resonaate_database import ResonaateDatabase
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config import ScenarioConfig
-    from resonaate.scenario.config.event_configs import EventConfig, EventConfigList
-    from resonaate.scenario.scenario import Scenario
-    from resonaate.scenario.scenario_builder import ScenarioBuilder
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.data.agent import AgentModel
+from resonaate.data.resonaate_database import ResonaateDatabase
+from resonaate.physics.time.stardate import datetimeToJulianDate
+from resonaate.scenario.config import ScenarioConfig
+from resonaate.scenario.config.event_configs import EventConfig, EventConfigList
+from resonaate.scenario.scenario import Scenario
+from resonaate.scenario.scenario_builder import ScenarioBuilder
+
 # Local Imports
-# Testing Imports
-from ...conftest import FIXTURE_DATA_DIR, BaseTestCase
+from ...conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # RESONAATE Imports
+    from resonaate.parallel import Redis
+
+
+@pytest.fixture()
+def _fixtureSetup(redis: Redis, reset_shared_db: None) -> None:  # pylint: disable=unused-argument
+    """Instantiate redis & reset DB properly."""
+
+
+def _getMinimalConfig(datafiles_dir: str) -> ScenarioConfig:
+    """Set up a minimal :class:`.ScenarioConfig` object."""
+    init_file = os.path.join(datafiles_dir, JSON_INIT_PATH, "minimal_init.json")
+    return ScenarioConfig.fromConfigFile(init_file)
+
+
+def _getManeuverDetectionConfig(datafiles_dir: str) -> ScenarioConfig:
+    """Set up a minimal :class:`.ScenarioConfig` object."""
+    init_file = os.path.join(datafiles_dir, JSON_INIT_PATH, "minimal_maneuver_detection_init.json")
+    return ScenarioConfig.fromConfigFile(init_file)
 
 
 @pytest.mark.event()
-class TestEventIntegration(BaseTestCase):
+@pytest.mark.usefixtures("_fixtureSetup")
+class TestEventIntegration:
     """Test class encapsulating tests that exercise event integration."""
 
-    @pytest.fixture(autouse=True)
-    def _fixtureSetUp(self, redis, reset_shared_db):  # pylint: disable=unused-argument
-        """Instantiate redis & reset DB properly."""
-
-    def _getMinimalConfig(self, datafiles_dir):
-        """Set up a minimal :class:`.ScenarioConfig` object."""
-        init_file = os.path.join(datafiles_dir, BaseTestCase.json_init_path, "minimal_init.json")
-        return ScenarioConfig.fromConfigFile(init_file)
-
-    def _getManeuverDetectionConfig(self, datafiles_dir):
-        """Set up a minimal :class:`.ScenarioConfig` object."""
-        init_file = os.path.join(
-            datafiles_dir, BaseTestCase.json_init_path, "minimal_maneuver_detection_init.json"
-        )
-        return ScenarioConfig.fromConfigFile(init_file)
-
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testBuildScheduledImpulse(self, datafiles):
+    def testBuildScheduledImpulse(self, datafiles: str):
         """Validate that no errors are thrown when building a :class:`.ScheduledImpulseEvent`."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
         minimal_config.events = EventConfigList(
@@ -66,9 +73,9 @@ class TestEventIntegration(BaseTestCase):
         assert ScenarioBuilder(minimal_config)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testBuildTargetTaskingPriorityDependency(self, datafiles):
+    def testBuildTargetTaskingPriorityDependency(self, datafiles: str):
         """Validate that a TargetTaskingPriority's data dependency is built."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
         priority_agent = {"unique_id": 12345, "name": "important sat"}
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
@@ -101,9 +108,11 @@ class TestEventIntegration(BaseTestCase):
 
     @pytest.mark.parametrize("seconds", [0, 2])
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteScheduledImpulse(self, datafiles, caplog, seconds):
+    def testExecuteScheduledImpulse(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, seconds: int
+    ):
         """Validate that a ScheduledImpulse is handled correctly."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         maneuvering_target = tasking_engine.targets[0]
@@ -153,9 +162,11 @@ class TestEventIntegration(BaseTestCase):
 
     @pytest.mark.parametrize("planned", [True, False])
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testDetectScheduledImpulse(self, datafiles, caplog, planned):
+    def testDetectScheduledImpulse(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, planned: bool
+    ):
         """Validate that a ScheduledImpulse is handled correctly."""
-        minimal_config = self._getManeuverDetectionConfig(datafiles)
+        minimal_config = _getManeuverDetectionConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         maneuvering_target = tasking_engine.targets[0]
@@ -208,9 +219,11 @@ class TestEventIntegration(BaseTestCase):
 
     @pytest.mark.parametrize("planned", [True, False])
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testDetectScheduledFiniteBurn(self, datafiles, caplog, planned):
+    def testDetectScheduledFiniteBurn(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, planned: bool
+    ):
         """Validate that a ScheduledImpulse is handled correctly."""
-        minimal_config = self._getManeuverDetectionConfig(datafiles)
+        minimal_config = _getManeuverDetectionConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         maneuvering_target = tasking_engine.targets[0]
@@ -263,9 +276,9 @@ class TestEventIntegration(BaseTestCase):
             assert found, "logs indicate that an unplanned maneuver was not detected"
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteTargetTaskPriority(self, datafiles, caplog):
+    def testExecuteTargetTaskPriority(self, datafiles: str, caplog: pytest.LogCaptureFixture):
         """Validate that a TargetTaskPriority is handled correctly."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         priority_target = tasking_engine.targets[0]
@@ -319,9 +332,9 @@ class TestEventIntegration(BaseTestCase):
         ), "logs indicate that tasking priority took place less than 3 times"
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteTargetAddition(self, datafiles, caplog):
+    def testExecuteTargetAddition(self, datafiles: str, caplog: pytest.LogCaptureFixture):
         """Validate that a TargetAddition is handled correctly."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         addition_id = 11116
@@ -394,9 +407,9 @@ class TestEventIntegration(BaseTestCase):
         )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteSensorAddition(self, datafiles, caplog):
+    def testExecuteSensorAddition(self, datafiles: str, caplog: pytest.LogCaptureFixture):
         """Validate that a SensorAddition is handled correctly."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         addition_id = 60002
@@ -482,9 +495,9 @@ class TestEventIntegration(BaseTestCase):
         )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteAgentRemovalTarget(self, datafiles, caplog):
+    def testExecuteAgentRemovalTarget(self, datafiles: str, caplog: pytest.LogCaptureFixture):
         """Validate that a AgentRemoval of a target is handled correctly."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         removed_target = tasking_engine.targets[0]
@@ -543,9 +556,9 @@ class TestEventIntegration(BaseTestCase):
         )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteAgentRemovalSensor(self, datafiles, caplog):
+    def testExecuteAgentRemovalSensor(self, datafiles: str, caplog: pytest.LogCaptureFixture):
         """Validate that a AgentRemoval of a target is handled correctly."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         removed_sensor = tasking_engine.sensors[0]
@@ -603,9 +616,9 @@ class TestEventIntegration(BaseTestCase):
         )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testMultiEvent(self, datafiles, caplog):
+    def testMultiEvent(self, datafiles: str, caplog: pytest.LogCaptureFixture):
         """Validate that multiple consecutive events are handled correctly."""
-        minimal_config = self._getMinimalConfig(datafiles)
+        minimal_config = _getMinimalConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         addition_id = 11116

@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -10,28 +9,22 @@ from datetime import datetime
 import pytest
 from sqlalchemy.orm import Query
 
-try:
-    # RESONAATE Imports
-    from resonaate.data.data_interface import Epoch
-    from resonaate.data.events import Event, EventScope
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.base import ConfigTypeError, ConfigValueError
-    from resonaate.scenario.config.event_configs import (
-        DataDependency,
-        EventConfig,
-        EventConfigList,
-        MissingDataDependency,
-        ScheduledImpulseEventConfig,
-    )
-    from resonaate.scenario.config.time_config import TIME_STAMP_FORMAT
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.data.data_interface import Epoch
+from resonaate.data.events import Event, EventScope
+from resonaate.physics.time.stardate import datetimeToJulianDate
+from resonaate.scenario.config.base import ConfigTypeError, ConfigValueError
+from resonaate.scenario.config.event_configs import (
+    DataDependency,
+    EventConfig,
+    EventConfigList,
+    MissingDataDependency,
+    ScheduledImpulseEventConfig,
+)
+from resonaate.scenario.config.time_config import TIME_STAMP_FORMAT
 
 
-class TestBaseEventClass(BaseTestCase):
+class TestBaseEventClass:
     """Test class for :class:`.Event` database table class."""
 
     def testInit(self):
@@ -106,7 +99,7 @@ class TestBaseEventClass(BaseTestCase):
         TestChild.fromConfig = orig_func
 
 
-class TestDataDependency(BaseTestCase):
+class TestDataDependency:
     """Test class for the :class:`.DataDependency` class."""
 
     def testNoAttributes(self):
@@ -132,7 +125,7 @@ class TestDataDependency(BaseTestCase):
         assert created_dep.timestampISO == timestamp.isoformat()
 
 
-class TestEventConfigClass(BaseTestCase):
+class TestEventConfigClass:
     """."""
 
     def testEventConfig(self):

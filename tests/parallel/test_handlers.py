@@ -1,35 +1,35 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
+# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 import os
 import pickle
+from unittest.mock import create_autospec
 
 # Third Party Imports
 import numpy as np
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.agents.estimate_agent import EstimateAgent
-    from resonaate.agents.target_agent import TargetAgent
-    from resonaate.common.exceptions import (
-        AgentProcessingError,
-        JobProcessingError,
-        MissingEphemerisError,
-    )
-    from resonaate.data.importer_database import ImporterDatabase
-    from resonaate.dynamics.two_body import TwoBody
-    from resonaate.estimation.maneuver_detection import StandardNis
-    from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-    from resonaate.parallel.handlers.agent_propagation import AgentPropagationJobHandler
-    from resonaate.parallel.handlers.job_handler import JobHandler
-    from resonaate.parallel.job import CallbackRegistration
-    from resonaate.physics.time.stardate import JulianDate, ScenarioTime
-    from resonaate.scenario.clock import ScenarioClock
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.agents.estimate_agent import EstimateAgent
+from resonaate.agents.target_agent import TargetAgent
+from resonaate.common.exceptions import (
+    AgentProcessingError,
+    JobProcessingError,
+    MissingEphemerisError,
+)
+from resonaate.data.importer_database import ImporterDatabase
+from resonaate.dynamics.two_body import TwoBody
+from resonaate.estimation.maneuver_detection import StandardNis
+from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
+from resonaate.parallel.handlers.agent_propagation import AgentPropagationJobHandler
+from resonaate.parallel.handlers.job_handler import JobHandler
+from resonaate.parallel.job import CallbackRegistration, Job
+from resonaate.physics.time.stardate import JulianDate, ScenarioTime
+from resonaate.scenario.clock import ScenarioClock
+
 # Local Imports
-# Testing Imports
-from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
+from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 
 
 @pytest.fixture(name="job_handler")
@@ -71,8 +71,18 @@ def createJobHandler(numpy_add_job, mocked_sensing_agent):
     job_handler.queue_mgr.close()
 
 
+@pytest.fixture(scope="class", name="mocked_error_job")
+def getMockedErrorJobObject() -> Job:
+    """Create a mocked error :class:`.Job` object."""
+    job = create_autospec(Job)
+    job.id = 1
+    job.error = "F"
+
+    return job
+
+
 @pytest.mark.usefixtures("redis_setup", "worker_manager")
-class TestBaseJobHandler(BaseTestCase):
+class TestBaseJobHandler:
     """Tests related to job handlers."""
 
     def jobCallback(self, obj):
@@ -175,7 +185,7 @@ def createEstimateAgent(target_agent, scenario_clock):
 
 
 @pytest.mark.usefixtures("redis_setup", "worker_manager")
-class TestAgentPropagateHandler(BaseTestCase):
+class TestAgentPropagateHandler:
     """Tests related to job handlers."""
 
     def testProblemTargetAgent(self, target_agent):
@@ -255,10 +265,10 @@ class TestAgentPropagateHandler(BaseTestCase):
         jd_start = JulianDate(2458454.0)
         epoch_time = ScenarioTime(60)
         # Create and load importer DB
-        db_path = "sqlite:///" + os.path.join(datafiles, self.importer_db_path)
+        db_path = "sqlite:///" + os.path.join(datafiles, IMPORTER_DB_PATH)
         importer_db = ImporterDatabase.getSharedInterface(db_path)
         importer_db.initDatabaseFromJSON(
-            os.path.join(FIXTURE_DATA_DIR, self.json_rso_truth, "11111-truth.json"),
+            os.path.join(FIXTURE_DATA_DIR, JSON_INIT_PATH, "11111-truth.json"),
             start=jd_start,
             stop=ScenarioTime(1200).convertToJulianDate(jd_start),
         )

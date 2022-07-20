@@ -1,32 +1,30 @@
 # pylint: disable=attribute-defined-outside-init, unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
-    from resonaate.scenario.config.agent_configs import (
-        DEFAULT_VIEWING_ANGLE,
-        ConfigError,
-        ConfigValueError,
-        FieldOfViewConfig,
-        SensingAgentConfig,
-        StationKeepingConfig,
-        TargetAgentConfig,
-    )
-    from resonaate.sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
+from resonaate.scenario.config.agent_configs import (
+    DEFAULT_VIEWING_ANGLE,
+    ConfigError,
+    ConfigValueError,
+    FieldOfViewConfig,
+    SensingAgentConfig,
+    StationKeepingConfig,
+    TargetAgentConfig,
+)
+from resonaate.sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
+
 # Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
 from .conftest import EARTH_SENSORS, GEO_TARGETS, LEO_TARGETS, SPACE_SENSORS
 
 
-class TestTargetConfig(BaseTestCase):
+class TestTargetConfig:
     """Test the target config object with valid/invalid sets of JSON configs."""
 
     @pytest.mark.parametrize("tgt_dict", GEO_TARGETS + LEO_TARGETS)
@@ -145,7 +143,7 @@ class TestTargetConfig(BaseTestCase):
             )
 
 
-class TestSensorConfig(BaseTestCase):
+class TestSensorConfig:
     """Test the sensor config object with valid/invalid sets of JSON configs."""
 
     @pytest.mark.parametrize("sen_dict", EARTH_SENSORS + SPACE_SENSORS)

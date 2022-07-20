@@ -1,21 +1,16 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 
 # Third Party Imports
 from sqlalchemy.orm import Query
 
-try:
-    # RESONAATE Imports
-    from resonaate.data.detected_maneuver import DetectedManeuver
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.data.detected_maneuver import DetectedManeuver
 
 
-class TestDetectedManeuver(BaseTestCase):
+class TestDetectedManeuver:
     """Test class for :class:`.DetectedManeuver` database table class."""
 
     def testInit(self):

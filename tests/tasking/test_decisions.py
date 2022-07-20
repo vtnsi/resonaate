@@ -1,28 +1,22 @@
-# pylint: disable=attribute-defined-outside-init
-# Standard Library Imports
+from __future__ import annotations
+
 # Third Party Imports
 import pytest
 from numpy import any as np_any
 from numpy import array_equal, asarray, full, nonzero, sort, unique
 
-try:
-    # RESONAATE Imports
-    from resonaate.tasking.decisions.decision_base import Decision
-    from resonaate.tasking.decisions.decisions import (
-        AllVisibleDecision,
-        MunkresDecision,
-        MyopicNaiveGreedyDecision,
-        RandomDecision,
-    )
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.tasking.decisions.decision_base import Decision
+from resonaate.tasking.decisions.decisions import (
+    AllVisibleDecision,
+    MunkresDecision,
+    MyopicNaiveGreedyDecision,
+    RandomDecision,
+)
 
 
 @pytest.fixture(name="mocked_decision_class")
-def mockedDecisionClass():
+def mockedDecisionClass() -> Decision:
     """Return reference to a minimal :class:`.Decision` class."""
 
     class MockedDecision(Decision):
@@ -32,10 +26,10 @@ def mockedDecisionClass():
     return MockedDecision
 
 
-class TestDecisionBase(BaseTestCase):
+class TestDecisionBase:
     """Test the base class of the decisions module."""
 
-    def testRegistry(self, mocked_decision_class):
+    def testRegistry(self, mocked_decision_class: Decision):
         """Test to make sure the decision object is registered."""
         # Test that new implemented class isn't registered
         test_decision = mocked_decision_class()
@@ -55,14 +49,14 @@ class TestDecisionBase(BaseTestCase):
         with pytest.raises(TypeError):
             Decision()  # pylint: disable=abstract-class-instantiated
 
-    def testDecisionCall(self, mocked_decision_class):
+    def testDecisionCall(self, mocked_decision_class: Decision):
         """Test the call function of the Decision base class."""
         reward_matrix = asarray([[10, 1.1, 0], [4, 15.9, 1], [2.1, 3, 11]])
         decision = mocked_decision_class()
         decision(reward_matrix)
 
 
-class TestMyopicNaiveGreedyDecision(BaseTestCase):
+class TestMyopicNaiveGreedyDecision:
     """Test the MyopicNaiveGreedyDecision class of the decisions module."""
 
     def testMyopicRegistry(self):
@@ -122,7 +116,7 @@ class TestMyopicNaiveGreedyDecision(BaseTestCase):
         assert not np_any(myopic_decision(reward_matrix))
 
 
-class TestMunkresDecision(BaseTestCase):
+class TestMunkresDecision:
     """Test the MunkresDecision class of the decisions module."""
 
     def testMunkresRegistry(self):
@@ -182,7 +176,7 @@ class TestMunkresDecision(BaseTestCase):
         assert not np_any(munkres_decision(reward_matrix))
 
 
-class TestRandomDecision(BaseTestCase):
+class TestRandomDecision:
     """Test the RandomDecision class of the decisions module."""
 
     def testMunkresRegistry(self):
@@ -228,7 +222,7 @@ class TestRandomDecision(BaseTestCase):
         assert not np_any(random_decision(reward_matrix))
 
 
-class TestAllVisibleDecision(BaseTestCase):
+class TestAllVisibleDecision:
     """Test the AllVisibleDecision class of the decisions module."""
 
     def testAllVisibleRegistry(self):

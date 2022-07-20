@@ -1,33 +1,30 @@
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 
 # Third Party Imports
 import numpy as np
-
-try:
-    # RESONAATE Imports
-    from resonaate.estimation import (
-        VALID_ADAPTIVE_ESTIMATION_LABELS,
-        VALID_FILTER_LABELS,
-        VALID_MANEUVER_DETECTION_LABELS,
-        AdaptiveFilter,
-        ManeuverDetection,
-        SequentialFilter,
-        adaptiveEstimationFactory,
-        maneuverDetectionFactory,
-        sequentialFilterFactory,
-    )
-    from resonaate.scenario.config.base import ConfigValueError
-    from resonaate.scenario.config.estimation_config import (
-        AdaptiveEstimationConfig,
-        ManeuverDetectionConfig,
-        SequentialFilterConfig,
-    )
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Third Party Imports
-# Testing Imports
 import pytest
+
+# RESONAATE Imports
+from resonaate.estimation import (
+    VALID_ADAPTIVE_ESTIMATION_LABELS,
+    VALID_FILTER_LABELS,
+    VALID_MANEUVER_DETECTION_LABELS,
+    AdaptiveFilter,
+    ManeuverDetection,
+    SequentialFilter,
+    adaptiveEstimationFactory,
+    maneuverDetectionFactory,
+    sequentialFilterFactory,
+)
+from resonaate.scenario.config.base import ConfigValueError
+from resonaate.scenario.config.estimation_config import (
+    AdaptiveEstimationConfig,
+    ManeuverDetectionConfig,
+    SequentialFilterConfig,
+)
 
 MANEUVER_DETECTION_CONFIG = {
     "threshold": 0.01,

@@ -1,4 +1,6 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
+# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 import time
 
@@ -6,18 +8,12 @@ import time
 import numpy as np
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.common.exceptions import JobTimeoutError
-    from resonaate.parallel import REDIS_QUEUE_LOGGER
-    from resonaate.parallel.job import Job
-    from resonaate.parallel.producer import QueueManager
-    from resonaate.parallel.worker import WorkerManager
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.common.exceptions import JobTimeoutError
+from resonaate.parallel import REDIS_QUEUE_LOGGER
+from resonaate.parallel.job import Job
+from resonaate.parallel.producer import QueueManager
+from resonaate.parallel.worker import WorkerManager
 
 
 def testJobClass():
@@ -44,7 +40,7 @@ def testJobClass():
 
 
 @pytest.mark.usefixtures("redis_setup")
-class TestWorkerManager(BaseTestCase):
+class TestWorkerManager:
     """Test proper usage of WorkerManager class."""
 
     def testCreation(self):
@@ -93,7 +89,7 @@ class TestWorkerManager(BaseTestCase):
 
 
 @pytest.mark.usefixtures("redis_setup", "worker_manager")
-class TestQueueManager(BaseTestCase):
+class TestQueueManager:
     """Test proper usage of QueueManager class."""
 
     def jobCallback(self, job):

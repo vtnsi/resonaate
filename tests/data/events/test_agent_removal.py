@@ -1,21 +1,16 @@
-# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from datetime import datetime
 
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.data.data_interface import AgentModel
-    from resonaate.data.events import AgentRemovalEvent
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.event_configs import AgentRemovalEventConfig
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.data.data_interface import AgentModel
+from resonaate.data.events import AgentRemovalEvent
+from resonaate.physics.time.stardate import datetimeToJulianDate
+from resonaate.scenario.config.event_configs import AgentRemovalEventConfig
 
 
 @pytest.fixture(name="event_config_dict")
@@ -33,7 +28,7 @@ def getAgentRemoval():
     }
 
 
-class TestAgentRemovalEventConfig(BaseTestCase):
+class TestAgentRemovalEventConfig:
     """Test class for :class:`.AgentRemovalEventConfig` class."""
 
     def testInitGoodArgs(self, event_config_dict):
@@ -51,7 +46,7 @@ class TestAgentRemovalEventConfig(BaseTestCase):
         assert agent_dependency.attributes is None
 
 
-class TestAgentRemovalEvent(BaseTestCase):
+class TestAgentRemovalEvent:
     """Test class for :class:`.AgentRemovalEvent` class."""
 
     def testFromConfig(self, event_config_dict):

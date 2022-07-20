@@ -1,62 +1,57 @@
+from __future__ import annotations
+
 # Third Party Imports
 from numpy import array
 
-try:
-    # RESONAATE Imports
-    from resonaate.physics.sensor_utils import (
-        apparentVisualMagnitude,
-        calculateIncidentSolarFlux,
-        calculatePhaseAngle,
-        calculateSunVizFraction,
-        lambertianPhaseFunction,
+# RESONAATE Imports
+from resonaate.physics.sensor_utils import (
+    apparentVisualMagnitude,
+    calculateIncidentSolarFlux,
+    calculatePhaseAngle,
+    calculateSunVizFraction,
+    lambertianPhaseFunction,
+)
+
+VISUAL_CROSS_SECTION = 25.0
+MASS = 100
+REFLECTIVITY = 0.21
+SOLAR_PHASE_ANGLE = 0.5
+NORM_BORESIGHT = 6371
+SUN_POSITION = array([1.47199372e08, 2.35328247e07, 1.02011844e07])
+RSO_POSITION = array([-6218.88151713, -4625.88230867, 802.87401975])
+SENSOR_POSITION = array([4221.25454032, -3223.82650314, 3521.91123676])
+
+
+def testApparentVisualMagnitude():
+    """Test apparentVisualMagnitude()."""
+    apparent_vismag = apparentVisualMagnitude(
+        VISUAL_CROSS_SECTION,
+        REFLECTIVITY,
+        lambertianPhaseFunction(SOLAR_PHASE_ANGLE),
+        NORM_BORESIGHT,
     )
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+    assert apparent_vismag == -7.7103627546277025
 
 
-class TestSensorUtils(BaseTestCase):
-    """Test cases for validating the `physics.sensor_utils` package."""
+def testCalculateIncidentSolarFlux():
+    """Test calculateIncidentSolarFlux()."""
+    flux = calculateIncidentSolarFlux(VISUAL_CROSS_SECTION, RSO_POSITION, SUN_POSITION)
+    assert flux == 0.0
 
-    visual_cross_section = 25.0
-    mass = 100
-    reflectivity = 0.21
-    solar_phase_angle = 0.5
-    norm_boresight = 6371
-    sun_position = array([1.47199372e08, 2.35328247e07, 1.02011844e07])
-    rso_position = array([-6218.88151713, -4625.88230867, 802.87401975])
-    sensor_position = array([4221.25454032, -3223.82650314, 3521.91123676])
 
-    def testApparentVisualMagnitude(self):
-        """Test apparentVisualMagnitude()."""
-        apparent_vismag = apparentVisualMagnitude(
-            self.visual_cross_section,
-            self.reflectivity,
-            lambertianPhaseFunction(self.solar_phase_angle),
-            self.norm_boresight,
-        )
-        assert apparent_vismag == -7.7103627546277025
+def testCalculatePhaseAngle():
+    """Test calculatePhaseAngle()."""
+    phase = calculatePhaseAngle(SUN_POSITION, RSO_POSITION, SENSOR_POSITION)
+    assert phase == 0.1859393122433178
 
-    def testCalculateIncidentSolarFlux(self):
-        """Test calculateIncidentSolarFlux()."""
-        flux = calculateIncidentSolarFlux(
-            self.visual_cross_section, self.rso_position, self.sun_position
-        )
-        assert flux == 0.0
 
-    def testCalculatePhaseAngle(self):
-        """Test calculatePhaseAngle()."""
-        phase = calculatePhaseAngle(self.sun_position, self.rso_position, self.sensor_position)
-        assert phase == 0.1859393122433178
+def testCalculateSunVizFraction():
+    """Test calculateSunVizFraction()."""
+    fraction = calculateSunVizFraction(RSO_POSITION, SUN_POSITION)
+    assert fraction == 0.0
 
-    def testCalculateSunVizFraction(self):
-        """Test calculateSunVizFraction()."""
-        fraction = calculateSunVizFraction(self.rso_position, self.sun_position)
-        assert fraction == 0.0
 
-    def testLambertianPhaseFunction(self):
-        """Test lambertianPhaseFunction()."""
-        phase = lambertianPhaseFunction(self.solar_phase_angle)
-        assert phase == 0.18897354431642885
+def testLambertianPhaseFunction():
+    """Test lambertianPhaseFunction()."""
+    phase = lambertianPhaseFunction(SOLAR_PHASE_ANGLE)
+    assert phase == 0.18897354431642885

@@ -10,20 +10,17 @@ from unittest.mock import patch
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.scenario.config.base import (
-        ConfigError,
-        ConfigMissingRequiredError,
-        ConfigObject,
-        ConfigObjectList,
-        ConfigSettingError,
-        ConfigTypeError,
-        ConfigValueError,
-        inclusiveRange,
-    )
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.scenario.config.base import (
+    ConfigError,
+    ConfigMissingRequiredError,
+    ConfigObject,
+    ConfigObjectList,
+    ConfigSettingError,
+    ConfigTypeError,
+    ConfigValueError,
+    inclusiveRange,
+)
 
 # Type Checking Imports
 if TYPE_CHECKING:

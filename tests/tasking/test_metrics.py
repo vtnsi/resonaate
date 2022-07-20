@@ -1,24 +1,27 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 import pytest
 
-try:
+# RESONAATE Imports
+from resonaate.tasking.metrics.behavior import TimeSinceObservation
+from resonaate.tasking.metrics.information import FisherInformation, ShannonInformation
+from resonaate.tasking.metrics.metric_base import Metric
+from resonaate.tasking.metrics.sensor import DeltaPosition, SlewCycle, TimeToTransit
+from resonaate.tasking.metrics.stability import LyapunovStability
+
+# Type Checking Imports
+if TYPE_CHECKING:
     # RESONAATE Imports
-    from resonaate.tasking.metrics.behavior import TimeSinceObservation
-    from resonaate.tasking.metrics.information import FisherInformation, ShannonInformation
-    from resonaate.tasking.metrics.metric_base import Metric
-    from resonaate.tasking.metrics.sensor import DeltaPosition, SlewCycle, TimeToTransit
-    from resonaate.tasking.metrics.stability import LyapunovStability
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+    from resonaate.agents.estimate_agent import EstimateAgent
+    from resonaate.agents.sensing_agent import SensingAgent
 
 
 @pytest.fixture(name="mocked_metric_class")
-def mockedMetricClass():
+def mockedMetricClass() -> Metric:
     """Return reference to a minimal :class:`.Metric` class."""
 
     class MockedMetric(Metric):
@@ -28,10 +31,10 @@ def mockedMetricClass():
     return MockedMetric
 
 
-class TestMetricsBase(BaseTestCase):
+class TestMetricsBase:
     """Test the base class of the metrics module."""
 
-    def testRegistry(self, mocked_metric_class):
+    def testRegistry(self, mocked_metric_class: Metric):
         """Test to make sure the Metric object is registered."""
         test_metric = mocked_metric_class()
         assert test_metric.is_registered is False
@@ -50,7 +53,12 @@ class TestMetricsBase(BaseTestCase):
         with pytest.raises(TypeError):
             Metric()  # pylint: disable=abstract-class-instantiated
 
-    def testMetricCall(self, mocked_estimate, mocked_metric_class, mocked_sensing_agent):
+    def testMetricCall(
+        self,
+        mocked_estimate: EstimateAgent,
+        mocked_metric_class: Metric,
+        mocked_sensing_agent: SensingAgent,
+    ):
         """Test the call function of the Metric base class."""
         metric = mocked_metric_class()
         target_agents = {11111: mocked_estimate}
@@ -60,10 +68,14 @@ class TestMetricsBase(BaseTestCase):
         metric(target_agents[target_id], sensor_agents[sensor_id])
 
 
-class TestInformationMetric(BaseTestCase):
+class TestInformationMetric:
     """Test the InformationMetric class of the metrics module."""
 
-    def testCalculateMetric(self, mocked_estimate, mocked_sensing_agent):
+    def testCalculateMetric(
+        self,
+        mocked_estimate: EstimateAgent,
+        mocked_sensing_agent: SensingAgent,
+    ):
         """Test the calculate metric function."""
         target_agents = {11111: mocked_estimate}
         target_id = 11111
@@ -75,10 +87,14 @@ class TestInformationMetric(BaseTestCase):
         fisher_metric(target_agents[target_id], sensor_agents[sensor_id])
 
 
-class TestStabilityMetric(BaseTestCase):
+class TestStabilityMetric:
     """Test the StabilityMetric class of the metrics module."""
 
-    def testCalculateMetric(self, mocked_estimate, mocked_sensing_agent):
+    def testCalculateMetric(
+        self,
+        mocked_estimate: EstimateAgent,
+        mocked_sensing_agent: SensingAgent,
+    ):
         """Test the calculate metric function."""
         target_agents = {11111: mocked_estimate}
         target_id = 11111
@@ -88,10 +104,14 @@ class TestStabilityMetric(BaseTestCase):
         lyapunov_metric(target_agents[target_id], sensor_agents[sensor_id])
 
 
-class TestSensorMetric(BaseTestCase):
+class TestSensorMetric:
     """Test the SensorMetric class of the metrics module."""
 
-    def testCalculateMetric(self, mocked_estimate, mocked_sensing_agent):
+    def testCalculateMetric(
+        self,
+        mocked_estimate: EstimateAgent,
+        mocked_sensing_agent: SensingAgent,
+    ):
         """Test the calculate metric function."""
         target_agents = {11111: mocked_estimate}
         target_id = 11111
@@ -105,10 +125,14 @@ class TestSensorMetric(BaseTestCase):
         time_to_transit(target_agents[target_id], sensor_agents[sensor_id])
 
 
-class TestBehaviorMetric(BaseTestCase):
+class TestBehaviorMetric:
     """Test the BehaviorMetric class of the metrics module."""
 
-    def testCalculateMetric(self, mocked_estimate, mocked_sensing_agent):
+    def testCalculateMetric(
+        self,
+        mocked_estimate: EstimateAgent,
+        mocked_sensing_agent: SensingAgent,
+    ):
         """Test the calculate metric function."""
         target_agents = {11111: mocked_estimate}
         target_id = 11111

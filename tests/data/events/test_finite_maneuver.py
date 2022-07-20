@@ -1,4 +1,5 @@
-# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 from datetime import datetime
@@ -7,18 +8,12 @@ from unittest.mock import create_autospec
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.agents.target_agent import TargetAgent
-    from resonaate.data.events import EventScope, ScheduledFiniteManeuverEvent
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.base import ConfigError, ConfigValueError
-    from resonaate.scenario.config.event_configs import ScheduledFiniteManeuverConfig
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.agents.target_agent import TargetAgent
+from resonaate.data.events import EventScope, ScheduledFiniteManeuverEvent
+from resonaate.physics.time.stardate import datetimeToJulianDate
+from resonaate.scenario.config.base import ConfigError, ConfigValueError
+from resonaate.scenario.config.event_configs import ScheduledFiniteManeuverConfig
 
 
 @pytest.fixture(name="event_config_dict")
@@ -36,7 +31,7 @@ def getFiniteManeuver():
     }
 
 
-class TestFiniteManeuverEventConfig(BaseTestCase):
+class TestFiniteManeuverEventConfig:
     """Test class for :class:`.ScheduledFiniteThrustEventConfig` class."""
 
     def testInitGoodArgs(self, event_config_dict):
@@ -69,7 +64,7 @@ def getMockedAgent():
     return mocked_target
 
 
-class TestFiniteThrustEvent(BaseTestCase):
+class TestFiniteThrustEvent:
     """Test class for :class:`.ScheduledFiniteThrustEvent` class."""
 
     def testFromConfig(self, event_config_dict):

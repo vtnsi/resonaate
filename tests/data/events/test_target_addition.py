@@ -1,4 +1,5 @@
-# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 from datetime import datetime
@@ -7,18 +8,12 @@ from json import dumps
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.data.data_interface import AgentModel
-    from resonaate.data.events import TargetAdditionEvent
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.base import ConfigError
-    from resonaate.scenario.config.event_configs import TargetAdditionEventConfig
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.data.data_interface import AgentModel
+from resonaate.data.events import TargetAdditionEvent
+from resonaate.physics.time.stardate import datetimeToJulianDate
+from resonaate.scenario.config.base import ConfigError
+from resonaate.scenario.config.event_configs import TargetAdditionEventConfig
 
 
 @pytest.fixture(name="tgt_config_eci")
@@ -63,7 +58,7 @@ def getTargetAdditionConfigDict():
     }
 
 
-class TestTargetAdditionEventConfig(BaseTestCase):
+class TestTargetAdditionEventConfig:
     """Test class for :class:`.TargetAdditionEventConfig` class."""
 
     def testInitGoodArgs(self, tgt_config_eci, event_config_dict):
@@ -127,7 +122,7 @@ class TestTargetAdditionEventConfig(BaseTestCase):
         }
 
 
-class TestTargetAdditionEvent(BaseTestCase):
+class TestTargetAdditionEvent:
     """Test class for :class:`.TargetAdditionEvent` class."""
 
     def testFromConfig(self, tgt_config_eci, event_config_dict):

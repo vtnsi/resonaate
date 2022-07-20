@@ -1,4 +1,4 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
+# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -10,23 +10,17 @@ from unittest.mock import Mock
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.common.exceptions import (
-        DuplicateEngineError,
-        DuplicateSensorError,
-        DuplicateTargetError,
-    )
-    from resonaate.scenario.config import ScenarioConfig
-    from resonaate.scenario.config.event_configs import (
-        MissingDataDependency,
-        TargetTaskPriorityConfig,
-    )
-    from resonaate.scenario.scenario_builder import ScenarioBuilder
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.common.exceptions import (
+    DuplicateEngineError,
+    DuplicateSensorError,
+    DuplicateTargetError,
+)
+from resonaate.scenario.config import ScenarioConfig
+from resonaate.scenario.config.event_configs import MissingDataDependency, TargetTaskPriorityConfig
+from resonaate.scenario.scenario_builder import ScenarioBuilder
+
 # Local Imports
-# Testing Imports
 from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
 

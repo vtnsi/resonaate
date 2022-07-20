@@ -1,4 +1,5 @@
-# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 from datetime import datetime
@@ -7,19 +8,13 @@ from json import dumps
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.data.data_interface import AgentModel
-    from resonaate.data.events import SensorAdditionEvent
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.physics.transforms.reductions import updateReductionParameters
-    from resonaate.scenario.config.base import ConfigError
-    from resonaate.scenario.config.event_configs import SensorAdditionEventConfig
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.data.data_interface import AgentModel
+from resonaate.data.events import SensorAdditionEvent
+from resonaate.physics.time.stardate import datetimeToJulianDate
+from resonaate.physics.transforms.reductions import updateReductionParameters
+from resonaate.scenario.config.base import ConfigError
+from resonaate.scenario.config.event_configs import SensorAdditionEventConfig
 
 
 @pytest.fixture(name="sen_config_ground")
@@ -89,7 +84,7 @@ def getSensorAddition():
     }
 
 
-class TestSensorAdditionEventConfig(BaseTestCase):
+class TestSensorAdditionEventConfig:
     """Test class for :class:`.SensorAdditionEventConfig` class."""
 
     def testInitGoodArgs(self, sen_config_ground, event_config_dict):
@@ -168,7 +163,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
         }
 
 
-class TestSensorAdditionEvent(BaseTestCase):
+class TestSensorAdditionEvent:
     """Test class for :class:`.SensorAdditionEvent` class."""
 
     def testFromConfig(self, sen_config_space, event_config_dict):

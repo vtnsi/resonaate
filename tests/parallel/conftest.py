@@ -1,4 +1,6 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
+# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 import time
 
@@ -6,15 +8,11 @@ import time
 import numpy as np
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.parallel import REDIS_QUEUE_LOGGER, setUpLogger
-    from resonaate.parallel.job import Job
-    from resonaate.parallel.producer import QueueManager
-    from resonaate.parallel.worker import WorkerManager
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Testing Imports
+# RESONAATE Imports
+from resonaate.parallel import REDIS_QUEUE_LOGGER, setUpLogger
+from resonaate.parallel.job import Job
+from resonaate.parallel.producer import QueueManager
+from resonaate.parallel.worker import WorkerManager
 
 
 @pytest.fixture(name="redis_setup")
