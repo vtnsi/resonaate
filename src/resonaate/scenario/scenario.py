@@ -31,7 +31,7 @@ from ..parallel.worker import WorkerManager
 from ..physics.constants import SEC2DAYS
 from ..physics.noise import noiseCovarianceFactory
 from ..physics.time.stardate import JulianDate
-from .config.agent_configs import SensorConfigObject, TargetConfigObject
+from .config.agent_configs import SensingAgentConfig, TargetAgentConfig
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -373,11 +373,11 @@ class Scenario:
         EventStack.logAndFlushEvents()
 
     @methdispatch
-    def addTarget(self, target_spec: TargetConfigObject | dict, tasking_engine_id: int) -> None:
+    def addTarget(self, target_spec: TargetAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
-            target_spec (:class:`.TargetConfigObject` | ``dict``): Specification of target being added.
+            target_spec (:class:`.TargetAgentConfig` | ``dict``): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
         # pylint: disable=unused-argument
@@ -392,15 +392,15 @@ class Scenario:
             target_spec (``dict``): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
-        target_conf = TargetConfigObject(**target_spec)
+        target_conf = TargetAgentConfig(**target_spec)
         self._addTargetConf(target_conf, tasking_engine_id)
 
-    @addTarget.register(TargetConfigObject)
-    def _addTargetConf(self, target_spec: TargetConfigObject, tasking_engine_id: int) -> None:
+    @addTarget.register(TargetAgentConfig)
+    def _addTargetConf(self, target_spec: TargetAgentConfig, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
-            target_spec (:class:`.TargetConfigObject`): Specification of target being added.
+            target_spec (:class:`.TargetAgentConfig`): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
         if target_spec.sat_num in self.target_agents:
@@ -485,11 +485,11 @@ class Scenario:
         self._tasking_engines[tasking_engine_id].removeTarget(agent_id)
 
     @methdispatch
-    def addSensor(self, sensor_spec: SensorConfigObject | dict, tasking_engine_id: int) -> None:
+    def addSensor(self, sensor_spec: SensingAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
         Args:
-            sensor_spec (:class:`.SensorConfigObject` | ``dict``): Specification of sensor being added.
+            sensor_spec (:class:`.SensingAgentConfig` | ``dict``): Specification of sensor being added.
             tasking_engine_id (``int``): Unique identifier to add the specified sensor to.
         """
         # pylint: disable=unused-argument
@@ -504,15 +504,15 @@ class Scenario:
             sensor_spec (``dict``): Specification of sensor being added.
             tasking_engine_id (``int``): Unique identifier to add the specified sensor to.
         """
-        sensor_conf = SensorConfigObject(**sensor_spec)
+        sensor_conf = SensingAgentConfig(**sensor_spec)
         self._addSensorConf(sensor_conf, tasking_engine_id)
 
-    @addSensor.register(SensorConfigObject)
-    def _addSensorConf(self, sensor_spec: SensorConfigObject, tasking_engine_id: int) -> None:
+    @addSensor.register(SensingAgentConfig)
+    def _addSensorConf(self, sensor_spec: SensingAgentConfig, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
         Args:
-            sensor_spec (:class:`.SensorConfigObject`): Specification of sensor being added.
+            sensor_spec (:class:`.SensingAgentConfig`): Specification of sensor being added.
             tasking_engine_id (``int``): Unique identifier to add the specified sensor to.
         """
         if sensor_spec.id in self._sensor_agents:

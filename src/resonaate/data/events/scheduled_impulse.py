@@ -21,7 +21,7 @@ from .base import Event, EventScope
 if TYPE_CHECKING:
     # Local Imports
     from ...agents.agent_base import Agent
-    from ...scenario.config.event_configs import ScheduledImpulseEventConfigObject
+    from ...scenario.config.event_configs import ScheduledImpulseEventConfig
 
 
 class ScheduledImpulseEvent(Event):
@@ -102,11 +102,11 @@ class ScheduledImpulseEvent(Event):
         scope_instance.appendPropagateEvent(impulse)
 
     @classmethod
-    def fromConfig(cls, config: ScheduledImpulseEventConfigObject) -> ScheduledImpulseEvent:
+    def fromConfig(cls, config: ScheduledImpulseEventConfig) -> ScheduledImpulseEvent:
         """Construct a :class:`.ScheduledImpulseEvent` from a specified `config`.
 
         Args:
-            config (:class:`.ScheduledImpulseEventConfigObject`): Configuration object to construct a
+            config (:class:`.ScheduledImpulseEventConfig`): Configuration object to construct a
                 :class:`.ScheduledImpulseEvent` from.
 
         Returns:

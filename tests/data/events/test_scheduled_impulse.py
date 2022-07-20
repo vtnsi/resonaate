@@ -13,7 +13,7 @@ try:
     from resonaate.data.events import EventScope, ScheduledImpulseEvent, TargetAdditionEvent
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config.base import ConfigError, ConfigValueError
-    from resonaate.scenario.config.event_configs import ScheduledImpulseEventConfigObject
+    from resonaate.scenario.config.event_configs import ScheduledImpulseEventConfig
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Local Imports
@@ -41,14 +41,14 @@ class TestScheduledImpulseEventConfig(BaseTestCase):
 
     def testInitGoodArgs(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with good arguments."""
-        assert ScheduledImpulseEventConfigObject(**event_config_dict)
+        assert ScheduledImpulseEventConfig(**event_config_dict)
 
     def testInitOtherGoodArgs(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with other good arguments."""
         impulse_config = deepcopy(event_config_dict)
         impulse_config["thrust_frame"] = "eci"
         impulse_config["planned"] = True
-        assert ScheduledImpulseEventConfigObject(**impulse_config)
+        assert ScheduledImpulseEventConfig(**impulse_config)
 
     def testInitBadScope(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with bad ``scope`` argument."""
@@ -56,7 +56,7 @@ class TestScheduledImpulseEventConfig(BaseTestCase):
         impulse_config = deepcopy(event_config_dict)
         impulse_config["scope"] = EventScope.SCENARIO_STEP.value
         with pytest.raises(ConfigError, match=expected_err):
-            ScheduledImpulseEventConfigObject(**impulse_config)
+            ScheduledImpulseEventConfig(**impulse_config)
 
     def testInitBadEventType(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with bad ``event_type`` argument."""
@@ -64,7 +64,7 @@ class TestScheduledImpulseEventConfig(BaseTestCase):
         impulse_config = deepcopy(event_config_dict)
         impulse_config["event_type"] = TargetAdditionEvent.EVENT_TYPE
         with pytest.raises(ConfigError, match=expected_err):
-            ScheduledImpulseEventConfigObject(**impulse_config)
+            ScheduledImpulseEventConfig(**impulse_config)
 
     def testInitBadVectorSize(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with bad ``thrust_vector`` size."""
@@ -72,11 +72,11 @@ class TestScheduledImpulseEventConfig(BaseTestCase):
         impulse_config = deepcopy(event_config_dict)
         impulse_config["thrust_vector"] = bad_vector
         with pytest.raises(ConfigValueError):
-            ScheduledImpulseEventConfigObject(**impulse_config)
+            ScheduledImpulseEventConfig(**impulse_config)
 
     def testDataDependency(self, event_config_dict):
         """Test that :class:`.ScheduledImpulseEventConfig`'s data dependencies are correct."""
-        impulse_config = ScheduledImpulseEventConfigObject(**event_config_dict)
+        impulse_config = ScheduledImpulseEventConfig(**event_config_dict)
         impulse_dependencies = impulse_config.getDataDependencies()
         assert len(impulse_dependencies) == 0
 
@@ -94,7 +94,7 @@ class TestScheduledImpulseEvent(BaseTestCase):
 
     def testFromConfig(self, event_config_dict):
         """Test :meth:`.ScheduledImpulseEvent.fromConfig()`."""
-        impulse_config = ScheduledImpulseEventConfigObject(**event_config_dict)
+        impulse_config = ScheduledImpulseEventConfig(**event_config_dict)
         assert ScheduledImpulseEvent.fromConfig(impulse_config)
 
     def testHandleEventNTW(self, mocked_target):

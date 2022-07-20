@@ -22,7 +22,7 @@ from .base import Event, EventScope
 if TYPE_CHECKING:
     # Local Imports
     from ...agents.agent_base import Agent
-    from ...scenario.config.event_configs import ScheduledFiniteManeuverConfigObject
+    from ...scenario.config.event_configs import ScheduledFiniteManeuverConfig
 
 
 class ScheduledFiniteManeuverEvent(Event):
@@ -87,13 +87,11 @@ class ScheduledFiniteManeuverEvent(Event):
         scope_instance.appendPropagateEvent(finite_maneuver)
 
     @classmethod
-    def fromConfig(
-        cls, config: ScheduledFiniteManeuverConfigObject
-    ) -> ScheduledFiniteManeuverEvent:
+    def fromConfig(cls, config: ScheduledFiniteManeuverConfig) -> ScheduledFiniteManeuverEvent:
         """Construct a :class:`.ScheduledFiniteEvent` from a specified `config`.
 
         Args:
-            config (:class:`.ScheduledFiniteEventConfigObject`): Configuration object to construct a
+            config (:class:`.ScheduledFiniteEventConfig`): Configuration object to construct a
                 :class:`.ScheduledFiniteEvent` from.
 
         Returns:

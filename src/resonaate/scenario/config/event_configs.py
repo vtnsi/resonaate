@@ -24,7 +24,7 @@ from ...data.events import (
     TargetAdditionEvent,
     TargetTaskPriority,
 )
-from .agent_configs import SensorConfigObject, TargetConfigObject
+from .agent_configs import SensingAgentConfig, TargetAgentConfig
 from .base import ConfigError, ConfigObject, ConfigObjectList, ConfigTypeError, ConfigValueError
 from .time_config import TIME_STAMP_FORMAT
 
@@ -47,8 +47,8 @@ VALID_AGENT_TYPES: tuple[str] = tuple(_type.value for _type in AgentRemovalEvent
 
 
 @dataclass
-class EventConfigObjectList(ConfigObjectList):
-    """Allows different types of :class:`.EventConfigObject` to be stored."""
+class EventConfigList(ConfigObjectList):
+    """Allows different types of :class:`.EventConfig` to be stored."""
 
     def __post_init__(self, config_type: Type) -> None:
         """Runs after the object is initialized."""
@@ -56,7 +56,7 @@ class EventConfigObjectList(ConfigObjectList):
         #   which themselves have different constructors.
         event_classes = {
             conf_class.EVENT_CLASS.EVENT_TYPE: conf_class
-            for conf_class in EventConfigObject.__subclasses__()
+            for conf_class in EventConfig.__subclasses__()
         }
 
         config_objects = []
@@ -68,10 +68,10 @@ class EventConfigObjectList(ConfigObjectList):
                     )
                 config_objects.append(event_classes[event["event_type"]](**event))
 
-            elif isinstance(event, EventConfigObject):
+            elif isinstance(event, EventConfig):
                 config_objects.append(event)
             else:
-                raise ConfigTypeError("events", event, EventConfigObject.__subclasses__())
+                raise ConfigTypeError("events", event, EventConfig.__subclasses__())
 
         self._config_objects = config_objects
 
@@ -83,7 +83,7 @@ class MissingDataDependency(Exception):
 class DataDependency:
     """Class describing a data dependency.
 
-    Describes a database object that an :class:`.Event` constructed from an :class:`.EventConfigObject` will require to
+    Describes a database object that an :class:`.Event` constructed from an :class:`.EventConfig` will require to
     be present in the database.
     """
 
@@ -112,7 +112,7 @@ class DataDependency:
 
 
 @dataclass
-class EventConfigObject(ConfigObject, ABC):
+class EventConfig(ConfigObject, ABC):
     """Abstract base class defining required fields of an event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = Event
@@ -184,7 +184,7 @@ class EventConfigObject(ConfigObject, ABC):
 
 
 @dataclass
-class ScheduledImpulseEventConfigObject(EventConfigObject):
+class ScheduledImpulseEventConfig(EventConfig):
     """Defines the required fields of a scheduled impulse event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = ScheduledImpulseEvent
@@ -212,7 +212,7 @@ class ScheduledImpulseEventConfigObject(EventConfigObject):
 
 
 @dataclass
-class ScheduledFiniteBurnConfigObject(EventConfigObject):
+class ScheduledFiniteBurnConfig(EventConfig):
     """Defines the required fields of a scheduled finite thrust event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = ScheduledFiniteBurnEvent
@@ -240,7 +240,7 @@ class ScheduledFiniteBurnConfigObject(EventConfigObject):
 
 
 @dataclass
-class ScheduledFiniteManeuverConfigObject(EventConfigObject):
+class ScheduledFiniteManeuverConfig(EventConfig):
     """Defines the required fields of a scheduled finite thrust event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = ScheduledFiniteManeuverEvent
@@ -267,7 +267,7 @@ class ScheduledFiniteManeuverConfigObject(EventConfigObject):
 
 
 @dataclass
-class TargetTaskPriorityConfigObject(EventConfigObject):
+class TargetTaskPriorityConfig(EventConfig):
     """Defines the required fields of a target task priority event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = TargetTaskPriority
@@ -303,7 +303,7 @@ class TargetTaskPriorityConfigObject(EventConfigObject):
 
 
 @dataclass
-class TargetAdditionEventConfigObject(EventConfigObject):
+class TargetAdditionEventConfig(EventConfig):
     """Defines the required fields of a target addition event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = TargetAdditionEvent
@@ -312,14 +312,14 @@ class TargetAdditionEventConfigObject(EventConfigObject):
     tasking_engine_id: int
     """``int``: Unique ID for the :class:`.TaskingEngine` that this target should be added to."""
 
-    target: TargetConfigObject | dict
+    target: TargetAgentConfig | dict
     """``dict``: Configuration object for the target that is being added."""
 
     def __post_init__(self) -> None:
         """Runs after the constructor has finished."""
         super().__post_init__()
         if isinstance(self.target, dict):
-            self.target = TargetConfigObject(**self.target)
+            self.target = TargetAgentConfig(**self.target)
 
     def getDataDependencies(self) -> list[DataDependency]:
         """Return a list of database objects that :class:`.TargetAdditionEvent` relates to.
@@ -339,7 +339,7 @@ class TargetAdditionEventConfigObject(EventConfigObject):
 
 
 @dataclass
-class SensorAdditionEventConfigObject(EventConfigObject):
+class SensorAdditionEventConfig(EventConfig):
     """Defines the required fields of a sensor addition event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = SensorAdditionEvent
@@ -348,14 +348,14 @@ class SensorAdditionEventConfigObject(EventConfigObject):
     tasking_engine_id: int
     """``int``: Unique ID for the :class:`.TaskingEngine` that this sensor should be added to."""
 
-    sensor: SensorConfigObject | dict
+    sensor: SensingAgentConfig | dict
     """``dict``: Configuration object for the sensor that is being added."""
 
     def __post_init__(self) -> None:
         """Runs after the constructor has finished."""
         super().__post_init__()
         if isinstance(self.sensor, dict):
-            self.sensor = SensorConfigObject(**self.sensor)
+            self.sensor = SensingAgentConfig(**self.sensor)
 
     def getDataDependencies(self) -> list[DataDependency]:
         """Return a list of database objects that :class:`.SensorAdditionEvent` relates to.
@@ -375,7 +375,7 @@ class SensorAdditionEventConfigObject(EventConfigObject):
 
 
 @dataclass
-class AgentRemovalEventConfigObject(EventConfigObject):
+class AgentRemovalEventConfig(EventConfig):
     """Defines the required fields of an agent removal event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = AgentRemovalEvent
@@ -410,7 +410,7 @@ class AgentRemovalEventConfigObject(EventConfigObject):
 
 
 @dataclass
-class SensorTimeBiasEventConfigObject(EventConfigObject):
+class SensorTimeBiasEventConfig(EventConfig):
     """Defines the required fields of an sensor time bias event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = SensorTimeBiasEvent

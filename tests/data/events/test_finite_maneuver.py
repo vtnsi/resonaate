@@ -13,7 +13,7 @@ try:
     from resonaate.data.events import EventScope, ScheduledFiniteManeuverEvent
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config.base import ConfigError, ConfigValueError
-    from resonaate.scenario.config.event_configs import ScheduledFiniteManeuverConfigObject
+    from resonaate.scenario.config.event_configs import ScheduledFiniteManeuverConfig
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Local Imports
@@ -41,7 +41,7 @@ class TestFiniteManeuverEventConfig(BaseTestCase):
 
     def testInitGoodArgs(self, event_config_dict):
         """Test :class:`.ScheduledFiniteThrustEventConfig` constructor with good arguments."""
-        assert ScheduledFiniteManeuverConfigObject(**event_config_dict)
+        assert ScheduledFiniteManeuverConfig(**event_config_dict)
 
     def testInitBadScope(self, event_config_dict):
         """Test :class:`.ScheduledFiniteThrustEventConfig` constructor with bad ``scope`` argument."""
@@ -51,14 +51,14 @@ class TestFiniteManeuverEventConfig(BaseTestCase):
         maneuver_config = deepcopy(event_config_dict)
         maneuver_config["scope"] = EventScope.SCENARIO_STEP.value
         with pytest.raises(ConfigError, match=expected_err):
-            ScheduledFiniteManeuverConfigObject(**maneuver_config)
+            ScheduledFiniteManeuverConfig(**maneuver_config)
 
     def testInitManeuverThrustType(self, event_config_dict):
         """Test :class:`.ScheduledFiniteThrustEventConfig` constructor with bad ``maneuver_type`` type."""
         maneuver_config = deepcopy(event_config_dict)
         maneuver_config["maneuver_type"] = True
         with pytest.raises(ConfigValueError):
-            ScheduledFiniteManeuverConfigObject(**maneuver_config)
+            ScheduledFiniteManeuverConfig(**maneuver_config)
 
 
 @pytest.fixture(name="mocked_target")
@@ -74,7 +74,7 @@ class TestFiniteThrustEvent(BaseTestCase):
 
     def testFromConfig(self, event_config_dict):
         """Test :meth:`.ScheduledFiniteThrustEvent.fromConfig()`."""
-        maneuver_config = ScheduledFiniteManeuverConfigObject(**event_config_dict)
+        maneuver_config = ScheduledFiniteManeuverConfig(**event_config_dict)
         assert ScheduledFiniteManeuverEvent.fromConfig(maneuver_config)
 
     def testHandleEventSpiral(self, mocked_target):

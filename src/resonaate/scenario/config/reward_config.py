@@ -12,7 +12,7 @@ from .base import ConfigObject, ConfigObjectList, ConfigValueError
 
 
 @dataclass
-class MetricConfigObject(ConfigObject):
+class MetricConfig(ConfigObject):
     """Define a metric function config."""
 
     name: str
@@ -37,8 +37,8 @@ class RewardConfig(ConfigObject):
     name: str
     """``str``: Name of this reward function."""
 
-    metrics: ConfigObjectList[MetricConfigObject] | list[MetricConfigObject | dict]
-    """``list``: :class:`.MetricConfigObject` objects for calculating the reward."""
+    metrics: ConfigObjectList[MetricConfig] | list[MetricConfig | dict]
+    """``list``: :class:`.MetricConfig` objects for calculating the reward."""
 
     parameters: dict = field(default_factory=dict)
     """``dict``: Parameters for the reward function."""
@@ -48,4 +48,4 @@ class RewardConfig(ConfigObject):
         if self.name not in VALID_REWARDS:
             raise ConfigValueError("name", self.name, VALID_REWARDS)
 
-        self.metrics = ConfigObjectList("metrics", MetricConfigObject, self.metrics)
+        self.metrics = ConfigObjectList("metrics", MetricConfig, self.metrics)

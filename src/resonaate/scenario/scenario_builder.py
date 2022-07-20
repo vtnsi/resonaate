@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..tasking.engine.engine_base import TaskingEngine
     from .config import ScenarioConfig
-    from .config.agent_configs import SensorConfigObject, TargetConfigObject
+    from .config.agent_configs import SensingAgentConfig, TargetAgentConfig
 
 
 class ScenarioBuilder:
@@ -73,8 +73,8 @@ class ScenarioBuilder:
         )
 
         # create target and sensor sets
-        target_configs: dict[int, TargetConfigObject] = {}
-        sensor_configs: dict[int, SensorConfigObject] = {}
+        target_configs: dict[int, TargetAgentConfig] = {}
+        sensor_configs: dict[int, SensingAgentConfig] = {}
         self.tasking_engines: dict[int, TaskingEngine] = {}
 
         for engine_conf in self._config.engines:
@@ -227,13 +227,13 @@ class ScenarioBuilder:
 
     @staticmethod
     def _validateTargetAddition(
-        new_target: TargetConfigObject, existing_target: TargetConfigObject
+        new_target: TargetAgentConfig, existing_target: TargetAgentConfig
     ) -> None:
         """Throw an `DuplicateTargetError` if the `new_target` and `existing_target` states don't match.
 
         Args:
-            new_target (:class:`.TargetConfigObject`): Target object being added.
-            existing_target (:class:`.TargetConfigObject`): Existing target object.
+            new_target (:class:`.TargetAgentConfig`): Target object being added.
+            existing_target (:class:`.TargetAgentConfig`): Existing target object.
 
         Raises:
             :exc:`.DuplicateTargetError`: If the `new_target` and `existing_target` states don't match.
@@ -261,13 +261,13 @@ class ScenarioBuilder:
 
     def initTargets(
         self,
-        target_configs: list[TargetConfigObject],
+        target_configs: list[TargetAgentConfig],
         station_keeping: bool,
     ) -> dict[int, TargetAgent]:
         """Initialize target RSOs based on a given config.
 
         Args:
-            target_configs (``list``): :class:`.TargetConfigObject` objects describing target RSO attributes.
+            target_configs (``list``): :class:`.TargetAgentConfig` objects describing target RSO attributes.
             station_keeping (``bool``): whether to perform station-keeping burns during the scenario.
 
         Raises:

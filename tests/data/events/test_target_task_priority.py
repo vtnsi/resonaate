@@ -14,7 +14,7 @@ try:
     # RESONAATE Imports
     from resonaate.data.data_interface import Agent
     from resonaate.data.events import TargetTaskPriority
-    from resonaate.scenario.config.event_configs import TargetTaskPriorityConfigObject
+    from resonaate.scenario.config.event_configs import TargetTaskPriorityConfig
     from resonaate.tasking.engine.engine_base import TaskingEngine
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
@@ -40,15 +40,15 @@ def getTargetTaskPriority():
 
 
 class TestTargetTaskPriorityConfig(BaseTestCase):
-    """Test class for :class:`.TargetTaskPriorityConfigObject` class."""
+    """Test class for :class:`.TestTargetTaskPriorityConfig` class."""
 
     def testInitGoodArgs(self, event_config_dict):
-        """Test :class:`.TargetTaskPriorityConfigObject` constructor with good arguments."""
-        assert TargetTaskPriorityConfigObject(**event_config_dict)
+        """Test :class:`.TestTargetTaskPriorityConfig` constructor with good arguments."""
+        assert TargetTaskPriorityConfig(**event_config_dict)
 
     def testDataDependency(self, event_config_dict):
         """Test that :class:`.ScheduledImpulseEventConfig`'s data dependencies are correct."""
-        priority_config = TargetTaskPriorityConfigObject(**event_config_dict)
+        priority_config = TargetTaskPriorityConfig(**event_config_dict)
         priority_dependencies = priority_config.getDataDependencies()
         assert len(priority_dependencies) == 1
 
@@ -73,7 +73,7 @@ class TestTargetTaskPriority(BaseTestCase):
 
     def testFromConfig(self, event_config_dict):
         """Test :meth:`.TargetTaskPriority.fromConfig()`."""
-        priority_config = TargetTaskPriorityConfigObject(**event_config_dict)
+        priority_config = TargetTaskPriorityConfig(**event_config_dict)
         assert TargetTaskPriority.fromConfig(priority_config)
 
     def testHandleEvent(self, mocked_engine):

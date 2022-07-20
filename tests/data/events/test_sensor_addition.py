@@ -14,7 +14,7 @@ try:
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.physics.transforms.reductions import updateReductionParameters
     from resonaate.scenario.config.base import ConfigError
-    from resonaate.scenario.config.event_configs import SensorAdditionEventConfigObject
+    from resonaate.scenario.config.event_configs import SensorAdditionEventConfig
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Local Imports
@@ -95,12 +95,12 @@ class TestSensorAdditionEventConfig(BaseTestCase):
     def testInitGoodArgs(self, sen_config_ground, event_config_dict):
         """Test :class:`.SensorAdditionEventConfig` constructor with good arguments."""
         event_config_dict["sensor"] = sen_config_ground
-        assert SensorAdditionEventConfigObject(**event_config_dict)
+        assert SensorAdditionEventConfig(**event_config_dict)
 
     def testInitOtherGoodArgs(self, sen_config_space, event_config_dict):
         """Test :class:`.SensorAdditionEventConfig` constructor with other good arguments."""
         event_config_dict["sensor"] = sen_config_space
-        assert SensorAdditionEventConfigObject(**event_config_dict)
+        assert SensorAdditionEventConfig(**event_config_dict)
 
     def testInitNoState(self, sen_config_space, event_config_dict):
         """Test :class:`.SensorAdditionEventConfig` constructor with no state configuration."""
@@ -109,7 +109,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
 
         event_config_dict["sensor"] = sen_config
         with pytest.raises(ConfigError):
-            _ = SensorAdditionEventConfigObject(**event_config_dict)
+            _ = SensorAdditionEventConfig(**event_config_dict)
 
     def testInitDuplicateState(self, sen_config_space, event_config_dict):
         """Test :class:`.SensorAdditionEventConfig` constructor with duplicate state configurations."""
@@ -120,7 +120,7 @@ class TestSensorAdditionEventConfig(BaseTestCase):
 
         event_config_dict["sensor"] = sen_config
         with pytest.raises(ConfigError):
-            _ = SensorAdditionEventConfigObject(**event_config_dict)
+            _ = SensorAdditionEventConfig(**event_config_dict)
 
     def testInitBadECIState(self, sen_config_space, event_config_dict):
         """Test :class:`.SensorAdditionEventConfig` constructor with a bad initial ECI state."""
@@ -131,18 +131,17 @@ class TestSensorAdditionEventConfig(BaseTestCase):
 
         event_config_dict["sensor"] = sen_config
         with pytest.raises(ConfigError, match=expected_err):
-            _ = SensorAdditionEventConfigObject(**event_config_dict)
+            _ = SensorAdditionEventConfig(**event_config_dict)
 
     def testInitRadarNoTx(self, sen_config_space, event_config_dict):
         """Test :class:`.SensorAdditionEventConfig` constructor with no transmit info for a radar."""
-        unique_id = sen_config_space["id"]
-        expected_err = f"Error occurred in 'SensorConfigObject': Sensor {unique_id}: Radar transmit parameters not set"
+        expected_err = r"\w*Sensor \d+: Radar transmit parameters not set\w*"
         sen_config = deepcopy(sen_config_space)
         del sen_config["tx_power"]
 
         event_config_dict["sensor"] = sen_config
         with pytest.raises(ConfigError, match=expected_err):
-            _ = SensorAdditionEventConfigObject(**event_config_dict)
+            _ = SensorAdditionEventConfig(**event_config_dict)
 
     def testInitGroundFacilityWithStationKeeping(self, sen_config_ground, event_config_dict):
         """Test :class:`.SensorAdditionEventConfig` constructor with station keeping set for a ground facility."""
@@ -152,12 +151,12 @@ class TestSensorAdditionEventConfig(BaseTestCase):
 
         event_config_dict["sensor"] = sen_config
         with pytest.raises(ConfigError, match=expected_err):
-            _ = SensorAdditionEventConfigObject(**event_config_dict)
+            _ = SensorAdditionEventConfig(**event_config_dict)
 
     def testDataDependency(self, sen_config_space, event_config_dict):
         """Test that :class:`.SensorAdditionEventConfig`'s data dependencies are correct."""
         event_config_dict["sensor"] = sen_config_space
-        addition_config = SensorAdditionEventConfigObject(**event_config_dict)
+        addition_config = SensorAdditionEventConfig(**event_config_dict)
         addition_dependencies = addition_config.getDataDependencies()
         assert len(addition_dependencies) == 1
 
@@ -175,7 +174,7 @@ class TestSensorAdditionEvent(BaseTestCase):
     def testFromConfig(self, sen_config_space, event_config_dict):
         """Test :meth:`.SensorAdditionEvent.fromConfig()`."""
         event_config_dict["sensor"] = sen_config_space
-        addition_config = SensorAdditionEventConfigObject(**event_config_dict)
+        addition_config = SensorAdditionEventConfig(**event_config_dict)
         updateReductionParameters(datetimeToJulianDate(addition_config.start_time))
         assert SensorAdditionEvent.fromConfig(addition_config)
 

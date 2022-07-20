@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from ..data.events.sensor_time_bias import SensorTimeBiasEvent
     from ..dynamics.dynamics_base import Dynamics
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config.agent_configs import SensorConfigObject
+    from ..scenario.config.agent_configs import SensingAgentConfig
 
 
 GROUND_FACILITY_LABEL = "GroundFacility"
@@ -123,7 +123,7 @@ class SensingAgent(Agent):
         Returns:
             :class:`.SensingAgent`: properly constructed `SensingAgent` object
         """
-        agent_config: SensorConfigObject = config["agent"]
+        agent_config: SensingAgentConfig = config["agent"]
 
         # Build the sensor based on the agent configuration
         sensor = sensorFactory(agent_config)

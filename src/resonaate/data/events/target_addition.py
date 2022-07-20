@@ -18,7 +18,7 @@ from .base import Event, EventScope
 # Type Checking Imports
 if TYPE_CHECKING:
     # Local Imports
-    from ...scenario.config.event_configs import TargetAdditionEventConfigObject
+    from ...scenario.config.event_configs import TargetAdditionEventConfig
     from ...scenario.scenario import Scenario
 
 
@@ -131,11 +131,11 @@ class TargetAdditionEvent(Event):
         scope_instance.addTarget(target_spec, self.tasking_engine_id)
 
     @classmethod
-    def fromConfig(cls, config: TargetAdditionEventConfigObject) -> TargetAdditionEvent:
+    def fromConfig(cls, config: TargetAdditionEventConfig) -> TargetAdditionEvent:
         """Construct a :class:`.NodeAdditionEvent` from a specified `config`.
 
         Args:
-            config (:class:`.TargetAdditionEventConfigObject`): object to construct a :class:`.TargetAdditionEvent` from.
+            config (:class:`.TargetAdditionEventConfig`): object to construct a :class:`.TargetAdditionEvent` from.
 
         Returns:
             :class:`.TargetAdditionEvent`: object based on the specified `config`.

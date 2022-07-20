@@ -13,7 +13,7 @@ try:
     from resonaate.data.events import TargetAdditionEvent
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config.base import ConfigError
-    from resonaate.scenario.config.event_configs import TargetAdditionEventConfigObject
+    from resonaate.scenario.config.event_configs import TargetAdditionEventConfig
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Local Imports
@@ -69,12 +69,12 @@ class TestTargetAdditionEventConfig(BaseTestCase):
     def testInitGoodArgs(self, tgt_config_eci, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with good arguments."""
         event_config_dict["target"] = tgt_config_eci
-        assert TargetAdditionEventConfigObject(**event_config_dict)
+        assert TargetAdditionEventConfig(**event_config_dict)
 
     def testInitOtherGoodArgs(self, tgt_config_coe, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with other good arguments."""
         event_config_dict["target"] = tgt_config_coe
-        assert TargetAdditionEventConfigObject(**event_config_dict)
+        assert TargetAdditionEventConfig(**event_config_dict)
 
     def testInitNoState(self, tgt_config_eci, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with no state configuration."""
@@ -83,7 +83,7 @@ class TestTargetAdditionEventConfig(BaseTestCase):
 
         event_config_dict["target"] = tgt_config
         with pytest.raises(ConfigError):
-            _ = TargetAdditionEventConfigObject(**event_config_dict)
+            _ = TargetAdditionEventConfig(**event_config_dict)
 
     def testInitDuplicateState(self, tgt_config_eci, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with duplicate state configurations."""
@@ -99,7 +99,7 @@ class TestTargetAdditionEventConfig(BaseTestCase):
 
         event_config_dict["target"] = tgt_config
         with pytest.raises(ConfigError):
-            _ = TargetAdditionEventConfigObject(**event_config_dict)
+            _ = TargetAdditionEventConfig(**event_config_dict)
 
     def testInitBadECIState(self, tgt_config_eci, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with a bad initial ECI state."""
@@ -110,12 +110,12 @@ class TestTargetAdditionEventConfig(BaseTestCase):
 
         event_config_dict["target"] = tgt_config
         with pytest.raises(ConfigError, match=expected_err):
-            _ = TargetAdditionEventConfigObject(**event_config_dict)
+            _ = TargetAdditionEventConfig(**event_config_dict)
 
     def testDataDependency(self, tgt_config_eci, event_config_dict):
         """Test that :class:`.TargetAdditionEventConfig`'s data dependencies are correct."""
         event_config_dict["target"] = tgt_config_eci
-        addition_config = TargetAdditionEventConfigObject(**event_config_dict)
+        addition_config = TargetAdditionEventConfig(**event_config_dict)
         addition_dependencies = addition_config.getDataDependencies()
         assert len(addition_dependencies) == 1
 
@@ -133,7 +133,7 @@ class TestTargetAdditionEvent(BaseTestCase):
     def testFromConfig(self, tgt_config_eci, event_config_dict):
         """Test :meth:`.TargetAdditionEvent.fromConfig()`."""
         event_config_dict["target"] = tgt_config_eci
-        addition_config = TargetAdditionEventConfigObject(**event_config_dict)
+        addition_config = TargetAdditionEventConfig(**event_config_dict)
         addition_event = TargetAdditionEvent.fromConfig(addition_config)
         assert addition_event.eci == addition_config.target.init_eci
         assert (

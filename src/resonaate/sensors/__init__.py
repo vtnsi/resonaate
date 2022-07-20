@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from typing import Dict, Tuple
 
     # Local Imports
-    from ..scenario.config.agent_configs import FieldOfViewConfig, SensorConfigObject
+    from ..scenario.config.agent_configs import FieldOfViewConfig, SensingAgentConfig
 
 OPTICAL_LABEL: str = "Optical"
 """``str``: Constant string used to describe optical sensors."""
@@ -51,12 +51,12 @@ DEFAULT_VIEWING_ANGLE: float = 1.0
 
 
 def sensorFactory(
-    sensor_config: SensorConfigObject,
+    sensor_config: SensingAgentConfig,
 ) -> Sensor:  # noqa: C901, # pylint: disable=too-many-branches
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
 
     Args:
-        configuration (:class:`.SensorConfigObject`): describes the sensor and its capabilities
+        configuration (:class:`.SensingAgentConfig`): describes the sensor and its capabilities
 
     Raises:
         ValueError: raised if invalid option is designate for `"sensor_type"`

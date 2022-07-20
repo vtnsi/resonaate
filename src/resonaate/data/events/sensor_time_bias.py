@@ -15,7 +15,7 @@ from .base import Event, EventScope
 if TYPE_CHECKING:
     # Local Imports
     from ...agents.agent_base import Agent
-    from ...scenario.config.event_configs import SensorTimeBiasEventConfigObject
+    from ...scenario.config.event_configs import SensorTimeBiasEventConfig
 
 
 class SensorTimeBiasEvent(Event):
@@ -43,11 +43,11 @@ class SensorTimeBiasEvent(Event):
         scope_instance.appendTimeBiasEvent(self)
 
     @classmethod
-    def fromConfig(cls, config: SensorTimeBiasEventConfigObject) -> SensorTimeBiasEvent:
+    def fromConfig(cls, config: SensorTimeBiasEventConfig) -> SensorTimeBiasEvent:
         """Construct a :class:`.SensorTimeBiasEvent` from a specified `config`.
 
         Args:
-            config (:class:`.SensorTimeBiasEventConfigObject`): Configuration object to construct a
+            config (:class:`.SensorTimeBiasEventConfig`): Configuration object to construct a
                 :class:`.SensorTimeBiasEvent` from.
 
         Returns:

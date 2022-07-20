@@ -6,14 +6,14 @@ from dataclasses import dataclass
 
 # Local Imports
 from ...sensors import ADV_RADAR_LABEL
-from .agent_configs import SensorConfigObject, TargetConfigObject
+from .agent_configs import SensingAgentConfig, TargetAgentConfig
 from .base import ConfigError, ConfigObject, ConfigObjectList
 from .decision_config import DecisionConfig
 from .reward_config import RewardConfig
 
 
 @dataclass
-class EngineConfigObject(ConfigObject):
+class EngineConfig(ConfigObject):
     """Defines the structure for an object defined in the 'engines' configuration section."""
 
     unique_id: int
@@ -25,11 +25,11 @@ class EngineConfigObject(ConfigObject):
     decision: DecisionConfig | dict
     """:class:`.DecisionConfig`: Decision configuration section for the defined engine."""
 
-    sensors: ConfigObjectList[SensorConfigObject] | list[SensorConfigObject | dict]
-    """``list``: :class:`.SensorConfigObject` objects that this engine can task."""
+    sensors: ConfigObjectList[SensingAgentConfig] | list[SensingAgentConfig | dict]
+    """``list``: :class:`.SensingAgentConfig` objects that this engine can task."""
 
-    targets: ConfigObjectList[TargetConfigObject] | list[TargetConfigObject | dict]
-    """``list``: :class:`.TargetConfigObject` objects that this engine can be task against."""
+    targets: ConfigObjectList[TargetAgentConfig] | list[TargetAgentConfig | dict]
+    """``list``: :class:`.TargetAgentConfig` objects that this engine can be task against."""
 
     def __post_init__(self):
         """Runs after the object is initialized."""
@@ -39,8 +39,8 @@ class EngineConfigObject(ConfigObject):
         if isinstance(self.decision, dict):
             self.decision = DecisionConfig(**self.decision)
 
-        self.sensors = ConfigObjectList("sensors", SensorConfigObject, self.sensors)
-        self.targets = ConfigObjectList("targets", TargetConfigObject, self.targets)
+        self.sensors = ConfigObjectList("sensors", SensingAgentConfig, self.sensors)
+        self.targets = ConfigObjectList("targets", TargetAgentConfig, self.targets)
 
         # [NOTE]: Only Advanced Radar can used with an AllVisibleDecision type.
         if self.decision.name == "AllVisibleDecision":

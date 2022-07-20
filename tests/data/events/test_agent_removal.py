@@ -10,7 +10,7 @@ try:
     from resonaate.data.data_interface import Agent
     from resonaate.data.events import AgentRemovalEvent
     from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.event_configs import AgentRemovalEventConfigObject
+    from resonaate.scenario.config.event_configs import AgentRemovalEventConfig
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Local Imports
@@ -38,11 +38,11 @@ class TestAgentRemovalEventConfig(BaseTestCase):
 
     def testInitGoodArgs(self, event_config_dict):
         """Test :class:`.AgentRemovalEventConfig` constructor with good arguments."""
-        assert AgentRemovalEventConfigObject(**event_config_dict)
+        assert AgentRemovalEventConfig(**event_config_dict)
 
     def testDataDependency(self, event_config_dict):
         """Test that :class:`.AgentRemovalEventConfig`'s data dependencies are correct."""
-        removal_config = AgentRemovalEventConfigObject(**event_config_dict)
+        removal_config = AgentRemovalEventConfig(**event_config_dict)
         removal_dependencies = removal_config.getDataDependencies()
         assert len(removal_dependencies) == 1
 
@@ -56,7 +56,7 @@ class TestAgentRemovalEvent(BaseTestCase):
 
     def testFromConfig(self, event_config_dict):
         """Test :meth:`.AgentRemovalEvent.fromConfig()`."""
-        removal_config = AgentRemovalEventConfigObject(**event_config_dict)
+        removal_config = AgentRemovalEventConfig(**event_config_dict)
         assert AgentRemovalEvent.fromConfig(removal_config)
 
     def testHandleEventTarget(self, mocked_scenario):

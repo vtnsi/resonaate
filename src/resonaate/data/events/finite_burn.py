@@ -19,7 +19,7 @@ from .base import Event, EventScope
 if TYPE_CHECKING:
     # Local Imports
     from ...agents.agent_base import Agent
-    from ...scenario.config.event_configs import ScheduledFiniteBurnConfigObject
+    from ...scenario.config.event_configs import ScheduledFiniteBurnConfig
 
 
 class ScheduledFiniteBurnEvent(Event):
@@ -99,11 +99,11 @@ class ScheduledFiniteBurnEvent(Event):
         scope_instance.appendPropagateEvent(finite_burn)
 
     @classmethod
-    def fromConfig(cls, config: ScheduledFiniteBurnConfigObject) -> ScheduledFiniteBurnEvent:
+    def fromConfig(cls, config: ScheduledFiniteBurnConfig) -> ScheduledFiniteBurnEvent:
         """Construct a :class:`.ScheduledFiniteEvent` from a specified `config`.
 
         Args:
-            config (:class:`.ScheduledFiniteEventConfigObject`): Configuration object to construct a
+            config (:class:`.ScheduledFiniteEventConfig`): Configuration object to construct a
                 :class:`.ScheduledFiniteEvent` from.
 
         Returns:

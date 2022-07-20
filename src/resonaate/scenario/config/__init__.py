@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, ClassVar
 # Local Imports
 from ...common.utilities import loadJSONFile
 from .base import ConfigObject, ConfigObjectList
-from .engine_config import EngineConfigObject
+from .engine_config import EngineConfig
 from .estimation_config import EstimationConfig
-from .event_configs import EventConfigObject, EventConfigObjectList
+from .event_configs import EventConfig, EventConfigList
 from .geopotential_config import GeopotentialConfig
 from .noise_config import NoiseConfig
 from .observation_config import ObservationConfig
@@ -39,8 +39,8 @@ class ScenarioConfig(ConfigObject):
     estimation: EstimationConfig | dict
     """:class:`.EstimationConfig`: estimation & filtering configuration object, **required**."""
 
-    engines: ConfigObjectList[EngineConfigObject] | list[EngineConfigObject | dict]
-    """:class:`.ConfigObjectList`: list of :class:`.EngineConfigObject` objects to use for tasking, **required**."""
+    engines: ConfigObjectList[EngineConfig] | list[EngineConfig | dict]
+    """:class:`.ConfigObjectList`: list of :class:`.EngineConfig` objects to use for tasking, **required**."""
 
     noise: NoiseConfig | dict | None = None
     """:class:`.NoiseConfig`: noise types and values to in the simulation."""
@@ -57,10 +57,8 @@ class ScenarioConfig(ConfigObject):
     observation: ObservationConfig | dict | None = None
     """:class:`.ObservationConfig`: configurations specific to observation behavior."""
 
-    events: EventConfigObjectList[EventConfigObject] | list[EventConfigObject | dict] = field(
-        default_factory=list
-    )
-    """:class:`.EventConfigObjectList`: list of :class:`.EventConfigObject` objects that occur during the simulation."""
+    events: EventConfigList[EventConfig] | list[EventConfig | dict] = field(default_factory=list)
+    """:class:`.EventConfigList`: list of :class:`.EventConfig` objects that occur during the simulation."""
 
     OPTIONAL_SECTION_MAP: ClassVar[dict[str, ConfigObject]] = {
         "noise": NoiseConfig,
@@ -82,12 +80,10 @@ class ScenarioConfig(ConfigObject):
             self.estimation = EstimationConfig(**self.estimation)
 
         if isinstance(self.engines, list):
-            self.engines = ConfigObjectList("engines", EngineConfigObject, self.engines)
+            self.engines = ConfigObjectList("engines", EngineConfig, self.engines)
 
         if isinstance(self.events, list):
-            self.events = EventConfigObjectList(
-                "events", EventConfigObject, self.events, default_empty=True
-            )
+            self.events = EventConfigList("events", EventConfig, self.events, default_empty=True)
 
         # Optional sub-config sections
         for section in fields(self):

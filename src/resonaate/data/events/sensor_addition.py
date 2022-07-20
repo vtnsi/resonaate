@@ -21,7 +21,7 @@ from .base import Event, EventScope
 # Type Checking Imports
 if TYPE_CHECKING:
     # Local Imports
-    from ...scenario.config.event_configs import SensorAdditionEventConfigObject
+    from ...scenario.config.event_configs import SensorAdditionEventConfig
     from ...scenario.scenario import Scenario
 
 
@@ -259,7 +259,7 @@ class SensorAdditionEvent(Event):
         scope_instance.addSensor(sensor_spec, self.tasking_engine_id)
 
     @classmethod
-    def fromConfig(cls, config: SensorAdditionEventConfigObject) -> SensorAdditionEvent:
+    def fromConfig(cls, config: SensorAdditionEventConfig) -> SensorAdditionEvent:
         """Construct a :class:`.NodeAdditionEvent` from a specified `config`.
 
         Args:

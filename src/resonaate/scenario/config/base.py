@@ -155,7 +155,6 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
 
     def __post_init__(self, config_type: ConfigObject) -> None:
         """Runs after the constructor has finished."""
-        # [TODO]: Is this necessary?
         self._validateRawConfig(self._config_objects)
         config_objects = []
         for config_object in self._config_objects:

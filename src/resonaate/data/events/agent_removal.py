@@ -17,7 +17,7 @@ from .base import Event, EventScope
 # Type Checking Imports
 if TYPE_CHECKING:
     # Local Imports
-    from ...scenario.config.event_configs import AgentRemovalEventConfigObject
+    from ...scenario.config.event_configs import AgentRemovalEventConfig
     from ...scenario.scenario import Scenario
 
 
@@ -82,7 +82,7 @@ class AgentRemovalEvent(Event):
             raise ValueError(err)
 
     @classmethod
-    def fromConfig(cls, config: AgentRemovalEventConfigObject) -> AgentRemovalEvent:
+    def fromConfig(cls, config: AgentRemovalEventConfig) -> AgentRemovalEvent:
         """Construct a :class:`.AgentRemovalEvent` from a specified `config`.
 
         Args:

@@ -37,7 +37,7 @@ from .base import ConfigError, ConfigObject, ConfigValueError
 
 
 @dataclass
-class TargetConfigObject(ConfigObject):
+class TargetAgentConfig(ConfigObject):
     """Configuration object for a target."""
 
     # Config label class variable - not used by "dataclass"
@@ -166,8 +166,8 @@ class TargetConfigObject(ConfigObject):
 
 
 @dataclass
-class SensorConfigObject(ConfigObject):
-    R"""Configuration object for a :class:`.Sensor`."""
+class SensingAgentConfig(ConfigObject):
+    R"""Configuration object for a :class:`.SensingAgent`."""
     # pylint: disable=too-many-instance-attributes
 
     # Config label class variable - not used by "dataclass"

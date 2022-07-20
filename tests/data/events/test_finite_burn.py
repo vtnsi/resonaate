@@ -13,7 +13,7 @@ try:
     from resonaate.data.events import EventScope, ScheduledFiniteBurnEvent
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config.base import ConfigError, ConfigValueError
-    from resonaate.scenario.config.event_configs import ScheduledFiniteBurnConfigObject
+    from resonaate.scenario.config.event_configs import ScheduledFiniteBurnConfig
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Local Imports
@@ -41,7 +41,7 @@ class TestFiniteBurnEventConfig(BaseTestCase):
 
     def testInitGoodArgs(self, event_config_dict):
         """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with good arguments."""
-        assert ScheduledFiniteBurnConfigObject(**event_config_dict)
+        assert ScheduledFiniteBurnConfig(**event_config_dict)
 
     def testInitBadScope(self, event_config_dict):
         """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with bad ``scope`` argument."""
@@ -49,14 +49,14 @@ class TestFiniteBurnEventConfig(BaseTestCase):
         burn_config = deepcopy(event_config_dict)
         burn_config["scope"] = EventScope.SCENARIO_STEP.value
         with pytest.raises(ConfigError, match=expected_err):
-            ScheduledFiniteBurnConfigObject(**burn_config)
+            ScheduledFiniteBurnConfig(**burn_config)
 
     def testInitBadThrustType(self, event_config_dict):
         """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with bad ``thrust_frame`` type."""
         burn_config = deepcopy(event_config_dict)
         burn_config["thrust_frame"] = True
         with pytest.raises(ConfigValueError):
-            ScheduledFiniteBurnConfigObject(**burn_config)
+            ScheduledFiniteBurnConfig(**burn_config)
 
 
 @pytest.fixture(name="mocked_target")
@@ -72,7 +72,7 @@ class TestFiniteBurnEvent(BaseTestCase):
 
     def testFromConfig(self, event_config_dict):
         """Test :meth:`.ScheduledFiniteBurnEvent.fromConfig()`."""
-        burn_config = ScheduledFiniteBurnConfigObject(**event_config_dict)
+        burn_config = ScheduledFiniteBurnConfig(**event_config_dict)
         assert ScheduledFiniteBurnEvent.fromConfig(burn_config)
 
     def testHandleNTWEvent(self, mocked_target):

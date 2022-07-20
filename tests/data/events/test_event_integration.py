@@ -12,7 +12,7 @@ try:
     from resonaate.data.resonaate_database import ResonaateDatabase
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config import ScenarioConfig
-    from resonaate.scenario.config.event_configs import EventConfigObject, EventConfigObjectList
+    from resonaate.scenario.config.event_configs import EventConfig, EventConfigList
     from resonaate.scenario.scenario import Scenario
     from resonaate.scenario.scenario_builder import ScenarioBuilder
 except ImportError as error:
@@ -48,9 +48,9 @@ class TestEventIntegration(BaseTestCase):
         minimal_config = self._getMinimalConfig(datafiles)
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "agent_propagation",
@@ -72,9 +72,9 @@ class TestEventIntegration(BaseTestCase):
         priority_agent = {"unique_id": 12345, "name": "important sat"}
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "task_reward_generation",
@@ -109,9 +109,9 @@ class TestEventIntegration(BaseTestCase):
         maneuvering_target = tasking_engine.targets[0]
         time = minimal_config.time.start_timestamp + timedelta(minutes=2, seconds=seconds)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "agent_propagation",
@@ -161,9 +161,9 @@ class TestEventIntegration(BaseTestCase):
         maneuvering_target = tasking_engine.targets[0]
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "agent_propagation",
@@ -217,9 +217,9 @@ class TestEventIntegration(BaseTestCase):
         time_1 = minimal_config.time.start_timestamp + timedelta(minutes=2)
         time_2 = minimal_config.time.start_timestamp + timedelta(minutes=4)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "agent_propagation",
@@ -272,9 +272,9 @@ class TestEventIntegration(BaseTestCase):
         time_1 = minimal_config.time.start_timestamp + timedelta(minutes=2)
         time_2 = minimal_config.time.start_timestamp + timedelta(minutes=4)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "task_reward_generation",
@@ -342,9 +342,9 @@ class TestEventIntegration(BaseTestCase):
 
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
@@ -431,9 +431,9 @@ class TestEventIntegration(BaseTestCase):
         }
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
@@ -490,9 +490,9 @@ class TestEventIntegration(BaseTestCase):
         removed_target = tasking_engine.targets[0]
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
@@ -551,9 +551,9 @@ class TestEventIntegration(BaseTestCase):
         removed_sensor = tasking_engine.sensors[0]
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
@@ -628,9 +628,9 @@ class TestEventIntegration(BaseTestCase):
         time_2 = minimal_config.time.start_timestamp + timedelta(minutes=2.5)
         time_3 = minimal_config.time.start_timestamp + timedelta(minutes=4)
 
-        minimal_config.events = EventConfigObjectList(
+        minimal_config.events = EventConfigList(
             "events",
-            EventConfigObject,
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",

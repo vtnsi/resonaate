@@ -12,7 +12,7 @@ try:
     from resonaate.physics.transforms.methods import getSlantRangeVector
     from resonaate.physics.transforms.reductions import updateReductionParameters
     from resonaate.scenario.clock import ScenarioClock
-    from resonaate.scenario.config.agent_configs import SensorConfigObject
+    from resonaate.scenario.config.agent_configs import SensingAgentConfig
 
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
@@ -54,7 +54,7 @@ class TestFieldOfView(BaseTestCase):
     julian_date = JulianDate(2459006.5)
     clock = ScenarioClock(julian_date, 60.0, 30.0)
     conic_sensor_config = {
-        "agent": SensorConfigObject(**CONIC_SENSOR_CONFIG),
+        "agent": SensingAgentConfig(**CONIC_SENSOR_CONFIG),
         "realtime": True,
         "clock": clock,
     }
@@ -63,7 +63,7 @@ class TestFieldOfView(BaseTestCase):
 
     CONIC_SENSOR_CONFIG["field_of_view"]["fov_shape"] = "rectangular"
     rectangular_sensor_config = {
-        "agent": SensorConfigObject(**CONIC_SENSOR_CONFIG),
+        "agent": SensingAgentConfig(**CONIC_SENSOR_CONFIG),
         "realtime": True,
         "clock": clock,
     }

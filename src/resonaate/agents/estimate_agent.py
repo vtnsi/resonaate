@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config.agent_configs import TargetConfigObject
+    from ..scenario.config.agent_configs import TargetAgentConfig
     from ..scenario.config.estimation_config import AdaptiveEstimationConfig
     from ..sensors.sensor_base import ObservationTuple
 
@@ -143,7 +143,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             :class:`.EstimateAgent`: properly constructed `EstimateAgent` object
         """
         # Grab multiple objects required for creating estimate agents
-        tgt_config: TargetConfigObject = config["target"]
+        tgt_config: TargetAgentConfig = config["target"]
         clock: ScenarioClock = config["clock"]
         # Create the initial state & covariance
         init_x, init_p = initialEstimateNoise(

@@ -14,7 +14,7 @@ from .. import Base, _DataMixin
 # Type Checking Import
 if TYPE_CHECKING:
     # Local Imports
-    from ...scenario.config.event_configs import EventConfigObject
+    from ...scenario.config.event_configs import EventConfig
 
 
 class EventScope(Enum):
@@ -157,11 +157,11 @@ class Event(_DataMixin, Base):
         return list(Event.EVENT_REGISTRY.keys())
 
     @classmethod
-    def concreteFromConfig(cls, config: EventConfigObject) -> Event:
+    def concreteFromConfig(cls, config: EventConfig) -> Event:
         """Construct a concrete :class:`.Event` child object from a specified `config`.
 
         Args:
-            config (:class:`.EventConfigObject`): Configuration object to construct a :class:`.Event` from.
+            config (:class:`.EventConfig`): Configuration object to construct a :class:`.Event` from.
 
         Returns:
             :class:`.Event`: object based on specified `config`.

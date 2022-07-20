@@ -9,8 +9,8 @@ try:
     from resonaate.scenario.config.agent_configs import (
         ConfigError,
         ConfigValueError,
-        SensorConfigObject,
-        TargetConfigObject,
+        SensingAgentConfig,
+        TargetAgentConfig,
     )
     from resonaate.sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
 except ImportError as error:
@@ -26,8 +26,8 @@ class TestTargetConfig(BaseTestCase):
 
     @pytest.mark.parametrize("tgt_dict", GEO_TARGETS + LEO_TARGETS)
     def testValidConfig(self, monkeypatch, tgt_dict):
-        """Test basic construction of TargetConfigObject & optional attributes."""
-        tgt_cfg_obj = TargetConfigObject(**tgt_dict)
+        """Test basic construction of TargetAgentConfig & optional attributes."""
+        tgt_cfg_obj = TargetAgentConfig(**tgt_dict)
         assert tgt_cfg_obj.sat_num == tgt_dict["sat_num"]
         assert tgt_cfg_obj.sat_name == tgt_dict["sat_name"]
         assert tgt_cfg_obj.station_keeping.routines == tgt_dict["station_keeping"]["routines"]
@@ -41,11 +41,11 @@ class TestTargetConfig(BaseTestCase):
         # Station keeping is optional, so test deleting it
         with monkeypatch.context() as m_patch:
             m_patch.delitem(tgt_dict, "station_keeping")
-            _ = TargetConfigObject(**tgt_dict)
+            _ = TargetAgentConfig(**tgt_dict)
 
     @pytest.mark.parametrize("tgt_dict", GEO_TARGETS + LEO_TARGETS)
     def testMultiStateConflict(self, monkeypatch, tgt_dict):
-        """Test basic construction of TargetConfigObject & optional attributes."""
+        """Test basic construction of TargetAgentConfig & optional attributes."""
         init_eci = [0, 0, 0, 0, 0, 0]
         init_coe = {
             "sma": 0,
@@ -67,23 +67,23 @@ class TestTargetConfig(BaseTestCase):
             m_patch.setitem(tgt_dict, "init_eqe", init_eqe)
             # All three set
             with pytest.raises(ConfigError):
-                _ = TargetConfigObject(**tgt_dict)
+                _ = TargetAgentConfig(**tgt_dict)
 
             # ECI + COE | EQE
             m_patch.delitem(tgt_dict, "init_eqe")
             with pytest.raises(ConfigError):
-                _ = TargetConfigObject(**tgt_dict)
+                _ = TargetAgentConfig(**tgt_dict)
 
             m_patch.delitem(tgt_dict, "init_coe")
             m_patch.setitem(tgt_dict, "init_eqe", init_eqe)
             with pytest.raises(ConfigError):
-                _ = TargetConfigObject(**tgt_dict)
+                _ = TargetAgentConfig(**tgt_dict)
 
             # EQE + COE
             m_patch.delitem(tgt_dict, "init_eci")
             m_patch.setitem(tgt_dict, "init_coe", init_coe)
             with pytest.raises(ConfigError):
-                _ = TargetConfigObject(**tgt_dict)
+                _ = TargetAgentConfig(**tgt_dict)
 
     @pytest.mark.parametrize("tgt_dict", GEO_TARGETS + LEO_TARGETS)
     def testInvalidStationKeepingConfig(self, monkeypatch, tgt_dict):
@@ -91,10 +91,10 @@ class TestTargetConfig(BaseTestCase):
         with monkeypatch.context() as m_patch:
             m_patch.setitem(tgt_dict, "station_keeping", {"routines": ["INVALID"]})
             with pytest.raises(ConfigValueError):
-                _ = TargetConfigObject(**tgt_dict)
+                _ = TargetAgentConfig(**tgt_dict)
             m_patch.setitem(tgt_dict, "station_keeping", {"routines": [20]})
             with pytest.raises(ConfigValueError):
-                _ = TargetConfigObject(**tgt_dict)
+                _ = TargetAgentConfig(**tgt_dict)
 
     @pytest.mark.parametrize("tgt_dict", GEO_TARGETS + LEO_TARGETS)
     def testInvalidStateConfig(self, monkeypatch, tgt_dict):
@@ -120,7 +120,7 @@ class TestTargetConfig(BaseTestCase):
                 m_patch.setitem(tgt_dict, "init_eqe", init_eqe)
 
             with pytest.raises(ConfigError):
-                _ = TargetConfigObject(**tgt_dict)
+                _ = TargetAgentConfig(**tgt_dict)
 
 
 class TestSensorConfig(BaseTestCase):
@@ -129,7 +129,7 @@ class TestSensorConfig(BaseTestCase):
     @pytest.mark.parametrize("sen_dict", EARTH_SENSORS + SPACE_SENSORS)
     def testValidConfig(self, monkeypatch, sen_dict):
         """Test basic construction of TestSensorConfig & optional attributes."""
-        sen_cfg_obj = SensorConfigObject(**sen_dict)
+        sen_cfg_obj = SensingAgentConfig(**sen_dict)
         assert sen_cfg_obj.id == sen_dict["id"]
         assert sen_cfg_obj.name == sen_dict["name"]
         assert sen_cfg_obj.azimuth_range == sen_dict["azimuth_range"]
@@ -151,7 +151,7 @@ class TestSensorConfig(BaseTestCase):
             # Station keeping is optional, so test deleting it
             with monkeypatch.context() as m_patch:
                 m_patch.delitem(sen_dict, "station_keeping")
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
 
         elif sen_cfg_obj.host_type == GROUND_FACILITY_LABEL:
             assert sen_cfg_obj.lla_set
@@ -188,23 +188,23 @@ class TestSensorConfig(BaseTestCase):
             m_patch.setitem(sen_dict, "init_eqe", init_eqe)
             # All three set
             with pytest.raises(ConfigError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
 
             # ECI + COE | EQE
             m_patch.delitem(sen_dict, "init_eqe")
             with pytest.raises(ConfigError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
 
             m_patch.delitem(sen_dict, "init_coe")
             m_patch.setitem(sen_dict, "init_eqe", init_eqe)
             with pytest.raises(ConfigError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
 
             # EQE + COE
             m_patch.delitem(sen_dict, "init_eci")
             m_patch.setitem(sen_dict, "init_coe", init_coe)
             with pytest.raises(ConfigError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
 
     @pytest.mark.parametrize("sen_dict", EARTH_SENSORS)
     def testMultiStateConflictGround(self, monkeypatch, sen_dict):
@@ -213,7 +213,7 @@ class TestSensorConfig(BaseTestCase):
             m_patch.setitem(sen_dict, "init_eci", [0, 0, 0, 0, 0])
             # LLA & ECI set
             with pytest.raises(ConfigError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
 
             # No State
             m_patch.delitem(sen_dict, "init_eci")
@@ -221,7 +221,7 @@ class TestSensorConfig(BaseTestCase):
             m_patch.delitem(sen_dict, "lon")
             m_patch.delitem(sen_dict, "alt")
             with pytest.raises(ConfigError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
 
     @pytest.mark.parametrize("sen_dict", SPACE_SENSORS)
     def testInvalidStateConfig(self, monkeypatch, sen_dict):
@@ -247,7 +247,7 @@ class TestSensorConfig(BaseTestCase):
                 m_patch.setitem(sen_dict, "init_eqe", init_eqe)
 
             with pytest.raises(ConfigError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
 
     @pytest.mark.parametrize("sen_dict", SPACE_SENSORS)
     def testInvalidStationKeepingConfig(self, monkeypatch, sen_dict):
@@ -255,7 +255,7 @@ class TestSensorConfig(BaseTestCase):
         with monkeypatch.context() as m_patch:
             m_patch.setitem(sen_dict, "station_keeping", {"routines": ["INVALID"]})
             with pytest.raises(ConfigValueError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)
             m_patch.setitem(sen_dict, "station_keeping", {"routines": [20]})
             with pytest.raises(ConfigValueError):
-                _ = SensorConfigObject(**sen_dict)
+                _ = SensingAgentConfig(**sen_dict)

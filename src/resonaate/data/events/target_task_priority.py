@@ -16,7 +16,7 @@ from .base import Event, EventScope
 # Type Checking Imports
 if TYPE_CHECKING:
     # Local Imports
-    from ...scenario.config.event_configs import TargetTaskPriorityConfigObject
+    from ...scenario.config.event_configs import TargetTaskPriorityConfig
     from ...tasking.engine.engine_base import TaskingEngine
 
 
@@ -61,7 +61,7 @@ class TargetTaskPriority(Event):
         ] *= self.priority
 
     @classmethod
-    def fromConfig(cls, config: TargetTaskPriorityConfigObject) -> TargetTaskPriority:
+    def fromConfig(cls, config: TargetTaskPriorityConfig) -> TargetTaskPriority:
         """Construct a :class:`.TargetTaskPriority` from a specified `config`.
 
         Args:
