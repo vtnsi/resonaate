@@ -23,6 +23,9 @@ from .measurements import IsAngle, getAzimuth, getElevation
 from .sensor_base import Sensor
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
     # Third Party Imports
     from numpy import ndarray
 
@@ -30,12 +33,15 @@ if TYPE_CHECKING:
     from . import FieldOfView
 
 
-OPTICAL_DETECTABLE_VISMAG = 25.0  # Default minimum observable visual magnitude (unitless)
-OPTICAL_DEFAULT_FOV = {
+OPTICAL_DETECTABLE_VISMAG: float = 25.0
+"""``float``: Default minimum observable visual magnitude, unit-less"""
+
+OPTICAL_DEFAULT_FOV: dict[str, Any] = {
     "fov_shape": "rectangular",
     "azimuth_angle": 1.0,
     "elevation_angle": 1.0,
-}  # Default Field of View of an optical sensor (degrees)
+}
+"""``dict``: Default Field of View (rectangular)of an optical sensor, degrees."""
 
 
 class Optical(Sensor):

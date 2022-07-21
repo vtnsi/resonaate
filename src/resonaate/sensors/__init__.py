@@ -16,9 +16,6 @@ from .radar import RADAR_DEFAULT_FOV, Radar
 from .sensor_base import Sensor
 
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Dict, Tuple
-
     # Local Imports
     from ..scenario.config.agent_configs import FieldOfViewConfig, SensingAgentConfig
 
@@ -37,26 +34,24 @@ CONIC_FOV_LABEL: str = "conic"
 RECTANGULAR_FOV_LABEL: str = "rectangular"
 """str: Constant string used to describe rectangular field of view."""
 
-VALID_SENSOR_FOV_LABELS: Tuple[str] = (
+VALID_SENSOR_FOV_LABELS: tuple[str] = (
     CONIC_FOV_LABEL,
     RECTANGULAR_FOV_LABEL,
 )
-"""``list``: Contains list of valid sensor Field of View configurations."""
+"""``tuple``: Contains valid sensor Field of View configurations."""
 
 SOLAR_PANEL_REFLECTIVITY: float = 0.21
-"""``float``: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`."""
+"""``float``: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`, unit-less."""
 
 DEFAULT_VIEWING_ANGLE: float = 1.0
-"""``float``: default angle for a sensor's FoV."""
+"""``float``: default angle for a sensor's FoV, degrees."""
 
 
-def sensorFactory(
-    sensor_config: SensingAgentConfig,
-) -> Sensor:  # noqa: C901, # pylint: disable=too-many-branches
+def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
 
     Args:
-        configuration (:class:`.SensingAgentConfig`): describes the sensor and its capabilities
+        sensor_config (:class:`.SensingAgentConfig`): describes the sensor and its capabilities
 
     Raises:
         ValueError: raised if invalid option is designate for `"sensor_type"`
