@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC, abstractmethod
-from dataclasses import InitVar, dataclass, field, fields
+from dataclasses import MISSING, InitVar, dataclass, field, fields
 from typing import TYPE_CHECKING, Sequence
 
 # Type Checking Imports
@@ -77,7 +77,7 @@ class ConfigValueError(ConfigSettingError):
 
     def __str__(self) -> str:
         """``str``: string representation of this exception."""
-        return f"Setting '{self.bad_setting}' for '{self.config_label} is not a valid setting: {self.requirements}"
+        return f"Setting '{self.bad_setting}' for '{self.config_label}' is not a valid setting: {self.requirements}"
 
 
 class ConfigMissingRequiredError(BaseConfigError):
@@ -115,16 +115,26 @@ class ConfigObject(ABC):
     """Class for defining a configuration object."""
 
     @classmethod
-    def getRequiredSections(cls) -> list[str]:
-        """``list``: labels of required sections of :class:`.ScenarioConfig`."""
-        # [NOTE]: Required fields **are not** in the class attributes before instantiation
-        return [section.name for section in fields(cls) if not hasattr(cls, section.name)]
+    def getRequiredFields(cls) -> list[str]:
+        """``list``: labels of required fields of a config object."""
+        # [NOTE]: Required fields define neither a `default` nor a `default_factory` attribute
+        #   This is the most robust way to determine this.
+        return [
+            section.name
+            for section in fields(cls)
+            if section.default == MISSING and section.default_factory == MISSING
+        ]
 
     @classmethod
-    def getOptionalSections(cls) -> list[str]:
-        """``list``: labels of optional sections of :class:`.ScenarioConfig`."""
-        # [NOTE]: Optional fields **are** in the class attributes before instantiation
-        return [section.name for section in fields(cls) if hasattr(cls, section.name)]
+    def getOptionalFields(cls) -> list[str]:
+        """``list``: labels of optional fields of a config object."""
+        # [NOTE]: Optional fields define either a `default` or `default_factory` attribute
+        #   This is the most robust way to determine this.
+        return [
+            section.name
+            for section in fields(cls)
+            if section.default != MISSING or section.default_factory != MISSING
+        ]
 
 
 @dataclass

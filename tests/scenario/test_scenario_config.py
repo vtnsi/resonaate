@@ -29,7 +29,7 @@ class TestScenarioConfig(BaseTestCase):
     """Test the :class:`.ScenarioConfig` class."""
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    @pytest.mark.parametrize("remove", ScenarioConfig.getRequiredSections())
+    @pytest.mark.parametrize("remove", ScenarioConfig.getRequiredFields())
     def testRequiredSection(self, datafiles, remove):
         """Test removing each required sections in config."""
         init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
@@ -41,7 +41,7 @@ class TestScenarioConfig(BaseTestCase):
             ScenarioConfig(**scenario_config)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    @pytest.mark.parametrize("remove", ScenarioConfig.getOptionalSections())
+    @pytest.mark.parametrize("remove", ScenarioConfig.getOptionalFields())
     def testOptionalSection(self, datafiles, remove):
         """Test removing each optional sections in config."""
         init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
@@ -53,28 +53,28 @@ class TestScenarioConfig(BaseTestCase):
         ScenarioConfig(**scenario_config)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    @pytest.mark.parametrize("remove", ScenarioConfig.getRequiredSections())
+    @pytest.mark.parametrize("remove", ScenarioConfig.getRequiredFields())
     def testRequiredFields(self, datafiles, remove):
         """Test removing required fields in each config section."""
         init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
         scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         section = getattr(ScenarioConfig(**scenario_config), remove)
         for field in fields(section):
-            if field in section.getRequiredSections():
+            if field in section.getRequiredFields():
                 temp_config = deepcopy(scenario_config)
                 del temp_config[section.config_label][field.config_label]
                 with pytest.raises(TypeError):
                     ScenarioConfig(**temp_config)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    @pytest.mark.parametrize("remove", ScenarioConfig.getOptionalSections())
+    @pytest.mark.parametrize("remove", ScenarioConfig.getOptionalFields())
     def testOptionalFields(self, datafiles, remove):
         """Test removing optional fields in each config section."""
         init_filepath = os.path.join(datafiles, self.json_init_path, "test_init.json")
         scenario_config = ScenarioConfig.parseConfigFile(init_filepath)
         section = getattr(ScenarioConfig(**scenario_config), remove)
         for field in fields(section):
-            if field in section.getOptionalSections():
+            if field in section.getOptionalFields():
                 temp_config = deepcopy(scenario_config)
                 if temp_config.get(remove):
                     del temp_config[remove][field.config_label]

@@ -70,8 +70,8 @@ def testConfigObject():
     assert test_obj.bool_field == config_dict["bool_field"]
     assert test_obj.option_field == config_dict["option_field"]
 
-    assert len(_TestConfigObject.getRequiredSections()) == 3
-    assert len(_TestConfigObject.getOptionalSections()) == 1
+    assert len(_TestConfigObject.getRequiredFields()) == 3
+    assert len(_TestConfigObject.getOptionalFields()) == 1
 
 
 def testConfigObjectList():
