@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Sequence
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any
+    from typing import Any, Type
 
 
 class BaseConfigError(Exception, ABC):
@@ -144,7 +144,7 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
     config_label: str
     """``str``: Label that this configuration item falls under in the raw configuration dictionary."""
 
-    config_type: InitVar[ConfigObject]
+    config_type: InitVar[Type[ConfigObject]]
     """``type``: type of the objects in this list."""
 
     _config_objects: list[ConfigObject] = field(default_factory=list)
@@ -153,48 +153,54 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
     default_empty: bool = False
     """``bool``: whether this list is empty by default. If ``False``, this list is required to be populated."""
 
-    def __post_init__(self, config_type: ConfigObject) -> None:
-        """Runs after the constructor has finished."""
-        self._validateRawConfig(self._config_objects)
+    def __post_init__(self, config_type: Type[ConfigObject]) -> None:
+        """Runs after the constructor has finished.
+
+        Args:
+            config_type (``type(ConfigObject)``): a reference to the contained :class:`.ConfigObject` class type.
+        """
+        self._validateRawConfig(self._config_objects, config_type)
         config_objects = []
         for config_object in self._config_objects:
-            if not isinstance(config_object, (config_type, dict)):
-                raise ConfigTypeError(self.config_label, config_object, (config_type, dict))
-
             if isinstance(config_object, dict):
-                if not config_object:
-                    raise ConfigMissingRequiredError(self.config_label, config_type)
                 config_objects.append(config_type(**config_object))
             else:
                 config_objects.append(config_object)
 
-        if not config_objects and not self.default_empty:
-            # msg = f"At least one {self.config_type} is required, but an empty list was given: {config_objects}"
-            raise ConfigMissingRequiredError(self.config_label, config_type)
-
         self._config_objects = config_objects
 
-    def _validateRawConfig(self, raw_config: list[dict[str, Any]]) -> None:
+    def _validateRawConfig(
+        self, raw_config: list[dict[str, Any]], config_type: Type[ConfigObject]
+    ) -> None:
         """Raise exceptions if types of `raw_config` are wrong.
 
         Args:
             raw_config (``list``): dictionaries that correspond to :attr:`.obj_type`.
+            config_type (``type(ConfigObject)``): a reference to the contained :class:`.ConfigObject` class type.
 
         Raises:
             TypeError: If `raw_config` is not a list, or if the elements of `raw_config` aren't dictionaries.
             ValueError: If `raw_config` is empty, but :attr:`.default_empty` is ``False``.
         """
+        # Must be a input list
         if not isinstance(raw_config, list):
             raise ConfigTypeError(self.config_label, raw_config, (list,))
 
         if not raw_config:
+            # Empty, but default_empty = False
             if not self.default_empty:
                 raise ConfigMissingRequiredError("config", self.config_label)
             return
 
-        for config_dict in raw_config:
-            if not isinstance(config_dict, dict):
-                raise ConfigTypeError(self.config_label, config_dict, (dict,))
+        for config in raw_config:
+            # Not an object or a dict
+            if not isinstance(config, (config_type, dict)):
+                raise ConfigTypeError(self.config_label, config, (config_type, dict))
+
+            # An empty dictionary in the list
+            if isinstance(config, dict):
+                if not config:
+                    raise ConfigMissingRequiredError(self.config_label, config_type)
 
     def __iter__(self) -> ConfigObject:
         """:class:`.ConfigObject`: iterates over the stored config objects."""
