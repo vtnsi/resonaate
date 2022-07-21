@@ -1,36 +1,37 @@
 {{ fullname | escape | underline}}
 
-.. automodule:: {{ fullname }}
-    :members:
 
-    {% if attributes or functions or classes or exceptions %}
-    ----------------------
+.. automodule:: {{fullname}}
+    :no-members:
+    :noindex:
+
+    {% block modules %}
+    {% if modules or classes or functions or attributes or exceptions %}
+    --------------------------
     {% endif %}
+    {% if modules %}
 
-    {% block attributes %}
-    {% if attributes %}
-    .. rubric:: Module Attributes
+    ..
+        Summarize the sub-modules
+
+    .. rubric:: {{ _('Submodules') }}
 
     .. autosummary::
-    {% for item in attributes %}
+        :toctree:
+        :template: custom-module.rst
+        :recursive:
+    {% for item in modules %}
         {{ item }}
     {%- endfor %}
     {% endif %}
     {% endblock %}
 
-    {% block functions %}
-    {% if functions %}
-    .. rubric:: {{ _('Functions') }}
-
-    .. autosummary::
-    {% for item in functions %}
-        {{ item }}
-    {%- endfor %}
-    {% endif %}
-    {% endblock %}
 
     {% block classes %}
     {% if classes %}
+    ..
+        Summarize the classes
+
     .. rubric:: {{ _('Classes') }}
 
     .. autosummary::
@@ -40,8 +41,43 @@
     {% endif %}
     {% endblock %}
 
+
+    {% block functions %}
+    {% if functions %}
+    ..
+        Summarize the functions
+
+    .. rubric:: {{ _('Functions') }}
+
+    .. autosummary::
+        :nosignatures:
+    {% for item in functions %}
+        {{ item }}
+    {%- endfor %}
+    {% endif %}
+    {% endblock %}
+
+
+    {% block attributes %}
+    {% if attributes %}
+    ..
+        Summarize the attributes
+
+    .. rubric:: {{ _('Module Attributes') }}
+
+    .. autosummary::
+    {% for item in attributes %}
+        {{ item }}
+    {%- endfor %}
+    {% endif %}
+    {% endblock %}
+
+
     {% block exceptions %}
     {% if exceptions %}
+    ..
+        Summarize the exceptions
+
     .. rubric:: {{ _('Exceptions') }}
 
     .. autosummary::
@@ -49,25 +85,15 @@
         {{ item }}
     {%- endfor %}
     {% endif %}
+    {% if modules or classes or functions or attributes or exceptions %}
+    --------------------------
+    {% endif %}
     {% endblock %}
 
-    {% if attributes or functions or classes or exceptions %}
-    ------------------------
-    {% endif %}
 
-{% block modules %}
-{% if modules %}
 
---------------------------
+.. rubric:: {{ _('Detailed Contents') }}
 
-.. rubric:: Submodules
 
-.. autosummary::
-    :toctree:
-    :template: custom-module.rst
-    :recursive:
-{% for item in modules %}
-    {{ item }}
-{%- endfor %}
-{% endif %}
-{% endblock %}
+.. automodule:: {{fullname}}
+    :members:

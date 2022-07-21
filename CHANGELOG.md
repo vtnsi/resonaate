@@ -54,6 +54,8 @@ ______________________________________________________________________
   - `_getSolarRadiationPressureAcceleration()` is now a class function of `SpecialPerturbations`
   - Metric calculations only take in 1 estimate agent and sensor agent
   - `FilterDebugFlag` is now `FilterFlag` and all filter debugging is handled in `SequentialFilter._debugChecks`
+  - `ConfigObject` classes are now `dataclasses`, reducing boilerplate code (#27)
+  - `data.agent.Agent` is now named `AgentModel` to reduce ambiguity
 
 - Deprecated
 
