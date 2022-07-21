@@ -600,11 +600,3 @@ class Scenario:
 
         resetMaster(self.redis_conn)
         self.redis_conn.close()
-
-    def __del__(self):
-        """Gracefully shutdown if simulation goes out of scope.
-
-        See Also:
-            :class:`~.Scenario.shutdown`
-        """
-        self.shutdown(flushall=True)
