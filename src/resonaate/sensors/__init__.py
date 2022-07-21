@@ -64,26 +64,6 @@ def sensorFactory(
     Returns:
         :class:`.Sensor`: properly constructed `Sensor` object
     """
-    # pylint:disable=import-outside-toplevel
-    # Local Imports
-    from ..scenario.config.agent_configs import FieldOfViewConfig
-
-    # Set field of view
-    if sensor_config.calculate_fov and not sensor_config.field_of_view:
-        fov_dict = {
-            OPTICAL_LABEL: OPTICAL_DEFAULT_FOV,
-            RADAR_LABEL: RADAR_DEFAULT_FOV,
-            ADV_RADAR_LABEL: ADV_RADAR_DEFAULT_FOV,
-        }
-        fov_config = FieldOfViewConfig(**fov_dict[sensor_config.sensor_type])
-        field_of_view = copy(fov_config)
-    else:
-        field_of_view = sensor_config.field_of_view
-
-    # Set detectable vismag
-    if sensor_config.detectable_vismag is None and sensor_config.sensor_type == OPTICAL_LABEL:
-        sensor_config.detectable_vismag = OPTICAL_DETECTABLE_VISMAG
-
     # Build generic sensor kwargs
     sensor_args = {
         "az_mask": asarray(sensor_config.azimuth_range) * const.RAD2DEG,  # Assumes radians
@@ -93,7 +73,7 @@ def sensorFactory(
         "efficiency": sensor_config.efficiency,
         "slew_rate": sensor_config.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(sensor_config.exemplar),
-        "field_of_view": fieldOfViewFactory(field_of_view),
+        "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),
         "calculate_fov": sensor_config.calculate_fov,
         "minimum_range": sensor_config.minimum_range,
         "maximum_range": sensor_config.maximum_range,
