@@ -103,11 +103,11 @@ class Optical(Sensor):
         self.detectable_vismag = detectable_vismag
 
     @property
-    def angle_measurements(self):
+    def angle_measurements(self) -> ndarray:
         """``ndarray``: Returns 2x1 integer array of which measurements are angles."""
         return array([IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI], dtype=int)
 
-    def getMeasurements(self, slant_range_sez: float, noisy=False) -> dict:
+    def getMeasurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:
@@ -125,8 +125,9 @@ class Optical(Sensor):
             "elevation_rad": getElevation(slant_range_sez),
         }
         if noisy:
-            measurements["azimuth_rad"] += self.measurement_noise[0]
-            measurements["elevation_rad"] += self.measurement_noise[1]
+            meas_noise = self.measurement_noise
+            measurements["azimuth_rad"] += meas_noise[0]
+            measurements["elevation_rad"] += meas_noise[1]
 
         return measurements
 
@@ -136,7 +137,7 @@ class Optical(Sensor):
         viz_cross_section: float,
         reflectivity: float,
         slant_range_sez: ndarray,
-    ):
+    ) -> bool:
         """Determine if the target is in view of the sensor.
 
         This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical
