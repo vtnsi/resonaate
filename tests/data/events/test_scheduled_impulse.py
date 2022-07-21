@@ -1,5 +1,6 @@
 # pylint: disable=unused-argument
 # Standard Library Imports
+from copy import deepcopy
 from datetime import datetime
 from unittest.mock import create_autospec
 
@@ -11,7 +12,7 @@ try:
     from resonaate.agents.target_agent import TargetAgent
     from resonaate.data.events import EventScope, ScheduledImpulseEvent, TargetAdditionEvent
     from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.base import ConfigError
+    from resonaate.scenario.config.base import ConfigError, ConfigValueError
     from resonaate.scenario.config.event_configs import ScheduledImpulseEventConfigObject
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
@@ -20,102 +21,62 @@ except ImportError as error:
 from ...conftest import BaseTestCase
 
 
+@pytest.fixture(name="event_config_dict")
+def getScheduledImpulse():
+    """``dict``: config dictionary for scheduled impulse event."""
+    return {
+        "scope": ScheduledImpulseEvent.INTENDED_SCOPE.value,
+        "scope_instance_id": 123,
+        "start_time": datetime(2021, 8, 3, 12, 5),
+        "end_time": datetime(2021, 8, 3, 12, 5),
+        "event_type": ScheduledImpulseEvent.EVENT_TYPE,
+        "thrust_vector": [0.0, 0.0, 0.00123],
+        "thrust_frame": "ntw",
+        "planned": False,
+    }
+
+
 class TestScheduledImpulseEventConfig(BaseTestCase):
     """Test class for :class:`.ScheduledImpulseEventConfig` class."""
 
-    def testInitGoodArgs(self):
+    def testInitGoodArgs(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with good arguments."""
-        assert ScheduledImpulseEventConfigObject(
-            {
-                "scope": ScheduledImpulseEventConfigObject.EVENT_CLASS.INTENDED_SCOPE.value,
-                "scope_instance_id": 123,
-                "start_time": datetime(2021, 8, 3, 12, 5),
-                "event_type": ScheduledImpulseEventConfigObject.EVENT_CLASS.EVENT_TYPE,
-                "thrust_vector": [0.0, 0.0, 0.00123],
-                "thrust_frame": "ntw",
-                "planned": False,
-            }
-        )
+        assert ScheduledImpulseEventConfigObject(**event_config_dict)
 
-    def testInitOtherGoodArgs(self):
+    def testInitOtherGoodArgs(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with other good arguments."""
-        assert ScheduledImpulseEventConfigObject(
-            {
-                "scope": ScheduledImpulseEventConfigObject.EVENT_CLASS.INTENDED_SCOPE.value,
-                "scope_instance_id": 123,
-                "start_time": datetime(2021, 8, 3, 12),
-                "end_time": datetime(2021, 8, 3, 12),
-                "event_type": ScheduledImpulseEventConfigObject.EVENT_CLASS.EVENT_TYPE,
-                "thrust_vector": [0.0, 0.0, 0.00123],
-                "thrust_frame": "eci",
-                "planned": True,
-            }
-        )
+        impulse_config = deepcopy(event_config_dict)
+        impulse_config["thrust_frame"] = "eci"
+        impulse_config["planned"] = True
+        assert ScheduledImpulseEventConfigObject(**impulse_config)
 
-    def testInitBadScope(self):
+    def testInitBadScope(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with bad ``scope`` argument."""
         expected_err = f"{ScheduledImpulseEvent} must have scope set to {ScheduledImpulseEvent.INTENDED_SCOPE}"
+        impulse_config = deepcopy(event_config_dict)
+        impulse_config["scope"] = EventScope.SCENARIO_STEP.value
         with pytest.raises(ConfigError, match=expected_err):
-            ScheduledImpulseEventConfigObject(
-                {
-                    "scope": EventScope.SCENARIO_STEP.value,
-                    "scope_instance_id": 123,
-                    "start_time": datetime(2021, 8, 3, 12),
-                    "end_time": datetime(2021, 8, 3, 12),
-                    "event_type": ScheduledImpulseEvent.EVENT_TYPE,
-                    "thrust_vector": [0.0, 0.0, 0.00123],
-                    "thrust_frame": "eci",
-                    "planned": True,
-                }
-            )
+            ScheduledImpulseEventConfigObject(**impulse_config)
 
-    def testInitBadEventType(self):
+    def testInitBadEventType(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with bad ``event_type`` argument."""
         expected_err = f"{ScheduledImpulseEvent} must have event_type set to {ScheduledImpulseEvent.EVENT_TYPE}"
+        impulse_config = deepcopy(event_config_dict)
+        impulse_config["event_type"] = TargetAdditionEvent.EVENT_TYPE
         with pytest.raises(ConfigError, match=expected_err):
-            ScheduledImpulseEventConfigObject(
-                {
-                    "scope": ScheduledImpulseEvent.INTENDED_SCOPE.value,
-                    "scope_instance_id": 123,
-                    "start_time": datetime(2021, 8, 3, 12),
-                    "end_time": datetime(2021, 8, 3, 12),
-                    "event_type": TargetAdditionEvent.EVENT_TYPE,
-                    "thrust_vector": [0.0, 0.0, 0.00123],
-                    "thrust_frame": "eci",
-                    "planned": True,
-                }
-            )
+            ScheduledImpulseEventConfigObject(**impulse_config)
 
-    def testInitBadVectorSize(self):
+    def testInitBadVectorSize(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with bad ``thrust_vector`` size."""
         bad_vector = [0.0, 0.0, 0.00123, 0.0]
-        expected_err = f"Delta vector defining an impulsive maneuver should be 3 dimensional, not {len(bad_vector)}"
-        with pytest.raises(ConfigError, match=expected_err):
-            ScheduledImpulseEventConfigObject(
-                {
-                    "scope": ScheduledImpulseEvent.INTENDED_SCOPE.value,
-                    "scope_instance_id": 123,
-                    "start_time": datetime(2021, 8, 3, 12),
-                    "event_type": ScheduledImpulseEvent.EVENT_TYPE,
-                    "thrust_vector": bad_vector,
-                    "thrust_frame": "ntw",
-                    "planned": True,
-                }
-            )
+        impulse_config = deepcopy(event_config_dict)
+        impulse_config["thrust_vector"] = bad_vector
+        with pytest.raises(ConfigValueError):
+            ScheduledImpulseEventConfigObject(**impulse_config)
 
-    def testDataDependency(self):
+    def testDataDependency(self, event_config_dict):
         """Test that :class:`.ScheduledImpulseEventConfig`'s data dependencies are correct."""
-        impulse_config = ScheduledImpulseEventConfigObject(
-            {
-                "scope": ScheduledImpulseEventConfigObject.EVENT_CLASS.INTENDED_SCOPE.value,
-                "scope_instance_id": 123,
-                "start_time": datetime(2021, 8, 3, 12),
-                "event_type": ScheduledImpulseEventConfigObject.EVENT_CLASS.EVENT_TYPE,
-                "thrust_vector": [0.0, 0.0, 0.00123],
-                "thrust_frame": "ntw",
-                "planned": True,
-            }
-        )
+        impulse_config = ScheduledImpulseEventConfigObject(**event_config_dict)
         impulse_dependencies = impulse_config.getDataDependencies()
         assert len(impulse_dependencies) == 0
 
@@ -131,19 +92,9 @@ def getMockedAgent():
 class TestScheduledImpulseEvent(BaseTestCase):
     """Test class for :class:`.ScheduledImpulseEvent` class."""
 
-    def testFromConfig(self):
+    def testFromConfig(self, event_config_dict):
         """Test :meth:`.ScheduledImpulseEvent.fromConfig()`."""
-        impulse_config = ScheduledImpulseEventConfigObject(
-            {
-                "scope": ScheduledImpulseEvent.INTENDED_SCOPE.value,
-                "scope_instance_id": 123,
-                "start_time": datetime(2021, 8, 3, 12),
-                "event_type": ScheduledImpulseEvent.EVENT_TYPE,
-                "thrust_vector": [0.0, 0.0, 0.00123],
-                "thrust_frame": "ntw",
-                "planned": True,
-            }
-        )
+        impulse_config = ScheduledImpulseEventConfigObject(**event_config_dict)
         assert ScheduledImpulseEvent.fromConfig(impulse_config)
 
     def testHandleEventNTW(self, mocked_target):

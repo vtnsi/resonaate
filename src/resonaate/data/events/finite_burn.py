@@ -1,6 +1,9 @@
 """Defines the :class:`.ScheduledFiniteBurnEvent` data table class."""
+from __future__ import annotations
+
 # Standard Library Imports
 from functools import partial
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array
@@ -12,49 +15,55 @@ from ...dynamics.integration_events.finite_thrust import ScheduledFiniteBurn, ec
 from ...physics.time.stardate import JulianDate, datetimeToJulianDate
 from .base import Event, EventScope
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...agents.agent_base import Agent
+    from ...scenario.config.event_configs import ScheduledFiniteBurnConfigObject
+
 
 class ScheduledFiniteBurnEvent(Event):
     """Event data object describing a scheduled finite thrust maneuver."""
 
-    EVENT_TYPE = "finite_burn"
-    """str: Name of this type of event."""
+    EVENT_TYPE: str = "finite_burn"
+    """``str``: Name of this type of event."""
 
-    INTENDED_SCOPE = EventScope.AGENT_PROPAGATION
-    """EventScope: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
+    INTENDED_SCOPE: EventScope = EventScope.AGENT_PROPAGATION
+    """`EventScope`: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
 
-    THRUST_FRAME_ECI = "eci"
-    """str: Configuration string used to delineate using the ECI frame to apply this burn."""
+    THRUST_FRAME_ECI: str = "eci"
+    """``str``: Configuration string used to delineate using the ECI frame to apply this burn."""
 
-    THRUST_FRAME_NTW = "ntw"
-    """str: Configuration string used to delineate using the NTW frame to apply this burn."""
+    THRUST_FRAME_NTW: str = "ntw"
+    """``str``: Configuration string used to delineate using the NTW frame to apply this burn."""
 
-    VALID_THRUST_FRAMES = (
+    VALID_THRUST_FRAMES: tuple[str] = (
         THRUST_FRAME_ECI,
         THRUST_FRAME_NTW,
     )
-    """tuple: Valid values for :attr:`~.ScheduledFiniteBurnEvent.thrust_frame`."""
+    """``tuple``: Valid values for :attr:`~.ScheduledFiniteBurnEvent.thrust_frame`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     acc_vec_0 = Column(Float)
-    """float: First element of acceleration vector in km/s^2."""
+    """``float``: First element of acceleration vector in km/s^2."""
 
     acc_vec_1 = Column(Float)
-    """float: Second element of acceleration vector in km/s^2."""
+    """``float``: Second element of acceleration vector in km/s^2."""
 
     acc_vec_2 = Column(Float)
-    """float: Third element of acceleration vector in km/s^2."""
+    """``float``: Third element of acceleration vector in km/s^2."""
 
     @declared_attr
     def thrust_frame(self):  # pylint: disable=invalid-name
-        """str: Label for frame that thrust should be applied in."""
+        """``str``: Label for frame that thrust should be applied in."""
         return Event.__table__.c.get(  # pylint: disable=no-member
             "thrust_frame", Column(String(10))
         )
 
     @declared_attr
     def planned(self):  # pylint: disable=invalid-name
-        """bool: Flag indicating whether this task is expected by the filter or not."""
+        """``bool``: Flag indicating whether this task is expected by the filter or not."""
         return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
 
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
@@ -65,7 +74,7 @@ class ScheduledFiniteBurnEvent(Event):
         "planned",
     )
 
-    def handleEvent(self, scope_instance):
+    def handleEvent(self, scope_instance: Agent) -> None:
         """Queue a :class:`.ScheduledFiniteBurn` to take place during agent propagation.
 
         Args:
@@ -90,15 +99,15 @@ class ScheduledFiniteBurnEvent(Event):
         scope_instance.appendPropagateEvent(finite_burn)
 
     @classmethod
-    def fromConfig(cls, config):
+    def fromConfig(cls, config: ScheduledFiniteBurnConfigObject) -> ScheduledFiniteBurnEvent:
         """Construct a :class:`.ScheduledFiniteEvent` from a specified `config`.
 
         Args:
-            config (ScheduledFiniteEventConfigObject): Configuration object to construct a
+            config (:class:`.ScheduledFiniteEventConfigObject`): Configuration object to construct a
                 :class:`.ScheduledFiniteEvent` from.
 
         Returns:
-            ScheduledFiniteEvent: :class:`.ScheduledFiniteEvent` object based on specified `config`.
+            :class:`.ScheduledFiniteEvent`: object based on specified `config`.
         """
         return cls(
             scope=config.scope,

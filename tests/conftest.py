@@ -253,17 +253,13 @@ TEST_START_JD = datetimeToJulianDate(datetime(2018, 12, 1, 12))
 @pytest.fixture(name="geopotential_config")
 def getGeopotentialConfig():
     """Return a :class:`.GeopotentialConfig` object based on :attr:`.GEOPOTENTIAL_CONFIG`."""
-    config = GeopotentialConfig()
-    config.readConfig(GEOPOTENTIAL_CONFIG)
-    return config
+    return GeopotentialConfig(**GEOPOTENTIAL_CONFIG)
 
 
 @pytest.fixture(name="perturbations_config")
 def getPerturbationsConfig():
     """Return a :class:`.PerturbationsConfig` object based on :attr:`.PERTURBATIONS_CONFIG`."""
-    config = PerturbationsConfig()
-    config.readConfig(PERTURBATIONS_CONFIG)
-    return config
+    return PerturbationsConfig(**PERTURBATIONS_CONFIG)
 
 
 @pytest.fixture(name="dynamics")

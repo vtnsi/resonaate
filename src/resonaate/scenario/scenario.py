@@ -373,7 +373,7 @@ class Scenario:
             target_spec (dict): Specification of target being added.
             tasking_engine_id (int): Unique identifier to add the specified target to.
         """
-        target_conf = TargetConfigObject(target_spec)
+        target_conf = TargetConfigObject(**target_spec)
         self._addTargetConf(target_conf, tasking_engine_id)
 
     @addTarget.register(TargetConfigObject)
@@ -483,7 +483,7 @@ class Scenario:
             sensor_spec (dict): Specification of sensor being added.
             tasking_engine_id (int): Unique identifier to add the specified sensor to.
         """
-        sensor_conf = SensorConfigObject(sensor_spec)
+        sensor_conf = SensorConfigObject(**sensor_spec)
         self._addSensorConf(sensor_conf, tasking_engine_id)
 
     @addSensor.register(SensorConfigObject)

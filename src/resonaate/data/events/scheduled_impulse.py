@@ -1,4 +1,9 @@
 """Defines the :class:`.ScheduledImpulseEvent` data table class."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import array
 from sqlalchemy import Boolean, Column, Float, String
@@ -12,49 +17,55 @@ from ...dynamics.integration_events.scheduled_impulse import (
 from ...physics.time.stardate import JulianDate, datetimeToJulianDate
 from .base import Event, EventScope
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...agents.agent_base import Agent
+    from ...scenario.config.event_configs import ScheduledImpulseEventConfigObject
+
 
 class ScheduledImpulseEvent(Event):
     """Event data object describing a scheduled impulsive maneuver."""
 
-    EVENT_TYPE = "impulse"
-    """str: Name of this type of event."""
+    EVENT_TYPE: str = "impulse"
+    """``str``: Name of this type of event."""
 
-    INTENDED_SCOPE = EventScope.AGENT_PROPAGATION
-    """EventScope: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
+    INTENDED_SCOPE: EventScope = EventScope.AGENT_PROPAGATION
+    """:class:`.EventScope`: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
 
-    THRUST_FRAME_ECI = "eci"
-    """str: Configuration string used to delineate using the ECI frame to apply this impulse."""
+    THRUST_FRAME_ECI: str = "eci"
+    """``str``: Configuration string used to delineate using the ECI frame to apply this impulse."""
 
-    THRUST_FRAME_NTW = "ntw"
-    """str: Configuration string used to delineate using the NTW frame to apply this impulse."""
+    THRUST_FRAME_NTW: str = "ntw"
+    """``str``: Configuration string used to delineate using the NTW frame to apply this impulse."""
 
-    VALID_THRUST_FRAMES = (
+    VALID_THRUST_FRAMES: tuple[str] = (
         THRUST_FRAME_ECI,
         THRUST_FRAME_NTW,
     )
-    """tuple: Valid values for :attr:`~.ScheduledImpulseEvent.thrust_frame`."""
+    """``tuple``: Valid values for :attr:`~.ScheduledImpulseEvent.thrust_frame`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     thrust_vec_0 = Column(Float)
-    """float: First element of impulse vector in km/s."""
+    """``float``: First element of impulse vector in km/s."""
 
     thrust_vec_1 = Column(Float)
-    """float: Second element of impulse vector in km/s."""
+    """``float``: Second element of impulse vector in km/s."""
 
     thrust_vec_2 = Column(Float)
-    """float: Third element of impulse vector in km/s."""
+    """``float``: Third element of impulse vector in km/s."""
 
     @declared_attr
     def thrust_frame(self):  # pylint: disable=invalid-name
-        """str: Label for frame that thrust should be applied in."""
+        """``str``: Label for frame that thrust should be applied in."""
         return Event.__table__.c.get(  # pylint: disable=no-member
             "thrust_frame", Column(String(10))
         )
 
     @declared_attr
     def planned(self):  # pylint: disable=invalid-name
-        """bool: Flag indicating whether this task is expected by the filter or not."""
+        """``bool``: Flag indicating whether this task is expected by the filter or not."""
         return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
 
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
@@ -65,11 +76,11 @@ class ScheduledImpulseEvent(Event):
         "planned",
     )
 
-    def handleEvent(self, scope_instance):
+    def handleEvent(self, scope_instance: Agent) -> None:
         """Queue a :class:`.ScheduledImpulse` to take place during agent propagation.
 
         Args:
-            scope_instance (agent_base.Agent): agent instance that will be executing this impulse.
+            scope_instance (:class:`~.agent_base.Agent`): agent instance that will be executing this impulse.
         """
         start_jd = JulianDate(self.start_time_jd)
         start_sim_time = start_jd.convertToScenarioTime(scope_instance.julian_date_start)
@@ -91,11 +102,11 @@ class ScheduledImpulseEvent(Event):
         scope_instance.appendPropagateEvent(impulse)
 
     @classmethod
-    def fromConfig(cls, config):
+    def fromConfig(cls, config: ScheduledImpulseEventConfigObject) -> ScheduledImpulseEvent:
         """Construct a :class:`.ScheduledImpulseEvent` from a specified `config`.
 
         Args:
-            config (ScheduledImpulseEventConfigObject): Configuration object to construct a
+            config (:class:`.ScheduledImpulseEventConfigObject`): Configuration object to construct a
                 :class:`.ScheduledImpulseEvent` from.
 
         Returns:

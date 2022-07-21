@@ -132,7 +132,7 @@ def createTargetAgent(scenario_clock):
         11111,
         "test_tgt",
         "Spacecraft",
-        np.asarray([6378.0, 2.0, 10.0, 0.0, 0.0, 0.0]),
+        np.asarray([400.0, 2.0, 10.0, 0.0, 0.0, 0.0]),
         scenario_clock,
         TwoBody(),
         True,

@@ -23,7 +23,6 @@ from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
 from ..tasking.rewards import rewardsFactory
 from .clock import ScenarioClock
-from .config.base import NO_SETTING
 from .config.event_configs import MissingDataDependency
 
 
@@ -65,7 +64,7 @@ class ScenarioBuilder:
         sensor_configs = {}
         self.tasking_engines = {}
 
-        for engine_conf in self._config.engines.objects:
+        for engine_conf in self._config.engines:
             if engine_conf.unique_id in self.tasking_engines:
                 err = f"Engines share a unique ID: {engine_conf.unique_id}"
                 raise ValueError(err)
@@ -128,7 +127,7 @@ class ScenarioBuilder:
 
             # Create the base estimation filter for nominal operation
             filter_dynamics = spacecraftDynamicsFactory(
-                self.config.estimation.sequential_filter.dynamics,
+                self.config.estimation.sequential_filter.dynamics_model,
                 self.clock,
                 self.geopotential,
                 self.perturbations,
@@ -155,8 +154,8 @@ class ScenarioBuilder:
         self.sensor_network = []
         for agent in sensor_configs.values():
             # Assign Sensor FoV from init if not set
-            if agent.calculate_fov is NO_SETTING:
-                agent._calculate_fov._setting = self.observation.field_of_view
+            if self.observation.field_of_view:
+                agent.calculate_fov = True
             sat_ratio = calcSatRatio(agent.visual_cross_section, agent.mass, agent.reflectivity)
 
             config = {
@@ -189,7 +188,7 @@ class ScenarioBuilder:
 
         built_event_types = set()
         built_events = []
-        for event_config in sorted(self._config.events.objects, key=lambda x: x.start_time):
+        for event_config in sorted(self._config.events.config_objects, key=lambda x: x.start_time):
             for data_dependency in event_config.getDataDependencies():
                 found_dependency = shared_interface.getData(data_dependency.query, multi=False)
                 if found_dependency is None:

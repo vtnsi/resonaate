@@ -1,6 +1,9 @@
 """Define :class:`.Event` abstract base class and common functionality."""
+from __future__ import annotations
+
 # Standard Library Imports
 from enum import Enum
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import Column, Float, Integer, String
@@ -8,11 +11,16 @@ from sqlalchemy import Column, Float, Integer, String
 # Local Imports
 from .. import Base, _DataMixin
 
+# Type Checking Import
+if TYPE_CHECKING:
+    # Local Imports
+    from ...scenario.config.event_configs import EventConfigObject
+
 
 class EventScope(Enum):
     """Enumerated possible values of the :attr:`.Event.scope` attribute."""
 
-    AGENT_PROPAGATION = "agent_propagation"
+    AGENT_PROPAGATION: str = "agent_propagation"
     """EventScope: Scope handled by an :class:`~.agent_base.Agent` during propagation.
 
     An event to be handled in the scope will have it's :attr:`.Event.scope_instance_id` set to the
@@ -35,21 +43,21 @@ class EventScope(Enum):
         Each step of this process is marked with a comment tag: ``[parallel-maneuver-event-handling]``.
     """
 
-    TASK_REWARD_GENERATION = "task_reward_generation"
+    TASK_REWARD_GENERATION: str = "task_reward_generation"
     """EventScope: Scope handled by a :class:`.TaskingEngine` during reward generation.
 
     An event to be handled in this scope will have it's :attr:`.Event.scope_instance_id` set to the
     :attr:`.TaskingEngine.unique_id` of the :class:`.TaskingEngine` instance that needs to handle it.
     """
 
-    SCENARIO_STEP = "scenario_step"
+    SCENARIO_STEP: str = "scenario_step"
     """EventScope: Scope handled by the :class:`.Scenario` at the beginning of a time step.
 
     An event to be handled in this scope will have it's :attr:`.Event.scope_instance_id` conventionally set to `0`
     since there's only one :class:`.Scenario` object.
     """
 
-    OBSERVATION_GENERATION = "observation_generation"
+    OBSERVATION_GENERATION: str = "observation_generation"
     """EventScope: Scope handled by an :class:`.SensorAgent` during tasking.
 
     Note:
@@ -62,20 +70,20 @@ class Event(_DataMixin, Base):
 
     __tablename__ = "events"
 
-    EVENT_REGISTRY = None
-    """dict: Correlates `event_type` values to the correct :class:`.Event` child class."""
+    EVENT_REGISTRY: dict[str, Event] | None = None
+    """``dict``: Correlates `event_type` values to the correct :class:`.Event` child class."""
 
-    EVENT_TYPE = "event"
-    """str: Name of this type of event."""
+    EVENT_TYPE: str = "event"
+    """``str``: Name of this type of event."""
 
     id = Column(  # noqa: A003
         Integer,
         primary_key=True,
     )
-    """int: Primary key for the 'events' table."""
+    """``int``: Primary key for the 'events' table."""
 
     scope = Column(String(128), nullable=False)
-    """str: Scope level at which this event needs to be handled.
+    """``str``: Scope level at which this event needs to be handled.
 
     Given the variety of events that RESONAATE needs to be able to handle, there needs to be a way
     to describe *where* in the software structure that these events need to be handled. For
@@ -85,17 +93,17 @@ class Event(_DataMixin, Base):
     """
 
     scope_instance_id = Column(Integer, nullable=False)
-    """int: Unique identifier of instance that needs to handle this event.
+    """``int``: Unique identifier of instance that needs to handle this event.
 
     See Also:
         :class:`.EventScope` has more information on what this identifier actually points to for each defined scope.
     """
 
     start_time_jd = Column(Float, index=True, nullable=False)
-    """float: Time that this event needs to be handled."""
+    """``float``: Time that this event needs to be handled."""
 
     end_time_jd = Column(Float, nullable=False)
-    """float: Julian date for when this event is no longer active.
+    """``float``: Julian date for when this event is no longer active.
 
     Not all events will have a time span for when they are active (e.g. impulsive manuevers or node addition/removal).
     However, because the events that _are_ active for a time span need to have their end time be query-able,
@@ -108,7 +116,7 @@ class Event(_DataMixin, Base):
     """
 
     event_type = Column(String(64), nullable=False)
-    """str: Attribute delineating which child class this table row implements."""
+    """``str``: Attribute delineating which child class this table row implements."""
 
     __mapper_args__ = {"polymorphic_on": event_type, "polymorphic_identity": EVENT_TYPE}
 
@@ -121,7 +129,7 @@ class Event(_DataMixin, Base):
     )
 
     @classmethod
-    def _generateRegistry(cls):
+    def _generateRegistry(cls) -> None:
         """Populate :attr:`.EVENT_REGISTRY` based on subclasses."""
         if cls.EVENT_REGISTRY is None:
             cls.EVENT_REGISTRY = {}
@@ -143,20 +151,20 @@ class Event(_DataMixin, Base):
                 ] = subclass
 
     @classmethod
-    def eventTypes(cls):
-        """list: Return a list of valid :attr:`.Event.event_type` values."""
+    def eventTypes(cls) -> list[str]:
+        """``list``: Return a list of valid :attr:`.Event.event_type` values."""
         Event._generateRegistry()
         return list(Event.EVENT_REGISTRY.keys())
 
     @classmethod
-    def concreteFromConfig(cls, config):
+    def concreteFromConfig(cls, config: EventConfigObject) -> Event:
         """Construct a concrete :class:`.Event` child object from a specified `config`.
 
         Args:
-            config (EventConfigObject): Configuration object to construct a :class:`.Event` from.
+            config (:class:`.EventConfigObject`): Configuration object to construct a :class:`.Event` from.
 
         Returns:
-            Event: :class:`.Event` object based on specified `config`.
+            :class:`.Event`: object based on specified `config`.
         """
         Event._generateRegistry()
         child_event = Event.EVENT_REGISTRY[  # pylint: disable=unsubscriptable-object

@@ -85,8 +85,7 @@ def buildScenarioFromConfigDict(
     # [NOTE][avoid-circular-import]: Import done inside of function to avoid circular imports for
     #    other components of the `scenario` package.
 
-    config = ScenarioConfig()
-    config.readConfig(config_dict)
+    config = ScenarioConfig(**config_dict)
     builder = ScenarioBuilder(config, importer_db_path=importer_db_path)
 
     return Scenario(

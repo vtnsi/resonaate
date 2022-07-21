@@ -1,70 +1,55 @@
 """Submodule defining the 'time' configuration section."""
+from __future__ import annotations
+
 # Standard Library Imports
+from dataclasses import dataclass
 from datetime import datetime
+from typing import ClassVar
 
 # Local Imports
-from .base import ConfigOption, ConfigSection
+from .base import ConfigObject, ConfigValueError
+
+DEFAULT_TIME_STEP: int = 60
+"""``int``: Default time step in seconds."""
+
+TIME_STAMP_FORMAT: str = "%Y-%m-%dT%H:%M:%S.%fZ"
+"""``str``: Format string for time stamps."""
 
 
-class TimeConfig(ConfigSection):
+@dataclass
+class TimeConfig(ConfigObject):
     """Configuration section defining several time-based options."""
 
-    CONFIG_LABEL = "time"
-    """str: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "time"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.TimeConfig`."""
-        self._start_timestamp = ConfigOption(
-            "start_timestamp",
-            (
-                str,
-                datetime,
-            ),
-        )
-        self._physics_step_sec = ConfigOption("physics_step_sec", (int,), default=60)
-        self._output_step_sec = ConfigOption("output_step_sec", (int,), default=60)
-        self._stop_timestamp = ConfigOption(
-            "stop_timestamp",
-            (
-                str,
-                datetime,
-            ),
-        )
+    start_timestamp: str | datetime
+    """``str | datetime``: epoch at which the simulation starts."""
 
-    @property
-    def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [
-            self._start_timestamp,
-            self._physics_step_sec,
-            self._output_step_sec,
-            self._stop_timestamp,
-        ]
+    stop_timestamp: str | datetime
+    """``str | datetime``: epoch at which the scenario stops."""
 
-    @property
-    def start_timestamp(self):
-        """datetime: Time for the scenario to start."""
-        if isinstance(self._start_timestamp.setting, str):
-            self._start_timestamp.readConfig(
-                datetime.strptime(self._start_timestamp.setting, "%Y-%m-%dT%H:%M:%S.%fZ")
+    physics_step_sec: int = DEFAULT_TIME_STEP
+    """``int``: time step used for propagation. Defaults to 60 seconds."""
+
+    output_step_sec: int = DEFAULT_TIME_STEP
+    """``int``: time step used for outputting data. Defaults to 60 seconds."""
+
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if isinstance(self.start_timestamp, str):
+            self.start_timestamp = datetime.strptime(self.start_timestamp, TIME_STAMP_FORMAT)
+
+        if isinstance(self.stop_timestamp, str):
+            self.stop_timestamp = datetime.strptime(self.stop_timestamp, TIME_STAMP_FORMAT)
+
+        if self.physics_step_sec <= 1:
+            raise ConfigValueError("physics_step_sec", self.physics_step_sec, "> 1")
+
+        if self.output_step_sec <= 1:
+            raise ConfigValueError("output_step_sec", self.output_step_sec, "> 1")
+
+        if self.start_timestamp >= self.stop_timestamp:
+            raise ConfigValueError(
+                "start_timestamp", self.start_timestamp, (f"before {self.stop_timestamp}",)
             )
-        return self._start_timestamp.setting
-
-    @property
-    def physics_step_sec(self):
-        """int: Timestep used for propagation. Defaults to 60 seconds."""
-        return self._physics_step_sec.setting
-
-    @property
-    def output_step_sec(self):
-        """int: Timestep used for outputting data. Defaults to 60 seconds."""
-        return self._physics_step_sec.setting
-
-    @property
-    def stop_timestamp(self):
-        """datetime: Time for the scenario to stop."""
-        if isinstance(self._stop_timestamp.setting, str):
-            self._stop_timestamp.readConfig(
-                datetime.strptime(self._stop_timestamp.setting, "%Y-%m-%dT%H:%M:%S.%fZ")
-            )
-        return self._stop_timestamp.setting

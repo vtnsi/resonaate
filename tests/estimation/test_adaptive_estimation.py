@@ -353,8 +353,7 @@ class TestAdaptiveEstimation(BaseTestCase):
             "prune_percentage": 0.997,
             "parameters": {},
         }
-        config = AdaptiveEstimationConfig()
-        config.readConfig(mmae_config)
+        config = AdaptiveEstimationConfig(**mmae_config)
         _ = AdaptiveFilter.fromConfig(config, NOMINAL_FILTER, TIMESTEP)
 
     def testInitialize(

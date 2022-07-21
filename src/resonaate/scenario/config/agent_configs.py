@@ -1,6 +1,12 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
+from __future__ import annotations
+
+# Standard Library Imports
+from dataclasses import dataclass, field
+from typing import ClassVar
 
 # Third Party Imports
+from numpy import inf
 from numpy.linalg import norm
 
 # Local Imports
@@ -13,82 +19,76 @@ from ...agents.target_agent import (
     MEO_DEFAULT_MASS,
     MEO_DEFAULT_VCS,
 )
-from ...dynamics.integration_events.station_keeping import (
-    VALID_STATION_KEEPING_ROUTINES,
-    StationKeeper,
-)
+from ...dynamics.integration_events.station_keeping import VALID_STATION_KEEPING_ROUTINES
 from ...physics.bodies.earth import Earth
 from ...physics.orbits import GEO_ALTITUDE_LIMIT, LEO_ALTITUDE_LIMIT, MEO_ALTITUDE_LIMIT
 from ...sensors import (
     ADV_RADAR_LABEL,
+    CONIC_FOV_LABEL,
     DEFAULT_VIEWING_ANGLE,
     OPTICAL_LABEL,
     RADAR_LABEL,
+    RECTANGULAR_FOV_LABEL,
     SOLAR_PANEL_REFLECTIVITY,
     VALID_SENSOR_FOV_LABELS,
 )
-from .base import (
-    NO_SETTING,
-    ConfigError,
-    ConfigObject,
-    ConfigOption,
-    ConfigSection,
-    ConfigValueError,
-)
+from ...sensors.optical import OPTICAL_DETECTABLE_VISMAG
+from .base import ConfigError, ConfigObject, ConfigValueError
 
 
-def validateStationKeepingConfigs(conf_str_list):
-    """Throw an exception if there's an invalid station keeping configuration string in `conf_str_list`.
-
-    Args:
-        conf_str_list (list(str)): List of station keeping configuration strings to be validated.
-
-    Raises:
-        ValueError: If there's an invalid station keeping configuration string in `conf_str_list`.
-    """
-    for conf_str in conf_str_list:
-        if conf_str not in StationKeeper.validConfigs():
-            raise ConfigValueError("station_keeping", conf_str, StationKeeper.validConfigs())
-
-
+@dataclass
 class TargetConfigObject(ConfigObject):
-    """Defines the structure for an object defined in the 'targets' configuration section."""
+    """Configuration object for a target."""
 
-    @staticmethod
-    def getFields():
-        """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.TargetConfigObject`.
+    # Config label class variable - not used by "dataclass"
+    CONFIG_LABEL: ClassVar[str] = "target"
+    R"""``str``: Key where settings are stored in the configuration dictionary."""
 
-        References:
-            :cite:t:`montenbruck_2012_orbits`, Eqn 3.75 - 3.76, Table 3.5
-        """
-        return (
-            ConfigOption("sat_num", (int,)),
-            ConfigOption("sat_name", (str,)),
-            ConfigOption("init_eci", (list,), default=NO_SETTING),
-            ConfigOption("init_coe", (dict,), default=NO_SETTING),
-            ConfigOption("init_eqe", (dict,), default=NO_SETTING),
-            ConfigOption("visual_cross_section", (float, int), default=NO_SETTING),
-            ConfigOption("mass", (float, int), default=NO_SETTING),
-            ConfigOption("reflectivity", (float,), default=SOLAR_PANEL_REFLECTIVITY),
-            StationKeepingConfig(),
-        )
+    # Basic dataclass attributes
+    sat_num: int
+    R"""``int``: target satellite ID number."""
 
-    def __init__(self, object_config):  # noqa: C901, pylint: disable=too-many-branches
-        """Construct an instance of a :class:`.TargetConfigObject`.
+    sat_name: str
+    R"""``str``: target name."""
 
-        Args:
-            object_config (dict): Configuration dictionary defining this
-                :class:`.TargetConfigObject`.
-        """
-        super().__init__(object_config)
+    init_eci: list[float] | None = None
+    R"""``list[float]```, optional: initial ECI state vector, km; km/sec. Defaults to ``None``."""
 
+    init_coe: dict[str, float] | None = None
+    R"""``dict[str, float]```, optional: initial COE set, see :meth:`.ClassicalElements.fromConfig` for details. Defaults to ``None``."""
+
+    init_eqe: dict[str, float] | None = None
+    R"""``dict[str, float]```, optional: initial EQE set, see :meth:`.EquinoctialElements.fromConfig` for details. Defaults to ``None``."""
+
+    visual_cross_section: float | None = None
+    R"""``float``, optional: visual cross-sectional area, m^2. Defaults to a value based on orbital regime."""
+
+    mass: float | None = None
+    R"""``float``, optional: total mass, kg. Defaults to a value based on orbital regime."""
+
+    reflectivity: float | None = None
+    R"""``float``, optional: constant reflectivity, unit-less. Defaults to a value based on orbital regime."""
+
+    station_keeping: StationKeepingConfig | dict | None = None
+    R""":class:`.StationKeepingConfig`, optional: types of station-keeping to apply during propagation. Defaults to a no station-keeping routines.
+
+    Note:
+        The global :attr:`.propagation.station_keeping` must be set to ``True`` for station-keeping
+        routines to actually run.
+    """
+
+    def __post_init__(self):  # noqa: C901
+        R"""Runs after the dataclass is initialized."""
+        # pylint: disable=too-many-branches
+        # [FIXME]: we need to make a "StateConfig" class to handle the logic better
+        # [FIXME]: we need a base AgentConfig class
         states_set = (self.eci_set, self.coe_set, self.eqe_set)
         if not any(states_set):
-            err = f"Target {self.sat_num}: State not specified: {object_config}"
+            err = f"Target {self.sat_num}: State not specified"
             raise ConfigError(self.__class__.__name__, err)
 
         if sum(states_set) > 1:
-            err = f"Target {self.sat_num}: Duplicate state specified: {object_config}"
+            err = f"Target {self.sat_num}: Duplicate state specified"
             raise ConfigError(self.__class__.__name__, err)
 
         if self.eci_set:
@@ -120,166 +120,202 @@ class TargetConfigObject(ConfigObject):
             orbital_regime = "geo"
         else:
             err = "RSO altitude above GEO, unable to set a default mass value"
-            raise ValueError(self.__class__.__name__, err)
+            raise ConfigError(self.__class__.__name__, err)
 
         # Set mass
-        if self.mass is NO_SETTING:
+        if self.mass is None:
             mass_dict = {
                 "leo": LEO_DEFAULT_MASS,
                 "meo": MEO_DEFAULT_MASS,
                 "geo": GEO_DEFAULT_MASS,
             }
-            self._mass._setting = mass_dict[orbital_regime]  # pylint:disable=no-member
+            self.mass = mass_dict[orbital_regime]
 
         # Set Visual Cross Section
-        if self.visual_cross_section is NO_SETTING:
+        if self.visual_cross_section is None:
             vcs_dict = {
                 "leo": LEO_DEFAULT_VCS,
                 "meo": MEO_DEFAULT_VCS,
                 "geo": GEO_DEFAULT_VCS,
             }
-            self._visual_cross_section._setting = vcs_dict[  # pylint:disable=no-member
-                orbital_regime
-            ]
+            self.visual_cross_section = vcs_dict[orbital_regime]
 
-    @property
-    def sat_num(self):
-        """int: Unique identifier for this target.
+        # Set Reflectivity
+        if self.reflectivity is None:
+            self.reflectivity = SOLAR_PANEL_REFLECTIVITY
 
-        Typically corresponds to a NORAD catalogue ID number.
-        """
-        return self._sat_num.setting  # pylint: disable=no-member
-
-    @property
-    def sat_name(self):
-        """str: Human recognizable name for this target."""
-        return self._sat_name.setting  # pylint: disable=no-member
-
-    @property
-    def init_eci(self):
-        """list: Six element list representing this target's initial ECI state vector."""
-        return self._init_eci.setting  # pylint: disable=no-member
-
-    @property
-    def init_coe(self):
-        """dict: Set of classical orbital elements (COE) describing the target's orbit.
-
-        See :meth:`.ClassicalElements.fromConfig()` for rules on defining a set of classical orbital elements.
-        """
-        return self._init_coe.setting  # pylint: disable=no-member
-
-    @property
-    def init_eqe(self):
-        """dict: Set of equinoctial orbital elements (EQE) describing the target's orbit.
-
-        See :meth:`.EquinoctialElements.fromConfig()` for rules on defining a set of equinoctial orbital elements.
-        """
-        return self._init_eqe.setting  # pylint: disable=no-member
-
-    @property
-    def mass(self):
-        """float: Mass of RSO."""
-        return self._mass.setting  # pylint:disable=no-member
-
-    @property
-    def visual_cross_section(self):
-        """float: visual_cross_section of RSO."""
-        return self._visual_cross_section.setting  # pylint:disable=no-member
-
-    @property
-    def reflectivity(self):
-        """float: reflectivity of RSO."""
-        return self._reflectivity.setting  # pylint:disable=no-member
-
-    @property
-    def station_keeping(self):
-        """str: listing what type of station keeping this RSO is doing."""
-        return self._station_keeping  # pylint: disable=no-member
+        if isinstance(self.station_keeping, dict):
+            self.station_keeping = StationKeepingConfig(**self.station_keeping)
+        elif self.station_keeping is None:
+            self.station_keeping = StationKeepingConfig()
 
     @property
     def eci_set(self):
-        """bool: Indication of whether an ECI vector is available for this target configuration."""
-        return self.init_eci != NO_SETTING
+        R"""``bool``: Boolean indication of whether this sensor has ECI settings."""
+        return self.init_eci is not None
 
     @property
     def coe_set(self):
-        """bool: Indication of whether COEs are available for this target configuration."""
-        return self.init_coe != NO_SETTING
+        R"""``bool``: Indication of whether COEs are available for this target configuration."""
+        return self.init_coe is not None
 
     @property
     def eqe_set(self):
-        """bool: Indication of whether EQEs are available for this target configuration."""
-        return self.init_eqe != NO_SETTING
+        R"""``bool``: Indication of whether EQEs are available for this target configuration."""
+        return self.init_eqe is not None
 
 
-class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-methods
-    """Defines the structure for an object defined in the 'sensors' configuration section."""
+@dataclass
+class SensorConfigObject(ConfigObject):
+    R"""Configuration object for a :class:`.Sensor`."""
+    # pylint: disable=too-many-instance-attributes
 
-    @staticmethod
-    def getFields():
-        """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.SensorConfigObject`."""
-        return (
-            ConfigOption("id", (int,)),
-            ConfigOption("name", (str,)),
-            ConfigOption(
-                "host_type",
-                (str,),
-                valid_settings=(
-                    GROUND_FACILITY_LABEL,
-                    SPACECRAFT_LABEL,
-                ),
-            ),
-            ConfigOption("lat", (float,), default=NO_SETTING),
-            ConfigOption("lon", (float,), default=NO_SETTING),
-            ConfigOption("alt", (float,), default=NO_SETTING),
-            ConfigOption("init_eci", (list,), default=NO_SETTING),
-            ConfigOption("init_coe", (dict,), default=NO_SETTING),
-            ConfigOption("init_eqe", (dict,), default=NO_SETTING),
-            ConfigOption("azimuth_range", (list,)),
-            ConfigOption("elevation_range", (list,)),
-            ConfigOption("covariance", (list,)),
-            ConfigOption("aperture_area", (float,)),
-            ConfigOption("efficiency", (float,)),
-            ConfigOption("slew_rate", (float,)),
-            ConfigOption("exemplar", (list,)),
-            FieldOfViewConfig(),
-            ConfigOption("calculate_fov", (bool,), default=NO_SETTING),
-            ConfigOption("detectable_vismag", (float, int), default=NO_SETTING),
-            ConfigOption("minimum_range", (float, int), default=NO_SETTING),
-            ConfigOption("maximum_range", (float, int), default=NO_SETTING),
-            ConfigOption(
-                "sensor_type",
-                (str,),
-                valid_settings=(
-                    OPTICAL_LABEL,
-                    RADAR_LABEL,
-                    ADV_RADAR_LABEL,
-                ),
-            ),
-            ConfigOption("tx_power", (float,), default=NO_SETTING),
-            ConfigOption("tx_frequency", (float,), default=NO_SETTING),
-            ConfigOption("visual_cross_section", (float, int), default=NO_SETTING),
-            ConfigOption("mass", (float, int), default=NO_SETTING),
-            ConfigOption("reflectivity", (float,), default=SOLAR_PANEL_REFLECTIVITY),
-            StationKeepingConfig(),
-        )
+    # Config label class variable - not used by "dataclass"
+    CONFIG_LABEL: ClassVar[str] = "sensor"
+    R"""``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self, object_config):  # noqa: C901, pylint:disable=too-many-branches
-        """Construct an instance of a :class:`.SensorConfigObject`.
+    # Basic dataclass attributes
+    id: int  # noqa: A003
+    R"""``int``: unique ID of the sensor."""
 
-        Args:
-            object_config (dict): Configuration dictionary defining this
-                :class:`.SensorConfigObject`.
-        """
-        super().__init__(object_config)
+    name: str
+    R"""``str``: name of the sensor."""
+
+    host_type: str
+    R"""``str``: type of host agent containing this sensor, in ``"Spacecraft" | "GroundFacility"``."""
+
+    sensor_type: str
+    R"""``str``: type of sensor object, in ``"Optical" | "Radar" | "AdvRadar"``."""
+
+    azimuth_range: list[float]
+    R"""``list[float]``: 2-element (order matters!) azimuth range mask :math:`\in [0, 2\pi]` radians."""
+
+    elevation_range: list[float]
+    R"""``list[float]``: 2-element (order independent) elevation range mask :math:`\in [-\frac{\pi}{2}, \frac{\pi}{2}]` radians."""
+
+    covariance: list[list[float]]
+    R"""``list[list[float]]``: (:math:`n_z \times n_z`) measurement noise covariance matrix.
+
+    The covariance matrix must be symmetric and positive definite. Also, the units for the
+    covariance depend on the units of the measurements that the sensor reports. If a sensor
+    reports measurements as a vector,
+
+    .. math::
+
+        z = \begin{bmatrix} z_1 \\ z_2 \\\end{bmatrix}, \quad \begin{bmatrix} s \\ km \\ \end{bmatrix}
+
+    Then, the structure and units of :attr:`.covariance` should be
+
+    .. math::
+
+        R = \begin{bmatrix} a & b \\ b & c \\\end{bmatrix}, \quad \begin{bmatrix} s^2 & km\cdot s \\ km\cdot s & (km)^2 \\ \end{bmatrix}
+
+    where :math:`R \succ 0`.
+    """
+
+    aperture_area: float
+    R"""``float``: effective aperture area of the sensor, m^2."""
+
+    efficiency: float
+    R"""``float``: sensor measurement efficiency, unit-less."""
+
+    slew_rate: float
+    R"""``float``: sensor maximum slew rate, rad/sec."""
+
+    exemplar: list[float]
+    R"""``list[float]``: 2-element sensor exemplar set of `(size, distance)`, (m^2, km)."""
+
+    lat: float | None = None
+    R"""``float``, optional: sensor geodetic latitude, :math:`\in [-\frac{\pi}{2}, \frac{\pi}{2}]` radians. Defaults to ``None``"""
+
+    lon: float | None = None
+    R"""``float``, optional: sensor longitude, :math:`\in [-\pi, \pi]` radians. Defaults to ``None``"""
+
+    alt: float | None = None
+    R"""``float``, optional: sensor height above ellipsoid, km. Defaults to ``None``"""
+
+    init_eci: list[float] | None = None
+    R"""``list[float]```, optional: initial ECI state vector, km; km/sec. Defaults to ``None``."""
+
+    init_coe: dict[str, float] | None = None
+    R"""``dict[str, float]```, optional: initial COE set, see :meth:`.ClassicalElements.fromConfig` for details. Defaults to ``None``."""
+
+    init_eqe: dict[str, float] | None = None
+    R"""``dict[str, float]```, optional: initial EQE set, see :meth:`.EquinoctialElements.fromConfig` for details. Defaults to ``None``."""
+
+    calculate_fov: bool = False
+    R"""``bool``, optional: whether this sensor uses its :attr:`.filed_of_view` to determine if other agents are visible. Defaults to ``False``"""
+
+    detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG
+    R"""``float, optional``: minimum detectable visual magnitude value, used for visibility constraints, unit-less. Defaults to :data:`.OPTICAL_DETECTABLE_VISMAG`."""
+
+    minimum_range: float = 0.0
+    R"""``float, optional``: minimum range at which this sensor can observe targets, km. Defaults to ``0.0`` (no minimum)."""
+
+    maximum_range: float = inf
+    R"""``float, optional``: maximum range at which this sensor can observe targets, km. Defaults to ``np.inf`` (no maximum)."""
+
+    visual_cross_section: float | None = None
+    R"""``float``, optional: visual cross-sectional area, m^2. Defaults to a value based on orbital regime."""
+
+    mass: float | None = None
+    R"""``float``, optional: total mass, kg. Defaults to a value based on orbital regime."""
+
+    reflectivity: float | None = None
+    R"""``float``, optional: constant reflectivity, unit-less. Defaults to a value based on orbital regime."""
+
+    tx_power: float | None = None
+    R"""``float``, optional: radar transmission power, W. Defaults to ``None``, but required for ``"Radar" | "AdvRadar"``."""
+
+    tx_frequency: float | None = None
+    R"""``float``, optional: radar transmission center frequency, Hz. Defaults to ``None``, but required for ``"Radar" | "AdvRadar"``."""
+
+    field_of_view: FieldOfViewConfig | dict | None = None
+    R""":class:`.FieldOfViewConfig`, optional: FOV type size to use in calculating visibility. Defaults to a conic FOV with default cone angle."""
+
+    station_keeping: StationKeepingConfig | dict | None = None
+    R""":class:`.StationKeepingConfig`, optional: types of station-keeping to apply during propagation. Defaults to a no station-keeping routines.
+
+    Note:
+        The global :attr:`.propagation.station_keeping` must be set to ``True`` for station-keeping
+        routines to actually run.
+    """
+
+    def __post_init__(self):  # noqa: C901
+        R"""Runs after the dataclass is initialized."""
+        # pylint: disable=too-many-branches
+        # [FIXME]: we need to make a "StateConfig" class to handle the logic better
+        # [FIXME]: we need a base AgentConfig class
+        # [FIXME]: add a sub-config for SensorConfig
+        if self.field_of_view and isinstance(self.field_of_view, dict):
+            self.field_of_view = FieldOfViewConfig(**self.field_of_view)
+        elif self.field_of_view is None:
+            self.field_of_view = FieldOfViewConfig(CONIC_FOV_LABEL)
+
+        if isinstance(self.station_keeping, dict):
+            self.station_keeping = StationKeepingConfig(**self.station_keeping)
+        elif self.station_keeping is None:
+            self.station_keeping = StationKeepingConfig()
+
+        if self.host_type not in (GROUND_FACILITY_LABEL, SPACECRAFT_LABEL):
+            err = f"Sensor {self.name}: host_type must be either {GROUND_FACILITY_LABEL} or {SPACECRAFT_LABEL}"
+            raise ConfigError(self.__class__.__name__, err)
+
+        if self.sensor_type not in (
+            OPTICAL_LABEL,
+            RADAR_LABEL,
+            ADV_RADAR_LABEL,
+        ):
+            err = f"Sensor {self.name}: sensor_type must be either {OPTICAL_LABEL}, {RADAR_LABEL}, or {ADV_RADAR_LABEL}"
+            raise ConfigError(self.__class__.__name__, err)
 
         states_set = (self.lla_set, self.eci_set, self.coe_set, self.eqe_set)
         if not any(states_set):
-            err = f"Sensor {self.id}: State not specified: {object_config}"
+            err = f"Sensor {self.id}: State not specified"
             raise ConfigError(self.__class__.__name__, err)
 
         if sum(states_set) > 1:
-            err = f"Sensor {self.id}: Duplicate state specified: {object_config}"
+            err = f"Sensor {self.id}: Duplicate state specified"
             raise ConfigError(self.__class__.__name__, err)
 
         if self.lla_set:
@@ -307,9 +343,9 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             altitude = self.init_coe["sma"] - Earth.radius
 
         is_radar = self.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL)
-        tx_not_set = self.tx_power is NO_SETTING or self.tx_frequency is NO_SETTING
+        tx_not_set = self.tx_power is None or self.tx_frequency is None
         if is_radar and tx_not_set:
-            err = f"Sensor {self.id}: Radar transmit parameters not set: {object_config}"
+            err = f"Sensor {self.id}: Radar transmit parameters not set"
             raise ConfigError(self.__class__.__name__, err)
 
         if self.host_type is GROUND_FACILITY_LABEL and self.station_keeping.routines:
@@ -327,296 +363,102 @@ class SensorConfigObject(ConfigObject):  # pylint: disable=too-many-public-metho
             raise ValueError(self.__class__.__name__, err)
 
         # Set mass
-        if self.mass is NO_SETTING:
+        if self.mass is None:
             mass_dict = {
                 "leo": LEO_DEFAULT_MASS,
                 "meo": MEO_DEFAULT_MASS,
                 "geo": GEO_DEFAULT_MASS,
             }
-            self._mass._setting = mass_dict[orbital_regime]  # pylint:disable=no-member
+            self.mass = mass_dict[orbital_regime]
 
         # Set Visual Cross Section
-        if self.visual_cross_section is NO_SETTING:
+        if self.visual_cross_section is None:
             vcs_dict = {
                 "leo": LEO_DEFAULT_VCS,
                 "meo": MEO_DEFAULT_VCS,
                 "geo": GEO_DEFAULT_VCS,
             }
-            self._visual_cross_section._setting = vcs_dict[  # pylint:disable=no-member
-                orbital_regime
-            ]
+            self.visual_cross_section = vcs_dict[orbital_regime]
 
-    @property  # noqa: A003
-    def id(self):  # noqa: A003 pylint: disable=invalid-name
-        """int: Unique identifier for this sensor."""
-        return self._id.setting  # pylint: disable=no-member
-
-    @property
-    def name(self):
-        """str: Human recognizable name for this sensor."""
-        return self._name.setting  # pylint: disable=no-member
-
-    @property
-    def host_type(self):
-        """str: Label for type of sensing agent this sensor is."""
-        return self._host_type.setting  # pylint: disable=no-member
-
-    @property
-    def lat(self):
-        """float: Latitude (in radians) of this sensor.
-
-        Will only be set if :attr:`.host_type` is set to `GROUND_FACILITY_LABEL`.
-        """
-        return self._lat.setting  # pylint: disable=no-member
-
-    @property
-    def lon(self):
-        """float: Longitude (in radians) of this sensor.
-
-        Will only be set if :attr:`.host_type` is set to `GROUND_FACILITY_LABEL`.
-        """
-        return self._lon.setting  # pylint: disable=no-member
-
-    @property
-    def alt(self):
-        """float: Height (in km) above ellipsoid.
-
-        Will only be set if :attr:`.host_type` is set to `GROUND_FACILITY_LABEL`.
-        """
-        return self._alt.setting  # pylint: disable=no-member
+        # Set Reflectivity
+        if self.reflectivity is None:
+            self.reflectivity = SOLAR_PANEL_REFLECTIVITY
 
     @property
     def lla_set(self):
-        """bool: Boolean indication of whether this sensor has LLA settings."""
-        return all((self.lat != NO_SETTING, self.lon != NO_SETTING, self.alt != NO_SETTING))
-
-    @property
-    def init_eci(self):
-        """list: Six element list representing this target's initial ECI state vector."""
-        return self._init_eci.setting  # pylint: disable=no-member
+        R"""``bool``: Boolean indication of whether this sensor has LLA settings."""
+        return any((self.lat is not None, self.lon is not None, self.alt is not None))
 
     @property
     def eci_set(self):
-        """bool: Boolean indication of whether this sensor has ECI settings."""
-        return self.init_eci != NO_SETTING
-
-    @property
-    def init_coe(self):
-        """dict: Set of classical orbital elements (COE) describing the target's orbit.
-
-        See :meth:`.ClassicalElements.fromConfig()` for rules on defining a set of classical orbital elements.
-        """
-        return self._init_coe.setting  # pylint: disable=no-member
+        R"""``bool``: Boolean indication of whether this sensor has ECI settings."""
+        return self.init_eci is not None
 
     @property
     def coe_set(self):
-        """bool: Indication of whether COEs are available for this target configuration."""
-        return self.init_coe != NO_SETTING
-
-    @property
-    def init_eqe(self):
-        """dict: Set of equinoctial orbital elements (EQE) describing the target's orbit.
-
-        See :meth:`.EquinoctialElements.fromConfig()` for rules on defining a set of equinoctial orbital elements.
-        """
-        return self._init_eqe.setting  # pylint: disable=no-member
+        R"""``bool``: Indication of whether COEs are available for this target configuration."""
+        return self.init_coe is not None
 
     @property
     def eqe_set(self):
-        """bool: Indication of whether EQEs are available for this target configuration."""
-        return self.init_eqe != NO_SETTING
-
-    @property
-    def covariance(self):
-        """list: Measurement noise covariance matrix."""
-        return self._covariance.setting  # pylint: disable=no-member
-
-    @property
-    def slew_rate(self):
-        """float: Rate (radians/sec) at which this sensor can slew to acquire new targets."""
-        return self._slew_rate.setting  # pylint: disable=no-member
-
-    @property
-    def azimuth_range(self):
-        """list: Range of motion (radians) that this sensor has in the azimuth plane."""
-        return self._azimuth_range.setting  # pylint: disable=no-member
-
-    @property
-    def elevation_range(self):
-        """list: Range of motion (radians) that this sensor has in the elevation plane."""
-        return self._elevation_range.setting  # pylint: disable=no-member
-
-    @property
-    def efficiency(self):
-        """float: Efficiency percentage of the sensor."""
-        return self._efficiency.setting  # pylint: disable=no-member
-
-    @property
-    def aperture_area(self):
-        """float: Size (meters^2) of the sensor."""
-        return self._aperture_area.setting  # pylint: disable=no-member
-
-    @property
-    def sensor_type(self):
-        """str: Label for type of sensor this sensor is."""
-        return self._sensor_type.setting  # pylint: disable=no-member
-
-    @property
-    def exemplar(self):
-        """list: Two element list of exemplar capabilities, used in min detectable power calculation.
-
-        Example/units: [cross sectional area (m^2), range (km)]
-        """
-        return self._exemplar.setting  # pylint: disable=no-member
-
-    @property
-    def field_of_view(self):
-        """FieldOfViewConfig: visibility of this sensor."""
-        return self._field_of_view  # pylint: disable=no-member
-
-    @property
-    def calculate_fov(self):
-        """bool: decision to do FoV calcs with this sensor."""
-        return self._calculate_fov.setting  # pylint: disable=no-member
-
-    @calculate_fov.setter
-    def calculate_fov(self, new_calc_fov: bool):
-        """Set new Field of View.
-
-        Args:
-            new_calc_fov (``bool``): global FoV setting
-        """
-        self._calculate_fov = new_calc_fov
-
-    @property
-    def minimum_range(self):
-        """float, int: minimum range visibility of this sensor."""
-        return self._minimum_range.setting  # pylint: disable=no-member
-
-    @property
-    def maximum_range(self):
-        """float, int: maximum range visibility of this sensor."""
-        return self._maximum_range.setting  # pylint: disable=no-member
-
-    @property
-    def detectable_vismag(self):
-        """float, int: maximum detectable visual magnitude of this sensor."""
-        return self._detectable_vismag.setting  # pylint: disable=no-member
-
-    @property
-    def tx_power(self):
-        """float: Transmit power of radar sensor.
-
-        Will only be set if :attr:`~.Observation.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
-        """
-        return self._tx_power.setting  # pylint: disable=no-member
-
-    @property
-    def tx_frequency(self):
-        """float: Transmit frequency of radar sensor.
-
-        Will only be set if :attr:`~.Observation.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
-        """
-        return self._tx_frequency.setting  # pylint: disable=no-member
-
-    @property
-    def mass(self):
-        """float: Mass of RSO."""
-        return self._mass.setting  # pylint: disable=no-member
-
-    @property
-    def visual_cross_section(self):
-        """float: visual_cross_section of RSO."""
-        return self._visual_cross_section.setting  # pylint: disable=no-member
-
-    @property
-    def reflectivity(self):
-        """float: reflectivity of RSO."""
-        return self._reflectivity.setting  # pylint: disable=no-member
-
-    @property
-    def station_keeping(self):
-        """string: list of station keeping checks to perform.
-
-        Default to type(None), asserted to be None if host_type is `GROUND_FACILITY_LABEL`.
-        """
-        return self._station_keeping  # pylint: disable=no-member
+        R"""``bool``: Indication of whether EQEs are available for this target configuration."""
+        return self.init_eqe is not None
 
 
-class FieldOfViewConfig(ConfigSection):
-    """Field of View config class."""
+@dataclass
+class FieldOfViewConfig(ConfigObject):
+    R"""Configuration for the field of view of a sensor."""
 
-    CONFIG_LABEL = "field_of_view"
+    CONFIG_LABEL: ClassVar[str] = "field_of_view"
+    R"""``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self) -> None:
-        """Initialize FieldOfViewConfig."""
-        self._fov_shape = ConfigOption(
-            "fov_shape",
-            (str,),
-            default=NO_SETTING,
-            valid_settings=(NO_SETTING,) + VALID_SENSOR_FOV_LABELS,
-        )
-        self._cone_angle = ConfigOption(
-            "cone_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
-        )  # degrees
-        self._azimuth_angle = ConfigOption(
-            "azimuth_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
-        )  # degrees
-        self._elevation_angle = ConfigOption(
-            "elevation_angle", (float, int), default=DEFAULT_VIEWING_ANGLE
-        )  # degrees
+    fov_shape: str
+    R"""``str``: Type of Field of View being used."""
 
-    @property
-    def nested_items(self):
-        """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._fov_shape, self._cone_angle, self._azimuth_angle, self._elevation_angle]
+    cone_angle: float = DEFAULT_VIEWING_ANGLE
+    R"""``float``: cone angle for `conic` Field of View (degrees)."""
 
-    @property
-    def fov_shape(self):
-        """String: Type of Field of View being used."""
-        return self._fov_shape.setting
+    azimuth_angle: float = DEFAULT_VIEWING_ANGLE
+    R"""``float``: horizontal angular resolution for `rectangular` Field of View (degrees)."""
 
-    @property
-    def cone_angle(self):
-        """float: cone angle for `conic` Field of View (degrees)."""
-        return self._cone_angle.setting
+    elevation_angle: float = DEFAULT_VIEWING_ANGLE
+    R"""``float``: vertical angular resolution for `rectangular` Field of View (degrees)."""
 
-    @property
-    def azimuth_angle(self):
-        """float: horizontal angular resolution for `rectangular` Field of View (degrees)."""
-        return self._azimuth_angle.setting
+    def __post_init__(self):
+        R"""Runs after the dataclass is initialized."""
+        if self.fov_shape not in VALID_SENSOR_FOV_LABELS:
+            raise ConfigValueError("fov_shape", self.fov_shape, VALID_SENSOR_FOV_LABELS)
 
-    @property
-    def elevation_angle(self):
-        """float: vertical angular resolution for `rectangular` Field of View (degrees)."""
-        return self._elevation_angle.setting
+        if self.fov_shape == CONIC_FOV_LABEL:
+            if self.cone_angle <= 0 or self.cone_angle >= 180:
+                raise ConfigValueError("cone_angle", self.cone_angle, "between 0 and 180")
+
+        if self.fov_shape == RECTANGULAR_FOV_LABEL:
+            if self.azimuth_angle <= 0 or self.azimuth_angle >= 180:
+                raise ConfigValueError("azimuth_angle", self.azimuth_angle, "between 0 and 180")
+
+            if self.elevation_angle <= 0 or self.elevation_angle >= 180:
+                raise ConfigValueError(
+                    "elevation_angle", self.elevation_angle, "between 0 and 180"
+                )
 
 
-class StationKeepingConfig(ConfigSection):
-    """Configuration setting defining station keeping options."""
+@dataclass
+class StationKeepingConfig(ConfigObject):
+    R"""Configuration for station keeping routines."""
 
-    CONFIG_LABEL = "station_keeping"
-    """``str``: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "station_keeping"
+    R"""``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.StationKeepingConfig`."""
-        self._routines = ConfigOption(
-            "routines",
-            (list,),
-            default=[],
-            valid_settings=(NO_SETTING,) + VALID_STATION_KEEPING_ROUTINES,
-        )
+    routines: list[str] = field(default_factory=list)
+    R"""``list``: station keeping routines to be used."""
 
-    @property
-    def routines(self):
-        """Return settings for routines."""
-        return self._routines.setting
+    def __post_init__(self):
+        R"""Runs after the class is initialized."""
+        for routine in self.routines:
+            if routine not in VALID_STATION_KEEPING_ROUTINES:
+                raise ConfigValueError("routine", routine, VALID_STATION_KEEPING_ROUTINES)
 
-    @property
-    def nested_items(self):
-        """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._routines]
-
-    def toJSON(self):
-        """Convert station keeping config section to JSON-serializable format."""
+    def toJSON(self) -> dict[str, list[str]]:
+        R"""Convert station keeping config section to JSON-serializable format."""
         return {"routines": self.routines}

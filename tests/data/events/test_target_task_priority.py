@@ -23,38 +23,32 @@ except ImportError as error:
 from ...conftest import BaseTestCase
 
 
+@pytest.fixture(name="event_config_dict")
+def getTargetTaskPriority():
+    """``dict``: config dictionary for changing a tasking priority."""
+    return {
+        "scope": TargetTaskPriority.INTENDED_SCOPE.value,
+        "scope_instance_id": 123,
+        "start_time": datetime(2021, 8, 3, 12),
+        "end_time": datetime(2021, 8, 3, 12),
+        "event_type": TargetTaskPriority.EVENT_TYPE,
+        "target_id": 12345,
+        "target_name": "important sat",
+        "priority": 2.0,
+        "is_dynamic": False,
+    }
+
+
 class TestTargetTaskPriorityConfig(BaseTestCase):
     """Test class for :class:`.TargetTaskPriorityConfigObject` class."""
 
-    def testInitGoodArgs(self):
+    def testInitGoodArgs(self, event_config_dict):
         """Test :class:`.TargetTaskPriorityConfigObject` constructor with good arguments."""
-        assert TargetTaskPriorityConfigObject(
-            {
-                "scope": TargetTaskPriority.INTENDED_SCOPE.value,
-                "scope_instance_id": 123,
-                "start_time": datetime(2021, 8, 3, 12),
-                "event_type": TargetTaskPriority.EVENT_TYPE,
-                "target_id": 12345,
-                "target_name": "important sat",
-                "priority": 2.0,
-                "is_dynamic": False,
-            }
-        )
+        assert TargetTaskPriorityConfigObject(**event_config_dict)
 
-    def testDataDependency(self):
+    def testDataDependency(self, event_config_dict):
         """Test that :class:`.ScheduledImpulseEventConfig`'s data dependencies are correct."""
-        priority_config = TargetTaskPriorityConfigObject(
-            {
-                "scope": TargetTaskPriority.INTENDED_SCOPE.value,
-                "scope_instance_id": 123,
-                "start_time": datetime(2021, 8, 3, 12),
-                "event_type": TargetTaskPriority.EVENT_TYPE,
-                "target_id": 12345,
-                "target_name": "important sat",
-                "priority": 2.0,
-                "is_dynamic": False,
-            }
-        )
+        priority_config = TargetTaskPriorityConfigObject(**event_config_dict)
         priority_dependencies = priority_config.getDataDependencies()
         assert len(priority_dependencies) == 1
 
@@ -77,20 +71,9 @@ def getMockedEngine():
 class TestTargetTaskPriority(BaseTestCase):
     """Test class for :class:`.TargetTaskPriority` class."""
 
-    def testFromConfig(self):
+    def testFromConfig(self, event_config_dict):
         """Test :meth:`.TargetTaskPriority.fromConfig()`."""
-        priority_config = TargetTaskPriorityConfigObject(
-            {
-                "scope": TargetTaskPriority.INTENDED_SCOPE.value,
-                "scope_instance_id": 123,
-                "start_time": datetime(2021, 8, 3, 12),
-                "event_type": TargetTaskPriority.EVENT_TYPE,
-                "target_id": 12345,
-                "target_name": "important sat",
-                "priority": 2.0,
-                "is_dynamic": False,
-            }
-        )
+        priority_config = TargetTaskPriorityConfigObject(**event_config_dict)
         assert TargetTaskPriority.fromConfig(priority_config)
 
     def testHandleEvent(self, mocked_engine):

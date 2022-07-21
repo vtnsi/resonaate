@@ -5,7 +5,6 @@ This includes Kalman filter classes, statistical tests, and debugging utility fu
 from __future__ import annotations
 
 # Standard Library Imports
-from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Local Imports
@@ -126,7 +125,7 @@ def maneuverDetectionFactory(config: ManeuverDetectionConfig) -> ManeuverDetecti
     Raises:
         ValueError: raised if `config.name` is invalid.
     """
-    if not config.name:
+    if not config:
         return None
 
     if config.name in VALID_MANEUVER_DETECTION_LABELS:
@@ -153,6 +152,8 @@ def adaptiveEstimationFactory(
         ValueError: raised if `config.name` is invalid.
     """
     # Create the base estimation filter for nominal operation
+    if config is None:
+        raise ValueError("Adaptive estimation turned on by sequential filter, but no config given")
     if config.name in VALID_ADAPTIVE_ESTIMATION_LABELS:
         adaptive_filter = _ADAPTIVE_ESTIMATION_MAP[config.name].fromConfig(
             config, nominal_filter, time_step

@@ -1,4 +1,10 @@
 """Submodule defining the 'estimation' configuration section."""
+from __future__ import annotations
+
+# Standard Library Imports
+from dataclasses import dataclass, field
+from typing import ClassVar
+
 # Local Imports
 from ...dynamics.constants import SPECIAL_PERTURBATIONS_LABEL, TWO_BODY_LABEL
 from ...estimation import (
@@ -8,213 +14,160 @@ from ...estimation import (
 )
 from ...estimation.adaptive.initialization import VALID_ORBIT_DETERMINATION_LABELS
 from ...estimation.adaptive.mmae_stacking_utils import VALID_STACKING_LABELS
-from .base import NO_SETTING, ConfigOption, ConfigSection
+from .base import ConfigObject, ConfigValueError
+
+VALID_FILTER_DYNAMICS = (
+    TWO_BODY_LABEL,
+    SPECIAL_PERTURBATIONS_LABEL,
+)
+DEFAULT_MANEUVER_DETECTION_THRESHOLD: float = 0.05
+DEFAULT_PRUNE_PERCENTAGE: float = 0.997
+DEFAULT_PRUNE_THRESHOLD: float = 1e-20
+DEFAULT_OBSERVATION_WINDOW: int = 3
+DEFAULT_MODEL_TIME_INTERVAL: int = 60
+DEFAULT_MMAE_STACKING_METHOD: str = "eci_stack"
+DEFAULT_MMAE_INITIALIZATION_METHOD: str = "lambert_universal"
 
 
-class EstimationConfig(ConfigSection):
+@dataclass
+class EstimationConfig(ConfigObject):
     """Configuration section defining several estimation-based options."""
 
-    CONFIG_LABEL = "estimation"
-    """``str``: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "estimation"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.EstimationConfig`."""
-        self._sequential_filter = SequentialFilterConfig()
-        self._adaptive_filter = AdaptiveEstimationConfig()
+    sequential_filter: SequentialFilterConfig | dict
+    """:class:`.SequentialFilterConfig`: sequential technique as nested item."""
 
-    @property
-    def nested_items(self):
-        """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._sequential_filter, self._adaptive_filter]
+    adaptive_filter: AdaptiveEstimationConfig | dict | None = None
+    """:class:`.AdaptiveEstimationConfig`: adaptive estimation technique as nested item."""
 
-    @property
-    def sequential_filter(self):
-        """:class:`.SequentialFilterConfig`: sequential technique as nested item."""
-        return self._sequential_filter
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if isinstance(self.sequential_filter, dict):
+            self.sequential_filter = SequentialFilterConfig(**self.sequential_filter)
 
-    @property
-    def adaptive_filter(self):
-        """:class:`.AdaptiveEstimationConfig`: adaptive estimation technique as nested item."""
-        return self._adaptive_filter
+        if isinstance(self.adaptive_filter, dict):
+            self.adaptive_filter = AdaptiveEstimationConfig(**self.adaptive_filter)
 
 
-class SequentialFilterConfig(ConfigSection):
+@dataclass
+class SequentialFilterConfig(ConfigObject):
     """Configuration section defining several sequential filter-based options."""
 
-    CONFIG_LABEL = "sequential_filter"
-    """``str``: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "sequential_filter"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.EstimationConfig`."""
-        self._name = ConfigOption("name", (str,), valid_settings=VALID_FILTER_LABELS)
-        self._parameters = ConfigOption("parameters", (dict,), default={})
-        self._dynamics = ConfigOption(
-            "dynamics_model",
-            (str,),
-            default=SPECIAL_PERTURBATIONS_LABEL,
-            valid_settings=(TWO_BODY_LABEL, SPECIAL_PERTURBATIONS_LABEL),
-        )
-        self._maneuver_detection = ManeuverDetectionConfig()
-        self._adaptive_estimation = ConfigOption("adaptive_estimation", (bool,), default=False)
+    name: str
+    """``str``: name of the sequential filter algorithm to use."""
 
-    @property
-    def nested_items(self):
-        """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [
-            self._name,
-            self._parameters,
-            self._dynamics,
-            self._maneuver_detection,
-            self._adaptive_estimation,
-        ]
+    dynamics_model: str = SPECIAL_PERTURBATIONS_LABEL
+    """``str``: name of the dynamics to use in the filter."""
 
-    @property
-    def name(self):
-        """``str``: Name of the type of filter to use."""
-        return self._name.setting
+    maneuver_detection: ManeuverDetectionConfig | dict | None = None
+    """:class:`.ManeuverDetectionConfig`: maneuver detection technique."""
 
-    @property
-    def parameters(self):
-        """``dict``: Dictionary of parameters used to further define the filter to use."""
-        return self._parameters.setting
+    adaptive_estimation: bool = False
+    """``bool``: Check if sequential filter should turn on adaptive estimation."""
 
-    @property
-    def dynamics(self):
-        """``str``: Name of the dynamics to use in the filter."""
-        return self._dynamics.setting
+    parameters: dict = field(default_factory=dict)
+    """``dict``: extra parameters for the filter algorithm."""
 
-    @property
-    def maneuver_detection(self):
-        """:class:`.ManeuverDetectionConfig`: maneuver detection technique as nested item."""
-        return self._maneuver_detection
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if self.name not in VALID_FILTER_LABELS:
+            raise ConfigValueError("name", self.name, VALID_FILTER_LABELS)
 
-    @property
-    def adaptive_estimation(self):
-        """``bool``: Check if sequential filter should turn on adaptive estimation."""
-        return self._adaptive_estimation.setting
+        if self.dynamics_model not in VALID_FILTER_DYNAMICS:
+            raise ConfigValueError("dynamics_model", self.dynamics_model, VALID_FILTER_DYNAMICS)
+
+        if isinstance(self.maneuver_detection, dict):
+            self.maneuver_detection = ManeuverDetectionConfig(**self.maneuver_detection)
 
 
-class ManeuverDetectionConfig(ConfigSection):
+@dataclass
+class ManeuverDetectionConfig(ConfigObject):
     """Configuration section defining maneuver detection options."""
 
-    CONFIG_LABEL = "maneuver_detection"
-    """``str``: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "maneuver_detection"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.ManeuverDetectionConfig`."""
-        self._name = ConfigOption(
-            "name",
-            (str,),
-            default=NO_SETTING,
-            valid_settings=(NO_SETTING,) + VALID_MANEUVER_DETECTION_LABELS,
-        )
-        self._threshold = ConfigOption("threshold", (float,), default=0.05)
-        self._parameters = ConfigOption("parameters", (dict,), default={})
+    name: str
+    """``str``: maneuver detection technique to use."""
 
-    @property
-    def nested_items(self):
-        """``list``: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._name, self._threshold, self._parameters]
+    threshold: float = DEFAULT_MANEUVER_DETECTION_THRESHOLD
+    R"""``float``: lower tail value for :math:`\chi^2` maneuver detection threshold."""
 
-    @property
-    def name(self):
-        """``str``: Name of metric to use."""
-        return self._name.setting  # pylint: disable=no-member
+    parameters: dict = field(default_factory=dict)
+    """``dict``: extra parameters for the maneuver detection technique."""
 
-    @property
-    def threshold(self):
-        """``float``: lower tail value for maneuver chi^2 threshold."""
-        return self._threshold.setting  # pylint: disable=no-member
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if self.name not in VALID_MANEUVER_DETECTION_LABELS:
+            raise ConfigValueError("name", self.name, VALID_MANEUVER_DETECTION_LABELS)
 
-    @property
-    def parameters(self):
-        """``dict``: Parameters to use for the metric function."""
-        return self._parameters.setting  # pylint: disable=no-member
+        if self.threshold <= 0 or self.threshold >= 1:
+            raise ConfigValueError("threshold", self.threshold, "between 0 and 1")
 
 
-class AdaptiveEstimationConfig(ConfigSection):
+@dataclass
+class AdaptiveEstimationConfig(ConfigObject):
     """Configuration section defining adaptive estimation options."""
 
-    CONFIG_LABEL = "adaptive_filter"
-    """str: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "adaptive_filter"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.AdaptiveEstimationConfig`.
+    name: str
+    """``str``: Name of adaptive estimation method to use."""
 
-        Note:
-            Most default values come from Nastasi's dissertation
-        """
-        self._name = ConfigOption(
-            "name",
-            (str,),
-            default=NO_SETTING,
-            valid_settings=(NO_SETTING,) + VALID_ADAPTIVE_ESTIMATION_LABELS,
-        )
-        self._orbit_determination = ConfigOption(
-            "orbit_determination",
-            (str,),
-            default="lambert_universal",
-            valid_settings=VALID_ORBIT_DETERMINATION_LABELS,
-        )
-        self._model_interval = ConfigOption("model_interval", (int,), default=60)
-        self._stacking_method = ConfigOption(
-            "stacking_method", (str,), default="eci_stack", valid_settings=VALID_STACKING_LABELS
-        )
-        self._observation_window = ConfigOption("observation_window", (int,), default=3)
-        self._prune_threshold = ConfigOption("prune_threshold", (float,), default=1e-20)
-        self._prune_percentage = ConfigOption("prune_percentage", (float,), default=0.997)
-        self._parameters = ConfigOption("parameters", (dict,), default={})
+    orbit_determination: str = DEFAULT_MMAE_INITIALIZATION_METHOD
+    """``str``: orbit determination technique used to initialize the adaptive filter."""
 
-    @property
-    def nested_items(self):
-        """``list``: Return a list of :class:`.ConfigOption` that this section contains."""
-        return [
-            self._name,
-            self._orbit_determination,
-            self._model_interval,
-            self._stacking_method,
-            self._observation_window,
-            self._prune_threshold,
-            self._prune_percentage,
-            self._parameters,
-        ]
+    stacking_method: str = DEFAULT_MMAE_STACKING_METHOD
+    """``str``: state vector coordinate system stacking technique."""
 
-    @property
-    def name(self):
-        """``str``: Name of adaptive estimation method to use."""
-        return self._name.setting
+    model_interval: int = DEFAULT_MODEL_TIME_INTERVAL
+    """``int``: time step between MMAE models in seconds."""
 
-    @property
-    def orbit_determination(self):
-        """``float``: value for maneuver chi^2 threshold."""
-        return self._orbit_determination.setting
+    observation_window: int = DEFAULT_OBSERVATION_WINDOW
+    """``int``: number of previous observations to go back to to start adaptive estimation."""
 
-    @property
-    def model_interval(self):
-        """``int``: Timestep between models in seconds."""
-        return self._model_interval.setting
+    prune_threshold: float = DEFAULT_PRUNE_THRESHOLD
+    """``float``: likelihood that a model has to be less than to be pruned off."""
 
-    @property
-    def stacking_method(self):
-        """``str``: name of coordinate system used for stacking models."""
-        return self._stacking_method.setting
+    prune_percentage: float = DEFAULT_PRUNE_PERCENTAGE
+    """``float``: percent likelihood a model has to meet to trigger MMAE convergence."""
 
-    @property
-    def observation_window(self):
-        """``int``: number of previous observations to go back to to start adaptive estimation."""
-        return self._observation_window.setting
+    parameters: dict = field(default_factory=dict)
+    """``dict``: extra parameters for the adaptive estimation technique."""
 
-    @property
-    def prune_threshold(self):
-        """``float``: likelihood that a model has to be less than to be pruned off."""
-        return self._prune_threshold.setting
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if self.name not in VALID_ADAPTIVE_ESTIMATION_LABELS:
+            raise ConfigValueError("name", self.name, VALID_ADAPTIVE_ESTIMATION_LABELS)
 
-    @property
-    def prune_percentage(self):
-        """``float``: percent likelihood a model has to meet to trigger mmae convergence."""
-        return self._prune_percentage.setting
+        if self.orbit_determination not in VALID_ORBIT_DETERMINATION_LABELS:
+            raise ConfigValueError(
+                "orbit_determination", self.orbit_determination, VALID_ORBIT_DETERMINATION_LABELS
+            )
 
-    @property
-    def parameters(self):
-        """``dict``: Parameters to use for the reward function specified by :attr:`.name`."""
-        return self._parameters.setting
+        if self.stacking_method not in VALID_STACKING_LABELS:
+            raise ConfigValueError("stacking_method", self.stacking_method, VALID_STACKING_LABELS)
+
+        if self.model_interval <= 0:
+            raise ConfigValueError("model_interval", self.model_interval, "must be positive")
+
+        if self.observation_window <= 0:
+            raise ConfigValueError(
+                "observation_window", self.observation_window, "must be positive"
+            )
+
+        if self.prune_threshold <= 0 or self.prune_threshold >= 1:
+            raise ConfigValueError(
+                "prune_threshold", self.prune_threshold, "must be between 0 and 1"
+            )
+
+        if self.prune_percentage <= 0 or self.prune_percentage >= 1:
+            raise ConfigValueError(
+                "prune_percentage", self.prune_percentage, "must be between 0 and 1"
+            )
