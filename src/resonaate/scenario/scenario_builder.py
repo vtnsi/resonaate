@@ -14,7 +14,7 @@ from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
-from ..common.exceptions import DuplicateSensorError, DuplicateTargetError
+from ..common.exceptions import DuplicateEngineError, DuplicateSensorError, DuplicateTargetError
 from ..common.logger import Logger
 from ..data.data_interface import AgentModel
 from ..data.events import Event
@@ -80,7 +80,7 @@ class ScenarioBuilder:
         for engine_conf in self._config.engines:
             if engine_conf.unique_id in self.tasking_engines:
                 err = f"Engines share a unique ID: {engine_conf.unique_id}"
-                raise ValueError(err)
+                raise DuplicateEngineError(err)
 
             # Create Reward & Decision from configuration
             reward = rewardsFactory(engine_conf.reward)

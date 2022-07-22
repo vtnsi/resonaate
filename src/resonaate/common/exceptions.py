@@ -27,3 +27,7 @@ class DuplicateTargetError(Exception):
 
 class DuplicateSensorError(Exception):
     """Exception that occurs for duplicate sensors."""
+
+
+class DuplicateEngineError(Exception):
+    """Exception that occurs for duplicate engines."""
