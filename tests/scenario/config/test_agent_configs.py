@@ -316,7 +316,7 @@ class TestSensorConfig(BaseTestCase):
         with pytest.raises(ConfigError):
             _ = SensingAgentConfig(**sen_dict)
 
-    def testInvalidHostTypoe(self):
+    def testInvalidHostType(self):
         """Test invalid host type."""
         with pytest.raises(ConfigError):
             _ = SensingAgentConfig(
