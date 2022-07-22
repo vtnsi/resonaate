@@ -16,7 +16,7 @@ from ...estimation.adaptive.initialization import VALID_ORBIT_DETERMINATION_LABE
 from ...estimation.adaptive.mmae_stacking_utils import VALID_STACKING_LABELS
 from .base import ConfigObject, ConfigValueError
 
-VALID_FILTER_DYNAMICS = (
+VALID_FILTER_DYNAMICS: tuple[str] = (
     TWO_BODY_LABEL,
     SPECIAL_PERTURBATIONS_LABEL,
 )
@@ -106,7 +106,7 @@ class ManeuverDetectionConfig(ConfigObject):
         if self.name not in VALID_MANEUVER_DETECTION_LABELS:
             raise ConfigValueError("name", self.name, VALID_MANEUVER_DETECTION_LABELS)
 
-        if self.threshold <= 0 or self.threshold >= 1:
+        if self.threshold <= 0.0 or self.threshold >= 1.0:
             raise ConfigValueError("threshold", self.threshold, "between 0 and 1")
 
 
@@ -162,12 +162,12 @@ class AdaptiveEstimationConfig(ConfigObject):
                 "observation_window", self.observation_window, "must be positive"
             )
 
-        if self.prune_threshold <= 0 or self.prune_threshold >= 1:
+        if self.prune_threshold <= 0.0 or self.prune_threshold >= 1.0:
             raise ConfigValueError(
                 "prune_threshold", self.prune_threshold, "must be between 0 and 1"
             )
 
-        if self.prune_percentage <= 0 or self.prune_percentage >= 1:
+        if self.prune_percentage <= 0.0 or self.prune_percentage >= 1.0:
             raise ConfigValueError(
                 "prune_percentage", self.prune_percentage, "must be between 0 and 1"
             )

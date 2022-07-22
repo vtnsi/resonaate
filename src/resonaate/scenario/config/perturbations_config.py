@@ -8,14 +8,14 @@ from typing import ClassVar
 # Local Imports
 from .base import ConfigObject, ConfigValueError
 
-SUPPORTED_THIRD_BODIES = [
+SUPPORTED_THIRD_BODIES: tuple[str] = (
     "moon",
     "sun",
     "jupiter",
     "saturn",
     "venus",
-]
-"""``list``: currently supported third-body perturbation configs."""
+)
+"""``tuple``: currently supported third-body perturbation configs."""
 
 
 @dataclass

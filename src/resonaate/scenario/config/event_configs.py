@@ -50,7 +50,7 @@ VALID_AGENT_TYPES: tuple[str] = tuple(_type.value for _type in AgentRemovalEvent
 class EventConfigList(ConfigObjectList):
     """Allows different types of :class:`.EventConfig` to be stored."""
 
-    def __post_init__(self, config_type: Type) -> None:
+    def __post_init__(self, config_type: Type[ConfigObject]) -> None:
         """Runs after the object is initialized."""
         # [NOTE]: This can't call the super class `__post_init__()` because it has DIFFERENT class types
         #   which themselves have different constructors.
@@ -61,7 +61,7 @@ class EventConfigList(ConfigObjectList):
 
         config_objects = []
         for event in self._config_objects:
-            if isinstance(event, dict):
+            if isinstance(event, dict) and event:
                 if event["event_type"] not in event_classes:
                     raise ConfigValueError(
                         "event_type", event["event_type"], tuple(event_classes.keys())

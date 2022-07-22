@@ -14,13 +14,13 @@ from ...dynamics.constants import (
 )
 from .base import ConfigObject, ConfigValueError
 
-VALID_PROPAGATION_METHODS = (
+VALID_PROPAGATION_METHODS: tuple[str] = (
     SPECIAL_PERTURBATIONS_LABEL,
     TWO_BODY_LABEL,
 )
 """``tuple``: Valid propagation methods."""
 
-VALID_INTEGRATION_METHODS = (
+VALID_INTEGRATION_METHODS: tuple[str] = (
     RK45_LABEL,
     DOP853_LABEL,
 )

@@ -8,7 +8,7 @@ from typing import ClassVar
 # Local Imports
 from .base import ConfigObject, ConfigValueError, inclusiveRange
 
-VALID_GEOPOTENTIAL_MODELS = (
+VALID_GEOPOTENTIAL_MODELS: tuple[str] = (
     "egm2008.txt",
     "egm96.txt",
     "GGM03S.txt",

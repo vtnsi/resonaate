@@ -1,5 +1,7 @@
 # pylint: disable=attribute-defined-outside-init, unused-argument
 # Standard Library Imports
+from copy import deepcopy
+
 # Third Party Imports
 import pytest
 
@@ -7,9 +9,12 @@ try:
     # RESONAATE Imports
     from resonaate.agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
     from resonaate.scenario.config.agent_configs import (
+        DEFAULT_VIEWING_ANGLE,
         ConfigError,
         ConfigValueError,
+        FieldOfViewConfig,
         SensingAgentConfig,
+        StationKeepingConfig,
         TargetAgentConfig,
     )
     from resonaate.sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
@@ -121,6 +126,23 @@ class TestTargetConfig(BaseTestCase):
 
             with pytest.raises(ConfigError):
                 _ = TargetAgentConfig(**tgt_dict)
+
+    def testInvalidAltitude(self):
+        """Test invalid altitude."""
+        with pytest.raises(ConfigError):
+            _ = TargetAgentConfig(
+                sat_num=1,
+                sat_name="Test",
+                init_eci=[1e9, 0, 0, 0, 0, 0],
+            )
+
+    def testNoStateInput(self):
+        """Test no state input."""
+        with pytest.raises(ConfigError):
+            _ = TargetAgentConfig(
+                sat_num=1,
+                sat_name="Test",
+            )
 
 
 class TestSensorConfig(BaseTestCase):
@@ -259,3 +281,155 @@ class TestSensorConfig(BaseTestCase):
             m_patch.setitem(sen_dict, "station_keeping", {"routines": [20]})
             with pytest.raises(ConfigValueError):
                 _ = SensingAgentConfig(**sen_dict)
+
+    def testInvalidAltitude(self):
+        """Test invalid altitude."""
+        sen_dict = deepcopy(SPACE_SENSORS[0])
+        sen_dict["init_eci"] = [1e9, 0, 0, 0, 0, 0]
+        with pytest.raises(ConfigError):
+            _ = SensingAgentConfig(**sen_dict)
+
+    def testStationKeepingForGroundSensors(self):
+        """Test station keeping for ground sensors throws an error."""
+        sen_dict = deepcopy(EARTH_SENSORS[0])
+        sen_dict["station_keeping"] = {"routines": ["LEO"]}
+        with pytest.raises(ConfigError):
+            _ = SensingAgentConfig(**sen_dict)
+
+        sen_dict = deepcopy(EARTH_SENSORS[0])
+        sen_dict["station_keeping"] = {}
+        _ = SensingAgentConfig(**sen_dict)
+
+        sen_dict = deepcopy(EARTH_SENSORS[0])
+        sen_dict["station_keeping"] = None
+        _ = SensingAgentConfig(**sen_dict)
+
+    def testRadarSensorRequiredInputs(self):
+        """Test radar sensor required inputs."""
+        sen_dict = deepcopy(EARTH_SENSORS[0])
+        del sen_dict["tx_frequency"]
+        with pytest.raises(ConfigError):
+            _ = SensingAgentConfig(**sen_dict)
+
+        sen_dict = deepcopy(EARTH_SENSORS[0])
+        del sen_dict["tx_power"]
+        with pytest.raises(ConfigError):
+            _ = SensingAgentConfig(**sen_dict)
+
+    def testInvalidHostTypoe(self):
+        """Test invalid host type."""
+        with pytest.raises(ConfigError):
+            _ = SensingAgentConfig(
+                id=11111,
+                name="Test",
+                host_type="INVALID",
+                sensor_type=OPTICAL_LABEL,
+                azimuth_range=[0, 360],
+                elevation_range=[0, 90],
+                covariance=[[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                aperture_area=10.0,
+                efficiency=0.99,
+                slew_rate=2.0,
+                exemplar=[2.0, 42000.0],
+                init_eci=[7000.0, 0, 0, 0, 0, 0],
+            )
+
+    def testInvalidSensorType(self):
+        """Test invalid sensor type."""
+        with pytest.raises(ConfigError):
+            _ = SensingAgentConfig(
+                id=11111,
+                name="Test",
+                host_type=SPACECRAFT_LABEL,
+                sensor_type="INVALID",
+                azimuth_range=[0, 360],
+                elevation_range=[0, 90],
+                covariance=[[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                aperture_area=10.0,
+                efficiency=0.99,
+                slew_rate=2.0,
+                exemplar=[2.0, 42000.0],
+                init_eci=[7000.0, 0, 0, 0, 0, 0],
+            )
+
+
+def testFieldOfViewConfig():
+    """Test field of view config."""
+    cone_cfg = FieldOfViewConfig(fov_shape="conic", cone_angle=DEFAULT_VIEWING_ANGLE)
+    assert cone_cfg.CONFIG_LABEL == "field_of_view"
+    assert cone_cfg.cone_angle == DEFAULT_VIEWING_ANGLE
+
+    cone_cfg = FieldOfViewConfig(fov_shape="conic")
+    assert cone_cfg.CONFIG_LABEL == "field_of_view"
+    assert cone_cfg.cone_angle == DEFAULT_VIEWING_ANGLE
+
+    rect_cfg = FieldOfViewConfig(
+        fov_shape="rectangular",
+        azimuth_angle=DEFAULT_VIEWING_ANGLE,
+        elevation_angle=DEFAULT_VIEWING_ANGLE,
+    )
+    assert rect_cfg.CONFIG_LABEL == "field_of_view"
+    assert rect_cfg.azimuth_angle == DEFAULT_VIEWING_ANGLE
+    assert rect_cfg.elevation_angle == DEFAULT_VIEWING_ANGLE
+
+    rect_cfg = FieldOfViewConfig(fov_shape="rectangular")
+    assert rect_cfg.azimuth_angle == DEFAULT_VIEWING_ANGLE
+    assert rect_cfg.elevation_angle == DEFAULT_VIEWING_ANGLE
+
+
+def testBadInputsFieldOfViewConfig():
+    """Test bad inputs for field of view config."""
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="invalid")
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="conic", cone_angle=0.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="conic", cone_angle=180.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="conic", cone_angle=-1.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="conic", cone_angle=181.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="rectangular", azimuth_angle=0.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="rectangular", azimuth_angle=180.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="rectangular", azimuth_angle=-1.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="rectangular", azimuth_angle=181.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="rectangular", elevation_angle=0.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="rectangular", elevation_angle=180.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="rectangular", elevation_angle=-1.0)
+
+    with pytest.raises(ConfigValueError):
+        _ = FieldOfViewConfig(fov_shape="rectangular", elevation_angle=181.0)
+
+
+def testStationKeepingConfig():
+    """Test station keeping config."""
+    cfg = StationKeepingConfig(routines=["LEO"])
+    assert cfg.CONFIG_LABEL == "station_keeping"
+    assert cfg.routines == ["LEO"]
+
+    assert cfg.toJSON() == {"routines": ["LEO"]}
+
+    cfg = StationKeepingConfig()
+    assert cfg.routines is not None
+    assert not cfg.routines
+
+    with pytest.raises(ConfigValueError):
+        _ = StationKeepingConfig(routines=["INVALID"])

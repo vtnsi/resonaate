@@ -360,7 +360,7 @@ class SensingAgentConfig(ConfigObject):
             orbital_regime = "geo"
         else:
             err = "RSO altitude above GEO, unable to set a default mass value"
-            raise ValueError(self.__class__.__name__, err)
+            raise ConfigError(self.__class__.__name__, err)
 
         # Set mass
         if self.mass is None:

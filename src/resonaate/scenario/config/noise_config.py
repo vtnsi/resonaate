@@ -11,12 +11,12 @@ from ...physics.noise import (
     DISCRETE_WHITE_NOISE_LABEL,
     SIMPLE_NOISE_LABEL,
 )
-from .base import ConfigObject, ConfigValueError
+from .base import ConfigObject, ConfigTypeError, ConfigValueError
 
 DEFAULT_RANDOM_SEED_VALUE: str = "os"
 """``str``: Value to set :attr:`~.NoiseConfig.random_seed` to that indicates seeding the PRNG with the OS's entropy."""
 
-VALID_NOISE_TYPES = (
+VALID_NOISE_TYPES: tuple[str] = (
     CONTINUOUS_WHITE_NOISE_LABEL,
     DISCRETE_WHITE_NOISE_LABEL,
     SIMPLE_NOISE_LABEL,
@@ -24,13 +24,13 @@ VALID_NOISE_TYPES = (
 """``tuple``: Valid noise types."""
 
 
-DEFAULT_POSITION_STD = 1e-3
+DEFAULT_POSITION_STD: float = 1e-3
 """``float``: Default value for :attr:`~.NoiseConfig.init_position_std_km`."""
 
-DEFAULT_VELOCITY_STD = 1e-6
+DEFAULT_VELOCITY_STD: float = 1e-6
 """``float``: Default value for :attr:`~.NoiseConfig.init_velocity_std_km_p_sec`."""
 
-DEFAULT_FILTER_NOISE_MAGNITUDE = 3e-14
+DEFAULT_FILTER_NOISE_MAGNITUDE: float = 3e-14
 """``float``: Default value for :attr:`~.NoiseConfig.filter_noise_magnitude`."""
 
 
@@ -72,11 +72,23 @@ class NoiseConfig(ConfigObject):
                 raise ConfigValueError(
                     "random_seed",
                     self.random_seed,
-                    (DEFAULT_RANDOM_SEED_VALUE, None, "or any int"),
+                    (DEFAULT_RANDOM_SEED_VALUE, None, "or any positive int"),
                 )
-
-        if self.random_seed == DEFAULT_RANDOM_SEED_VALUE:
             self.random_seed = None
+
+        elif not isinstance(self.random_seed, int):
+            raise ConfigTypeError(
+                "random_seed",
+                self.random_seed,
+                (DEFAULT_RANDOM_SEED_VALUE, None, "or any positive int"),
+            )
+
+        elif self.random_seed < 0:
+            raise ConfigValueError(
+                "random_seed",
+                self.random_seed,
+                (DEFAULT_RANDOM_SEED_VALUE, None, "or any positive int"),
+            )
 
         if self.dynamics_noise_type not in VALID_NOISE_TYPES:
             raise ConfigValueError(
@@ -93,3 +105,11 @@ class NoiseConfig(ConfigObject):
 
         if self.filter_noise_magnitude <= 0.0:
             raise ConfigValueError("filter_noise_magnitude", self.filter_noise_magnitude, "> 0.0")
+
+        if self.init_position_std_km <= 0.0:
+            raise ConfigValueError("init_position_std_km", self.init_position_std_km, "> 0.0")
+
+        if self.init_velocity_std_km_p_sec <= 0.0:
+            raise ConfigValueError(
+                "init_velocity_std_km_p_sec", self.init_velocity_std_km_p_sec, "> 0.0"
+            )
