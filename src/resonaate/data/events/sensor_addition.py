@@ -1,6 +1,9 @@
 """Defines the :class:`.SensorAdditionEvent` data table class."""
+from __future__ import annotations
+
 # Standard Library Imports
 from json import dumps, loads
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array
@@ -15,128 +18,134 @@ from ...physics.transforms.methods import ecef2eci, lla2ecef
 from ...sensors import ADV_RADAR_LABEL, RADAR_LABEL
 from .base import Event, EventScope
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...scenario.config.event_configs import SensorAdditionEventConfig
+    from ...scenario.scenario import Scenario
+
 
 class SensorAdditionEvent(Event):
     """Event data object describing a sensor that is added after scenario start."""
 
-    EVENT_TYPE = "sensor_addition"
-    """str: Name of this type of event."""
+    EVENT_TYPE: str = "sensor_addition"
+    """``str``: Name of this type of event."""
 
-    INTENDED_SCOPE = EventScope.SCENARIO_STEP
-    """EventScope: Scope where :class:`.SensorAdditionEvent` objects should be handled."""
+    INTENDED_SCOPE: EventScope = EventScope.SCENARIO_STEP
+    """:class:`.EventScope`: Scope where :class:`.SensorAdditionEvent` objects should be handled."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
     def agent_id(self):  # pylint: disable=invalid-name
-        """int: Unique ID of the :class:`.Agent` being added to the scenario."""
+        """``int``: Unique ID of the :class:`.AgentModel` being added to the scenario."""
         return Event.__table__.c.get(  # pylint: disable=no-member
             "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
         )
 
-    agent = relationship("Agent", lazy="joined", innerjoin=True)
-    """agent_base.Agent: the `Agent` object being added to the scenario."""
+    agent = relationship("AgentModel", lazy="joined", innerjoin=True)
+    """:class:`~.agent.AgentModel`: the `AgentModel` object being added to the scenario."""
 
     @declared_attr
     def tasking_engine_id(self):  # pylint: disable=invalid-name
-        """int: Unique ID for the :class:`.TaskingEngine` that this sensor should be added to."""
+        """``int``: Unique ID for the :class:`.TaskingEngine` that this sensor should be added to."""
         return Event.__table__.c.get(  # pylint: disable=no-member
             "tasking_engine_id", Column(Integer)
         )
 
     host_type = Column(String(64))
-    """str: Label for type of sensing agent this sensor is."""
+    """``str``: Label for type of sensing agent this sensor is."""
 
     @declared_attr
     def pos_x_km(self):  # pylint: disable=invalid-name
-        """float: Cartesian x-coordinate for inertial satellite location in ECI frame."""
+        """``float``: Cartesian x-coordinate for inertial satellite location in ECI frame."""
         return Event.__table__.c.get("pos_x_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def pos_y_km(self):  # pylint: disable=invalid-name
-        """float: Cartesian y-coordinate for inertial satellite location in ECI frame."""
+        """``float``: Cartesian y-coordinate for inertial satellite location in ECI frame."""
         return Event.__table__.c.get("pos_y_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def pos_z_km(self):  # pylint: disable=invalid-name
-        """float: Cartesian z-coordinate for inertial satellite location in ECI frame."""
+        """``float``: Cartesian z-coordinate for inertial satellite location in ECI frame."""
         return Event.__table__.c.get("pos_z_km", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_x_km_p_sec(self):  # pylint: disable=invalid-name
-        """float: Cartesian x-coordinate for inertial satellite velocity in ECI frame."""
+        """``float``: Cartesian x-coordinate for inertial satellite velocity in ECI frame."""
         return Event.__table__.c.get("vel_x_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_y_km_p_sec(self):  # pylint: disable=invalid-name
-        """float: Cartesian y-coordinate for inertial satellite velocity in ECI frame."""
+        """``float``: Cartesian y-coordinate for inertial satellite velocity in ECI frame."""
         return Event.__table__.c.get("vel_y_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     @declared_attr
     def vel_z_km_p_sec(self):  # pylint: disable=invalid-name
-        """float: Cartesian z-coordinate for inertial satellite velocity in ECI frame."""
+        """``float``: Cartesian z-coordinate for inertial satellite velocity in ECI frame."""
         return Event.__table__.c.get("vel_z_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     azimuth_min = Column(Float)
-    """float: Minimum amount of motion (radians) this sensor has in the azimuth plane."""
+    """``float``: Minimum amount of motion (radians) this sensor has in the azimuth plane."""
 
     azimuth_max = Column(Float)
-    """float: Maximum amount of motion (radians) this sensor has in the azimuth plane."""
+    """``float``: Maximum amount of motion (radians) this sensor has in the azimuth plane."""
 
     elevation_min = Column(Float)
-    """float: Minimum amount of motion (radians) this sensor has in the elevation plane."""
+    """``float``: Minimum amount of motion (radians) this sensor has in the elevation plane."""
 
     elevation_max = Column(Float)
-    """float: Maximum amount of motion (radians) this sensor has in the elevation plane."""
+    """``float``: Maximum amount of motion (radians) this sensor has in the elevation plane."""
 
     covariance_json = Column(String(128))
-    """str: JSON serialized covariance array."""
+    """``str``: JSON serialized covariance array."""
 
     aperture_area = Column(Float)
-    """float: Size (meters^2) of the sensor."""
+    """``float``: Size (meters^2) of the sensor."""
 
     efficiency = Column(Float)
-    """float: Efficiency percentage of the sensor."""
+    """``float``: Efficiency percentage of the sensor."""
 
     slew_rate = Column(Float)
-    """float: Rate (radians/sec) at which this sensor can slew to acquire new targets."""
+    """``float``: Rate (radians/sec) at which this sensor can slew to acquire new targets."""
 
     sensor_type = Column(String(64))
-    """str: Label for type of sensor this sensor is."""
+    """``str``: Label for type of sensor this sensor is."""
 
     exemplar_cross_section = Column(Float)
-    """float: Cross sectional area (m^2) exemplar capability."""
+    """``float``: Cross sectional area (m^2) exemplar capability."""
 
     exemplar_range = Column(Float)
-    """float: Range (km) exemplar capability."""
+    """``float``: Range (km) exemplar capability."""
 
     fov_shape = Column(String(64))
-    """String: fov_shape string."""
+    """``str``: fov_shape string."""
 
     fov_angle_1 = Column(Float)
-    """float: first angle (only angle for `conic`, horizontal angle for `rectangular`."""
+    """``float``: first angle (only angle for `conic`, horizontal angle for `rectangular`."""
 
     fov_angle_2 = Column(Float, nullable=True)
-    """float: Second angle (vertical angle for `rectangular`."""
+    """``float``: Second angle (vertical angle for `rectangular`."""
 
     calculate_fov = Column(Boolean)
-    """bool: whether to do FoV calcs."""
+    """``bool``: whether to do FoV calcs."""
 
     tx_power = Column(Float)
-    """float: Transmit power of radar sensor.
+    """``float``: Transmit power of radar sensor.
 
     Defaults to 0.0 unless :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
     """
 
     tx_frequency = Column(Float)
-    """float: Transmit frequency of radar sensor.
+    """``float``: Transmit frequency of radar sensor.
 
     Defaults to 0.0 unless :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
     """
 
     @declared_attr
     def station_keeping_json(self):  # pylint: disable=invalid-name
-        """str: JSON serialized list of station keeping key words for this target."""
+        """``str``: JSON serialized list of station keeping key words for this target."""
         return Event.__table__.c.get(  # pylint: disable=no-member
             "station_keeping_json", Column(String(128))
         )
@@ -172,7 +181,7 @@ class SensorAdditionEvent(Event):
     )
 
     @property
-    def eci(self):
+    def eci(self) -> list[float]:
         """``list``: returns the formatted ECI state vector."""
         return [
             self.pos_x_km,
@@ -184,33 +193,33 @@ class SensorAdditionEvent(Event):
         ]
 
     @property
-    def azimuth_range(self):
-        """list: Range of motion (radians) that this sensor has in the azimuth plane."""
+    def azimuth_range(self) -> list[float]:
+        """``list``: Range of motion (radians) that this sensor has in the azimuth plane."""
         return [self.azimuth_min, self.azimuth_max]
 
     @property
-    def elevation_range(self):
-        """list: Range of motion (radians) that this sensor has in the elevation plane."""
+    def elevation_range(self) -> list[float]:
+        """``list``: Range of motion (radians) that this sensor has in the elevation plane."""
         return [self.elevation_min, self.elevation_max]
 
     @property
-    def covariance(self):
-        """list: Measurement noise covariance matrix."""
+    def covariance(self) -> list[list[float]]:
+        """``list``: Measurement noise covariance matrix."""
         return loads(self.covariance_json)
 
     @property
-    def exemplar(self):
-        """list: Two element list of exemplar capabilities, used in min detectable power calculation."""
+    def exemplar(self) -> list[float]:
+        """``list``: Two element list of exemplar capabilities, used in min detectable power calculation."""
         return [self.exemplar_cross_section, self.exemplar_range]
 
     @property
-    def station_keeping(self):
-        """list: List of station keeping key words for this target."""
+    def station_keeping(self) -> dict:
+        """``dict``: station keeping key words for this target."""
         return loads(self.station_keeping_json)
 
     @property
-    def field_of_view(self):
-        """Dict: Field of view dictionary object."""
+    def field_of_view(self) -> dict:
+        """``dict``: Field of view dictionary object."""
         if self.fov_shape == "conic":
             return {"fov_shape": self.fov_shape, "cone_angle": self.fov_angle_1}
 
@@ -223,11 +232,11 @@ class SensorAdditionEvent(Event):
 
         raise ValueError("Incorrect field of view image type")
 
-    def handleEvent(self, scope_instance):
+    def handleEvent(self, scope_instance: Scenario) -> None:
         """Add the node described by this :class:`.NodeAdditionEvent` to the appropriate tasking engine.
 
         Args:
-            scope_instance (Scenario): :class:`.Scenario` class that's currently executing.
+            scope_instance (:class:`.Scenario`): :class:`.Scenario` class that's currently executing.
         """
         sensor_spec = {
             "id": self.agent_id,
@@ -250,46 +259,47 @@ class SensorAdditionEvent(Event):
         scope_instance.addSensor(sensor_spec, self.tasking_engine_id)
 
     @classmethod
-    def fromConfig(cls, config):
+    def fromConfig(cls, config: SensorAdditionEventConfig) -> SensorAdditionEvent:
         """Construct a :class:`.NodeAdditionEvent` from a specified `config`.
 
         Args:
-            config (SensorAdditionEventConfig): Configuration object to construct a :class:`.NodeAdditionEvent` from.
+            config (:class:`.SensorAdditionEventConfig`): Configuration object to construct a :class:`.NodeAdditionEvent` from.
 
         Returns:
-            NodeAdditionEvent: :class:`.NodeAdditionEvent` object based on the specified `config`.
+            :class:`.SensorAdditionEvent`: object based on the specified `config`.
         """
-        if config.lla_set:
+        sensor = config.sensor
+        if sensor.lla_set:
             ecef_state = lla2ecef(
-                array([config.lat, config.lon, config.alt])  # radians, radians, km
+                array([sensor.lat, sensor.lon, sensor.alt])  # radians, radians, km
             )
             initial_state = ecef2eci(ecef_state)
-        elif config.eci_set:
-            initial_state = array(config.init_eci)
-        elif config.coe_set:
-            orbit = ClassicalElements.fromConfig(config.init_coe)
+        elif sensor.eci_set:
+            initial_state = array(sensor.init_eci)
+        elif sensor.coe_set:
+            orbit = ClassicalElements.fromConfig(sensor.init_coe)
             initial_state = orbit.toECI()
-        elif config.eqe_set:
-            orbit = EquinoctialElements.fromConfig(config.init_eqe)
+        elif sensor.eqe_set:
+            orbit = EquinoctialElements.fromConfig(sensor.init_eqe)
             initial_state = orbit.toECI()
         else:
-            raise ValueError(f"Sensor config doesn't contain initial state information: {config}")
+            raise ValueError(f"Sensor config doesn't contain initial state information: {sensor}")
 
-        if config.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL):
-            tx_power = config.tx_power
-            tx_frequency = config.tx_frequency
+        if sensor.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL):
+            tx_power = sensor.tx_power
+            tx_frequency = sensor.tx_frequency
         else:
             tx_power = 0.0
             tx_frequency = 0.0
 
-        if config.field_of_view.fov_shape == "conic":
-            fov_angle_1 = config.field_of_view.cone_angle
+        if sensor.field_of_view.fov_shape == "conic":
+            fov_angle_1 = sensor.field_of_view.cone_angle
             fov_angle_2 = 0.0
-        elif config.field_of_view.fov_shape == "rectangular":
-            fov_angle_1 = config.field_of_view.azimuth_angle
-            fov_angle_2 = config.field_of_view.elevation_angle
+        elif sensor.field_of_view.fov_shape == "rectangular":
+            fov_angle_1 = sensor.field_of_view.azimuth_angle
+            fov_angle_2 = sensor.field_of_view.elevation_angle
         else:
-            raise ValueError(f"Field of View config has incorrect type {config.field_of_view}")
+            raise ValueError(f"Field of View config has incorrect type {sensor.field_of_view}")
 
         return cls(
             scope=config.scope,
@@ -298,30 +308,30 @@ class SensorAdditionEvent(Event):
             end_time_jd=datetimeToJulianDate(config.end_time),
             event_type=config.event_type,
             tasking_engine_id=config.tasking_engine_id,
-            agent_id=config.id,
-            host_type=config.host_type,
+            agent_id=sensor.id,
+            host_type=sensor.host_type,
             pos_x_km=initial_state[0],
             pos_y_km=initial_state[1],
             pos_z_km=initial_state[2],
             vel_x_km_p_sec=initial_state[3],
             vel_y_km_p_sec=initial_state[4],
             vel_z_km_p_sec=initial_state[5],
-            azimuth_min=config.azimuth_range[0],
-            azimuth_max=config.azimuth_range[1],
-            elevation_min=config.elevation_range[0],
-            elevation_max=config.elevation_range[1],
-            covariance_json=dumps(config.covariance),
-            aperture_area=config.aperture_area,
-            efficiency=config.efficiency,
-            slew_rate=config.slew_rate,
-            sensor_type=config.sensor_type,
-            exemplar_cross_section=config.exemplar[0],
-            exemplar_range=config.exemplar[1],
-            fov_shape=config.field_of_view.fov_shape,
+            azimuth_min=sensor.azimuth_range[0],
+            azimuth_max=sensor.azimuth_range[1],
+            elevation_min=sensor.elevation_range[0],
+            elevation_max=sensor.elevation_range[1],
+            covariance_json=dumps(sensor.covariance),
+            aperture_area=sensor.aperture_area,
+            efficiency=sensor.efficiency,
+            slew_rate=sensor.slew_rate,
+            sensor_type=sensor.sensor_type,
+            exemplar_cross_section=sensor.exemplar[0],
+            exemplar_range=sensor.exemplar[1],
+            fov_shape=sensor.field_of_view.fov_shape,
             fov_angle_1=fov_angle_1,
             fov_angle_2=fov_angle_2,
-            calculate_fov=config.calculate_fov,
+            calculate_fov=sensor.calculate_fov,
             tx_power=tx_power,
             tx_frequency=tx_frequency,
-            station_keeping_json=dumps(config.station_keeping.toJSON()),
+            station_keeping_json=dumps(sensor.station_keeping.toJSON()),
         )

@@ -1,66 +1,51 @@
 """Submodule defining the objects listed in the 'engines' configuration section."""
+from __future__ import annotations
+
+# Standard Library Imports
+from dataclasses import dataclass
+
 # Local Imports
 from ...sensors import ADV_RADAR_LABEL
-from .agent_configs import SensorConfigObject, TargetConfigObject
-from .base import ConfigError, ConfigObject, ConfigObjectList, ConfigOption
+from .agent_configs import SensingAgentConfig, TargetAgentConfig
+from .base import ConfigError, ConfigObject, ConfigObjectList
 from .decision_config import DecisionConfig
 from .reward_config import RewardConfig
 
 
-class EngineConfigObject(ConfigObject):
+@dataclass
+class EngineConfig(ConfigObject):
     """Defines the structure for an object defined in the 'engines' configuration section."""
 
-    @staticmethod
-    def getFields():
-        """Return a tuple of defining required :class:`.ConfigOption` objects for a :class:`.EngineConfigObject`."""
-        return (
-            ConfigOption("unique_id", (int,)),
-            RewardConfig(),
-            DecisionConfig(),
-            ConfigObjectList("targets", TargetConfigObject),
-            ConfigObjectList("sensors", SensorConfigObject),
-        )
+    unique_id: int
+    """``int``: Unique ID for the defined engine."""
 
-    def __init__(self, object_config):
-        """Construct an instance of a :class:`.EngineConfigObject`.
+    reward: RewardConfig | dict
+    """:class:`.RewardConfig`: Reward configuration section for the defined engine."""
 
-        Args:
-            object_config (dict): Configuration dictionary defining this
-                :class:`.EngineConfigObject`.
+    decision: DecisionConfig | dict
+    """:class:`.DecisionConfig`: Decision configuration section for the defined engine."""
 
-        Raises:
-            TypeError: If decision function being used is "AllVisibleDecision" and not all sensors
-                defined in :attr:`.sensors` are advanced radars.
-        """
-        super().__init__(object_config)
+    sensors: ConfigObjectList[SensingAgentConfig] | list[SensingAgentConfig | dict]
+    """``list``: :class:`.SensingAgentConfig` objects that this engine can task."""
+
+    targets: ConfigObjectList[TargetAgentConfig] | list[TargetAgentConfig | dict]
+    """``list``: :class:`.TargetAgentConfig` objects that this engine can be task against."""
+
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if isinstance(self.reward, dict):
+            self.reward = RewardConfig(**self.reward)
+
+        if isinstance(self.decision, dict):
+            self.decision = DecisionConfig(**self.decision)
+
+        self.sensors = ConfigObjectList("sensors", SensingAgentConfig, self.sensors)
+        self.targets = ConfigObjectList("targets", TargetAgentConfig, self.targets)
+
+        # [NOTE]: Only Advanced Radar can used with an AllVisibleDecision type.
         if self.decision.name == "AllVisibleDecision":
             for sensor in self.sensors:
                 if sensor.sensor_type != ADV_RADAR_LABEL:
                     err = "Only AdvRadar sensors can use the AllVisibleDecision"
                     err += f": sensor {sensor.id} is {sensor.sensor_type}"
                     raise ConfigError(self.__class__.__name__, err)
-
-    @property
-    def unique_id(self):
-        """int: Unique ID for the defined engine."""
-        return self._unique_id.setting  # pylint: disable=no-member
-
-    @property
-    def reward(self):
-        """RewardConfig: Reward configuration section for the defined engine."""
-        return self._reward  # pylint: disable=no-member
-
-    @property
-    def decision(self):
-        """DecisionConfig: Decision configuration section for the defined engine."""
-        return self._decision  # pylint: disable=no-member
-
-    @property
-    def targets(self):
-        """list: List of :class:`.TargetConfigObject` objects that this engine can task."""
-        return self._targets.objects  # pylint: disable=no-member
-
-    @property
-    def sensors(self):
-        """list: List of :class:`.SensorConfigObject` objects that this engine can task."""
-        return self._sensors.objects  # pylint: disable=no-member

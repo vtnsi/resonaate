@@ -62,7 +62,7 @@ class _DataMixin:
         Returns:
             str: String representation of this :class:`.DataMixin` object.
         """
-        if self.__class__.__name__ == "Agent":
+        if self.__class__.__name__ == "AgentModel":
             rep_str = f"{self.__class__}("
         else:
             rep_str = f"{self.__class__}(id={self.id}, "

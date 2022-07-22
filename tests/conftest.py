@@ -41,6 +41,12 @@ FIXTURE_DATA_DIR = os.path.join(
     "datafiles",
 )
 
+IMPORTER_DB_PATH = "db/importer.sqlite3"
+SHARED_DB_PATH = "db/importer.sqlite3"
+JSON_INIT_PATH = "json/config/init_messages"
+JSON_RSO_TRUTH = "json/rso_truth"
+JSON_SENSOR_TRUTH = "json/sat_sensor_truth"
+
 
 class BaseTestCase:
     """Base unit test class for all to inherit from.
@@ -48,11 +54,11 @@ class BaseTestCase:
     This is primarily for storing global constants/common file locations, etc.
     """
 
-    importer_db_path = "db/importer.sqlite3"
-    shared_db_path = "db/shared.sqlite3"
-    json_init_path = "json/config/init_messages"
-    json_rso_truth = "json/rso_truth"
-    json_sensor_truth = "json/sat_sensor_truth"
+    importer_db_path = IMPORTER_DB_PATH
+    shared_db_path = SHARED_DB_PATH
+    json_init_path = JSON_INIT_PATH
+    json_rso_truth = JSON_RSO_TRUTH
+    json_sensor_truth = JSON_SENSOR_TRUTH
 
 
 @pytest.fixture(autouse=True)
@@ -253,17 +259,13 @@ TEST_START_JD = datetimeToJulianDate(datetime(2018, 12, 1, 12))
 @pytest.fixture(name="geopotential_config")
 def getGeopotentialConfig():
     """Return a :class:`.GeopotentialConfig` object based on :attr:`.GEOPOTENTIAL_CONFIG`."""
-    config = GeopotentialConfig()
-    config.readConfig(GEOPOTENTIAL_CONFIG)
-    return config
+    return GeopotentialConfig(**GEOPOTENTIAL_CONFIG)
 
 
 @pytest.fixture(name="perturbations_config")
 def getPerturbationsConfig():
     """Return a :class:`.PerturbationsConfig` object based on :attr:`.PERTURBATIONS_CONFIG`."""
-    config = PerturbationsConfig()
-    config.readConfig(PERTURBATIONS_CONFIG)
-    return config
+    return PerturbationsConfig(**PERTURBATIONS_CONFIG)
 
 
 @pytest.fixture(name="dynamics")
@@ -286,7 +288,6 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "importer: mark test as using imported data rather than propagation"
     )
-    config.addinivalue_line("markers", "datafiles: creates tmpdirs for required data")
 
 
 def pytest_collection_modifyitems(config, items):

@@ -37,7 +37,7 @@
         "beta": 2.0
       },
       "dynamics_model": "special_perturbations",
-      "maneuver_detection_method": null
+      "maneuver_detection": null
     }
   },
   "engines_files": ["../engines/test_engine.json"],

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Query
 
 try:
     # RESONAATE Imports
-    from resonaate.data.agent import Agent
+    from resonaate.data.agent import AgentModel
     from resonaate.data.ephemeris import TruthEphemeris
     from resonaate.data.epoch import Epoch
     from resonaate.data.importer_database import ImporterDatabase
@@ -52,7 +52,7 @@ EXAMPLE_EPOCH = {
 def getSingleEphemerisData():
     """Create a valid :class:`.TruthEphemeris` object."""
     epoch = Epoch(**EXAMPLE_EPOCH)
-    tgt = Agent(
+    tgt = AgentModel(
         unique_id=EXAMPLE_RSO[0]["unique_id"],
         name=EXAMPLE_RSO[0]["name"],
     )
@@ -81,7 +81,7 @@ def getMultipleEphemerisData():
         ephems.append(
             TruthEphemeris.fromECIVector(
                 epoch=epoch,
-                agent=Agent(unique_id=rso["unique_id"], name=rso["name"]),
+                agent=AgentModel(unique_id=rso["unique_id"], name=rso["name"]),
                 eci=rso["eci"],
             )
         )
@@ -125,7 +125,7 @@ class TestResonaateDatabase(BaseTestCase):
 
         ephems = []
         for rso in EXAMPLE_RSO:
-            database.insertData(Agent(unique_id=rso["unique_id"], name=rso["name"]))
+            database.insertData(AgentModel(unique_id=rso["unique_id"], name=rso["name"]))
             ephems.append(
                 TruthEphemeris.fromECIVector(
                     julian_date=EXAMPLE_EPOCH["julian_date"],
@@ -209,8 +209,8 @@ class TestResonaateDatabase(BaseTestCase):
 
         query = (
             Query(TruthEphemeris)
-            .join(Agent)
-            .filter(Agent.unique_id == EXAMPLE_RSO[0]["unique_id"])
+            .join(AgentModel)
+            .filter(AgentModel.unique_id == EXAMPLE_RSO[0]["unique_id"])
         )
         del_count = database.deleteData(query)
 
@@ -245,8 +245,8 @@ class TestResonaateDatabase(BaseTestCase):
             Query(TruthEphemeris)
             .join(Epoch)
             .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
-            .join(Agent)
-            .filter(Agent.unique_id == EXAMPLE_RSO[1]["unique_id"])
+            .join(AgentModel)
+            .filter(AgentModel.unique_id == EXAMPLE_RSO[1]["unique_id"])
         )
         result = database.getData(combined_query, multi=False)
 
@@ -262,8 +262,8 @@ class TestResonaateDatabase(BaseTestCase):
         # Delete based on ID
         sat_num_query = (
             Query(TruthEphemeris)
-            .join(Agent)
-            .filter(Agent.unique_id == EXAMPLE_RSO[0]["unique_id"])
+            .join(AgentModel)
+            .filter(AgentModel.unique_id == EXAMPLE_RSO[0]["unique_id"])
         )
         deleted_count = database.deleteData(sat_num_query)
         assert deleted_count == 1
@@ -291,8 +291,8 @@ class TestResonaateDatabase(BaseTestCase):
             Query(TruthEphemeris)
             .join(Epoch)
             .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
-            .join(Agent)
-            .filter(Agent.unique_id == EXAMPLE_RSO[1]["unique_id"])
+            .join(AgentModel)
+            .filter(AgentModel.unique_id == EXAMPLE_RSO[1]["unique_id"])
         )
         result = database.getData(combined_query, multi=False)
 
@@ -308,8 +308,8 @@ class TestResonaateDatabase(BaseTestCase):
         # Delete based on ID
         sat_num_query = (
             Query(TruthEphemeris)
-            .join(Agent)
-            .filter(Agent.unique_id == EXAMPLE_RSO[0]["unique_id"])
+            .join(AgentModel)
+            .filter(AgentModel.unique_id == EXAMPLE_RSO[0]["unique_id"])
         )
         deleted_count = database.deleteData(sat_num_query)
         assert deleted_count == 1
@@ -361,7 +361,7 @@ class TestImporterDatabase(BaseTestCase):
             stop=2458454.0 + 1 / 24,  # one hour later
         )
         ephems = importer_db.getData(
-            Query(TruthEphemeris).join(Agent).filter(Agent.unique_id == 11111)
+            Query(TruthEphemeris).join(AgentModel).filter(AgentModel.unique_id == 11111)
         )
         assert len(ephems) == 61
         importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
@@ -381,8 +381,8 @@ class TestImporterDatabase(BaseTestCase):
         with pytest.raises(NotImplementedError):
             importer_db.deleteData(
                 Query(TruthEphemeris)
-                .join(Agent)
-                .filter(Agent.unique_id == EXAMPLE_RSO[0]["unique_id"])
+                .join(AgentModel)
+                .filter(AgentModel.unique_id == EXAMPLE_RSO[0]["unique_id"])
             )
 
         # `bulkSave()`
@@ -404,8 +404,8 @@ class TestImporterDatabase(BaseTestCase):
             Query(TruthEphemeris)
             .join(Epoch)
             .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
-            .join(Agent)
-            .filter(Agent.unique_id == EXAMPLE_RSO[1]["unique_id"])
+            .join(AgentModel)
+            .filter(AgentModel.unique_id == EXAMPLE_RSO[1]["unique_id"])
         )
         result = database.getData(combined_query, multi=False)
 
@@ -431,8 +431,8 @@ class TestImporterDatabase(BaseTestCase):
             Query(TruthEphemeris)
             .join(Epoch)
             .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
-            .join(Agent)
-            .filter(Agent.unique_id == EXAMPLE_RSO[1]["unique_id"])
+            .join(AgentModel)
+            .filter(AgentModel.unique_id == EXAMPLE_RSO[1]["unique_id"])
         )
         result = importer_db.getData(combined_query, multi=False)
 

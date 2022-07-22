@@ -50,9 +50,9 @@ class TruthEphemeris(Base, _EphemerisMixin):
     # Many to one relation with :class:`.Epoch`
     julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     agent_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    agent = relationship("Agent", lazy="joined", innerjoin=True)
+    agent = relationship("AgentModel", lazy="joined", innerjoin=True)
 
     MUTABLE_COLUMN_NAMES = (
         "julian_date",
@@ -98,9 +98,9 @@ class EstimateEphemeris(Base, _EphemerisMixin):
     # Many to one relation with :class:`.Epoch`
     julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     agent_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    agent = relationship("Agent", lazy="joined", innerjoin=True)
+    agent = relationship("AgentModel", lazy="joined", innerjoin=True)
 
     # Source of Estimate (Observation or Propagation)
     source = Column(String, nullable=False)

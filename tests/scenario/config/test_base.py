@@ -1,6 +1,11 @@
+from __future__ import annotations
+
 # Standard Library Imports
-from abc import ABCMeta
+import re
 from copy import deepcopy
+from dataclasses import asdict, dataclass, field
+from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 # Third Party Imports
 import pytest
@@ -8,13 +13,11 @@ import pytest
 try:
     # RESONAATE Imports
     from resonaate.scenario.config.base import (
-        NO_SETTING,
         ConfigError,
         ConfigMissingRequiredError,
         ConfigObject,
         ConfigObjectList,
-        ConfigOption,
-        ConfigSection,
+        ConfigSettingError,
         ConfigTypeError,
         ConfigValueError,
         inclusiveRange,
@@ -22,52 +25,77 @@ try:
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 
-
-def testBasicConfigOption():
-    """Test basic constructor of a :class:`.ConfigOption`."""
-    test_option = ConfigOption("test_item", (int,))
-    assert not test_option.nested_items
-
-
-def testConfigOptionBadDefault():
-    """Test :class:`.ConfigOption` with bad default settings."""
-    expected_err = r"Setting .* must be in types .*, not .*"
-    with pytest.raises(ConfigTypeError, match=expected_err):
-        _ = ConfigOption("test_item", (int,), default="abc")
-
-    expected_err = r"Setting .* for .* is not a valid setting: .*"
-    with pytest.raises(ConfigValueError, match=expected_err):
-        _ = ConfigOption("test_item", (int,), default=6, valid_settings=range(5))
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
 
 
-def testConfigOptionValidation():
-    """Test basic functionality of a :class:`.ConfigOption`'s setting validation."""
-    test_item = ConfigOption("test_item", (int,), default=0, valid_settings=range(10))
+def testConfigError():
+    """Make sure the ConfigError class works properly."""
+    label = "test_label"
+    msg = "This is a Config error!"
+    err = ConfigError(config_label=label, message=msg)
 
-    assert test_item.setting == 0
-
-    test_item.readConfig(5)
-    assert test_item.setting == 5
-
-    with pytest.raises(ConfigTypeError):
-        test_item.readConfig("abc")
-
-    with pytest.raises(ConfigValueError):
-        test_item.readConfig(11)
+    expected = f"Error occurred in '{label}': {msg}"
+    assert str(err) == expected
+    with pytest.raises(ConfigError, match=re.escape(expected)):
+        raise err
 
 
-def testConfigOptionRequired():
-    """Test required functionality of :class:`.ConfigOption`."""
-    required_item = ConfigOption("required", (int,))
-    assert required_item.isRequired()
-    expected_err = r"Missing required .* in .* config"
-    with pytest.raises(ConfigMissingRequiredError, match=expected_err):
-        _ = required_item.setting
+@patch.multiple(ConfigSettingError, __abstractmethods__=set())
+def testConfigSettingError():
+    """Make sure the ConfigSettingError class works properly."""
+    # pylint: disable=abstract-class-instantiated
+    label = "test_label"
+    setting = 45  # supposed to be a list or tuple
+    requirements = (
+        list,
+        tuple,
+    )
+    err = ConfigSettingError(config_label=label, bad_setting=setting, requirements=requirements)
+
+    assert err.requirements == requirements
+    assert err.bad_setting == setting
+    assert err.config_label == label
 
 
-def testNoSettingDeepcopy():
-    """Validate that `.NO_SETTING` cannot be copied."""
-    assert NO_SETTING is deepcopy(NO_SETTING)
+def testConfigTypeError():
+    """Make sure the ConfigTypeError class works properly."""
+    label = "test_label"
+    setting = "supposed to be an int"
+    requirements = (int,)
+    err = ConfigTypeError(config_label=label, bad_setting=setting, requirements=requirements)
+
+    expected = f"Setting '{label}' must be in types {requirements}, not {type(setting)}"
+    assert str(err) == expected
+    with pytest.raises(ConfigTypeError, match=re.escape(expected)):
+        raise err
+
+
+def testConfigValueError():
+    """Make sure the ConfigValueError class works properly."""
+    label = "test_label"
+    setting = -1.0
+    requirements = "greater than 0"
+    err = ConfigValueError(config_label=label, bad_setting=setting, requirements=requirements)
+
+    expected = f"Setting '{setting}' for '{label}' is not a valid setting: {requirements}"
+    assert str(err) == expected
+    with pytest.raises(ConfigValueError, match=re.escape(expected)):
+        raise err
+
+
+def testConfigMissingRequiredError():
+    """Make sure the ConfigMissingRequiredError class works properly."""
+    label = "test_label"
+    missing = "missing_field"
+    err = ConfigMissingRequiredError(config_label=label, missing=missing)
+
+    expected = f"Missing required '{missing}' in '{label}' config"
+    assert str(err) == expected
+    with pytest.raises(ConfigMissingRequiredError, match=re.escape(expected)):
+        raise err
 
 
 def testInclusiveRange():
@@ -82,185 +110,198 @@ def testInclusiveRange():
         inclusiveRange(0, 1, 2, 3)
 
 
-class TestSection(ConfigSection, metaclass=ABCMeta):
-    """Abstract base class for :class:`.ConfigSection` test fixtures to inherit from."""
-
-    @property
-    def nested_items(self):
-        """list: List of nested :class:`.ConfigItem` objects."""
-        return [self._int_option, self._str_option, self._bool_option]  # pylint: disable=no-member
-
-    @property
-    def int_option(self):
-        """int: Setting of integer option."""
-        return self._int_option.setting  # pylint: disable=no-member
-
-    @property
-    def str_option(self):
-        """str: Setting of string option."""
-        return self._str_option.setting  # pylint: disable=no-member
-
-    @property
-    def bool_option(self):
-        """bool: Setting of boolean option."""
-        return self._bool_option.setting  # pylint: disable=no-member
-
-
-@pytest.fixture(name="basic_test_section")
-def getBasicTestSection():
-    """Return an initialized :class:`.TestSection` that has default options."""
-
-    class BasicTestSection(TestSection):
-        def __init__(self):
-            self._int_option = ConfigOption("int_option", (int,), default=0)
-            self._str_option = ConfigOption("str_option", (str,), default="foo")
-            self._bool_option = ConfigOption("bool_option", (bool,), default=False)
-
-    return BasicTestSection()
-
-
-@pytest.fixture(name="required_test_section")
-def getRequiredTestSection():
-    """Return an initialized :class:`.TestSection` that has required options."""
-
-    class RequiredTestSection(TestSection):
-        def __init__(self):
-            self._int_option = ConfigOption("int_option", (int,))
-            self._str_option = ConfigOption("str_option", (str,))
-            self._bool_option = ConfigOption("bool_option", (bool,))
-
-    return RequiredTestSection()
-
-
-def testBasicConfigSection(basic_test_section):
-    """Test the expected base functionality of a :class:`.BasicTestSection`."""
-    assert basic_test_section.int_option == 0
-    assert basic_test_section.str_option == "foo"
-    assert basic_test_section.bool_option is False
-    assert basic_test_section.isRequired() is False
-
-    config_dict = {"int_option": 5, "str_option": "bar", "bool_option": True}
-    basic_test_section.readConfig(config_dict)
-
-    assert basic_test_section.int_option == config_dict["int_option"]
-    assert basic_test_section.str_option == config_dict["str_option"]
-    assert basic_test_section.bool_option == config_dict["bool_option"]
-
-
-def testRequiredConfigSection(required_test_section):
-    """Test the expected functionality of a :class:`.RequiredTestSection`."""
-    assert required_test_section.isRequired() is True
-    with pytest.raises(ConfigMissingRequiredError):
-        _ = required_test_section.int_option
-
-    incomplete_config = {"int_option": 5, "str_option": "bar"}
-    with pytest.raises(ConfigMissingRequiredError):
-        required_test_section.readConfig(incomplete_config)
-
-    config_dict = {"int_option": 5, "str_option": "bar", "bool_option": True}
-    required_test_section.readConfig(config_dict)
-
-    assert required_test_section.int_option == config_dict["int_option"]
-    assert required_test_section.str_option == config_dict["str_option"]
-    assert required_test_section.bool_option == config_dict["bool_option"]
-
-
+@dataclass
 class _TestConfigObject(ConfigObject):
     """Generic :class:`.ConfigObject` for testing."""
 
-    @staticmethod
-    def getFields():
-        """Returns a tuple of :class:`.ConfigOption`s defining the fields required for a :class:`.TestConfigObject`."""
-        return (
-            ConfigOption("int_field", (int,)),
-            ConfigOption("str_field", (str,)),
-            ConfigOption("bool_field", (bool,)),
-        )
+    int_field: int
+    """``int``: Required setting of integer field."""
 
-    @property
-    def int_field(self):
-        """int: Setting of integer field."""
-        return self._int_field.setting  # pylint: disable=no-member
+    str_field: str
+    """``str``: Required setting of string field."""
 
-    @property
-    def str_field(self):
-        """str: Setting of string field."""
-        return self._str_field.setting  # pylint: disable=no-member
+    bool_field: bool
+    """``bool``: Required setting of boolean field."""
 
-    @property
-    def bool_field(self):
-        """bool: Setting of boolean field."""
-        return self._bool_field.setting  # pylint: disable=no-member
+    option_field: float = 0.0
+    """``float``: Optional setting of float field with 0.0 default"""
 
 
-def testConfigObject():
+@dataclass
+class _ExtendedConfig(_TestConfigObject):
+    """An extended :class:`.ConfigObject` for testing more complex fields."""
+
+    optional_dict: dict = field(default_factory=dict)
+    """``dict``: Optional dictionary setting with {} default."""
+
+
+@dataclass
+class _AllRequired(ConfigObject):
+    req_field_1: int
+    req_field_2: str
+
+
+@dataclass
+class _AllOptional(ConfigObject):
+    opt_field_1: int = 10
+    opt_field_2: str = "this is optional"
+
+
+@pytest.fixture(name="test_config_dict")
+def getTestConfigDict() -> dict[str, Any]:
+    """Returns the config dict for a simple test object."""
+    return {
+        "int_field": 123,
+        "str_field": "abc",
+        "bool_field": True,
+    }
+
+
+def testConfigObject(test_config_dict: dict[str, Any]):
     """Test basic functionality of the :class:`.ConfigObject` class."""
-    config_dict = {"int_field": 123, "str_field": "abc", "bool_field": True}
-    test_obj = _TestConfigObject(config_dict)
+    # Test equality and id
+    test_obj1 = _TestConfigObject(**test_config_dict)
+    test_obj2 = _TestConfigObject(**test_config_dict)
+    assert test_obj1 == test_obj2
+    assert test_obj1 is not test_obj2
+
+    # Use default value for `option_field`
+    config_dict = deepcopy(test_config_dict)
+    test_obj = _TestConfigObject(**config_dict)
     assert test_obj.int_field == config_dict["int_field"]
     assert test_obj.str_field == config_dict["str_field"]
     assert test_obj.bool_field == config_dict["bool_field"]
+    assert test_obj.option_field == 0.0
+
+    # Use custom value for `option_field`
+    config_dict = deepcopy(test_config_dict)
+    config_dict["option_field"] = 10.0
+    test_obj = _TestConfigObject(**config_dict)
+    assert test_obj.int_field == config_dict["int_field"]
+    assert test_obj.str_field == config_dict["str_field"]
+    assert test_obj.bool_field == config_dict["bool_field"]
+    assert test_obj.option_field == config_dict["option_field"]
 
 
-def testConfigObjectList():
+def testExtendedConfig(test_config_dict: dict[str, Any]):
+    """Test functionality of the :class:`.ConfigObject` class with a non-basic field type."""
+    # Use default factory
+    config_dict = deepcopy(test_config_dict)
+    expected = {}
+    test_obj = _ExtendedConfig(**config_dict)
+    assert isinstance(test_obj.optional_dict, dict)
+    assert test_obj.optional_dict == expected
+
+    # Use non-default value, but empty
+    config_dict = deepcopy(test_config_dict)
+    expected = {}
+    config_dict["optional_dict"] = expected
+    test_obj = _ExtendedConfig(**config_dict)
+    assert isinstance(test_obj.optional_dict, dict)
+    assert test_obj.optional_dict == expected
+
+    # Use non-default, non-empty value
+    config_dict = deepcopy(test_config_dict)
+    expected = {
+        "key1": "value1",
+        "key2": 1932721,
+    }
+    config_dict["optional_dict"] = expected
+    test_obj = _ExtendedConfig(**config_dict)
+    assert isinstance(test_obj.optional_dict, dict)
+    assert test_obj.optional_dict == expected
+
+
+def testRequiredAndOptionalFields():
+    """Test the getRequiredFields & getOptionalFields methods."""
+    # Test required & optional fields
+    assert len(_TestConfigObject.getRequiredFields()) == 3
+    assert len(_TestConfigObject.getOptionalFields()) == 1
+
+    assert len(_ExtendedConfig.getRequiredFields()) == 3
+    assert len(_ExtendedConfig.getOptionalFields()) == 2
+
+    # Test all-required config
+    assert len(_AllRequired.getRequiredFields()) == 2
+    assert len(_AllRequired.getOptionalFields()) == 0
+
+    # Test all-required config
+    assert len(_AllOptional.getRequiredFields()) == 0
+    assert len(_AllOptional.getOptionalFields()) == 2
+
+
+def testConfigObjectList(test_config_dict: dict[str, Any]):
     """Test basic functionality of the :class:`.ConfigObjectList` class."""
-    list_item = ConfigObjectList("test_list", _TestConfigObject)
-    assert list_item.isRequired() is True
+    test_obj1 = _TestConfigObject(**test_config_dict)
+    test_obj2 = _TestConfigObject(**test_config_dict)
+
+    object_list = ConfigObjectList("test_list", _TestConfigObject, [test_obj1, test_obj2])
+    assert object_list
+    for obj_list_item, test_obj in zip(object_list, (test_obj1, test_obj2)):
+        assert obj_list_item == test_obj
+        assert obj_list_item is test_obj
+
+    input_list_dicts = [deepcopy(test_config_dict), deepcopy(test_config_dict)]
+    object_list = ConfigObjectList(
+        "test_list", _TestConfigObject, input_list_dicts, default_empty=False
+    )
+    assert object_list
+    for obj_list_item, test_dict in zip(object_list, input_list_dicts):
+        # [NOTE]: Need to add the optional field b/c the `asdict()` outputs it
+        test_dict.update({"option_field": 0.0})
+        assert asdict(obj_list_item) == test_dict
+        # The `asdict()` returns a new dictionary object
+        assert asdict(obj_list_item) is not test_dict
+
+    # Test __getitem__(), __len__()
+    item1, item2 = object_list[0], object_list[1]
+    assert isinstance(item1, _TestConfigObject)
+    assert isinstance(item2, _TestConfigObject)
+    assert len(object_list) == 2
+
+    # Test removing all items
+    # pylint: disable=protected-access
+    object_list._config_objects = []
+    with pytest.raises(ConfigMissingRequiredError):
+        _ = object_list.config_objects
 
     with pytest.raises(ConfigMissingRequiredError):
-        _ = list_item.objects
-
-    with pytest.raises(ConfigError):
-        list_item.readConfig([{}])
+        list_item = ConfigObjectList("test_list", _TestConfigObject, [])
 
     with pytest.raises(ConfigMissingRequiredError):
-        list_item.readConfig([])
+        list_item = ConfigObjectList("test_list", _TestConfigObject, [{}])
 
     with pytest.raises(ConfigTypeError):
-        list_item.readConfig("bad")
+        list_item = ConfigObjectList("test_list", _TestConfigObject, "bad")
 
     with pytest.raises(ConfigTypeError):
-        list_item.readConfig([[], []])
+        list_item = ConfigObjectList("test_list", _TestConfigObject, ["bad1", "bad2"])
+
+    with pytest.raises(ConfigTypeError):
+        list_item = ConfigObjectList("test_list", _TestConfigObject, [[], []])
 
     config_list = [{"int_field": 123, "str_field": "abc", "bool_field": True}]
-    list_item.readConfig(config_list)
-    for item in list_item.objects:
+    list_item = ConfigObjectList("test_list", _TestConfigObject, config_list)
+    assert list_item.required
+
+    for item in list_item.config_objects:
         assert isinstance(item, _TestConfigObject)
         assert item.int_field == config_list[0]["int_field"]
         assert item.str_field == config_list[0]["str_field"]
         assert item.bool_field == config_list[0]["bool_field"]
 
 
-def testConfigObjectListDefaultEmpty():
+def testConfigObjectListDefaultEmpty(test_config_dict: dict[str, Any]):
     """Validate that :class:`.ConfigObjectList` methods don't throw errors when list is allowed to be empty."""
-    conf_list = ConfigObjectList("list_label", _TestConfigObject, default_empty=True)
-    conf_list.readConfig([])
-    assert not conf_list.nested_items
-    assert not conf_list.objects
+    conf_list = ConfigObjectList("list_label", _TestConfigObject, [], default_empty=True)
+    assert not conf_list.config_objects
 
+    with pytest.raises(ConfigMissingRequiredError):
+        _ = ConfigObjectList("list_label", _TestConfigObject, [], default_empty=False)
 
-class _TestConfigSection(ConfigSection):
-    """:class:`.ConfigSection` for testing nested :class:`.ConfigObjectList`."""
-
-    def __init__(self):
-        """Construct an instance of a :class:`.TestConfigSection`."""
-        self._list_option = ConfigObjectList("list_option", _TestConfigObject, default_empty=True)
-
-    @property
-    def nested_items(self):
-        """list: List of nested :class:`.ConfigItem` objects."""
-        return [self._list_option]
-
-
-def testReadConfigSectionWithList():
-    """Test the integration of the :class:`.ConfigObjectList` with a :class:`.ConfigSection`."""
-    test_config = _TestConfigSection()
-    test_config.readConfig({})  # shouldn't throw error since `default_empty` flag is True
-
-    config_section = {
-        "list_option": [
-            {"int_field": 123, "str_field": "abc", "bool_field": True},
-            {"int_field": 456, "str_field": "def", "bool_field": False},
-        ]
-    }
-    test_config.readConfig(config_section)
+    test_obj1 = _TestConfigObject(**test_config_dict)
+    test_obj2 = _TestConfigObject(**test_config_dict)
+    conf_list = ConfigObjectList(
+        "list_label", _TestConfigObject, [test_obj1, test_obj2], default_empty=True
+    )
+    assert conf_list.config_objects

@@ -1,24 +1,25 @@
 """Submodule defining the 'observation' configuration section."""
+from __future__ import annotations
+
+# Standard Library Imports
+from dataclasses import dataclass
+from typing import ClassVar
+
 # Local Imports
-from .base import ConfigOption, ConfigSection
+from .base import ConfigObject
 
 
-class ObservationConfig(ConfigSection):
+@dataclass
+class ObservationConfig(ConfigObject):
     """Configuration section defining several observation-based options."""
 
-    CONFIG_LABEL = "observation"
-    """str: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "observation"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.ObservationConfig`."""
-        self._field_of_view = ConfigOption("field_of_view", (bool,), default=True)
+    field_of_view: bool = True
+    """``bool``: whether or not to do field of view calculations.
 
-    @property
-    def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._field_of_view]
-
-    @property
-    def field_of_view(self):
-        """bool: whether or not to do field of view calculations."""
-        return self._field_of_view.setting
+    Note:
+        This setting turns background (serendipitous) observations on for all sensors. This will
+        also force each sensor to have a FOV config.
+    """

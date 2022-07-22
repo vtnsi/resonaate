@@ -13,7 +13,7 @@ try:
     # RESONAATE Imports
     import resonaate.data.resonaate_database
     import resonaate.estimation.adaptive.adaptive_filter
-    from resonaate.data.agent import Agent
+    from resonaate.data.agent import AgentModel
     from resonaate.data.ephemeris import EstimateEphemeris
     from resonaate.data.observation import Observation
     from resonaate.dynamics.two_body import TwoBody
@@ -212,8 +212,8 @@ def getTestAdaptiveFilter():
 
 @pytest.fixture(name="rso_agent")
 def getTestRSOAgent():
-    """Create a custom :class:`Agent` object for an RSO."""
-    rso_agent = Agent()
+    """Create a custom :class:`AgentModel` object for an RSO."""
+    rso_agent = AgentModel()
     rso_agent.unique_id = 10001
     rso_agent.name = "Test_sat"
     rso_agent.eci_state = array(
@@ -224,8 +224,8 @@ def getTestRSOAgent():
 
 @pytest.fixture(name="sensor_agent")
 def getTestSensorAgent(earth_sensor):
-    """Create a custom :class:`Agent` object for a sensor."""
-    sensor_agent = Agent()
+    """Create a custom :class:`AgentModel` object for a sensor."""
+    sensor_agent = AgentModel()
     sensor_agent.unique_id = 100001
     sensor_agent.name = "Test_sensor"
     sensor_agent.eci_state = array(
@@ -260,7 +260,7 @@ def getTestSensorAgent(earth_sensor):
 
 @pytest.fixture(name="earth_sensor")
 def getTestEarthSensor():
-    """Create a custom :class:`Agent` object for a sensor."""
+    """Create a custom :class:`AgentModel` object for a sensor."""
     earth_sensor = AdvRadar(
         az_mask=array([0.0, 359.99999]),
         el_mask=array([1.0, 89.0]),
@@ -353,8 +353,7 @@ class TestAdaptiveEstimation(BaseTestCase):
             "prune_percentage": 0.997,
             "parameters": {},
         }
-        config = AdaptiveEstimationConfig()
-        config.readConfig(mmae_config)
+        config = AdaptiveEstimationConfig(**mmae_config)
         _ = AdaptiveFilter.fromConfig(config, NOMINAL_FILTER, TIMESTEP)
 
     def testInitialize(

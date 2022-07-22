@@ -1,31 +1,29 @@
 """Submodule defining the 'decision' configuration section."""
+from __future__ import annotations
+
+# Standard Library Imports
+from dataclasses import dataclass, field
+from typing import ClassVar
+
 # Local Imports
 from ...tasking.decisions import VALID_DECISIONS
-from .base import ConfigOption, ConfigSection
+from .base import ConfigObject, ConfigValueError
 
 
-class DecisionConfig(ConfigSection):
+@dataclass
+class DecisionConfig(ConfigObject):
     """Configuration section defining several decision-based options."""
 
-    CONFIG_LABEL = "decision"
-    """str: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "decision"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.DecisionConfig`."""
-        self._name = ConfigOption("name", (str,), valid_settings=VALID_DECISIONS)
-        self._parameters = ConfigOption("parameters", (dict,), default={})
+    name: str
+    """``str``: Name of this decision function."""
 
-    @property
-    def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._name, self._parameters]
+    parameters: dict = field(default_factory=dict)
+    """``dict``: Parameters for the decision function."""
 
-    @property
-    def name(self):
-        """str: Name of this decision function."""
-        return self._name.setting
-
-    @property
-    def parameters(self):
-        """dict: Parameters for the decision function."""
-        return self._parameters.setting
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if self.name not in VALID_DECISIONS:
+            raise ConfigValueError("name", self.name, VALID_DECISIONS)

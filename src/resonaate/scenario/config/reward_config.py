@@ -1,67 +1,51 @@
-"""Submodule defining the 'reward' configuration section.
+"""Submodule defining the 'reward' configuration section."""
+from __future__ import annotations
 
-Todo:
-    - Document :attr:`.RewardConfig.metrics`
+# Standard Library Imports
+from dataclasses import dataclass, field
+from typing import ClassVar
 
-    - Document :attr:`.RewardConfig.parameters`
-
-"""
 # Local Imports
 from ...tasking.metrics import VALID_METRICS
 from ...tasking.rewards import VALID_REWARDS
-from .base import ConfigObject, ConfigObjectList, ConfigOption, ConfigSection
+from .base import ConfigObject, ConfigObjectList, ConfigValueError
 
 
-class RewardConfig(ConfigSection):
+@dataclass
+class MetricConfig(ConfigObject):
+    """Define a metric function config."""
+
+    name: str
+    """``str``: Name of this metric function."""
+
+    parameters: dict = field(default_factory=dict)
+    """``dict``: Parameters for the metric function."""
+
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if self.name not in VALID_METRICS:
+            raise ConfigValueError("name", self.name, VALID_METRICS)
+
+
+@dataclass
+class RewardConfig(ConfigObject):
     """Configuration section defining several reward-based options."""
 
-    CONFIG_LABEL = "reward"
-    """str: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "reward"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.RewardConfig`."""
-        self._name = ConfigOption("name", (str,), valid_settings=VALID_REWARDS)
-        self._parameters = ConfigOption("parameters", (dict,), default={})
-        self._metrics = ConfigObjectList("metrics", MetricConfigObject)
+    name: str
+    """``str``: Name of this reward function."""
 
-    @property
-    def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._name, self._metrics, self._parameters]
+    metrics: ConfigObjectList[MetricConfig] | list[MetricConfig | dict]
+    """``list``: :class:`.MetricConfig` objects for calculating the reward."""
 
-    @property
-    def name(self):
-        """str: Name of this reward function."""
-        return self._name.setting
+    parameters: dict = field(default_factory=dict)
+    """``dict``: Parameters for the reward function."""
 
-    @property
-    def metrics(self):
-        """list: List of :class:`.MetricConfigObject` objects."""
-        return self._metrics.objects
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if self.name not in VALID_REWARDS:
+            raise ConfigValueError("name", self.name, VALID_REWARDS)
 
-    @property
-    def parameters(self):
-        """dict: Parameters to use for the reward function specified by :attr:`.name`."""
-        return self._parameters.setting
-
-
-class MetricConfigObject(ConfigObject):
-    """:class:`.ConfigObject` to define a metric function."""
-
-    @staticmethod
-    def getFields():
-        """Return a tuple :class:`.ConfigOption` objects required for a :class:`.MetricConfigObject`."""
-        return (
-            ConfigOption("name", (str,), valid_settings=VALID_METRICS),
-            ConfigOption("parameters", (dict,), default={}),
-        )
-
-    @property
-    def name(self):
-        """str: Name of metric to use."""
-        return self._name.setting  # pylint: disable=no-member
-
-    @property
-    def parameters(self):
-        """dict: Parameters to use for the metric function."""
-        return self._parameters.setting  # pylint: disable=no-member
+        self.metrics = ConfigObjectList("metrics", MetricConfig, self.metrics)

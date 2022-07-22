@@ -158,7 +158,7 @@ class TestDetectedManeuver(BaseTestCase):
         )
         database.insertData(det)
 
-        # Test querying by Agent
+        # Test querying by AgentModel
         query = Query(DetectedManeuver).filter(DetectedManeuver.target == agent_copy)
         new_det = database.getData(query, multi=False)
         assert new_det.target == agent_copy

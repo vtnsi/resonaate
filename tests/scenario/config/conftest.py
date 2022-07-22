@@ -226,7 +226,7 @@ SPACE_SENSORS = [
         "aperture_area": 0.030,
         "sensor_type": "Optical",
         "init_eci": [
-            -6997.811593501495,
+            -26997.811593501495,
             63.69359356853797,
             -447.53287804600023,
             0.48666918798751624,
@@ -237,7 +237,7 @@ SPACE_SENSORS = [
         "field_of_view": {"fov_shape": "conic"},
         "calculate_fov": False,
         "host_type": "Spacecraft",
-        "station_keeping": {"routines": ["LEO"]},
+        "station_keeping": {"routines": []},
     },
     {
         "name": "Space Sensor 2",

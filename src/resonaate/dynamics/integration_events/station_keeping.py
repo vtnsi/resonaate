@@ -1,7 +1,6 @@
 """Defines station-keeping events that allow satellites to control their orbit "autonomously"."""
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
-from typing import Tuple
 
 # Third Party Imports
 from numpy import asarray, cos, sin
@@ -17,13 +16,10 @@ from ..special_perturbations import _getRotationMatrix
 from .discrete_state_change_event import DiscreteStateChangeEvent
 from .event_stack import EventRecord, EventStack
 
-VALID_STATION_KEEPING_ROUTINES: Tuple[list] = (
-    ["GEO NS"],
-    ["GEO EW"],
-    ["GEO NS", "GEO EW"],
-    ["GEO EW", "GEO NS"],
-    ["LEO"],
-    [],
+VALID_STATION_KEEPING_ROUTINES: tuple[str] = (
+    "GEO NS",
+    "GEO EW",
+    "LEO",
 )
 
 

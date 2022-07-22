@@ -10,7 +10,7 @@ from sqlalchemy.orm import Query
 
 try:
     # RESONAATE Imports
-    from resonaate.data.agent import Agent
+    from resonaate.data.agent import AgentModel
     from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
     from resonaate.data.epoch import Epoch
     from resonaate.data.observation import Observation
@@ -146,12 +146,12 @@ for bad_idx in reversed(bad_span_idxs):
 
 @pytest.fixture(scope="module", name="agents")
 def getMultipleAgents():
-    """Create several valid :class:`.Agent` objects."""
+    """Create several valid :class:`.AgentModel` objects."""
     agents = []
     for rso in EXAMPLE_RSO:
-        agents.append(Agent(**rso))
+        agents.append(AgentModel(**rso))
     for sensor in EXAMPLE_SENSORS:
-        agents.append(Agent(**sensor))
+        agents.append(AgentModel(**sensor))
     return agents
 
 

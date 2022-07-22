@@ -1,5 +1,9 @@
 # pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
+from copy import deepcopy
+from dataclasses import asdict
 from datetime import datetime
 
 # Third Party Imports
@@ -9,9 +13,17 @@ from sqlalchemy.orm import Query
 try:
     # RESONAATE Imports
     from resonaate.data.data_interface import Epoch
-    from resonaate.data.events import Event
+    from resonaate.data.events import Event, EventScope
     from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.event_configs import DataDependency, MissingDataDependency
+    from resonaate.scenario.config.base import ConfigTypeError, ConfigValueError
+    from resonaate.scenario.config.event_configs import (
+        DataDependency,
+        EventConfig,
+        EventConfigList,
+        MissingDataDependency,
+        ScheduledImpulseEventConfig,
+    )
+    from resonaate.scenario.config.time_config import TIME_STAMP_FORMAT
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
 # Local Imports
@@ -118,3 +130,81 @@ class TestDataDependency(BaseTestCase):
         assert isinstance(created_dep, Epoch)
         assert created_dep.julian_date == datetimeToJulianDate(timestamp)
         assert created_dep.timestampISO == timestamp.isoformat()
+
+
+class TestEventConfigClass(BaseTestCase):
+    """."""
+
+    def testEventConfig(self):
+        """Test that EventConfig can be created from a dictionary."""
+
+        class _TestEventConfig(EventConfig):
+            """Test EventConfig."""
+
+        with pytest.raises(ConfigValueError):
+            _TestEventConfig(
+                **{
+                    "scope": "invalid",
+                    "scope_instance_id": 0,
+                    "start_time": "2020-01-01T00:00:00.000Z",
+                    "end_time": "2020-01-02T00:00:00.000Z",
+                    "event_type": "test_event",
+                }
+            )
+
+        with pytest.raises(ConfigValueError):
+            _TestEventConfig(
+                **{
+                    "scope": "agent_propagation",
+                    "scope_instance_id": 0,
+                    "start_time": "2020-01-01T00:00:00.000Z",
+                    "end_time": None,
+                    "event_type": "invalid",
+                }
+            )
+
+        cfg = ScheduledImpulseEventConfig(
+            scope="agent_propagation",
+            scope_instance_id=0,
+            start_time="2020-01-01T00:00:00.000Z",
+            end_time=None,
+            event_type="impulse",
+            thrust_vector=[1.0, 0.0, 1.0],
+            thrust_frame="ntw",
+        )
+        assert cfg.scope == EventScope.AGENT_PROPAGATION.value
+        assert cfg.scope_instance_id == 0
+        assert cfg.start_time == datetime.strptime("2020-01-01T00:00:00.000Z", TIME_STAMP_FORMAT)
+        assert cfg.event_type == "impulse"
+
+    def testEventConfigList(self):
+        """."""
+        cfg_dict = {
+            "scope": "agent_propagation",
+            "scope_instance_id": 0,
+            "start_time": datetime.strptime("2020-01-01T00:00:00.000Z", TIME_STAMP_FORMAT),
+            "end_time": datetime.strptime("2020-01-02T00:00:00.000Z", TIME_STAMP_FORMAT),
+            "event_type": "impulse",
+            "thrust_vector": [1.0, 0.0, 1.0],
+            "thrust_frame": "ntw",
+            "planned": True,
+        }
+        cfg_list = EventConfigList("events", EventConfig, [cfg_dict, deepcopy(cfg_dict)])
+        assert len(cfg_list) == 2
+        assert isinstance(cfg_list[0], EventConfig)
+        assert asdict(cfg_list[0]) == cfg_dict
+
+        event_cfg = ScheduledImpulseEventConfig(**cfg_dict)
+        cfg_list = EventConfigList("events", EventConfig, [event_cfg])
+        assert len(cfg_list) == 1
+
+        event_cfg_dict = deepcopy(cfg_dict)
+        event_cfg_dict["event_type"] = "invalid"
+        with pytest.raises(ConfigValueError):
+            _ = ScheduledImpulseEventConfig(**event_cfg_dict)
+
+        with pytest.raises(ConfigTypeError):
+            _ = EventConfigList("events", EventConfig, [{}], default_empty=True)
+
+        cfg_list = EventConfigList("events", EventConfig, [], default_empty=True)
+        assert len(cfg_list) == 0

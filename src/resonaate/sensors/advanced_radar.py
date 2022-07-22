@@ -1,11 +1,22 @@
 """Defines the :class:`.AdvRadar` sensor class."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Local Imports
 from .radar import Radar
 
-ADV_RADAR_DEFAULT_FOV = {
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
+ADV_RADAR_DEFAULT_FOV: dict[str, Any] = {
     "fov_shape": "conic",
     "cone_angle": 179.0,
-}  # Default Field of View of an advanced radar sensor (degrees)
+}
+"""``dict``: Default Field of View (conic) of an advanced radar sensor, degrees."""
 
 
 class AdvRadar(Radar):

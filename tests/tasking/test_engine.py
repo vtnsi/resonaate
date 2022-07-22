@@ -25,17 +25,15 @@ target_nums = [10001, 10002, 10003]
 @pytest.fixture(name="decision")
 def getDecision():
     """Returns a valid Decision object."""
-    decision_config = DecisionConfig()
-    decision_config.readConfig({"name": "MunkresDecision", "parameters": {}})
+    decision_config = DecisionConfig(**{"name": "MunkresDecision", "parameters": {}})
     return decisionFactory(decision_config)
 
 
 @pytest.fixture(name="reward")
 def getReward():
     """Returns a valid Reward object."""
-    reward_config = RewardConfig()
-    reward_config.readConfig(
-        {
+    reward_config = RewardConfig(
+        **{
             "name": "CostConstrainedReward",
             "metrics": [
                 {"name": "KLDivergence", "parameters": {}},

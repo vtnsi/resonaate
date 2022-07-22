@@ -1,6 +1,9 @@
 """Defines the :class:`.ScheduledFiniteManeuverEvent` data table class."""
+from __future__ import annotations
+
 # Standard Library Imports
 from functools import partial
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import Boolean, Column, Float, String
@@ -15,36 +18,42 @@ from ...dynamics.integration_events.finite_thrust import (
 from ...physics.time.stardate import JulianDate, datetimeToJulianDate
 from .base import Event, EventScope
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...agents.agent_base import Agent
+    from ...scenario.config.event_configs import ScheduledFiniteManeuverConfig
+
 
 class ScheduledFiniteManeuverEvent(Event):
     """Event data object describing a scheduled finite maneuver."""
 
-    EVENT_TYPE = "finite_maneuver"
-    """str: Name of this type of event."""
+    EVENT_TYPE: str = "finite_maneuver"
+    """``str``: Name of this type of event."""
 
-    INTENDED_SCOPE = EventScope.AGENT_PROPAGATION
-    """EventScope: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
+    INTENDED_SCOPE: EventScope = EventScope.AGENT_PROPAGATION
+    """:class:`.EventScope`: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
 
-    MANEUVER_TYPE_SPIRAL = "spiral"
-    """str: Configuration string used to delineate spiral maneuver to apply this thrust."""
+    MANEUVER_TYPE_SPIRAL: str = "spiral"
+    """``str``: Configuration string used to delineate spiral maneuver to apply this thrust."""
 
-    MANEUVER_TYPE_PLANE_CHANGE = "plane_change"
-    """str: Configuration string used to delineate plane change maneuver to apply this thrust."""
+    MANEUVER_TYPE_PLANE_CHANGE: str = "plane_change"
+    """``str``: Configuration string used to delineate plane change maneuver to apply this thrust."""
 
-    VALID_MANEUVER_TYPES = (MANEUVER_TYPE_SPIRAL, MANEUVER_TYPE_PLANE_CHANGE)
-    """tuple: Valid values for :attr:`.maneuver_type`."""
+    VALID_MANEUVER_TYPES: tuple[str] = (MANEUVER_TYPE_SPIRAL, MANEUVER_TYPE_PLANE_CHANGE)
+    """``tuple``: Valid values for :attr:`.maneuver_type`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     maneuver_type = Column(String(10))
-    """str: Label for type of maneuver being applied."""
+    """``str``: Label for type of maneuver being applied."""
 
     maneuver_mag = Column(Float)
-    """float: Magnitude of maneuver vector in km/s^2."""
+    """``float``: Magnitude of maneuver vector in km/s^2."""
 
     @declared_attr
     def planned(self):  # pylint: disable=invalid-name
-        """bool: Flag indicating whether this task is expected by the filter or not."""
+        """``bool``: Flag indicating whether this task is expected by the filter or not."""
         return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
 
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
@@ -53,7 +62,7 @@ class ScheduledFiniteManeuverEvent(Event):
         "planned",
     )
 
-    def handleEvent(self, scope_instance):
+    def handleEvent(self, scope_instance: Agent) -> None:
         """Queue a :class:`.ScheduledFiniteManeuver` to take place during agent propagation.
 
         Args:
@@ -78,15 +87,15 @@ class ScheduledFiniteManeuverEvent(Event):
         scope_instance.appendPropagateEvent(finite_maneuver)
 
     @classmethod
-    def fromConfig(cls, config):
+    def fromConfig(cls, config: ScheduledFiniteManeuverConfig) -> ScheduledFiniteManeuverEvent:
         """Construct a :class:`.ScheduledFiniteEvent` from a specified `config`.
 
         Args:
-            config (ScheduledFiniteEventConfigObject): Configuration object to construct a
+            config (:class:`.ScheduledFiniteEventConfig`): Configuration object to construct a
                 :class:`.ScheduledFiniteEvent` from.
 
         Returns:
-            ScheduledFiniteEvent: :class:`.ScheduledFiniteEvent` object based on specified `config`.
+            :class:`.ScheduledFiniteEvent`: object based on specified `config`.
         """
         return cls(
             scope=config.scope,

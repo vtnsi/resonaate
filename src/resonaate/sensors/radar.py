@@ -14,6 +14,9 @@ from .measurements import IsAngle, getAzimuth, getElevation, getRange, getRangeR
 from .sensor_base import Sensor
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
     # Third Party Imports
     from numpy import ndarray
 
@@ -21,10 +24,18 @@ if TYPE_CHECKING:
     from . import FieldOfView
 
 
-RADAR_DEFAULT_FOV = {
+RADAR_DEFAULT_FOV: dict[str, Any] = {
     "fov_shape": "conic",
     "cone_angle": 1.0,
-}  # Default Field of View of a radar sensor (degrees)
+}
+"""``dict``: Default Field of View (conic) of a radar sensor, degrees."""
+
+
+RADAR_DEFAULT_TX_POWER: float = 3e6
+"""``float``: Default transmit power of a radar sensor, W."""
+
+RADAR_DEFAULT_TX_FREQUENCY: float = 1e5
+"""``float``: Default transmit frequency of a radar sensor, Hz."""
 
 
 class Radar(Sensor):

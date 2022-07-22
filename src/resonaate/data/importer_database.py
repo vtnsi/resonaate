@@ -9,7 +9,7 @@ from sqlalchemy.orm import Query
 from ..common.logger import resonaateLogError
 from ..common.utilities import loadJSONFile
 from ..physics.time.stardate import JulianDate
-from .agent import Agent
+from .agent import AgentModel
 from .data_interface import DataInterface
 from .ephemeris import TruthEphemeris
 from .epoch import Epoch
@@ -196,7 +196,9 @@ class ImporterDatabase(DataInterface):
                 ephemeris["vel_z_km_p_sec"] = ephemeris["velocity"][2]
                 del ephemeris["velocity"]
 
-                agent_query = Query(Agent).filter(Agent.unique_id == ephemeris["sat_num"])
+                agent_query = Query(AgentModel).filter(
+                    AgentModel.unique_id == ephemeris["sat_num"]
+                )
                 julian_date_query = Query(Epoch).filter(
                     Epoch.julian_date == ephemeris["julian_date"]
                 )
@@ -205,7 +207,7 @@ class ImporterDatabase(DataInterface):
                 agent = self.getData(agent_query, multi=False)
                 if not agent:
                     self._insertData(
-                        Agent(
+                        AgentModel(
                             unique_id=ephemeris.pop("sat_num"),
                             name=ephemeris.pop("sat_name"),
                         )

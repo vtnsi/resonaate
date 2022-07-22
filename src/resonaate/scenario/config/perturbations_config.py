@@ -1,41 +1,49 @@
 """Submodule defining the 'perturbations' configuration section."""
+from __future__ import annotations
+
+# Standard Library Imports
+from dataclasses import dataclass, field
+from typing import ClassVar
+
 # Local Imports
-from .base import ConfigOption, ConfigSection
+from .base import ConfigObject, ConfigValueError
+
+SUPPORTED_THIRD_BODIES: tuple[str] = (
+    "moon",
+    "sun",
+    "jupiter",
+    "saturn",
+    "venus",
+)
+"""``tuple``: currently supported third-body perturbation configs."""
 
 
-class PerturbationsConfig(ConfigSection):
+@dataclass
+class PerturbationsConfig(ConfigObject):
     """Configuration section defining several perturbations options."""
 
-    CONFIG_LABEL = "perturbations"
-    """str: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "perturbations"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.PerturbationsConfig`."""
-        self._third_bodies = ConfigOption("third_bodies", (list,), default=[])
-        self._solar_radiation_pressure = ConfigOption(
-            "solar_radiation_pressure", (bool,), default=False
-        )
-        self._general_relativity = ConfigOption("general_relativity", (bool,), default=False)
+    third_bodies: list[str] = field(default_factory=list)
+    """``list[str]``: names of third body objects to use in special perturbations dynamics.
 
-    @property
-    def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [self._third_bodies, self._solar_radiation_pressure, self._general_relativity]
+    Currently the following third bodies are supported:
+         * `"sun"`
+         * `"moon"`
+         * `"jupiter"`
+         * `"saturn"`
+         * `"venus"`
+    """
 
-    @property
-    def third_bodies(self):
-        """list: List of third body objects to use in special perturbations dynamics.
+    solar_radiation_pressure: bool = False
+    """``bool``: whether to account for solar radiation pressure in special perturbations dynamics."""
 
-        Currently the objects "sun" and "moon" are supported.
-        """
-        return self._third_bodies.setting
+    general_relativity: bool = False
+    """``bool``: whether to account for general relativity in special perturbations dynamics."""
 
-    @property
-    def solar_radiation_pressure(self):
-        """Bool: Whether or not to account for solar radiation pressure in special perturbations dynamics."""
-        return self._solar_radiation_pressure.setting
-
-    @property
-    def general_relativity(self):
-        """Bool: Whether or not to account for general relativity in special perturbations dynamics."""
-        return self._general_relativity.setting
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        for third_body in self.third_bodies:
+            if third_body not in SUPPORTED_THIRD_BODIES:
+                raise ConfigValueError("third_bodies", third_body, SUPPORTED_THIRD_BODIES)

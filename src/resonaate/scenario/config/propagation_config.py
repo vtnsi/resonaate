@@ -1,4 +1,10 @@
 """Submodule defining the 'propagation' configuration section."""
+from __future__ import annotations
+
+# Standard Library Imports
+from dataclasses import dataclass
+from typing import ClassVar
+
 # Local Imports
 from ...dynamics.constants import (
     DOP853_LABEL,
@@ -6,86 +12,62 @@ from ...dynamics.constants import (
     SPECIAL_PERTURBATIONS_LABEL,
     TWO_BODY_LABEL,
 )
-from .base import ConfigOption, ConfigSection
+from .base import ConfigObject, ConfigValueError
+
+VALID_PROPAGATION_METHODS: tuple[str] = (
+    SPECIAL_PERTURBATIONS_LABEL,
+    TWO_BODY_LABEL,
+)
+"""``tuple``: Valid propagation methods."""
+
+VALID_INTEGRATION_METHODS: tuple[str] = (
+    RK45_LABEL,
+    DOP853_LABEL,
+)
+"""``tuple``: Valid integration methods."""
 
 
-class PropagationConfig(ConfigSection):
+@dataclass
+class PropagationConfig(ConfigObject):
     """Configuration section defining several propagation-based options."""
 
-    CONFIG_LABEL = "propagation"
-    """str: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "propagation"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.PropagationConfig`."""
-        self._propagation_model = ConfigOption(
-            "propagation_model",
-            (str,),
-            default=SPECIAL_PERTURBATIONS_LABEL,
-            valid_settings=(TWO_BODY_LABEL, SPECIAL_PERTURBATIONS_LABEL),
-        )
-        self._integration_method = ConfigOption(
-            "integration_method",
-            (str,),
-            default=RK45_LABEL,
-            valid_settings=(
-                RK45_LABEL,
-                DOP853_LABEL,
-            ),
-        )
-        self._station_keeping = ConfigOption("station_keeping", (bool,), default=True)
-        self._target_realtime_propagation = ConfigOption(
-            "target_realtime_propagation", (bool,), default=True
-        )
-        self._sensor_realtime_propagation = ConfigOption(
-            "sensor_realtime_propagation", (bool,), default=True
-        )
-        self._realtime_observation = ConfigOption("realtime_observation", (bool,), default=True)
-        self._truth_simulation_only = ConfigOption("truth_simulation_only", (bool,), default=False)
+    propagation_model: str = SPECIAL_PERTURBATIONS_LABEL
+    """``str``: model with which to propagate RSOs."""
 
-    @property
-    def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [
-            self._propagation_model,
-            self._integration_method,
-            self._station_keeping,
-            self._target_realtime_propagation,
-            self._sensor_realtime_propagation,
-            self._realtime_observation,
-            self._truth_simulation_only,
-        ]
+    integration_method: str = RK45_LABEL
+    """``str``: method with which to numerically integrate RSOs."""
 
-    @property
-    def propagation_model(self):
-        """str: String describing model with which to propagate RSOs."""
-        return self._propagation_model.setting
+    station_keeping: bool = False
+    """``bool``: whether to use the station keeping for the truth model.
 
-    @property
-    def integration_method(self):
-        """str: String describing method with which to numerically integrate RSOs."""
-        return self._integration_method.setting
+    Note:
+        This turns station-keeping on or off, globally. So this must be ``True`` for agents with
+        a :attr:`~.TargetAgent.station_keeping` to use the routines.
+    """
 
-    @property
-    def station_keeping(self):
-        """bool: Whether to use the station keeping for the truth model."""
-        return self._station_keeping.setting
+    target_realtime_propagation: bool = True
+    """``bool``: whether to use the internal propagation for the truth model."""
 
-    @property
-    def target_realtime_propagation(self):
-        """bool: Whether to use the internal propagation for the truth model."""
-        return self._target_realtime_propagation.setting
+    sensor_realtime_propagation: bool = True
+    """``bool``: whether to use the internal propagation for the truth model."""
 
-    @property
-    def sensor_realtime_propagation(self):
-        """bool: Whether to use the internal propagation for the truth model."""
-        return self._sensor_realtime_propagation.setting
+    realtime_observation: bool = True
+    """``bool``: whether to generate observations during the simulation."""
 
-    @property
-    def realtime_observation(self):
-        """bool: Whether to generate observations during the simulation."""
-        return self._realtime_observation.setting
+    truth_simulation_only: bool = False
+    """``bool``: whether to skip estimation and tasking during the simulation."""
 
-    @property
-    def truth_simulation_only(self):
-        """bool: Whether to estimation and tasking during the simulation."""
-        return self._truth_simulation_only.setting
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if self.propagation_model not in VALID_PROPAGATION_METHODS:
+            raise ConfigValueError(
+                "propagation_model", self.propagation_model, VALID_PROPAGATION_METHODS
+            )
+
+        if self.integration_method not in VALID_INTEGRATION_METHODS:
+            raise ConfigValueError(
+                "integration_method", self.integration_method, VALID_INTEGRATION_METHODS
+            )

@@ -131,11 +131,11 @@ html_theme_options = {
     "logo_only": False,
     "display_version": True,
     "prev_next_buttons_location": "bottom",
-    "style_external_links": False,
+    "style_external_links": True,
     # Toc options
     "collapse_navigation": False,
     "sticky_navigation": True,
-    "navigation_depth": 7,
+    "navigation_depth": 5,
     "includehidden": True,
     "titles_only": False,
 }
@@ -241,6 +241,13 @@ epub_exclude_files = ["search.html"]
 
 autosummary_generate = True
 
+autodoc_class_signature = "separated"
+autoclass_content = "class"
+autodoc_default_options = {
+    "show-inheritance": True,
+    "member-order": "groupwise",
+}
+
 # -- Options for todo extension ----------------------------------------------
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
@@ -258,6 +265,8 @@ napoleon_use_admonition_for_references = True
 napoleon_use_ivar = True
 napoleon_use_param = True
 napoleon_use_rtype = False
+napoleon_preprocess_types = True
+napoleon_attr_annotations = True
 
 # -- Options for BibTeX extension --------------------------------------------
 # Tell where LaTeX bib file is located

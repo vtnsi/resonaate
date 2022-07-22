@@ -9,7 +9,7 @@ from sqlalchemy.orm import Query
 # Local Imports
 from ..common.logger import resonaateLogError
 from ..physics.time.stardate import JulianDate
-from .agent import Agent
+from .agent import AgentModel
 from .data_interface import DataInterface
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .observation import Observation
@@ -28,7 +28,7 @@ def fetchAgentIDs(database: DataInterface) -> List[int]:
     Returns:
         (``list``): list of agent ID numbers, as integers
     """
-    agent_id_tuples = database.getData(Query(distinct(Agent.unique_id)), multi=True)
+    agent_id_tuples = database.getData(Query(distinct(AgentModel.unique_id)), multi=True)
     return [int(agent_id_tuple[0]) for agent_id_tuple in agent_id_tuples]
 
 

@@ -8,10 +8,11 @@ from sqlalchemy.orm import Query
 
 try:
     # RESONAATE Imports
-    from resonaate.data.agent import Agent
+    from resonaate.data.agent import AgentModel
     from resonaate.data.resonaate_database import ResonaateDatabase
     from resonaate.physics.time.stardate import datetimeToJulianDate
     from resonaate.scenario.config import ScenarioConfig
+    from resonaate.scenario.config.event_configs import EventConfig, EventConfigList
     from resonaate.scenario.scenario import Scenario
     from resonaate.scenario.scenario_builder import ScenarioBuilder
 except ImportError as error:
@@ -45,17 +46,22 @@ class TestEventIntegration(BaseTestCase):
     def testBuildScheduledImpulse(self, datafiles):
         """Validate that no errors are thrown when building a :class:`.ScheduledImpulseEvent`."""
         minimal_config = self._getMinimalConfig(datafiles)
-        minimal_config.events.readConfig(
+        time = minimal_config.time.start_timestamp + timedelta(minutes=2)
+
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "agent_propagation",
                     "scope_instance_id": 123,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
+                    "start_time": time,
+                    "end_time": time,
                     "event_type": "impulse",
                     "thrust_vector": [0.0, 0.0, 0.00123],
                     "thrust_frame": "ntw",
                 }
-            ]
+            ],
         )
         assert ScenarioBuilder(minimal_config)
 
@@ -64,26 +70,31 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a TargetTaskingPriority's data dependency is built."""
         minimal_config = self._getMinimalConfig(datafiles)
         priority_agent = {"unique_id": 12345, "name": "important sat"}
-        minimal_config.events.readConfig(
+        time = minimal_config.time.start_timestamp + timedelta(minutes=2)
+
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "task_reward_generation",
                     "scope_instance_id": 123,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
+                    "start_time": time,
+                    "end_time": time,
                     "event_type": "task_priority",
                     "target_id": priority_agent["unique_id"],
                     "target_name": priority_agent["name"],
                     "priority": 2.0,
                     "is_dynamic": False,
                 }
-            ]
+            ],
         )
         _ = ScenarioBuilder(minimal_config)
         shared_db = ResonaateDatabase.getSharedInterface()
         assert shared_db.getData(
-            Query([Agent]).filter(
-                Agent.unique_id == priority_agent["unique_id"],
-                Agent.name == priority_agent["name"],
+            Query([AgentModel]).filter(
+                AgentModel.unique_id == priority_agent["unique_id"],
+                AgentModel.name == priority_agent["name"],
             ),
             multi=False,
         )
@@ -94,22 +105,25 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a ScheduledImpulse is handled correctly."""
         minimal_config = self._getMinimalConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         maneuvering_target = tasking_engine.targets[0]
+        time = minimal_config.time.start_timestamp + timedelta(minutes=2, seconds=seconds)
 
-        minimal_config.events.readConfig(
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "agent_propagation",
                     "scope_instance_id": maneuvering_target.sat_num,
-                    "start_time": minimal_config.time.start_timestamp
-                    + timedelta(minutes=2, seconds=seconds),
+                    "start_time": time,
+                    "end_time": time,
                     "event_type": "impulse",
                     "thrust_vector": [0.0, 0.0, 0.125],
                     "thrust_frame": "ntw",
                     "planned": False,
                 }
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)
@@ -143,21 +157,25 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a ScheduledImpulse is handled correctly."""
         minimal_config = self._getManeuverDetectionConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         maneuvering_target = tasking_engine.targets[0]
+        time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events.readConfig(
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "agent_propagation",
                     "scope_instance_id": maneuvering_target.sat_num,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
+                    "start_time": time,
+                    "end_time": time,
                     "event_type": "impulse",
                     "thrust_vector": [0.0, 0.0, 0.125],
                     "thrust_frame": "ntw",
                     "planned": planned,
                 }
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)
@@ -194,22 +212,26 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a ScheduledImpulse is handled correctly."""
         minimal_config = self._getManeuverDetectionConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         maneuvering_target = tasking_engine.targets[0]
+        time_1 = minimal_config.time.start_timestamp + timedelta(minutes=2)
+        time_2 = minimal_config.time.start_timestamp + timedelta(minutes=4)
 
-        minimal_config.events.readConfig(
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "agent_propagation",
                     "scope_instance_id": maneuvering_target.sat_num,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
-                    "end_time": minimal_config.time.start_timestamp + timedelta(minutes=4),
+                    "start_time": time_1,
+                    "end_time": time_2,
                     "event_type": "finite_burn",
                     "acc_vector": [0.0, 0.0, 0.002],
                     "thrust_frame": "ntw",
                     "planned": planned,
                 }
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)
@@ -245,23 +267,27 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a TargetTaskPriority is handled correctly."""
         minimal_config = self._getMinimalConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         priority_target = tasking_engine.targets[0]
+        time_1 = minimal_config.time.start_timestamp + timedelta(minutes=2)
+        time_2 = minimal_config.time.start_timestamp + timedelta(minutes=4)
 
-        minimal_config.events.readConfig(
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "task_reward_generation",
                     "scope_instance_id": tasking_engine.unique_id,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
-                    "end_time": minimal_config.time.start_timestamp + timedelta(minutes=4),
+                    "start_time": time_1,
+                    "end_time": time_2,
                     "event_type": "task_priority",
                     "target_id": priority_target.sat_num,
                     "target_name": priority_target.sat_name,
                     "priority": 2.0,
                     "is_dynamic": False,
                 }
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)
@@ -297,30 +323,39 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a TargetAddition is handled correctly."""
         minimal_config = self._getMinimalConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         addition_id = 11116
 
-        minimal_config.events.readConfig(
+        target = {
+            "sat_num": addition_id,
+            "sat_name": "test_target_addition",
+            "init_eci": [
+                34532.51759487585,
+                -23974.32804541272,
+                -3273.2937902514736,
+                1.7635318397028281,
+                2.5020107992826763,
+                0.28890951790512437,
+            ],
+            "station_keeping": {},
+        }
+
+        time = minimal_config.time.start_timestamp + timedelta(minutes=2)
+
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
                     "scope_instance_id": 0,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
+                    "start_time": time,
+                    "end_time": time,
                     "event_type": "target_addition",
-                    "sat_num": addition_id,
-                    "sat_name": "Target6",
-                    "init_eci": [
-                        34532.51759487585,
-                        -23974.32804541272,
-                        -3273.2937902514736,
-                        1.7635318397028281,
-                        2.5020107992826763,
-                        0.28890951790512437,
-                    ],
-                    "station_keeping": {},
+                    "target": target,
                     "tasking_engine_id": tasking_engine.unique_id,
                 }
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)
@@ -363,45 +398,53 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a SensorAddition is handled correctly."""
         minimal_config = self._getMinimalConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         addition_id = 60002
 
-        minimal_config.events.readConfig(
+        sensor = {
+            "name": "Geo Space Sensor 1",
+            "id": addition_id,
+            "covariance": [[9.869604401089358e-14, 0.0], [0.0, 9.869604401089358e-14]],
+            "slew_rate": 0.03490658503988659,
+            "azimuth_range": [0.0, 6.283185132646661],
+            "elevation_range": [-1.5707961522619713, 1.5707961522619713],
+            "efficiency": 0.99,
+            "aperture_area": 0.19634954084936207,
+            "sensor_type": "Optical",
+            "init_eci": [
+                42499.60206485572,
+                184.76309877864716,
+                4.838191959393135,
+                -0.013241150121066223,
+                3.0793657899539326,
+                0.08063602923669937,
+            ],
+            "exemplar": [1, 10000],
+            "field_of_view": {
+                "fov_shape": "conic",
+            },
+            "calculate_fov": False,
+            "detectable_vismag": 25.0,
+            "minimum_range": 0.0,
+            "maximum_range": 99000,
+            "host_type": "Spacecraft",
+        }
+        time = minimal_config.time.start_timestamp + timedelta(minutes=2)
+
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
                     "scope_instance_id": 0,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
+                    "start_time": time,
+                    "end_time": time,
                     "event_type": "sensor_addition",
-                    "name": "Geo Space Sensor 1",
-                    "id": addition_id,
-                    "covariance": [[9.869604401089358e-14, 0.0], [0.0, 9.869604401089358e-14]],
-                    "slew_rate": 0.03490658503988659,
-                    "azimuth_range": [0.0, 6.283185132646661],
-                    "elevation_range": [-1.5707961522619713, 1.5707961522619713],
-                    "efficiency": 0.99,
-                    "aperture_area": 0.19634954084936207,
-                    "sensor_type": "Optical",
-                    "init_eci": [
-                        42499.60206485572,
-                        184.76309877864716,
-                        4.838191959393135,
-                        -0.013241150121066223,
-                        3.0793657899539326,
-                        0.08063602923669937,
-                    ],
-                    "exemplar": [1, 10000],
-                    "field_of_view": {
-                        "fov_shape": "conic",
-                    },
-                    "calculate_fov": False,
-                    "detectable_vismag": 25.0,
-                    "minimum_range": 0.0,
-                    "maximum_range": 99000,
-                    "host_type": "Spacecraft",
+                    "sensor": sensor,
                     "tasking_engine_id": tasking_engine.unique_id,
                 }
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)
@@ -443,21 +486,25 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a AgentRemoval of a target is handled correctly."""
         minimal_config = self._getMinimalConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         removed_target = tasking_engine.targets[0]
+        time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events.readConfig(
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
                     "scope_instance_id": 0,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
+                    "start_time": time,
+                    "end_time": time,
                     "event_type": "agent_removal",
                     "tasking_engine_id": tasking_engine.unique_id,
                     "agent_id": removed_target.sat_num,
                     "agent_type": "target",
                 }
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)
@@ -500,21 +547,25 @@ class TestEventIntegration(BaseTestCase):
         """Validate that a AgentRemoval of a target is handled correctly."""
         minimal_config = self._getMinimalConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         removed_sensor = tasking_engine.sensors[0]
+        time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events.readConfig(
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
                     "scope_instance_id": 0,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
+                    "start_time": time,
+                    "end_time": time,
                     "event_type": "agent_removal",
                     "tasking_engine_id": tasking_engine.unique_id,
                     "agent_id": removed_sensor.id,
                     "agent_type": "sensor",
                 }
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)
@@ -556,33 +607,45 @@ class TestEventIntegration(BaseTestCase):
         """Validate that multiple consecutive events are handled correctly."""
         minimal_config = self._getMinimalConfig(datafiles)
 
-        tasking_engine = minimal_config.engines.objects[0]
+        tasking_engine = minimal_config.engines[0]
         addition_id = 11116
 
-        minimal_config.events.readConfig(
+        target = {
+            "sat_num": addition_id,
+            "sat_name": "Target6",
+            "init_eci": [
+                34532.51759487585,
+                -23974.32804541272,
+                -3273.2937902514736,
+                1.7635318397028281,
+                2.5020107992826763,
+                0.28890951790512437,
+            ],
+            "station_keeping": {},
+        }
+
+        time_1 = minimal_config.time.start_timestamp + timedelta(minutes=2)
+        time_2 = minimal_config.time.start_timestamp + timedelta(minutes=2.5)
+        time_3 = minimal_config.time.start_timestamp + timedelta(minutes=4)
+
+        minimal_config.events = EventConfigList(
+            "events",
+            EventConfig,
             [
                 {
                     "scope": "scenario_step",
                     "scope_instance_id": 0,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2),
+                    "start_time": time_1,
+                    "end_time": time_1,
                     "event_type": "target_addition",
-                    "sat_num": addition_id,
-                    "sat_name": "Target6",
-                    "init_eci": [
-                        34532.51759487585,
-                        -23974.32804541272,
-                        -3273.2937902514736,
-                        1.7635318397028281,
-                        2.5020107992826763,
-                        0.28890951790512437,
-                    ],
-                    "station_keeping": {},
+                    "target": target,
                     "tasking_engine_id": tasking_engine.unique_id,
                 },
                 {
                     "scope": "agent_propagation",
                     "scope_instance_id": addition_id,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=2.5),
+                    "start_time": time_2,
+                    "end_time": time_2,
                     "event_type": "impulse",
                     "thrust_vector": [0.0, 0.0, 0.125],
                     "thrust_frame": "ntw",
@@ -590,13 +653,14 @@ class TestEventIntegration(BaseTestCase):
                 {
                     "scope": "scenario_step",
                     "scope_instance_id": 0,
-                    "start_time": minimal_config.time.start_timestamp + timedelta(minutes=4),
+                    "start_time": time_3,
+                    "end_time": time_3,
                     "event_type": "agent_removal",
                     "tasking_engine_id": tasking_engine.unique_id,
                     "agent_id": addition_id,
                     "agent_type": "target",
                 },
-            ]
+            ],
         )
 
         builder = ScenarioBuilder(minimal_config)

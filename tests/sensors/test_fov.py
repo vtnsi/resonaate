@@ -12,7 +12,7 @@ try:
     from resonaate.physics.transforms.methods import getSlantRangeVector
     from resonaate.physics.transforms.reductions import updateReductionParameters
     from resonaate.scenario.clock import ScenarioClock
-    from resonaate.scenario.config.agent_configs import SensorConfigObject
+    from resonaate.scenario.config.agent_configs import SensingAgentConfig
 
 except ImportError as error:
     raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
@@ -54,20 +54,20 @@ class TestFieldOfView(BaseTestCase):
     julian_date = JulianDate(2459006.5)
     clock = ScenarioClock(julian_date, 60.0, 30.0)
     conic_sensor_config = {
-        "agent": SensorConfigObject(CONIC_SENSOR_CONFIG),
+        "agent": SensingAgentConfig(**CONIC_SENSOR_CONFIG),
         "realtime": True,
         "clock": clock,
     }
-    conic_sensor_agent = SensingAgent.fromConfig(conic_sensor_config, {})
+    conic_sensor_agent = SensingAgent.fromConfig(conic_sensor_config)
     conic_sensor_agent.sensors.host.time = ScenarioTime(30)
 
     CONIC_SENSOR_CONFIG["field_of_view"]["fov_shape"] = "rectangular"
     rectangular_sensor_config = {
-        "agent": SensorConfigObject(CONIC_SENSOR_CONFIG),
+        "agent": SensingAgentConfig(**CONIC_SENSOR_CONFIG),
         "realtime": True,
         "clock": clock,
     }
-    rectangular_sensor_agent = SensingAgent.fromConfig(rectangular_sensor_config, {})
+    rectangular_sensor_agent = SensingAgent.fromConfig(rectangular_sensor_config)
     rectangular_sensor_agent.sensors.host.time = ScenarioTime(30)
 
     nominal_filter = UnscentedKalmanFilter(
@@ -91,7 +91,7 @@ class TestFieldOfView(BaseTestCase):
         "Secondary RSO",
         "Spacecraft",
         clock,
-        array([26111.5, 33076.1, 0, -2.41152, 1.9074, 0]),
+        array([26111.5, 33076.1, 0, -2.41153, 1.9074, 0]),
         zeros((6, 6)),
         nominal_filter,
         None,
@@ -133,7 +133,7 @@ class TestFieldOfView(BaseTestCase):
         )
         assert bool(in_fov) is True
         not_in_fov = self.conic_sensor_agent.sensors.inFOV(
-            self.primary_rso.eci_state[:3], array([0, 0, 0])
+            self.primary_rso.eci_state[:3], array([0, 0.01, 0])
         )
         assert bool(not_in_fov) is False
 
