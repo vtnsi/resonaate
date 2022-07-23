@@ -3,68 +3,37 @@ from __future__ import annotations
 
 # Standard Library Imports
 import logging
-import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
-from numpy import asarray
 
 # RESONAATE Imports
-from resonaate.agents.estimate_agent import EstimateAgent
-from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
-from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.parallel import getRedisConnection, isMaster, resetMaster
-from resonaate.physics.time.stardate import ScenarioTime, datetimeToJulianDate
-from resonaate.scenario.clock import ScenarioClock
+from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
-from resonaate.sensors.sensor_base import Sensor
-from resonaate.tasking.decisions.decision_base import Decision
-from resonaate.tasking.engine.centralized_engine import CentralizedTaskingEngine
-from resonaate.tasking.metrics.metric_base import Metric
-from resonaate.tasking.rewards.reward_base import Reward
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Any
-
     # RESONAATE Imports
     from resonaate.common.logger import Logger
     from resonaate.parallel import Redis
     from resonaate.physics.time.stardate import JulianDate
 
-FIXTURE_DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "datafiles",
-)
-
-IMPORTER_DB_PATH = "db/importer.sqlite3"
-SHARED_DB_PATH = "db/importer.sqlite3"
-JSON_INIT_PATH = "json/config/init_messages"
-JSON_RSO_TRUTH = "json/rso_truth"
-JSON_SENSOR_TRUTH = "json/sat_sensor_truth"
-
-
-class BaseTestCase:
-    """Base unit test class for all to inherit from.
-
-    This is primarily for storing global constants/common file locations, etc.
-    """
-
-    importer_db_path = IMPORTER_DB_PATH
-    shared_db_path = SHARED_DB_PATH
-    json_init_path = JSON_INIT_PATH
-    json_rso_truth = JSON_RSO_TRUTH
-    json_sensor_truth = JSON_SENSOR_TRUTH
+FIXTURE_DATA_DIR = Path(__file__).parent / "datafiles"
+IMPORTER_DB_PATH = Path("db/importer.sqlite3")
+SHARED_DB_PATH = Path("db/importer.sqlite3")
+JSON_INIT_PATH = Path("json/config/init_messages")
+JSON_RSO_TRUTH = Path("json/rso_truth")
+JSON_SENSOR_TRUTH = Path("json/sat_sensor_truth")
 
 
 @pytest.fixture(autouse=True)
@@ -146,107 +115,21 @@ def getDataInterface() -> ResonaateDatabase:
     shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
 
 
-@pytest.fixture(scope="class", name="mocked_clock")
-def getMockedClockObject() -> ScenarioClock:
-    """Create a mocked :class:`.ScenarioClock` object."""
-    clock = create_autospec(ScenarioClock)
-    clock.dt_step = 60
-    clock.julian_date_start = 2458454.0
-    clock.time = ScenarioTime(2458454.0)
-    return clock
-
-
-@pytest.fixture(scope="class", name="mocked_estimate")
-def getMockedEstimateObject() -> EstimateAgent:
-    """Create a mocked :class:`.EstimateAgent` object."""
-    estimate = create_autospec(EstimateAgent)
-    estimate.nominal_filter.pred_p = asarray([[4, 23], [1, 67]])
-    estimate.nominal_filter.est_p = asarray([[1, 1], [2, 4]])
-    estimate.nominal_filter.cross_cvr = asarray([[3, 1, 12], [12, 344, 2]])
-    estimate.initial_covariance = asarray([[1, 1], [3, 2]])
-    estimate.last_observed_at = 2458454.0
-    return estimate
-
-
-@pytest.fixture(scope="class", name="mocked_sensor")
-def getMockedSensorObject() -> Sensor:
-    """Create a mocked :class:`.Sensor` object."""
-    sensor = create_autospec(Sensor)
-    sensor.r_matrix = asarray([[7.0e-4, 0.0, 0.0], [0.0, 6.5e-4, 0.0], [0.0, 0.0, 8.0e-4]])
-    sensor.delta_boresight = 4.0
-    sensor.slew_rate = 2.0
-    return sensor
-
-
-@pytest.fixture(scope="class", name="mocked_sensing_agent")
-def getMockedSensingAgentObject(mocked_sensor: Sensor) -> SensingAgent:
-    """Create a mocked :class:`.SensingAgent` object."""
-    sensing_agent = create_autospec(SensingAgent)
-    mocked_sensor.r_matrix = asarray([[7.0e-4, 0.0, 0.0], [0.0, 6.5e-4, 0.0], [0.0, 0.0, 8.0e-4]])
-    mocked_sensor.delta_boresight = 4.0
-    mocked_sensor.slew_rate = 2.0
-
-    sensing_agent.sensors = mocked_sensor
-    return sensing_agent
-
-
-@pytest.fixture(scope="class", name="mocked_metric")
-def getMockedMetricObject() -> Metric:
-    """Create a mocked :class:`.Metric` object."""
-    metric = create_autospec(Metric)
-
-    return metric
-
-
-@pytest.fixture(scope="class", name="mocked_reward")
-def getMockedRewardObject() -> Reward:
-    """Create a mocked :class:`.Reward` object."""
-    reward = create_autospec(Reward)
-
-    return reward
-
-
-@pytest.fixture(scope="class", name="mocked_decision")
-def getMockedDecisionObject() -> Decision:
-    """Create a mocked :class:`.Decision` object."""
-    decision = create_autospec(Decision)
-
-    return decision
-
-
-@pytest.fixture(scope="class", name="mocked_central_tasking_engine")
-def getMockedCentralizedTaskingEngineObject() -> CentralizedTaskingEngine:
-    """Create a mocked :class:`.CentralizedTaskingEngine` object."""
-    central_engine = create_autospec(CentralizedTaskingEngine)
-
-    return central_engine
-
-
-@pytest.fixture(scope="class", name="mocked_filter")
-def getMockedFilterObject() -> UnscentedKalmanFilter:
-    """Create a mocked :class:`.UnscentedKalmanFilter` object."""
-    mocked_filter = create_autospec(UnscentedKalmanFilter)
-
-    return mocked_filter
-
-
-GEOPOTENTIAL_CONFIG: dict[str, str | int] = {"model": "egm96.txt", "degree": 4, "order": 4}
-
-PERTURBATIONS_CONFIG: dict[str, Any] = {"third_bodies": ["sun", "moon"]}
-
 TEST_START_JD: JulianDate = datetimeToJulianDate(datetime(2018, 12, 1, 12))
 
 
 @pytest.fixture(name="geopotential_config")
 def getGeopotentialConfig() -> GeopotentialConfig:
     """Return a :class:`.GeopotentialConfig` object based on :attr:`.GEOPOTENTIAL_CONFIG`."""
-    return GeopotentialConfig(**GEOPOTENTIAL_CONFIG)
+    cfg_dict = {"model": "egm96.txt", "degree": 4, "order": 4}
+    return GeopotentialConfig(**cfg_dict)
 
 
 @pytest.fixture(name="perturbations_config")
 def getPerturbationsConfig() -> PerturbationsConfig:
     """Return a :class:`.PerturbationsConfig` object based on :attr:`.PERTURBATIONS_CONFIG`."""
-    return PerturbationsConfig(**PERTURBATIONS_CONFIG)
+    cfg_dict = {"third_bodies": ["sun", "moon"]}
+    return PerturbationsConfig(**cfg_dict)
 
 
 @pytest.fixture(name="dynamics")

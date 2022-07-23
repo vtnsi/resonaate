@@ -79,7 +79,7 @@ class TestScheduledImpulseEventConfig:
 @pytest.fixture(name="mocked_target")
 def getMockedAgent():
     """Get mocked :class:`.TargetAgent` object."""
-    mocked_target = create_autospec(TargetAgent)
+    mocked_target = create_autospec(TargetAgent, instance=True)
     mocked_target.julian_date_start = datetimeToJulianDate(datetime(2021, 8, 3, 12))
     return mocked_target
 

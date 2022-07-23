@@ -5,7 +5,7 @@ from __future__ import annotations
 import os.path
 import re
 from copy import deepcopy
-from unittest.mock import Mock
+from unittest.mock import Mock, create_autospec
 
 # Third Party Imports
 import pytest
@@ -17,7 +17,11 @@ from resonaate.common.exceptions import (
     DuplicateTargetError,
 )
 from resonaate.scenario.config import ScenarioConfig
-from resonaate.scenario.config.event_configs import MissingDataDependency, TargetTaskPriorityConfig
+from resonaate.scenario.config.event_configs import (
+    DataDependency,
+    MissingDataDependency,
+    TargetTaskPriorityConfig,
+)
 from resonaate.scenario.scenario_builder import ScenarioBuilder
 
 # Local Imports
@@ -175,7 +179,7 @@ def testMissingDataDependency(
 
     # Mock the `DataDependency` used by `TargetTaskPriorityConfig`, so that calling
     #   `dependency.createDependency()` raises a `MissingDataDependency` exception.
-    dummy_data_dependency = Mock(spec="DataDependency")
+    dummy_data_dependency = create_autospec(DataDependency, instance=True)
     dummy_data_dependency.query = "SQL QUERY"
     dummy_data_dependency.createDependency = Mock(side_effect=MissingDataDependency("DataType"))
 

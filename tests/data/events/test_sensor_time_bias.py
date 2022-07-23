@@ -54,7 +54,7 @@ class TestSensorTimeBiasEventConfig:
 @pytest.fixture(name="mocked_sensor")
 def getMockedAgent():
     """Get mocked :class:`.SensingAgent` object."""
-    mocked_sensor = create_autospec(SensingAgent)
+    mocked_sensor = create_autospec(SensingAgent, instance=True)
     mocked_sensor.julian_date_start = datetimeToJulianDate(datetime(2019, 2, 1, 15, 20))
     return mocked_sensor
 

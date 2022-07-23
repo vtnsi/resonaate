@@ -59,7 +59,7 @@ class TestFiniteManeuverEventConfig:
 @pytest.fixture(name="mocked_target")
 def getMockedAgent():
     """Get mocked :class:`.TargetAgent` object."""
-    mocked_target = create_autospec(TargetAgent)
+    mocked_target = create_autospec(TargetAgent, instance=True)
     mocked_target.julian_date_start = datetimeToJulianDate(datetime(2019, 2, 1, 0, 0))
     return mocked_target
 

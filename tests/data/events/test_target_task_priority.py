@@ -56,7 +56,7 @@ class TestTargetTaskPriorityConfig:
 @pytest.fixture(name="mocked_engine")
 def getMockedEngine():
     """Get mocked :class:`.TaskingEngine` object."""
-    mocked_engine = create_autospec(TaskingEngine)
+    mocked_engine = create_autospec(TaskingEngine, instance=True)
     mocked_engine.reward_matrix = zeros((10, 10), dtype=float)
     return mocked_engine
 

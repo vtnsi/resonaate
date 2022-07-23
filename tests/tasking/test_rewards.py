@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
 # Third Party Imports
 import pytest
@@ -42,6 +43,12 @@ def mockedMetricClass() -> Metric:
             return 3
 
     return MockedMetric
+
+
+@pytest.fixture(scope="class", name="mocked_metric")
+def getMockedMetricObject() -> Metric:
+    """Create a mocked :class:`.Metric` object."""
+    return MagicMock(spec="resonaate.tasking.metrics.metric_base.Metric")
 
 
 class TestRewardBase:

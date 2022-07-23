@@ -13,5 +13,5 @@ from resonaate.scenario.scenario import Scenario
 @pytest.fixture(name="mocked_scenario")
 def getMockedScenario():
     """Get a mocked :class:`.Scenario` object."""
-    mocked_scenario = create_autospec(Scenario)
+    mocked_scenario = create_autospec(Scenario, instance=True)
     return mocked_scenario
