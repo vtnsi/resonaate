@@ -39,7 +39,7 @@
       "dynamics_model": "two_body",
       "maneuver_detection": {
         "name": "standard_nis",
-        "maneuver_gate_val": 0.01,
+        "threshold": 0.01,
         "parameters": {}
       },
       "adaptive_estimation": true
