@@ -38,7 +38,7 @@ setuptools.setup(
             "flake8-plugin-utils==1.3.2",
             "flake8-pytest-style==1.6.0",
             "flake8-rst-docstrings==0.2.7",
-            "pylint==2.14.4",
+            "pylint==2.14.5",
             # Type Checking
             "mypy==0.961",
             "types-redis==4.3.4",
