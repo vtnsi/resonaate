@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 
 
 # Register each reward class to global registry
-Reward.register("CostConstrainedReward", CostConstrainedReward)
-Reward.register("SimpleSummationReward", SimpleSummationReward)
-Reward.register("CombinedReward", CombinedReward)
+Reward.register(CostConstrainedReward)
+Reward.register(SimpleSummationReward)
+Reward.register(CombinedReward)
 
 
 VALID_REWARDS: list[str] = list(Reward.REGISTRY.keys())

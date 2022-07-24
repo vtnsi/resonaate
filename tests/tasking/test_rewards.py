@@ -2,7 +2,6 @@ from __future__ import annotations
 
 # Standard Library Imports
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
 
 # Third Party Imports
 import pytest
@@ -23,60 +22,57 @@ if TYPE_CHECKING:
     from resonaate.agents.sensing_agent import SensingAgent
 
 
-@pytest.fixture(name="mocked_reward_class")
-def mockedRewardClass() -> Reward:
+@pytest.fixture(name="stub_reward_class")
+def stubRewardClass() -> Reward:
     """Return reference to a minimal :class:`.Reward` class."""
 
-    class MockedReward(Reward):
+    class StubReward(Reward):
         def _calculateReward(self, estimate_agent, sensor_agent, **kwargs):
             return 3
 
-    return MockedReward
+    return StubReward
 
 
-@pytest.fixture(name="mocked_metric_class")
-def mockedMetricClass() -> Metric:
+@pytest.fixture(name="stub_metric_class")
+def stubMetricClass() -> Metric:
     """Return reference to a minimal :class:`.Metric` class."""
 
-    class MockedMetric(Metric):
+    class StubMetric(Metric):
         def _calculateMetric(self, estimate_agent, sensor_agent, **kwargs):
             return 3
 
-    return MockedMetric
-
-
-@pytest.fixture(scope="class", name="mocked_metric")
-def getMockedMetricObject() -> Metric:
-    """Create a mocked :class:`.Metric` object."""
-    return MagicMock(spec="resonaate.tasking.metrics.metric_base.Metric")
+    return StubMetric
 
 
 class TestRewardBase:
     """Test the base class of the reward module."""
 
-    def testRegistry(self, mocked_reward_class: Reward, mocked_metric: Metric):
+    def testRegistry(self, stub_reward_class: Reward, stub_metric_class: Metric):
         """Test to make sure the reward object is registered."""
-        test_reward = mocked_reward_class(mocked_metric)
+        test_reward = stub_reward_class(stub_metric_class())
         assert test_reward.is_registered is False
 
         # Register new class and check
-        Reward.register("MockedReward", mocked_reward_class)
-        test_reward = mocked_reward_class(mocked_metric)
+        Reward.register(stub_reward_class)
+        test_reward = stub_reward_class(stub_metric_class())
         assert test_reward.is_registered is True
 
         # Ensure we cannot register objects that are not :class:`.Reward` sub-classes
         with pytest.raises(TypeError):
-            Reward.register("MockedReward", [True, False])
+            Reward.register([True, False])
 
-    def testCreation(self, mocked_metric):
+        with pytest.raises(TypeError):
+            Reward.register(stub_metric_class)
+
+    def testCreation(self, stub_metric_class: Metric):
         """Test creating a Decision Object."""
         with pytest.raises(TypeError):
-            Reward(mocked_metric)  # pylint: disable=abstract-class-instantiated
+            Reward(stub_metric_class())  # pylint: disable=abstract-class-instantiated
 
     def testCalculateReward(
         self,
-        mocked_reward_class: Reward,
-        mocked_metric: Metric,
+        stub_reward_class: Reward,
+        stub_metric_class: Metric,
         mocked_estimate: EstimateAgent,
         mocked_sensor: SensingAgent,
     ):
@@ -85,7 +81,7 @@ class TestRewardBase:
         target_id = 11111
         sensor_agents = {"sensor": mocked_sensor}
         sensor_id = "sensor"
-        reward = mocked_reward_class(mocked_metric)
+        reward = stub_reward_class(stub_metric_class())
         reward(target_agents[target_id], sensor_agents[sensor_id])
 
 
@@ -93,13 +89,13 @@ class TestCostConstrainedReward:
     """Test the CostConstrainedReward class of the reward module."""
 
     @pytest.fixture(name="metric_list")
-    def getMetricList(self, mocked_metric_class: Metric):
+    def getMetricList(self, stub_metric_class: Metric):
         """Create list of metrics to assign proper metric length of Reward Function calls."""
-        info_metric = mocked_metric_class()
+        info_metric = stub_metric_class()
         info_metric.METRIC_TYPE = "information"
-        stability_metric = mocked_metric_class()
+        stability_metric = stub_metric_class()
         stability_metric.METRIC_TYPE = "stability"
-        sensor_metric = mocked_metric_class()
+        sensor_metric = stub_metric_class()
         sensor_metric.METRIC_TYPE = "sensor"
         return [info_metric, stability_metric, sensor_metric]
 
@@ -127,15 +123,15 @@ class TestSimpleSummationReward:
     """Test the SimpleSummationReward class of the reward module."""
 
     @pytest.fixture(name="metric_list")
-    def getMetricList(self, mocked_metric_class: Metric):
+    def getMetricList(self, stub_metric_class: Metric):
         """Create list of metrics to assign proper metric length of Reward Function calls."""
-        info_metric = mocked_metric_class()
+        info_metric = stub_metric_class()
         info_metric.METRIC_TYPE = "information"
-        stability_metric = mocked_metric_class()
+        stability_metric = stub_metric_class()
         stability_metric.METRIC_TYPE = "stability"
-        sensor_metric = mocked_metric_class()
+        sensor_metric = stub_metric_class()
         sensor_metric.METRIC_TYPE = "sensor"
-        behavior_metric = mocked_metric_class()
+        behavior_metric = stub_metric_class()
         behavior_metric.METRIC_TYPE = "behavior"
         return [info_metric, stability_metric, sensor_metric, behavior_metric]
 
@@ -163,15 +159,15 @@ class TestCombinedReward:
     """Test the CombinedReward class of the reward module."""
 
     @pytest.fixture(name="metric_list")
-    def getMetricList(self, mocked_metric_class: Metric):
+    def getMetricList(self, stub_metric_class: Metric):
         """Create list of metrics to assign proper metric length of Reward Function calls."""
-        info_metric = mocked_metric_class()
+        info_metric = stub_metric_class()
         info_metric.METRIC_TYPE = "information"
-        stability_metric = mocked_metric_class()
+        stability_metric = stub_metric_class()
         stability_metric.METRIC_TYPE = "stability"
-        sensor_metric = mocked_metric_class()
+        sensor_metric = stub_metric_class()
         sensor_metric.METRIC_TYPE = "sensor"
-        behavior_metric = mocked_metric_class()
+        behavior_metric = stub_metric_class()
         behavior_metric.METRIC_TYPE = "behavior"
         return [info_metric, stability_metric, sensor_metric, behavior_metric]
 

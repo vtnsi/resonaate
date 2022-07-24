@@ -36,13 +36,13 @@ class TestDecisionBase:
         assert test_decision.is_registered is False
 
         # Register new class and check
-        Decision.register("MockedDecision", mocked_decision_class)
+        Decision.register(mocked_decision_class)
         test_decision = mocked_decision_class()
         assert test_decision.is_registered is True
 
         # Ensure we cannot register objects that are not :class:`.Decision` sub-classes
         with pytest.raises(TypeError):
-            Decision.register("MockedDecision", [2, 2])
+            Decision.register([2, 2])
 
     def testCreation(self):
         """Test creating a Decision Object."""

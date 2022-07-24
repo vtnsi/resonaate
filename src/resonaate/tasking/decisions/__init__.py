@@ -20,10 +20,10 @@ if TYPE_CHECKING:
 
 
 # Register each reward class to global registry
-Decision.register("MunkresDecision", MunkresDecision)
-Decision.register("MyopicNaiveGreedyDecision", MyopicNaiveGreedyDecision)
-Decision.register("RandomDecision", RandomDecision)
-Decision.register("AllVisibleDecision", AllVisibleDecision)
+Decision.register(MunkresDecision)
+Decision.register(MyopicNaiveGreedyDecision)
+Decision.register(RandomDecision)
+Decision.register(AllVisibleDecision)
 
 
 VALID_DECISIONS: list[str] = list(Decision.REGISTRY.keys())

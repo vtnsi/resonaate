@@ -17,15 +17,14 @@ class Metric(metaclass=ABCMeta):
     METRIC_TYPE: str = "base"
     """``str``: Type of metric in str format, for reward logic."""
 
-    REGISTRY: dict[str, "Metric"] = {}
+    REGISTRY: dict[str, Metric] = {}
     """``dict``: Global metric object registry."""
 
     @classmethod
-    def register(cls, name: str, metric: "Metric") -> None:
+    def register(cls, metric: Metric) -> None:
         """Register an implemented metric class in the global registry.
 
         Args:
-            name (``str``): name to store as the key in the registry
             metric (:class:`.Metric`): metric object to register
 
         Raises:
@@ -34,7 +33,7 @@ class Metric(metaclass=ABCMeta):
         if not issubclass(metric, Metric):
             raise TypeError(type(metric))
 
-        cls.REGISTRY[name] = metric
+        cls.REGISTRY[metric.__name__] = metric
 
     @property
     def is_registered(self) -> bool:

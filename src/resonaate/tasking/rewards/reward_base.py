@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 # Local Imports
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 class Reward(metaclass=ABCMeta):
     """Abstract base class to encapsulate behavior of general reward methods."""
 
-    REGISTRY: dict[str, "Reward"] = {}
+    REGISTRY: dict[str, Reward] = {}
     """``dict``: Global reward object registry."""
 
     def __init__(self, metrics: list[Metric]):
@@ -34,16 +35,18 @@ class Reward(metaclass=ABCMeta):
         """
         if isinstance(metrics, Metric):
             metrics = [metrics]
+        elif not isinstance(metrics, Iterable):
+            raise TypeError("Reward constructor must be given Metric objects.")
+
         if not all(isinstance(metric, Metric) for metric in metrics):
             raise TypeError("Reward constructor must be given Metric objects.")
         self._metrics = metrics
 
     @classmethod
-    def register(cls, name: str, reward: "Reward") -> None:
+    def register(cls, reward: Reward) -> None:
         """Register an implemented reward class in the global registry.
 
         Args:
-            name (``str``): name to store as the key in the registry
             reward (:class:`.Reward`): reward object to register
 
         Raises:
@@ -51,7 +54,7 @@ class Reward(metaclass=ABCMeta):
         """
         if not issubclass(reward, Reward):
             raise TypeError(type(reward))
-        cls.REGISTRY[name] = reward
+        cls.REGISTRY[reward.__name__] = reward
 
     @property
     def is_registered(self) -> bool:

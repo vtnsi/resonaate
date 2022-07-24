@@ -40,13 +40,13 @@ class TestMetricsBase:
         assert test_metric.is_registered is False
 
         # Register new class and check
-        Metric.register("MockedMetric", mocked_metric_class)
+        Metric.register(mocked_metric_class)
         test_metric = mocked_metric_class()
         assert test_metric.is_registered is True
 
         # Ensure we cannot register objects that are not :class:`.Metric` sub-classes
         with pytest.raises(TypeError):
-            Metric.register("MockedMetric", [2, 2])
+            Metric.register([2, 2])
 
     def testCreation(self):
         """Test creating a Metric Object."""
