@@ -185,6 +185,11 @@ class TaskingEngine(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def shutdown(self) -> None:
+        """Perform cleanup operations for shutting down parallel processes/threads."""
+        raise NotImplementedError
+
     @property
     def reward(self) -> Reward:
         """:class:`.Reward`: Returns the tasking engine's reward function."""

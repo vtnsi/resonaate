@@ -16,13 +16,14 @@ from . import (
     MASTER_KEY_NAME,
     PROCESSED_QUEUE_NAME_PREFIX,
     REDIS_QUEUE_LOGGER,
+    ParallelMixin,
     getMasterHash,
     getRedisConnection,
     masterExists,
 )
 
 
-class WorkerManager:
+class WorkerManager(ParallelMixin):
     """Class for managing worker processes."""
 
     WATCHDOG_INTERVAL = 3
@@ -188,7 +189,7 @@ class WorkerManager:
 
                     del workers_processing[worker.name]
 
-    def __del__(self):
+    def shutdown(self):
         """Close workers when this :class:`.WorkerManager` instance goes out of scope."""
         self.stopWorkers(no_wait=True)
         self._redis_conn.delete(self._processing_queue_name)

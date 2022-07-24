@@ -49,7 +49,7 @@ class TestWorkerManager:
         worker_manager.startWorkers()
         assert worker_manager.is_processing is False
         worker_manager.stopWorkers(no_wait=False)
-        del worker_manager
+        worker_manager.shutdown()
 
     def testGoodJob(
         self, worker_manager: WorkerManager, queue_manager: QueueManager, numpy_add_job: Job
@@ -61,7 +61,7 @@ class TestWorkerManager:
         """Test deleting a WorkerManager."""
         worker_manager = WorkerManager(proc_count=1, daemonic=True, logger=REDIS_QUEUE_LOGGER)
         worker_manager.startWorkers()
-        del worker_manager
+        worker_manager.shutdown()
 
     def testLongJob(
         self, worker_manager: WorkerManager, queue_manager: QueueManager, sleep_job_1s: Job
@@ -110,7 +110,7 @@ class TestQueueManager:
         """Test basic functionality of QueueManager class."""
         queue_manager = QueueManager(logger=REDIS_QUEUE_LOGGER)
         assert queue_manager.queued_jobs_processed is True
-        queue_manager.close()
+        queue_manager.shutdown()
 
     def testGoodJob(self, queue_manager: QueueManager, numpy_add_job: Job, sleep_job_1s: Job):
         """Test using a good job with QueueManager."""
@@ -122,9 +122,9 @@ class TestQueueManager:
         with pytest.raises(TypeError):
             queue_manager.queueJobs(job)
 
-    def testDeletion(self, queue_manager: QueueManager):
-        """Test deleting a QueueManager."""
-        del queue_manager
+    def testShutdown(self, queue_manager: QueueManager):
+        """Test shutting down a QueueManager."""
+        queue_manager.shutdown()
 
     def testCompletedJobNoCallback(self, queue_manager: QueueManager, numpy_add_job: Job):
         """Test completing job with no callback, use getResults()."""

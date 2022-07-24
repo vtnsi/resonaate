@@ -23,7 +23,7 @@ from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import spacecraftDynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
-from ..parallel import REDIS_QUEUE_LOGGER, getRedisConnection, resetMaster
+from ..parallel import REDIS_QUEUE_LOGGER, ParallelMixin, getRedisConnection, resetMaster
 from ..parallel.handlers.agent_propagation import AgentPropagationJobHandler
 from ..parallel.handlers.estimate_prediction import EstimatePredictionJobHandler
 from ..parallel.handlers.estimate_update import EstimateUpdateJobHandler
@@ -72,7 +72,7 @@ def methdispatch(func: Callable) -> Callable:
     return wrapper
 
 
-class Scenario:
+class Scenario(ParallelMixin):
     """Simulation scenario class for managing .
 
     The Scenario class is the main simulation object that contains the major simulation pieces. It
@@ -593,7 +593,14 @@ class Scenario:
             flushall (``bool``, optional): whether to flush the Redis keys on shutdown. Defaults to True.
         """
         if self.worker_mgr:
-            self.worker_mgr.stopWorkers(no_wait=True)
+            self.worker_mgr.shutdown()
+
+        for engine in self._tasking_engines.values():
+            engine.shutdown()
+
+        self._agent_propagation_handler.shutdown()
+        self._estimate_prediction_handler.shutdown()
+        self._estimate_update_handler.shutdown()
 
         if flushall:
             self.redis_conn.flushall(asynchronous=True)

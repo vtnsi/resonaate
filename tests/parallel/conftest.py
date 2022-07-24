@@ -34,7 +34,7 @@ def createWorkerManager() -> WorkerManager:
     worker_manager.startWorkers()
     yield worker_manager
     worker_manager.stopWorkers(no_wait=True)
-    del worker_manager
+    worker_manager.shutdown()
 
 
 @pytest.fixture(name="queue_manager")
@@ -42,7 +42,7 @@ def createQueueManager() -> QueueManager:
     """Create a valid QueueManager."""
     queue_manager = QueueManager(processed_callback=None, logger=REDIS_QUEUE_LOGGER)
     yield queue_manager
-    del queue_manager
+    queue_manager.shutdown()
 
 
 @pytest.fixture(name="numpy_add_job")

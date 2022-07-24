@@ -14,12 +14,13 @@ from . import (
     JOB_QUEUE_NAME_PREFIX,
     PROCESSED_QUEUE_NAME_PREFIX,
     REDIS_QUEUE_LOGGER,
+    ParallelMixin,
     getRedisConnection,
 )
 from .job import Job
 
 
-class QueueManager:
+class QueueManager(ParallelMixin):
     """Class for managing queuing of new jobs and handling of completed jobs."""
 
     _BLOCK_INTERVAL = 1
@@ -172,12 +173,8 @@ class QueueManager:
 
         return ret
 
-    def close(self):
+    def shutdown(self):
         """Delete job/processed queues and un-register the names from Redis."""
         self._redis_conn.delete(self._job_queue_name)
         self._redis_conn.delete(self._processed_queue_name)
         self._redis_conn.lrem(JOB_QUEUE_LIST, 1, self._job_queue_name)
-
-    def __del__(self):
-        """Call :meth:`.close()` when :class:`.QueueManager` goes out of scope."""
-        self.close()
