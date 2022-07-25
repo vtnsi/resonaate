@@ -240,6 +240,7 @@ def testCanSlew(sensor_args: dict, mocked_sensing_agent: SensingAgent):
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testGetMeasurements(sensor_args: dict):
     """Test calling getMeasurement & getNoisyMeasurement."""
+    # pylint: disable=invalid-name
     sensor = Sensor(**sensor_args)
     sensor.getMeasurements = Mock()
     sensor.getMeasurements.return_value = {
