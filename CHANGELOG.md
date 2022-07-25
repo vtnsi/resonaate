@@ -46,6 +46,9 @@ ______________________________________________________________________
   - `Optical.isVisible()` now checks solar phase angle and apparent vismag
   - Unit tests for `sensor_utils.py`
   - Unit tests for `Sensor`
+  - Add a `ParallelMixin` class that requires a `shutdown()` method be overwritten, inherited by parallel classes (see !39)
+  - Improve coverage of `tasking.engine` & fix slow test case (see !39)
+  - Replaced all `__del__()` with `shutdown()` for parallel classes (see !39)
 
 - Changed
 
@@ -56,6 +59,10 @@ ______________________________________________________________________
   - `FilterDebugFlag` is now `FilterFlag` and all filter debugging is handled in `SequentialFilter._debugChecks`
   - `ConfigObject` classes are now `dataclasses`, reducing boilerplate code (#27)
   - `data.agent.Agent` is now named `AgentModel` to reduce ambiguity
+  - Remove all `try` import statements in the test modules to address #31 (see !39)
+  - Improve unit test mocking code by making it more uniform: mainly `create_autospec()` in **most** places (see !39)
+  - Reduce usage of global mocking fixtures (see !39)
+  - Add type annotation support to test modules (see !39)
 
 - Deprecated
 
@@ -64,11 +71,14 @@ ______________________________________________________________________
   - `DEFAULT_VIZ_X_SECTION` and all references to it
   - `services` sub-package as well as all corresponding tests, documentation, & references
   - argument `truth` in `EstimateAgent._update()`
+  - all (for real this time) `__del__()` (see !39)
 
 - Fixed
 
   - FOV tests now reliably pass, properly call `updateReductionParameters`
   - Incorrect `Sensor.maximum_range` check, fixes #40 along with other small errors
+  - `Decision`, `Reward`, & `Metric` subclasses register themselves with their own class name, directly (see 39!)
+  - `TaskingEngine` now auto-sorts the sensors/targets to prevent undefined behavior on insertion/deletion (see !39)
 
 ## \[1.4.0 - 2022-06-06\]
 
