@@ -162,12 +162,12 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         Yields:
             :class:`.Task`: tasking DB object for each target/sensor pair
         """
-        for tgt_ind, target in enumerate(self.target_list):
-            for sen_ind, sensor_agent in enumerate(self.sensor_list):
+        for tgt_id, tgt_ind in self.target_indices.items():
+            for sen_id, sen_ind in self.sensor_indices.items():
                 yield Task(
                     julian_date=julian_date,
-                    target_id=target,
-                    sensor_id=sensor_agent,
+                    target_id=tgt_id,
+                    sensor_id=sen_id,
                     visibility=self.visibility_matrix[tgt_ind, sen_ind],
                     reward=self.reward_matrix[tgt_ind, sen_ind],
                     decision=self.decision_matrix[tgt_ind, sen_ind],
