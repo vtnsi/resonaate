@@ -1,44 +1,46 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 import pytest
 
-# RESONAATE Library Imports
-try:
-    # RESONAATE Imports
-    from resonaate.data.agent import AgentModel
-    from resonaate.data.epoch import Epoch
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Testing Imports
+# RESONAATE Imports
+from resonaate.data.agent import AgentModel
+from resonaate.data.epoch import Epoch
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
 
-EXAMPLE_RSO = {
+EXAMPLE_RSO: dict[str, Any] = {
     "name": "Sat1",
     "unique_id": 38093,
 }
 
 
-EXAMPLE_EPOCH = {
+EXAMPLE_EPOCH: dict[str, Any] = {
     "julian_date": 2458207.010416667,
     "timestampISO": "2019-01-01T00:01:00.000Z",
 }
 
 
-EXAMPLE_SENSOR_AGENT = {
+EXAMPLE_SENSOR_AGENT: dict[str, Any] = {
     "name": "Sensor1",
     "unique_id": 100200,
 }
 
 
 @pytest.fixture(name="epoch")
-def getEpoch():
+def getEpoch() -> Epoch:
     """Create a valid :class:`.Epoch` object."""
     return Epoch(**EXAMPLE_EPOCH)
 
 
 @pytest.fixture(name="target_agent")
-def getTargetAgent():
+def getTargetAgent() -> AgentModel:
     """Create a valid :class:`.AgentModel` object."""
     return AgentModel(
         unique_id=EXAMPLE_RSO["unique_id"],
@@ -47,7 +49,7 @@ def getTargetAgent():
 
 
 @pytest.fixture(name="sensor_agent")
-def getSensorAgent():
+def getSensorAgent() -> AgentModel:
     """Create a valid :class:`.AgentModel` object."""
     return AgentModel(
         unique_id=EXAMPLE_SENSOR_AGENT["unique_id"],

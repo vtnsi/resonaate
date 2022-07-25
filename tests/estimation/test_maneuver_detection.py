@@ -1,15 +1,11 @@
-# Standard Library Imports
+from __future__ import annotations
+
 # Third Party Imports
 import numpy as np
-
-try:
-    # RESONAATE Imports
-    from resonaate.estimation.maneuver_detection import FadingMemoryNis, SlidingNis, StandardNis
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Third Party Imports
-# Testing Imports
 import pytest
+
+# RESONAATE Imports
+from resonaate.estimation.maneuver_detection import FadingMemoryNis, SlidingNis, StandardNis
 
 MANEUVER_DETECTION_METHODS = (StandardNis, SlidingNis, FadingMemoryNis)
 

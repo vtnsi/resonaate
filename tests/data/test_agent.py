@@ -1,18 +1,10 @@
-# pylint: disable=attribute-defined-outside-init
-# Standard Library Imports
-# Third Party Imports
+from __future__ import annotations
+
 # RESONAATE Imports
-try:
-    # RESONAATE Imports
-    from resonaate.data.agent import AgentModel
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+from resonaate.data.agent import AgentModel
 
 
-class TestAgentTable(BaseTestCase):
+class TestAgentTable:
     """Test class for :class:`.AgentModel` database table class."""
 
     def testInit(self):

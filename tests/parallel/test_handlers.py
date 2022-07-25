@@ -1,49 +1,82 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
+# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 import os
 import pickle
+from typing import TYPE_CHECKING
+from unittest.mock import create_autospec
 
 # Third Party Imports
 import numpy as np
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.agents.estimate_agent import EstimateAgent
-    from resonaate.agents.target_agent import TargetAgent
-    from resonaate.common.exceptions import (
-        AgentProcessingError,
-        JobProcessingError,
-        MissingEphemerisError,
-    )
-    from resonaate.data.importer_database import ImporterDatabase
-    from resonaate.dynamics.two_body import TwoBody
-    from resonaate.estimation.maneuver_detection import StandardNis
-    from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-    from resonaate.parallel.handlers.agent_propagation import AgentPropagationJobHandler
-    from resonaate.parallel.handlers.job_handler import JobHandler
-    from resonaate.parallel.job import CallbackRegistration
-    from resonaate.physics.time.stardate import JulianDate, ScenarioTime
-    from resonaate.scenario.clock import ScenarioClock
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.agents.estimate_agent import EstimateAgent
+from resonaate.agents.sensing_agent import SensingAgent
+from resonaate.agents.target_agent import TargetAgent
+from resonaate.common.exceptions import (
+    AgentProcessingError,
+    JobProcessingError,
+    MissingEphemerisError,
+)
+from resonaate.data.importer_database import ImporterDatabase
+from resonaate.dynamics.two_body import TwoBody
+from resonaate.estimation.maneuver_detection import StandardNis
+from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
+from resonaate.parallel.handlers.agent_propagation import AgentPropagationJobHandler
+from resonaate.parallel.handlers.job_handler import JobHandler
+from resonaate.parallel.job import CallbackRegistration, Job
+from resonaate.physics.time.stardate import JulianDate, ScenarioTime
+from resonaate.scenario.clock import ScenarioClock
+from resonaate.sensors.sensor_base import Sensor
+
 # Local Imports
-# Testing Imports
-from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
+from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
+    # RESONAATE Imports
+    from resonaate.parallel import Redis
+
+
+@pytest.fixture(scope="class", name="mocked_sensor")
+def getMockedSensorObject() -> Sensor:
+    """Create a mocked :class:`.Sensor` object."""
+    sensor = create_autospec(Sensor, instance=True)
+    sensor.r_matrix = np.array([[7.0e-4, 0.0, 0.0], [0.0, 6.5e-4, 0.0], [0.0, 0.0, 8.0e-4]])
+    sensor.delta_boresight = 4.0
+    sensor.slew_rate = 2.0
+    return sensor
+
+
+@pytest.fixture(scope="class", name="mocked_sensing_agent")
+def getMockedSensingAgentObject(mocked_sensor: Sensor) -> SensingAgent:
+    """Create a mocked :class:`.SensingAgent` object."""
+    sensing_agent = create_autospec(SensingAgent, instance=True)
+    mocked_sensor.r_matrix = np.array([[7.0e-4, 0.0, 0.0], [0.0, 6.5e-4, 0.0], [0.0, 0.0, 8.0e-4]])
+    mocked_sensor.delta_boresight = 4.0
+    mocked_sensor.slew_rate = 2.0
+
+    sensing_agent.sensors = mocked_sensor
+    return sensing_agent
 
 
 @pytest.fixture(name="job_handler")
-def createJobHandler(numpy_add_job, mocked_sensing_agent):
+def createJobHandler(numpy_add_job: Job, mocked_sensing_agent: SensingAgent) -> JobHandler:
     """Create a valid JobHandler."""
 
     class GenericCallback(CallbackRegistration):
         """Dummy callback class for testing."""
 
-        def jobCreateCallback(self, **kwargs):
+        def jobCreateCallback(self, **kwargs) -> Job:
             """Return numpy job fixture."""
             return numpy_add_job
 
-        def jobCompleteCallback(self, job):
+        def jobCompleteCallback(self, job: Job) -> Any:
             """Simply returns job result."""
             return job.retval
 
@@ -52,7 +85,7 @@ def createJobHandler(numpy_add_job, mocked_sensing_agent):
 
         callback_class = GenericCallback
 
-        def generateJobs(self, **kwargs):
+        def generateJobs(self, **kwargs) -> list[Job]:
             """Simply return list of numpy add jobs."""
             jobs = []
             for registration in self.callback_registry:
@@ -68,65 +101,71 @@ def createJobHandler(numpy_add_job, mocked_sensing_agent):
     job_handler = GenericJobHandler()
     job_handler.registerCallback(mocked_sensing_agent)
     yield job_handler
-    job_handler.queue_mgr.close()
+    job_handler.queue_mgr.shutdown()
+
+
+@pytest.fixture(scope="class", name="mocked_error_job")
+def getMockedErrorJobObject() -> Job:
+    """Create a mocked error :class:`.Job` object."""
+    job = create_autospec(Job, instance=True)
+    job.id = 1
+    job.error = "F"
+    job.status = "failed"
+
+    return job
 
 
 @pytest.mark.usefixtures("redis_setup", "worker_manager")
-class TestBaseJobHandler(BaseTestCase):
+class TestBaseJobHandler:
     """Tests related to job handlers."""
 
     def jobCallback(self, obj):
         """Dummy callback function to check the job completed."""
 
-    def testBadRegistration(self, job_handler):
+    def testBadRegistration(self, job_handler: JobHandler):
         """Test registering a improper callback."""
         job_handler.callback_class = self.jobCallback  # Bad callback type
         with pytest.raises(TypeError):
             job_handler.registerCallback(self)
 
-    def testBadJob(self, job_handler, mocked_error_job):
+    def testBadJob(self, job_handler: JobHandler, mocked_error_job: Job):
         """Test using a bad job with QueueManager."""
         with pytest.raises(JobProcessingError):
             job_handler.handleProcessedJob(mocked_error_job)
 
-    def testValidJob(self, job_handler):
+    def testValidJob(self, job_handler: JobHandler):
         """Test executing a valid job."""
         job_handler.executeJobs()
+        assert job_handler.queue_mgr.queued_jobs_processed
 
-    def testLengthyJob(self, job_handler, sleep_job_6s):
+    def testLengthyJob(self, job_handler: JobHandler, sleep_job_6s: Job):
         """Test executing a valid job, but longer than timeout."""
 
         class GenericCallback(CallbackRegistration):
             """Dummy callback class for testing."""
 
-            def jobCreateCallback(self, **kwargs):
+            def jobCreateCallback(self, **kwargs) -> Job:
                 """Return numpy job fixture."""
                 return sleep_job_6s
 
-            def jobCompleteCallback(self, job):
+            def jobCompleteCallback(self, job: Job) -> Any:
                 """Simply returns job result."""
                 return job.retval
 
         # need to do this manually for testing
         job_handler.callback_registry = [GenericCallback(self)]
         job_handler.executeJobs()
-
-        # Check for log, doesn't seem to work?
-        # for record_tuple in caplog.record_tuples:
-        #     if "completed after" in record_tuple:
-        #         break
-        # else:
-        #     assert False
+        assert not job_handler.queue_mgr.queued_jobs_processed
 
 
 @pytest.fixture(name="scenario_clock")
-def createScenarioClock(reset_shared_db):
+def createScenarioClock(reset_shared_db: None) -> ScenarioClock:
     """Create a :class:`.ScenarioClock` object for use in testing."""
     return ScenarioClock(JulianDate(2458454.0), 300, 60)
 
 
 @pytest.fixture(name="target_agent")
-def createTargetAgent(scenario_clock):
+def createTargetAgent(scenario_clock: ScenarioClock) -> TargetAgent:
     """Create valid target agent for testing propagate jobs."""
     agent = TargetAgent(
         11111,
@@ -145,7 +184,7 @@ def createTargetAgent(scenario_clock):
 
 
 @pytest.fixture(name="estimate_agent")
-def createEstimateAgent(target_agent, scenario_clock):
+def createEstimateAgent(target_agent: TargetAgent, scenario_clock: ScenarioClock) -> EstimateAgent:
     """Create valid estimate agent for testing propagate jobs."""
     est_x = np.asarray([6378.0, 2.0, 10.0, 0.0, 0.0, 0.0])
     est_p = np.diagflat([1.0, 2.0, 1.0, 0.001, 0.002, 0.001])
@@ -175,10 +214,10 @@ def createEstimateAgent(target_agent, scenario_clock):
 
 
 @pytest.mark.usefixtures("redis_setup", "worker_manager")
-class TestAgentPropagateHandler(BaseTestCase):
+class TestAgentPropagateHandler:
     """Tests related to job handlers."""
 
-    def testProblemTargetAgent(self, target_agent):
+    def testProblemTargetAgent(self, target_agent: TargetAgent):
         """Test logging a bad agent when an error occurs."""
         handler = AgentPropagationJobHandler()
         handler.registerCallback(target_agent)
@@ -196,7 +235,9 @@ class TestAgentPropagateHandler(BaseTestCase):
                 julian_date=target_julian_date,
             )
 
-    def testProblemEstimateAgent(self, redis, estimate_agent, target_agent):
+    def testProblemEstimateAgent(
+        self, redis: Redis, estimate_agent: EstimateAgent, target_agent: TargetAgent
+    ):
         """Test logging a bad estimate when an error occurs."""
         redis.set("target_agents", pickle.dumps({target_agent.simulation_id: target_agent}))
         handler = AgentPropagationJobHandler()
@@ -215,7 +256,9 @@ class TestAgentPropagateHandler(BaseTestCase):
                 julian_date=target_julian_date,
             )
 
-    def testProblemEstimateAgentNoMatch(self, redis, estimate_agent, target_agent):
+    def testProblemEstimateAgentNoMatch(
+        self, redis: Redis, estimate_agent: EstimateAgent, target_agent: TargetAgent
+    ):
         """Test logging a bad estimate when an error occurs, but with no matching target agent."""
         redis.set("target_agents", pickle.dumps({target_agent.simulation_id + 1: target_agent}))
         handler = AgentPropagationJobHandler()
@@ -241,7 +284,7 @@ class TestAgentPropagateHandler(BaseTestCase):
         # else:
         #     assert False
 
-    def testNoImporterDB(self, target_agent):
+    def testNoImporterDB(self, target_agent: TargetAgent):
         """Test registering importer model without Importer DB created."""
         target_agent._realtime = False  # pylint: disable=protected-access
         handler = AgentPropagationJobHandler()
@@ -250,15 +293,17 @@ class TestAgentPropagateHandler(BaseTestCase):
             handler.registerCallback(target_agent)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testNoImporterData(self, datafiles, target_agent, reset_importer_db):
+    def testNoImporterData(
+        self, datafiles: str, target_agent: TargetAgent, reset_importer_db: None
+    ):
         """Test registering importer model without data for RSO in DB."""
         jd_start = JulianDate(2458454.0)
         epoch_time = ScenarioTime(60)
         # Create and load importer DB
-        db_path = "sqlite:///" + os.path.join(datafiles, self.importer_db_path)
+        db_path = "sqlite:///" + os.path.join(datafiles, IMPORTER_DB_PATH)
         importer_db = ImporterDatabase.getSharedInterface(db_path)
         importer_db.initDatabaseFromJSON(
-            os.path.join(FIXTURE_DATA_DIR, self.json_rso_truth, "11111-truth.json"),
+            os.path.join(FIXTURE_DATA_DIR, JSON_INIT_PATH, "11111-truth.json"),
             start=jd_start,
             stop=ScenarioTime(1200).convertToJulianDate(jd_start),
         )

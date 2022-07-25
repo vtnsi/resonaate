@@ -2,27 +2,19 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from copy import deepcopy
-from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from copy import copy, deepcopy
+from unittest.mock import Mock, create_autospec, patch
 
 # Third Party Imports
 import numpy as np
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.common.exceptions import ShapeError
-    from resonaate.physics.time.stardate import ScenarioTime
-    from resonaate.sensors.sensor_base import Sensor
-
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-
-# Type Checking Imports
-if TYPE_CHECKING:
-    # RESONAATE Imports
-    from resonaate.agents.sensing_agent import SensingAgent
+# RESONAATE Imports
+from resonaate.agents.sensing_agent import SensingAgent
+from resonaate.common.exceptions import ShapeError
+from resonaate.physics.time.stardate import ScenarioTime
+from resonaate.sensors import FieldOfView
+from resonaate.sensors.sensor_base import Sensor
 
 
 @pytest.fixture(name="sensor_args")
@@ -36,7 +28,7 @@ def getSensorArgs() -> dict:
         "efficiency": 0.95,
         "exemplar": np.array((1.0, 42000.0)),
         "slew_rate": 1.0,
-        "field_of_view": MagicMock(spec="resonaate.sensors.FieldOfView"),
+        "field_of_view": {"fov_shape": "conic"},
         "calculate_fov": True,
         "minimum_range": 0.0,
         "maximum_range": np.inf,
@@ -46,7 +38,7 @@ def getSensorArgs() -> dict:
 @pytest.fixture(name="mocked_sensing_agent")
 def getSensorAgent() -> SensingAgent:
     """Create a mocked sensing agent object."""
-    sensor_agent = MagicMock(spec="resonaate.agents.sensing_agent.SensorAgent")
+    sensor_agent = create_autospec(spec=SensingAgent, instance=True)
     sensor_agent.time = ScenarioTime(60.0)
     sensor_agent.name = "Test Sensor Agent"
     sensor_agent.simulation_id = 11111
@@ -213,7 +205,7 @@ def testGetSensorData(sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert sensor.getSensorData() == expected_space
 
     # Test ground sensor types
-    ground_sensor_agent = deepcopy(mocked_sensing_agent)
+    ground_sensor_agent = copy(mocked_sensing_agent)
     ground_sensor_agent.agent_type = "GroundFacility"
     ground_sensor_agent.lla_state = np.array((10, 2.5, 0.3))
     expected_ground = deepcopy(expected)
@@ -248,8 +240,9 @@ def testCanSlew(sensor_args: dict, mocked_sensing_agent: SensingAgent):
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testGetMeasurements(sensor_args: dict):
     """Test calling getMeasurement & getNoisyMeasurement."""
+    # pylint: disable=invalid-name
     sensor = Sensor(**sensor_args)
-    sensor.getMeasurements = MagicMock()
+    sensor.getMeasurements = Mock()
     sensor.getMeasurements.return_value = {
         "measurement_1": 1.0,
         "measurement_2": 20.0,
@@ -267,7 +260,7 @@ def testGetMeasurements(sensor_args: dict):
 def testInFOVConic(sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
     sensor = Sensor(**sensor_args)
-    sensor.field_of_view = MagicMock()
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
     sensor.field_of_view.fov_shape = "conic"
     sensor.field_of_view.cone_angle = np.pi
 
@@ -290,7 +283,7 @@ def testInFOVConic(sensor_args: dict):
 def testInFOVRegular(sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
     sensor = Sensor(**sensor_args)
-    sensor.field_of_view = MagicMock()
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
     sensor.field_of_view.fov_shape = "rectangular"
     sensor.field_of_view.azimuth_angle = np.pi
     sensor.field_of_view.elevation_angle = np.pi
@@ -315,7 +308,7 @@ def testInFOVRegular(sensor_args: dict):
 def testInFOVBad(sensor_args: dict):
     """Test a bad FOV shape."""
     sensor = Sensor(**sensor_args)
-    sensor.field_of_view = MagicMock()
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
     sensor.field_of_view.fov_shape = "bad_fov_shape"
     with pytest.raises(ValueError, match=r"Wrong FoV shape\w*"):
         sensor.inFOV(np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)))
@@ -333,7 +326,7 @@ def testCheckTargetsInView(sensor_args: dict, mocked_sensing_agent: SensingAgent
     """Checks whether list of targets is in the FOV of the sensor."""
     # pylint: disable=abstract-class-instantiated
     sensor = Sensor(**sensor_args)
-    sensor.field_of_view = MagicMock()
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
     sensor.field_of_view.fov_shape = "conic"
     sensor.field_of_view.cone_angle = np.pi
     # Requires self.host.ecef_state to be set
@@ -344,10 +337,10 @@ def testCheckTargetsInView(sensor_args: dict, mocked_sensing_agent: SensingAgent
     tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
     # Create mocks for TargetAgent objects with `eci_state`
-    agent_1 = MagicMock()
-    agent_2 = MagicMock()
-    agent_3 = MagicMock()
-    agent_4 = MagicMock()
+    agent_1 = Mock()
+    agent_2 = Mock()
+    agent_3 = Mock()
+    agent_4 = Mock()
     agent_1.eci_state = np.array((0.0, 1.0, 0.0, 0.0, 0.0, 0.0))
     agent_2.eci_state = np.array((-1.0, 0.0, -1.0, 0.0, 0.0, 0.0))  # outside FOV
     agent_3.eci_state = np.array((0.0, 1.0, 0.0, 0.0, 0.0, 0.0))

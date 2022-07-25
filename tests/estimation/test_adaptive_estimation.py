@@ -1,103 +1,117 @@
-# pylint: disable=attribute-defined-outside-init, protected-access
+# pylint: disable=protected-access
+from __future__ import annotations
+
 # Standard Library Imports
 import os.path
 from datetime import timedelta
 from math import isclose
 from pickle import dumps
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
 from numpy import array, diagflat, ones, zeros
 
-try:
-    # RESONAATE Imports
-    import resonaate.data.resonaate_database
-    import resonaate.estimation.adaptive.adaptive_filter
-    from resonaate.data.agent import AgentModel
-    from resonaate.data.ephemeris import EstimateEphemeris
-    from resonaate.data.observation import Observation
-    from resonaate.dynamics.two_body import TwoBody
-    from resonaate.estimation.adaptive.adaptive_filter import AdaptiveFilter
-    from resonaate.estimation.adaptive.gpb1 import GeneralizedPseudoBayesian1
-    from resonaate.estimation.adaptive.initialization import lambertInitializationFactory
-    from resonaate.estimation.adaptive.mmae_stacking_utils import stackingFactory
-    from resonaate.estimation.adaptive.smm import StaticMultipleModel
-    from resonaate.estimation.maneuver_detection import StandardNis
-    from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-    from resonaate.parallel import getRedisConnection
-    from resonaate.physics.time.conversions import getTargetJulianDate
-    from resonaate.physics.time.stardate import JulianDate
-    from resonaate.physics.transforms.reductions import updateReductionParameters
-    from resonaate.scenario import buildScenarioFromConfigDict
-    from resonaate.scenario.config import ScenarioConfig
-    from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
-    from resonaate.sensors.advanced_radar import AdvRadar
-    from resonaate.sensors.sensor_base import ObservationTuple
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+import resonaate.data.resonaate_database
+import resonaate.estimation.adaptive.adaptive_filter
+from resonaate.data.agent import AgentModel
+from resonaate.data.ephemeris import EstimateEphemeris
+from resonaate.data.observation import Observation
+from resonaate.dynamics.two_body import TwoBody
+from resonaate.estimation.adaptive.adaptive_filter import AdaptiveFilter
+from resonaate.estimation.adaptive.gpb1 import GeneralizedPseudoBayesian1
+from resonaate.estimation.adaptive.initialization import lambertInitializationFactory
+from resonaate.estimation.adaptive.mmae_stacking_utils import stackingFactory
+from resonaate.estimation.adaptive.smm import StaticMultipleModel
+from resonaate.estimation.maneuver_detection import StandardNis
+from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
+from resonaate.parallel import getRedisConnection
+from resonaate.physics.time.conversions import getTargetJulianDate
+from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.transforms.reductions import updateReductionParameters
+from resonaate.scenario import buildScenarioFromConfigDict
+from resonaate.scenario.config import ScenarioConfig
+from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
+from resonaate.sensors.advanced_radar import AdvRadar
+from resonaate.sensors.sensor_base import ObservationTuple
+
 # Local Imports
-# Testing Imports
-from ..conftest import FIXTURE_DATA_DIR, BaseTestCase
+from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
+
+# Type Checking Imports
+if TYPE_CHECKING:
+
+    # RESONAATE Imports
+    from resonaate.parallel import Redis
+    from resonaate.sensors.sensor_base import Sensor
+
+
+@pytest.fixture()
+def _fixtureSetup(redis: Redis, reset_shared_db: None):  # pylint: disable=unused-argument
+    """Instantiate redis & reset DB properly."""
+
+
+def propagateScenario(
+    datafiles: str,
+    init_filepath: str,
+    elapsed_time: timedelta,
+) -> None:
+    """Performs the basic operations required to step a simulation forward in time.
+
+    Args:
+        datafiles (str): file path for datafiles directory
+        init_filepath (str): file path for Resonaate initialization file
+        elapsed_time (`timedelta`): amount of time to simulate
+    """
+    init_file = os.path.join(datafiles, JSON_INIT_PATH, init_filepath)
+    shared_db_path = "sqlite:///" + os.path.join(datafiles, SHARED_DB_PATH)
+
+    # Create scenario from JSON init message
+    config_dict = ScenarioConfig.parseConfigFile(init_file)
+
+    app = buildScenarioFromConfigDict(
+        config_dict,
+        internal_db_path=shared_db_path,
+        importer_db_path=None,
+    )
+
+    red = getRedisConnection()
+    red.set("db_path", dumps(shared_db_path))
+
+    # Determine target Julian date based on elapsed time
+    init_julian_date = JulianDate(app.clock.julian_date_start)
+    target_julian_date = getTargetJulianDate(init_julian_date, elapsed_time)
+
+    # Propagate scenario forward in time
+    app.propagateTo(target_julian_date)
+
+    assert isclose(app.clock.julian_date_epoch, target_julian_date)
+    app.shutdown(flushall=True)
 
 
 @pytest.mark.scenario()
-class TestAdaptiveEstimationIntegration(BaseTestCase):
+@pytest.mark.usefixtures("_fixtureSetup")
+class TestAdaptiveEstimationIntegration:
     """Integration test :class:`.AdaptiveFilter` classes."""
-
-    @pytest.fixture(autouse=True)
-    def _fixtureSetUp(self, redis, reset_shared_db):  # pylint: disable=unused-argument
-        """Instantiate redis & reset DB properly."""
-
-    def _propagateScenario(self, datafiles, init_filepath, elapsed_time, importer_db_path=None):
-        """Performs the basic operations required to step a simulation forward in time.
-
-        Args:
-            datafiles (str): file path for datafiles directory
-            init_filepath (str): file path for Resonaate initialization file
-            elapsed_time (`timedelta`): amount of time to simulate
-            importer_db_path (``str``): path to external importer database for pre-canned data.
-        """
-        init_file = os.path.join(datafiles, self.json_init_path, init_filepath)
-        shared_db_path = "sqlite:///" + os.path.join(datafiles, self.shared_db_path)
-
-        # Create scenario from JSON init message
-        config_dict = ScenarioConfig.parseConfigFile(init_file)
-
-        self.app = buildScenarioFromConfigDict(
-            config_dict,
-            internal_db_path=shared_db_path,
-            importer_db_path=importer_db_path,
-        )
-
-        red = getRedisConnection()
-        red.set("db_path", dumps(shared_db_path))
-
-        # Determine target Julian date based on elapsed time
-        init_julian_date = JulianDate(self.app.clock.julian_date_start)
-        target_julian_date = getTargetJulianDate(init_julian_date, elapsed_time)
-
-        # Propagate scenario forward in time
-        self.app.propagateTo(target_julian_date)
-
-        assert isclose(self.app.clock.julian_date_epoch, target_julian_date)
 
     @pytest.mark.slow()
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testStaticMultipleModel(self, datafiles):
+    def testStaticMultipleModel(self, datafiles: str):
         """Test the static multiple model and mmae running over multiple timesteps."""
         init_filepath = "smm_init.json"
         elapsed_time = timedelta(hours=5)
-        self._propagateScenario(datafiles, init_filepath, elapsed_time)
+        propagateScenario(datafiles, init_filepath, elapsed_time)
 
     @pytest.mark.slow()
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testGeneralizedPseudoBayesianFirstOrderModel(self, datafiles):
+    def testGeneralizedPseudoBayesianFirstOrderModel(self, datafiles: str):
         """Test the gpb1 and mmae converging on a single timestep."""
         init_filepath = "gpb1_init.json"
         elapsed_time = timedelta(hours=3)
-        self._propagateScenario(datafiles, init_filepath, elapsed_time)
+        propagateScenario(datafiles, init_filepath, elapsed_time)
 
 
 EST_X = array([6378.0, 2.0, 10.0, 0.0, 0.0, 0.0])
@@ -189,7 +203,7 @@ MANEUVER_TIMES = array([3600, 3600, 4200, 8400])
 
 
 @pytest.fixture(name="adaptive_filter")
-def getTestAdaptiveFilter():
+def getTestAdaptiveFilter() -> AdaptiveFilter:
     """Create a custom :class:`AdaptiveFilter` object."""
     adaptive_filter = AdaptiveFilter(
         NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
@@ -211,7 +225,7 @@ def getTestAdaptiveFilter():
 
 
 @pytest.fixture(name="rso_agent")
-def getTestRSOAgent():
+def getTestRSOAgent() -> AgentModel:
     """Create a custom :class:`AgentModel` object for an RSO."""
     rso_agent = AgentModel()
     rso_agent.unique_id = 10001
@@ -223,7 +237,7 @@ def getTestRSOAgent():
 
 
 @pytest.fixture(name="sensor_agent")
-def getTestSensorAgent(earth_sensor):
+def getTestSensorAgent(earth_sensor: Sensor) -> AgentModel:
     """Create a custom :class:`AgentModel` object for a sensor."""
     sensor_agent = AgentModel()
     sensor_agent.unique_id = 100001
@@ -259,7 +273,7 @@ def getTestSensorAgent(earth_sensor):
 
 
 @pytest.fixture(name="earth_sensor")
-def getTestEarthSensor():
+def getTestEarthSensor() -> AdvRadar:
     """Create a custom :class:`AgentModel` object for a sensor."""
     earth_sensor = AdvRadar(
         az_mask=array([0.0, 359.99999]),
@@ -281,7 +295,7 @@ def getTestEarthSensor():
 
 
 @pytest.fixture(name="radar_observation")
-def getTestRadarObservation(sensor_agent, rso_agent):
+def getTestRadarObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
     radar_observation = Observation.fromSEZVector(
         julian_date=JulianDate(2459304.270833333),
@@ -299,13 +313,15 @@ def getTestRadarObservation(sensor_agent, rso_agent):
 
 
 @pytest.fixture(name="radar_observation_tuple")
-def getTestRadarObservationTuple(radar_observation, sensor_agent):
+def getTestRadarObservationTuple(
+    radar_observation: Observation, sensor_agent: AgentModel
+) -> ObservationTuple:
     """Create a custom :class:`ObservationTuple` object for a sensor."""
     return ObservationTuple(radar_observation, sensor_agent, array([2, 3, 1, 1]))
 
 
 @pytest.fixture(name="optical_observation")
-def getTestOpticalObservation(sensor_agent, rso_agent):
+def getTestOpticalObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
     optical_observation = Observation.fromSEZVector(
         julian_date=JulianDate(2459304.270833333),
@@ -321,18 +337,21 @@ def getTestOpticalObservation(sensor_agent, rso_agent):
 
 
 @pytest.fixture(name="optical_observation_tuple")
-def getTestOpticalObservationTuple(optical_observation, sensor_agent):
+def getTestOpticalObservationTuple(
+    optical_observation: Observation, sensor_agent: AgentModel
+) -> ObservationTuple:
     """Create a custom :class:`ObservationTuple` object for a sensor."""
     return ObservationTuple(optical_observation, sensor_agent, array([2, 3, 1, 1]))
 
 
 @pytest.fixture(name="update_reduction_parameters", autouse=True)
-def _getUpdateReductionParameters(redis):  # pylint:disable=unused-argument
+def _getUpdateReductionParameters(redis: Redis) -> None:
     """Run updateReductionParameters."""
+    # pylint:disable=unused-argument
     updateReductionParameters(julian_date=CURRENT_JULIAN_DATE)
 
 
-class TestAdaptiveEstimation(BaseTestCase):
+class TestAdaptiveEstimation:
     """Unit test adaptive estimation base class."""
 
     def testInit(self):
@@ -357,7 +376,11 @@ class TestAdaptiveEstimation(BaseTestCase):
         _ = AdaptiveFilter.fromConfig(config, NOMINAL_FILTER, TIMESTEP)
 
     def testInitialize(
-        self, monkeypatch, adaptive_filter, radar_observation, radar_observation_tuple
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        adaptive_filter: AdaptiveFilter,
+        radar_observation: Observation,
+        radar_observation_tuple: ObservationTuple,
     ):
         """Test initialization of adaptive estimation & various conditions."""
         estimate_ephem = [EST1, EST2, EST3]
@@ -422,7 +445,9 @@ class TestAdaptiveEstimation(BaseTestCase):
         good_init = adaptive_filter.initialize([radar_observation_tuple], JULIAN_DATE_START)
         assert good_init is True
 
-    def testCalcNominalStates(self, monkeypatch, adaptive_filter):
+    def testCalcNominalStates(
+        self, monkeypatch: pytest.MonkeyPatch, adaptive_filter: AdaptiveFilter
+    ):
         """Test calculation of nominal states for hypotheses."""
         adaptive_filter.num_models = 3
         estimate_ephem = [EST1, EST2, EST3]
@@ -444,7 +469,7 @@ class TestAdaptiveEstimation(BaseTestCase):
         )
         assert nominal_states.shape == (3, 6)
 
-    def testGenerateHypothesisStates(self, adaptive_filter):
+    def testGenerateHypothesisStates(self, adaptive_filter: AdaptiveFilter):
         """Test generation of hypothesis states."""
         maneuvers = array(
             [
@@ -459,7 +484,7 @@ class TestAdaptiveEstimation(BaseTestCase):
         )
         assert hypothesis_states.shape == (2, 6)
 
-    def testCalcTimestep(self, adaptive_filter):
+    def testCalcTimestep(self, adaptive_filter: AdaptiveFilter):
         """Test determining of estimation timestep."""
         adaptive_filter.model_interval = 400
         adaptive_filter.time = 600
@@ -477,7 +502,10 @@ class TestAdaptiveEstimation(BaseTestCase):
         assert num_models == 6
 
     def testGenerateHypothesisManeuvers(
-        self, adaptive_filter, radar_observation_tuple, optical_observation_tuple
+        self,
+        adaptive_filter: AdaptiveFilter,
+        radar_observation_tuple: ObservationTuple,
+        optical_observation_tuple: ObservationTuple,
     ):
         """Test generating maneuver hypotheses."""
         adaptive_filter.num_models = 3
@@ -494,7 +522,7 @@ class TestAdaptiveEstimation(BaseTestCase):
         )
         assert optical_v.shape == (3, 3)
 
-    def testInitialPruning(self, adaptive_filter):
+    def testInitialPruning(self, adaptive_filter: AdaptiveFilter):
         """Test initial pruning of hypotheses."""
         maneuvers = array(
             [
@@ -515,12 +543,12 @@ class TestAdaptiveEstimation(BaseTestCase):
         assert hypothesis_states.size == 0
         assert adaptive_filter.num_models == 0
 
-    def testCreateModels(self, adaptive_filter):
+    def testCreateModels(self, adaptive_filter: AdaptiveFilter):
         """Test creating multiple models."""
         models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         assert len(models) == len(HYPOTHESIS_STATES)
 
-    def testPredict(self, adaptive_filter):
+    def testPredict(self, adaptive_filter: AdaptiveFilter):
         """Test Adaptive Filter Predict Test."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -529,7 +557,9 @@ class TestAdaptiveEstimation(BaseTestCase):
 
         assert adaptive_filter.time == new_time
 
-    def testForecast(self, adaptive_filter, radar_observation_tuple):
+    def testForecast(
+        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
+    ):
         """Test Adaptive Filter Predict Test."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -538,7 +568,9 @@ class TestAdaptiveEstimation(BaseTestCase):
         adaptive_filter.forecast([radar_observation_tuple])
         adaptive_filter._compileForecastStep([radar_observation_tuple])
 
-    def testUpdate(self, adaptive_filter, radar_observation_tuple):
+    def testUpdate(
+        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
+    ):
         """Test Adaptive Filter Predict Test."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -549,7 +581,7 @@ class TestAdaptiveEstimation(BaseTestCase):
         # Test Propagation Update
         adaptive_filter.update([])
 
-    def testCompilePredict(self, adaptive_filter):
+    def testCompilePredict(self, adaptive_filter: AdaptiveFilter):
         """Test compiling prediction step attributes."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         for model in adaptive_filter.models:
@@ -558,7 +590,9 @@ class TestAdaptiveEstimation(BaseTestCase):
         adaptive_filter.model_weights = [1, 2, 3]
         adaptive_filter._compilePredictStep()
 
-    def testCompileUpdate(self, adaptive_filter, radar_observation_tuple):
+    def testCompileUpdate(
+        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
+    ):
         """Test compiling update step attributes."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         for model in adaptive_filter.models:
@@ -581,7 +615,7 @@ class TestAdaptiveEstimation(BaseTestCase):
         adaptive_filter.model_weights = ones(3) / 1
         adaptive_filter._compileUpdateStep([radar_observation_tuple])
 
-    def testPruning(self, adaptive_filter):
+    def testPruning(self, adaptive_filter: AdaptiveFilter):
         """Test pruning hypotheses."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         adaptive_filter.num_models = 3
@@ -612,7 +646,7 @@ class TestAdaptiveEstimation(BaseTestCase):
         adaptive_filter.prune(prune_index, [])
         assert adaptive_filter.num_models == 1
 
-    def testCalculatingDeltaV(self, adaptive_filter):
+    def testCalculatingDeltaV(self, adaptive_filter: AdaptiveFilter):
         """Test calculating maneuvers for hypotheses."""
         tgt_eci_position = array([-948.311943, 750.624874, 6767.19073])
         adaptive_filter.num_models = 4
@@ -621,32 +655,32 @@ class TestAdaptiveEstimation(BaseTestCase):
         )
         assert maneuvers.shape == (4, 3)
 
-    def testGetPredictionResults(self, adaptive_filter):
+    def testGetPredictionResults(self, adaptive_filter: AdaptiveFilter):
         """Test getting prediction results."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         result = adaptive_filter.getPredictionResult()
         assert len(result["models"]) == 3
 
-    def testGetForecastResults(self, adaptive_filter):
+    def testGetForecastResults(self, adaptive_filter: AdaptiveFilter):
         """Test getting forecast results."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         result = adaptive_filter.getForecastResult()
         assert len(result["models"]) == 3
 
-    def testGetUpdateResults(self, adaptive_filter):
+    def testGetUpdateResults(self, adaptive_filter: AdaptiveFilter):
         """Test getting update results."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         result = adaptive_filter.getUpdateResult()
         assert len(result["true_y"]) == 2
 
-    def testResumeSequentialFiltering(self, adaptive_filter):
+    def testResumeSequentialFiltering(self, adaptive_filter: AdaptiveFilter):
         """Test reinitializing nominal filter after MMAE ends."""
         adaptive_filter._resumeSequentialFiltering()
         assert adaptive_filter.converged_filter is not None
 
 
 @pytest.fixture(name="smm")
-def getTestSMM():
+def getTestSMM() -> StaticMultipleModel:
     """Create a custom :class:`StaticMultipleModel` object."""
     smm = StaticMultipleModel(
         NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
@@ -675,10 +709,16 @@ def getTestSMM():
     return smm
 
 
-class TestSMM(BaseTestCase):
+class TestSMM:
     """Unit test static multiple model class."""
 
-    def testInitialize(self, monkeypatch, radar_observation, radar_observation_tuple, smm):
+    def testInitialize(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        radar_observation: Observation,
+        radar_observation_tuple: ObservationTuple,
+        smm: StaticMultipleModel,
+    ):
         """Test custom initialization process."""
         estimate_ephem = [EST1, EST2, EST3]
         radar_observation.julian_date = CURRENT_JULIAN_DATE
@@ -722,7 +762,7 @@ class TestSMM(BaseTestCase):
         good_init = smm.initialize([radar_observation_tuple], JULIAN_DATE_START)
         assert good_init is True
 
-    def testUpdate(self, radar_observation_tuple, smm):
+    def testUpdate(self, radar_observation_tuple: ObservationTuple, smm: StaticMultipleModel):
         """Test custom update process."""
         smm.models = smm._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -732,7 +772,7 @@ class TestSMM(BaseTestCase):
         # Test Measurement Update
         smm.update([radar_observation_tuple])
 
-    def testPruneToSingleModel(self, smm):
+    def testPruneToSingleModel(self, smm: StaticMultipleModel):
         """Test pruning to single model."""
         no_prune = smm._prunedToSingleModel([])
         assert no_prune is False
@@ -740,7 +780,9 @@ class TestSMM(BaseTestCase):
         single_model = smm._prunedToSingleModel([])
         assert single_model is True
 
-    def testConvergedToSingleModel(self, monkeypatch, smm):
+    def testConvergedToSingleModel(
+        self, monkeypatch: pytest.MonkeyPatch, smm: StaticMultipleModel
+    ):
         """Test converging to a single model."""
         no_converge = smm._convergedToSingleModel([])
         assert no_converge is False
@@ -755,7 +797,7 @@ class TestSMM(BaseTestCase):
         converge = smm._convergedToSingleModel([])
         assert converge is True
 
-    def testPreWeight(self, smm, radar_observation_tuple):
+    def testPreWeight(self, smm: StaticMultipleModel, radar_observation_tuple: ObservationTuple):
         """Test pre weighting of SMM."""
         smm.models = smm._createModels(HYPOTHESIS_STATES)
         for model in smm.models:
@@ -764,7 +806,7 @@ class TestSMM(BaseTestCase):
 
 
 @pytest.fixture(name="gpb1")
-def getTestGPB1():
+def getTestGPB1() -> GeneralizedPseudoBayesian1:
     """Create a custom :class:`GeneralizedPseudoBayesian1` object."""
     gpb1 = GeneralizedPseudoBayesian1(
         NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
@@ -793,10 +835,16 @@ def getTestGPB1():
     return gpb1
 
 
-class TestGPB1(BaseTestCase):
+class TestGPB1:
     """Unit test Gauss pseudo Bayesian first order class."""
 
-    def testInitialize(self, radar_observation, monkeypatch, radar_observation_tuple, gpb1):
+    def testInitialize(
+        self,
+        radar_observation: ObservationTuple,
+        monkeypatch: pytest.MonkeyPatch,
+        radar_observation_tuple: Observation,
+        gpb1: GeneralizedPseudoBayesian1,
+    ):
         """Test custom initialization process."""
         estimate_ephem = [EST1, EST2, EST3]
         radar_observation.julian_date = CURRENT_JULIAN_DATE
@@ -840,7 +888,9 @@ class TestGPB1(BaseTestCase):
         good_init = gpb1.initialize([radar_observation_tuple], JULIAN_DATE_START)
         assert good_init is True
 
-    def testUpdate(self, gpb1, radar_observation_tuple):
+    def testUpdate(
+        self, gpb1: GeneralizedPseudoBayesian1, radar_observation_tuple: ObservationTuple
+    ):
         """Test custom update process."""
         gpb1.models = gpb1._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -850,7 +900,7 @@ class TestGPB1(BaseTestCase):
         # Test Measurement Update
         gpb1.update([radar_observation_tuple])
 
-    def testConstructMixMatrix(self, gpb1):
+    def testConstructMixMatrix(self, gpb1: GeneralizedPseudoBayesian1):
         """Test custom update process."""
         mix = gpb1._constructMixMatrix()
         tru_mix = array(

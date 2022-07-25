@@ -14,6 +14,7 @@ from ...data.events import EventScope, handleRelevantEvents
 from ...data.query_util import addAlmostEqualFilter
 from ...data.resonaate_database import ResonaateDatabase
 from ...data.task import Task
+from ...parallel import ParallelMixin
 from ...parallel.handlers.task_execution import TaskExecutionJobHandler
 from ...parallel.handlers.task_prediction import TaskPredictionJobHandler
 from .engine_base import TaskingEngine
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from ..rewards import Reward
 
 
-class CentralizedTaskingEngine(TaskingEngine):
+class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
     """Centralized implementation of a tasking engine.
 
     This class provides methods for centralized network tasking processes. In a centralized
@@ -161,13 +162,18 @@ class CentralizedTaskingEngine(TaskingEngine):
         Yields:
             :class:`.Task`: tasking DB object for each target/sensor pair
         """
-        for tgt_ind, target in enumerate(self.target_list):
-            for sen_ind, sensor_agent in enumerate(self.sensor_list):
+        for tgt_id, tgt_ind in self.target_indices.items():
+            for sen_id, sen_ind in self.sensor_indices.items():
                 yield Task(
                     julian_date=julian_date,
-                    target_id=target,
-                    sensor_id=sensor_agent,
+                    target_id=tgt_id,
+                    sensor_id=sen_id,
                     visibility=self.visibility_matrix[tgt_ind, sen_ind],
                     reward=self.reward_matrix[tgt_ind, sen_ind],
                     decision=self.decision_matrix[tgt_ind, sen_ind],
                 )
+
+    def shutdown(self) -> None:
+        """Perform cleanup operations for shutting down parallel processes/threads."""
+        self._predict_handler.shutdown()
+        self._execute_handler.shutdown()

@@ -1,4 +1,5 @@
-# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from datetime import datetime
 from unittest.mock import create_autospec
@@ -8,19 +9,11 @@ import pytest
 from numpy import zeros
 
 # RESONAATE Imports
+from resonaate.data.data_interface import AgentModel
+from resonaate.data.events import TargetTaskPriority
 from resonaate.physics.time.stardate import JulianDate
-
-try:
-    # RESONAATE Imports
-    from resonaate.data.data_interface import AgentModel
-    from resonaate.data.events import TargetTaskPriority
-    from resonaate.scenario.config.event_configs import TargetTaskPriorityConfig
-    from resonaate.tasking.engine.engine_base import TaskingEngine
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
+from resonaate.scenario.config.event_configs import TargetTaskPriorityConfig
+from resonaate.tasking.engine.engine_base import TaskingEngine
 
 
 @pytest.fixture(name="event_config_dict")
@@ -39,7 +32,7 @@ def getTargetTaskPriority():
     }
 
 
-class TestTargetTaskPriorityConfig(BaseTestCase):
+class TestTargetTaskPriorityConfig:
     """Test class for :class:`.TestTargetTaskPriorityConfig` class."""
 
     def testInitGoodArgs(self, event_config_dict):
@@ -63,12 +56,12 @@ class TestTargetTaskPriorityConfig(BaseTestCase):
 @pytest.fixture(name="mocked_engine")
 def getMockedEngine():
     """Get mocked :class:`.TaskingEngine` object."""
-    mocked_engine = create_autospec(TaskingEngine)
+    mocked_engine = create_autospec(TaskingEngine, instance=True)
     mocked_engine.reward_matrix = zeros((10, 10), dtype=float)
     return mocked_engine
 
 
-class TestTargetTaskPriority(BaseTestCase):
+class TestTargetTaskPriority:
     """Test class for :class:`.TargetTaskPriority` class."""
 
     def testFromConfig(self, event_config_dict):

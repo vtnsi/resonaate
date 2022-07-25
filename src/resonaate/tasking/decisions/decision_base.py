@@ -14,15 +14,14 @@ if TYPE_CHECKING:
 class Decision(metaclass=ABCMeta):
     """Abstract base class to encapsulate behavior of general decision methods."""
 
-    REGISTRY: dict[str, "Decision"] = {}
+    REGISTRY: dict[str, Decision] = {}
     """``dict``: Global decision object registry."""
 
     @classmethod
-    def register(cls, name: str, decision: "Decision") -> None:
+    def register(cls, decision: Decision) -> None:
         """Register an implemented decision class in the global registry.
 
         Args:
-            name (``str``): name to store as the key in the registry
             decision (:class:`.Decision`): decision object to register
 
         Raises:
@@ -31,7 +30,7 @@ class Decision(metaclass=ABCMeta):
         if not issubclass(decision, Decision):
             raise TypeError(type(decision))
 
-        cls.REGISTRY[name] = decision
+        cls.REGISTRY[decision.__name__] = decision
 
     @property
     def is_registered(self) -> bool:

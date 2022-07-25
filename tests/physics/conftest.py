@@ -1,8 +1,7 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
 import os
-
-# RESONAATE Library Imports
 
 PHYSICS_DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

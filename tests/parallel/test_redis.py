@@ -1,4 +1,6 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
+# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 import os
 import pickle
@@ -8,26 +10,20 @@ import pytest
 from redis import Redis
 from redis import exceptions as redis_exceptions
 
-try:
-    # RESONAATE Imports
-    from resonaate.parallel import (
-        RedisConfig,
-        getMasterHash,
-        getRedisConnection,
-        isMaster,
-        masterExists,
-        resetMaster,
-        resetRedisQueue,
-        setUpLogger,
-    )
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.parallel import (
+    RedisConfig,
+    getMasterHash,
+    getRedisConnection,
+    isMaster,
+    masterExists,
+    resetMaster,
+    resetRedisQueue,
+    setUpLogger,
+)
 
 
-class TestRedis(BaseTestCase):
+class TestRedis:
     """Tests defining interface with Redis library."""
 
     def testRedisConfig(self, monkeypatch):

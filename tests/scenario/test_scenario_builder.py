@@ -1,32 +1,30 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
+# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
 import os.path
 import re
 from copy import deepcopy
-from unittest.mock import Mock
+from unittest.mock import Mock, create_autospec
 
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.common.exceptions import (
-        DuplicateEngineError,
-        DuplicateSensorError,
-        DuplicateTargetError,
-    )
-    from resonaate.scenario.config import ScenarioConfig
-    from resonaate.scenario.config.event_configs import (
-        MissingDataDependency,
-        TargetTaskPriorityConfig,
-    )
-    from resonaate.scenario.scenario_builder import ScenarioBuilder
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.common.exceptions import (
+    DuplicateEngineError,
+    DuplicateSensorError,
+    DuplicateTargetError,
+)
+from resonaate.scenario.config import ScenarioConfig
+from resonaate.scenario.config.event_configs import (
+    DataDependency,
+    MissingDataDependency,
+    TargetTaskPriorityConfig,
+)
+from resonaate.scenario.scenario_builder import ScenarioBuilder
+
 # Local Imports
-# Testing Imports
 from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
 
@@ -181,7 +179,7 @@ def testMissingDataDependency(
 
     # Mock the `DataDependency` used by `TargetTaskPriorityConfig`, so that calling
     #   `dependency.createDependency()` raises a `MissingDataDependency` exception.
-    dummy_data_dependency = Mock(spec="DataDependency")
+    dummy_data_dependency = create_autospec(DataDependency, instance=True)
     dummy_data_dependency.query = "SQL QUERY"
     dummy_data_dependency.createDependency = Mock(side_effect=MissingDataDependency("DataType"))
 

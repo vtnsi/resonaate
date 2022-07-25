@@ -1,4 +1,5 @@
-# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 from datetime import datetime
@@ -7,18 +8,12 @@ from unittest.mock import create_autospec
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.agents.sensing_agent import SensingAgent
-    from resonaate.data.events import SensorTimeBiasEvent
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.base import ConfigError, ConfigTypeError
-    from resonaate.scenario.config.event_configs import SensorTimeBiasEventConfig
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.agents.sensing_agent import SensingAgent
+from resonaate.data.events import SensorTimeBiasEvent
+from resonaate.physics.time.stardate import datetimeToJulianDate
+from resonaate.scenario.config.base import ConfigError, ConfigTypeError
+from resonaate.scenario.config.event_configs import SensorTimeBiasEventConfig
 
 
 @pytest.fixture(name="event_config_dict")
@@ -34,7 +29,7 @@ def getTimeBias():
     }
 
 
-class TestSensorTimeBiasEventConfig(BaseTestCase):
+class TestSensorTimeBiasEventConfig:
     """Test class for :class:`.ScheduledImpulseEventConfig` class."""
 
     def testInitGoodArgs(self, event_config_dict):
@@ -59,12 +54,12 @@ class TestSensorTimeBiasEventConfig(BaseTestCase):
 @pytest.fixture(name="mocked_sensor")
 def getMockedAgent():
     """Get mocked :class:`.SensingAgent` object."""
-    mocked_sensor = create_autospec(SensingAgent)
+    mocked_sensor = create_autospec(SensingAgent, instance=True)
     mocked_sensor.julian_date_start = datetimeToJulianDate(datetime(2019, 2, 1, 15, 20))
     return mocked_sensor
 
 
-class TestSensorTimeBiasEvent(BaseTestCase):
+class TestSensorTimeBiasEvent:
     """Test class for :class:`.SensorTimeBiasEvent` class."""
 
     def testFromConfig(self, event_config_dict):

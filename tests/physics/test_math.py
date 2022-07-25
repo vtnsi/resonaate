@@ -1,21 +1,25 @@
+from __future__ import annotations
+
 # Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 import pytest
 from numpy import array, deg2rad, isclose, linspace
 
-try:
-    # RESONAATE Imports
-    from resonaate.physics.constants import PI, TWOPI
-    from resonaate.physics.math import ShapeError, angularMean, wrapAngle2Pi, wrapAngleNegPiPi
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Testing Imports
+# RESONAATE Imports
+from resonaate.physics.constants import PI, TWOPI
+from resonaate.physics.math import ShapeError, angularMean, wrapAngle2Pi, wrapAngleNegPiPi
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+UNWRAPPED_ANGLES: ndarray = linspace(-5, 5, 41) * PI
 
 
-UNWRAPPED_ANGLES = linspace(-5, 5, 41) * PI
-
-
-WRAPPED_NEG_PI = (
+WRAPPED_NEG_PI: ndarray = (
     array(
         [
             1.0,
@@ -65,7 +69,7 @@ WRAPPED_NEG_PI = (
 )
 
 
-WRAPPED_TWO_PI = (
+WRAPPED_TWO_PI: ndarray = (
     array(
         [
             1.0,
@@ -115,7 +119,7 @@ WRAPPED_TWO_PI = (
 )
 
 
-ANGULAR_MEAN = [
+ANGULAR_MEAN: list[tuple[ndarray, float, float, float]] = [
     # Angles, valid_mean, low, high
     (deg2rad([210, 190, 170, 150]), deg2rad(180), 0.0, TWOPI),
     (deg2rad([330, 350, 10, 30]), deg2rad(360), 0.0, TWOPI),
@@ -157,8 +161,8 @@ ANGULAR_MEAN = [
 ]
 
 
-WEIGHTED_ANGULAR_MEAN = [
-    # Angles, valid_mean, low, high
+WEIGHTED_ANGULAR_MEAN: list[tuple[ndarray, float, ndarray]] = [
+    # Angles, valid_mean, weights
     (deg2rad([355, 5, 15]), deg2rad(3.99447), array([0.4, 0.3, 0.3])),
     (deg2rad([210, 190, 170]), deg2rad(200.1233420), array([0.6, 0.3, 0.1])),
     (deg2rad([-340, -15, -50]), deg2rad(339.4314), array([0.25, 0.35, 0.4])),
@@ -168,7 +172,7 @@ WEIGHTED_ANGULAR_MEAN = [
 @pytest.mark.parametrize(
     ("unwrapped_angle", "wrapped_angle"), zip(UNWRAPPED_ANGLES, WRAPPED_NEG_PI)
 )
-def testwrapAngleNegPiPi(unwrapped_angle, wrapped_angle):
+def testwrapAngleNegPiPi(unwrapped_angle: float, wrapped_angle: float):
     """Test wrapAngleNegPiPi."""
     assert isclose(wrapAngleNegPiPi(unwrapped_angle), wrapped_angle)
 
@@ -176,19 +180,19 @@ def testwrapAngleNegPiPi(unwrapped_angle, wrapped_angle):
 @pytest.mark.parametrize(
     ("unwrapped_angle", "wrapped_angle"), zip(UNWRAPPED_ANGLES, WRAPPED_TWO_PI)
 )
-def testwrapAngle2Pi(unwrapped_angle, wrapped_angle):
+def testwrapAngle2Pi(unwrapped_angle: float, wrapped_angle: float):
     """Test wrapAngle2Pi."""
     assert isclose(wrapAngle2Pi(unwrapped_angle), wrapped_angle)
 
 
 @pytest.mark.parametrize(("angles", "valid_mean", "low", "high"), ANGULAR_MEAN)
-def testAngularMean(angles, valid_mean, low, high):
+def testAngularMean(angles: ndarray, valid_mean: float, low: float, high: float):
     """Test different sets of angular means."""
     assert isclose(angularMean(angles, low=low, high=high), valid_mean)
 
 
 @pytest.mark.parametrize(("angles", "valid_mean", "weights"), WEIGHTED_ANGULAR_MEAN)
-def testAngularMeanWeights(angles, valid_mean, weights):
+def testAngularMeanWeights(angles: ndarray, valid_mean: float, weights: ndarray):
     """Test different sets of weighted angular means."""
     assert isclose(angularMean(angles, weights=weights), valid_mean)
 

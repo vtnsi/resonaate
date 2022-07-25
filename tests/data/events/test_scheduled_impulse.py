@@ -1,4 +1,5 @@
-# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 from datetime import datetime
@@ -7,18 +8,12 @@ from unittest.mock import create_autospec
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.agents.target_agent import TargetAgent
-    from resonaate.data.events import EventScope, ScheduledImpulseEvent, TargetAdditionEvent
-    from resonaate.physics.time.stardate import datetimeToJulianDate
-    from resonaate.scenario.config.base import ConfigError, ConfigValueError
-    from resonaate.scenario.config.event_configs import ScheduledImpulseEventConfig
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ...conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.agents.target_agent import TargetAgent
+from resonaate.data.events import EventScope, ScheduledImpulseEvent, TargetAdditionEvent
+from resonaate.physics.time.stardate import datetimeToJulianDate
+from resonaate.scenario.config.base import ConfigError, ConfigValueError
+from resonaate.scenario.config.event_configs import ScheduledImpulseEventConfig
 
 
 @pytest.fixture(name="event_config_dict")
@@ -36,7 +31,7 @@ def getScheduledImpulse():
     }
 
 
-class TestScheduledImpulseEventConfig(BaseTestCase):
+class TestScheduledImpulseEventConfig:
     """Test class for :class:`.ScheduledImpulseEventConfig` class."""
 
     def testInitGoodArgs(self, event_config_dict):
@@ -84,12 +79,12 @@ class TestScheduledImpulseEventConfig(BaseTestCase):
 @pytest.fixture(name="mocked_target")
 def getMockedAgent():
     """Get mocked :class:`.TargetAgent` object."""
-    mocked_target = create_autospec(TargetAgent)
+    mocked_target = create_autospec(TargetAgent, instance=True)
     mocked_target.julian_date_start = datetimeToJulianDate(datetime(2021, 8, 3, 12))
     return mocked_target
 
 
-class TestScheduledImpulseEvent(BaseTestCase):
+class TestScheduledImpulseEvent:
     """Test class for :class:`.ScheduledImpulseEvent` class."""
 
     def testFromConfig(self, event_config_dict):
