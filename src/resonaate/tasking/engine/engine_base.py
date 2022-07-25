@@ -143,14 +143,6 @@ class TaskingEngine(metaclass=ABCMeta):
 
         return observations
 
-    def retaskSensors(self, new_target_nums: list[int]) -> None:
-        """Update the set of target agents, usually after a target is added/removed.
-
-        Args:
-            new_target_nums (``list``): ID numbers of new targets to task against.
-        """
-        self.target_list = new_target_nums
-
     @abstractmethod
     def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
         """Perform a set of analysis operations on the current simulation state.
