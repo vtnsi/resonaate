@@ -456,6 +456,7 @@ class Scenario(ParallelMixin):
             "clock": self.clock,
             "sequential_filter": self.scenario_config.estimation.sequential_filter,
             "adaptive_filter": self.scenario_config.estimation.adaptive_filter,
+            "initial_orbit_determination": self.scenario_config.estimation.sequential_filter.initial_orbit_determination,
             "seed": self.scenario_config.noise.random_seed,
             "dynamics": filter_dynamics,
             "q_matrix": filter_noise,

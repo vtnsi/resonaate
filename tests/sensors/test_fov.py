@@ -19,6 +19,7 @@ from resonaate.physics.transforms.methods import getSlantRangeVector
 from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario.clock import ScenarioClock
 from resonaate.scenario.config.agent_configs import SensingAgentConfig
+from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
 SENSOR_CONFIG = {
     "name": "Test Radar",
@@ -110,6 +111,7 @@ def getEstimateAgent1(ukf: UnscentedKalmanFilter, clock: ScenarioClock) -> Estim
         zeros((6, 6)),
         ukf,
         None,
+        InitialOrbitDeterminationConfig(),
         25.0,
         100.0,
         0.21,
@@ -128,6 +130,7 @@ def getEstimateAgent2(ukf: UnscentedKalmanFilter, clock: ScenarioClock) -> Estim
         zeros((6, 6)),
         ukf,
         None,
+        InitialOrbitDeterminationConfig(),
         25.0,
         100.0,
         0.21,

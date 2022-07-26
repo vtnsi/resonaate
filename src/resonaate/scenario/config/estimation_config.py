@@ -12,7 +12,7 @@ from ...estimation import (
     VALID_FILTER_LABELS,
     VALID_MANEUVER_DETECTION_LABELS,
 )
-from ...estimation.adaptive.initialization import VALID_ORBIT_DETERMINATION_LABELS
+from ...estimation.adaptive.initialization import VALID_LAMBERT_IOD_LABELS
 from ...estimation.adaptive.mmae_stacking_utils import VALID_STACKING_LABELS
 from .base import ConfigObject, ConfigValueError
 
@@ -27,6 +27,8 @@ DEFAULT_OBSERVATION_WINDOW: int = 3
 DEFAULT_MODEL_TIME_INTERVAL: int = 60
 DEFAULT_MMAE_STACKING_METHOD: str = "eci_stack"
 DEFAULT_MMAE_INITIALIZATION_METHOD: str = "lambert_universal"
+DEFAULT_IOD_INITIALIZATION_METHOD: str = "lambert_universal"
+DEFAULT_IOD_OBSERVATION_SPACING: int = 60
 
 
 @dataclass
@@ -42,6 +44,9 @@ class EstimationConfig(ConfigObject):
     adaptive_filter: AdaptiveEstimationConfig | dict | None = None
     """:class:`.AdaptiveEstimationConfig`: adaptive estimation technique as nested item."""
 
+    initial_orbit_determination: InitialOrbitDeterminationConfig | dict | None = None
+    """:class:`.InitialOrbitDeterminationConfig`: initial orbit determination technique as nested item."""
+
     def __post_init__(self):
         """Runs after the object is initialized."""
         if isinstance(self.sequential_filter, dict):
@@ -49,6 +54,11 @@ class EstimationConfig(ConfigObject):
 
         if isinstance(self.adaptive_filter, dict):
             self.adaptive_filter = AdaptiveEstimationConfig(**self.adaptive_filter)
+
+        if isinstance(self.initial_orbit_determination, dict):
+            self.initial_orbit_determination = InitialOrbitDeterminationConfig(
+                **self.initial_orbit_determination
+            )
 
 
 @dataclass
@@ -69,6 +79,9 @@ class SequentialFilterConfig(ConfigObject):
 
     adaptive_estimation: bool = False
     """``bool``: Check if sequential filter should turn on adaptive estimation."""
+
+    initial_orbit_determination: bool = False
+    """``bool``: Check if sequential filter should turn on initial orbit determination."""
 
     parameters: dict = field(default_factory=dict)
     """``dict``: extra parameters for the filter algorithm."""
@@ -146,9 +159,11 @@ class AdaptiveEstimationConfig(ConfigObject):
         if self.name not in VALID_ADAPTIVE_ESTIMATION_LABELS:
             raise ConfigValueError("name", self.name, VALID_ADAPTIVE_ESTIMATION_LABELS)
 
-        if self.orbit_determination not in VALID_ORBIT_DETERMINATION_LABELS:
+        if self.orbit_determination not in VALID_LAMBERT_IOD_LABELS:
             raise ConfigValueError(
-                "orbit_determination", self.orbit_determination, VALID_ORBIT_DETERMINATION_LABELS
+                "orbit_determination",
+                self.orbit_determination,
+                VALID_LAMBERT_IOD_LABELS,
             )
 
         if self.stacking_method not in VALID_STACKING_LABELS:
@@ -170,4 +185,34 @@ class AdaptiveEstimationConfig(ConfigObject):
         if self.prune_percentage <= 0.0 or self.prune_percentage >= 1.0:
             raise ConfigValueError(
                 "prune_percentage", self.prune_percentage, "must be between 0 and 1"
+            )
+
+
+@dataclass
+class InitialOrbitDeterminationConfig(ConfigObject):
+    """Configuration section defining initial orbit determination options."""
+
+    CONFIG_LABEL: ClassVar[str] = "initial_orbit_determination"
+    """``str``: Key where settings are stored in the configuration dictionary read from file."""
+
+    name: str = DEFAULT_IOD_INITIALIZATION_METHOD
+    """``str``: Name of initial orbit determination method to use."""
+
+    minimum_observation_spacing: int = DEFAULT_IOD_OBSERVATION_SPACING
+    """``int``: Minimum amount of seconds allowed between each observation used for IOD."""
+
+    def __post_init__(self):
+        """Runs after the object is initialized."""
+        if self.name not in VALID_LAMBERT_IOD_LABELS:
+            raise ConfigValueError(
+                "name",
+                self.name,
+                VALID_LAMBERT_IOD_LABELS,
+            )
+
+        if self.minimum_observation_spacing <= 0:
+            raise ConfigValueError(
+                "minimum_observation_spacing",
+                self.minimum_observation_spacing,
+                "must be positive",
             )

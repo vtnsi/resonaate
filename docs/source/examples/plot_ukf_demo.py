@@ -113,6 +113,7 @@ sat1_agent = TargetAgent(
 from resonaate.agents.estimate_agent import EstimateAgent
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.noise import continuousWhiteNoise, initialEstimateNoise
+from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
 # Extra information required by EstimateAgent
 seed = 12345  # Seeds the random number generator, used for adding noise
@@ -132,7 +133,18 @@ ukf = UnscentedKalmanFilter(
 
 # Create an EstimateAgent object to track the actual TargetAgent satellite
 sat1_estimate_agent = EstimateAgent(
-    sat1_id, sat1_name, sat1_type, clock, sat1_est0, sat1_cov0, ukf, None, 25.0, 100, 0.21
+    sat1_id,
+    sat1_name,
+    sat1_type,
+    clock,
+    sat1_est0,
+    sat1_cov0,
+    ukf,
+    None,
+    InitialOrbitDeterminationConfig(),
+    25.0,
+    100,
+    0.21,
 )
 
 # RESONAATE Imports

@@ -16,7 +16,15 @@ from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKal
 EST_X = array([6678.14, 0.0, 0.0, 0.0, 6.78953, 3.68641])
 EST_P = diagflat([1.0, 2.0, 1.0, 1, 1, 1])
 NOMINAL_FILTER = UnscentedKalmanFilter(
-    10001, 0.0, EST_X, EST_P, TwoBody(), 3 * EST_P, StandardNis(0.01), None
+    10001,
+    0.0,
+    EST_X,
+    EST_P,
+    TwoBody(),
+    3 * EST_P,
+    StandardNis(0.01),
+    None,
+    False,
 )
 TIMESTEP = 300
 ORBIT_DETERMINATION = lambertInitializationFactory("lambert_universal")

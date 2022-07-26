@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.time.stardate import ScenarioTime
     from ...sensors.sensor_base import ObservationTuple
+    from ..initial_orbit_determination import InitialOrbitDetermination
     from ..maneuver_detection import ManeuverDetection
 
 
@@ -96,7 +97,8 @@ class UnscentedKalmanFilter(SequentialFilter):
         dynamics: Dynamics,
         q_matrix: ndarray,
         maneuver_detection: Optional[ManeuverDetection],
-        adaptive_estimation: bool,
+        initial_orbit_determination: bool = False,
+        adaptive_estimation: bool = False,
         alpha: float = 0.001,
         beta: float = 2.0,
         kappa: Optional[float] = None,
@@ -111,7 +113,8 @@ class UnscentedKalmanFilter(SequentialFilter):
             dynamics (:class:`.Dynamics`): dynamics object associated with the filter's target
             q_matrix (``ndarray``): dynamics error covariance matrix
             maneuver_detection (:class:`.ManeuverDetection`): ManeuverDetection associated with the filter
-            adaptive_estimation (``bool``): whether adaptive estimation is allowed to be started
+            initial_orbit_determination (``bool``, optional): Indicator that IOD can be flagged by the filter
+            adaptive_estimation (``bool``, optional): Indicator that adaptive estimation can be flagged by the filter
             alpha (``float``, optional): sigma point spread. Defaults to 0.001. This should be a
                 small positive value: :math:`\alpha <= 1`.
             beta (``float``, optional): Gaussian pdf parameter. Defaults to 2.0. This parameter
@@ -130,6 +133,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             dynamics,
             q_matrix,
             maneuver_detection,
+            initial_orbit_determination,
             adaptive_estimation,
             extra_parameters={
                 "alpha": alpha,

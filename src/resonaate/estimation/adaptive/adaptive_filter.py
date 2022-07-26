@@ -18,6 +18,8 @@ from ...data.queries import fetchEstimatesByJDInterval, fetchObservationsByJDInt
 from ...data.resonaate_database import ResonaateDatabase
 from ...dynamics.celestial import EarthCollision
 from ...parallel import getRedisConnection
+from ...physics.orbit_determination.lambert import determineTransferDirection
+from ...physics.orbits.utils import getTrueAnomalyFromRV
 from ...physics.time.stardate import JulianDate, ScenarioTime
 from ...physics.transforms.methods import radarObs2eciPosition
 from ..sequential.sequential_filter import FilterFlag, SequentialFilter
@@ -33,6 +35,7 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ...dynamics.integration_events import ScheduledEventType
+    from ...physics.orbit_determination import OrbitDeterminationFunction
     from ...scenario.config.estimation_config import AdaptiveEstimationConfig
     from ...sensors.sensor_base import ObservationTuple
 
@@ -69,7 +72,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
-        orbit_determination: Callable[[ndarray, ScenarioTime, ndarray, ScenarioTime], ndarray],
+        orbit_determination: OrbitDeterminationFunction,
         stacking_method: Callable[[list[SequentialFilter], ndarray], tuple[ndarray, ndarray]],
         previous_obs_window: int,
         model_interval: float,
@@ -101,7 +104,8 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             nominal_filter.dynamics,
             nominal_filter.q_matrix,
             nominal_filter.maneuver_detection,
-            False,
+            adaptive_estimation=False,
+            initial_orbit_determination=False,
         )
         # MMAE initialized attributes
         self.scenario_time_step = timestep
@@ -480,6 +484,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
                 self.dynamics,
                 self.q_matrix,
                 self.maneuver_detection,
+                self._original_filter.initial_orbit_determination,
                 adaptive_estimation=False,
                 **self._original_filter.extra_parameters,
             )
@@ -657,12 +662,17 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         for idx, (pre_maneuver_state, maneuver_time) in enumerate(
             zip(pre_maneuver_states, maneuver_times)
         ):
-            maneuvers[idx + 1] = self.orbit_determination_method(
-                initial_state=pre_maneuver_state,
-                initial_time=maneuver_time,
-                current_state=tgt_eci_position,
-                current_time=self.time,
+            transfer_method = determineTransferDirection(
+                initial_true_anomaly=getTrueAnomalyFromRV(pre_maneuver_state),
+                final_true_anomaly=getTrueAnomalyFromRV(self.est_x),
             )
+            new_velocity, _ = self.orbit_determination_method(
+                pre_maneuver_state[:3],
+                tgt_eci_position[:3],
+                self.time - maneuver_time,
+                transfer_method,
+            )
+            maneuvers[idx + 1] = new_velocity - pre_maneuver_state[3:]
 
         return maneuvers
 

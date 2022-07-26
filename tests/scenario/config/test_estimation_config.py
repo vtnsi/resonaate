@@ -13,6 +13,8 @@ from resonaate.dynamics import SPECIAL_PERTURBATIONS_LABEL
 from resonaate.estimation import VALID_MANEUVER_DETECTION_LABELS
 from resonaate.scenario.config.base import ConfigValueError
 from resonaate.scenario.config.estimation_config import (
+    DEFAULT_IOD_INITIALIZATION_METHOD,
+    DEFAULT_IOD_OBSERVATION_SPACING,
     DEFAULT_MANEUVER_DETECTION_THRESHOLD,
     DEFAULT_MMAE_INITIALIZATION_METHOD,
     DEFAULT_MMAE_STACKING_METHOD,
@@ -22,21 +24,28 @@ from resonaate.scenario.config.estimation_config import (
     DEFAULT_PRUNE_THRESHOLD,
     AdaptiveEstimationConfig,
     EstimationConfig,
+    InitialOrbitDeterminationConfig,
     ManeuverDetectionConfig,
     SequentialFilterConfig,
 )
 
 
 @pytest.fixture(name="estimation_cfg_dict")
-@patch("resonaate.scenario.config.estimation_config.AdaptiveEstimationConfig", autospec=True)
 @patch("resonaate.scenario.config.estimation_config.SequentialFilterConfig", autospec=True)
+@patch("resonaate.scenario.config.estimation_config.AdaptiveEstimationConfig", autospec=True)
+@patch(
+    "resonaate.scenario.config.estimation_config.InitialOrbitDeterminationConfig", autospec=True
+)
 def getEstimationConfig(
-    seq_filter: SequentialFilterConfig, adaptive_filter: AdaptiveEstimationConfig
+    initial_orbit_determination: InitialOrbitDeterminationConfig,
+    adaptive_filter: AdaptiveEstimationConfig,
+    seq_filter: SequentialFilterConfig,
 ) -> dict:
     """Generate the default EstimationConfig dictionary."""
     return {
         "sequential_filter": seq_filter,
         "adaptive_filter": adaptive_filter,
+        "initial_orbit_determination": initial_orbit_determination,
     }
 
 
@@ -46,6 +55,7 @@ def testCreateEstimationConfig(estimation_cfg_dict: dict):
     assert cfg.CONFIG_LABEL == "estimation"
     assert isinstance(cfg.sequential_filter, SequentialFilterConfig)
     assert isinstance(cfg.adaptive_filter, AdaptiveEstimationConfig)
+    assert isinstance(cfg.initial_orbit_determination, InitialOrbitDeterminationConfig)
 
     for field in fields(EstimationConfig):
         assert field.name in cfg.__dict__
@@ -67,9 +77,14 @@ def testCreateEstimationConfig(estimation_cfg_dict: dict):
     assert cfg is not None
     assert isinstance(cfg.adaptive_filter, AdaptiveEstimationConfig)
 
+    cfg_dict["initial_orbit_determination"] = {"name": "lambert_universal"}
+    cfg = EstimationConfig(**cfg_dict)
+    assert cfg is not None
+    assert isinstance(cfg.initial_orbit_determination, InitialOrbitDeterminationConfig)
+
     # Ensure the correct amount of req/opt keys
     assert len(EstimationConfig.getRequiredFields()) == 1
-    assert len(EstimationConfig.getOptionalFields()) == 1
+    assert len(EstimationConfig.getOptionalFields()) == 2
 
 
 @pytest.fixture(name="sequential_filter_cfg_dict")
@@ -92,6 +107,7 @@ def testCreateSequentialFilterConfig(sequential_filter_cfg_dict: dict):
     assert cfg.dynamics_model == SPECIAL_PERTURBATIONS_LABEL
     assert cfg.maneuver_detection is None
     assert cfg.adaptive_estimation is False
+    assert cfg.initial_orbit_determination is False
     assert not cfg.parameters
     assert cfg.parameters is not None
 
@@ -114,7 +130,7 @@ def testCreateSequentialFilterConfig(sequential_filter_cfg_dict: dict):
 
     # Ensure the correct amount of req/opt keys
     assert len(SequentialFilterConfig.getRequiredFields()) == 1
-    assert len(SequentialFilterConfig.getOptionalFields()) == 4
+    assert len(SequentialFilterConfig.getOptionalFields()) == 5
 
 
 def testBadInputsSequentialFilterConfig(sequential_filter_cfg_dict: dict):
@@ -233,7 +249,7 @@ def testCreateAdaptiveEstimationConfig(adaptive_estimation_cfg_dict: dict):
 
 
 def testBadInputsAdaptiveEstimationConfig(adaptive_estimation_cfg_dict: dict):
-    """Test that ManeuverDetectionConfig cannot be created from bad inputs."""
+    """Test that AdaptiveEstimationConfig cannot be created from bad inputs."""
     cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
     cfg_dict["name"] = "invalid"
     with pytest.raises(ConfigValueError):
@@ -313,3 +329,49 @@ def testBadInputsAdaptiveEstimationConfig(adaptive_estimation_cfg_dict: dict):
     cfg_dict["prune_percentage"] = 2.0
     with pytest.raises(ConfigValueError):
         _ = AdaptiveEstimationConfig(**cfg_dict)
+
+
+@pytest.fixture(name="initial_orbit_determination_cfg_dict")
+def getInitialOrbitDeterminationConfig() -> dict:
+    """Generate the default InitialOrbitDeterminationConfig dictionary."""
+    return {
+        "name": DEFAULT_IOD_INITIALIZATION_METHOD,
+        "minimum_observation_spacing": DEFAULT_IOD_OBSERVATION_SPACING,
+    }
+
+
+def testCreateInitialOrbitDeterminationConfig(initial_orbit_determination_cfg_dict: dict):
+    """Test that InitialOrbitDeterminationConfig can be created from a dictionary."""
+    cfg = InitialOrbitDeterminationConfig(**initial_orbit_determination_cfg_dict)
+    assert cfg.CONFIG_LABEL == "initial_orbit_determination"
+    assert cfg.name == DEFAULT_IOD_INITIALIZATION_METHOD
+    assert cfg.minimum_observation_spacing == DEFAULT_IOD_OBSERVATION_SPACING
+
+    for field in fields(InitialOrbitDeterminationConfig):
+        assert field.name in cfg.__dict__
+        assert getattr(cfg, field.name) is not None
+
+    # Can be created from empty dictionary
+    _ = InitialOrbitDeterminationConfig(**{})
+
+    # Ensure the correct amount of req/opt keys
+    assert len(InitialOrbitDeterminationConfig.getRequiredFields()) == 0
+    assert len(InitialOrbitDeterminationConfig.getOptionalFields()) == 2
+
+
+def testBadInputsInitialOrbitDeterminationConfig(initial_orbit_determination_cfg_dict: dict):
+    """Test that InitialOrbitDeterminationConfig cannot be created from bad inputs."""
+    cfg_dict = deepcopy(initial_orbit_determination_cfg_dict)
+    cfg_dict["name"] = "invalid"
+    with pytest.raises(ConfigValueError):
+        _ = InitialOrbitDeterminationConfig(**cfg_dict)
+
+    cfg_dict = deepcopy(initial_orbit_determination_cfg_dict)
+    cfg_dict["minimum_observation_spacing"] = -1
+    with pytest.raises(ConfigValueError):
+        _ = InitialOrbitDeterminationConfig(**cfg_dict)
+
+    cfg_dict = deepcopy(initial_orbit_determination_cfg_dict)
+    cfg_dict["minimum_observation_spacing"] = 0
+    with pytest.raises(ConfigValueError):
+        _ = InitialOrbitDeterminationConfig(**cfg_dict)

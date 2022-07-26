@@ -156,6 +156,7 @@ class ScenarioBuilder:
                 "clock": self.clock,
                 "sequential_filter": self.config.estimation.sequential_filter,
                 "adaptive_filter": self.config.estimation.adaptive_filter,
+                "initial_orbit_determination": self.config.estimation.initial_orbit_determination,
                 "seed": self.config.noise.random_seed,
                 "dynamics": filter_dynamics,
                 "q_matrix": q_matrix,

@@ -13,7 +13,11 @@ from ..common.utilities import getTypeString
 from ..data.detected_maneuver import DetectedManeuver
 from ..data.ephemeris import EstimateEphemeris
 from ..data.filter_step import FilterStep
-from ..estimation import adaptiveEstimationFactory, sequentialFilterFactory
+from ..estimation import (
+    adaptiveEstimationFactory,
+    initialOrbitDeterminationFactory,
+    sequentialFilterFactory,
+)
 from ..estimation.sequential.sequential_filter import FilterFlag, SequentialFilter
 from ..physics.noise import initialEstimateNoise
 from ..physics.transforms.methods import ecef2lla, eci2ecef
@@ -31,9 +35,13 @@ if TYPE_CHECKING:
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.integration_events.station_keeping import StationKeeper
+    from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
     from ..scenario.config.agent_configs import TargetAgentConfig
-    from ..scenario.config.estimation_config import AdaptiveEstimationConfig
+    from ..scenario.config.estimation_config import (
+        AdaptiveEstimationConfig,
+        InitialOrbitDeterminationConfig,
+    )
     from ..sensors.sensor_base import ObservationTuple
 
 
@@ -50,6 +58,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         initial_covariance: ndarray,
         _filter: SequentialFilter,
         adaptive_filter_config: AdaptiveEstimationConfig,
+        initial_orbit_determination_config: InitialOrbitDeterminationConfig,
         visual_cross_section: float | int,
         mass: float | int,
         reflectivity: float,
@@ -118,7 +127,16 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             self._logger.error("Invalid input type for _filter param")
             raise TypeError(type(_filter))
 
-        self.adaptive_filter = adaptive_filter_config
+        # Attribute to track the adaptive_filter config of this object
+        self.adaptive_filter_config = adaptive_filter_config
+
+        # Attribute to track the initial_orbit_determination config of this object
+        self.initial_orbit_determination = initialOrbitDeterminationFactory(
+            initial_orbit_determination_config, self.simulation_id, self.julian_date_start
+        )
+
+        # Attribute to track the time at which IOD begins
+        self.iod_start_time: ScenarioTime | None = None
 
         # Attribute to track the most recent _actual_ observation of this object
         self.last_observed_at = self.julian_date_start
@@ -170,6 +188,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             init_p,
             nominal_filter,
             config["adaptive_filter"],
+            config["initial_orbit_determination"],
             tgt_config.visual_cross_section,
             tgt_config.mass,
             tgt_config.reflectivity,
@@ -321,11 +340,13 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         if obs_tuples:
             self.last_observed_at = self.julian_date_epoch
             self._saveFilterStep()
+            self._attemptInitialOrbitDetermination(obs_tuples)
             if self.nominal_filter.maneuver_detected:
                 self._saveDetectedManeuver(obs_tuples)
                 if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
                     self.resetFilter(self.nominal_filter.converged_filter)
                 self._attemptAdaptiveEstimation(obs_tuples)
+                self._attemptInitialOrbitDetermination(obs_tuples)
 
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
@@ -351,7 +372,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         if FilterFlag.ADAPTIVE_ESTIMATION_START in self.nominal_filter.flags:
             self.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
             adaptive_filter = adaptiveEstimationFactory(
-                self.adaptive_filter, self.nominal_filter, self.dt_step
+                self.adaptive_filter_config, self.nominal_filter, self.dt_step
             )
 
             # Create a multiple_model_filter
@@ -362,6 +383,35 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
             if mmae_started:
                 self.resetFilter(adaptive_filter)
+
+    def _attemptInitialOrbitDetermination(self, obs_tuples: list[ObservationTuple]):
+        """Try to start initial orbit determination on this RSO.
+
+        Args:
+            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+        """
+        if not self.initial_orbit_determination:
+            return
+
+        if self.iod_start_time is None and self.nominal_filter.maneuver_detected:
+            self.iod_start_time = self.time
+            msg = f"Turning on IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
+            self._logger.info(msg)
+
+        # [NOTE]: IOD cannot converge on the same timestep as initialization
+        if self.iod_start_time is not None and self.iod_start_time < self.time:
+            msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
+            self._logger.info(msg)
+            iod_est_x, success = self.initial_orbit_determination.determineNewEstimateState(
+                obs_tuples, self.iod_start_time, self.time
+            )
+            if success:
+                self.iod_start_time = None
+                self.nominal_filter.est_x = iod_est_x
+                msg = f"IOD successful for RSO {self.simulation_id}"
+            else:
+                msg = f"IOD unsuccessful for RSO {self.simulation_id}"
+            self._logger.debug(msg)
 
     def resetFilter(self, new_filter: SequentialFilter) -> None:
         """Overwrite the agent's filter object with a new filter instance.
