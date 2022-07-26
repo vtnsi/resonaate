@@ -277,6 +277,7 @@ This is a required field defining estimation techniques used to track the target
 "estimation": {
     "sequential_filter": SequentialFilterConfig,  # Required
     "adaptive_filter": AdaptiveEstimationConfig,  # Optional
+    "initial_orbit_determination": InitialOrbitDeterminationConfig,  # Optional
 }
 ```
 
@@ -301,11 +302,12 @@ This is a required field in `"estimation"` defining the nominal sequential filte
 
 ```python
 "estimation": {
-    "name":                 str,                      # Required
-    "dynamics_model":       str,                      # Optional
-    "maneuver_detection":   ManeuverDetectionConfig,  # Optional
-    "adaptive_estimation":  bool,                     # Optional
-    "parameters":           dict,                     # Optional
+    "name":                         str,                      # Required
+    "dynamics_model":               str,                      # Optional
+    "maneuver_detection":           ManeuverDetectionConfig,  # Optional
+    "adaptive_estimation":          bool,                     # Optional
+    "initial_orbit_determination":  bool,                     # Optional
+    "parameters":                   dict,                     # Optional
 }
 ```
 
@@ -329,7 +331,7 @@ This is an optional field in `"sequential_filter"` defining the maneuver detecti
 ```
 
 ```python
-"estimation": {
+"maneuver_detection": {
     "name":       str,    # Required
     "threshold":  float,  # Optional
     "parameters": dict,   # Optional
@@ -356,7 +358,7 @@ This is an optional field in `"estimation"` defining the adaptive estimation tec
 ```
 
 ```python
-"estimation": {
+"adaptive_filter": {
     "name":                 str,    # Required
     "orbit_determination":  str,    # Optional
     "stacking_method":      str,    # Optional
@@ -365,6 +367,32 @@ This is an optional field in `"estimation"` defining the adaptive estimation tec
     "prune_threshold":      float,  # Optional
     "prune_percentage":     float,  # Optional
     "parameters":           dict,   # Optional
+}
+```
+
+#### InitialOrbitDeterminationConfig
+
+This is an optional field in `"estimation"` defining the initial orbi technique that is used if a maneuver is detected.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.estimation_config
+
+.. autoclass:: InitialOrbitDeterminationConfig
+   :members:
+   :noindex:
+   :special-members: __init__
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"initial_orbit_determination": {
+    "name":                          str,    # Optional
+    "minimum_observation_spacing":   int,    # Optional
 }
 ```
 

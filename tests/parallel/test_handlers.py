@@ -29,6 +29,7 @@ from resonaate.parallel.handlers.job_handler import JobHandler
 from resonaate.parallel.job import CallbackRegistration, Job
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
 from resonaate.scenario.clock import ScenarioClock
+from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 from resonaate.sensors.sensor_base import Sensor
 
 # Local Imports
@@ -204,8 +205,10 @@ def createEstimateAgent(target_agent: TargetAgent, scenario_clock: ScenarioClock
             3 * est_p,
             StandardNis(0.01),
             None,
+            False,
         ),
         None,
+        InitialOrbitDeterminationConfig(),
         25.0,
         500.0,
         0.21,

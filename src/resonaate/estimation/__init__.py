@@ -10,7 +10,9 @@ from typing import TYPE_CHECKING
 # Local Imports
 from .adaptive.adaptive_filter import AdaptiveFilter
 from .adaptive.gpb1 import GeneralizedPseudoBayesian1
+from .adaptive.initialization import VALID_LAMBERT_IOD_LABELS
 from .adaptive.smm import StaticMultipleModel
+from .initial_orbit_determination import LambertIOD
 from .maneuver_detection import FadingMemoryNis, ManeuverDetection, SlidingNis, StandardNis
 from .sequential.sequential_filter import SequentialFilter
 from .sequential.unscented_kalman_filter import UnscentedKalmanFilter
@@ -25,12 +27,14 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ..dynamics.dynamics_base import Dynamics
-    from ..physics.time.stardate import ScenarioTime
+    from ..physics.time.stardate import JulianDate, ScenarioTime
     from ..scenario.config.estimation_config import (
         AdaptiveEstimationConfig,
+        InitialOrbitDeterminationConfig,
         ManeuverDetectionConfig,
         SequentialFilterConfig,
     )
+    from .initial_orbit_determination import InitialOrbitDetermination
 
 
 VALID_ESTIMATE_SOURCE_LABELS: Tuple[str] = (
@@ -103,6 +107,7 @@ def sequentialFilterFactory(
             dynamics,
             q_matrix,
             maneuverDetectionFactory(config.maneuver_detection),
+            config.initial_orbit_determination,
             config.adaptive_estimation,
             **config.parameters,
         )
@@ -144,6 +149,8 @@ def adaptiveEstimationFactory(
     Args:
         config (:class:`.AdaptiveEstimationConfig`): the configuration used to generate the
             adaptive estimator.
+        nominal_filter (:class:`.SequentialFilter`): the current estimate's nominal filter
+        time_step (:class:`.ScenarioTime`): the scenario level time step
 
     Returns:
         :class:`.AdaptiveFilter`: adaptive estimation class.
@@ -162,3 +169,29 @@ def adaptiveEstimationFactory(
         raise ValueError(f"Invalid adaptive estimation type: {config.name}")
 
     return adaptive_filter
+
+
+def initialOrbitDeterminationFactory(
+    config: InitialOrbitDeterminationConfig, sat_num: int, julian_date_start: JulianDate
+) -> InitialOrbitDetermination:
+    """Build an initial orbit determination class for use in filtering.
+
+    Args:
+        config (:class:`.InitialOrbitDeterminationConfig`): the configuration used to generate the
+            adaptive estimator.
+        sat_num (``int``): satcat ID of Estimate
+        julian_date_start (:class:`.JulianDate`): Scenario starting JulianDate
+
+    Returns:
+        :class:`.InitialOrbitDetermination`: adaptive estimation class.
+
+    Raises:
+        ValueError: raised if `config.name` is invalid.
+    """
+    if not config:
+        return None
+
+    if config.name in VALID_LAMBERT_IOD_LABELS:
+        return LambertIOD.fromConfig(config, sat_num, julian_date_start)
+
+    raise ValueError(f"Invalid Initial Orbit Determination type: {config.name}")

@@ -114,10 +114,10 @@ class TestAdaptiveEstimationIntegration:
         propagateScenario(datafiles, init_filepath, elapsed_time)
 
 
-EST_X = array([6378.0, 2.0, 10.0, 0.0, 0.0, 0.0])
+EST_X = array([6378.0, 2.0, 10.0, 0.0, 7.0, 0.0])
 EST_P = diagflat([1.0, 2.0, 1.0, 1, 1, 1])
 NOMINAL_FILTER = UnscentedKalmanFilter(
-    10001, 0.0, EST_X, EST_P, TwoBody(), 3 * EST_P, StandardNis(0.01), None
+    10001, 0.0, EST_X, EST_P, TwoBody(), 3 * EST_P, StandardNis(0.01), None, False
 )
 TIMESTEP = 300
 ORBIT_DETERMINATION = lambertInitializationFactory("lambert_universal")
@@ -512,6 +512,7 @@ class TestAdaptiveEstimation:
         adaptive_filter.est_x = array(
             [-948.311943, 750.624874, 6767.19073, 7.46101124, 1.20802706, 0.911776855]
         )
+        adaptive_filter.time = 9000
         delta_v = adaptive_filter._generateHypothesisManeuvers(
             [radar_observation_tuple], HYPOTHESIS_STATES, MANEUVER_TIMES
         )
@@ -650,6 +651,7 @@ class TestAdaptiveEstimation:
         """Test calculating maneuvers for hypotheses."""
         tgt_eci_position = array([-948.311943, 750.624874, 6767.19073])
         adaptive_filter.num_models = 4
+        adaptive_filter.time = 9000
         maneuvers = adaptive_filter._calculateDeltaV(
             HYPOTHESIS_STATES, MANEUVER_TIMES, tgt_eci_position
         )

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ...physics.orbit_determination.lambert import lambertGauss, lambertMinEnergy, lambertUniversal
+from ...physics.orbit_determination.lambert import lambertBattin, lambertUniversal
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -13,29 +13,23 @@ if TYPE_CHECKING:
     from ...physics.orbit_determination import OrbitDeterminationFunction
 
 
-LAMBERT_MIN_SMA_LABEL = "lambert_min_sma"
-"""``str``: Constant string used to describe Lambert minimum SMA function."""
-
-LAMBERT_GAUSS_LABEL = "lambert_gauss"
-"""``str``: Constant string used to describe Lambert Gauss function."""
+LAMBERT_BATTIN_LABEL = "lambert_battin"
+"""``str``: Constant string used to describe Lambert Battin function."""
 
 LAMBERT_UNIVERSAL_LABEL = "lambert_universal"
 """``str``: Constant string used to describe Lambert universal function."""
 
-
-_ORBIT_DETERMINATION_MAP: dict[str, OrbitDeterminationFunction] = {
-    LAMBERT_MIN_SMA_LABEL: lambertMinEnergy,
-    LAMBERT_GAUSS_LABEL: lambertGauss,
+_LAMBERT_IOD_MAP: dict[str, OrbitDeterminationFunction] = {
+    LAMBERT_BATTIN_LABEL: lambertBattin,
     LAMBERT_UNIVERSAL_LABEL: lambertUniversal,
 }
 
-
-VALID_ORBIT_DETERMINATION_LABELS: tuple[str] = tuple(_ORBIT_DETERMINATION_MAP.keys())
-"""``tuple[str]``: Valid entries for :py:data:`'orbit_determination'` key in filter configuration."""
+VALID_LAMBERT_IOD_LABELS: tuple[str] = tuple(_LAMBERT_IOD_MAP.keys())
+"""``tuple[str]``: Valid entries for :py:data:`'orbit_determination'` key in iod configuration."""
 
 
 def lambertInitializationFactory(name: str) -> OrbitDeterminationFunction:
-    """Build a lambert class for use in filtering.
+    """Build a lambert class for use in initial orbit determination.
 
     Args:
         name (``str``): name of orbit determination method.
@@ -45,9 +39,8 @@ def lambertInitializationFactory(name: str) -> OrbitDeterminationFunction:
     """
     if not name:
         return None
-
-    if name.lower() in VALID_ORBIT_DETERMINATION_LABELS:
-        iod_class = _ORBIT_DETERMINATION_MAP[name]
+    if name.lower() in VALID_LAMBERT_IOD_LABELS:
+        iod_class = _LAMBERT_IOD_MAP[name]
     else:
         raise ValueError(name)
 

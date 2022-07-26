@@ -49,6 +49,12 @@ ______________________________________________________________________
   - Add a `ParallelMixin` class that requires a `shutdown()` method be overwritten, inherited by parallel classes (see !39)
   - Improve coverage of `tasking.engine` & fix slow test case (see !39)
   - Replaced all `__del__()` with `shutdown()` for parallel classes (see !39)
+  - `estimation/initial_orbit_determination` for IOD during a scenario (see !1)
+  - `physics/orbit_determination/lambert` for classical algorithms of orbit determination (see !1)
+  - `EstimateAgent._attemptInitialOrbitDetermination` to handle application of IOD (see !1)
+  - `Initial_orbit_determination_factory` IOD factory method (see !1)
+  - `initial_orbit_determination` config option for setting iod, defaults to NO_SETTING (see !1)
+  - `lambertBattin` orbit determination method (see !1)
 
 - Changed
 
@@ -72,6 +78,7 @@ ______________________________________________________________________
   - `services` sub-package as well as all corresponding tests, documentation, & references
   - argument `truth` in `EstimateAgent._update()`
   - all (for real this time) `__del__()` (see !39)
+  - `lambertMinEnergy` and `lambertGauss` orbit determination methods (see !1)
 
 - Fixed
 

@@ -464,3 +464,19 @@ def getFlightPathAngle(ecc: float, true_anom: float) -> float:
         ``float``: flight path angle, :math:`\phi_{fpa}\in[0,2\pi)`, in radians.
     """
     return arctan2(ecc * sin(true_anom), 1 + ecc * cos(true_anom))
+
+
+@wrap_anomaly
+def getTrueAnomalyFromRV(eci_state: ndarray, mu: float = Earth.mu) -> float:
+    """Calculate True Anomaly from an ECI state vector.
+
+    Args:
+        eci_state (``ndarray``): 6x1 ECI State Vector
+        mu (``float``, optional): Gravitational Constant. Defaults to Earth.mu.
+
+    Returns:
+        ``float``: True Anomaly of state vector
+    """
+    position, velocity = eci_state[:3], eci_state[3:]
+    _, ecc_vector = getEccentricity(r_vec=position, v_vec=velocity, mu=mu)
+    return getTrueAnomaly(r_vec=position, v_vec=velocity, e_unit_vec=ecc_vector)

@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.time.stardate import ScenarioTime
     from ...sensors.sensor_base import ObservationTuple
+    from ..initial_orbit_determination import InitialOrbitDetermination
     from ..maneuver_detection import ManeuverDetection
 
 
@@ -41,6 +42,7 @@ class FilterFlag(Flag):
     MANEUVER_DETECTION = auto()
     ADAPTIVE_ESTIMATION_START = auto()
     ADAPTIVE_ESTIMATION_CLOSE = auto()
+    INITIAL_ORBIT_DETERMINATION_START = auto()
 
 
 class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
@@ -132,6 +134,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         dynamics: Dynamics,
         q_matrix: ndarray,
         maneuver_detection: Optional[ManeuverDetection],
+        initial_orbit_determination: bool,
         adaptive_estimation: bool,
         extra_parameters: Optional[dict[str, Any]] = None,
     ):
@@ -145,7 +148,8 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
             dynamics (:class:`.Dynamics`): dynamics object associated with the filter's target
             q_matrix (``ndarray``): dynamics error covariance matrix
             maneuver_detection (:class:`.ManeuverDetection`): ManeuverDetection associated with the filter
-            adaptive_estimation (``bool``): whether adaptive estimation is allowed to be started
+            initial_orbit_determination (``bool``, optional): Indicator that IOD can be flagged by the filter
+            adaptive_estimation (``bool``, optional): Indicator that adaptive estimation can be flagged by the filter
             extra_parameters (``dict``, optional): extra arguments for derived classes, for allowing dynamic
                 creation from within this class
         """
@@ -178,6 +182,9 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         # MMAE products
         self.true_y = array([])
         self.adaptive_estimation = adaptive_estimation
+
+        # Orbit Determination products
+        self.initial_orbit_determination = initial_orbit_determination
 
         # Intermediate values, used for checking statistical consistency & simplifying equations
         self.nis = array([])
@@ -236,6 +243,11 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
             self.maneuver_metric = self.maneuver_detection.metric
             if self.adaptive_estimation and FilterFlag.ADAPTIVE_ESTIMATION_START not in self.flags:
                 self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_START
+            if (
+                self.initial_orbit_determination
+                and FilterFlag.INITIAL_ORBIT_DETERMINATION_START not in self.flags
+            ):
+                self.flags |= FilterFlag.INITIAL_ORBIT_DETERMINATION_START
 
     def getPredictionResult(self) -> dict[str, Any]:
         """Compile result message for a predict step.

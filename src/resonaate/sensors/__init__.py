@@ -10,9 +10,9 @@ from numpy import asarray, sqrt
 
 # Local Imports
 from ..physics import constants as const
-from .advanced_radar import ADV_RADAR_DEFAULT_FOV, AdvRadar
-from .optical import OPTICAL_DEFAULT_FOV, OPTICAL_DETECTABLE_VISMAG, Optical
-from .radar import RADAR_DEFAULT_FOV, Radar
+from .advanced_radar import AdvRadar
+from .optical import Optical
+from .radar import Radar
 from .sensor_base import Sensor
 
 if TYPE_CHECKING:
@@ -107,7 +107,7 @@ def fieldOfViewFactory(configuration: FieldOfViewConfig) -> FieldOfView:
     if configuration.fov_shape == "rectangular":
         return RectangularFoV(configuration)
 
-    raise ValueError("wrong FoV type input")
+    raise ValueError(f"wrong FoV shape: {configuration.fov_shape}")
 
 
 class FieldOfView:
