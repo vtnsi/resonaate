@@ -41,8 +41,8 @@ setuptools.setup(
             "pylint==2.14.5",
             # Type Checking
             "mypy==0.971",
-            "types-sqlalchemy==1.4.46",
-            "types-redis==4.3.11",
+            "types-sqlalchemy==1.4.49",
+            "types-redis==4.3.12",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
             "black==22.6.0",
@@ -62,13 +62,13 @@ setuptools.setup(
             "coverage==6.4.2",
         ],
         "doc": [
-            "sphinx==5.0.2",
+            "sphinx==5.1.1",
             "sphinx_rtd_theme==1.0.0",
             "myst-parser==0.18.0",
             "sphinx-copybutton==0.5.0",
             "sphinxcontrib-bibtex==2.4.2",
             "sphinxcontrib-mermaid==0.7.1",
-            "sphinx-gallery==0.10.1",
+            "sphinx-gallery==0.11.0",
             "importlib-metadata==4.11.3; python_version < '3.10'",
         ],
     },
