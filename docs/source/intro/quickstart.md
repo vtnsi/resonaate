@@ -146,10 +146,6 @@ To start, connect to Redis and determine the simulation parameters.
 
 ```python
 import os
-from resonaate.parallel import isMaster
-
-# Establish Redis connection
-started = isMaster()
 
 # Points to a valid main configuration file
 init_file = os.path.abspath(
