@@ -1,13 +1,47 @@
 """:class:`.Job` handler class that manages estimate prediction logic."""
 # Standard Library Imports
 from collections import defaultdict
+from typing import TYPE_CHECKING
+
+# Third Party Imports
+from mjolnir import Job
 
 # Local Imports
-from ...data.events import EventScope, getRelevantEvents
-from ...data.resonaate_database import ResonaateDatabase
-from ..async_functions import asyncPredict
-from ..job import CallbackRegistration, Job
+from ..data.events import EventScope, getRelevantEvents
+from ..data.resonaate_database import ResonaateDatabase
 from .agent_propagation import PropagationJobHandler
+from .base import CallbackRegistration
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from ..data.events.base import Event
+    from ..estimation.sequential.sequential_filter import SequentialFilter
+    from ..physics.time.stardate import ScenarioTime
+
+
+def asyncPredict(
+    seq_filter: SequentialFilter, time: ScenarioTime, scheduled_events: list[Event] = None
+) -> ndarray:
+    """Wrap a filter prediction method for use with a parallel job submission module.
+
+    Hint:
+        The filter that's being used needs to have :meth:`~.SequentialFilter.getPredictionResult`
+        and :meth:`~.SequentialFilter.updateFromAsyncResult` methods implemented.
+
+    Args:
+        seq_filter (:class:`.SequentialFilter`): filter object used to predict state estimates
+        time (:class:`.ScenarioTime`): time during the scenario to predict to
+        scheduled_events (``list``, optional): :class:`.Event` objects
+
+    Returns:
+        ``ndarray``: 6x1 final state vector of the object being propagated
+    """
+    seq_filter.predict(time, scheduled_events=scheduled_events)
+
+    return seq_filter.getPredictionResult()
 
 
 class EstimatePredictionRegistration(CallbackRegistration):

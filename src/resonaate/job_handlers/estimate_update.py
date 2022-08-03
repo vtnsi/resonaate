@@ -4,15 +4,65 @@ from __future__ import annotations
 # Standard Library Imports
 from typing import TYPE_CHECKING
 
+# Third Party Imports
+from mjolnir import Job
+
 # Local Imports
-from ..async_functions import asyncUpdateEstimate
-from ..job import CallbackRegistration, Job
-from .job_handler import JobHandler
+from ..estimation.sequential.sequential_filter import FilterFlag
+from .base import CallbackRegistration, JobHandler
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Local Imports
-    from ...agents.estimate_agent import EstimateAgent
+    from ..agents.estimate_agent import EstimateAgent
+    from ..data.observation import Observation
+
+
+def asyncUpdateEstimate(estimate_agent: EstimateAgent, successful_obs: list[Observation]) -> dict:
+    """Update the state estimate for a :class:`.EstimateAgent`.
+
+    Hint:
+        The filter that's being used needs to have :meth:`~.SequentialFilter.getUpdateResult`
+        and :meth:`~.SequentialFilter.updateFromAsyncResult` methods implemented.
+
+    Args:
+        estimate_agent (:class:`.EstimateAgent`): estimate object corresponding to the target.
+        successful_obs (``list``): :class:`.Observation` objects to be incorporated in the filter update
+
+    Returns:
+        ``dict``: execute result dictionary contains:
+
+        :``"filter_update"``: (``dict``): filter update results to be applied.
+        :``"observations'``: (:class:`.Observation`): successful_obs
+        :``"observed"``: (``bool``): whether there were successful observations of this target.
+        :``"estimate_id"``: (``int``): ID of the :class:`.EstimateAgent` to calculate metrics for.
+        :``"new_filter"``: (:class:`.SequentialFilter`): new filter object for this :class:`.EstimateAgent`
+    """
+    # Update the filter with the successful observations, save the data
+    estimate_agent.updateEstimate(successful_obs)
+
+    # Common result, no new filter object
+    result = {
+        "estimate_id": estimate_agent.simulation_id,
+        "filter_update": estimate_agent.nominal_filter.getUpdateResult(),
+        "observations": successful_obs,
+        "observed": bool(successful_obs),
+        "new_filter": None,
+    }
+
+    # MMAE is closing
+    if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in estimate_agent.nominal_filter.flags:
+        # [NOTE]: The next two lines MUST be in this order
+        estimate_agent.resetFilter(estimate_agent.nominal_filter.converged_filter)
+        estimate_agent.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_CLOSE
+        result["new_filter"] = estimate_agent.nominal_filter
+
+    # MMAE is beginning
+    elif FilterFlag.ADAPTIVE_ESTIMATION_START in estimate_agent.nominal_filter.flags:
+        estimate_agent.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
+        result["new_filter"] = estimate_agent.nominal_filter
+
+    return result
 
 
 class EstimateUpdateRegistration(CallbackRegistration):
