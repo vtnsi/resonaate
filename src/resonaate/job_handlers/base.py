@@ -3,10 +3,10 @@ import logging
 from abc import ABC, abstractmethod
 
 # Third Party Imports
-from mjolnir import QueueManager
+from mjolnir import Job, JobTimeoutError, QueueManager
 
 # Local Imports
-from ..common.exceptions import JobProcessingError, JobTimeoutError
+from ..common.exceptions import JobProcessingError
 from ..common.utilities import getTimeout
 
 
@@ -142,7 +142,7 @@ class JobHandler(ParallelMixin, ABC):
         Raises:
             :class:`.JobProcessingError`: raised if job completed in an error state
         """
-        if job.status == "processed":
+        if job.status == Job.Status.PROCESSED:
             self.job_id_registration_dict[job.id].jobCompleteCallback(job)
 
         else:
@@ -173,4 +173,4 @@ class JobHandler(ParallelMixin, ABC):
 
     def shutdown(self):
         """Shutdown the :class:`.QueueManager`."""
-        self.queue_mgr.shutdown()
+        self.queue_mgr.stopHandling()

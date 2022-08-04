@@ -1,10 +1,6 @@
 """Contains all the custom-defined exceptions used in RESONAATE."""
 
 
-class JobTimeoutError(Exception):
-    """Exception indicating jobs haven't completed within a given timeout."""
-
-
 class JobProcessingError(Exception):
     """Exception indicating jobs encountered an error during processing."""
 
