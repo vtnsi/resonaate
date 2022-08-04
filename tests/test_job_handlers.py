@@ -116,7 +116,7 @@ def createJobHandler(numpy_add_job: Job, mocked_sensing_agent: SensingAgent) -> 
     job_handler = GenericJobHandler()
     job_handler.registerCallback(mocked_sensing_agent)
     yield job_handler
-    job_handler.queue_mgr.shutdown()
+    job_handler.queue_mgr.stopHandling()
 
 
 @pytest.fixture(scope="class", name="mocked_error_job")
@@ -125,7 +125,7 @@ def getMockedErrorJobObject() -> Job:
     job = create_autospec(Job, instance=True)
     job.id = 1
     job.error = "F"
-    job.status = "failed"
+    job.status = Job.Status.FAILED
 
     return job
 
