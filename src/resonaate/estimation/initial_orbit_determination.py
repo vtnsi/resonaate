@@ -8,6 +8,7 @@ from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+from mjolnir import KeyValueStore
 from numpy import array
 from scipy.linalg import norm
 from sqlalchemy import asc
@@ -16,7 +17,6 @@ from sqlalchemy.orm import Query
 # Local Imports
 from ..data.observation import Observation
 from ..data.resonaate_database import ResonaateDatabase
-from ..parallel import getRedisConnection
 from ..physics.constants import DAYS2SEC
 from ..physics.orbit_determination import OrbitDeterminationFunction
 from ..physics.orbit_determination.lambert import determineTransferDirection
@@ -270,7 +270,7 @@ class LambertIOD(InitialOrbitDetermination):
             return None, False
 
         # load path to on-disk database for the current scenario run
-        db_path = loads(getRedisConnection().get("db_path"))
+        db_path = loads(KeyValueStore.getValue("db_path"))
         database = ResonaateDatabase.getSharedInterface(db_path=db_path)
 
         # Ensure observations are from the same pass
