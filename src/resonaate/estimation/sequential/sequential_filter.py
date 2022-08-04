@@ -9,6 +9,7 @@ from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+from mjolnir import KeyValueStore
 from numpy import array, fabs
 from scipy.linalg import norm
 
@@ -16,7 +17,6 @@ from scipy.linalg import norm
 from ...common.behavioral_config import BehavioralConfig
 from ...data.queries import fetchTruthByJDEpoch
 from ...data.resonaate_database import ResonaateDatabase
-from ...parallel import getRedisConnection
 from ..debug_utils import checkThreeSigmaObs, logFilterStep
 
 if TYPE_CHECKING:
@@ -331,7 +331,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         """Debugging checks if flags are set to do so."""
         # Check if error inflation is too large
         if BehavioralConfig.getConfig().debugging.EstimateErrorInflation:
-            db_path = loads(getRedisConnection().get("db_path"))
+            db_path = loads(KeyValueStore.getValue("db_path"))
             database = ResonaateDatabase.getSharedInterface(db_path=db_path)
             truth = fetchTruthByJDEpoch(
                 database, self.target_id, obs_tuples[0].observation.julian_date
