@@ -60,7 +60,7 @@ class EventStack:
         popped_event = KeyValueStore.popValue(cls.EVENT_STACK_LOCATION, 0)
         event_buckets = defaultdict(list)
         while popped_event:
-            event_record = EventRecord.fromSerial(popped_event.decode())
+            event_record = EventRecord.fromSerial(popped_event)
             event_buckets[event_record.event_type].append(event_record.performer)
 
             popped_event = KeyValueStore.popValue(cls.EVENT_STACK_LOCATION, 0)

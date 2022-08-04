@@ -85,7 +85,7 @@ def propagateScenario(
     app.propagateTo(target_julian_date)
 
     assert isclose(app.clock.julian_date_epoch, target_julian_date)
-    app.shutdown(flushall=True)
+    app.shutdown()
 
 
 @pytest.mark.scenario()

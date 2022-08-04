@@ -190,7 +190,7 @@ else:
     scenario.logger.info("Simulation complete")
 finally:
     # Gracefully shutdown the simulation
-    scenario.shutdown(flushall=True)
+    scenario.shutdown()
 ```
 
 The simulation will log information to `stdout`, unless otherwise specified, and it should look similar to the CLI example above.

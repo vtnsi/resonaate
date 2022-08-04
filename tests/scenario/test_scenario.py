@@ -74,7 +74,7 @@ def propagateScenario(
 
     assert app.clock.julian_date_epoch == target_julian_date
 
-    app.shutdown(flushall=True)
+    app.shutdown()
 
     return app
 

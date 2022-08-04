@@ -71,7 +71,7 @@ def runResonaate(
         app.logger.info("Simulation complete")
     finally:
         # Gracefully shutdown the simulation
-        app.shutdown(flushall=True)
+        app.shutdown()
 
 
 def main() -> None:

@@ -183,7 +183,7 @@ else:
     scenario.logger.info("Simulation complete")
 finally:
     # Gracefully shutdown the simulation
-    scenario.shutdown(flushall=True)
+    scenario.shutdown()
 ```
 
 ## Contributing
