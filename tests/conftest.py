@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
+from mjolnir import KeyValueStore
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
-from resonaate.parallel import getRedisConnection, isMaster, resetMaster
 from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
@@ -25,7 +25,6 @@ from resonaate.scenario.config.perturbations_config import PerturbationsConfig
 if TYPE_CHECKING:
     # RESONAATE Imports
     from resonaate.common.logger import Logger
-    from resonaate.parallel import Redis
     from resonaate.physics.time.stardate import JulianDate
 
 FIXTURE_DATA_DIR = Path(__file__).parent / "datafiles"
@@ -66,16 +65,11 @@ def getTestLoggerObject() -> Logger:
     return logger
 
 
-@pytest.fixture(name="redis")
-def getRedisInstance() -> Redis:
-    """Setup and destroy an instance of Redis key-value store."""
-    redis_conn = getRedisConnection()
-    isMaster()
-    yield redis_conn
-    resetMaster()
-    if redis_conn:
-        redis_conn.flushall()
-        redis_conn.close()
+@pytest.fixture(name="teardown_kvs")
+def teardownKeyValueStore():
+    """Make sure that :class:`.KeyValueStore.Server` is shut down after each test that uses it."""
+    yield
+    KeyValueStore.stopServerProcess()
 
 
 @pytest.fixture(name="reset_shared_db")
