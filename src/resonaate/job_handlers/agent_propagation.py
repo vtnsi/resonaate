@@ -1,4 +1,6 @@
 """:class:`.Job` handler classes that manage agent propagation logic."""
+from __future__ import annotations
+
 # Standard Library Imports
 import json
 import os.path
@@ -38,7 +40,7 @@ if TYPE_CHECKING:
 
 
 def asyncPropagate(
-    dynamics: Dynamics,
+    dynamics,  #: Dynamics,
     init_time: ScenarioTime,
     final_time: ScenarioTime,
     initial_state: ndarray,

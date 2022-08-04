@@ -1,4 +1,6 @@
 """:class:`.Job` handler class that manage task prediction logic."""
+from __future__ import annotations
+
 # Standard Library Imports
 from pickle import loads
 from typing import TYPE_CHECKING

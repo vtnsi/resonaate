@@ -34,7 +34,7 @@ from resonaate.scenario.config.estimation_config import InitialOrbitDeterminatio
 from resonaate.sensors.sensor_base import Sensor
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
+from .conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 
 
 @pytest.fixture(name="worker_manager")

@@ -1,7 +1,7 @@
 """:class:`.Job` handler class that manage task execution logic."""
 # Standard Library Imports
 from pickle import loads
-from typing import TYPE_CHECKING, List
+from typing import List
 
 # Third Party Imports
 from mjolnir import Job, KeyValueStore
