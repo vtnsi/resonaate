@@ -8,10 +8,10 @@ import datetime
 from pickle import dumps, loads
 
 # Third Party Imports
+from mjolnir import KeyValueStore
 from numpy import asarray, cos, dot, fmod, matmul, sin
 
 # Local Imports
-from ...parallel import getRedisConnection
 from .. import constants as const
 from ..math import rot1, rot2, rot3
 from ..time.conversions import JulianDate, dayOfYear, greenwichApparentTime, utc2TerrestrialTime
@@ -45,7 +45,7 @@ def updateReductionParameters(julian_date, eops=None):
 
     """
     params = _updateFK5Parameters(julian_date, eops=eops)
-    getRedisConnection().set(
+    KeyValueStore.setValue(
         REDUCTION_REDIS_KEY, dumps(dict(zip(REDUCTION_PARAMETER_LABELS, params)))
     )
 
@@ -60,7 +60,7 @@ def getReductionParameters():
         ValueError: If :meth:`.updateReductionParameters()` hasn't been previously called to set
             the reduction parameters.
     """
-    serial_obj = getRedisConnection().get(REDUCTION_REDIS_KEY)
+    serial_obj = KeyValueStore.getValue(REDUCTION_REDIS_KEY)
 
     if serial_obj is None:
         raise ValueError("Reduction parameters have not been updated.")
