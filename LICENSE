@@ -6,22 +6,16 @@ ______________________________________________________________________
 
 <!-- START TOC -->
 
+<!-- TOC Formatted for GitLab -->
+
 **Table of Contents**
 
-- [License Information](#license-information)
-  - [RESONAATE License](#resonaate-license)
-  - [Dependency Licenses](#dependency-licenses)
-    - [SciPy License](#scipy-license)
-    - [NumPy License](#numpy-license)
-    - [Concurrent Log Handler License](#concurrent-log-handler-license)
-    - [SQLAlchemy License](#sqlalchemy-license)
-    - [Matplotlib License](#matplotlib-license)
-    - [Redis license](#redis-license)
-    - [redis-py license](#redis-py-license)
+[[_TOC_]]
+
+<!-- END TOC -->
 
 ______________________________________________________________________
 
-<!-- END TOC -->
 
 ## RESONAATE License
 

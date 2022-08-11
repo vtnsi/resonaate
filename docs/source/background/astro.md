@@ -1,4 +1,4 @@
-# Astrodynamics Overview
+# Astrodynamics
 
 Placeholder documentation for astrodynamics explanations.
 

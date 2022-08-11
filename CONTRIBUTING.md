@@ -23,25 +23,17 @@ You will find much more thorough explanation of all topics there.
 
 ______________________________________________________________________
 
-<!-- Start TOC -->
+<!-- START TOC -->
+
+<!-- TOC Formatted for GitLab -->
 
 **Table of Contents**
 
-- [Contributing Guide](#contributing-guide)
-  - [General Information](#general-information)
-    - [Why?](#why)
-  - [Your First Contribution](#your-first-contribution)
-  - [Developer Tools](#developer-tools)
-    - [Source Control](#source-control)
-    - [VS Code Extensions](#vs-code-extensions)
-  - [Documentation](#documentation)
-  - [Code Style](#code-style)
-  - [Testing](#testing)
-  - [Communications](#communications)
-
-______________________________________________________________________
+\[\[_TOC_\]\]
 
 <!-- END TOC -->
+
+______________________________________________________________________
 
 ## General Information
 

@@ -8,12 +8,15 @@ Please see [Building the Documentation](#building-the-documentation) for instruc
 
 ______________________________________________________________________
 
+<!-- START TOC -->
+
+<!-- TOC Formatted for GitLab -->
+
 **Table of Contents**
 
-- [Generating Documentation](#generating-documentation)
-  - [Documentation Style](#documentation-style)
-  - [Building The Documentation](#building-the-documentation)
-  - [Files & Directories](#files--directories)
+\[\[_TOC_\]\]
+
+<!-- END TOC -->
 
 ______________________________________________________________________
 
@@ -109,11 +112,10 @@ Users can see what other targets are available by using `make help`, but other t
 - [x] Make docstrings reference technical background when applicable.
 - [x] Make documentation README better with more instructions, explanation of features.
 - [ ] Make initial tutorial going over minimal config, running example, plotting data (See Issue #147)
-- [ ] Add docstrings for all packages so summaries have text (See Issue #6)
+- [x] Add docstrings for all packages so summaries have text (See Issue #6)
 - [ ] Make examples that are more targeted towards stuff like MMAE, MC, Tasking (See Issue #146)
 - [ ] Add technical background for astro, estimation, ... (See Issue #145)
 - [ ] Make RESONAATE icon and favicon (See Isse #148)
-- [ ] Add version switching to docs with GitLab Pages (See Issue #143)
 
 [autosummary]: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
 [commonmark]: https://commonmark.org/help/
