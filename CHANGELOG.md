@@ -59,6 +59,7 @@ ______________________________________________________________________
 - `initial_orbit_determination` config option for setting IOD, defaults to NO_SETTING (see !1)
 - `lambertBattin()` orbit determination method (see !1)
 - docs `make serve` target for serving the HTML documentation (see #57)
+- README in `tests` and `.gitlab` folders
 
 ### Changed
 
