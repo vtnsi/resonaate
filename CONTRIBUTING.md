@@ -1,7 +1,25 @@
 # Contributing Guide
 
-When contributing to this repository, please first discuss the change you wish to make via issue,
-email, or any other method with the owners of this repository before making a change.
+Thank you for considering contributing to RESONAATE!
+Having contributors like you is what makes this project so awesome.
+Here are few ways you can contribute to the project:
+
+- Make new tutorials & examples
+- Write technical explanations for the documentation
+- Improve the source code docstrings
+- Submit bug reports & feature requests
+- Review merge requests
+- Discuss the current status of the package
+- Add unit tests for uncovered modules
+- Contribute source code
+
+All contributors are expected to be respectful of each other and welcoming to all newcomers.
+Please see the Virginia Tech [Student Code of Conduct](https://codeofconduct.vt.edu) for more official guidelines.
+
+Finally, this contributing guide is meant to serve as a brief overview of the most common topics.
+There are more detailed guides in the official HTML documentation that are referenced here which provide much more context.
+Please read over this page first, then follow the instructions under [Documentation](#documentation) to build and view the official HTML documentation.
+You will find much more thorough explanation of all topics there.
 
 ______________________________________________________________________
 
@@ -11,13 +29,15 @@ ______________________________________________________________________
 
 - [Contributing Guide](#contributing-guide)
   - [General Information](#general-information)
-    - [New Developers](#new-developers)
-    - [Merge Request Process](#merge-request-process)
-    - [Git Workflow](#git-workflow)
+    - [Why?](#why)
+  - [Your First Contribution](#your-first-contribution)
   - [Developer Tools](#developer-tools)
+    - [Source Control](#source-control)
     - [VS Code Extensions](#vs-code-extensions)
-    - [Code Styling](#code-styling)
-    - [Testing](#testing)
+  - [Documentation](#documentation)
+  - [Code Style](#code-style)
+  - [Testing](#testing)
+  - [Communications](#communications)
 
 ______________________________________________________________________
 
@@ -25,62 +45,73 @@ ______________________________________________________________________
 
 ## General Information
 
-In general, developers should attempt to create unit tests for all new code added to ensure proper coverage.
-Also, users should review their use of `print()` and `log.debug()` statements when merging completed code into main branches.
+In general, we ask contributors to abide by software best practices as much as possible.
+We try to reduce the cognitive overhead of this by automating as much as we can and laying out well-defined processes along with the requisite documentation.
 
-Please review the Sphinx-flavored [reST][sphinx-rest] and [napoleon] documentation before contributing code.
-Properly documenting your functions and classes is critical to allowing other users to understand how to use them, and adhering to the established style/rules of the RESONAATE documentation is necessary to provide a consistent documentation reading experience.
-Also, documenting your own code will force you to review it before passing it on to others to review.
+We ask new developers to be curious about improving their software skills, and they will be rewarded with a great experience.
+A few very important topics for new developers to learn are:
 
-### New Developers
+- software testing practices
+- source control
+- documentation
+- style & formatting
 
-Any new developers should first familiarize themselves with using RESONAATE.
-To do this, follow the README instructions to install the tool, and run some short simulations making changes to configuration files to see how behavior is changed.
-Once semi-familiar with using the tool, creating the `sphinx` documentation will be helpful for understanding how to use the different parts of the API.
+Don't worry if you aren't familiar with any of these... they aren't prerequisites, but things to learn over time!
 
-Finally, scan the [issue list][issue-list] and see if there are any interesting bugs or features.
-If an issue peaks your interest, read it over and ask a maintainer about tackling the issue.
-They should be able to provide more information on if it's a good "first issue" and how to get started.
-Open a new branch based on the latest **develop** commit, and start working!
+### Why?
 
-### Merge Request Process
+If you're curious why a software tool for research *aims* to follow "professional" processes and management, please refer to the excellent paper by Software Carpentry on [Best Practices in Scientific Computing](https://arxiv.org/abs/1210.0530) and [The Good Research Code Handbook](https://goodresearch.dev/index.html).
+The [Scikit HEP](https://scikit-hep.org/developer) is a great example of well-maintained, professional software used in cutting-edge research.
 
-- Use the provided merge request templates
-- Properly format the code using the established linting procedures
-- Ensure any install or build dependencies are removed before the end of the layer when doing a
-  build.
-- Update the README.md with details of changes to the interface, this includes new environment
-  variables, exposed ports, useful file locations and container parameters.
-- Update CHANGELOG.md with in-depth developer log notes
-- Increase the version numbers in any examples files and the README.md to the new version that this
-  Merge Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
-- You may merge the Merge Request in once you have the sign-off of a maintainer or owner, or if you
-  do not have permission to do that, you may request the reviewer to merge it for you.
+## Your First Contribution
 
-### Git Workflow
+If you are new to RESONAATE, checkout the [Issue Tracker][issue-list] for any ["Good First Issue"][newcomer issues] labels... these are specifically flagged as issues that are easier to start your RESONAATE development experience.
+Please feel free to ask questions from any of the listed contributors; everyone was a beginner at some point!
 
-- New features and bug-fixes are completed in a separate branch, based off the `develop` branch
-  - Make sure to do the following before creating the new branch: `git pull origin develop`
-  - Use a descriptive name starting with either the `feature/` or `bugfix/` prefix.
-  - Include the number of the issue it addresses before a descriptive name
-  - `bugfix/10-hanging-process` or `feature/54-add-node-dynamics` are good examples (address issues 10 & 54, resp.)
-  - Ensures easy tracking of issues and new features
-- Once the feature is initially finished, it can be reviewed
-  - Open a merge request into `develop` for the branch
-  - Assign a reviewer to check your work, a code review may be requested
-  - This ensures `develop` is stable enough for "continuous development"
-- Once `develop` is deemed stable enough, it can become a release candidate
-  - Open a merge request into `main` for the release candidate
-  - This ensures `main` remains "production-ready" as much as possible
+The full documentation has a thorough explanation of the developer workflow, so make sure to [build the docs](#documentation) and read through them!
+As a quick overview, the general process for working on an issue is:
+
+1. Install the [Developer Tools](#developer-tools)
+1. Clone the repository & checkout the **develop** branch
+1. Create a new branch to track the issue (typically a **feat/** or **bug/**)
+1. Code away, making sure to `git commit` *often*
+1. Push the code back to GitLab
+1. Open a [Merge Request][new merge request] following instructions in the [Template][merge request template]
+1. Let others review your code
+
+New contributors are also welcome to create issues for reporting bugs or requesting enhancements.
+Please make sure to first search [All Open & Closed Issues][all issues] for similar or duplicate issues.
+Then you can create an [Issue][new issue] following instructions in the provided [Template][issue template].
 
 ## Developer Tools
 
 To install all development dependencies:
 
-```shell
+```bash
 pip install -e .[dev,test,doc]
 pre-commit install
 ```
+
+**NOTE**:
+If you use `zsh`, you may need to use the following command instead:
+
+```zsh
+pip install -e ".[dev,test,doc]"
+```
+
+If you want more explanation, please follow the instructions under [Documentation](#documentation) to build and serve the documentation.
+The full documentation includes more specific details on development best practices.
+
+Also, if you need help setting up the rest of your developer environment, checkout the [Developer Quickstart Guide][dev-quickstart].
+This has a lot more detail on more general set up procedures, primarily focused at using WSL 2 on Windows with VS Code.
+
+### Source Control
+
+We use `git` extensively to properly manage many concurrent branches in activate development.
+The developer documentation does include details on how to use `git` in common workflows, but does not go into great detail or provide an in-depth tutorial.
+There are a myriad of resources on the internet for learning `git`, including a good [list maintained by `numpy`](https://numpy.org/devdocs/dev/gitwash/git_resources.html#git-resources) and a [tutorial by Software Carpentry](https://swcarpentry.github.io/git-novice/index.html).
+We defer to those resources which do a much better job of properly introducing `git`.
+Of course, all team members are happy to directly answer any questions you have!
 
 ### VS Code Extensions
 
@@ -95,83 +126,110 @@ The following VS Code extensions are highly recommended; they can be easily inst
 1. [njpwerner.autodocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring)
 1. [bungcip.better-toml](https://marketplace.visualstudio.com/items?itemName=bungcip.better-toml)
 
-### Code Styling
+## Documentation
+
+- Follow [Developer Tools](#developer-tools) for how to install the required tools to build the documentation.
+
+- Navigate into the `docs/` directory
+
+  ```bash
+  cd docs
+  ```
+
+- Build the documentation
+
+  ```bash
+  make clean; make html
+  ```
+
+- Serve the documentation
+
+  ```bash
+  make serve
+  ```
+
+- Open [http://localhost:8000/](http://localhost:8000/) in a browser
+
+## Code Style
 
 Please lint your features before merging into develop, so the codebase can remain clean, concise, and consistent.
 
-Run the following command to install the proper tools for linting:
-
-```shell
-pip install -e .[dev]
-pre-commit install
-```
-
 To execute linting checks please run both of the following commands:
 
-```shell
+```bash
 pylint *.py tests src/resonaate docs
 ```
 
 `pylint` is pretty slow for checking every file, so this only checks dirty **.py** files:
 
-```shell
+```bash
 pylint `git diff --name-only --diff-filter=d | grep -E '\.py$' | tr '\n' ' '`
 ```
 
 `flake8` is another linter that covers different checks:
 
-```shell
+```bash
 flake8 .
 ```
 
-### Testing
+To run `pre-commit` against the entire repo:
+
+```bash
+pre-commit run --all-files
+```
+
+## Testing
 
 Running unit tests is required before merging into protected branches.
-
-Install `pytest` and our required plugins by executing
-
-```shell
-pip install -e .[test]
-```
 
 The `pytest` package has _excellent_ [documentation][pytest-docs], so please refer to their [Getting Started][pytest-tutorial] page first.
 There is also a helpful tutorial on `pytest` located [here][pytest-realpython].
 
 Running the full test suite is easy:
 
-```shell
+```bash
 redis-server &
 pytest
 ```
 
 This does take a decent amount of time because it includes integration tests. To run a quicker, but still large percentage of tests run the following command:
 
-```shell
-pytest -xm "not (event or scenario)"
+```bash
+pytest -m "not (event or scenario)"
 ```
 
 This runs only the unit tests which are much faster to run.
 
-To determine coverage statistics:
+## Communications
 
-```shell
-coverage run -m pytest -m "not (event or scenario)"
-coverage combine
-coverage report
-coverage html
-```
+The RESONAATE group uses a few different methods of communication: GitLab, Microsoft Teams, Google Group (email).
+Please contact a core developer to be added to the proper communication channels.
+Here is a brief description of each channel, and the most appropriate communication types:
 
-Also, refer to the example test module (`tests/example.py`) for how to write and format proper test cases.
-To see how the tests behave, run the following:
+- GitLab
+  - Long-form topics, discussions, & issues related to project development
+  - Project-specific context
+  - Document bugs & request features
+  - Ask for help debugging & request a code review
+  - Collaborate on a paper
+- Microsoft Teams
+  - Shorter-form topics & discussions
+  - Thread-specific context
+  - Used for meetings, announcements, coding questions
+  - Store documents that are commonly passed around
+- Google Group (email)
+  - Official or important emails
+  - The most direct way to get everyone's attention
 
-```shell
-pytest -vvs tests/example.py
-```
 
-
+[all issues]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues?scope=all&state=all
+[dev-quickstart]: https://code.vt.edu/space-research/developer-quickstart
+[issue template]: https://code.vt.edu/space-research/resonaate/resonaate/-/blob/feature/auto-release/.gitlab/issue_templates/Default.md
 [issue-list]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues
-[napoleon]: https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
+[merge request template]: https://code.vt.edu/space-research/resonaate/resonaate/-/blob/feature/auto-release/.gitlab/merge_request_templates/Default.md
+[new issue]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues/new
+[new merge request]: https://code.vt.edu/space-research/resonaate/resonaate/-/merge_requests/new
+[newcomer issues]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues?scope=all&state=opened&label_name%5B%5D=Good%20First%20Issue
 [pytest-docs]: https://docs.pytest.org/en/latest/
 [pytest-realpython]: https://realpython.com/pytest-python-testing/
 [pytest-tutorial]: https://docs.pytest.org/en/latest/getting-started.html#getstarted
-[sphinx-rest]: https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html
