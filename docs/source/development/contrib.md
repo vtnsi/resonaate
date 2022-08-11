@@ -1,5 +1,8 @@
+# Getting Started
+
 ```{include} ../../../CONTRIBUTING.md
 ---
+start-after: '# Contributing Guide'
 end-before: <!-- START TOC -->
 ---
 ```

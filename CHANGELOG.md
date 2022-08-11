@@ -50,6 +50,7 @@ ______________________________________________________________________
 - `lambertBattin()` orbit determination method (see !1)
 - docs `make serve` target for serving the HTML documentation (see #57)
 - README in `tests` and `.gitlab` folders
+- Documentation on the CI system, developer workflows, GitLab labels, style guide & release procedure (see #58 and #59)
 
 ### Changed
 

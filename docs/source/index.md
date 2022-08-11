@@ -45,7 +45,7 @@ An overview of the motivation, design, framework, and terminology is provided be
 The sidebar on the left has more pages organized into targeted sets of information.
 See {ref}`main-index-site` for a description of these sections.
 
-View the [source code](https://code.vt.edu/space-research/resonaate/resonaate), [issue tracker](https://code.vt.edu/space-research/resonaate/resonaate/-/issues), and [wiki](https://code.vt.edu/space-research/resonaate/resonaate/-/wikis/home), hosted on GitLab.
+View the [source code](https://code.vt.edu/space-research/resonaate/resonaate) and [issue tracker](https://code.vt.edu/space-research/resonaate/resonaate/-/issues) hosted on GitLab.
 
 ______________________________________________________________________
 
@@ -144,6 +144,23 @@ gen/examples/index
 
 ```
 
+% User Guide TOC
+
+(main-index-tech)=
+
+```{toctree}
+---
+maxdepth: 1
+caption: User Guide
+name: home_background_toc
+includehidden:
+---
+background/astro
+background/estimation
+background/noise
+background/tasking
+```
+
 % Reference Material TOC
 
 (main-index-ref)=
@@ -161,23 +178,6 @@ reference/api
 
 ```
 
-% Technical Explanation TOC
-
-(main-index-tech)=
-
-```{toctree}
----
-maxdepth: 1
-caption: Technical Explanations
-name: home_background_toc
-includehidden:
----
-background/astro
-background/estimation
-background/noise
-background/tasking
-```
-
 % Developer Info TOC
 
 (main-index-dev)=
@@ -189,9 +189,14 @@ caption: For Developers
 name: home_dev_toc
 includehidden:
 ---
-Getting Started <development/contributing>
-Building the Documentation <development/doc_readme>
-CI/CD <development/gitlab_ci>
+Getting Started <development/contrib>
+Workflow <development/workflow>
+Style Guide <development/style>
+Testing <development/test>
+Documentation <development/docs>
+Labels <development/labels>
+Releases <development/releases>
+CI/CD <development/ci>
 Docker <development/containers>
 ```
 

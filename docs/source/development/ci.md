@@ -65,7 +65,7 @@ If the runner is configured to handle it, jobs in the same stage are typically r
 
 A *runner* is the computer/server that executes jobs defined by a pipeline.
 The runner is connected to the GitLab API over the internet, sending & receiving jobs & data.
-Often, runners are provided by GitLab themselves, but the self-hosted VT GitLab instance (https://code.vt.edu) doesn't have instance-wide runners to use.
+Often, runners are provided by GitLab themselves, but the self-hosted VT GitLab instance (<https://code.vt.edu>) doesn't have instance-wide runners to use.
 Therefore, we have procured our own server to be a runner, and this is the computer which executes all pipelines for the `resonaate` project.
 
 ### Tools
@@ -517,7 +517,7 @@ Here is a compiled list of external resources for those wishing to learn more ab
 - [GitLab Quality CI] for inspiration on a general "rules" file and overall organization\`
 - [GitLab containers with `buildah`] for the self-explanatory
 - [GitLab CI Templates] for grabbing SAST & Secret Detection tools. There are also a bunch of other good resources
-- [Contributing Guide](./contributing.md) for overall description of developer tools used in these jobs
+- [Contributing Guide](./contrib.md) for overall description of developer tools used in these jobs
 - [GitLab Workflow]: is a VS Code extension that uses the GitLab API to allow for interaction with GitLab directly through VS Code
 - [GitLab CI Editor]: is a tool that lets you alter the CI rules and lint the config file
 - [GitLab CI Variables]: lists all the predefined GitLab CI variables that are accessible during jobs
