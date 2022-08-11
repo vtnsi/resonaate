@@ -103,6 +103,8 @@ ______________________________________________________________________
 
 ### Development
 
+- Updated merge request & issue templates with better instructions/auto-labels (see #58)
+
 ### CI
 
 - Automated release job for creating release notes and publishing a release on GitLab (see #24)
