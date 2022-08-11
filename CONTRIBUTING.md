@@ -18,14 +18,6 @@ ______________________________________________________________________
     - [VS Code Extensions](#vs-code-extensions)
     - [Code Styling](#code-styling)
     - [Testing](#testing)
-    - [Docker Images](#docker-images)
-  - [GitLab CI/CD](#gitlab-cicd)
-    - [Check Stage](#check-stage)
-    - [Test Stage](#test-stage)
-    - [Build Stage](#build-stage)
-    - [Deploy Stage](#deploy-stage)
-    - [Release Stage](#release-stage)
-    - [Other](#other)
 
 ______________________________________________________________________
 
@@ -176,93 +168,6 @@ To see how the tests behave, run the following:
 pytest -vvs tests/example.py
 ```
 
-**NOTE** Using `ResonaateDatabase::getSharedInterface()` or `ImporterDatabase::getSharedInterface()` is _usually_ a bad idea when writing a unit test unless the test **requires** it be called first.
-If this is the case, please call `ResonaateDatabase::resetData()` or `ImporterDatabase::resetData()` with the appropriate tables to drop.
-
-### Docker Images
-
-Once the **resonaate** submodule is updated & tested, and once the repository is updated to accommodate any changes to **resonaate**, developers should rebuild, tag, save, and upload the new image to the GitLab registry.
-
-1. Rebuild the Docker images:
-   ```shell
-   docker-compose -f docker-compose.yml build
-   ```
-1. Generate a personal access token with `write_package_registry` permissions from [GitLab](https://code.vt.edu/-/profile/personal_access_tokens)
-1. Login into the container registry:
-   ```shell
-    docker login code.vt.edu:5005
-   ```
-   - Use your GitLab username, and the personal access token as your password
-1. Next, tag the image(s) using the proper registry hostname & port (from above):
-   ```shell
-   docker tag <image_id> code.vt.edu:5005/space-research/resonaate/resonaate/<image_name>:<tag>
-   ```
-   - Be sure to replace `<image_id>`, `<image_name>`, and `<image_tag>` accordingly
-1. Now that the image is properly tagged, you can simply push it to the registry:
-   ```shell
-   docker push code.vt.edu:5005/space-research/resonaate/resonaate/<image_name>:<tag>
-   ```
-1. Finally, logout of the registry:
-   ```shell
-   docker logout code.vt.edu:5005
-   ```
-
-## GitLab CI/CD
-
-The continuous integration/deployment configuration is located in **.gitlab/.gitlab-ci.yml**.
-This is the main CI config file, and it includes other CI config files from **.gitlab/ci/**.
-The CI configs are split across multiple files to make it easier to understand the different stages.
-The pipeline is run for all updates to Merge Requests or direct pushes to the **develop** & **main** branches.
-
-The **.gitlab/ci/common.gitlab-ci.yml** file defines the workflow, default configs, environment variables, stages, & aliases used by many job definitions.
-All jobs will inherit these attributes unless explicitly refusing it or overwriting the configuration values.
-
-### Check Stage
-
-Jobs in the check stage define pre-test checks to enforce code styling and ensure that the documentation builds.
-
-- **flake8** runs a full `flake8` linter check and outputs results to a job artifact
-- **pylint** runs a full `pylint` linter check and outputs results to a job artifact
-- **sphinx** builds the full documentation and uploads it to a job artifact
-- **manifest** verifies that the **Manifest.in** file properly includes tracked files, so that source distributions work properly
-
-The check stage jobs are always run during a pipeline.
-
-### Test Stage
-
-Jobs in the test stage define run test suites against the source code.
-
-- **pytest:\*** jobs run various portions of the test suite. These are split into separate chunks and run in parallel for faster pipelines. The jobs upload coverage data & unit test reports as job artifacts
-- **coverage-report** collects data from the test suite jobs and calculates the coverage statistics, uploading the combined coverage data as a job artifact
-
-The test stage jobs are always run during a pipeline.
-
-### Build Stage
-
-The build stage defines tasks that build the source code package distributions.
-
-- **build** creates source (`sdist`) and binary (`whl`) distribution packages and uploads them as job artifacts. This job relies on **manifest** successfully succeeding.
-
-### Deploy Stage
-
-The deploy stage uploads package distributions & containers to the GitLab package & container registries as well as any deployments to specific environments.
-
-- **pages** deploys built documentation to the correct path for GitLab Pages SSG. This doesn't work and needs a new option. This job relies on **sphinx** succeeding.
-- **publish** uploads package distributions to the GitLab registry. It is only run when releases are merged into the **main** branch, and it relies on the **build** job succeeding.
-
-### Release Stage
-
-The release stage performs required actions for properly releasing a new version of the source code.
-Currently, there are no jobs, but this will change soon.
-Jobs to perform are bumping version numbers automatically, creating release notes, tagging the release.
-These may need to come before or after **deploy** stage jobs.
-
-### Other
-
-These are the other CI jobs/pipelines included under **.gitlab/ci/** which configure external tools or use external templates.
-
-- **dependabot.gitlab-ci.yml** for running scheduled jobs to perform automated dependency updating. See "CI/CD" -> "Schedules" -> "RESONAATE - Nightly" for details on when it's run
-- **security.gitlab-ci.yml** includes GitLab SAST & Secret Detection templates for automated security scanning of the repository.
 
 [issue-list]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues
 [napoleon]: https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html

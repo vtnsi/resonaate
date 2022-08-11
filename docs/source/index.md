@@ -189,9 +189,10 @@ caption: For Developers
 name: home_dev_toc
 includehidden:
 ---
-development/contributing
-development/doc_readme
-development/containers
+Getting Started <development/contributing>
+Building the Documentation <development/doc_readme>
+CI/CD <development/gitlab_ci>
+Docker <development/containers>
 ```
 
 % Meta Information TOC

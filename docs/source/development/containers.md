@@ -2,6 +2,9 @@
 
 These are instructions for loading RESONAATE Docker images, creating the containers, and running them via `docker-compose`.
 
+```{warning} This documentation is not currently kept up-to-date because we don't officially support a working Docker configuration. User beware!
+```
+
 ______________________________________________________________________
 
 <!-- TOC formatted for sphinx -->
