@@ -16,59 +16,83 @@ local:
 
 ______________________________________________________________________
 
-## Pre-requisites
+## Prerequisites
 
-RESONAATE requires a few pre-requisites to be installed directly on a system.
+RESONAATE requires a few prerequisites to be installed directly on a system.
 The operating system must be Linux-based.
 The minimum OS versions officially supported:
 
 - CentOS 7+, or equivalent RHEL
 - Debian 9+
 - Fedora 25+
-- Ubuntu 16.04+
+- Ubuntu 20.04+
 
-RESONAATE The following items to be present on a system:
+RESONAATE requires the following items to be present on a system:
 
-- Python >= 3.7.9
+- Python >= 3.7
+- Redis >= 5.0.10
+
+(install-redis)=
+
+### Installing Redis
+
+#### Install Redis with a Package Manager
+
+Unless there is good reason, please install Redis according to the instructions for your operating system described in the [Redis Install][redis install main] page.
+This page has easy to follow instructions for the most common operating systems, and it will also install in such a way that you can easily upgrade the Redis version via your package manager.
+
+#### Install Redis from Source
+
+If you have a specific need, or can't use a package manager, you can also install Redis from [source][redis source install].
+The following tools are required in order to install Redis:
+
 - A GCC Compiler
 - `make`
 - `libc`/`glibc`
 
-## Redis
+If using an Ubuntu distribution of Linux, you can ensure these requirements are installed with:
 
-The exact release of Redis can be downloaded from https://download.redis.io/releases/.
+```bash
+sudo apt install build-essential
+```
+
+```{note}
+This installs **much more** than the minimum requirements, but will guarantee those are met.
+```
+
+The exact release of Redis can be downloaded from <https://download.redis.io/releases/>.
 Once downloaded (or provided already), it's simple to build Redis.
 
 1. Extract Redis source, replacing `<version>` as necessary:
-   ```shell
+   ```bash
    tar xzf redis-<version>.tar.gz
    ```
 1. Change directory into extracted Redis source directory:
-   ```shell
+   ```bash
    cd redis-<version>
    ```
-1. Compile the Redis tool using `make`:
-   ```shell
+1. Compile the Redis tool using `make` (`-j` allows for a parallel build):
+   ```bash
    make -j
    ```
 1. Test Redis build:
-   ```shell
+   ```bash
    make test
    ```
-1. (Optional) Install Redis binaries in path:
-   ```shell
+1. (Optional) Install Redis binaries in your path:
+   ```bash
    sudo make install
    ```
 
 If you installed Redis correctly, you should be able to run:
 
-```shell
+```bash
 src/redis-server
 ```
 
 You can interact with Redis using the built-in client:
 
-```shell
+```bash
 src/redis-cli
 redis> set foo bar
 OK
@@ -76,11 +100,11 @@ redis> get foo
 "bar"
 ```
 
-## RESONAATE Dependencies
+### RESONAATE Dependencies
 
 To install RESONAATE package, the following dependencies must be installed first:
 
-```shell
+```bash
 async-timeout==4.0.2
 concurrent-log-handler==0.9.20
 cycler==0.11.0
@@ -105,19 +129,9 @@ wrapt==1.14.0
 zipp==3.8.0
 ```
 
-### From PyPI
-
-To install dependencies from PYPI, execute:
-
-```shell
-python3 -m pip install -r requirements.txt
-```
-
-### From Directory of Packages
-
 If provided with an actual directory of the required packages (usually called **deps-vX.Y.Z**), users can install without accessing PyPI:
 
-```shell
+```bash
 python3 -m pip install --no-index --find-links=rel/path/to/deps-vX.Y.Z/ -r requirements.txt
 ```
 
@@ -125,6 +139,9 @@ python3 -m pip install --no-index --find-links=rel/path/to/deps-vX.Y.Z/ -r requi
 
 Once the dependencies are installed, navigate into the RESONAATE source code directory, and execute:
 
-```shell
+```bash
 python3 -m pip install -e .
 ```
+
+[redis install main]: https://redis.io/docs/getting-started/installation/
+[redis source install]: https://redis.io/docs/getting-started/installation/install-redis-from-source/

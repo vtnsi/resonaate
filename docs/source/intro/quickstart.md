@@ -24,6 +24,7 @@ ______________________________________________________________________
 ## Prerequisite: Redis Server
 
 A prerequisite to using the {command}`resonaate` command to start simulations is to start a Redis server which handles distributing tasks to different CPU cores.
+To install Redis, please refer to {ref}`install-redis`.
 To start Redis server running in the background, execute:
 
 ```bash
@@ -52,7 +53,7 @@ resonaate <init_file> -t <number_of_hours>
 ```
 
 Replace `<init_file>` with the location of a main scenario configuration file.
-There are example scenario configuration files in the **resonaate/configs/json** directory.
+There are example scenario configuration files in the `configs/json` directory.
 Replace `<number_of_hours>` with a decimal for the number of hours to simulate during the scenario.
 If this argument is omitted, it will run the full scenario length defined in the configuration file.
 
@@ -82,7 +83,7 @@ Database Files:
                         Path to Importer database
 ```
 
-To run a simulation using the **configs/json/main_init.json** config file for an hour of simulated time:
+To run a simulation using the `configs/json/main_init.json` config file for an hour of simulated time:
 
 ```bash
 resonaate configs/json/main_init.json -t1
@@ -217,7 +218,7 @@ Once the script completes, users should stop the Redis server, as mentioned in {
 ## Initialization
 
 The initialization/configuration file structure required to run RESONAATE is described in detail by the {ref}`ref-cfg-top`.
-Currently, example initialization files are located under **resonaate/configs/json**.
+Currently, example initialization files are located under `configs/json`.
 
 The documentation defines the schema required by the different JSON configuration files:
 
@@ -244,6 +245,6 @@ The documentation defines the schema required by the different JSON configuratio
 
 ## Standalone Behavior Configuration
 
-By default, RESONAATE will use the default settings defined in **resonaate/src/resonaate/common/default_behavior.config**.
-To overwrite these settings, please copy the contents of **src/resonaate/common/default_behavior.config** to a new `.config` file to another file to save the default settings.
-Edit by un-commenting and changing the required values.
+By default, RESONAATE will use the default settings defined in `src/resonaate/common/default_behavior.config`.
+To overwrite these settings, please copy the contents of `src/resonaate/common/default_behavior.config` to a new `.config` file to another file to save the default settings.
+Edit by uncommenting and changing the required values.

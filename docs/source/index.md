@@ -206,9 +206,9 @@ caption: Meta Information
 name: home_meta_toc
 includehidden:
 ---
-meta/bibliography
-meta/changelog
-meta/license
+Bibliography <meta/bibliography>
+Changelog <meta/changelog>
+License <meta/license>
 ```
 
 ______________________________________________________________________
@@ -241,11 +241,11 @@ ______________________________________________________________________
 - Project Principal Investigators
   - Dr. Jonathan Black: <jonathan.black@vt.edu>
   - Dr. Kevin Schroeder: <kschro1@vt.edu>
-- Lead Developers
+- Core Developers
   - Dylan Thomas: <dylan.thomas@vt.edu>
   - David Kusterer: <kdavid13@vt.edu>
-- Developers
   - Jon Kadan: <jkadan@vt.edu>
   - Cameron Harris: <camerondh@vt.edu>
+- Contributors
   - Connor Segal: <csegal@vt.edu>
   - Amit Bala: <agbala@vt.edu>
