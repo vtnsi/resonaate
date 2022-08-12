@@ -86,6 +86,7 @@ ______________________________________________________________________
   - Incorrect `Sensor.maximum_range` check, fixes #40 along with other small errors
   - `Decision`, `Reward`, & `Metric` subclasses register themselves with their own class name, directly (see 39!)
   - `TaskingEngine` now auto-sorts the sensors/targets to prevent undefined behavior on insertion/deletion (see !39)
+  - Testing bug (#64) where `ScenarioClock` created a DB and didn't reset the tables
 
 ## \[1.4.0 - 2022-06-06\]
 
