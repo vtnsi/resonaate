@@ -40,6 +40,8 @@ Here are some of the features that RESONAATE has to offer:
 - Configurable and extendible {class}`.ScenarioConfig` class for changing simulation options
 - Parallelization across multiple cores and machines
 - Dynamic event system that can perform various spacecraft maneuvers and more
+- Several {class}`.ManeuverDetection` techniques
+- Adaptive estimation after detected maneuvers either in the form of initial orbit determination (IOD) or multiple model adaptive estimation (MMAE)
 
 An overview of the motivation, design, framework, and terminology is provided below in {ref}`main-index-abstract`.
 The sidebar on the left has more pages organized into targeted sets of information.
@@ -78,7 +80,7 @@ alt: Space Surveillance Network
 The U.S. Space Surveillance Network (SSN)
 ```
 
-The RESONAATE simulation creates a decision making engine that can create a tasking strategy for a diversely populated space object surveillance and identification (SOSI) network.
+The RESONAATE simulation creates a decision-making engine that can create a tasking strategy for a diversely populated space object surveillance and identification (SOSI) network.
 The figure on the right ({numref}`index-main-fig-ssn`) shows a visual representation of the United States Space Surveillance Network (SSN).
 RESONAATE often uses a version of this model, but also provides the flexibility to construct an arbitrary SSN with different sensors.
 The RESONAATE simulation tracks multiple maneuvering and non-maneuvering RSO using the given SSN, and attempts to do so in a responsive, autonomous, and optimal way.
@@ -89,8 +91,11 @@ The POMDP algorithm implements multiple types of metrics to measure the value of
 Examples of these include sensor usage metrics, information theoretic metrics, stability metrics, and behavioral metrics.
 The successful measurements from the tasked sensors are combined using an unscented Kalman filter (UKF) to maintain viable orbit estimates for all targets.
 This process is repeated over sequential time steps for the entire simulation length.
+The filter for each target RSO can include maneuver detection techniques for unplanned maneuvers.
+If a maneuver is detected, the simulation has the ability to dynamically switch to an adaptive estimation technique which can include triggering IOD or initializing an MMAE filter until post-maneuver convergence.
+
 The RESONAATE simulation stores both truth and estimated state information into a SQL database which allows for comparisons of various algorithms across different portions of the RSO tracking problem (e.g. tasking, estimation, or fusion) by directly measuring the global performance.
-It is also easy to perform Monte Carlo studies to determine algorithm sensitivity, or parametric studies to determine trade offs for tunable algorithm parameters.
+It is also easy to perform Monte Carlo studies to determine algorithm sensitivity, or parametric studies to determine trade-offs for tunable algorithm parameters.
 
 (index-main-fig-pomdp)=
 

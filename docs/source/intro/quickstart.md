@@ -86,7 +86,7 @@ Database Files:
 To run a simulation using the `configs/json/main_init.json` config file for an hour of simulated time:
 
 ```bash
-resonaate configs/json/main_init.json -t1
+resonaate configs/json/main_init.json -t 1
 ```
 
 The log output should look something like:

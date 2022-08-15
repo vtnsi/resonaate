@@ -111,12 +111,16 @@ Users can see what other targets are available by using `make help`, but other t
 - [x] Make simple examples for how `TwoBody` works
 - [x] Make docstrings reference technical background when applicable.
 - [x] Make documentation README better with more instructions, explanation of features.
-- [ ] Make initial tutorial going over minimal config, running example, plotting data (See Issue #147)
-- [x] Add docstrings for all packages so summaries have text (See Issue #6)
-- [ ] Make examples that are more targeted towards stuff like MMAE, MC, Tasking (See Issue #146)
-- [ ] Add technical background for astro, estimation, ... (See Issue #145)
-- [ ] Make RESONAATE icon and favicon (See Isse #148)
+- [x] Add docstrings for all packages, so summaries have text
+- [ ] Make initial tutorial going over minimal config, running example, plotting data (See Issue [#54])
+- [ ] Make examples that are more targeted towards stuff like MMAE, MC, Tasking (See Issue [#55])
+- [ ] Add technical background for astro, estimation, ... (See Issue [#56])
+- [ ] Make RESONAATE icon and favicon (See Issue [#53])
 
+[#53]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues/53
+[#54]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues/54
+[#55]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues/55
+[#56]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues/56
 [autosummary]: https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
 [commonmark]: https://commonmark.org/help/
 [divio]: https://documentation.divio.com/introduction/

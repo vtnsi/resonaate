@@ -109,6 +109,8 @@ The `include:` keyword controls this behavior, by telling the GitLab CI system t
 We currently use only the `local` option which simply points to other config files in the same project, but there are options to include external files as well.
 This can be useful for templates and configurations that are already well-defined, such as the [GitLab CI Templates].
 
+<details><summary>Main CI Includes (Click to expand)</summary>
+
 ```{literalinclude} ../../../.gitlab/.gitlab-ci.yml
 ---
 name: ci-include
@@ -119,6 +121,8 @@ start-at: 'include:'
 end-before: =====
 ---
 ```
+
+</details>
 
 (ci-main-default)=
 
@@ -132,6 +136,8 @@ This controls which runner is allowed to execute the job, and is a requirement f
 We only have a single, Linux-based, runner so there isn't a need to distinguish them via job tags (besides the GitLab requirement!).
 However, this could be useful if you had runners dedicated to natively testing/building for a specific operating system or if runners had various levels of resources.
 
+<details><summary>CI Default Settings (Click to expand)</summary>
+
 ```{literalinclude} ../../../.gitlab/.gitlab-ci.yml
 ---
 name: ci-default
@@ -143,6 +149,8 @@ end-before: =====
 ---
 ```
 
+</details>
+
 (ci-main-workflow)=
 
 ### Workflow
@@ -151,6 +159,8 @@ The workflow defines when a pipeline is generated based on specific events.
 The events are checked with logic typically using the predefined [GitLab CI Variables].
 
 The `resonaate` pipeline is run for all updates to Merge Requests, direct pushes to the **default** branch, & pushed tags (for releases).
+
+<details><summary>CI Workflow (Click to expand)</summary>
 
 ```{literalinclude} ../../../.gitlab/.gitlab-ci.yml
 ---
@@ -163,6 +173,8 @@ end-before: =====
 ---
 ```
 
+</details>
+
 (ci-main-stages)=
 
 ### Stages
@@ -172,6 +184,8 @@ The stages are defined (in order) as **Check**, **Test**, **Build**, **Release**
 Please look at the `resonaate` [pipelines] page to see examples of these stages.
 If one defines a job as part of a stage, it will wait until the previous stage completes to begin by default.
 The nominal stage order is shown below in code and in {numref}`fig-mermaid-pipeline`
+
+<details><summary>CI Stages (Click to expand)</summary>
 
 ```{literalinclude} ../../../.gitlab/.gitlab-ci.yml
 ---
@@ -183,6 +197,8 @@ start-at: 'stages:'
 end-before: =====
 ---
 ```
+
+</details>
 
 (fig-mermaid-pipeline)=
 
@@ -253,6 +269,8 @@ These rules are defined in `/.gitlab/ci/rules.gitlab-ci.yml`:
 - `.rules:tag`: runs **only** for pushed tags
 - `.rules:schedule`: runs **only** for **scheduled** pipelines, also it has an optional manual trigger for pushes to Merge Requests
 
+<details><summary>CI Rules Config (Click to expand)</summary>
+
 ```{literalinclude} ../../../.gitlab/ci/rules.gitlab-ci.yml
 ---
 name: ci-rule-jobs
@@ -263,7 +281,11 @@ start-at: .rules:default
 ---
 ```
 
+</details>
+
 These hidden jobs are built with simple logic statements using [GitLab CI Variables].
+
+<details><summary>CI Rule Conditions (Click to expand)</summary>
 
 ```{literalinclude} ../../../.gitlab/ci/rules.gitlab-ci.yml
 ---
@@ -276,6 +298,8 @@ end-before: =====
 ---
 ```
 
+</details>
+
 (ci-common-jobs)=
 
 ### Jobs
@@ -283,6 +307,8 @@ end-before: =====
 Besides the rules, there are many jobs which share other properties because they all use `python`-based Docker images as the job base.
 To ensure commonality, reduce duplication, and improve reproducibility a set of common "base" `python` jobs are defined in `/.gitlab/ci/base.gitlab-ci.yml`.
 Each of the common job bases extends the `.python-base` job which defines properties to control the `pip` cache directory & when it's invalidated.
+
+<details><summary>Common CI Job Config (Click to expand)</summary>
 
 ```{literalinclude} ../../../.gitlab/ci/base.gitlab-ci.yml
 ---
@@ -295,6 +321,8 @@ end-before: Docker
 ---
 ```
 
+</details>
+
 All other jobs can extend one of these jobs if they intend to execute `python` or `pip` commands:
 
 - `.python-latest`: points at the latest officially supported image
@@ -303,6 +331,8 @@ All other jobs can extend one of these jobs if they intend to execute `python` o
 - `.python39`: uses the latest `python3.9-bullseye` image from Docker Hub
 - `.python38`: uses the latest `python3.8-bullseye` image from Docker Hub
 - `.python37`: uses the latest `python3.7-bullseye` image from Docker Hub
+
+<details><summary>Common Python CI Jobs (Click to expand)</summary>
 
 ```{literalinclude} ../../../.gitlab/ci/base.gitlab-ci.yml
 ---
@@ -313,6 +343,8 @@ linenos: true
 start-after: Docker
 ---
 ```
+
+</details>
 
 ```{note} We only include/support the officially supported versions of Python.
 ```
@@ -354,6 +386,9 @@ These jobs are quick, run for every pipeline, and only expose the job log as an 
 Also, these jobs have zero dependencies, so they are always immediately started by each pipeline.
 
 - **flake8** runs a full `flake8` linter check
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/check.gitlab-ci.yml
   ---
   name: ci-flake8-job
@@ -364,7 +399,13 @@ Also, these jobs have zero dependencies, so they are always immediately started 
   end-before: ====
   ---
   ```
+
+  </details>
+
 - **pylint** runs a full `pylint` linter check
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/check.gitlab-ci.yml
   ---
   name: ci-pylint-job
@@ -375,7 +416,13 @@ Also, these jobs have zero dependencies, so they are always immediately started 
   end-before: ====
   ---
   ```
+
+  </details>
+
 - **manifest** verifies that the `Manifest.in` file properly includes tracked files, so that source distributions work properly
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/check.gitlab-ci.yml
   ---
   name: ci-manifest-job
@@ -386,6 +433,8 @@ Also, these jobs have zero dependencies, so they are always immediately started 
   ---
   ```
 
+  </details>
+
 (ci-jobs-test)=
 
 ### Test Stage
@@ -395,6 +444,9 @@ All jobs in this stage run for every pipeline, and the `pytest` jobs are run imm
 However, the coverage jobs must wait for the tests to finish before downloading the artifacts and compiling coverage reports.
 
 - **pytest** jobs run various portions of the test suite via `pytest`. These are split into separate chunks and run in parallel for faster pipelines. Once complete, the jobs upload coverage data & unit test reports as job artifacts.
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/test.gitlab-ci.yml
   ---
   name: ci-unit-test-job
@@ -405,7 +457,13 @@ However, the coverage jobs must wait for the tests to finish before downloading 
   end-before: ====
   ---
   ```
+
+  </details>
+
 - **coverage** collects data from the `pytest` jobs and calculates the coverage statistics, uploading the combined coverage data as a job artifact. This job also reports the `coverage` keyword which is automatically parsed by GitLab.
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/test.gitlab-ci.yml
   ---
   name: ci-coverage-job
@@ -416,6 +474,8 @@ However, the coverage jobs must wait for the tests to finish before downloading 
   ---
   ```
 
+  </details>
+
 (ci-jobs-build)=
 
 ### Build Stage
@@ -424,6 +484,9 @@ The build stage defines tasks that build the source code package and documentati
 All jobs for this stage run in every pipeline, but they may have dependencies on jobs in earlier stages.
 
 - **build-pkg** creates source (`sdist`) and binary (`whl`) distributions of the package and then uploads them as job artifacts using the `build` tool. This job relies on **manifest** finishing successfully.
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/build.gitlab-ci.yml
   ---
   name: ci-build-pkg-job
@@ -434,7 +497,13 @@ All jobs for this stage run in every pipeline, but they may have dependencies on
   end-before: =====
   ---
   ```
+
+  </details>
+
 - **build-docs** builds the full HTML documentation and uploads it as a job artifact. This uses the `sphinx` documentation system (and a bunch of plugins) to generate API documentation from docstrings in the source code. This is merged with narrative documentation written in the `/docs/source` directory.
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/build.gitlab-ci.yml
   ---
   name: ci-build-docs-job
@@ -444,6 +513,8 @@ All jobs for this stage run in every pipeline, but they may have dependencies on
   start-at: 'build-docs:'
   ---
   ```
+
+  </details>
 
 (ci-jobs-release)=
 
@@ -455,6 +526,9 @@ By default, these jobs rely on all previous stages to finish before being starte
 This is to prevent a premature release in case an earlier stage fails.
 
 - **release-notes** compiles the `git` history since the previous tag and saves it to a temporary file with nice formatting. This file serves as the release notes, and includes regular commits, merge commits, & commit authors. The release notes are uploaded as an artifact.
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/release.gitlab-ci.yml
   ---
   name: ci-release-notes-job
@@ -465,7 +539,13 @@ This is to prevent a premature release in case an earlier stage fails.
   end-before: ====
   ---
   ```
+
+  </details>
+
 - **release** performs an official release procedure using the GitLab [`release` keyword]. This ingests the release notes artifact directly.
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/release.gitlab-ci.yml
   ---
   name: ci-release-job
@@ -476,6 +556,8 @@ This is to prevent a premature release in case an earlier stage fails.
   ---
   ```
 
+  </details>
+
 (ci-jobs-publish)=
 
 ### Publish Stage
@@ -485,6 +567,9 @@ Jobs in this stage typically only run on pushed tag pipelines (releases, after m
 These jobs typically have earlier dependencies that must finish successfully before being able to start.
 
 - **publish-pkg** uploads the package distributions to the GitLab registry. It is only run on pushed tag pipelines (after merges into **main**), and it relies on the **build-pkg** job succeeding.
+
+  <details><summary>Config (Click to expand)</summary>
+
   ```{literalinclude} ../../../.gitlab/ci/publish.gitlab-ci.yml
   ---
   name: ci-pkg-upload-job
@@ -495,6 +580,8 @@ These jobs typically have earlier dependencies that must finish successfully bef
   end-before: ====
   ---
   ```
+
+  </details>
 
 (ci-jobs-other)=
 
