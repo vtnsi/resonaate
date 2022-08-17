@@ -242,7 +242,7 @@ def testGetMeasurements(sensor_args: dict):
     """Test calling getMeasurement & getNoisyMeasurement."""
     # pylint: disable=invalid-name
     sensor = Sensor(**sensor_args)
-    sensor.getMeasurements = Mock()
+    sensor.getMeasurements = Mock()  # pylint: disable=invalid-name
     sensor.getMeasurements.return_value = {
         "measurement_1": 1.0,
         "measurement_2": 20.0,
