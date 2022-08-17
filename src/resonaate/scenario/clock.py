@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 class ScenarioClock:
     """The ScenarioClock Class instantiates a ScenarioClock object.
 
+    On creation, the ScenarioClock object inserts a new epoch into the database for each time step in the simulation.
+
     It stores the temporal information for the associated Scenario, and
     broadcasts the current time stamp to all Agents and Estimator.
     """
@@ -37,6 +39,8 @@ class ScenarioClock:
         dt_step: ScenarioTime | float,
     ) -> None:
         """Construct a `ScenarioClock` object.
+
+        The clock inserts a new epoch into the database for each time step in the simulation.
 
         Args:
             start_date (:class:`.JulianDate`): starting Julian date of the simulation.
