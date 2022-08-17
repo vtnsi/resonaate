@@ -1,8 +1,13 @@
 """Test :class:`.EstimateAgent`."""
+# pylint:disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
+from unittest.mock import create_autospec
+
 # Third Party Imports
+import numpy as np
 import pytest
-from numpy import array, diagflat
 
 # RESONAATE Imports
 import resonaate.estimation.initial_orbit_determination
@@ -15,22 +20,38 @@ from resonaate.estimation import initialOrbitDeterminationFactory
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
+from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario.clock import ScenarioClock
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
 from resonaate.sensors.sensor_base import ObservationTuple
 
 
+@pytest.fixture(name="mocked_clock")
+def getMockedScenarioClock() -> ScenarioClock:
+    """Get a mocked :class:`.ScenarioClock` object."""
+    mocked_clock = create_autospec(ScenarioClock, instance=True)
+    mocked_clock.julian_date_start = JulianDate(2459304.0666666665)
+    mocked_clock.julian_date_epoch = mocked_clock.julian_date_start
+    mocked_clock.julian_date_stop = mocked_clock.julian_date_start + (1 / 3)
+    mocked_clock.initial_time = ScenarioTime(0.0)
+    mocked_clock.time_span = ScenarioTime(28800.0)
+    mocked_clock.time = ScenarioTime(0.0)
+    mocked_clock.dt_step = ScenarioTime(300.0)
+    updateReductionParameters(julian_date=mocked_clock.julian_date_start)
+    return mocked_clock
+
+
 @pytest.fixture(name="earth_sensor")
-def getTestEarthSensor():
+def getTestEarthSensor() -> AdvRadar:
     """Create a custom :class:`Agent` object for a sensor."""
     earth_sensor = AdvRadar(
-        az_mask=array([0.0, 359.99999]),
-        el_mask=array([1.0, 89.0]),
-        r_matrix=diagflat([2.38820057e-11, 3.73156339e-11, 9.00000000e-08, 3.61000000e-10]),
+        az_mask=np.array([0.0, 359.99999]),
+        el_mask=np.array([1.0, 89.0]),
+        r_matrix=np.diagflat([2.38820057e-11, 3.73156339e-11, 9.00000000e-08, 3.61000000e-10]),
         diameter=27.0,
         efficiency=0.9,
-        exemplar=array([1, 40744]),
+        exemplar=np.array([1, 40744]),
         field_of_view={"fov_shape": "conic"},
         calculate_fov=False,
         power_tx=120000.0,
@@ -44,13 +65,13 @@ def getTestEarthSensor():
 
 
 @pytest.fixture(name="sensor_agent")
-def getTestSensorAgent(earth_sensor):
+def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> SensingAgent:
     """Create a custom :class:`Agent` object for a sensor."""
     sensor_agent = SensingAgent(
         300000,
         "Test_sensor",
         "GroundFacility",
-        array(
+        np.array(
             [
                 -1.55267475e03,
                 1.47362430e03,
@@ -60,11 +81,11 @@ def getTestSensorAgent(earth_sensor):
                 2.19474290e-04,
             ]
         ),
-        ScenarioClock(JulianDate(2459304.1666666665), 28800.0, 300),
+        mocked_clock,
         earth_sensor,
         Terrestrial(
             JulianDate(2459304.1666666665),
-            array(
+            np.array(
                 [
                     1.83995228e03,
                     1.11114727e03,
@@ -84,7 +105,7 @@ def getTestSensorAgent(earth_sensor):
 
 
 @pytest.fixture(name="obs_tuples")
-def getObsTuples(sensor_agent):
+def getObsTuples(sensor_agent: SensingAgent) -> ObservationTuple:
     """Create a custom :class:`ObservationTuple` object for a sensor."""
     radar_observation = Observation.fromSEZVector(
         julian_date=JulianDate(2459304.267361111),
@@ -99,19 +120,19 @@ def getObsTuples(sensor_agent):
         sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
     )
 
-    return ObservationTuple(radar_observation, sensor_agent, array([2, 3, 1, 1]))
+    return ObservationTuple(radar_observation, sensor_agent, np.array([2, 3, 1, 1]))
 
 
 @pytest.fixture(name="nominal_filter")
-def getNominalFilter():
+def getNominalFilter() -> UnscentedKalmanFilter:
     """Create a :class:`.NominalFilter`."""
     nominal_filter = UnscentedKalmanFilter(
         10001,
         ScenarioTime(0.0),
-        array([6378.0, 2.0, 10.0, 0.0, 7.0, 0.0]),
-        diagflat([1.0, 2.0, 1.0, 1, 1, 1]),
+        np.array([6378.0, 2.0, 10.0, 0.0, 7.0, 0.0]),
+        np.diagflat([1.0, 2.0, 1.0, 1, 1, 1]),
         TwoBody(),
-        3 * diagflat([1.0, 2.0, 1.0, 1, 1, 1]),
+        3 * np.diagflat([1.0, 2.0, 1.0, 1, 1, 1]),
         StandardNis(0.01),
         True,
     )
@@ -121,15 +142,16 @@ def getNominalFilter():
 
 @pytest.fixture(name="estimate_agent")
 def getTestEstimateAgent(
-    nominal_filter,
-):
+    nominal_filter: UnscentedKalmanFilter,
+    mocked_clock: ScenarioClock,
+) -> EstimateAgent:
     """Create a custom :class:.`Agent` object for testing."""
     estimate_agent = EstimateAgent(
         10001,
         "estimate_agent",
         "Spacecraft",
-        ScenarioClock(JulianDate(2459304.0666666665), 28800.0, 300),
-        array(
+        mocked_clock,
+        np.array(
             [
                 4.38022237e03,
                 -5.70920771e01,
@@ -139,7 +161,7 @@ def getTestEstimateAgent(
                 -4.75396773e00,
             ]
         ),
-        diagflat([1.0, 2.0, 1.0, 1, 1, 1]),
+        np.diagflat([1.0, 2.0, 1.0, 1, 1, 1]),
         nominal_filter,
         None,
         None,
@@ -150,7 +172,12 @@ def getTestEstimateAgent(
     return estimate_agent
 
 
-def testAttemptInitialOrbitDetermination(estimate_agent, obs_tuples, monkeypatch, caplog):
+def testAttemptInitialOrbitDetermination(
+    estimate_agent: EstimateAgent,
+    obs_tuples: ObservationTuple,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
     """Test _attemptInitialOrbitDetermination().
 
     Args:
@@ -160,6 +187,7 @@ def testAttemptInitialOrbitDetermination(estimate_agent, obs_tuples, monkeypatch
         caplog (:class:`.LogCaptureFixture`): logging of function calls
     """
     # pylint:disable=protected-access
+    original_state = estimate_agent.nominal_filter.est_x.copy()
     # Test the quick return
     estimate_agent._attemptInitialOrbitDetermination(obs_tuples)
     assert estimate_agent.iod_start_time is None
@@ -174,11 +202,12 @@ def testAttemptInitialOrbitDetermination(estimate_agent, obs_tuples, monkeypatch
 
     # Test unsuccessful IOD
     estimate_agent.time = ScenarioTime(300.0)
+    bad_state = np.array([1, 2, 3, 4, 5, 7])
 
     def determineNewEstimateStateBad(
         self, obs_tuples, detection_time, current_time
     ):  # pylint:disable=unused-argument
-        return array([1, 2, 3, 4, 5, 7]), False
+        return bad_state, False
 
     with monkeypatch.context() as m_patch:
         m_patch.setattr(
@@ -187,16 +216,15 @@ def testAttemptInitialOrbitDetermination(estimate_agent, obs_tuples, monkeypatch
             determineNewEstimateStateBad,
         )
         estimate_agent._attemptInitialOrbitDetermination(obs_tuples)
-        assert (
-            caplog.record_tuples[-1][-1]
-            == f"IOD unsuccessful for RSO {estimate_agent.simulation_id}"
-        )
+        assert np.allclose(estimate_agent.nominal_filter.est_x, original_state)
+        assert not np.allclose(estimate_agent.nominal_filter.est_x, bad_state)
+        assert estimate_agent.iod_start_time == ScenarioTime(0.0)
 
     # Test successful IOD
-    def determineNewEstimateStateGood(
-        self, obs_tuples, detection_time, current_time
-    ):  # pylint:disable=unused-argument
-        return array([1, 2, 3, 4, 5, 6]), True
+    good_state = np.array([1, 2, 3, 4, 5, 6])
+
+    def determineNewEstimateStateGood(self, obs_tuples, detection_time, current_time):
+        return good_state, True
 
     with monkeypatch.context() as m_patch:
         m_patch.setattr(
@@ -205,7 +233,6 @@ def testAttemptInitialOrbitDetermination(estimate_agent, obs_tuples, monkeypatch
             determineNewEstimateStateGood,
         )
         estimate_agent._attemptInitialOrbitDetermination(obs_tuples)
-        assert (
-            caplog.record_tuples[-1][-1]
-            == f"IOD successful for RSO {estimate_agent.simulation_id}"
-        )
+        assert not np.allclose(estimate_agent.nominal_filter.est_x, original_state)
+        assert np.allclose(estimate_agent.nominal_filter.est_x, good_state)
+        assert estimate_agent.iod_start_time is None
