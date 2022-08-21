@@ -47,7 +47,7 @@ setuptools.setup(
             # Formatters
             "black==22.6.0",
             "isort[colors]==5.10.1",
-            "mdformat==0.7.14",
+            "mdformat==0.7.15",
             "mdformat-myst==0.1.5",
             "mdformat-gfm==0.3.5",
             # Pre-commit stuff
