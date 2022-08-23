@@ -54,7 +54,7 @@
   before_script:
     - !reference [.create-venv, before_script]
     - echo -e "\e[0Ksection_start:`date +%s`:pip_test[collapsed=true]\r\e[0K Install resonaate & test dependencies via pip"
-    - python3 -m pip install -e .[test]
+    - python3 -m pip install .[test]
     - echo -e "\e[0Ksection_end:`date +%s`:pip_test\r\e[0K"
 
 # ==========================================

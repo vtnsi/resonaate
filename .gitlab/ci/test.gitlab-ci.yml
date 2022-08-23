@@ -33,17 +33,9 @@ include:
 pytest-unit:
   extends: .test-base
   variables:
-    COVERAGE_FILE: .coverage.unit
-    JUNIT_FILE: unit.xml
   script:
     - echo "Running unit tests with pytest"
-    - coverage run -m pytest --junitxml=$JUNIT_FILE -m "not (scenario or event)" $PYTEST_OPTIONS
-  artifacts:
-    paths:
-      - .coverage.unit*
-    reports:
-      junit:
-        - $JUNIT_FILE
+    - pytest -m "not (scenario or event)" $PYTEST_OPTIONS
 
 # ==========================================
 # Scenario Test Job
@@ -51,19 +43,9 @@ pytest-unit:
 
 pytest-scenario:
   extends: .test-base
-  variables:
-    COVERAGE_FILE: .coverage.scenario
-    JUNIT_FILE: scenario.xml
   script:
     - echo "Running scenario tests with pytest"
-    - coverage run -m pytest --junitxml=$JUNIT_FILE -m scenario $PYTEST_OPTIONS
-
-  artifacts:
-    paths:
-      - .coverage.scenario*
-    reports:
-      junit:
-        - $JUNIT_FILE
+    - pytest -m scenario $PYTEST_OPTIONS
 
 # ==========================================
 # Event Test Job
@@ -72,18 +54,9 @@ pytest-scenario:
 pytest-event:
   extends: .test-base
   variables:
-    COVERAGE_FILE: .coverage.event
-    JUNIT_FILE: event.xml
-    PYTEST_MARKS: "-m event"
   script:
     - echo "Running event tests with pytest"
-    - coverage run -m pytest --junitxml=$JUNIT_FILE -m event $PYTEST_OPTIONS
-  artifacts:
-    paths:
-      - .coverage.event*
-    reports:
-      junit:
-        - $JUNIT_FILE
+    - pytest -m event $PYTEST_OPTIONS
 
 # ==========================================
 # Coverage Job
@@ -94,22 +67,12 @@ coverage:
   before_script:
     - !reference [.pip-test, before_script]
   script:
-    - echo "Combining coverage files from parallel test jobs"
-    - coverage combine
-    - echo "Creating coverage reports"
-    - coverage report
-    - coverage html
-    - coverage xml
+    - echo "Calculating unit test coverage"
+    - pytest --cov --cov-report=html --cov-report=term:skip-covered --cov-context=test -m "not (event or scenario)"
   artifacts:
     name: coverage
     paths:
       - coverage/
     expose_as: Coverage
     expire_in: 1 week
-    reports:
-      junit: coverage.xml
-  needs:
-    - pytest-unit
-    - pytest-scenario
-    - pytest-event
-  coverage: /TOTAL.*\s+(\d+\%)/
+  coverage: /TOTAL.*\s+(\d+.\d+\%)/
