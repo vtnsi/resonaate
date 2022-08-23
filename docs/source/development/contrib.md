@@ -1,5 +1,8 @@
-```{include} ../../../CHANGELOG.md
+# Getting Started
+
+```{include} ../../../CONTRIBUTING.md
 ---
+start-after: '# Contributing Guide'
 end-before: <!-- START TOC -->
 ---
 ```
@@ -8,13 +11,13 @@ end-before: <!-- START TOC -->
 
 ```{contents} Table of Contents
 ---
-depth: 2
-backlinks: none
+depth: 1
+backlinks: top
 local:
 ---
 ```
 
-```{include} ../../../CHANGELOG.md
+```{include} ../../../CONTRIBUTING.md
 ---
 start-after: <!-- END TOC -->
 ---

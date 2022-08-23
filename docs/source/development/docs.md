@@ -1,4 +1,4 @@
-```{include} ../../../CHANGELOG.md
+```{include} ../../README.md
 ---
 end-before: <!-- START TOC -->
 ---
@@ -14,7 +14,7 @@ local:
 ---
 ```
 
-```{include} ../../../CHANGELOG.md
+```{include} ../../README.md
 ---
 start-after: <!-- END TOC -->
 ---

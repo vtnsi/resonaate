@@ -1,14 +1,12 @@
-#####################
-# Base Job Settings #
-#####################
+# ==========================================
+# Includes
+# ==========================================
 
 include:
-  - local: /.gitlab/ci/common.gitlab-ci.yml
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
 
 # Exclude 'public' directory, since it just flags a bunch on our auto-documentation
-# Turn on experimental features for semgrep
 variables:
-  SAST_EXCLUDED_PATHS: spec, test, tests, tmp, public
-  SAST_BANDIT_EXCLUDED_PATHS: "*/tests/*, */.venv/*, */docs/*"
+  SAST_EXCLUDED_PATHS: spec, test, tests, tmp, public, docs, configs, .venv,
+  SAST_BANDIT_EXCLUDED_PATHS: "*/tests/*, */.venv/*, */docs/*, */configs/*"
