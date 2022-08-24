@@ -101,7 +101,7 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
         return 0
 
     # Partial occultation, see Eqn 3.89
-    if c < abs(a + b) and norm(sun_eci_position) < norm(sat_sun_vector):
+    if c < abs(a + b):
         # Montenbruck Eq. 3.93
         x = (c**2 + a**2 - b**2) / (2 * c)
         y = sqrt(a**2 - x**2)
