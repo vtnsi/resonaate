@@ -69,7 +69,8 @@ def lineOfSight(eci_position_1: ndarray, eci_position_2: ndarray) -> bool:
 def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray) -> float:
     r"""Calculate the fraction of the Sun **NOT** occluded by Earth from a satellite's position.
 
-    This method is only valid for orbiting satellites.
+    This method is only valid for orbiting satellites. See the last paragraph of section 3.4 in
+    "Satellite Orbits" by Montenbruck for explanation of the occultation conditions.
 
     References:
         :cite:t:`montenbruck_2012_orbits`, Section 3.42
@@ -91,10 +92,15 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
         dot(-tgt_eci_position, sat_sun_vector) / (norm(tgt_eci_position) * norm(sat_sun_vector))
     )
 
-    # [TODO]: Determine if the `AND`s are required. Does the algorithm include when sat in front of Earth?
-    if c < abs(b - a) and norm(sun_eci_position) < norm(sat_sun_vector):
+    # No occultation is possible if the satellite is closer to the Sun than the ECI origin
+    if norm(sun_eci_position) >= norm(sat_sun_vector):
+        return 1.0
+
+    # Full occultation, see Eqn 3.89
+    if c < abs(b - a):
         return 0
 
+    # Partial occultation, see Eqn 3.89
     if c < abs(a + b) and norm(sun_eci_position) < norm(sat_sun_vector):
         # Montenbruck Eq. 3.93
         x = (c**2 + a**2 - b**2) / (2 * c)
