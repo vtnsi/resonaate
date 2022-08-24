@@ -29,18 +29,14 @@ from ..physics.transforms.reductions import getReductionParameters
 from .base import CallbackRegistration, JobHandler
 
 if TYPE_CHECKING:
-    # Third Party Imports
-    from numpy import ndarray
-
     # Local Imports
     from ..data.events.base import Event
     from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
-    from ..physics.time.stardate import ScenarioTime
 
 
 def asyncPropagate(
-    dynamics,  #: Dynamics,
+    dynamics: Dynamics,
     init_time: ScenarioTime,
     final_time: ScenarioTime,
     initial_state: ndarray,

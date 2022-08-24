@@ -1,3 +1,4 @@
+"""Defines abstract base classes used throughout the ``job_handlers`` subpackage."""
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod

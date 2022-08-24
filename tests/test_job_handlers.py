@@ -36,6 +36,11 @@ from resonaate.sensors.sensor_base import Sensor
 # Local Imports
 from .conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
 
 @pytest.fixture(name="worker_manager")
 def createWorkerManager() -> WorkerManager:

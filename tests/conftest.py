@@ -66,7 +66,7 @@ def getTestLoggerObject() -> Logger:
 
 
 @pytest.fixture(name="teardown_kvs")
-def teardownKeyValueStore():
+def _teardownKeyValueStore():
     """Make sure that :class:`.KeyValueStore.Server` is shut down after each test that uses it."""
     yield
     KeyValueStore.stopServerProcess()
