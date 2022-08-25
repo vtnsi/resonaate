@@ -9,11 +9,11 @@ class Earth:
         radius (``float``): mean equatorial radius (km).
         mass (``float``): planet's mass, (km).
         spin_rate (``float``): rotation rate about the *K*-axis (ECEF), (rad/sec).
-        eccentricity (``float``): equatorial bulge, (untiless).
+        eccentricity (``float``): equatorial bulge, (unit-less).
         atmosphere (``float``): assumed height of the atmosphere, (km).
-        j2 (``float``): second-order zonal coefficient, (unitless).
-        j3 (``float``): third-order zonal coefficient, (unitless).
-        j4 (``float``): fourth-order zonal coefficient, (unitless).
+        j2 (``float``): second-order zonal coefficient, (unit-less).
+        j3 (``float``): third-order zonal coefficient, (unit-less).
+        j4 (``float``): fourth-order zonal coefficient, (unit-less).
 
     References:
         #. :cite:t:`vallado_2013_astro`, Appendix D.1, Table D-1

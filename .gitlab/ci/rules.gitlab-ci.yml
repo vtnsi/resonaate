@@ -1,0 +1,53 @@
+# ==========================================
+# CONDITIONS
+# ==========================================
+
+# Merge request pipelines
+.mr: &mr
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# Pushed tag pipelines
+.tag: &tag
+  if: $CI_COMMIT_TAG
+
+# Default branch commit pipelines
+.branch: &branch
+  if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+
+# Scheduled pipelines
+.schedule: &schedule
+  if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+# ==========================================
+# RULES
+# ==========================================
+
+# Default rule: run on all MR, default branch pushes, & tag pushes
+.rules:default:
+  rules:
+    - <<: *tag
+    - <<: *branch
+    - <<: *mr
+
+# Only on merge requests
+.rules:mr:
+  rules:
+    - *mr
+
+# Only on pushes to default branch
+.rules:branch:
+  rules:
+    - *branch
+
+# Only on pushed tags
+.rules:tag:
+  rules:
+    - *tag
+
+# Always on scheduled jobs, allow manually for merge requests
+.rules:scheduled:
+  rules:
+    - <<: *mr
+      when: manual
+      allow_failure: true
+    - <<: *schedule

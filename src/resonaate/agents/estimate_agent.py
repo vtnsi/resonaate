@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import fabs
 from numpy.random import default_rng
-from scipy.linalg import norm
 
 # Local Imports
 from ..common.exceptions import ShapeError
@@ -15,29 +13,39 @@ from ..common.utilities import getTypeString
 from ..data.detected_maneuver import DetectedManeuver
 from ..data.ephemeris import EstimateEphemeris
 from ..data.filter_step import FilterStep
-from ..estimation import adaptiveEstimationFactory, sequentialFilterFactory
-from ..estimation.debug_utils import checkThreeSigmaObs, logFilterStep
-from ..estimation.sequential.sequential_filter import FilterDebugFlag, SequentialFilter
+from ..estimation import (
+    adaptiveEstimationFactory,
+    initialOrbitDeterminationFactory,
+    sequentialFilterFactory,
+)
+from ..estimation.sequential.sequential_filter import FilterFlag, SequentialFilter
 from ..physics.noise import initialEstimateNoise
 from ..physics.transforms.methods import ecef2lla, eci2ecef
-from .agent_base import DEFAULT_VIS_X_SECTION, Agent
+from .agent_base import Agent
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Optional
+    from typing import Any, NoReturn
 
     # Third Party Imports
     from numpy import ndarray
+    from typing_extensions import Self
 
     # Local Imports
+    from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.integration_events.station_keeping import StationKeeper
+    from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config.estimation_config import AdaptiveEstimationConfig
+    from ..scenario.config.agent_configs import TargetAgentConfig
+    from ..scenario.config.estimation_config import (
+        AdaptiveEstimationConfig,
+        InitialOrbitDeterminationConfig,
+    )
     from ..sensors.sensor_base import ObservationTuple
 
 
-class EstimateAgent(Agent):
+class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
     """Define the behavior of the **estimated** target agents in the simulation."""
 
     def __init__(
@@ -50,9 +58,13 @@ class EstimateAgent(Agent):
         initial_covariance: ndarray,
         _filter: SequentialFilter,
         adaptive_filter_config: AdaptiveEstimationConfig,
-        seed: Optional[int] = None,
-        station_keeping: Optional[list[StationKeeper]] = None,
-    ):
+        initial_orbit_determination_config: InitialOrbitDeterminationConfig,
+        visual_cross_section: float | int,
+        mass: float | int,
+        reflectivity: float,
+        seed: int | None = None,
+        station_keeping: list[StationKeeper] | None = None,
+    ) -> None:
         R"""Construct an EstimateAgent object.
 
         Args:
@@ -64,6 +76,9 @@ class EstimateAgent(Agent):
             initial_covariance (``ndarray``): 6x6 initial covariance or uncertainty
             _filter (:class:`.SequentialFilter`): tracks the estimate's state throughout the simulation
             adaptive_filter_config (:class:`.ConfigOption`): adaptive filter configuration to be used if needed
+            visual_cross_section (``float, int``): constant visual cross-section of the agent
+            mass (``float, int``): constant mass of the agent
+            reflectivity (``float``): constant reflectivity of the agent
             seed (``int``, optional): number to seed random number generator. Defaults to ``None``.
             station_keeping (``list``, optional): list of :class:`.StationKeeper` objects describing the station
                 keeping to be performed. Defaults to ``None``.
@@ -73,14 +88,16 @@ class EstimateAgent(Agent):
             - ``ShapeError`` raised if process noise is not a 6x6 matrix
         """
         super().__init__(
-            _id,
-            name,
-            agent_type,
-            initial_state,
-            clock,
-            _filter.dynamics,
-            True,
-            DEFAULT_VIS_X_SECTION,
+            _id=_id,
+            name=name,
+            agent_type=agent_type,
+            initial_state=initial_state,
+            clock=clock,
+            dynamics=_filter.dynamics,
+            realtime=True,
+            visual_cross_section=visual_cross_section,
+            mass=mass,
+            reflectivity=reflectivity,
             station_keeping=station_keeping,
         )
 
@@ -110,7 +127,16 @@ class EstimateAgent(Agent):
             self._logger.error("Invalid input type for _filter param")
             raise TypeError(type(_filter))
 
-        self.adaptive_filter = adaptive_filter_config
+        # Attribute to track the adaptive_filter config of this object
+        self.adaptive_filter_config = adaptive_filter_config
+
+        # Attribute to track the initial_orbit_determination config of this object
+        self.initial_orbit_determination = initialOrbitDeterminationFactory(
+            initial_orbit_determination_config, self.simulation_id, self.julian_date_start
+        )
+
+        # Attribute to track the time at which IOD begins
+        self.iod_start_time: ScenarioTime | None = None
 
         # Attribute to track the most recent _actual_ observation of this object
         self.last_observed_at = self.julian_date_start
@@ -124,7 +150,55 @@ class EstimateAgent(Agent):
         # Apply None value to estimate station_keeping
         assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
 
-    def updateEstimate(self, obs_tuples: list[ObservationTuple], truth: ndarray):
+    @classmethod
+    def fromConfig(cls, config: dict[str, Any]) -> Self:
+        """Factory to initialize :class:`.EstimateAgent` objects based on given configuration.
+
+        Args:
+            config (``dict``): formatted configuration parameters
+
+        Returns:
+            :class:`.EstimateAgent`: properly constructed `EstimateAgent` object
+        """
+        # Grab multiple objects required for creating estimate agents
+        tgt_config: TargetAgentConfig = config["target"]
+        clock: ScenarioClock = config["clock"]
+        # Create the initial state & covariance
+        init_x, init_p = initialEstimateNoise(
+            tgt_config.init_eci, config["position_std"], config["velocity_std"], config["rng"]
+        )
+
+        nominal_filter = sequentialFilterFactory(
+            config["sequential_filter"],
+            tgt_config.sat_num,
+            clock.time,
+            init_x,
+            init_p,
+            config["dynamics"],
+            config["q_matrix"],
+        )
+
+        # Create the `EstimateAgent` and initialize its filter object
+        est = cls(
+            tgt_config.sat_num,
+            tgt_config.sat_name,
+            config["agent_type"],
+            clock,
+            init_x,
+            init_p,
+            nominal_filter,
+            config["adaptive_filter"],
+            config["initial_orbit_determination"],
+            tgt_config.visual_cross_section,
+            tgt_config.mass,
+            tgt_config.reflectivity,
+            config["seed"],
+        )
+
+        # Return properly initialized `EstimateAgent`
+        return est
+
+    def updateEstimate(self, obs_tuples: list[ObservationTuple]) -> None:
         """Update the :attr:`nominal_filter`, state estimate, & covariance.
 
         This is the local update function. See :meth:`.updateFromAsyncUpdateEstimate` for details
@@ -135,12 +209,11 @@ class EstimateAgent(Agent):
 
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` objects associated with this timestep
-            truth (``ndarray``): 6x1 ECI state vector for the true target agent
         """
         self.nominal_filter.update(obs_tuples)
-        self._update(obs_tuples, truth=truth)
+        self._update(obs_tuples)
 
-    def updateFromAsyncPredict(self, async_result: dict[str, Any]):
+    def updateFromAsyncPredict(self, async_result: dict[str, Any]) -> None:
         """Perform predict using EstimateAgent's :attr:`nominal_filter`'s async result.
 
         Save the *a priori* :attr:`.state_estimate` and :attr:`.error_covariance`. This occurs
@@ -155,14 +228,10 @@ class EstimateAgent(Agent):
         """
         self.nominal_filter.updateFromAsyncResult(async_result)
 
-        if FilterDebugFlag.NEAREST_PD in self.nominal_filter.flags:
-            msg = f"`nearestPD()` function was used in predict: {self.name}"
-            self._logger.warning(msg)
-
         self.state_estimate = self.nominal_filter.pred_x
         self.error_covariance = self.nominal_filter.pred_p
 
-    def updateFromAsyncUpdateEstimate(self, async_result: dict[str, Any]):
+    def updateFromAsyncUpdateEstimate(self, async_result: dict[str, Any]) -> None:
         """Update the :attr:`nominal_filter`, state estimate, & covariance from an async result.
 
         This is the parallel result update function. See :meth:`.updateEstimate` for details
@@ -193,7 +262,7 @@ class EstimateAgent(Agent):
             covariance=self.error_covariance.tolist(),
         )
 
-    def _saveDetectedManeuver(self, obs_tuples: list[ObservationTuple]):
+    def _saveDetectedManeuver(self, obs_tuples: list[ObservationTuple]) -> None:
         """Save :class:`.DetectedManeuver` events to insert into the DB later.
 
         Args:
@@ -220,7 +289,7 @@ class EstimateAgent(Agent):
 
         return detections
 
-    def _saveFilterStep(self):
+    def _saveFilterStep(self) -> None:
         """Save :class:`.FilterStep` events to insert into the DB later."""
         self._filter_info.append(
             FilterStep.recordFilterStep(
@@ -239,50 +308,25 @@ class EstimateAgent(Agent):
         return filter_steps
 
     @property
-    def maneuver_detected(self):
-        """``bool``: Returns whether detected manevers are stored for this estimate agent."""
+    def maneuver_detected(self) -> bool:
+        """``bool``: Returns whether detected maneuvers are stored for this estimate agent."""
         return bool(self._detected_maneuvers)
 
-    def _logFilterEvents(self, obs_tuples: list[ObservationTuple], truth: ndarray):
+    def _logFilterEvents(self, obs_tuples: list[ObservationTuple]) -> None:
         """Log filter events and perform debugging steps.
 
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` made of the agent during the timestep.
-            truth (``ndarray``): 6x1, ECI truth_state of the target
         """
-        # Check if error inflation is too large
-        if FilterDebugFlag.ERROR_INFLATION in self.nominal_filter.flags:
-            tol_km = 5  # Estimate inflation error tolerance (km)
-            pred_error = fabs(norm(truth[:3] - self.nominal_filter.pred_x[:3]))
-            est_error = fabs(norm(truth[:3] - self.nominal_filter.est_x[:3]))
-
-            # If error increase is larger than desired log the debug information
-            if est_error > pred_error + tol_km:
-                file_name = logFilterStep(self.nominal_filter, obs_tuples, truth)
-                msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
-                self._logger.warning(msg)
-
-        # Check if nearestPD() was called on the filter
-        if FilterDebugFlag.NEAREST_PD in self.nominal_filter.flags:
-            msg = f"`nearestPD()` function was used on {self.name} EstimateAgent"
-            self._logger.warning(msg)
-
-        # Check the three sigma distance of observations & log if needed
-        if FilterDebugFlag.THREE_SIGMA_OBS in self.nominal_filter.flags:
-            filenames = checkThreeSigmaObs(obs_tuples, sigma=3)
-            msg = "Made bad observation, debugging info:\n\t"
-            for filename in filenames:
-                self._logger.warning(msg + f"{filename}")
-
         # Check if a maneuver was detected
-        if FilterDebugFlag.MANEUVER_DETECTION in self.nominal_filter.flags:
+        if FilterFlag.MANEUVER_DETECTION in self.nominal_filter.flags:
             sensor_nums = {ob.agent.simulation_id for ob in obs_tuples}
             tgt = self.simulation_id
             jd = self.julian_date_epoch
             msg = f"Maneuver Detected for RSO {tgt} by sensors {sensor_nums} at time {jd}"
             self._logger.info(msg)
 
-    def _update(self, obs_tuples: list[ObservationTuple], truth: Optional[ndarray] = None):
+    def _update(self, obs_tuples: list[ObservationTuple]) -> None:
         """Perform update of :attr:`nominal_filter`, state estimate, & covariance.
 
         Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. Also, log
@@ -290,48 +334,45 @@ class EstimateAgent(Agent):
 
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
-            truth (``ndarray``, optional): 6x1 ECI state vector for the true target agent
         """
-        if truth is not None:
-            self._logFilterEvents(obs_tuples, truth)
+        self._logFilterEvents(obs_tuples)
 
         if obs_tuples:
             self.last_observed_at = self.julian_date_epoch
             self._saveFilterStep()
+            self._attemptInitialOrbitDetermination(obs_tuples)
             if self.nominal_filter.maneuver_detected:
                 self._saveDetectedManeuver(obs_tuples)
-                if (
-                    FilterDebugFlag.ADAPTIVE_ESTIMATION_CLOSE
-                    in self.nominal_filter.flags
-                ):
+                if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
                     self.resetFilter(self.nominal_filter.converged_filter)
                 self._attemptAdaptiveEstimation(obs_tuples)
+                self._attemptInitialOrbitDetermination(obs_tuples)
 
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
 
-    def importState(self, ephemeris):
+    def importState(self, ephemeris: _EphemerisMixin) -> NoReturn:
         """Set the state of this EstimateAgent based on a given :class:`.Ephemeris` object.
 
         Warning:
             This method is not implemented because EstimateAgent's cannot load data for propagation.
 
         Args:
-            ephemeris (:class:`.Ephemeris`): data object to update this SensingAgent's state with
+            ephemeris (:class:`._EphemerisMixin`): data object to update this SensingAgent's state with
         """
         raise NotImplementedError("Cannot load state estimates directly into simulation")
 
-    def _attemptAdaptiveEstimation(self, obs_tuples: list[ObservationTuple]):
+    def _attemptAdaptiveEstimation(self, obs_tuples: list[ObservationTuple]) -> None:
         """Try to start adaptive estimation on this RSO.
 
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
         """
         # MMAE initialization checks
-        if FilterDebugFlag.ADAPTIVE_ESTIMATION_START in self.nominal_filter.flags:
-            self.nominal_filter.flags ^= FilterDebugFlag.ADAPTIVE_ESTIMATION_START
+        if FilterFlag.ADAPTIVE_ESTIMATION_START in self.nominal_filter.flags:
+            self.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
             adaptive_filter = adaptiveEstimationFactory(
-                self.adaptive_filter, self.nominal_filter, self.dt_step
+                self.adaptive_filter_config, self.nominal_filter, self.dt_step
             )
 
             # Create a multiple_model_filter
@@ -343,52 +384,36 @@ class EstimateAgent(Agent):
             if mmae_started:
                 self.resetFilter(adaptive_filter)
 
-    @classmethod
-    def fromConfig(cls, config: dict[str, Any], events: dict[str, Any]):
-        """Factory to initialize :class:`.EstimateAgent` objects based on given configuration.
+    def _attemptInitialOrbitDetermination(self, obs_tuples: list[ObservationTuple]):
+        """Try to start initial orbit determination on this RSO.
 
         Args:
-            config (``dict``): formatted configuration parameters
-            events (``dict``): corresponding formatted events
-
-        Returns:
-            :class:`.EstimateAgent`: properly constructed `EstimateAgent` object
+            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
         """
-        # Grab multiple objects required for creating estimate agents
-        tgt = config["target"]
-        clock = config["clock"]
-        # Create the initial state & covariance
-        init_x, init_p = initialEstimateNoise(
-            tgt.eci_state, config["position_std"], config["velocity_std"], config["rng"]
-        )
+        if not self.initial_orbit_determination:
+            return
 
-        nominal_filter = sequentialFilterFactory(
-            config["sequential_filter"],
-            tgt.simulation_id,
-            clock.time,
-            init_x,
-            init_p,
-            config["dynamics"],
-            config["q_matrix"],
-        )
+        if self.iod_start_time is None and self.nominal_filter.maneuver_detected:
+            self.iod_start_time = self.time
+            msg = f"Turning on IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
+            self._logger.info(msg)
 
-        # Create the `EstimateAgent` and initialize its filter object
-        est = cls(
-            tgt.simulation_id,
-            tgt.name,
-            tgt.agent_type,
-            clock,
-            init_x,
-            init_p,
-            nominal_filter,
-            config["adaptive_filter"],
-            config["seed"],
-        )
+        # [NOTE]: IOD cannot converge on the same timestep as initialization
+        if self.iod_start_time is not None and self.iod_start_time < self.time:
+            msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
+            self._logger.info(msg)
+            iod_est_x, success = self.initial_orbit_determination.determineNewEstimateState(
+                obs_tuples, self.iod_start_time, self.time
+            )
+            if success:
+                self.iod_start_time = None
+                self.nominal_filter.est_x = iod_est_x
+                msg = f"IOD successful for RSO {self.simulation_id}"
+            else:
+                msg = f"IOD unsuccessful for RSO {self.simulation_id}"
+            self._logger.debug(msg)
 
-        # Return properly initialized `EstimateAgent`
-        return est
-
-    def resetFilter(self, new_filter: SequentialFilter):
+    def resetFilter(self, new_filter: SequentialFilter) -> None:
         """Overwrite the agent's filter object with a new filter instance.
 
         Args:
@@ -404,37 +429,37 @@ class EstimateAgent(Agent):
         self._filter = new_filter
 
     @property
-    def eci_state(self):
+    def eci_state(self) -> ndarray:
         """``ndarray``: Returns the 6x1 ECI current state estimate."""
         return self._state_estimate
 
     @property
-    def ecef_state(self):
+    def ecef_state(self) -> ndarray:
         """``ndarray``: Returns the 6x1 ECEF current state estimate."""
         return self._ecef_state
 
     @property
-    def lla_state(self):
+    def lla_state(self) -> ndarray:
         """``ndarray``: Returns the 3x1 current position estimate in lat, lon, & alt."""
         return self._lla_state
 
     @property
-    def process_noise_covariance(self):
+    def process_noise_covariance(self) -> ndarray:
         """``ndarray``: Returns the 6x6 process noise matrix."""
         return self._filter.q_matrix
 
     @property
-    def initial_covariance(self):
+    def initial_covariance(self) -> ndarray:
         """``ndarray``: Returns the 6x6 original error covariance matrix."""
         return self._initial_covariance
 
     @property
-    def error_covariance(self):
+    def error_covariance(self) -> ndarray:
         """``ndarray``: Returns the 6x6 current error covariance (uncertainty) matrix."""
         return self._error_covariance
 
     @error_covariance.setter
-    def error_covariance(self, new_covar: ndarray):
+    def error_covariance(self, new_covar: ndarray) -> None:
         """Properly set the error covariance matrix.
 
         Args:
@@ -450,12 +475,12 @@ class EstimateAgent(Agent):
         self._error_covariance = new_covar
 
     @property
-    def state_estimate(self):
+    def state_estimate(self) -> ndarray:
         """``ndarray``: Returns the 6x1 ECI current state estimate."""
         return self._state_estimate
 
     @state_estimate.setter
-    def state_estimate(self, new_state):
+    def state_estimate(self, new_state) -> None:
         """Set the EstimateAgent's new 6x1 ECI state vector.
 
         Args:
@@ -466,6 +491,21 @@ class EstimateAgent(Agent):
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property
-    def nominal_filter(self):
+    def nominal_filter(self) -> SequentialFilter:
         """:class:`.SequentialFilter`: Returns the EstimateAgent's associated filter instance."""
         return self._filter
+
+    @property
+    def visual_cross_section(self) -> float:
+        """``float``: Returns the EstimateAgent's associated visual cross section."""
+        return self._visual_cross_section
+
+    @property
+    def mass(self) -> float:
+        """``float``: Returns the EstimateAgent's associated mass."""
+        return self._mass
+
+    @property
+    def reflectivity(self) -> float:
+        """``float``: Returns the EstimateAgent's associated reflectivity."""
+        return self._reflectivity

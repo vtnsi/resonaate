@@ -1,4 +1,5 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 from itertools import combinations, permutations
@@ -8,32 +9,28 @@ import pytest
 from numpy import eye, linspace
 from sqlalchemy.orm import Query
 
-try:
-    # RESONAATE Imports
-    from resonaate.data.agent import Agent
-    from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
-    from resonaate.data.epoch import Epoch
-    from resonaate.data.observation import Observation
-    from resonaate.data.queries import (
-        fetchAgentIDs,
-        fetchEstimateIDs,
-        fetchEstimatesByJDEpoch,
-        fetchEstimatesByJDInterval,
-        fetchObservationsByJDEpoch,
-        fetchObservationsByJDInterval,
-        fetchTruthByJDEpoch,
-        fetchTruthByJDInterval,
-        filterByJulianDateInterval,
-        filterBySingleJulianDate,
-        jdEpochQuery,
-        jdIntervalQuery,
-    )
-    from resonaate.data.resonaate_database import ResonaateDatabase
-    from resonaate.physics.constants import PI
-    from resonaate.physics.time.stardate import JulianDate
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-
+# RESONAATE Imports
+from resonaate.data.agent import AgentModel
+from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
+from resonaate.data.epoch import Epoch
+from resonaate.data.observation import Observation
+from resonaate.data.queries import (
+    fetchAgentIDs,
+    fetchEstimateIDs,
+    fetchEstimatesByJDEpoch,
+    fetchEstimatesByJDInterval,
+    fetchObservationsByJDEpoch,
+    fetchObservationsByJDInterval,
+    fetchTruthByJDEpoch,
+    fetchTruthByJDInterval,
+    filterByJulianDateInterval,
+    filterBySingleJulianDate,
+    jdEpochQuery,
+    jdIntervalQuery,
+)
+from resonaate.data.resonaate_database import ResonaateDatabase
+from resonaate.physics.constants import PI
+from resonaate.physics.time.stardate import JulianDate
 
 # SET UP RSO AGENTS
 RSO_UNIQUE_IDS = [24601, 41914, 27839]
@@ -146,12 +143,12 @@ for bad_idx in reversed(bad_span_idxs):
 
 @pytest.fixture(scope="module", name="agents")
 def getMultipleAgents():
-    """Create several valid :class:`.Agent` objects."""
+    """Create several valid :class:`.AgentModel` objects."""
     agents = []
     for rso in EXAMPLE_RSO:
-        agents.append(Agent(**rso))
+        agents.append(AgentModel(**rso))
     for sensor in EXAMPLE_SENSORS:
-        agents.append(Agent(**sensor))
+        agents.append(AgentModel(**sensor))
     return agents
 
 

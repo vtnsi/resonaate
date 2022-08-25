@@ -531,8 +531,8 @@ def eci2razel(target_eci, observer_eci):
         :cite:t:`vallado_2013_astro`, Algorithm 27
 
     Args:
-        target_eci (``np.ndarray``): 6x1 ECI state vector of target
-        observer_eci (``np.ndarray``): 6x1 ECI state vector of observer
+        target_eci (``ndarray``): 6x1 ECI state vector of target
+        observer_eci (``ndarray``): 6x1 ECI state vector of observer
 
     Returns:
         rng (``float``): topocentric horizon range to target (km)

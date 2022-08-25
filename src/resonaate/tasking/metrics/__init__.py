@@ -1,20 +1,23 @@
 """Defines the metrics used to measure tasking performance."""
+from __future__ import annotations
+
 # Local Imports
 from .behavior import TimeSinceObservation
 from .information import FisherInformation, KLDivergence, ShannonInformation
-from .metric_base import Metric as _BaseMetric
+from .metric_base import Metric
 from .sensor import DeltaPosition, SlewCycle, TimeToTransit
 from .stability import LyapunovStability
 
 # Register each metric class to global registry
-_BaseMetric.register("TimeSinceObservation", TimeSinceObservation)
-_BaseMetric.register("FisherInformation", FisherInformation)
-_BaseMetric.register("ShannonInformation", ShannonInformation)
-_BaseMetric.register("DeltaPosition", DeltaPosition)
-_BaseMetric.register("SlewCycle", SlewCycle)
-_BaseMetric.register("TimeToTransit", TimeToTransit)
-_BaseMetric.register("LyapunovStability", LyapunovStability)
-_BaseMetric.register("KLDivergence", KLDivergence)
+Metric.register(TimeSinceObservation)
+Metric.register(FisherInformation)
+Metric.register(ShannonInformation)
+Metric.register(DeltaPosition)
+Metric.register(SlewCycle)
+Metric.register(TimeToTransit)
+Metric.register(LyapunovStability)
+Metric.register(KLDivergence)
 
-VALID_METRICS = list(_BaseMetric.REGISTRY.keys())
+
+VALID_METRICS: list[str] = list(Metric.REGISTRY.keys())
 """list: List of valid metric labels."""

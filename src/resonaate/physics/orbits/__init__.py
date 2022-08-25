@@ -21,6 +21,14 @@ ECCENTRICITY_LIMIT = 1e-7
 INCLINATION_LIMIT = 1e-7 * const.DEG2RAD
 """``float``: Defines the limit between inclined & equatorial orbits  (:cite:p:`vallado_2003_aiaa_covariance`)."""
 
+# Orbital constants
+LEO_ALTITUDE_LIMIT = 12000
+"""``int``: Maximum altitude for "Low Earth Orbit" RSO designation (km)"""
+MEO_ALTITUDE_LIMIT = 30000
+"""``int``: Maximum altitude for "Medium Earth Orbit" RSO designation (km)"""
+GEO_ALTITUDE_LIMIT = 45000
+"""``int``: Maximum altitude for "Geostationary Earth Orbit" RSO designation (km)"""
+
 
 class InclinationError(Exception):
     r"""Exception indicating that an invalid inclination angle was used."""

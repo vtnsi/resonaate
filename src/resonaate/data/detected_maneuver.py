@@ -19,14 +19,14 @@ class DetectedManeuver(Base, _DataMixin):
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
 
     ## Defines the associated sensor agent with the observation data
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     # [FIXME]: Lazy way to implement multiple sensor IDs before moving to postgres
     sensor_ids = Column(String, nullable=False)
 
     ## Defines the associated target agent with the observation data
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    target = relationship("Agent", lazy="joined", innerjoin=True)
+    target = relationship("AgentModel", lazy="joined", innerjoin=True)
 
     # NIS at the time of the maneuver detection
     nis = Column(Float, nullable=False)

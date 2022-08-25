@@ -1,16 +1,17 @@
 """Defines the abstract :class:`.JobHandler` base class that specifies the common API for all parallel execution."""
 # Standard Library Imports
 import logging
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
 # Local Imports
 from ...common.exceptions import JobProcessingError, JobTimeoutError
 from ...common.utilities import getTimeout
+from .. import ParallelMixin
 from ..job import CallbackRegistration
 from ..producer import QueueManager
 
 
-class JobHandler(metaclass=ABCMeta):
+class JobHandler(ParallelMixin, ABC):
     """Handle creating, queuing, blocking, and post-processing jobs for parallel execution."""
 
     callback_class = None
@@ -54,7 +55,7 @@ class JobHandler(metaclass=ABCMeta):
         """Register callback object that is used in parallel job creation and post-processing.
 
         The callback is specifically used by :meth:`~.JobHandler.executeJobs` and
-        :meth:`~.Jobhandler.handleProcessedJob`.
+        :meth:`~.JobHandler.handleProcessedJob`.
 
         Args:
             registrant (``object``): reference to the registration's calling object
@@ -118,3 +119,7 @@ class JobHandler(metaclass=ABCMeta):
                 self.logger.error(msg)
 
         self.job_id_registration_dict = {}
+
+    def shutdown(self):
+        """Shutdown the :class:`.QueueManager`."""
+        self.queue_mgr.shutdown()

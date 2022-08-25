@@ -53,7 +53,7 @@ class EarthOrientationParameter:
     # Instantaneous rate of change of UT1 w.r.t UTC (seconds)
     length_of_day: float
 
-    # Difference in atomice time w.r.t UTC, via leap seconds (seconds)
+    # Difference in atomic time w.r.t UTC, via leap seconds (seconds)
     delta_atomic_time: int
 
     # Catalog the source of the EOP data

@@ -1,26 +1,30 @@
 # pylint: disable=protected-access
-# Standard Library Imports
+from __future__ import annotations
+
 # Third Party Imports
+import pytest
 from numpy import array, diagflat, ones
 
-try:
-    # RESONAATE Imports
-    from resonaate.dynamics.two_body import TwoBody
-    from resonaate.estimation.adaptive.adaptive_filter import AdaptiveFilter
-    from resonaate.estimation.adaptive.initialization import lambertInitializationFactory
-    from resonaate.estimation.adaptive.mmae_stacking_utils import eciStack, stackingFactory
-    from resonaate.estimation.maneuver_detection import StandardNis
-    from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.dynamics.two_body import TwoBody
+from resonaate.estimation.adaptive.adaptive_filter import AdaptiveFilter
+from resonaate.estimation.adaptive.initialization import lambertInitializationFactory
+from resonaate.estimation.adaptive.mmae_stacking_utils import eciStack, stackingFactory
+from resonaate.estimation.maneuver_detection import StandardNis
+from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 
 EST_X = array([6678.14, 0.0, 0.0, 0.0, 6.78953, 3.68641])
 EST_P = diagflat([1.0, 2.0, 1.0, 1, 1, 1])
 NOMINAL_FILTER = UnscentedKalmanFilter(
-    10001, 0.0, EST_X, EST_P, TwoBody(), 3 * EST_P, StandardNis(0.01), None
+    10001,
+    0.0,
+    EST_X,
+    EST_P,
+    TwoBody(),
+    3 * EST_P,
+    StandardNis(0.01),
+    None,
+    False,
 )
 TIMESTEP = 300
 ORBIT_DETERMINATION = lambertInitializationFactory("lambert_universal")
@@ -56,9 +60,9 @@ HYPOTHESIS_STATES = array(
 )
 
 
-class TestStackingMethods(BaseTestCase):
-    """Test Class for Stacking methods."""
-
+@pytest.fixture(name="adaptive_filter")
+def getAdaptiveFilter() -> AdaptiveFilter:
+    """Returns an AdaptiveFilter object."""
     adaptive_filter = AdaptiveFilter(
         NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
     )
@@ -76,13 +80,15 @@ class TestStackingMethods(BaseTestCase):
     adaptive_filter.innov_cvr = ones((Y_DIM, Y_DIM))
     adaptive_filter.kalman_gain = ones((adaptive_filter.x_dim, Y_DIM))
     adaptive_filter.model_weights = array([1, 1, 1])
+    return adaptive_filter
 
-    def testECIStacking(self):
-        """Tests stacking ECI states."""
-        self.adaptive_filter.stacking_method = stackingFactory("eci_stack")
-        self.adaptive_filter.models = self.adaptive_filter._createModels(HYPOTHESIS_STATES)
-        for model in self.adaptive_filter.models:
-            model.pred_x = EST_X
-        pred_x, est_x = eciStack(self.adaptive_filter.models, self.adaptive_filter.model_weights)
-        assert pred_x.shape == (6,)
-        assert est_x.shape == (6,)
+
+def testECIStacking(adaptive_filter: AdaptiveFilter) -> None:
+    """Tests stacking ECI states."""
+    adaptive_filter.stacking_method = stackingFactory("eci_stack")
+    adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
+    for model in adaptive_filter.models:
+        model.pred_x = EST_X
+    pred_x, est_x = eciStack(adaptive_filter.models, adaptive_filter.model_weights)
+    assert pred_x.shape == (6,)
+    assert est_x.shape == (6,)

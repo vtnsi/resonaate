@@ -1,32 +1,30 @@
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 
 # Third Party Imports
 import numpy as np
-
-try:
-    # RESONAATE Imports
-    from resonaate.estimation import (
-        VALID_ADAPTIVE_ESTIMATION_LABELS,
-        VALID_FILTER_LABELS,
-        VALID_MANEUVER_DETECTION_LABELS,
-        AdaptiveFilter,
-        ManeuverDetection,
-        SequentialFilter,
-        adaptiveEstimationFactory,
-        maneuverDetectionFactory,
-        sequentialFilterFactory,
-    )
-    from resonaate.scenario.config.estimation_config import (
-        AdaptiveEstimationConfig,
-        ManeuverDetectionConfig,
-        SequentialFilterConfig,
-    )
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Third Party Imports
-# Testing Imports
 import pytest
+
+# RESONAATE Imports
+from resonaate.estimation import (
+    VALID_ADAPTIVE_ESTIMATION_LABELS,
+    VALID_FILTER_LABELS,
+    VALID_MANEUVER_DETECTION_LABELS,
+    AdaptiveFilter,
+    ManeuverDetection,
+    SequentialFilter,
+    adaptiveEstimationFactory,
+    maneuverDetectionFactory,
+    sequentialFilterFactory,
+)
+from resonaate.scenario.config.base import ConfigValueError
+from resonaate.scenario.config.estimation_config import (
+    AdaptiveEstimationConfig,
+    ManeuverDetectionConfig,
+    SequentialFilterConfig,
+)
 
 MANEUVER_DETECTION_CONFIG = {
     "threshold": 0.01,
@@ -74,8 +72,7 @@ def testSequentialFilterFactory(sequential_filter_type, dynamics):
             "beta": 2,
         }
     # Create config object
-    estimation_config = SequentialFilterConfig()
-    estimation_config.readConfig(config)
+    estimation_config = SequentialFilterConfig(**config)
     # Call factory function
     filter_obj = sequentialFilterFactory(
         estimation_config, TGT_ID, INITIAL_TIME, EST_X, EST_P, dynamics, Q_MATRIX
@@ -88,9 +85,8 @@ def testSequentialFilterFactoryError(dynamics):
     config = deepcopy(ESTIMATION_CONFIG["sequential_filter"])
     config["name"] = "ukf"
     # Create config object
-    estimation_config = SequentialFilterConfig()
-    estimation_config.readConfig(config)
-    estimation_config._name._setting = "invlaid_name"  # pylint: disable=protected-access
+    estimation_config = SequentialFilterConfig(**config)
+    estimation_config.name = "invlaid_name"
     # Call factory function
     error_msg = f"Invalid filter type: {estimation_config.name}"
     with pytest.raises(ValueError, match=error_msg):
@@ -106,25 +102,28 @@ def testManeuverDetectionFactory(detection_method):
     config = deepcopy(MANEUVER_DETECTION_CONFIG)
     config["name"] = detection_method
     # Create config object
-    maneuver_det_config = ManeuverDetectionConfig()
-    maneuver_det_config.readConfig(config)
+    maneuver_det_config = ManeuverDetectionConfig(**config)
     # Call factory function
     maneuver_detection = maneuverDetectionFactory(maneuver_det_config)
     assert isinstance(maneuver_detection, ManeuverDetection)
 
     config["name"] = None
-    # Create config object
-    maneuver_det_config = ManeuverDetectionConfig()
-    maneuver_det_config.readConfig(config)
-    # Call factory function
-    maneuver_detection = maneuverDetectionFactory(maneuver_det_config)
+    with pytest.raises(ConfigValueError):
+        ManeuverDetectionConfig(**config)
+
+    with pytest.raises(ConfigValueError):
+        ManeuverDetectionConfig({})
+
+    maneuver_detection = maneuverDetectionFactory({})
+    assert maneuver_detection is None
+
+    maneuver_detection = maneuverDetectionFactory(None)
     assert maneuver_detection is None
 
     config["name"] = "standard_nis"
     # Create config object
-    maneuver_det_config = ManeuverDetectionConfig()
-    maneuver_det_config.readConfig(config)
-    maneuver_det_config._name._setting = "invalid_name"  # pylint: disable=protected-access
+    maneuver_det_config = ManeuverDetectionConfig(**config)
+    maneuver_det_config.name = "invalid_name"
     # Call factory function
     error_msg = f"Invalid maneuver detection type: {maneuver_det_config.name}"
     with pytest.raises(ValueError, match=error_msg):
@@ -138,13 +137,11 @@ def testAdaptiveFilterFactory(adaptive_filter_type, dynamics):
     config = deepcopy(ESTIMATION_CONFIG["adaptive_filter"])
     config["name"] = adaptive_filter_type
     # Create config object
-    estimation_config = AdaptiveEstimationConfig()
-    estimation_config.readConfig(config)
+    estimation_config = AdaptiveEstimationConfig(**config)
 
     config2 = deepcopy(ESTIMATION_CONFIG["sequential_filter"])
     config2["name"] = "ukf"
-    sequential_config = SequentialFilterConfig()
-    sequential_config.readConfig(config2)
+    sequential_config = SequentialFilterConfig(**config2)
 
     sequential_filter = sequentialFilterFactory(
         sequential_config, TGT_ID, INITIAL_TIME, EST_X, EST_P, dynamics, Q_MATRIX
@@ -153,8 +150,7 @@ def testAdaptiveFilterFactory(adaptive_filter_type, dynamics):
     config3 = deepcopy(MANEUVER_DETECTION_CONFIG)
     config3["name"] = "standard_nis"
     # Create config object
-    maneuver_det_config = ManeuverDetectionConfig()
-    maneuver_det_config.readConfig(config3)
+    maneuver_det_config = ManeuverDetectionConfig(**config3)
     # Call factory function
     maneuver_detection = maneuverDetectionFactory(maneuver_det_config)
 
@@ -166,9 +162,8 @@ def testAdaptiveFilterFactory(adaptive_filter_type, dynamics):
     assert isinstance(filter_obj, AdaptiveFilter)
 
     # Create config object
-    estimation_config = AdaptiveEstimationConfig()
-    estimation_config.readConfig(config)
-    estimation_config._name._setting = "invalid_name"  # pylint: disable=protected-access
+    estimation_config = AdaptiveEstimationConfig(**config)
+    estimation_config.name = "invalid_name"
     # Call factory function
     error_msg = f"Invalid adaptive estimation type: {estimation_config.name}"
     with pytest.raises(ValueError, match=error_msg):

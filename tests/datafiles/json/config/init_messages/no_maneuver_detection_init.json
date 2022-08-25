@@ -17,7 +17,6 @@
   "propagation": {
     "propagation_model": "special_perturbations",
     "integration_method": "RK45",
-    "realtime_propagation": true,
     "realtime_observation": true
   },
   "geopotential": {
@@ -36,7 +35,7 @@
       "dynamics_model": "special_perturbations",
       "maneuver_detection": {
         "name": "standard_nis",
-        "maneuver_gate_val": 0.01,
+        "threshold": 0.01,
         "parameters": {}
       }
     }

@@ -1,0 +1,39 @@
+# ==========================================
+# Common Base Jobs
+# ==========================================
+
+.python-base:
+  # Cache the pip libraries. Only update if different branch, or requirements.txt changed.
+  cache:
+    key:
+      files:
+        - setup.py
+        - pyproject.toml
+      prefix: "%CI_COMMIT_REF_SLUG%"
+    paths:
+      - .cache/pip
+      - .venv
+  # Change pip's cache directory to be inside the project directory since we can
+  # only cache local items
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Docker images for different Pythons
+.python310: &python310
+  extends: .python-base
+  image: python:3.10-bullseye
+
+.python39:
+  extends: .python-base
+  image: python:3.9-bullseye
+
+.python38:
+  extends: .python-base
+  image: python:3.8-bullseye
+
+.python37: &python37
+  extends: .python-base
+  image: python:3.7-bullseye
+
+.python-latest: *python310
+.python-oldest: *python37

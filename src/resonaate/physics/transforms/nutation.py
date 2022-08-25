@@ -51,7 +51,7 @@ def get1980NutationSeries() -> Tuple[ndarray, ndarray]:
         nut_data = array(loadDatFile(file_resource))
 
     # Parse integer and real coefficients out.
-    i_coeffs = nut_data[::, :5]
-    r_coeffs = nut_data[::, 5:9] * 0.0001 * const.ARCSEC2RAD
+    integers = nut_data[::, :5]
+    reals = nut_data[::, 5:9] * 0.0001 * const.ARCSEC2RAD
 
-    return array(r_coeffs), array(i_coeffs)
+    return array(reals), array(integers)

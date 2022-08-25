@@ -182,7 +182,7 @@ class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
 
 
 class AgentPropagationRegistration(CallbackRegistration):
-    """Registration for :class:`.TargetAgent` & :class:`.SensorAgent` truth propgation jobs."""
+    """Registration for :class:`.TargetAgent` & :class:`.SensorAgent` truth propagation jobs."""
 
     def jobCreateCallback(self, **kwargs):
         """Create a :func:`.asyncPropagate` job & update :attr:`~.Agent.time` appropriately.
@@ -331,7 +331,7 @@ class AgentPropagationJobHandler(PropagationJobHandler):
         KeywordArgs:
             epoch_time (:class:`.ScenarioTime`): current simulation epoch.
             julian_date (:class:`.JulianDate`): current simulation Julian Date
-            prior_julian_date (:class:`.JulianDate`): Julian Date at beginnning of timestep
+            prior_julian_date (:class:`.JulianDate`): Julian Date at beginning of timestep
 
         Returns:
             ``list``: :class:`.Job` objects that will be submitted

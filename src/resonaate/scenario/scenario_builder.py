@@ -1,6 +1,9 @@
 """Defines the :class:`.ScenarioBuilder` class to build valid :class:`.Scenario` objects from given configurations."""
+from __future__ import annotations
+
 # Standard Library Imports
 from math import isclose
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import allclose, array
@@ -11,18 +14,26 @@ from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
-from ..common.exceptions import DuplicateSensorError, DuplicateTargetError
+from ..common.exceptions import DuplicateEngineError, DuplicateSensorError, DuplicateTargetError
 from ..common.logger import Logger
-from ..data.data_interface import Agent
+from ..data.data_interface import AgentModel
 from ..data.events import Event
 from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import spacecraftDynamicsFactory
+from ..dynamics.special_perturbations import calcSatRatio
 from ..physics.noise import noiseCovarianceFactory
-from ..scenario.clock import ScenarioClock
 from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
 from ..tasking.rewards import rewardsFactory
+from .clock import ScenarioClock
 from .config.event_configs import MissingDataDependency
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ..tasking.engine.engine_base import TaskingEngine
+    from .config import ScenarioConfig
+    from .config.agent_configs import SensingAgentConfig, TargetAgentConfig
 
 
 class ScenarioBuilder:
@@ -33,48 +44,43 @@ class ScenarioBuilder:
     """
 
     # pylint:disable=too-many-locals, too-many-branches
-    def __init__(self, scenario_configuration, importer_db_path=None):  # noqa: C901
+    def __init__(  # noqa: C901
+        self, scenario_configuration: ScenarioConfig, importer_db_path: str | None = None
+    ) -> None:
         """Instantiate a :class:`.ScenarioBuilder` from a config dictionary.
 
         Args:
-            scenario_configuration (ScenarioConfig): config settings to make a valid :class:`.Scenario`
+            scenario_configuration (:class:`.ScenarioConfig`): config settings to make a valid :class:`.Scenario`
             importer_db_path (``str``, optional): path to external importer database for pre-canned
                 data. Defaults to ``None``.
 
         Raises:
             ValueError: raised if the "engines" field is empty
         """
+        # [FIXME]: Split this into more sub-methods
         # Create logger from configs
         self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
         # Save base config
         self._config = scenario_configuration
 
         # Instantiate clock based on config's start time and class variables
-        self.clock = ScenarioClock.fromConfig(self.time)
+        self.clock = ScenarioClock.fromConfig(self.config.time)
 
-        # Create the base estimation filter for nominal operation
-        filter_dynamics = spacecraftDynamicsFactory(
-            self.config.estimation.sequential_filter.dynamics,
-            self.clock,
-            self.geopotential,
-            self.perturbations,
-            method=self.propagation.integration_method,
-        )
         q_matrix = noiseCovarianceFactory(
-            self.noise.filter_noise_type,
-            self.time.physics_step_sec,
-            self.noise.filter_noise_magnitude,
+            self.config.noise.filter_noise_type,
+            self.config.time.physics_step_sec,
+            self.config.noise.filter_noise_magnitude,
         )
 
         # create target and sensor sets
-        target_configs = {}
-        sensor_configs = {}
-        self.tasking_engines = {}
+        target_configs: dict[int, TargetAgentConfig] = {}
+        sensor_configs: dict[int, SensingAgentConfig] = {}
+        self.tasking_engines: dict[int, TaskingEngine] = {}
 
-        for engine_conf in self._config.engines.objects:
+        for engine_conf in self._config.engines:
             if engine_conf.unique_id in self.tasking_engines:
                 err = f"Engines share a unique ID: {engine_conf.unique_id}"
-                raise ValueError(err)
+                raise DuplicateEngineError(err)
 
             # Create Reward & Decision from configuration
             reward = rewardsFactory(engine_conf.reward)
@@ -110,7 +116,7 @@ class ScenarioBuilder:
                 reward,
                 decision,
                 importer_db_path,
-                self.propagation.realtime_observation,
+                self.config.propagation.realtime_observation,
             )
 
             self.tasking_engines[tasking_engine.unique_id] = tasking_engine
@@ -119,60 +125,92 @@ class ScenarioBuilder:
             )
 
         self.target_agents = self.initTargets(
-            list(target_configs.values()), self.propagation.station_keeping
+            list(target_configs.values()), self.config.propagation.station_keeping
         )
 
         # Build estimate set
-        self.estimate_agents = {}
-        for target_id, target_agent in self.target_agents.items():
+        self.estimate_agents: dict[int, EstimateAgent] = {}
+        for target_id, target_config in target_configs.items():
+            sat_ratio = calcSatRatio(
+                target_config.visual_cross_section,
+                target_config.mass,
+                target_config.reflectivity,
+            )
+
+            # Create the base estimation filter for nominal operation
+            filter_dynamics = spacecraftDynamicsFactory(
+                self.config.estimation.sequential_filter.dynamics_model,
+                self.clock,
+                self.config.geopotential,
+                self.config.perturbations,
+                sat_ratio,
+                method=self.config.propagation.integration_method,
+            )
+
             config = {
-                "target": target_agent,
-                "position_std": self.noise.init_position_std_km,
-                "velocity_std": self.noise.init_velocity_std_km_p_sec,
-                "rng": default_rng(self.noise.random_seed),
+                "target": target_config,
+                "agent_type": self.target_agents[target_id].agent_type,
+                "position_std": self.config.noise.init_position_std_km,
+                "velocity_std": self.config.noise.init_velocity_std_km_p_sec,
+                "rng": default_rng(self.config.noise.random_seed),
                 "clock": self.clock,
                 "sequential_filter": self.config.estimation.sequential_filter,
                 "adaptive_filter": self.config.estimation.adaptive_filter,
-                "seed": self.noise.random_seed,
+                "initial_orbit_determination": self.config.estimation.initial_orbit_determination,
+                "seed": self.config.noise.random_seed,
                 "dynamics": filter_dynamics,
                 "q_matrix": q_matrix,
             }
-            self.estimate_agents[target_id] = EstimateAgent.fromConfig(config, events=[])
+            self.estimate_agents[target_id] = EstimateAgent.fromConfig(config)
 
         self.logger.info(f"Successfully loaded {len(self.target_agents)} target agents")
 
-        self.sensor_network = []
-        for agent in sensor_configs.values():
+        self.sensor_network: list[SensingAgent] = []
+        for sensor_config in sensor_configs.values():
+            # Assign Sensor FoV from init if not set
+            if self.config.observation.field_of_view:
+                sensor_config.calculate_fov = True
+            sat_ratio = calcSatRatio(
+                sensor_config.visual_cross_section,
+                sensor_config.mass,
+                sensor_config.reflectivity,
+            )
+
             config = {
-                "agent": agent,
+                "agent": sensor_config,
                 "clock": self.clock,
                 "satellite_dynamics": spacecraftDynamicsFactory(
-                    self.propagation.propagation_model,
+                    self.config.propagation.propagation_model,
                     self.clock,
-                    self.geopotential,
-                    self.perturbations,
-                    method=self.propagation.integration_method,
+                    self.config.geopotential,
+                    self.config.perturbations,
+                    sat_ratio,
+                    method=self.config.propagation.integration_method,
                 ),
-                "realtime": self.propagation.sensor_realtime_propagation,
+                "realtime": self.config.propagation.sensor_realtime_propagation,
             }
 
-            self.sensor_network.append(SensingAgent.fromConfig(config, events=[]))
+            self.sensor_network.append(SensingAgent.fromConfig(config))
 
         self.logger.info(f"Successfully loaded {len(self.sensor_network)} sensor agents")
 
         # Store agent data in the database for events that rely on them
         agent_data = []
         for target_agent in self.target_agents.values():
-            agent_data.append(Agent(unique_id=target_agent.simulation_id, name=target_agent.name))
+            agent_data.append(
+                AgentModel(unique_id=target_agent.simulation_id, name=target_agent.name)
+            )
         for sensor_agent in self.sensor_network:
-            agent_data.append(Agent(unique_id=sensor_agent.simulation_id, name=sensor_agent.name))
+            agent_data.append(
+                AgentModel(unique_id=sensor_agent.simulation_id, name=sensor_agent.name)
+            )
 
         shared_interface = ResonaateDatabase.getSharedInterface()
         shared_interface.bulkSave(agent_data)
 
         built_event_types = set()
         built_events = []
-        for event_config in sorted(self._config.events.objects, key=lambda x: x.start_time):
+        for event_config in sorted(self._config.events, key=lambda x: x.start_time):
             for data_dependency in event_config.getDataDependencies():
                 found_dependency = shared_interface.getData(data_dependency.query, multi=False)
                 if found_dependency is None:
@@ -193,12 +231,14 @@ class ScenarioBuilder:
         self.logger.info(f"Loaded {len(built_events)} events of types {built_event_types}")
 
     @staticmethod
-    def _validateTargetAddition(new_target, existing_target):
+    def _validateTargetAddition(
+        new_target: TargetAgentConfig, existing_target: TargetAgentConfig
+    ) -> None:
         """Throw an `DuplicateTargetError` if the `new_target` and `existing_target` states don't match.
 
         Args:
-            new_target (TargetConfigObject): Target object being added.
-            existing_target (TargetConfigObject): Existing target object.
+            new_target (:class:`.TargetAgentConfig`): Target object being added.
+            existing_target (:class:`.TargetAgentConfig`): Existing target object.
 
         Raises:
             :exc:`.DuplicateTargetError`: If the `new_target` and `existing_target` states don't match.
@@ -224,12 +264,16 @@ class ScenarioBuilder:
         err = f"Duplicate targets specified with different initial states: {new_target.sat_num}"
         raise DuplicateTargetError(err)
 
-    def initTargets(self, target_configs, station_keeping):
+    def initTargets(
+        self,
+        target_configs: list[TargetAgentConfig],
+        station_keeping: bool,
+    ) -> dict[int, TargetAgent]:
         """Initialize target RSOs based on a given config.
 
         Args:
-            target_configs (``list``): List of :class:`.TargetConfigObject` objects describing target RSO
-                attributes.
+            target_configs (``list``): :class:`.TargetAgentConfig` objects describing target RSO attributes.
+            station_keeping (``bool``): whether to perform station-keeping burns during the scenario.
 
         Raises:
             ValueError: raised if RSO state isn't specified as "init_coe" or "init_eci"
@@ -237,65 +281,42 @@ class ScenarioBuilder:
         Returns:
             ``dict``: constructed :class:`.Spacecraft` objects for each RSO specified
         """
-        targets = {}
+        targets: dict[int, TargetAgent] = {}
         for target_conf in target_configs:
+            sat_ratio = calcSatRatio(
+                target_conf.visual_cross_section,
+                target_conf.mass,
+                target_conf.reflectivity,
+            )
+
             dynamics_method = spacecraftDynamicsFactory(
-                self.propagation.propagation_model,
+                self.config.propagation.propagation_model,
                 self.clock,
-                self.geopotential,
-                self.perturbations,
-                method=self.propagation.integration_method,
+                self.config.geopotential,
+                self.config.perturbations,
+                sat_ratio,
+                method=self.config.propagation.integration_method,
             )
 
             dynamics_noise = noiseCovarianceFactory(
-                self.noise.dynamics_noise_type,
-                self.time.physics_step_sec,
-                self.noise.dynamics_noise_magnitude,
+                self.config.noise.dynamics_noise_type,
+                self.config.time.physics_step_sec,
+                self.config.noise.dynamics_noise_magnitude,
             )
             config = {
                 "target": target_conf,
                 "clock": self.clock,
                 "dynamics": dynamics_method,
-                "realtime": self.propagation.target_realtime_propagation,
+                "realtime": self.config.propagation.target_realtime_propagation,
                 "station_keeping": station_keeping,
                 "noise": dynamics_noise,
-                "random_seed": self.noise.random_seed,
+                "random_seed": self.config.noise.random_seed,
             }
-            targets[target_conf.sat_num] = TargetAgent.fromConfig(config, events=[])
+            targets[target_conf.sat_num] = TargetAgent.fromConfig(config)
 
         return targets
 
     @property
-    def config(self):
-        """ScenarioConfig: returns the entire configuration."""
+    def config(self) -> ScenarioConfig:
+        """:class:`.ScenarioConfig`: returns the entire configuration."""
         return self._config
-
-    @property
-    def noise(self):
-        """NoiseConfig: returns "noise" section of the configuration."""
-        return self._config.noise
-
-    @property
-    def propagation(self):
-        """PropagationConfig`: returns "propagation" section of the configuration."""
-        return self._config.propagation
-
-    @property
-    def time(self):
-        """TimeConfig: returns "time" section of the configuration."""
-        return self._config.time
-
-    @property
-    def geopotential(self):
-        """GeopotentialConfig: returns "geopotential" section of the configuration."""
-        return self._config.geopotential
-
-    @property
-    def perturbations(self):
-        """PerturbationsConfig: returns "perturbations" section of the configuration."""
-        return self._config.perturbations
-
-    @property
-    def time_step(self):
-        """TimeConfig: returns "time_step" section of the configuration."""
-        return self.time.physics_step_sec

@@ -1,0 +1,92 @@
+# ==========================================
+# Includes
+# ==========================================
+
+include:
+  - local: .gitlab/ci/base.gitlab-ci.yml
+  - local: .gitlab/ci/rules.gitlab-ci.yml
+  - local: .gitlab/ci/scripts.gitlab-ci.yml
+
+# ==========================================
+# Base Publish Job
+# ==========================================
+
+.publish-base:
+  stage: publish
+  extends:
+    - .rules:tag
+  # Only run after successful build stage
+  when: on_success
+
+# ==========================================
+# Pages Publish Job
+# ==========================================
+
+# Publish to Gitlab Pages
+# [NOTE]: This never runs currently, b/c no Pages support
+publish-pages:
+  extends: .publish-base
+  script:
+    - echo "publish docs to GitLab Pages"
+    - mv docs/build/html/ ./public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 hour
+    when: on_success
+  needs:
+    - build-docs
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+
+# ==========================================
+# Publish Package Job
+# ==========================================
+
+# Publish to Gitlab package registry
+publish-pkg:
+  extends:
+    - .publish-base
+    - .python-latest
+  before_script:
+    - !reference [.create-venv, before_script]
+    - python3 -m pip install twine
+  variables:
+    TWINE_PASSWORD: "$CI_JOB_TOKEN"
+    TWINE_USERNAME: gitlab-ci-token
+    TWINE_REPOSITORY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+    TWINE_OPTIONS: --verbose --skip-existing
+  script:
+    - echo "Publishing RESONAATE $RESONAATE_VERSION to GitLab package registry"
+    - python3 -m twine upload $TWINE_OPTIONS dist/*
+  needs:
+    - build-pkg
+
+# ==========================================
+# Publish Container Job
+# ==========================================
+
+# Build container using buildah tool, to avoid dind security issues.
+# Publish to Gitlab container registry
+# [NOTE]: This never runs currently, b/c we don't have a container configuration
+publish-container:
+  extends: .publish-base
+  before_script:
+    - !reference [.apt-update, before_script]
+    - !reference [.install-buildah, before_script]
+  script:
+    - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - buildah bud -t ${RESONAATE_IMAGE_NAME} .
+    - export CONTAINER_ID=$(buildah from ${RESONAATE_IMAGE_NAME})
+    - buildah commit --squash $CONTAINER_ID $FQ_IMAGE_NAME
+    - buildah push ${FQ_IMAGE_NAME}
+  variables:
+    STORAGE_DRIVER: vfs
+    BUILDAH_FORMAT: docker
+    REGISTRY_AUTH_FILE: ${HOME}/auth.json
+    FQ_IMAGE_NAME: ${CI_REGISTRY_IMAGE}/${RESONAATE_IMAGE_NAME}:${RESONAATE_VERSION}
+  # Prevents from running
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never

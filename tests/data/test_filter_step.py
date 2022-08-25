@@ -1,4 +1,5 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 
@@ -6,21 +7,12 @@ from copy import deepcopy
 from numpy import array
 from sqlalchemy.orm import Query
 
-# RESONAATE Library Imports
-try:
-    # RESONAATE Imports
-    from resonaate.data.filter_step import FilterStep
-    from resonaate.data.resonaate_database import ResonaateDatabase
-except ImportError as error:
-    raise Exception(
-        f"Please ensure you have the appropriate packages installed\n {error}"
-    ) from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.data.filter_step import FilterStep
+from resonaate.data.resonaate_database import ResonaateDatabase
 
 
-class TestFilterStep(BaseTestCase):
+class TestFilterStep:
     """Test class for :class:`.FilterStep` database table class."""
 
     innovation = array(

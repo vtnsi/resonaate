@@ -10,7 +10,12 @@
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
-            "args": ["configs/json/main_init.json", "-t", "1", "--debug"]
+            "args": [
+                "configs/json/main_init.json",
+                "-t",
+                "1",
+                "--debug"
+            ]
         },
         {
             "name": "Test Run",
@@ -18,7 +23,12 @@
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
-            "args": ["configs/json/test_init.json", "-t", "1", "--debug"],
+            "args": [
+                "configs/json/test_init.json",
+                "-t",
+                "1",
+                "--debug"
+            ],
         },
         {
             "name": "MMAE Run",
@@ -26,7 +36,25 @@
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
-            "args": ["configs/json/mmae_init.json", "-t", "8", "--debug"],
+            "args": [
+                "configs/json/mmae_init.json",
+                "-t",
+                "8",
+                "--debug"
+            ],
+        },
+        {
+            "name": "IOD Run",
+            "type": "python",
+            "request": "launch",
+            "module": "resonaate",
+            "console": "integratedTerminal",
+            "args": [
+                "configs/json/iod_init.json",
+                "-t",
+                "8",
+                "--debug"
+            ],
         },
         {
             "name": "Python Current File",

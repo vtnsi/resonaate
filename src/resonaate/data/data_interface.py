@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
 from . import Base
-from .agent import Agent
+from .agent import AgentModel
 from .detected_maneuver import DetectedManeuver
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .epoch import Epoch
@@ -34,7 +34,7 @@ class DataInterface(metaclass=ABCMeta):
 
     VALID_DATA_TYPES = {
         Epoch.__tablename__: Epoch,
-        Agent.__tablename__: Agent,
+        AgentModel.__tablename__: AgentModel,
         TruthEphemeris.__tablename__: TruthEphemeris,
         EstimateEphemeris.__tablename__: EstimateEphemeris,
         Observation.__tablename__: Observation,

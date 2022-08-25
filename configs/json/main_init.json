@@ -22,6 +22,9 @@
     "sensor_realtime_propagation": true,
     "realtime_observation": true
   },
+  "observation": {
+    "field_of_view": false
+  },
   "geopotential": {
     "model": "egm96.txt",
     "degree": 2,

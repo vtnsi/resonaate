@@ -17,7 +17,6 @@
   "propagation": {
     "propagation_model": "special_perturbations",
     "integration_method": "RK45",
-    "realtime_propagation": true,
     "realtime_observation": true
   },
   "geopotential": {

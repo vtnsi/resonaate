@@ -35,7 +35,6 @@ class EstimateUpdateRegistration(CallbackRegistration):
             asyncUpdateEstimate,
             args=[
                 self.registrant.estimate_agents[estimate_id],
-                self.registrant.target_agents[estimate_id].eci_state,
                 kwargs["observations"],
             ],
         )
@@ -64,7 +63,7 @@ class EstimateUpdateJobHandler(JobHandler):
     def generateJobs(self, **kwargs):
         """Generate list of update jobs to submit to the :class:`.QueueManager`.
 
-        KewordArgs:
+        KeywordArgs:
             observations (``list``): :class:`.Observation` objects with which to update the
                 :class:`EstimateAgent`.
 

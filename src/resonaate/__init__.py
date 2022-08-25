@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from typing import Optional
 
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 
 
 def runResonaate(

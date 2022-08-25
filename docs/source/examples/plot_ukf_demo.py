@@ -91,7 +91,17 @@ two_body_noise = simpleNoise(dt, 1e-25)
 
 # Construct the satellite object
 sat1_agent = TargetAgent(
-    sat1_id, sat1_name, sat1_type, sat1_x0, clock, two_body_dynamics, realtime, two_body_noise
+    sat1_id,
+    sat1_name,
+    sat1_type,
+    sat1_x0,
+    clock,
+    two_body_dynamics,
+    realtime,
+    two_body_noise,
+    25.0,
+    100,
+    0.21,
 )
 
 # RESONAATE Imports
@@ -103,6 +113,7 @@ sat1_agent = TargetAgent(
 from resonaate.agents.estimate_agent import EstimateAgent
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.noise import continuousWhiteNoise, initialEstimateNoise
+from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
 # Extra information required by EstimateAgent
 seed = 12345  # Seeds the random number generator, used for adding noise
@@ -122,7 +133,18 @@ ukf = UnscentedKalmanFilter(
 
 # Create an EstimateAgent object to track the actual TargetAgent satellite
 sat1_estimate_agent = EstimateAgent(
-    sat1_id, sat1_name, sat1_type, clock, sat1_est0, sat1_cov0, ukf, None
+    sat1_id,
+    sat1_name,
+    sat1_type,
+    clock,
+    sat1_est0,
+    sat1_cov0,
+    ukf,
+    None,
+    InitialOrbitDeterminationConfig(),
+    25.0,
+    100,
+    0.21,
 )
 
 # RESONAATE Imports
@@ -163,6 +185,8 @@ tx_frequency = 1.5 * 1e9  # Sensor transmit center frequency (Hz)
 
 # Exemplar is akin to sensor capability descriptions found in OV-1s (baseball at LEO, basketball at GEO)
 exemplar = [0.04908738521234052, 40500.0]  # Exemplar area (m^2)  # Exemplar range (km)
+field_of_view = "conic"
+calc_field_of_view = True
 
 radar_sensor = Radar(
     az_mask,
@@ -174,6 +198,10 @@ radar_sensor = Radar(
     tx_power,
     tx_frequency,
     np.radians(slew_rate),
+    field_of_view,
+    calc_field_of_view,
+    None,
+    None,
 )
 
 # Lat, Lon, Alt for sensor near VT
@@ -200,6 +228,9 @@ sensor_agent = SensingAgent(
     radar_sensor,
     sensor_dynamics,
     True,  # real time propagation
+    25.0,
+    100.0,
+    0.21,
 )
 
 # %%
@@ -225,7 +256,7 @@ sat1_estimate_agent.nominal_filter.predict(t1)
 obs = []
 truth_state = sat1_agent.eci_state  # [NOTE]: only used for debugging purposes!
 # Apply filter prediction step to estimate's state
-sat1_estimate_agent.updateEstimate(obs, truth_state)
+sat1_estimate_agent.updateEstimate(obs)
 
 # Magnitude of true error (true - estimate) after prediction step
 prior_error = np.linalg.norm(truth_state[:3] - sat1_estimate_agent.eci_state[:3])

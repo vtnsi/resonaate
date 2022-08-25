@@ -40,12 +40,14 @@ Here are some of the features that RESONAATE has to offer:
 - Configurable and extendible {class}`.ScenarioConfig` class for changing simulation options
 - Parallelization across multiple cores and machines
 - Dynamic event system that can perform various spacecraft maneuvers and more
+- Several {class}`.ManeuverDetection` techniques
+- Adaptive estimation after detected maneuvers either in the form of initial orbit determination (IOD) or multiple model adaptive estimation (MMAE)
 
 An overview of the motivation, design, framework, and terminology is provided below in {ref}`main-index-abstract`.
 The sidebar on the left has more pages organized into targeted sets of information.
 See {ref}`main-index-site` for a description of these sections.
 
-View the [source code](https://code.vt.edu/space-research/resonaate/resonaate), [issue tracker](https://code.vt.edu/space-research/resonaate/resonaate/-/issues), and [wiki](https://code.vt.edu/space-research/resonaate/resonaate/-/wikis/home), hosted on GitLab.
+View the [source code](https://code.vt.edu/space-research/resonaate/resonaate) and [issue tracker](https://code.vt.edu/space-research/resonaate/resonaate/-/issues) hosted on GitLab.
 
 ______________________________________________________________________
 
@@ -78,7 +80,7 @@ alt: Space Surveillance Network
 The U.S. Space Surveillance Network (SSN)
 ```
 
-The RESONAATE simulation creates a decision making engine that can create a tasking strategy for a diversely populated space object surveillance and identification (SOSI) network.
+The RESONAATE simulation creates a decision-making engine that can create a tasking strategy for a diversely populated space object surveillance and identification (SOSI) network.
 The figure on the right ({numref}`index-main-fig-ssn`) shows a visual representation of the United States Space Surveillance Network (SSN).
 RESONAATE often uses a version of this model, but also provides the flexibility to construct an arbitrary SSN with different sensors.
 The RESONAATE simulation tracks multiple maneuvering and non-maneuvering RSO using the given SSN, and attempts to do so in a responsive, autonomous, and optimal way.
@@ -89,8 +91,11 @@ The POMDP algorithm implements multiple types of metrics to measure the value of
 Examples of these include sensor usage metrics, information theoretic metrics, stability metrics, and behavioral metrics.
 The successful measurements from the tasked sensors are combined using an unscented Kalman filter (UKF) to maintain viable orbit estimates for all targets.
 This process is repeated over sequential time steps for the entire simulation length.
+The filter for each target RSO can include maneuver detection techniques for unplanned maneuvers.
+If a maneuver is detected, the simulation has the ability to dynamically switch to an adaptive estimation technique which can include triggering IOD or initializing an MMAE filter until post-maneuver convergence.
+
 The RESONAATE simulation stores both truth and estimated state information into a SQL database which allows for comparisons of various algorithms across different portions of the RSO tracking problem (e.g. tasking, estimation, or fusion) by directly measuring the global performance.
-It is also easy to perform Monte Carlo studies to determine algorithm sensitivity, or parametric studies to determine trade offs for tunable algorithm parameters.
+It is also easy to perform Monte Carlo studies to determine algorithm sensitivity, or parametric studies to determine trade-offs for tunable algorithm parameters.
 
 (index-main-fig-pomdp)=
 
@@ -115,7 +120,7 @@ ______________________________________________________________________
 {ref}`main-index-started` goes over basic information on how to install, setup, and use the RESONAATE tool and library.
 This section is the main jumping off point for new users or anyone trying to get a general understanding of the RESONAATE use cases.
 
-{ref}`main-index-ref` details specific information on how RESONAATE works such as the JSON config format, the service layer interface, and the library API documentation.
+{ref}`main-index-ref` details specific information on how RESONAATE works such as the JSON config format and the library API documentation.
 This section targets users and developers alike for quickly and efficiently finding out more information on how to use various features of RESONAATE.
 
 {ref}`main-index-tech` is meant for in-depth description of the mathematics, physics, and software engineering that RESONAATE is built upon.
@@ -144,6 +149,23 @@ gen/examples/index
 
 ```
 
+% User Guide TOC
+
+(main-index-tech)=
+
+```{toctree}
+---
+maxdepth: 1
+caption: User Guide
+name: home_background_toc
+includehidden:
+---
+background/astro
+background/estimation
+background/noise
+background/tasking
+```
+
 % Reference Material TOC
 
 (main-index-ref)=
@@ -157,26 +179,8 @@ includehidden:
 hidden:
 ---
 reference/config_format
-reference/service
 reference/api
 
-```
-
-% Technical Explanation TOC
-
-(main-index-tech)=
-
-```{toctree}
----
-maxdepth: 1
-caption: Technical Explanations
-name: home_background_toc
-includehidden:
----
-background/astro
-background/estimation
-background/noise
-background/tasking
 ```
 
 % Developer Info TOC
@@ -190,9 +194,15 @@ caption: For Developers
 name: home_dev_toc
 includehidden:
 ---
-development/contributing
-development/doc_readme
-development/containers
+Getting Started <development/contrib>
+Workflow <development/workflow>
+Style Guide <development/style>
+Testing <development/test>
+Documentation <development/docs>
+Labels <development/labels>
+Releases <development/releases>
+CI/CD <development/ci>
+Docker <development/containers>
 ```
 
 % Meta Information TOC
@@ -206,9 +216,9 @@ caption: Meta Information
 name: home_meta_toc
 includehidden:
 ---
-meta/bibliography
-meta/changelog
-meta/license
+Bibliography <meta/bibliography>
+Changelog <meta/changelog>
+License <meta/license>
 ```
 
 ______________________________________________________________________
@@ -241,11 +251,11 @@ ______________________________________________________________________
 - Project Principal Investigators
   - Dr. Jonathan Black: <jonathan.black@vt.edu>
   - Dr. Kevin Schroeder: <kschro1@vt.edu>
-- Lead Developers
+- Core Developers
   - Dylan Thomas: <dylan.thomas@vt.edu>
   - David Kusterer: <kdavid13@vt.edu>
-- Developers
   - Jon Kadan: <jkadan@vt.edu>
   - Cameron Harris: <camerondh@vt.edu>
+- Contributors
   - Connor Segal: <csegal@vt.edu>
   - Amit Bala: <agbala@vt.edu>

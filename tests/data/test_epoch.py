@@ -1,18 +1,10 @@
-# pylint: disable=attribute-defined-outside-init
-# Standard Library Imports
-# Third Party Imports
+from __future__ import annotations
+
 # RESONAATE Imports
-try:
-    # RESONAATE Imports
-    from resonaate.data.epoch import Epoch
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+from resonaate.data.epoch import Epoch
 
 
-class TestEpochTable(BaseTestCase):
+class TestEpochTable:
     """Test class for :class:`.Epoch` database table class."""
 
     def testInit(self):

@@ -1,4 +1,4 @@
-"""Defines the :class:`~.agent.Agent` data table class."""
+"""Defines the :class:`~.agent.AgentModel` data table class."""
 # Third Party Imports
 from sqlalchemy import Column, Integer, String
 
@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String
 from . import Base, _DataMixin
 
 
-class Agent(Base, _DataMixin):
+class AgentModel(Base, _DataMixin):
     """Generic agent DB table."""
 
     __tablename__ = "agents"

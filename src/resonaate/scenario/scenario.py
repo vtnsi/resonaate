@@ -1,9 +1,12 @@
 """Defines the :class:`.Scenario` class which controls RESONAATE simulations."""
+from __future__ import annotations
+
 # Standard Library Imports
 import logging
 from collections import defaultdict
 from functools import singledispatch, update_wrapper
 from pickle import dumps
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import around, seterr
@@ -20,7 +23,7 @@ from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import spacecraftDynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
-from ..parallel import REDIS_QUEUE_LOGGER, getRedisConnection, resetMaster
+from ..parallel import REDIS_QUEUE_LOGGER, ParallelMixin, getRedisConnection, resetMaster
 from ..parallel.handlers.agent_propagation import AgentPropagationJobHandler
 from ..parallel.handlers.estimate_prediction import EstimatePredictionJobHandler
 from ..parallel.handlers.estimate_update import EstimateUpdateJobHandler
@@ -28,14 +31,29 @@ from ..parallel.worker import WorkerManager
 from ..physics.constants import SEC2DAYS
 from ..physics.noise import noiseCovarianceFactory
 from ..physics.time.stardate import JulianDate
-from .config.agent_configs import SensorConfigObject, TargetConfigObject
+from .config.agent_configs import SensingAgentConfig, TargetAgentConfig
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Callable
+
+    # Local Imports
+    from ..physics.time.stardate import ScenarioTime
+    from ..tasking.engine.engine_base import TaskingEngine
+    from .clock import ScenarioClock
+    from .config import ScenarioConfig
+    from .config.estimation_config import EstimationConfig
 
 
-def methdispatch(func):
+def methdispatch(func: Callable) -> Callable:
     """Wrap an instance method in the ``singledispatch`` wrapper.
 
     Args:
-        func (callable): Method to be wrapped.
+        func (``callable``): Method to be wrapped.
+
+    Returns:
+        ``callable``: wrapped method
 
     See Also:
         https://stackoverflow.com/questions/24601722/how-can-i-use-functools-singledispatch-with-instance-methods
@@ -54,7 +72,7 @@ def methdispatch(func):
     return wrapper
 
 
-class Scenario:
+class Scenario(ParallelMixin):
     """Simulation scenario class for managing .
 
     The Scenario class is the main simulation object that contains the major simulation pieces. It
@@ -64,17 +82,17 @@ class Scenario:
 
     def __init__(
         self,
-        config,
-        clock,
-        target_agents,
-        estimate_agents,
-        sensor_network,
-        tasking_engines,
-        estimation_config,
-        internal_db_path=None,
-        importer_db_path=None,
-        logger=None,
-        start_workers=True,
+        config: ScenarioConfig,
+        clock: ScenarioClock,
+        target_agents: dict[int, TargetAgent],
+        estimate_agents: dict[int, EstimateAgent],
+        sensor_network: list[SensingAgent],
+        tasking_engines: dict[int, TaskingEngine],
+        estimation_config: EstimationConfig,
+        internal_db_path: str | None = None,
+        importer_db_path: str | None = None,
+        logger: Logger | None = None,
+        start_workers: bool = True,
     ):
         """Instantiate a Scenario object.
 
@@ -156,7 +174,7 @@ class Scenario:
             f"Spacecraft truth dynamics model: {config.propagation.propagation_model}"
         )
         self.logger.info(
-            f"Spacecraft filter dynamics model: {config.estimation.sequential_filter.dynamics}"
+            f"Spacecraft filter dynamics model: {config.estimation.sequential_filter.dynamics_model}"
         )
         self.logger.info(f"Numerical integration method: {config.propagation.integration_method}")
         self.logger.info(f"Earth gravity model: {config.geopotential.model}")
@@ -210,7 +228,7 @@ class Scenario:
 
         self.logger.info("Initialized Scenario.")
 
-    def propagateTo(self, target_time):
+    def propagateTo(self, target_time: JulianDate) -> None:
         """Propagate the :class:`.Scenario` forward to the given time.
 
         Args:
@@ -248,7 +266,7 @@ class Scenario:
             )
             raise ValueError(rounded_delta)
 
-    def saveDatabaseOutput(self):
+    def saveDatabaseOutput(self) -> None:
         """Save Truth, Estimate, and Observation data to the output database."""
         # Grab `TruthEphemeris` for targets & sensors
         output_data = [tgt.getCurrentEphemeris() for tgt in self.target_agents.values()]
@@ -289,7 +307,7 @@ class Scenario:
         # Commit data to output DB
         self.database.bulkSave(output_data)
 
-    def stepForward(self):
+    def stepForward(self) -> None:
         """Propagate the simulation forward by a single timestep."""
         prior_jd = self.current_julian_date
         next_jd = JulianDate(float(prior_jd) + self.clock.dt_step * SEC2DAYS)
@@ -355,34 +373,35 @@ class Scenario:
         EventStack.logAndFlushEvents()
 
     @methdispatch
-    def addTarget(self, target_spec, tasking_engine_id):  # pylint: disable=unused-argument
+    def addTarget(self, target_spec: TargetAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
-            target_spec (): Specification of target being added.
-            tasking_engine_id (int): Unique identifier to add the specified target to.
+            target_spec (:class:`.TargetAgentConfig` | ``dict``): Specification of target being added.
+            tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
+        # pylint: disable=unused-argument
         err = f"Can't handle target specification of type {type(target_spec)}"
         raise TypeError(err)
 
     @addTarget.register(dict)
-    def _addTargetDict(self, target_spec, tasking_engine_id):
+    def _addTargetDict(self, target_spec: int, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
-            target_spec (dict): Specification of target being added.
-            tasking_engine_id (int): Unique identifier to add the specified target to.
+            target_spec (``dict``): Specification of target being added.
+            tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
-        target_conf = TargetConfigObject(target_spec)
+        target_conf = TargetAgentConfig(**target_spec)
         self._addTargetConf(target_conf, tasking_engine_id)
 
-    @addTarget.register(TargetConfigObject)
-    def _addTargetConf(self, target_spec, tasking_engine_id):
+    @addTarget.register(TargetAgentConfig)
+    def _addTargetConf(self, target_spec: TargetAgentConfig, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
-            target_spec (TargetConfigObject): Specification of target being added.
-            tasking_engine_id (int): Unique identifier to add the specified target to.
+            target_spec (:class:`.TargetAgentConfig`): Specification of target being added.
+            tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
         if target_spec.sat_num in self.target_agents:
             err = f"Target '{target_spec.sat_num} already exists in this scenario."
@@ -425,34 +444,36 @@ class Scenario:
             "noise": dynamics_noise,
             "random_seed": self.scenario_config.noise.random_seed,
         }
-        target_agent = TargetAgent.fromConfig(target_factory_config, events=[])
+        target_agent = TargetAgent.fromConfig(target_factory_config)
         self.target_agents[target_spec.sat_num] = target_agent
 
         estimate_factory_config = {
-            "target": target_agent,
+            "target": target_spec,
+            "agent_type": target_agent.agent_type,
             "position_std": self.scenario_config.noise.init_position_std_km,
             "velocity_std": self.scenario_config.noise.init_velocity_std_km_p_sec,
             "rng": default_rng(self.scenario_config.noise.random_seed),
             "clock": self.clock,
             "sequential_filter": self.scenario_config.estimation.sequential_filter,
             "adaptive_filter": self.scenario_config.estimation.adaptive_filter,
+            "initial_orbit_determination": self.scenario_config.estimation.sequential_filter.initial_orbit_determination,
             "seed": self.scenario_config.noise.random_seed,
             "dynamics": filter_dynamics,
             "q_matrix": filter_noise,
         }
-        estimate_agent = EstimateAgent.fromConfig(estimate_factory_config, events=[])
+        estimate_agent = EstimateAgent.fromConfig(estimate_factory_config)
         self._estimate_agents[target_spec.sat_num] = estimate_agent
 
         self._tasking_engines[tasking_engine_id].addTarget(target_agent.simulation_id)
         self._agent_propagation_handler.registerCallback(target_agent)
         self._estimate_prediction_handler.registerCallback(estimate_agent)
 
-    def removeTarget(self, agent_id, tasking_engine_id):
+    def removeTarget(self, agent_id: int, tasking_engine_id: int) -> None:
         """Remove a target from this :class:`.Scenario`.
 
         Args:
-            agent_id (int): Unique identifier of target being removed.
-            tasking_engine_id (int): Unique identifier of tasking engine target is being removed from.
+            agent_id (``int``): Unique identifier of target being removed.
+            tasking_engine_id (``int``): Unique identifier of tasking engine target is being removed from.
         """
         if agent_id not in self.target_agents:
             err = f"Target '{agent_id} doesn't exist in this scenario."
@@ -465,34 +486,35 @@ class Scenario:
         self._tasking_engines[tasking_engine_id].removeTarget(agent_id)
 
     @methdispatch
-    def addSensor(self, sensor_spec, tasking_engine_id):  # pylint: disable=unused-argument
+    def addSensor(self, sensor_spec: SensingAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
         Args:
-            sensor_spec (): Specification of sensor being added.
-            tasking_engine_id (int): Unique identifier to add the specified sensor to.
+            sensor_spec (:class:`.SensingAgentConfig` | ``dict``): Specification of sensor being added.
+            tasking_engine_id (``int``): Unique identifier to add the specified sensor to.
         """
+        # pylint: disable=unused-argument
         err = f"Can't handle sensor specification of type {type(sensor_spec)}"
         raise TypeError(err)
 
     @addSensor.register(dict)
-    def _addSensorDict(self, sensor_spec, tasking_engine_id):
+    def _addSensorDict(self, sensor_spec: dict, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
         Args:
-            sensor_spec (dict): Specification of sensor being added.
-            tasking_engine_id (int): Unique identifier to add the specified sensor to.
+            sensor_spec (``dict``): Specification of sensor being added.
+            tasking_engine_id (``int``): Unique identifier to add the specified sensor to.
         """
-        sensor_conf = SensorConfigObject(sensor_spec)
+        sensor_conf = SensingAgentConfig(**sensor_spec)
         self._addSensorConf(sensor_conf, tasking_engine_id)
 
-    @addSensor.register(SensorConfigObject)
-    def _addSensorConf(self, sensor_spec, tasking_engine_id):
+    @addSensor.register(SensingAgentConfig)
+    def _addSensorConf(self, sensor_spec: SensingAgentConfig, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
         Args:
-            sensor_spec (SensorConfigObject): Specification of sensor being added.
-            tasking_engine_id (int): Unique identifier to add the specified sensor to.
+            sensor_spec (:class:`.SensingAgentConfig`): Specification of sensor being added.
+            tasking_engine_id (``int``): Unique identifier to add the specified sensor to.
         """
         if sensor_spec.id in self._sensor_agents:
             err = f"Sensor '{sensor_spec.id} already exists in this scenario."
@@ -513,18 +535,18 @@ class Scenario:
             "realtime": self.scenario_config.propagation.sensor_realtime_propagation,
         }
 
-        sensing_agent = SensingAgent.fromConfig(config, events=[])
+        sensing_agent = SensingAgent.fromConfig(config)
         self._sensor_agents[sensing_agent.simulation_id] = sensing_agent
 
         self._tasking_engines[tasking_engine_id].addSensor(sensing_agent.simulation_id)
         self._agent_propagation_handler.registerCallback(sensing_agent)
 
-    def removeSensor(self, agent_id, tasking_engine_id):
+    def removeSensor(self, agent_id: int, tasking_engine_id: int) -> None:
         """Remove a sensor from this :class:`.Scenario`.
 
         Args:
-            agent_id (int): Unique identifier of sensor being removed.
-            tasking_engine_id (int): Unique identifier of tasking engine sensor is being removed from.
+            agent_id (``int``): Unique identifier of sensor being removed.
+            tasking_engine_id (``int``): Unique identifier of tasking engine sensor is being removed from.
         """
         if agent_id not in self._sensor_agents:
             err = f"Sensor '{agent_id} doesn't exist in this scenario."
@@ -534,36 +556,36 @@ class Scenario:
         self._tasking_engines[tasking_engine_id].removeSensor(agent_id)
 
     @property
-    def output_time_step(self):
-        """int: returns the configuration output time step in seconds."""
+    def output_time_step(self) -> ScenarioTime:
+        """`:class:`.ScenarioTime`: returns the configuration output time step in seconds."""
         return self.scenario_config.time.output_step_sec
 
     @property
-    def physics_time_step(self):
-        """int: returns the configuration physics time step in seconds."""
+    def physics_time_step(self) -> ScenarioTime:
+        """`:class:`.ScenarioTime`: returns the configuration physics time step in seconds."""
         return self.scenario_config.time.physics_step_sec
 
     @property
-    def julian_date_start(self):
-        """int: returns the configuration starting Julian date."""
+    def julian_date_start(self) -> JulianDate:
+        """`:class:`.JulianDate`: returns the configuration starting Julian date."""
         return self.clock.julian_date_start
 
     @property
-    def tasking_engines(self):
-        """dict: tasking engines indexed by their unique id."""
+    def tasking_engines(self) -> dict[int, TaskingEngine]:
+        """``dict``: tasking engines indexed by their unique id."""
         return self._tasking_engines
 
     @property
-    def sensor_agents(self):
-        """dict: sensor agents indexed by their unique id."""
+    def sensor_agents(self) -> dict[int, SensingAgent]:
+        """``dict``: sensor agents indexed by their unique id."""
         return self._sensor_agents
 
     @property
-    def estimate_agents(self):
-        """dict: estimate agents indexed by their unique id."""
+    def estimate_agents(self) -> dict[int, EstimateAgent]:
+        """``dict``: estimate agents indexed by their unique id."""
         return self._estimate_agents
 
-    def shutdown(self, flushall=True):
+    def shutdown(self, flushall: bool = True) -> None:
         """Gracefully shuts down the simulation.
 
         Make sure Redis 'master' variable gets reset and workers are shut down nicely.
@@ -572,18 +594,17 @@ class Scenario:
             flushall (``bool``, optional): whether to flush the Redis keys on shutdown. Defaults to True.
         """
         if self.worker_mgr:
-            self.worker_mgr.stopWorkers(no_wait=True)
+            self.worker_mgr.shutdown()
+
+        for engine in self._tasking_engines.values():
+            engine.shutdown()
+
+        self._agent_propagation_handler.shutdown()
+        self._estimate_prediction_handler.shutdown()
+        self._estimate_update_handler.shutdown()
 
         if flushall:
             self.redis_conn.flushall(asynchronous=True)
 
         resetMaster(self.redis_conn)
         self.redis_conn.close()
-
-    def __del__(self):
-        """Gracefully shutdown if simulation goes out of scope.
-
-        See Also:
-            :class:`~.Scenario.shutdown`
-        """
-        self.shutdown(flushall=True)

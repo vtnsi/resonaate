@@ -23,22 +23,26 @@ from .target_addition import TargetAdditionEvent
 from .target_task_priority import TargetTaskPriority
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
     # Local Imports
+    from ...common.logger import Logger
     from ...data.resonaate_database import ResonaateDatabase
     from ...physics.time.stardate import JulianDate
 
 
 def getRelevantEvents(
     database: ResonaateDatabase,
-    event_scope,
+    event_scope: EventScope,
     julian_date_lb: JulianDate,
     julian_date_ub: JulianDate,
     scope_instance_id: int = None,
-) -> None:
+) -> list[Event]:
     """Return a list of :class:`.Event` objects for the current time step and scope.
 
     Args:
-        database (:class:`.ResonaateDatabase`): Database for retreiving events from.
+        database (:class:`.ResonaateDatabase`): Database for retrieving events from.
         event_scope (:class:`.EventScope`): Relevant scope to query events for.
         julian_date_lb (:class:`JulianDate`): Lower bound on Julian Date to search.
         julian_date_ub (:class:`JulianDate`): Upper bound on Julian Date to search.
@@ -46,7 +50,7 @@ def getRelevantEvents(
             the query.
 
     Returns:
-        ``list``: List of relevant :class:`.Event` objects.
+        ``list``: relevant :class:`.Event` objects.
     """
     event_alias = with_polymorphic(Event, "*")
     query = Query(event_alias).filter(
@@ -60,19 +64,19 @@ def getRelevantEvents(
 
 
 def handleRelevantEvents(
-    scope_instance,
+    scope_instance: Any,
     database: ResonaateDatabase,
-    event_scope,
+    event_scope: EventScope,
     julian_date_lb: JulianDate,
     julian_date_ub: JulianDate,
-    logger,
+    logger: Logger,
     scope_instance_id: int = None,
 ) -> None:
     """Handle events relevant for a given scope and time.
 
     Args:
-        scope_instance (any): Scope object that will handle the relevant events.
-        database (:class:`.ResonaateDatabase`): Database for retreiving events from.
+        scope_instance (``any``): Scope object that will handle the relevant events.
+        database (:class:`.ResonaateDatabase`): Database for retrieving events from.
         event_scope (:class:`.EventScope`): Relevant scope to query events for.
         julian_date_lb (:class:`JulianDate`): Lower bound on Julian Date to search.
         julian_date_ub (:class:`JulianDate`): Upper bound on Julian Date to search.

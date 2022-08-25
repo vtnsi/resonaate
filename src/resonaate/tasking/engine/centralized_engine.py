@@ -1,4 +1,9 @@
 """Defines the :class:`.CentralizedTaskingEngine` class."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import zeros
 from sqlalchemy.orm import Query
@@ -9,12 +14,20 @@ from ...data.events import EventScope, handleRelevantEvents
 from ...data.query_util import addAlmostEqualFilter
 from ...data.resonaate_database import ResonaateDatabase
 from ...data.task import Task
+from ...parallel import ParallelMixin
 from ...parallel.handlers.task_execution import TaskExecutionJobHandler
 from ...parallel.handlers.task_prediction import TaskPredictionJobHandler
 from .engine_base import TaskingEngine
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...physics.time.stardate import JulianDate
+    from ..decisions import Decision
+    from ..rewards import Reward
 
-class CentralizedTaskingEngine(TaskingEngine):
+
+class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
     """Centralized implementation of a tasking engine.
 
     This class provides methods for centralized network tasking processes. In a centralized
@@ -23,17 +36,24 @@ class CentralizedTaskingEngine(TaskingEngine):
     """
 
     def __init__(
-        self, engine_id, sensor_ids, target_ids, reward, decision, importer_db_path, realtime_obs
+        self,
+        engine_id: int,
+        sensor_ids: list[int],
+        target_ids: list[int],
+        reward: Reward,
+        decision: Decision,
+        importer_db_path: str | None,
+        realtime_obs: bool,
     ):
         """Initialize a centralized tasking engine.
 
         Args:
-            engine_id (int): Unique ID for this :class:`.TaskingEngine`
+            engine_id (``int``): Unique ID for this :class:`.TaskingEngine`
             sensor_ids (``list``): list of sensor agent ID numbers
             target_ids (``list``): list of target agent ID numbers
             reward (:class:`.Reward`): callable reward object for determining tasking priority
             decision (:class:`.Decision`): callable decision object for optimizing tasking
-            importer_db_path (``str``): path to external importer database for pre-canned data.
+            importer_db_path (``str`` | ``None``): path to external importer database for pre-canned data.
             realtime_obs (``bool``): whether to execute realtime observations
         """
         super().__init__(
@@ -48,7 +68,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         self._execute_handler = TaskExecutionJobHandler()
         self._execute_handler.registerCallback(self)
 
-    def assess(self, prior_julian_date, julian_date):
+    def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
         """Perform a set of analysis operations on the current simulation state.
 
         #. The rewards for all possible tasks are computed
@@ -95,11 +115,11 @@ class CentralizedTaskingEngine(TaskingEngine):
         msg += f" on {len(observed_targets)} targets {observed_targets}"
         self.logger.info(msg)
 
-    def generateTasking(self):
+    def generateTasking(self) -> None:
         """Create tasking solution based on the current simulation state."""
         self.decision_matrix = self._decision(self.reward_matrix)
 
-    def loadImportedObservations(self, epoch):
+    def loadImportedObservations(self, epoch: JulianDate) -> list[Observation]:
         """Load imported :class:`.Observation` objects from :class:`.ImporterDatabase`.
 
         Args:
@@ -133,7 +153,7 @@ class CentralizedTaskingEngine(TaskingEngine):
 
         return imported_observations
 
-    def getCurrentTasking(self, julian_date):
+    def getCurrentTasking(self, julian_date: JulianDate) -> Task:
         """Return current tasking solution.
 
         Args:
@@ -142,13 +162,18 @@ class CentralizedTaskingEngine(TaskingEngine):
         Yields:
             :class:`.Task`: tasking DB object for each target/sensor pair
         """
-        for tgt_ind, target in enumerate(self.target_list):
-            for sen_ind, sensor_agent in enumerate(self.sensor_list):
+        for tgt_id, tgt_ind in self.target_indices.items():
+            for sen_id, sen_ind in self.sensor_indices.items():
                 yield Task(
                     julian_date=julian_date,
-                    target_id=target,
-                    sensor_id=sensor_agent,
+                    target_id=tgt_id,
+                    sensor_id=sen_id,
                     visibility=self.visibility_matrix[tgt_ind, sen_ind],
                     reward=self.reward_matrix[tgt_ind, sen_ind],
                     decision=self.decision_matrix[tgt_ind, sen_ind],
                 )
+
+    def shutdown(self) -> None:
+        """Perform cleanup operations for shutting down parallel processes/threads."""
+        self._predict_handler.shutdown()
+        self._execute_handler.shutdown()

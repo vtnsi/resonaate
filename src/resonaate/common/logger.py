@@ -81,7 +81,7 @@ def _resonaateLog(message: str, level: int):
     """Log a message to the top-level log record.
 
     This provides a simple, easy one-liner that doesn't require pre-initializing a logger object.
-    The primary usecase is for simple functions that need to log messages.
+    The primary use case is for simple functions that need to log messages.
 
     Args:
         message (``str``): message to record with in the log.

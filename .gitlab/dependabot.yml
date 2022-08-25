@@ -15,7 +15,7 @@ updates:
       separator: "/"
     # apply labels to Mr
     labels:
-      - "Type: Dependency"
+      - "Type: DEP"
       - "1: High"
     ignore:
       # flake8 has broken dep, so keep until isolated somehow

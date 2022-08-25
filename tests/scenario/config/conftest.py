@@ -1,4 +1,6 @@
-GEO_TARGETS = [
+from __future__ import annotations
+
+GEO_TARGETS: list[dict] = [
     {
         "sat_name": "RSO 1 ECI",
         "sat_num": 40000,
@@ -66,7 +68,7 @@ GEO_TARGETS = [
 ]
 
 
-LEO_TARGETS = [
+LEO_TARGETS: list[dict] = [
     {
         "sat_name": "RSO 1 ECI",
         "sat_num": 10000,
@@ -134,7 +136,7 @@ LEO_TARGETS = [
 ]
 
 
-EARTH_SENSORS = [
+EARTH_SENSORS: list[dict] = [
     {
         "name": "GROUND SENSOR 1",
         "id": 120001,
@@ -151,6 +153,11 @@ EARTH_SENSORS = [
         "aperture_area": 200.0,
         "sensor_type": "AdvRadar",
         "exemplar": [0.01, 5000.0],
+        "field_of_view": {"fov_shape": "conic"},
+        "calculate_fov": False,
+        "detectable_vismag": 25.0,
+        "minimum_range": 0.0,
+        "maximum_range": 99000,
         "lat": 0.5,
         "lon": -1.0,
         "alt": 0.360,
@@ -169,6 +176,11 @@ EARTH_SENSORS = [
         "aperture_area": 1.0,
         "sensor_type": "Optical",
         "exemplar": [0.10, 32500.0],
+        "field_of_view": {"fov_shape": "conic"},
+        "calculate_fov": False,
+        "detectable_vismag": 25.0,
+        "minimum_range": 0.0,
+        "maximum_range": 99000,
         "lat": 0.35,
         "lon": -2.70,
         "alt": 3.0,
@@ -190,6 +202,11 @@ EARTH_SENSORS = [
         "aperture_area": 50.0,
         "sensor_type": "Radar",
         "exemplar": [0.1, 10000.0],
+        "field_of_view": {"fov_shape": "conic"},
+        "calculate_fov": False,
+        "detectable_vismag": 25.0,
+        "minimum_range": 0.0,
+        "maximum_range": 99000,
         "lat": 0.5,
         "lon": -1.0,
         "alt": 0.360,
@@ -199,7 +216,7 @@ EARTH_SENSORS = [
     },
 ]
 
-SPACE_SENSORS = [
+SPACE_SENSORS: list[dict] = [
     {
         "name": "Space Sensor 1",
         "id": 50001,
@@ -211,7 +228,7 @@ SPACE_SENSORS = [
         "aperture_area": 0.030,
         "sensor_type": "Optical",
         "init_eci": [
-            -6997.811593501495,
+            -26997.811593501495,
             63.69359356853797,
             -447.53287804600023,
             0.48666918798751624,
@@ -219,8 +236,10 @@ SPACE_SENSORS = [
             -7.448488839044817,
         ],
         "exemplar": [1.0, 30000],
+        "field_of_view": {"fov_shape": "conic"},
+        "calculate_fov": False,
         "host_type": "Spacecraft",
-        "station_keeping": {"routines": ["LEO"]},
+        "station_keeping": {"routines": []},
     },
     {
         "name": "Space Sensor 2",
@@ -239,6 +258,8 @@ SPACE_SENSORS = [
             "true_long": 0.0,
         },
         "exemplar": [1.0, 30000],
+        "field_of_view": {"fov_shape": "conic"},
+        "calculate_fov": False,
         "host_type": "Spacecraft",
         "station_keeping": {"routines": ["LEO"]},
     },
@@ -261,6 +282,8 @@ SPACE_SENSORS = [
             "lam": 360.0,
         },
         "exemplar": [1.0, 30000],
+        "field_of_view": {"fov_shape": "conic"},
+        "calculate_fov": False,
         "host_type": "Spacecraft",
         "station_keeping": {"routines": ["LEO"]},
     },

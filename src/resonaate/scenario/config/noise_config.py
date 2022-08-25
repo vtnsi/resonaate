@@ -1,132 +1,115 @@
-"""Submodule defining the 'noise' configuration section.
+"""Submodule defining the 'noise' configuration section."""
+from __future__ import annotations
 
-To Do:
-    - make sure valid settings for different types of noise are correct
+# Standard Library Imports
+from dataclasses import dataclass
+from typing import ClassVar
 
-"""
 # Local Imports
 from ...physics.noise import (
     CONTINUOUS_WHITE_NOISE_LABEL,
     DISCRETE_WHITE_NOISE_LABEL,
     SIMPLE_NOISE_LABEL,
 )
-from .base import ConfigOption, ConfigSection, ConfigValueError
+from .base import ConfigObject, ConfigTypeError, ConfigValueError
+
+DEFAULT_RANDOM_SEED_VALUE: str = "os"
+"""``str``: Value to set :attr:`~.NoiseConfig.random_seed` to that indicates seeding the PRNG with the OS's entropy."""
+
+VALID_NOISE_TYPES: tuple[str] = (
+    CONTINUOUS_WHITE_NOISE_LABEL,
+    DISCRETE_WHITE_NOISE_LABEL,
+    SIMPLE_NOISE_LABEL,
+)
+"""``tuple``: Valid noise types."""
 
 
-class NoiseConfig(ConfigSection):
+DEFAULT_POSITION_STD: float = 1e-3
+"""``float``: Default value for :attr:`~.NoiseConfig.init_position_std_km`."""
+
+DEFAULT_VELOCITY_STD: float = 1e-6
+"""``float``: Default value for :attr:`~.NoiseConfig.init_velocity_std_km_p_sec`."""
+
+DEFAULT_FILTER_NOISE_MAGNITUDE: float = 3e-14
+"""``float``: Default value for :attr:`~.NoiseConfig.filter_noise_magnitude`."""
+
+
+@dataclass
+class NoiseConfig(ConfigObject):
     """Configuration section defining several noise-based options."""
 
-    CONFIG_LABEL = "noise"
-    """str: Key where settings are stored in the configuration dictionary read from file."""
+    CONFIG_LABEL: ClassVar[str] = "noise"
+    """``str``: Key where settings are stored in the configuration dictionary."""
 
-    RNG_SEED_OS = "os"
-    """str: Value to set :attr:`._random_seed.setting` to that indicates seeding the PRNG with the OS's entropy."""
+    init_position_std_km: float = DEFAULT_POSITION_STD
+    """``float``: Standard deviation of initial RSO position estimate (km)."""
 
-    def __init__(self):
-        """Construct an instance of a :class:`.NoiseConfig`."""
-        self._init_position_std_km = ConfigOption("init_position_std_km", (float,), default=1e-3)
-        self._init_velocity_std_km_p_sec = ConfigOption(
-            "init_velocity_std_km_p_sec", (float,), default=1e-6
-        )
-        self._dynamics_noise_type = ConfigOption(
-            "dynamics_noise_type",
-            (str,),
-            default=SIMPLE_NOISE_LABEL,
-            valid_settings=(
-                CONTINUOUS_WHITE_NOISE_LABEL,
-                DISCRETE_WHITE_NOISE_LABEL,
-                SIMPLE_NOISE_LABEL,
-            ),
-        )
-        self._dynamics_noise_magnitude = ConfigOption(
-            "dynamics_noise_magnitude", (float,), default=1e-20
-        )
-        self._filter_noise_type = ConfigOption(
-            "filter_noise_type",
-            (str,),
-            default=CONTINUOUS_WHITE_NOISE_LABEL,
-            valid_settings=(
-                CONTINUOUS_WHITE_NOISE_LABEL,
-                DISCRETE_WHITE_NOISE_LABEL,
-                SIMPLE_NOISE_LABEL,
-            ),
-        )
-        self._filter_noise_magnitude = ConfigOption(
-            "filter_noise_magnitude", (float,), default=3.0e-14
-        )
-        self._random_seed = ConfigOption(
-            "random_seed",
-            (
-                int,
-                str,
-            ),
-            default=1,
-        )
+    init_velocity_std_km_p_sec: float = DEFAULT_VELOCITY_STD
+    """``float``: Standard deviation of initial RSO velocity estimate (km/sec)."""
 
-    def readConfig(self, raw_config):
-        """Validate random seed value.
+    dynamics_noise_type: str = SIMPLE_NOISE_LABEL
+    """``str``: String describing noise used in dynamics propagation."""
 
-        Extend :meth:`.ConfigItem.readConfig()`
-        """
-        super().readConfig(raw_config)
+    dynamics_noise_magnitude: float = 1e-20
+    """float: 'Variance' of noise added in dynamics propagation."""
 
-        if isinstance(self._random_seed.setting, str):
-            if self._random_seed.setting != self.RNG_SEED_OS:
+    filter_noise_type: str = CONTINUOUS_WHITE_NOISE_LABEL
+    """``str``: String describing noise used in filter propagation."""
+
+    filter_noise_magnitude: float = DEFAULT_FILTER_NOISE_MAGNITUDE
+    """``float``: 'Variance' of noise added in filter propagation."""
+
+    random_seed: str | int | None = DEFAULT_RANDOM_SEED_VALUE
+    """``str | int | None``: Pseudo-random number generator (PRNG) seed value.
+
+    Setting this value to :attr:`.RNG_SEED_OS` will seed the PRNG with the OS's entropy.
+    """
+
+    def __post_init__(self):
+        """Initialize :attr:`~.NoiseConfig.random_seed`."""
+        if isinstance(self.random_seed, str):
+            if self.random_seed != DEFAULT_RANDOM_SEED_VALUE:
                 raise ConfigValueError(
-                    self._random_seed.config_label,
-                    self._random_seed.setting,
-                    (self.RNG_SEED_OS, "or any int"),
+                    "random_seed",
+                    self.random_seed,
+                    (DEFAULT_RANDOM_SEED_VALUE, None, "or any positive int"),
                 )
+            self.random_seed = None
 
-    @property
-    def nested_items(self):
-        """list: Return a list of :class:`.ConfigOption` objects that this section contains."""
-        return [
-            self._init_position_std_km,
-            self._init_velocity_std_km_p_sec,
-            self._dynamics_noise_type,
-            self._dynamics_noise_magnitude,
-            self._filter_noise_type,
-            self._filter_noise_magnitude,
-            self._random_seed,
-        ]
+        elif not isinstance(self.random_seed, int):
+            raise ConfigTypeError(
+                "random_seed",
+                self.random_seed,
+                (DEFAULT_RANDOM_SEED_VALUE, None, "or any positive int"),
+            )
 
-    @property
-    def init_position_std_km(self):
-        """float: Standard deviation of initial RSO position estimate (km)."""
-        return self._init_position_std_km.setting
+        elif self.random_seed < 0:
+            raise ConfigValueError(
+                "random_seed",
+                self.random_seed,
+                (DEFAULT_RANDOM_SEED_VALUE, None, "or any positive int"),
+            )
 
-    @property
-    def init_velocity_std_km_p_sec(self):
-        """float: Standard deviation of initial RSO velocity estimate (km/sec)."""
-        return self._init_velocity_std_km_p_sec.setting
+        if self.dynamics_noise_type not in VALID_NOISE_TYPES:
+            raise ConfigValueError(
+                "dynamics_noise_type", self.dynamics_noise_type, VALID_NOISE_TYPES
+            )
 
-    @property
-    def dynamics_noise_type(self):
-        """str: String describing noise used in dynamics propagation."""
-        return self._dynamics_noise_type.setting
+        if self.filter_noise_type not in VALID_NOISE_TYPES:
+            raise ConfigValueError("filter_noise_type", self.filter_noise_type, VALID_NOISE_TYPES)
 
-    @property
-    def dynamics_noise_magnitude(self):
-        """float: 'Variance' of noise added in dynamics propagation."""
-        return self._dynamics_noise_magnitude.setting
+        if self.dynamics_noise_magnitude <= 0.0:
+            raise ConfigValueError(
+                "dynamics_noise_magnitude", self.dynamics_noise_magnitude, "> 0.0"
+            )
 
-    @property
-    def filter_noise_type(self):
-        """str: String describing noise used in filter propagation."""
-        return self._filter_noise_type.setting
+        if self.filter_noise_magnitude <= 0.0:
+            raise ConfigValueError("filter_noise_magnitude", self.filter_noise_magnitude, "> 0.0")
 
-    @property
-    def filter_noise_magnitude(self):
-        """float: 'Variance' of noise added in filter propagation."""
-        return self._filter_noise_magnitude.setting
+        if self.init_position_std_km <= 0.0:
+            raise ConfigValueError("init_position_std_km", self.init_position_std_km, "> 0.0")
 
-    @property
-    def random_seed(self):
-        """int|None: Psuedo-random number generator (PRNG) seed value.
-
-        Setting this value to :attr:`.RNG_SEED_OS` will seed the PRNG with the OS's entropy.
-        """
-        if self._random_seed.setting == self.RNG_SEED_OS:
-            return None
-        return self._random_seed.setting
+        if self.init_velocity_std_km_p_sec <= 0.0:
+            raise ConfigValueError(
+                "init_velocity_std_km_p_sec", self.init_velocity_std_km_p_sec, "> 0.0"
+            )

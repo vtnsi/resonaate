@@ -1,4 +1,5 @@
-# pylint: disable=attribute-defined-outside-init
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
 
@@ -6,15 +7,8 @@ from copy import deepcopy
 import numpy as np
 from sqlalchemy.orm import Query
 
-# RESONAATE Library Imports
-try:
-    # RESONAATE Imports
-    from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+# RESONAATE Imports
+from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
 
 EXAMPLE_STATE = {
     "eci": [32832.44359, -26125.770428, -4175.978356, 1.920657, 2.399111, 0.090893],
@@ -71,7 +65,7 @@ EXAMPLE_STATE = {
 }
 
 
-class TestTruthEphemerisTable(BaseTestCase):
+class TestTruthEphemerisTable:
     """Test class for :class:`.TruthEphemeris` database table class."""
 
     def testInit(self):
@@ -189,7 +183,7 @@ class TestTruthEphemerisTable(BaseTestCase):
         assert new_ephem.epoch == epoch_copy
 
 
-class TestEstimateEphemerisTable(BaseTestCase):
+class TestEstimateEphemerisTable:
     """Test class for :class:`.EstimateEphemeris` database table."""
 
     def testInit(self):

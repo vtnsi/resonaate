@@ -15,7 +15,7 @@ from ...physics.math import angularMean, wrapAngleNegPiPi
 from ...physics.statistics import chiSquareQuadraticForm
 from ...sensors.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ..debug_utils import findNearestPositiveDefiniteMatrix
-from .sequential_filter import FilterDebugFlag, SequentialFilter
+from .sequential_filter import FilterFlag, SequentialFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.time.stardate import ScenarioTime
     from ...sensors.sensor_base import ObservationTuple
+    from ..initial_orbit_determination import InitialOrbitDetermination
     from ..maneuver_detection import ManeuverDetection
 
 
@@ -96,7 +97,8 @@ class UnscentedKalmanFilter(SequentialFilter):
         dynamics: Dynamics,
         q_matrix: ndarray,
         maneuver_detection: Optional[ManeuverDetection],
-        adaptive_estimation: bool,
+        initial_orbit_determination: bool = False,
+        adaptive_estimation: bool = False,
         alpha: float = 0.001,
         beta: float = 2.0,
         kappa: Optional[float] = None,
@@ -111,7 +113,8 @@ class UnscentedKalmanFilter(SequentialFilter):
             dynamics (:class:`.Dynamics`): dynamics object associated with the filter's target
             q_matrix (``ndarray``): dynamics error covariance matrix
             maneuver_detection (:class:`.ManeuverDetection`): ManeuverDetection associated with the filter
-            adaptive_estimation (``bool``): whether adaptive estimation is allowed to be started
+            initial_orbit_determination (``bool``, optional): Indicator that IOD can be flagged by the filter
+            adaptive_estimation (``bool``, optional): Indicator that adaptive estimation can be flagged by the filter
             alpha (``float``, optional): sigma point spread. Defaults to 0.001. This should be a
                 small positive value: :math:`\alpha <= 1`.
             beta (``float``, optional): Gaussian pdf parameter. Defaults to 2.0. This parameter
@@ -130,6 +133,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             dynamics,
             q_matrix,
             maneuver_detection,
+            initial_orbit_determination,
             adaptive_estimation,
             extra_parameters={
                 "alpha": alpha,
@@ -184,7 +188,8 @@ class UnscentedKalmanFilter(SequentialFilter):
             sqrt_cov = sqrt_func(cov)
         except LinAlgError:
             if BehavioralConfig.getConfig().debugging.NearestPD:
-                self._flags |= FilterDebugFlag.NEAREST_PD
+                msg = f"`nearestPD()` function was used on RSO {self.target_id}"
+                self._logger.warning(msg)
                 sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
             else:
                 raise
@@ -207,7 +212,7 @@ class UnscentedKalmanFilter(SequentialFilter):
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
         """
-        self._flags = FilterDebugFlag.NONE
+        self._flags = FilterFlag.NONE
         # STEP 1: Calculate the predicted state estimate at t(k) (X(k + 1|k))
         self.predictStateEstimate(final_time, scheduled_events=scheduled_events)
         # STEP 2: Calculate the predicted covariance at t(k) (P(k + 1|k))
@@ -221,7 +226,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         Args:
             obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the UKF step
         """
-        self._flags = FilterDebugFlag.NONE
+        self._flags = FilterFlag.NONE
         # STEP 1: Re-sample the sigma points around predicted (sampled) state estimate
         self.sigma_points = self.generateSigmaPoints(self.pred_x, self.pred_p)
         # STEP 2: Calculate the Measurement Matrix (H)
@@ -259,12 +264,8 @@ class UnscentedKalmanFilter(SequentialFilter):
             # STEP 4: Maneuver detection
             self.checkManeuverDetection()
 
-            # Check error inflation, and write debuggin info if needed
-            if BehavioralConfig.getConfig().debugging.EstimateErrorInflation:
-                self._flags |= FilterDebugFlag.ERROR_INFLATION
-
-            if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
-                self._flags |= FilterDebugFlag.THREE_SIGMA_OBS
+            # Check and write debugging info if needed
+            self._debugChecks(obs_tuples)
 
     def predictStateEstimate(
         self,

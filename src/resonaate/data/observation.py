@@ -19,14 +19,14 @@ class Observation(Base, _DataMixin):
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
 
     ## Defines the associated sensor agent with the observation data
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     sensor_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    sensor = relationship("Agent", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
+    sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
 
     ## Defines the associated target agent with the observation data
-    # Many to one relation with :class:`.Agent`
+    # Many to one relation with :class:`.AgentModel`
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    target = relationship("Agent", foreign_keys=[target_id], lazy="joined", innerjoin=True)
+    target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
 
     # Type of the observing sensor (Optical, Radar, AdvRadar)
     sensor_type = Column(String(128), nullable=False)

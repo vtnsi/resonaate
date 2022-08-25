@@ -5,10 +5,19 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from enum import Flag, auto
+from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array
+from numpy import array, fabs
+from scipy.linalg import norm
+
+# Local Imports
+from ...common.behavioral_config import BehavioralConfig
+from ...data.queries import fetchTruthByJDEpoch
+from ...data.resonaate_database import ResonaateDatabase
+from ...parallel import getRedisConnection
+from ..debug_utils import checkThreeSigmaObs, logFilterStep
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -22,19 +31,18 @@ if TYPE_CHECKING:
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.time.stardate import ScenarioTime
     from ...sensors.sensor_base import ObservationTuple
+    from ..initial_orbit_determination import InitialOrbitDetermination
     from ..maneuver_detection import ManeuverDetection
 
 
-class FilterDebugFlag(Flag):
-    """Flags for tracking filter events & debugging."""
+class FilterFlag(Flag):
+    """Flags for tracking filter events."""
 
     NONE = 0
-    NEAREST_PD = auto()
-    ERROR_INFLATION = auto()
-    THREE_SIGMA_OBS = auto()
     MANEUVER_DETECTION = auto()
     ADAPTIVE_ESTIMATION_START = auto()
     ADAPTIVE_ESTIMATION_CLOSE = auto()
+    INITIAL_ORBIT_DETERMINATION_START = auto()
 
 
 class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
@@ -126,6 +134,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         dynamics: Dynamics,
         q_matrix: ndarray,
         maneuver_detection: Optional[ManeuverDetection],
+        initial_orbit_determination: bool,
         adaptive_estimation: bool,
         extra_parameters: Optional[dict[str, Any]] = None,
     ):
@@ -139,7 +148,8 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
             dynamics (:class:`.Dynamics`): dynamics object associated with the filter's target
             q_matrix (``ndarray``): dynamics error covariance matrix
             maneuver_detection (:class:`.ManeuverDetection`): ManeuverDetection associated with the filter
-            adaptive_estimation (``bool``): whether adaptive estimation is allowed to be started
+            initial_orbit_determination (``bool``, optional): Indicator that IOD can be flagged by the filter
+            adaptive_estimation (``bool``, optional): Indicator that adaptive estimation can be flagged by the filter
             extra_parameters (``dict``, optional): extra arguments for derived classes, for allowing dynamic
                 creation from within this class
         """
@@ -173,6 +183,9 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.true_y = array([])
         self.adaptive_estimation = adaptive_estimation
 
+        # Orbit Determination products
+        self.initial_orbit_determination = initial_orbit_determination
+
         # Intermediate values, used for checking statistical consistency & simplifying equations
         self.nis = array([])
         self.r_matrix = array([])
@@ -184,7 +197,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.is_angular = array([])
 
         # Set filter flags to empty
-        self._flags = FilterDebugFlag.NONE
+        self._flags = FilterFlag.NONE
 
     @abstractmethod
     def predict(
@@ -226,13 +239,15 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
             self.maneuver_detected = self.maneuver_detection(self.innovation, self.innov_cvr)
 
         if self.maneuver_detected:
-            self.flags |= FilterDebugFlag.MANEUVER_DETECTION
+            self.flags |= FilterFlag.MANEUVER_DETECTION
             self.maneuver_metric = self.maneuver_detection.metric
+            if self.adaptive_estimation and FilterFlag.ADAPTIVE_ESTIMATION_START not in self.flags:
+                self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_START
             if (
-                self.adaptive_estimation
-                and FilterDebugFlag.ADAPTIVE_ESTIMATION_START not in self.flags
+                self.initial_orbit_determination
+                and FilterFlag.INITIAL_ORBIT_DETERMINATION_START not in self.flags
             ):
-                self.flags |= FilterDebugFlag.ADAPTIVE_ESTIMATION_START
+                self.flags |= FilterFlag.INITIAL_ORBIT_DETERMINATION_START
 
     def getPredictionResult(self) -> dict[str, Any]:
         """Compile result message for a predict step.
@@ -312,6 +327,31 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.predict(final_time, scheduled_events=scheduled_events)
         return self.pred_x, self.pred_p
 
+    def _debugChecks(self, obs_tuples):
+        """Debugging checks if flags are set to do so."""
+        # Check if error inflation is too large
+        if BehavioralConfig.getConfig().debugging.EstimateErrorInflation:
+            db_path = loads(getRedisConnection().get("db_path"))
+            database = ResonaateDatabase.getSharedInterface(db_path=db_path)
+            truth = fetchTruthByJDEpoch(
+                database, self.target_id, obs_tuples[0].observation.julian_date
+            )
+            tol_km = 5  # Estimate inflation error tolerance (km)
+            pred_error = fabs(norm(truth[:3] - self.pred_x[:3]))
+            est_error = fabs(norm(truth[:3] - self.est_x[:3]))
+
+            # If error increase is larger than desired log the debug information
+            if est_error > pred_error + tol_km:
+                file_name = logFilterStep(self, obs_tuples, truth)
+                msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
+                self._logger.warning(msg)
+
+        if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
+            filenames = checkThreeSigmaObs(obs_tuples, sigma=3)
+            msg = "Made bad observation, debugging info:\n\t"
+            for filename in filenames:
+                self._logger.warning(msg + f"{filename}")
+
     @property
     def logger(self):
         """Returns the logger."""
@@ -323,9 +363,9 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         return self._flags
 
     @flags.setter
-    def flags(self, new_flags: FilterDebugFlag):
+    def flags(self, new_flags: FilterFlag):
         """Set the filter flags attribute."""
-        if not isinstance(new_flags, FilterDebugFlag):
+        if not isinstance(new_flags, FilterFlag):
             raise TypeError(new_flags)
 
         self._flags = new_flags

@@ -1,19 +1,47 @@
 """Defines the :class:`.Optical` sensor class."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
-from numpy import asarray, sqrt, squeeze
+from numpy import array
 from scipy.linalg import norm
 
 # Local Imports
-from ..physics import constants as const
 from ..physics.bodies import Sun
 from ..physics.sensor_utils import (
+    apparentVisualMagnitude,
     calculateIncidentSolarFlux,
+    calculatePhaseAngle,
     checkGroundSensorLightingConditions,
     checkSpaceSensorLightingConditions,
     getEarthLimbConeAngle,
+    lambertianPhaseFunction,
 )
 from .measurements import IsAngle, getAzimuth, getElevation
 from .sensor_base import Sensor
+
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from . import FieldOfView
+
+
+OPTICAL_DETECTABLE_VISMAG: float = 25.0
+"""``float``: Default minimum observable visual magnitude, unit-less"""
+
+OPTICAL_DEFAULT_FOV: dict[str, Any] = {
+    "fov_shape": "rectangular",
+    "azimuth_angle": 1.0,
+    "elevation_angle": 1.0,
+}
+"""``dict``: Default Field of View (rectangular)of an optical sensor, degrees."""
 
 
 class Optical(Sensor):
@@ -25,80 +53,71 @@ class Optical(Sensor):
     Facility objects with optical sensors must be in eclipse while the target is in sunlight.
     Spacecraft objects with optical sensors must be viewing the target against empty space, and not
     the Earth.
+
+    References:
+        #  :cite:t:`vallado_2016_aiaa_covariance`
     """
 
     def __init__(
-        self, az_mask, el_mask, r_matrix, diameter, efficiency, exemplar, slew_rate, **sensor_args
+        self,
+        az_mask: ndarray,
+        el_mask: ndarray,
+        r_matrix: ndarray,
+        diameter: float,
+        efficiency: float,
+        exemplar: ndarray,
+        slew_rate: float,
+        field_of_view: FieldOfView,
+        calculate_fov: bool,
+        detectable_vismag: float,
+        minimum_range: float,
+        maximum_range: float,
+        **sensor_args: dict,
     ):
         """Construct a `Optical` sensor object.
 
         Args:
-            az_mask (``list``): azimuth mask for visibility conditions
-            el_mask (``list``): elevation mask for visibility conditions
-            r_matrix (``np.ndarray``): measurement noise covariance matrix
+            az_mask (``ndarray``): azimuth mask for visibility conditions
+            el_mask (``ndarray``): elevation mask for visibility conditions
+            r_matrix (``ndarray``): measurement noise covariance matrix
             diameter (``float``): size of sensor (m)
             efficiency (``float``): efficiency percentage of the sensor
-            exemplar (``np.ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation
-                    [cross sectional area (m^2), range (km)]
+            exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
+            field_of_view (``float``): Angular field of view of sensor (deg)
+            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
+            detectable_vismag (``float``): minimum vismag of RSO needed for visibility
+            minimum_range (``float``): minimum RSO range needed for visibility
+            maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         super().__init__(
-            az_mask, el_mask, r_matrix, diameter, efficiency, slew_rate, **sensor_args
+            az_mask,
+            el_mask,
+            r_matrix,
+            diameter,
+            efficiency,
+            exemplar,
+            slew_rate,
+            field_of_view,
+            calculate_fov,
+            minimum_range,
+            maximum_range,
+            **sensor_args,
         )
 
-        # Calculate minimum detectable power & maximum auxiliary range
-        self.exemplar = squeeze(exemplar)
-        self.min_detect = self._minPowerFromExemplar(
-            diameter, self.exemplar[0], self.exemplar[1] * 1000
-        )
-        self.max_range_aux = self._maxRangeFromExemplar(diameter, self.min_detect)
-
-    def _minPowerFromExemplar(self, diameter, exemplar_area, exemplar_range):
-        """Calculate the minimum detectable power based on exemplar criterion.
-
-        References:
-            :cite:t:`nastasi_2018_diss`, Pg 48, Eqn 3.10
-
-        Args:
-            diameter (``float``): aperture diameter, m^2
-            exemplar_area (``float``): cross-sectional area of the exemplar target, m^2
-            exemplar_range (``float``): range to exemplar target, m
-
-        Returns:
-            ``float``: minimum detectable power for this sensors, W
-        """
-        return (const.SOLAR_FLUX * exemplar_area * diameter**2 * self.efficiency) / (
-            16 * exemplar_range**2
-        )
-
-    def _maxRangeFromExemplar(self, diameter, min_detect_power):
-        """Calculate the auxiliary maximum range for a detection.
-
-        This is an intermediate calculation for simplifying when `maximumRangeTo()` is called.
-
-        References:
-            :cite:t:`nastasi_2018_diss`, Pg 48, Eqn 3.11
-
-        Args:
-            diameter (``float``): aperture diameter, m^2
-            min_detect_power (``float``): minimum detectable power of the sensor, W
-
-        Returns:
-            ``float``: auxiliary maximum range, (mW-1)^1/2
-        """
-        return sqrt((diameter**2 * self.efficiency) / (16 * min_detect_power))
+        self.detectable_vismag = detectable_vismag
 
     @property
-    def angle_measurements(self):
-        """``np.ndarray``: Returns 2x1 integer array of which measurements are angles."""
-        return asarray([IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI], dtype=int)
+    def angle_measurements(self) -> ndarray:
+        """``ndarray``: Returns 2x1 integer array of which measurements are angles."""
+        return array([IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI], dtype=int)
 
-    def getMeasurements(self, slant_range_sez, noisy=False):
+    def getMeasurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:
-            slant_range_sez (``np.ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
             noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
 
         Returns:
@@ -112,12 +131,19 @@ class Optical(Sensor):
             "elevation_rad": getElevation(slant_range_sez),
         }
         if noisy:
-            measurements["azimuth_rad"] += self.measurement_noise[0]
-            measurements["elevation_rad"] += self.measurement_noise[1]
+            meas_noise = self.measurement_noise
+            measurements["azimuth_rad"] += meas_noise[0]
+            measurements["elevation_rad"] += meas_noise[1]
 
         return measurements
 
-    def isVisible(self, tgt_eci_state, viz_cross_section, slant_range_sez):
+    def isVisible(
+        self,
+        tgt_eci_state: ndarray,
+        viz_cross_section: float,
+        reflectivity: float,
+        slant_range_sez: ndarray,
+    ) -> bool:
         """Determine if the target is in view of the sensor.
 
         This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical
@@ -128,15 +154,30 @@ class Optical(Sensor):
             :cite:t:`vallado_2013_astro`, Sections 4.1 - 4.4 and 5 - 5.3.5.
 
         Args:
-            tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target agent
+            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target agent
             viz_cross_section (``float``): area of the target facing the sun (m^2)
-            slant_range_sez (``np.ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            reflectivity (``float``): Reflectivity of RSO (unitless)
+            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
 
         Returns:
             ``bool``: True if target is visible; False if target is not visible
         """
         jd = self.host.julian_date_epoch
         sun_eci_position = Sun.getPosition(jd)
+        boresight_eci = tgt_eci_state - self.host.eci_state
+
+        # Early Exit if RSO is too dim
+        solar_phase_angle = calculatePhaseAngle(
+            sun_eci_position, tgt_eci_state[:3], self.host.eci_state[:3]
+        )
+        rso_apparent_vismag = apparentVisualMagnitude(
+            viz_cross_section,
+            reflectivity,
+            lambertianPhaseFunction(solar_phase_angle),
+            norm(boresight_eci),
+        )
+        if rso_apparent_vismag > self.detectable_vismag:
+            return False
 
         # Calculate the illumination of the target object
         tgt_solar_flux = calculateIncidentSolarFlux(
@@ -145,7 +186,6 @@ class Optical(Sensor):
 
         if self.host.agent_type == "Spacecraft":
             # Check if sensor is pointed at the Sun
-            boresight_eci = tgt_eci_state - self.host.eci_state
             lighting = checkSpaceSensorLightingConditions(
                 boresight_eci[:3], sun_eci_position / norm(sun_eci_position)
             )
@@ -169,23 +209,8 @@ class Optical(Sensor):
         # Check if target is illuminated & if sensor has good lighting conditions
         if tgt_solar_flux > 0 and can_observe:
             # Call base class' visibility check
-            return super().isVisible(tgt_eci_state, viz_cross_section, slant_range_sez)
+            return super().isVisible(
+                tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
+            )
 
         return False
-
-    def maximumRangeTo(self, viz_cross_section, tgt_eci_state):
-        """Calculate the maximum possible range based on a target's visible area.
-
-        Args:
-            viz_cross_section (``float``): area of the target facing the sun (m^2)
-            tgt_eci_state (``np.ndarray``): 6x1 ECI state vector of the target agent
-
-        Returns:
-            ``float``: maximum possible range to target at which this sensor can make valid observations (km)
-        """
-        jd = self.host.julian_date_epoch
-        sun_eci_position = Sun.getPosition(jd)
-        solar_flux = calculateIncidentSolarFlux(
-            viz_cross_section, tgt_eci_state[:3], sun_eci_position
-        )
-        return sqrt(solar_flux) * self.max_range_aux / 1000.0

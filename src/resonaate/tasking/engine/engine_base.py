@@ -1,7 +1,10 @@
 """Abstract :class:`.Tasking` base class defining the tasking engine API."""
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import zeros
@@ -11,6 +14,13 @@ from ...data.importer_database import ImporterDatabase
 from ..decisions.decision_base import Decision
 from ..rewards.reward_base import Reward
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Local Imports
+    from ...data.observation import Observation
+    from ...data.task import Task
+    from ...physics.time.stardate import JulianDate
+
 
 class TaskingEngine(metaclass=ABCMeta):
     """Abstract base class defining common API for tasking engines.
@@ -18,11 +28,19 @@ class TaskingEngine(metaclass=ABCMeta):
     This class provides the framework and behavior for the command & control of a network or agent.
     """
 
-    def __init__(self, engine_id, sensor_ids, target_ids, reward, decision, importer_db_path=None):
+    def __init__(
+        self,
+        engine_id: int,
+        sensor_ids: list[int],
+        target_ids: list[int],
+        reward: Reward,
+        decision: Decision,
+        importer_db_path: str | None = None,
+    ):
         """Initialize a tasking engine object.
 
         Args:
-            engine_id (int): Unique ID for this :class:`.TaskingEngine`
+            engine_id (``int``): Unique ID for this :class:`.TaskingEngine`
             sensor_ids (``list``): list of sensor agent ID numbers
             target_ids (``list``): list of target agent ID numbers
             reward (:class:`.Reward`): callable reward object for determining tasking priority
@@ -48,21 +66,28 @@ class TaskingEngine(metaclass=ABCMeta):
         self._decision = decision
         """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
 
-        self.target_list = target_ids
-        """``list``: target agent ID numbers."""
-        self.sensor_list = sensor_ids
-        """``list``: sensor agent ID numbers."""
+        self.sensor_list = sorted(sensor_ids)
+        """``list``: sorted sensor agent ID numbers."""
+
+        self.sensor_indices = {}
+        """``dict``: mapping of sorted sensor agent ID numbers to indices in :attr:`.sensor_list`."""
+
+        self.target_list = sorted(target_ids)
+        """``list``: sorted target agent ID numbers."""
+
+        self.target_indices = {}
+        """``dict``: mapping of sorted target agent ID numbers to indices in :attr:`.target_list`."""
+
+        # Sort sensors & targets - also creates index mappings
+        self._sortSensors()
+        self._sortTargets()
 
         self.reward_matrix = zeros((self.num_targets, self.num_sensors), dtype=float)
-        """``numpy.ndarray``: NxM array defining the tasking reward for every target/sensor pair."""
+        """``ndarray``: NxM array defining the tasking reward for every target/sensor pair."""
         self.decision_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
-        """``numpy.ndarray``: NxM array defining the tasking decision for every target/sensor pair."""
+        """``ndarray``: NxM array defining the tasking decision for every target/sensor pair."""
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
-        """``numpy.ndarray``: NxM array defining the visibility condition for every target/sensor pair."""
-
-        self.target_indices = {
-            target_id: index for index, target_id in enumerate(self.target_list)
-        }
+        """``ndarray``: NxM array defining the visibility condition for every target/sensor pair."""
 
         # List of transient observations (current timestep only)
         self._observations = []
@@ -75,41 +100,43 @@ class TaskingEngine(metaclass=ABCMeta):
         if importer_db_path:
             self._importer_db = ImporterDatabase.getSharedInterface(db_path=importer_db_path)
 
-    def addTarget(self, target_id):
+    def addTarget(self, target_id: int) -> None:
         """Add a target to this :class:`.TaskingEngine`.
 
         Args:
-            target_id (int): Unique identifier for the target being added.
+            target_id (``int``): Unique identifier for the target being added.
         """
-        self.target_indices[target_id] = len(self.target_list)
         self.target_list.append(target_id)
+        self._sortTargets()
 
-    def removeTarget(self, target_id):
+    def removeTarget(self, target_id: int) -> None:
         """Remove a target from this :class:`.TaskingEngine`.
 
         Args:
-            target_id (int): Unique identifier for the target being removed.
+            target_id (``int``): Unique identifier for the target being removed.
         """
-        del self.target_indices[target_id]
         self.target_list.remove(target_id)
+        self._sortTargets()
 
-    def addSensor(self, sensor_id):
+    def addSensor(self, sensor_id: int) -> None:
         """Add a sensor to this :class:`.TaskingEngine`.
 
         Args:
-            sensor_id (int): Unique identifier for the sensor being added.
+            sensor_id (``int``): Unique identifier for the sensor being added.
         """
         self.sensor_list.append(sensor_id)
+        self._sortSensors()
 
-    def removeSensor(self, sensor_id):
+    def removeSensor(self, sensor_id: int) -> None:
         """Remove a sensor from this :class:`.TaskingEngine`.
 
         Args:
-            sensor_id (int): Unique identifier for the sensor being removed.
+            sensor_id (``int``): Unique identifier for the sensor being removed.
         """
         self.sensor_list.remove(sensor_id)
+        self._sortSensors()
 
-    def saveObservations(self, observations):
+    def saveObservations(self, observations: list[Observation]) -> None:
         """Save set of :class:`.Observation` objects to transient lists.
 
         Args:
@@ -118,23 +145,15 @@ class TaskingEngine(metaclass=ABCMeta):
         self._observations.extend(observations)
         self._saved_observations.extend(observations)
 
-    def getCurrentObservations(self):
+    def getCurrentObservations(self) -> list[Observation]:
         """``list``: Returns current list of observations saved internally & resets transient list."""
         observations = self._saved_observations
         self._saved_observations = []
 
         return observations
 
-    def retaskSensors(self, new_target_nums):
-        """Update the set of target agents, usually after a target is added/removed.
-
-        Args:
-            new_target_nums (``list``): ID numbers of new targets to task against.
-        """
-        self.target_list = new_target_nums
-
     @abstractmethod
-    def assess(self, prior_julian_date, julian_date):
+    def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
         """Perform a set of analysis operations on the current simulation state.
 
         Must be overridden by implemented classes.
@@ -146,7 +165,7 @@ class TaskingEngine(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def generateTasking(self):
+    def generateTasking(self) -> None:
         """Create tasking solution based on the current simulation state.
 
         Must be overridden by implemented classes.
@@ -154,7 +173,7 @@ class TaskingEngine(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def getCurrentTasking(self, julian_date):
+    def getCurrentTasking(self, julian_date: JulianDate) -> Task:
         """Return current tasking solution.
 
         Must be overridden by implemented classes.
@@ -167,32 +186,47 @@ class TaskingEngine(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def shutdown(self) -> None:
+        """Perform cleanup operations for shutting down parallel processes/threads."""
+        raise NotImplementedError
+
+    def _sortTargets(self) -> None:
+        """Sort target list & index mapping, for use after adding/removing target(s)."""
+        self.target_list.sort()
+        self.target_indices = {_id: idx for idx, _id in enumerate(self.target_list)}
+
+    def _sortSensors(self) -> None:
+        """Sort sensor list & index mapping, for use after adding/removing sensor(s)."""
+        self.sensor_list.sort()
+        self.sensor_indices = {_id: idx for idx, _id in enumerate(self.sensor_list)}
+
     @property
-    def reward(self):
+    def reward(self) -> Reward:
         """:class:`.Reward`: Returns the tasking engine's reward function."""
         return self._reward
 
     @property
-    def decision(self):
+    def decision(self) -> Decision:
         """:class:`.Decision`: Returns the tasking engine's decision function."""
         return self._decision
 
     @property
-    def unique_id(self):
+    def unique_id(self) -> int:
         """int: Unique identifier for this :class:`.TaskingEngine`."""
         return self._unique_id
 
     @property
-    def num_targets(self):
+    def num_targets(self) -> int:
         """``int``: Returns the number of targets."""
         return len(self.target_list)
 
     @property
-    def num_sensors(self):
+    def num_sensors(self) -> int:
         """``int``: Returns the number of sensors."""
         return len(self.sensor_list)
 
     @property
-    def observations(self):
+    def observations(self) -> list[Observation]:
         """``list``: Returns the :class:`.Observation` objects for the previous timestep."""
         return self._observations

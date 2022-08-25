@@ -1,15 +1,25 @@
 """Functions that define physics related to sensors."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
-from numpy import arccos, arcsin, dot, sqrt
+from numpy import arccos, arcsin, cos, dot, log10, sin, sqrt
 from scipy.linalg import norm
 
 # Local Imports
-from ..physics import constants as const
-from ..physics.bodies import Earth
-from ..physics.bodies.third_body import Sun
+from .bodies import Earth
+from .bodies.third_body import Sun
+from .constants import PI, SOLAR_FLUX, SPEED_OF_LIGHT
+from .math import subtendedAngle
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
 
 
-def getEarthLimbConeAngle(eci_state):
+def getEarthLimbConeAngle(eci_state: ndarray) -> float:
     r"""Return the elevation angle between a sensor and the limb of the Earth.
 
     Determine the cone angle that the satellite makes with Earth's limb, which we define as the
@@ -29,10 +39,10 @@ def getEarthLimbConeAngle(eci_state):
     Returns:
         ``float``: angle target makes with the Earth's limb, :math:`[-\frac{\pi}{2}, 0]` (rad)
     """
-    return arcsin((Earth.radius + Earth.atmosphere) / norm(eci_state[:3])) - const.PI * 0.5
+    return arcsin((Earth.radius + Earth.atmosphere) / norm(eci_state[:3])) - PI * 0.5
 
 
-def lineOfSight(eci_position_1, eci_position_2):
+def lineOfSight(eci_position_1: ndarray, eci_position_2: ndarray) -> bool:
     r"""Determine if line of sight exists between two given positions.
 
     This assumes a spherical Earth which is more conservative.
@@ -56,10 +66,11 @@ def lineOfSight(eci_position_1, eci_position_2):
     return (1 - tau) * r1sq + r1_dot_r2 * tau >= Earth.radius**2
 
 
-def calculateSunVizFraction(tgt_eci_position, sun_eci_position):
+def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray) -> float:
     r"""Calculate the fraction of the Sun **NOT** occluded by Earth from a satellite's position.
 
-    This method is only valid for orbiting satellites.
+    This method is only valid for orbiting satellites. See the last paragraph of section 3.4 in
+    "Satellite Orbits" by Montenbruck for explanation of the occultation conditions.
 
     References:
         :cite:t:`montenbruck_2012_orbits`, Section 3.42
@@ -81,11 +92,16 @@ def calculateSunVizFraction(tgt_eci_position, sun_eci_position):
         dot(-tgt_eci_position, sat_sun_vector) / (norm(tgt_eci_position) * norm(sat_sun_vector))
     )
 
-    # [TODO]: Determine if the `AND`s are required. Does the algorithm include when sat in front of Earth?
-    if c < abs(b - a) and norm(sun_eci_position) < norm(sat_sun_vector):
+    # No occultation is possible if the satellite is closer to the Sun than the ECI origin
+    if norm(sun_eci_position) >= norm(sat_sun_vector):
+        return 1.0
+
+    # Full occultation, see Eqn 3.89
+    if c < abs(b - a):
         return 0
 
-    if c < abs(a + b) and norm(sun_eci_position) < norm(sat_sun_vector):
+    # Partial occultation, see Eqn 3.89
+    if c < abs(a + b):
         # Montenbruck Eq. 3.93
         x = (c**2 + a**2 - b**2) / (2 * c)
         y = sqrt(a**2 - x**2)
@@ -94,12 +110,14 @@ def calculateSunVizFraction(tgt_eci_position, sun_eci_position):
         A = a**2 * arccos(x / a) + b**2 * arccos((c - x) / b) - c * y
 
         # Partial occultation
-        return 1.0 - A / (const.pi * a**2)
+        return 1.0 - A / (PI * a**2)
 
     return 1  # No occultation by the Earth
 
 
-def calculateIncidentSolarFlux(viz_cross_section, tgt_eci_position, sun_eci_position):
+def calculateIncidentSolarFlux(
+    viz_cross_section: float, tgt_eci_position: ndarray, sun_eci_position: ndarray
+) -> float:
     r"""Calculate the current solar flux of a target object.
 
     References:
@@ -113,13 +131,13 @@ def calculateIncidentSolarFlux(viz_cross_section, tgt_eci_position, sun_eci_posi
     Returns:
         ``float``: incident solar flux (W)
     """
-    solar_flux = const.SOLAR_FLUX * viz_cross_section
+    solar_flux = SOLAR_FLUX * viz_cross_section
     return solar_flux * calculateSunVizFraction(tgt_eci_position, sun_eci_position)
 
 
 def checkGroundSensorLightingConditions(
-    sensor_eci_position, sun_eci_unit_vector, buffer_angle=const.PI / 12
-):
+    sensor_eci_position: ndarray, sun_eci_unit_vector: ndarray, buffer_angle: float = PI / 12
+) -> bool:
     r"""Determine if a ground sensor has the appropriate lighting condition.
 
     This assumes ground-based sensors can only collect during times of eclipse (nighttime). There
@@ -141,12 +159,12 @@ def checkGroundSensorLightingConditions(
     satellite_sun_angle = arccos(
         dot(sun_eci_unit_vector, sensor_eci_position) / norm(sensor_eci_position)
     )
-    return satellite_sun_angle >= const.PI / 2 + buffer_angle
+    return satellite_sun_angle >= PI / 2 + buffer_angle
 
 
 def checkSpaceSensorLightingConditions(
-    boresight_eci_vector, sun_eci_unit_vector, cone_angle=const.PI / 12
-):
+    boresight_eci_vector: ndarray, sun_eci_unit_vector: ndarray, cone_angle: float = PI / 12
+) -> bool:
     r"""Determine if a space sensor has the appropriate lighting condition.
 
     This assumes space-based sensors can only collect if the required boresight vector is not
@@ -171,7 +189,7 @@ def checkSpaceSensorLightingConditions(
     return boresight_sun_angle >= cone_angle
 
 
-def calculateRadarCrossSection(viz_cross_section, wavelength):
+def calculateRadarCrossSection(viz_cross_section: float, wavelength: float) -> float:
     r"""Calculate the effective area seen by a radar signal.
 
     This equation assumes radar is reflected perpendicularly from a flat plat and
@@ -187,10 +205,10 @@ def calculateRadarCrossSection(viz_cross_section, wavelength):
     Returns:
         ``float``: effective cross-sectional area (m\ :sup:`2`)
     """
-    return 4 * const.PI * viz_cross_section**2 / wavelength**2
+    return 4 * PI * viz_cross_section**2 / wavelength**2
 
 
-def getWavelengthFromString(freq):
+def getWavelengthFromString(freq: str):
     r"""Return the wavelength of the given frequency band.
 
     Args:
@@ -200,15 +218,71 @@ def getWavelengthFromString(freq):
         ``float``: wavelength of the given frequency band (m)
     """
     return {
-        "VHF": const.SPEED_OF_LIGHT / (165.0 * (1e6)),
-        "UHF": const.SPEED_OF_LIGHT / (650.0 * (1e6)),
-        "L": const.SPEED_OF_LIGHT / (1.5 * (1e9)),
-        "S": const.SPEED_OF_LIGHT / (3.0 * (1e9)),
-        "C": const.SPEED_OF_LIGHT / (6.0 * (1e9)),
-        "X": const.SPEED_OF_LIGHT / (10.0 * (1e9)),
-        "Ku": const.SPEED_OF_LIGHT / (15.0 * (1e9)),
-        "K": const.SPEED_OF_LIGHT / (20.0 * (1e9)),
-        "Ka": const.SPEED_OF_LIGHT / (30.0 * (1e9)),
-        "V": const.SPEED_OF_LIGHT / (60.0 * (1e9)),
-        "W": const.SPEED_OF_LIGHT / (15.0 * (1e9)),
+        "VHF": SPEED_OF_LIGHT / (165.0 * (1e6)),
+        "UHF": SPEED_OF_LIGHT / (650.0 * (1e6)),
+        "L": SPEED_OF_LIGHT / (1.5 * (1e9)),
+        "S": SPEED_OF_LIGHT / (3.0 * (1e9)),
+        "C": SPEED_OF_LIGHT / (6.0 * (1e9)),
+        "X": SPEED_OF_LIGHT / (10.0 * (1e9)),
+        "Ku": SPEED_OF_LIGHT / (15.0 * (1e9)),
+        "K": SPEED_OF_LIGHT / (20.0 * (1e9)),
+        "Ka": SPEED_OF_LIGHT / (30.0 * (1e9)),
+        "V": SPEED_OF_LIGHT / (60.0 * (1e9)),
+        "W": SPEED_OF_LIGHT / (15.0 * (1e9)),
     }[freq]
+
+
+def apparentVisualMagnitude(
+    visual_cross_section: float, reflectivity: float, phase_function: float, rso_range: float
+) -> float:
+    """Calculate apparent visual magnitude of an RSO.
+
+    Args:
+        visual_cross_section (``float, int``): constant visual cross-section of the agent
+        reflectivity (``float``): constant reflectivity of the agent
+        phase_function (``float``): solar phase of RSO
+        rso_range (``float``): range from sensor to RSO
+
+    Returns:
+        ``float``: apparent visual magnitude (unitless)
+
+    References:
+        :cite:t:`cognion_2013_amos`, Eqn 3
+    """
+    return Sun.absolute_magnitude - 2.5 * log10(
+        (visual_cross_section * reflectivity * phase_function) / rso_range**2
+    )
+
+
+def lambertianPhaseFunction(phi: float) -> float:
+    """Reflection off a spherical Lambertian reflector.
+
+    Args:
+        phi (``float``): phase angle
+
+    Returns
+        (``float``): phase angle
+
+    References:
+        :cite:t:`cognion_2013_amos`, Eqn 1
+    """
+    return 2 * ((PI - phi) * cos(phi) + sin(phi)) / (3 * PI**2)
+
+
+def calculatePhaseAngle(emitter: ndarray, reflector: ndarray, observer: ndarray) -> float:
+    """Angle between the light incident onto an observed object and the light reflected from the object.
+
+    Args:
+        emitter (``ndarray``): 3x1 ECI position of emitting body
+        reflector (``ndarray``): 3x1 ECI position reflection body
+        observer (``ndarray``): 3x1 ECI position of observer
+
+    Returns:
+        ``float``: angle between the light incident onto an observed object and the light reflected from the object
+    """
+    phase_angle = subtendedAngle(
+        emitter - reflector,
+        observer - reflector,
+    )
+
+    return phase_angle

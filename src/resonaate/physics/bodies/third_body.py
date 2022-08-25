@@ -252,7 +252,7 @@ def _scaleChebyshevInputs(
 
     Note:
         JPL Horizons kernel segments are split into many Chebyshev series in order to best approximate positions
-        over very long timeframes. Therefore, this scaling function is unique to this module, so we may scale
+        over very long time frames. Therefore, this scaling function is unique to this module, so we may scale
         multiple input values at once that aren't necessarily in the same series set (and therefore aren't in
         the same domain).
 
@@ -305,7 +305,7 @@ def getSegmentPosition(jd: IterFloatType, segment: TBK) -> ndarray:
     # Unpack metadata from desired ephemeris segment
     jd0, interval, coefficients = THIRD_BODY_EPHEMS[segment.value]
 
-    # Calculate the correpsonding index to retrieve the correct set of coefficients.
+    # Calculate the corresponding index to retrieve the correct set of coefficients.
     scaled_jd, idx = _scaleChebyshevInputs(jd, jd0, interval)
 
     # [NOTE]: Coefficient (degree) index must be first for `chebval()`, so coefficient matrices are transposed.
@@ -353,15 +353,18 @@ class Sun(ThirdBody):
         mu (``float``): gravitational parameter (km^3/sec^2), from DE430.
         radius (``float``): mean equatorial radius (km), from Vallado.
         mass (``float``): sun's mass (kg), from Vallado.
+        absolute_magnitude (``float``): sun's absolute visual magnitude (unitless) from NASA.
 
     References:
         :cite:t:`vallado_2013_astro`, Appendix D.3, Table D-5.
         :cite:t:`folkner_2014_planetary`, Table 8.
+        :cite:t:`sun_vismag_2018_nasa`
     """
 
     mu: float = 1.32712440041939400e11
     radius: float = 696000.0
     mass: float = 1.9891e30
+    absolute_magnitude = -26.74
 
     @staticmethod
     def getPosition(jd: float) -> ndarray:

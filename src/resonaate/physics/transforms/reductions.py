@@ -154,10 +154,10 @@ def _getNutationParameters(ttt, dd_psi, dd_eps, num=2):
         ttt (``float``): terrestrial time in Julian centuries
         dd_psi (``float``): EOP correction to psi nutation parameter
         dd_eps (``float``): EOP correction to epsilon nutation parameter
-        num (int, optional): whether to correct quation of equinox. Defaults to 2.
+        num (int, optional): whether to correct equation of equinox. Defaults to 2.
 
     Returns:
-        ``tuple``: set of paramters defining nutation behavior
+        ``tuple``: set of parameters defining nutation behavior
     """
     # Convenience variables
     ttt2 = ttt * ttt
@@ -190,15 +190,15 @@ def _getNutationParameters(ttt, dd_psi, dd_eps, num=2):
 
     # Initialize & calculate nutation/obliquity corrections. Convert to between [0,2pi].
     # Vallado 4th Ed Eq 3-83
-    tempval = (
+    temp_val = (
         iar_80[::, 0] * corrected[0]
         + iar_80[::, 1] * corrected[1]
         + iar_80[::, 2] * corrected[2]
         + iar_80[::, 3] * corrected[3]
         + iar_80[::, 4] * corrected[4]
     ).flatten()
-    delta_psi = dot((rar_80[::, 0] + rar_80[::, 1] * ttt).flatten(), sin(tempval))
-    delta_eps = dot((rar_80[::, 2] + rar_80[::, 3] * ttt).flatten(), cos(tempval))
+    delta_psi = dot((rar_80[::, 0] + rar_80[::, 1] * ttt).flatten(), sin(temp_val))
+    delta_eps = dot((rar_80[::, 2] + rar_80[::, 3] * ttt).flatten(), cos(temp_val))
     # Corrections for FK5 - Makes consistent with GCRF.
     delta_psi = fmod(delta_psi, const.TWOPI) + dd_psi
     delta_eps = fmod(delta_eps, const.TWOPI) + dd_eps

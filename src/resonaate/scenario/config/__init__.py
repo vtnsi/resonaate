@@ -1,91 +1,131 @@
 """Subpackage defining how a :class:`.Scenario` can be configured."""
+from __future__ import annotations
+
 # Standard Library Imports
-import os
+import os.path
+from dataclasses import dataclass, field, fields
+from typing import TYPE_CHECKING, ClassVar
 
 # Local Imports
-from ...common.logger import resonaateLogWarning
 from ...common.utilities import loadJSONFile
-from .base import ConfigMissingRequiredError, ConfigObjectList
-from .engine_config import EngineConfigObject
+from .base import ConfigObject, ConfigObjectList
+from .engine_config import EngineConfig
 from .estimation_config import EstimationConfig
-from .event_configs import EventConfigObjectList
+from .event_configs import EventConfig, EventConfigList
 from .geopotential_config import GeopotentialConfig
 from .noise_config import NoiseConfig
+from .observation_config import ObservationConfig
 from .perturbations_config import PerturbationsConfig
 from .propagation_config import PropagationConfig
 from .time_config import TimeConfig
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any, Callable
 
-class ScenarioConfig:
+
+@dataclass
+class ScenarioConfig(ConfigObject):
     """Configuration class for creating valid :class:`.Scenario` objects.
 
     This allows the extra logic for properly checking all configs to be abstracted from the
     factory methods and the :class:`.Scenario`'s constructor.
     """
 
-    def __init__(self):
-        """Instantiate a :class:`.ScenarioConfig` object from a dictionary."""
-        self.time = TimeConfig()
-        self.noise = NoiseConfig()
-        self.propagation = PropagationConfig()
-        self.geopotential = GeopotentialConfig()
-        self.engines = ConfigObjectList("engines", EngineConfigObject)
-        self.perturbations = PerturbationsConfig()
-        self.estimation = EstimationConfig()
-        self.events = EventConfigObjectList()
+    time: TimeConfig | dict
+    """:class:`.TimeConfig`: simulation time configuration object, **required**."""
 
-        self.sections = (
-            self.time,
-            self.noise,
-            self.propagation,
-            self.geopotential,
-            self.engines,
-            self.perturbations,
-            self.events,
-            self.estimation,
-        )
+    estimation: EstimationConfig | dict
+    """:class:`.EstimationConfig`: estimation & filtering configuration object, **required**."""
+
+    engines: ConfigObjectList[EngineConfig] | list[EngineConfig | dict]
+    """:class:`.ConfigObjectList`: list of :class:`.EngineConfig` objects to use for tasking, **required**."""
+
+    noise: NoiseConfig | dict | None = None
+    """:class:`.NoiseConfig`: noise types and values to in the simulation."""
+
+    propagation: PropagationConfig | dict | None = None
+    """:class:`.PropagationConfig`: define propagation techniques used during simulation."""
+
+    geopotential: GeopotentialConfig | dict | None = None
+    """:class:`.GeopotentialConfig`: define the geopotential model of the Earth to use in the :class:`.SpecialPerturbations` propagator."""
+
+    perturbations: PerturbationsConfig | dict | None = None
+    """:class:`.PerturbationsConfig`: define perturbations to include in the :class:`.SpecialPerturbations` propagator."""
+
+    observation: ObservationConfig | dict | None = None
+    """:class:`.ObservationConfig`: configurations specific to observation behavior."""
+
+    events: EventConfigList[EventConfig] | list[EventConfig | dict] = field(default_factory=list)
+    """:class:`.EventConfigList`: list of :class:`.EventConfig` objects that occur during the simulation."""
+
+    OPTIONAL_SECTION_MAP: ClassVar[dict[str, ConfigObject]] = {
+        "noise": NoiseConfig,
+        "propagation": PropagationConfig,
+        "geopotential": GeopotentialConfig,
+        "perturbations": PerturbationsConfig,
+        "observation": ObservationConfig,
+    }
+    """``dict``: mapping that makes auto-validating optional sub-configs easier."""
+
+    def __post_init__(self) -> None:
+        """Runs after the object is initialized."""
+        # [FIXME]: This could be handled more generically
+        # Required sections
+        if isinstance(self.time, dict):
+            self.time = TimeConfig(**self.time)
+
+        if isinstance(self.estimation, dict):
+            self.estimation = EstimationConfig(**self.estimation)
+
+        if isinstance(self.engines, list):
+            self.engines = ConfigObjectList("engines", EngineConfig, self.engines)
+
+        if isinstance(self.events, list):
+            self.events = EventConfigList("events", EventConfig, self.events, default_empty=True)
+
+        # Optional sub-config sections
+        for section in fields(self):
+            if getattr(self, section.name) is None:
+                setattr(self, section.name, self.OPTIONAL_SECTION_MAP[section.name]())
+
+        if isinstance(self.noise, dict):
+            self.noise = NoiseConfig(**self.noise)
+
+        if isinstance(self.propagation, dict):
+            self.propagation = PropagationConfig(**self.propagation)
+
+        if isinstance(self.geopotential, dict):
+            self.geopotential = GeopotentialConfig(**self.geopotential)
+
+        if isinstance(self.perturbations, dict):
+            self.perturbations = PerturbationsConfig(**self.perturbations)
+
+        if isinstance(self.observation, dict):
+            self.observation = ObservationConfig(**self.observation)
 
     @classmethod
-    def fromConfigFile(cls, config_file_path):
+    def fromConfigFile(cls, config_file_path: str) -> ScenarioConfig:
         """Parse a configuration file and generate a :class:`.ScenarioConfig` from it.
 
         Args:
-            config_file_path (str): Path to initialization configuration file.
+            config_file_path (``str``): Path to initialization configuration file.
 
         Returns:
-            ScenarioConfig: Generated from configuration file.
+            :class:`.ScenarioConfig`: Generated from configuration file.
         """
         config_dict = cls.parseConfigFile(config_file_path)
-        config = cls()
-        config.readConfig(config_dict)
-
-        return config
-
-    def readConfig(self, config_dict):
-        """Read a configuration dictionary into this :class:`.ScenarioConfig`.
-
-        Args:
-            config_dict (dict): Config dictionary specifying :class:`.Scenario` attributes.
-        """
-        for section in self.sections:
-            nested_config = config_dict.pop(section.config_label, None)
-            if nested_config:
-                section.readConfig(nested_config)
-
-            elif section.isRequired() and not nested_config:
-                raise ConfigMissingRequiredError("Scenario", section.config_label)
-
-        # Log a warning if unused sections were included in the :class:`.Scenario` config
-        if config_dict:
-            msg = f"Scenario config included un-implemented sections: {config_dict.keys()}"
-            resonaateLogWarning(msg)
+        return cls(**config_dict)
 
     @staticmethod
-    def parseConfigFile(path, file_loader=loadJSONFile):
+    def parseConfigFile(path: str, file_loader: Callable = loadJSONFile) -> dict[str, Any]:
         """Parse out configuration from a given filepath.
 
         Args:
             path (``str``): path to main config file
+            file_loader (``callable``, optional): function to load a JSON file from a given path. Defaults to
+                :func:`loadJSONFile`.
 
         Returns:
             ``dict``: config dictionary object with the necessary fields
@@ -115,13 +155,3 @@ class ScenarioConfig:
             configuration["engines"].append(engine_config)
 
         return configuration
-
-    @property
-    def required_sections(self):
-        """list: List of labels of required sections of :class:`.ScenarioConfig`."""
-        return [section.config_label for section in self.sections if section.isRequired()]
-
-    @property
-    def optional_sections(self):
-        """list: List of labels of optional sections of :class:`.ScenarioConfig`."""
-        return [section.config_label for section in self.sections if not section.isRequired()]

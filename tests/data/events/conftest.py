@@ -1,19 +1,17 @@
-"""Pytest fixtures shared across the events tests."""
+from __future__ import annotations
+
 # Standard Library Imports
 from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
 
-try:
-    # RESONAATE Imports
-    from resonaate.scenario.scenario import Scenario
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
+# RESONAATE Imports
+from resonaate.scenario.scenario import Scenario
 
 
 @pytest.fixture(name="mocked_scenario")
 def getMockedScenario():
     """Get a mocked :class:`.Scenario` object."""
-    mocked_scenario = create_autospec(Scenario)
+    mocked_scenario = create_autospec(Scenario, instance=True)
     return mocked_scenario

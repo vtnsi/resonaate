@@ -39,7 +39,6 @@ ______________________________________________________________________
 ### Dependencies
 
 These are the software requirements for all versions of RESONAATE.
-Packages can be installed at their minimum required versions using `pip install -r requirements/requirements.txt`.
 Please see software documentation for best installation practices.
 
 - Python (PIP) Packages
@@ -50,82 +49,79 @@ Please see software documentation for best installation practices.
   - [matplotlib](https://matplotlib.org/index.html)
   - [redis](https://github.com/andymccurdy/redis-py)
 - Software
-  - [Python >= 3.7.9](https://www.python.org)
+  - [Python >= 3.7](https://www.python.org)
   - [Redis server > 5.0.10](https://redis.io/)
 
 ### Installation
 
-See [Installation](./docs/source/intro/install.md#installation) for details on installing `resonaate` and its dependencies.
+See [Installation](./docs/source/intro/install.md#installation) for details on installing the `resonaate` Python package and its dependencies.
 
 ### RESONAATE Configuration
 
 By default, RESONAATE will use the default settings defined in `src/resonaate/common/default_behavior.config`.
 These values correspond to how RESONAATE behaves with respect to logging, database, debugging, and parallelization.
 To overwrite these settings, please copy the contents of `src/resonaate/common/default_behavior.config` to a new `.config` file to save the default settings.
-Edit by un-commenting and changing the required values.
+Edit by uncommenting and changing the required values.
 
 ## Usage
 
-Using the RESONAATE tool is the easiest when using the CLI, which is installed along with the Python package.
+Using the RESONAATE tool is easiest when using the CLI, which is installed along with the Python package.
 The reason for this, is that RESONAATE has been designed to be highly reconfigurable between separate simulation runs.
 This is accomplished by altering the values of configuration files which makes Monte Carlo & parametric studies easier to accomplish.
-Simple instructions for the `resonaate` CLI are described below along with a short definition of the configuration schema.
+Simple instructions for the RESONAATE CLI are described below along with a short definition of the configuration schema.
 
 ### CLI Tool
 
 - Get Redis server running
 
-```bash
-redis-server &
-```
+  ```bash
+  redis-server &
+  ```
 
 - Run example, replacing `<init_file>` and `<number_of_hours>` with appropriate values
 
-```bash
-resonaate <init_file> -t <number_of_hours>
-```
+  ```bash
+  resonaate <init_file> -t <number_of_hours>
+  ```
 
 - Command line arguments for `resonaate` entry point:
 
-```bash
-resonaate -h
-usage: resonaate [-h] [-t HOURS] [--debug] [-d DB_PATH]
-                 [-i IMPORTER_DB_PATH]
-                 INIT_FILE
+  ```bash
+  usage: resonaate [-h] [-t HOURS] [--debug] [-d DB_PATH] [-i IMPORTER_DB_PATH] INIT_FILE
 
-RESONAATE Command Line Interface
+  RESONAATE Command Line Interface
 
-positional arguments:
-  INIT_FILE             Path to RESONAATE initialization message file
+  positional arguments:
+    INIT_FILE             Path to RESONAATE initialization message file
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -t HOURS, --time HOURS
-                        Time in hours to simulate. DEFAULT: 1/2 hour
-  --debug               Turns on parallel debug mode
+  optional arguments:
+    -h, --help            show this help message and exit
+    -t HOURS, --time HOURS
+                          Time in hours to simulate. DEFAULT: 1/2 hour
+    --debug               Turns on parallel debug mode
 
-Database Files:
-  -d DB_PATH, --db-path DB_PATH
-                        Path to RESONAATE database
-  -i IMPORTER_DB_PATH, --importer-db-path IMPORTER_DB_PATH
-                        Path to Importer database
-```
+  Database Files:
+    -d DB_PATH, --db-path DB_PATH
+                          Path to RESONAATE database
+    -i IMPORTER_DB_PATH, --importer-db-path IMPORTER_DB_PATH
+                          Path to Importer database
+  ```
 
 - Users should stop Redis when they are done working running/simulations
 
-```bash
-redis-cli shutdown
-```
+  ```bash
+  redis-cli shutdown
+  ```
 
 ### Initialization
 
-The initialization/configuration file structure required to run RESONAATE is described in detail by the [Initialization](https://code.vt.edu/space-research/resonaate/resonaate/-/wikis/Initialization) documentation on the Wiki.
-Currently, example initialization files are located under **configs/json**.
+The initialization/configuration file structure required to run RESONAATE is described in detail by the [Config Specification](./docs/source/reference/config_format.md) documentation.
+Currently, example initialization files are located under `configs/json/`.
 
 This Wiki defines the schema required by the different JSON configuration files:
 
 - Main initialization file
-  - File required to be pointed to when using `resonaate` CLI
+  - Required to be pointed to when using `resonaate` CLI
   - Describes the main `Scenario`-level properties of the simulation
   - Points to files defining `Engine` objects
   - Points to files for `TargetEvent` and `SensorEvent` objects
@@ -146,13 +142,12 @@ This Wiki defines the schema required by the different JSON configuration files:
 When interacting with the `resonaate` CLI, users may specify two separate types of databases: `ResonaateDatabase` (aka internal) and `ImporterDatabase` (aka external).
 
 The internal `ResonaateDatabase` defines where data _produced_ by RESONAATE is stored.
-The default behavior is to store the database **in memory** which is likely faster, but means that no produced data is guaranteed to be saved if the simulation stops early.
-Users may save the database to disk by with the `-d` or `--db-path` CLI options to `resonaate` (recommended) or by changing `DatabasePath` in **resonaate.config** (not recommended).
+Users may save the database to a specific database file with the `-d` or `--db-path` CLI options to `resonaate` (recommended).
 The `--db-path` option requires explicit selection of the file location.
 
-The external `ImporterDatabase` defines **read-only** data that RESONAATE will ingest during a simulation and mix with produced data, but is protected from alteration by RESONAATE itself.
-This provides utility for preloading large sets of pre-computed data (truth, observations, tasks); testing fusion of external estimates or observations with internally generated estimates and observations; and stacking data from simulation runs together.
-Users can specify an `ImporterDatabase` with the `-i` or `--importer-db-path` CLI options to `resonaate`.
+The external `ImporterDatabase` defines **read-only** data that RESONAATE will ingest during a simulation and mix with produced data, but is protected from being written to by RESONAATE.
+This provides utility for loading large sets of pre-computed data (truth, observations, tasks); testing fusion of external estimates or observations with internally generated estimates and observations; and stacking data from simulation runs together.
+Users can specify the `ImporterDatabase` file path with the `-i` or `--importer-db-path` CLI options to `resonaate`.
 
 ### Python Example
 
@@ -212,36 +207,37 @@ finally:
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for more thorough details.
+
 Using these development tools requires a standalone version of RESONAATE to be installed.
-
-### Linting
-
-- Install linting libraries:
+To install compatible, up-to-date versions please install RESONAATE with the following commands:
 
 ```bash
-pip install -e .[dev]
+pip install -e .[dev,test,doc]
 pre-commit install
 ```
 
+````{note}
+If you use `zsh`, you may need to use the following command instead:
+```zsh
+pip install -e ".[dev,test,doc]"
+```
+````
+
+### Linting
+
 - Running `flake8` linter:
 
-```bash
-flake8 .
-```
+  ```bash
+  flake8 .
+  ```
 
 - Running `pylint` linter:
 
-```bash
-pylint *.py tests src/resonaate docs
-```
+  ```bash
+  pylint *.py tests src/resonaate docs
+  ```
 
 ### Testing
-
-- Install pytest
-
-  ```bash
-  pip install -e .[test]
-  ```
 
 - Get Redis server running
 
@@ -249,14 +245,14 @@ pylint *.py tests src/resonaate docs
   redis-server &
   ```
 
-- Run unit tests only
+- Run unit tests only (~30 s)
 
   ```bash
-  pytest -xm "not (service or event or scenario)"
+  pytest -m "not (event or scenario)"
 
   ```
 
-- Run entire test suite
+- Run entire test suite (~4 m)
 
   ```bash
   pytest
@@ -264,19 +260,25 @@ pylint *.py tests src/resonaate docs
 
 ### Generating Documentation
 
-1. Install required packages:
-   ```shell
-   pip install -e .[doc]
-   ```
-1. Navigate into the **docs** directory:
-   ```shell
-   cd docs
-   ```
-1. Build the documentation
-   ```shell
-   make clean; make html
-   ```
-1. Open **docs/build/html/index.html** in a browser to view the documentation
+- Navigate into the `docs/` directory
+
+  ```bash
+  cd docs
+  ```
+
+- Build the documentation
+
+  ```bash
+  make clean; make html
+  ```
+
+- Serve the documentation
+
+  ```bash
+  make serve
+  ```
+
+- Open [http://localhost:8000/](http://localhost:8000/) in a browser
 
 ## Publications
 
@@ -306,11 +308,11 @@ For additional information on the development of the RESONAATE Tool, see the fol
 - Project Principal Investigators
   - Dr. Jonathan Black: <jonathan.black@vt.edu>
   - Dr. Kevin Schroeder: <kschro1@vt.edu>
-- Lead Developers
+- Core Developers
   - Dylan Thomas: <dylan.thomas@vt.edu>
   - David Kusterer: <kdavid13@vt.edu>
-- Developers
   - Jon Kadan: <jkadan@vt.edu>
   - Cameron Harris: <camerondh@vt.edu>
+- Contributors
   - Connor Segal: <csegal@vt.edu>
   - Amit Bala: <agbala@vt.edu>

@@ -14,10 +14,24 @@ help:
 
 .PHONY: help Makefile
 
+serve:
+	python3 -m http.server --directory $(BUILDDIR)/html
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo
+	@echo "To view files, run:"
+	@echo
+	@echo "\tpython3 -m http.server --directory $(BUILDDIR)/html"
+	@echo
+	@echo "Or"
+	@echo
+	@ echo "\tmake serve"
+	@echo
+	@echo "... and open a browser to http://localhost:8000/"
+	@echo
 
 # Clean built docs & generated source files
 clean:

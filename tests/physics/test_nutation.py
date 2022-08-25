@@ -1,22 +1,11 @@
-# pylint: disable=attribute-defined-outside-init
-# Standard Library Imports
-# Third Party Imports
+from __future__ import annotations
+
 # RESONAATE Imports
-try:
-    # RESONAATE Imports
-    from resonaate.physics.transforms.nutation import get1980NutationSeries
-except ImportError as error:
-    raise Exception(f"Please ensure you have appropriate packages installed:\n {error}") from error
-# Local Imports
-# Testing Imports
-from ..conftest import BaseTestCase
+from resonaate.physics.transforms.nutation import get1980NutationSeries
 
 
-class TestNutationModel(BaseTestCase):
-    """Test cases for validating the `physics.transformas` package."""
-
-    def testNutation(self):
-        """Test loading nutation files."""
-        r_c, i_c = get1980NutationSeries()
-        assert r_c.shape == (106, 4)
-        assert i_c.shape == (106, 5)
+def testNutation1980Series():
+    """Test loading nutation files."""
+    r_c, i_c = get1980NutationSeries()
+    assert r_c.shape == (106, 4)
+    assert i_c.shape == (106, 5)

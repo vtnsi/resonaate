@@ -1,9 +1,52 @@
-# Include other pipeline job files
+# ==========================================
+# Job Stages
+# ==========================================
+
+stages:
+  - check
+  - test
+  - build
+  - release
+  - publish
+
+# ==========================================
+# Includes
+# ==========================================
+
 include:
-  - local: /.gitlab/ci/check.gitlab-ci.yml
-  - local: /.gitlab/ci/test.gitlab-ci.yml
-  - local: /.gitlab/ci/security.gitlab-ci.yml
-  - local: /.gitlab/ci/build.gitlab-ci.yml
-  - local: /.gitlab/ci/release.gitlab-ci.yml
-  - local: /.gitlab/ci/deploy.gitlab-ci.yml
-  - local: /.gitlab/ci/dependabot.gitlab-ci.yml
+  - local: .gitlab/ci/rules.gitlab-ci.yml
+  - local: .gitlab/ci/check.gitlab-ci.yml
+  - local: .gitlab/ci/dependabot.gitlab-ci.yml
+  - local: .gitlab/ci/test.gitlab-ci.yml
+  - local: .gitlab/ci/security.gitlab-ci.yml
+  - local: .gitlab/ci/build.gitlab-ci.yml
+  - local: .gitlab/ci/release.gitlab-ci.yml
+  - local: .gitlab/ci/publish.gitlab-ci.yml
+
+# ==========================================
+# Default Workflow
+# ==========================================
+
+# This pipeline is only run for MR, tags, & pushes to develop
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: $CI_COMMIT_TAG
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+
+# ==========================================
+# Default Job Settings
+# ==========================================
+
+default:
+  tags:
+    - docker
+    - linux
+
+# ==========================================
+# Variables
+# ==========================================
+
+variables:
+  # Name of container image
+  RESONAATE_IMAGE_NAME: resonaate

@@ -1,160 +1,121 @@
-#####################
-# Base Job Settings #
-#####################
+# ==========================================
+# Includes
+# ==========================================
 
 include:
-  - local: /.gitlab/ci/common.gitlab-ci.yml
+  - local: .gitlab/ci/base.gitlab-ci.yml
+  - local: .gitlab/ci/rules.gitlab-ci.yml
+  - local: .gitlab/ci/scripts.gitlab-ci.yml
 
-##################
-# Script Aliases #
-##################
-
-# pip install test tools
-# [NOTE]: Editable/Developer install is required here, because the coverage combine/report
-#   fails otherwise...
-.pip-test: &pip-test
-  - python3 -m pip install -e .[test]
-
-# pytest unit test command
-.pytest-unit: &pytest-unit
-  - COVERAGE_FILE=.coverage.unit coverage run -m pytest --junitxml=unit.xml -m "not (scenario or service or event)" --durations=5
-
-# pytest scenario integration test command
-.pytest-scenario: &pytest-scenario
-  - COVERAGE_FILE=.coverage.scenario coverage run -m pytest --junitxml=scenario.xml -m "scenario" --durations=5
-
-# pytest event integration test command
-.pytest-event: &pytest-event
-  - COVERAGE_FILE=.coverage.event coverage run -m pytest --junitxml=event.xml -m "event" --durations=5
-
-# pytest service integration test command
-.pytest-service: &pytest-service
-  - COVERAGE_FILE=.coverage.service coverage run -m pytest --junitxml=service.xml -m "service" --durations=5
-
-# coverage combine command
-.coverage-combine: &coverage-combine
-  - coverage combine
-
-# coverage report command
-.coverage-report: &coverage-report
-  - coverage report
-  - coverage html
-  - coverage xml
-
-#################
-# Base Test Job #
-#################
+# ==========================================
+# Base Test Job
+# ==========================================
 
 .test-base:
   stage: test
+  extends:
+    - .python-latest
+    - .rules:default
+  variables:
+    PYTEST_OPTIONS: "-ra -v --durations=5"
   before_script:
-    - !reference [.apt-setup]
-    - !reference [.start-redis]
-    - !reference [.create-venv]
-    - echo -e "\e[0Ksection_start:`date +%s`:pip_test[collapsed=true]\r\e[0K Install resonaate test dependencies via pip"
-    - *pip-test
-    - echo -e "\e[0Ksection_end:`date +%s`:pip_test\r\e[0K"
+    - !reference [.install-redis, before_script]
+    - !reference [.pip-test, before_script]
   artifacts:
     when: always
-    expire_in: 1 week
+    expire_in: 1 hour
   when: always
   needs: []
 
-#################
-# Unit Test Job #
-#################
+# ==========================================
+# Unit Test Job
+# ==========================================
 
-pytest:unit:
+pytest-unit:
   extends: .test-base
+  variables:
+    COVERAGE_FILE: .coverage.unit
+    JUNIT_FILE: unit.xml
   script:
-    - echo -e "\e[0Ksection_start:`date +%s`:pytest_unit[collapsed=true]\r\e[0K Unit test code with pytest"
-    - *pytest-unit
-    - echo -e "\e[0Ksection_end:`date +%s`:pytest_unit\r\e[0K"
-    - !reference [.stop-redis]
+    - !reference [.start-redis, script]
+    - echo "Running unit tests with pytest"
+    - coverage run -m pytest --junitxml=$JUNIT_FILE -m "not (scenario or event)" $PYTEST_OPTIONS
+    - !reference [.stop-redis, script]
   artifacts:
     paths:
       - .coverage.unit*
     reports:
       junit:
-        - unit.xml
+        - $JUNIT_FILE
 
-#####################
-# Scenario Test Job #
-#####################
+# ==========================================
+# Scenario Test Job
+# ==========================================
 
-pytest:scenario:
+pytest-scenario:
   extends: .test-base
+  variables:
+    COVERAGE_FILE: .coverage.scenario
+    JUNIT_FILE: scenario.xml
   script:
-    - echo -e "\e[0Ksection_start:`date +%s`:pytest_scenario[collapsed=true]\r\e[0K Scenario integration tests"
-    - *pytest-scenario
-    - echo -e "\e[0Ksection_end:`date +%s`:pytest_scenario\r\e[0K"
-    - !reference [.stop-redis]
+    - !reference [.start-redis, script]
+    - echo "Running scenario tests with pytest"
+    - coverage run -m pytest --junitxml=$JUNIT_FILE -m scenario $PYTEST_OPTIONS
+    - !reference [.stop-redis, script]
   artifacts:
     paths:
       - .coverage.scenario*
     reports:
       junit:
-        - scenario.xml
+        - $JUNIT_FILE
 
-##################
-# Event Test Job #
-##################
+# ==========================================
+# Event Test Job
+# ==========================================
 
-pytest:event:
+pytest-event:
   extends: .test-base
+  variables:
+    COVERAGE_FILE: .coverage.event
+    JUNIT_FILE: event.xml
+    PYTEST_MARKS: "-m event"
   script:
-    - echo -e "\e[0Ksection_start:`date +%s`:pytest_event[collapsed=true]\r\e[0K Event integration tests"
-    - *pytest-event
-    - echo -e "\e[0Ksection_end:`date +%s`:pytest_event\r\e[0K"
-    - !reference [.stop-redis]
+    - !reference [.start-redis, script]
+    - echo "Running event tests with pytest"
+    - coverage run -m pytest --junitxml=$JUNIT_FILE -m event $PYTEST_OPTIONS
+    - !reference [.stop-redis, script]
   artifacts:
     paths:
       - .coverage.event*
     reports:
       junit:
-        - event.xml
+        - $JUNIT_FILE
 
-####################
-# Service Test Job #
-####################
+# ==========================================
+# Coverage Job
+# ==========================================
 
-pytest:service:
+coverage:
   extends: .test-base
+  before_script:
+    - !reference [.pip-test, before_script]
   script:
-    - echo -e "\e[0Ksection_start:`date +%s`:pytest_service[collapsed=true]\r\e[0K Service integration tests"
-    - *pytest-service
-    - echo -e "\e[0Ksection_end:`date +%s`:pytest_service\r\e[0K"
-    - !reference [.stop-redis]
+    - echo "Combining coverage files from parallel test jobs"
+    - coverage combine
+    - echo "Creating coverage reports"
+    - coverage report
+    - coverage html
+    - coverage xml
   artifacts:
-    paths:
-      - .coverage.service*
-    reports:
-      junit:
-        - service.xml
-
-#########################
-# Coverage Analysis Job #
-#########################
-
-coverage-report:
-  extends: .test-base
-  script:
-    - echo -e "\e[0Ksection_start:`date +%s`:cov_combine[collapsed=true]\r\e[0K Combine coverage files from test jobs"
-    - *coverage-combine
-    - echo -e "\e[0Ksection_end:`date +%s`:cov_combine\r\e[0K"
-    - echo -e "\e[0Ksection_start:`date +%s`:cov_report[collapsed=true]\r\e[0K Create coverage reports (CLI, HTML, XML)"
-    - *coverage-report
-    - echo -e "\e[0Ksection_end:`date +%s`:cov_report\r\e[0K"
-    - !reference [.stop-redis]
-  artifacts:
+    name: coverage
     paths:
       - coverage/
     expose_as: Coverage
+    expire_in: 1 week
     reports:
       cobertura: coverage.xml
   needs:
-    - pytest:unit
-    - pytest:scenario
-    - pytest:service
-    - pytest:event
+    - pytest-unit
+    - pytest-scenario
+    - pytest-event
   coverage: /TOTAL.*\s+(\d+\%)/
