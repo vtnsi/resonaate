@@ -170,6 +170,7 @@ def testMissingDataDependency(
     reset_shared_db: None,
 ):
     """Verify ValuerError is thrown if you can't find, nor create a DataDependency."""
+    # pylint: disable=invalid-name
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
 
@@ -181,11 +182,15 @@ def testMissingDataDependency(
     #   `dependency.createDependency()` raises a `MissingDataDependency` exception.
     dummy_data_dependency = create_autospec(DataDependency, instance=True)
     dummy_data_dependency.query = "SQL QUERY"
-    dummy_data_dependency.createDependency = Mock(side_effect=MissingDataDependency("DataType"))
+    dummy_data_dependency.createDependency = Mock(  # pylint: disable=invalid-name
+        side_effect=MissingDataDependency("DataType")
+    )
 
     # Mock the `getDataDependencies()` method of the `EventConfig` class, so that it returns
     #   the `dummy_data_dependency` object.
-    tgt_event.getDataDependencies = Mock(return_value=[dummy_data_dependency])
+    tgt_event.getDataDependencies = Mock(  # pylint: disable=invalid-name
+        return_value=[dummy_data_dependency]
+    )
 
     # This dependency is not found
     scenario_cfg_dict["events"].append(tgt_event)
