@@ -74,6 +74,13 @@
     - apt-get install -y -qq curl
     - echo -e "\e[0Ksection_end:`date +%s`:install_curl\r\e[0K"
 
+# Install `git` to image using `apt`
+.install-git:
+  before_script:
+    - echo -e "\e[0Ksection_start:`date +%s`:install_git[collapsed=true]\r\e[0K Install git "
+    - apt-get -y -qq install git
+    - echo -e "\e[0Ksection_end:`date +%s`:install_git\r\e[0K"
+
 # Install `buildah` to image using `apt`
 .install-buildah:
   before_script:

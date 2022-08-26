@@ -36,7 +36,10 @@ include:
 release-notes:
   extends:
     - .release-base
-  image: alpine/git:latest
+  image: ubuntu:latest
+  before_script:
+    - !reference [.apt-update, before_script]
+    - !reference [.install-git, before_script]
   script:
     - echo "Creating release notes for the ${CI_COMMIT_TAG} tag"
     - echo RELEASE_TAG=$CI_COMMIT_TAG >> variables.env
