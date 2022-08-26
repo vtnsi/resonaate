@@ -44,23 +44,31 @@ release-notes:
     - echo "Creating release notes for the ${CI_COMMIT_TAG} tag"
     - echo RELEASE_TAG=$CI_COMMIT_TAG >> variables.env
     # Title
-    - echo "# RESONAATE Release Notes\n" >> $RELEASE_NOTES_FILE
+    - echo "# RESONAATE Release Notes" >> $RELEASE_NOTES_FILE
+    - echo ""
     # Get release annotation
     - git tag -l --format='%(subject)' -n0 $CI_COMMIT_TAG >> $RELEASE_NOTES_FILE
     # Generate ToC
-    - echo "\n---\n## Table of Contents\n" >> $RELEASE_NOTES_FILE
+    - echo ""
+    - echo "## Table of Contents" >> $RELEASE_NOTES_FILE
+    - echo ""
     - echo "- [Commits](#commits)" >> $RELEASE_NOTES_FILE
     - echo "- [Merges](#merges)" >> $RELEASE_NOTES_FILE
     - echo "- [Authors](#authors)" >> $RELEASE_NOTES_FILE
-    - echo "\n---" >> $RELEASE_NOTES_FILE
     # Get all the regular commits
-    - echo "\n## Commits\n" >> $RELEASE_NOTES_FILE
+    - echo ""
+    - echo "## Commits" >> $RELEASE_NOTES_FILE
+    - echo ""
     - git log --no-merges --pretty="- %s (%h)" $(git tag --sort=-creatordate | head -2)...$(git tag --sort=-creatordate | head -1) >> $RELEASE_NOTES_FILE
     # Get all the merge commits
-    - echo "\n## Merges\n" >> $RELEASE_NOTES_FILE
+    - echo ""
+    - echo "## Merges" >> $RELEASE_NOTES_FILE
+    - echo ""
     - git log --merges --pretty="- %s (%h)" $(git tag --sort=-creatordate | head -2)...$(git tag --sort=-creatordate | head -1) >> $RELEASE_NOTES_FILE
     # Get all the commit authors - remove "Dependabot"
-    - echo "\n## Authors\n" >> $RELEASE_NOTES_FILE
+    - echo ""
+    - echo "## Authors" >> $RELEASE_NOTES_FILE
+    - echo ""
     - git log --pretty="- %an%n- %cn" $(git tag --sort=-creatordate | head -2)...$(git tag --sort=-creatordate | head -1) | sort | uniq | grep -v "Dependabot" >> $RELEASE_NOTES_FILE
   artifacts:
     paths:

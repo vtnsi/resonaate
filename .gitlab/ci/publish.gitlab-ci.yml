@@ -60,8 +60,6 @@ publish-pkg:
   script:
     - echo "Publishing RESONAATE $RESONAATE_VERSION to GitLab package registry"
     - python3 -m twine upload $TWINE_OPTIONS dist/*
-  needs:
-    - build-pkg
 
 # ==========================================
 # Publish Container Job
