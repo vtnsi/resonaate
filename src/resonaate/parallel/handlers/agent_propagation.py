@@ -3,7 +3,6 @@
 import json
 import os.path
 import pickle
-from abc import ABCMeta
 from collections import defaultdict
 from enum import Flag
 
@@ -29,7 +28,7 @@ from ..job import CallbackRegistration, Job
 from .job_handler import JobHandler
 
 
-class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
+class PropagationJobHandler(JobHandler):
     """Handle parallel propagation jobs during the simulation."""
 
     def handleProcessedJob(self, job):

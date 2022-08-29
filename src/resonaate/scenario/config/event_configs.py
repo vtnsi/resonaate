@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
@@ -112,7 +111,7 @@ class DataDependency:
 
 
 @dataclass
-class EventConfig(ConfigObject, ABC):
+class EventConfig(ConfigObject):
     """Abstract base class defining required fields of an event configuration object."""
 
     EVENT_CLASS: ClassVar[Event] = Event
