@@ -48,7 +48,7 @@ class ConfigError(BaseConfigError):
         return f"Error occurred in '{self.config_label}': {self.message}"
 
 
-class ConfigSettingError(BaseConfigError, ABC):
+class ConfigSettingError(BaseConfigError):
     """Encapsulate shared functionality of subclasses."""
 
     def __init__(self, config_label: str, bad_setting: Any, requirements: tuple) -> None:
@@ -111,7 +111,7 @@ def inclusiveRange(*args):
     return range(start, stop, step)
 
 
-class ConfigObject(ABC):
+class ConfigObject:
     """Class for defining a configuration object."""
 
     @classmethod
