@@ -177,7 +177,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.est_p = est_p
         self.pred_x = array([])
         self.pred_p = array([])
-        self.source: Optional[str] = None
+        self.source: Optional[str] = "Initialization"
 
         # MMAE products
         self.true_y = array([])

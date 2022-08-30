@@ -226,6 +226,9 @@ class Scenario(ParallelMixin):
         # Get the redis connection singleton
         self.redis_conn = getRedisConnection()
 
+        # Save initial states to database
+        self.saveDatabaseOutput()
+
         self.logger.info("Initialized Scenario.")
 
     def propagateTo(self, target_time: JulianDate) -> None:
