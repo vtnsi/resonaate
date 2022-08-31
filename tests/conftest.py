@@ -48,7 +48,6 @@ def _patchMissingEnvVariables(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     with monkeypatch.context() as m_patch:
         m_patch.delenv("RESONAATE_BEHAVIOR_CONFIG", raising=False)
-        m_patch.delenv("REDIS_PASSWORD", raising=False)
         yield
         # Make sure we reset the config after each test function
         BehavioralConfig.getConfig()

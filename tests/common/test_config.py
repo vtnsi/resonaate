@@ -39,7 +39,7 @@ CORRECT_DEFAULTS = OrderedDict(
         "database": {
             "DatabasePath": "sqlite://",
         },
-        "parallel": {"RedisHostname": "localhost", "RedisPort": 6379, "WorkerCount": None},
+        "parallel": {"WorkerCount": None},
         "debugging": {
             "OutputDirectory": "debugging",
             "NearestPD": False,
