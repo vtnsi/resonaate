@@ -21,6 +21,7 @@
     - python3 -m pip install --upgrade pip virtualenv
     - virtualenv .venv
     - source .venv/bin/activate
+    - python 3 -m pip install mjolnir[test] --index-url https://gitlab-ci-token:$CI_JOB_TOKEN@code.vt.edu/api/v4/projects/16484/packages/pypi/simple
     - echo -e "\e[0Ksection_end:`date +%s`:venv\r\e[0K"
 
 # `pip install` RESONAATE only
@@ -28,7 +29,6 @@
   before_script:
     - !reference [.create-venv, before_script]
     - echo -e "\e[0Ksection_start:`date +%s`:pip_base[collapsed=true]\r\e[0K Install resonaate via pip"
-    - python 3 -m pip install mjolnir[test] --index-url https://gitlab-ci-token:$CI_JOB_TOKEN@code.vt.edu/api/v4/projects/16484/packages/pypi/simple
     - python3 -m pip install .
     - echo -e "\e[0Ksection_end:`date +%s`:pip_base\r\e[0K"
 
