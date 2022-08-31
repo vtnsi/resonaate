@@ -1,4 +1,4 @@
-"""Encapsulation of event tracking using Redis with a :class:`.EventRecord` and :class:`.EventStack`."""
+"""Encapsulation of event tracking using ``mjolnir`` with a :class:`.EventRecord` and :class:`.EventStack`."""
 # Standard Library Imports
 import logging
 from collections import defaultdict
@@ -40,10 +40,10 @@ class EventRecord:
 
 
 class EventStack:
-    """Encapsulation of event tracking using Redis."""
+    """Encapsulation of event tracking using ``mjolnir``."""
 
     EVENT_STACK_LOCATION = "event_stack"
-    """str: Redis key where state change events are recorded."""
+    """str: :class:`.KeyValueStore` key where state change events are recorded."""
 
     @classmethod
     def pushEvent(cls, event_record):
