@@ -184,7 +184,9 @@ As a best practice, once you have committed your changes, it is a good idea
 to use `git rebase` (not `git merge`) to synchronize your work with the **develop** branch.
 
 ```bash
-git fetch origin develop
+git checkout develop
+git pull origin develop
+git checkout my-branch
 git rebase develop
 ```
 
@@ -243,7 +245,9 @@ Also, if you do not understand a required fix, please ask the reviewer or anothe
 If a git conflict arises, it is necessary to synchronize your branch with other changes in **develop** by using `git rebase`:
 
 ```bash
-git fetch origin develop
+git checkout develop
+git pull origin develop
+git checkout my-branch
 git rebase develop
 git push --force-with-lease origin my-branch
 ```
