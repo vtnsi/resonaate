@@ -113,7 +113,7 @@ coverage:
     expose_as: Coverage
     expire_in: 1 week
     reports:
-      cobertura: coverage.xml
+      junit: coverage.xml
   needs:
     - pytest-unit
     - pytest-scenario
