@@ -31,8 +31,8 @@ REDUCTION_PARAMETER_LABELS = (
 )
 """list: List of keys used to construct reduction parameter dictionary."""
 
-REDUCTION_REDIS_KEY = "reduction_params"
-"""str: Redis key used to store reduction parameters."""
+REDUCTION_KEY = "reduction_params"
+"""str: Key used to identify the reduction parameters in the key value store."""
 
 
 def updateReductionParameters(julian_date, eops=None):
@@ -42,16 +42,13 @@ def updateReductionParameters(julian_date, eops=None):
         julian_date (:class:`.JulianDate`): Julian date to calculate the transformation for
         eops (:class:`.EarthOrientationParameter`, optional): Defaults to None. Specific EOPs to
             use rather than lookup, useful for tests
-
     """
     params = _updateFK5Parameters(julian_date, eops=eops)
-    KeyValueStore.setValue(
-        REDUCTION_REDIS_KEY, dumps(dict(zip(REDUCTION_PARAMETER_LABELS, params)))
-    )
+    KeyValueStore.setValue(REDUCTION_KEY, dumps(dict(zip(REDUCTION_PARAMETER_LABELS, params))))
 
 
 def getReductionParameters():
-    """Retrieve current set of reduction parameters from Redis.
+    """Retrieve current set of reduction parameters from the key value store.
 
     Note:
         :meth:`.updateReductionParameters()` *must* be called before this function.
@@ -60,7 +57,7 @@ def getReductionParameters():
         ValueError: If :meth:`.updateReductionParameters()` hasn't been previously called to set
             the reduction parameters.
     """
-    serial_obj = KeyValueStore.getValue(REDUCTION_REDIS_KEY)
+    serial_obj = KeyValueStore.getValue(REDUCTION_KEY)
 
     if serial_obj is None:
         raise ValueError("Reduction parameters have not been updated.")
