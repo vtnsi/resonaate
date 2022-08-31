@@ -40,7 +40,6 @@ Run the following command to show the Docker images:
 docker images
 REPOSITORY   TAG             IMAGE ID       CREATED          SIZE
 resonaate    v1.2.0          9c31555933ce   30 minutes ago   459MB
-redis        5.0.10-alpine   df4672527181   5 months ago     29.3MB
 ```
 
 ## Usage
