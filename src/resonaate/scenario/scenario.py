@@ -144,7 +144,9 @@ class Scenario(ParallelMixin):
         self.worker_mgr = None
         if start_workers:
             ## Worker manager class instance.
-            self.worker_mgr = WorkerManager()
+            self.worker_mgr = WorkerManager(
+                proc_count=BehavioralConfig.getConfig().parallel.WorkerCount
+            )
             self.worker_mgr.startWorkers()
 
         # Log some basic information about propagation for this simulation
