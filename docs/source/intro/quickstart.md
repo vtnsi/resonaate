@@ -19,24 +19,6 @@ local:
 
 ______________________________________________________________________
 
-(intro-quick-redis)=
-
-## Prerequisite: Redis Server
-
-A prerequisite to using the {command}`resonaate` command to start simulations is to start a Redis server which handles distributing tasks to different CPU cores.
-To install Redis, please refer to {ref}`install-redis`.
-To start Redis server running in the background, execute:
-
-```bash
-redis-server &
-```
-
-Once the server is started, users can run the {command}`resonaate` command multiple times.
-Finally, users should stop the Redis server when they are done working:
-
-```bash
-redis-cli shutdown
-```
 
 (intro-quick-cli)=
 
@@ -140,9 +122,6 @@ sqlite> SELECT agent_id, julian_date, pos_x_km, pos_y_km, pos_z_km FROM estimate
 
 This example goes over a small Python script that emulates the behavior of the {command}`resonaate` command.
 This will show the necessary steps required to execute a RESONAATE simulation.
-Redis still needs to be started before this code is executed (see {ref}`intro-quick-redis`), but that can be performed programmatically if needed.
-
-To start, connect to Redis and determine the simulation parameters.
 
 ```python
 import os
@@ -206,8 +185,6 @@ from resonaate.data.resonaate_database import ResonaateDatabase
 db = ResonaateDatabase.getSharedInterface()
 print(len(db.getData(Query(TruthEphemeris))))
 ```
-
-Once the script completes, users should stop the Redis server, as mentioned in {ref}`intro-quick-redis`.
 
 (intro-quick-init)=
 

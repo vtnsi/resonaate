@@ -19,24 +19,6 @@ This shows how to directly create and use the following classes:
 # Initial Setup
 # -------------
 #
-# Redis Setup
-# ###########
-#
-# To properly use RESONAATE, you must start a **Redis** server.
-# This can be done by running the following command in a terminal:
-#
-# .. code-block:: bash
-#
-#     $ redis-server > /dev/null 2>&1 &
-#
-# This starts the server as a background process, so you can keep using the same terminal session.
-#
-# When you are done working, you can stop the **Redis** server by running the following command:
-#
-# .. code-block:: bash
-#
-#     $ redis-cli shutdown
-#
 # General Imports
 # ###############
 #
