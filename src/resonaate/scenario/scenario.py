@@ -4,6 +4,7 @@ from __future__ import annotations
 # Standard Library Imports
 from collections import defaultdict
 from functools import singledispatch, update_wrapper
+from multiprocessing import cpu_count
 from pickle import dumps
 from typing import TYPE_CHECKING
 
@@ -143,9 +144,10 @@ class Scenario(ParallelMixin):
         self.worker_mgr = None
         if start_workers:
             ## Worker manager class instance.
-            self.worker_mgr = WorkerManager(
-                proc_count=BehavioralConfig.getConfig().parallel.WorkerCount
-            )
+            proc_count = BehavioralConfig.getConfig().parallel.WorkerCount
+            if proc_count is None:
+                proc_count = cpu_count()
+            self.worker_mgr = WorkerManager(proc_count=proc_count)
             self.worker_mgr.startWorkers()
 
         # Log some basic information about propagation for this simulation
