@@ -32,7 +32,8 @@ ______________________________________________________________________
 
 ### Changed
 
-*for changes in existing functionality*
+- all references to Redis throughout the code have been refactored to use the `mjolnir` package
+- all references to Redis throughout the documentation have been removed
 
 ### Deprecated
 
@@ -40,7 +41,7 @@ ______________________________________________________________________
 
 ### Removed
 
-*for now removed features*
+- RESONAATE no longer requires Redis to be running in the background to work
 
 ### Fixed
 
