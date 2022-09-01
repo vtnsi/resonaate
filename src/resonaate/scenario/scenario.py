@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # Standard Library Imports
-import logging
 from collections import defaultdict
 from functools import singledispatch, update_wrapper
 from pickle import dumps
