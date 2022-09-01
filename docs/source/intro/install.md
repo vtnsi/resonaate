@@ -60,6 +60,10 @@ wrapt==1.14.0
 zipp==3.8.0
 ```
 
+`mjolnir` is a special case amongst these packages, as it is not available on PyPI.
+To install `mjolnir`, you'll need to clone the repository (available [here](https://code.vt.edu/space-research/resonaate/mjolnir)) and install in development mode *or*
+install `mjolnir` from its package registry (instructions available [here](https://code.vt.edu/space-research/resonaate/mjolnir/-/packages/827)).
+
 If provided with an actual directory of the required packages (usually called **deps-vX.Y.Z**), users can install without accessing PyPI:
 
 ```bash
