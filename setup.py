@@ -56,7 +56,7 @@ setuptools.setup(
             "check-manifest>=0.48",
         ],
         "test": [
-            "pytest==7.1.2",
+            "pytest==7.1.3",
             "pytest-datafiles==2.0.1",
             "pytest-randomly==3.12.0",
             "coverage==6.4.4",
