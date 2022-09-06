@@ -4,4 +4,4 @@ scipy==1.7.3
 concurrent-log-handler==0.9.20
 sqlalchemy==1.4.40
 matplotlib==3.5.3
-redis==4.3.4
+mjolnir==1.1.2

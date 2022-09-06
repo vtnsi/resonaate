@@ -1,11 +1,11 @@
-"""Encapsulation of event tracking using Redis with a :class:`.EventRecord` and :class:`.EventStack`."""
+"""Encapsulation of event tracking using ``mjolnir`` with a :class:`.EventRecord` and :class:`.EventStack`."""
 # Standard Library Imports
 import logging
 from collections import defaultdict
 from json import dumps, loads
 
-# Local Imports
-from ...parallel import getRedisConnection
+# Third Party Imports
+from mjolnir import KeyValueStore
 
 
 class EventRecord:
@@ -40,10 +40,10 @@ class EventRecord:
 
 
 class EventStack:
-    """Encapsulation of event tracking using Redis."""
+    """Encapsulation of event tracking using ``mjolnir``."""
 
     EVENT_STACK_LOCATION = "event_stack"
-    """str: Redis key where state change events are recorded."""
+    """str: :class:`.KeyValueStore` key where state change events are recorded."""
 
     @classmethod
     def pushEvent(cls, event_record):
@@ -52,18 +52,18 @@ class EventStack:
         Args:
             event_record (EventRecord): Object describing the event that took place.
         """
-        getRedisConnection().rpush(cls.EVENT_STACK_LOCATION, event_record.serialize())
+        KeyValueStore.appendValue(cls.EVENT_STACK_LOCATION, event_record.serialize())
 
     @classmethod
     def logAndFlushEvents(cls):
         """Pop all events off of the stack and log the number of each event type there are."""
-        popped_event = getRedisConnection().lpop(cls.EVENT_STACK_LOCATION)
+        popped_event = KeyValueStore.popValue(cls.EVENT_STACK_LOCATION, 0)
         event_buckets = defaultdict(list)
         while popped_event:
-            event_record = EventRecord.fromSerial(popped_event.decode())
+            event_record = EventRecord.fromSerial(popped_event)
             event_buckets[event_record.event_type].append(event_record.performer)
 
-            popped_event = getRedisConnection().lpop(cls.EVENT_STACK_LOCATION)
+            popped_event = KeyValueStore.popValue(cls.EVENT_STACK_LOCATION, 0)
 
         logger = logging.getLogger("resonaate")
         for event_type, bucket in event_buckets.items():

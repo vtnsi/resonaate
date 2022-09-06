@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
+from mjolnir import KeyValueStore
 from numpy import array, diagflat, ones, zeros
 
 # RESONAATE Imports
@@ -26,7 +27,6 @@ from resonaate.estimation.adaptive.mmae_stacking_utils import stackingFactory
 from resonaate.estimation.adaptive.smm import StaticMultipleModel
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-from resonaate.parallel import getRedisConnection
 from resonaate.physics.time.conversions import getTargetJulianDate
 from resonaate.physics.time.stardate import JulianDate
 from resonaate.physics.transforms.reductions import updateReductionParameters
@@ -43,13 +43,12 @@ from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
 if TYPE_CHECKING:
 
     # RESONAATE Imports
-    from resonaate.parallel import Redis
     from resonaate.sensors.sensor_base import Sensor
 
 
 @pytest.fixture()
-def _fixtureSetup(redis: Redis, reset_shared_db: None):  # pylint: disable=unused-argument
-    """Instantiate redis & reset DB properly."""
+def _fixtureSetup(teardown_kvs, reset_shared_db: None):  # pylint: disable=unused-argument
+    """Reset key value store and DB properly."""
 
 
 def propagateScenario(
@@ -76,8 +75,7 @@ def propagateScenario(
         importer_db_path=None,
     )
 
-    red = getRedisConnection()
-    red.set("db_path", dumps(shared_db_path))
+    KeyValueStore.setValue("db_path", dumps(shared_db_path))
 
     # Determine target Julian date based on elapsed time
     init_julian_date = JulianDate(app.clock.julian_date_start)
@@ -87,7 +85,7 @@ def propagateScenario(
     app.propagateTo(target_julian_date)
 
     assert isclose(app.clock.julian_date_epoch, target_julian_date)
-    app.shutdown(flushall=True)
+    app.shutdown()
 
 
 @pytest.mark.scenario()
@@ -345,7 +343,7 @@ def getTestOpticalObservationTuple(
 
 
 @pytest.fixture(name="update_reduction_parameters", autouse=True)
-def _getUpdateReductionParameters(redis: Redis) -> None:
+def _getUpdateReductionParameters(teardown_kvs) -> None:
     """Run updateReductionParameters."""
     # pylint:disable=unused-argument
     updateReductionParameters(julian_date=CURRENT_JULIAN_DATE)

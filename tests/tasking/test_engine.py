@@ -13,8 +13,8 @@ import pytest
 # RESONAATE Imports
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.observation import Observation
-from resonaate.parallel.handlers.task_execution import TaskExecutionJobHandler
-from resonaate.parallel.handlers.task_prediction import TaskPredictionJobHandler
+from resonaate.job_handlers.task_execution import TaskExecutionJobHandler
+from resonaate.job_handlers.task_prediction import TaskPredictionJobHandler
 from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario.config.decision_config import DecisionConfig
 from resonaate.scenario.config.reward_config import RewardConfig

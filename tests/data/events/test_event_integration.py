@@ -3,7 +3,6 @@ from __future__ import annotations
 # Standard Library Imports
 import os.path
 from datetime import timedelta
-from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
@@ -21,15 +20,10 @@ from resonaate.scenario.scenario_builder import ScenarioBuilder
 # Local Imports
 from ...conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
-# Type Checking Imports
-if TYPE_CHECKING:
-    # RESONAATE Imports
-    from resonaate.parallel import Redis
-
 
 @pytest.fixture()
-def _fixtureSetup(redis: Redis, reset_shared_db: None) -> None:  # pylint: disable=unused-argument
-    """Instantiate redis & reset DB properly."""
+def _fixtureSetup(teardown_kvs, reset_shared_db: None) -> None:  # pylint: disable=unused-argument
+    """Reset key value store and DB properly."""
 
 
 def _getMinimalConfig(datafiles_dir: str) -> ScenarioConfig:

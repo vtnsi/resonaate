@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 # Standard Library Imports
-import logging
 from collections import defaultdict
 from functools import singledispatch, update_wrapper
+from multiprocessing import cpu_count
 from pickle import dumps
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+from mjolnir import KeyValueStore, WorkerManager
 from numpy import around, seterr
 from numpy.random import default_rng
 from scipy.linalg import norm
@@ -23,11 +24,10 @@ from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import spacecraftDynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
-from ..parallel import REDIS_QUEUE_LOGGER, ParallelMixin, getRedisConnection, resetMaster
-from ..parallel.handlers.agent_propagation import AgentPropagationJobHandler
-from ..parallel.handlers.estimate_prediction import EstimatePredictionJobHandler
-from ..parallel.handlers.estimate_update import EstimateUpdateJobHandler
-from ..parallel.worker import WorkerManager
+from ..job_handlers.agent_propagation import AgentPropagationJobHandler
+from ..job_handlers.base import ParallelMixin
+from ..job_handlers.estimate_prediction import EstimatePredictionJobHandler
+from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
 from ..physics.noise import noiseCovarianceFactory
 from ..physics.time.stardate import JulianDate
@@ -141,11 +141,13 @@ class Scenario(ParallelMixin):
                 "Simulation is running in debug mode. Worker jobs can block indefinitely."
             )
 
-        REDIS_QUEUE_LOGGER.setLevel(logging.WARNING)
         self.worker_mgr = None
         if start_workers:
             ## Worker manager class instance.
-            self.worker_mgr = WorkerManager(daemonic=True)
+            proc_count = BehavioralConfig.getConfig().parallel.WorkerCount
+            if proc_count is None:
+                proc_count = cpu_count()
+            self.worker_mgr = WorkerManager(proc_count=proc_count)
             self.worker_mgr.startWorkers()
 
         # Log some basic information about propagation for this simulation
@@ -223,8 +225,8 @@ class Scenario(ParallelMixin):
         for estimate_agent in self.estimate_agents.values():
             self._estimate_prediction_handler.registerCallback(estimate_agent)
 
-        # Get the redis connection singleton
-        self.redis_conn = getRedisConnection()
+        # Save initial states to database
+        self.saveDatabaseOutput()
 
         self.logger.info("Initialized Scenario.")
 
@@ -328,8 +330,8 @@ class Scenario(ParallelMixin):
             epoch_time=self.clock.time,
         )
 
-        self.redis_conn.set("target_agents", dumps(self.target_agents))
-        self.redis_conn.set("sensor_agents", dumps(self.sensor_agents))
+        KeyValueStore.setValue("target_agents", dumps(self.target_agents))
+        KeyValueStore.setValue("sensor_agents", dumps(self.sensor_agents))
         if not self.scenario_config.propagation.truth_simulation_only:
 
             self._estimate_prediction_handler.executeJobs(
@@ -338,7 +340,7 @@ class Scenario(ParallelMixin):
                 epoch_time=self.clock.time,
             )
 
-            self.redis_conn.set("estimate_agents", dumps(self.estimate_agents))
+            KeyValueStore.setValue("estimate_agents", dumps(self.estimate_agents))
             # Handle Sensor Time Bias Events
             # [NOTE][parallel-time-bias-event-handling] Step one: query for events and "handle" them.
             sensor_tasking_events = defaultdict(list)
@@ -585,16 +587,10 @@ class Scenario(ParallelMixin):
         """``dict``: estimate agents indexed by their unique id."""
         return self._estimate_agents
 
-    def shutdown(self, flushall: bool = True) -> None:
-        """Gracefully shuts down the simulation.
-
-        Make sure Redis 'master' variable gets reset and workers are shut down nicely.
-
-        Args:
-            flushall (``bool``, optional): whether to flush the Redis keys on shutdown. Defaults to True.
-        """
+    def shutdown(self) -> None:
+        """Make sure workers are shut down nicely."""
         if self.worker_mgr:
-            self.worker_mgr.shutdown()
+            self.worker_mgr.stopWorkers()
 
         for engine in self._tasking_engines.values():
             engine.shutdown()
@@ -602,9 +598,3 @@ class Scenario(ParallelMixin):
         self._agent_propagation_handler.shutdown()
         self._estimate_prediction_handler.shutdown()
         self._estimate_update_handler.shutdown()
-
-        if flushall:
-            self.redis_conn.flushall(asynchronous=True)
-
-        resetMaster(self.redis_conn)
-        self.redis_conn.close()

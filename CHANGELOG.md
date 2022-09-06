@@ -62,6 +62,34 @@ ______________________________________________________________________
 
 *related to the continuous integration system*
 
+## [2.0.0][v2.0.0] - 2022-09-06
+
+### Added
+
+- Initial state vectors (at the initial `Epoch`) are saved to the DB, see #114
+
+### Changed
+
+- all references to Redis throughout the code have been refactored to use the `mjolnir` package, see #52
+- all references to Redis throughout the documentation have been removed, see #52
+- stop overuse of `ABC` when no abstract methods declared
+
+### Removed
+
+- RESONAATE no longer requires Redis to be running in the background to work, see #52
+
+### Fixed
+
+- null `Observation` objects produced during tasking when not using FoV feature, see !69
+
+### Development
+
+- pylance "unreachable code" false-positive caused by `np.cross()`
+
+### CI
+
+- Changed removed `cobertura` field for `junit` to produce XML test data
+
 ## [1.5.2][v1.5.2] - 2022-08-26
 
 ### CI
@@ -511,7 +539,7 @@ Initial version ported to a new repository.
 [old - #77]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/77
 [old - #78]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/78
 [old - #79]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/79
-[unreleased-diff]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.2...develop
+[unreleased-diff]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v2.0.0...develop
 [v1.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/commits/v1.0.0
 [v1.0.1]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.0.0...v1.0.1
 [v1.1.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.0.1...v1.1.0
@@ -522,6 +550,7 @@ Initial version ported to a new repository.
 [v1.5.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.4.0...v1.5.0
 [v1.5.1]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.0...v1.5.1
 [v1.5.2]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.1...v1.5.2
+[v2.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.2...v2.0.0
 [`black`]: https://black.readthedocs.io/en/stable/index.html
 [`isort`]: https://pycqa.github.io/isort/
 [`pre-commit`]: https://pre-commit.com/

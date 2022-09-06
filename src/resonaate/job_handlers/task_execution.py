@@ -1,11 +1,48 @@
 """:class:`.Job` handler class that manage task execution logic."""
+# Standard Library Imports
+from pickle import loads
+from typing import List
+
 # Third Party Imports
+from mjolnir import Job, KeyValueStore
 from numpy import where
 
 # Local Imports
-from ..async_functions import asyncExecuteTasking
-from ..job import CallbackRegistration, Job
-from .job_handler import JobHandler
+from ..agents.sensing_agent import SensingAgent
+from .base import CallbackRegistration, JobHandler
+
+
+def asyncExecuteTasking(tasked_sensors: List[SensingAgent], target_id: int) -> dict:
+    """Execute tasked observations on a :class:`.TargetAgent`.
+
+    Hint:
+        The filter that's being used needs to have :meth:`~.SequentialFilter.getUpdateResult`
+        implemented
+
+    Args:
+        tasked_sensors (``list``): indices corresponding to sensors tasked to observe the target.
+        target_id (``int``): ID of `.TargetAgent` being tasked on.
+
+    Returns:
+        ``dict``: execute result dictionary contains:
+
+        :``"observations"``: (``list``): successful :class:`.Observation` objects of target(s).
+        :``"target_id"``: (``int``): ID of the :class:`.TargetAgent` observations were made of.
+    """
+    successful_obs = []
+    sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
+    target_agents = loads(KeyValueStore.getValue("target_agents"))
+    estimate_agent = loads(KeyValueStore.getValue("estimate_agents"))[target_id]
+    sensor_list = list(sensor_agents.values())
+    target_list = list(target_agents.values())
+
+    if len(tasked_sensors) > 0:
+        for sensor in tasked_sensors:
+            successful_obs.extend(
+                sensor_list[sensor].sensors.collectObservations(estimate_agent, target_list)
+            )
+
+    return {"target_id": target_id, "observations": successful_obs}
 
 
 class TaskExecutionRegistration(CallbackRegistration):

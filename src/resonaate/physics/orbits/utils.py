@@ -1,4 +1,6 @@
 """Define a collection of common functions used across the orbits package."""
+from __future__ import annotations
+
 # Standard Library Imports
 from typing import Optional, Tuple
 
@@ -216,7 +218,9 @@ def getAngularMomentumFromEQE(p: float, q: float, retro: bool = False) -> ndarra
     return (1 / (1 + p_sq + q_sq)) * array([2 * p, -2 * q, (1 - p_sq - q_sq) * II])
 
 
-def getAngularMomentum(r_vec: ndarray, v_vec: ndarray) -> ndarray:
+def getAngularMomentum(
+    r_vec: ndarray[float, float, float], v_vec: ndarray[float, float, float]
+) -> ndarray:
     r"""Get the angular momentum vector from position & velocity vectors.
 
     References:
@@ -232,7 +236,7 @@ def getAngularMomentum(r_vec: ndarray, v_vec: ndarray) -> ndarray:
     return cross(r_vec, v_vec)
 
 
-def getLineOfNodes(ang_momentum_vec: ndarray) -> ndarray:
+def getLineOfNodes(ang_momentum_vec: ndarray[float, float, float]) -> ndarray:
     r"""Get the line of nodes vector from the angular momentum vector.
 
     References:
@@ -244,7 +248,7 @@ def getLineOfNodes(ang_momentum_vec: ndarray) -> ndarray:
     Returns:
         ``ndarray``: 3x1 line of nodes vector, :math:`\vec{n}`.
     """
-    return cross(array([0, 0, 1]), ang_momentum_vec)
+    return cross(array([0, 0, 1], dtype=float), ang_momentum_vec)
 
 
 def getEccentricity(

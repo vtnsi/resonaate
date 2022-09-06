@@ -56,13 +56,10 @@ build-docs:
     - .build-base
     - .python-latest
   before_script:
-    - !reference [.install-redis, before_script]
     - !reference [.pip-doc, before_script]
   script:
-    - !reference [.start-redis, script]
     - echo "Building documentation with sphinx"
     - cd docs && make clean && make html
-    - !reference [.stop-redis, script]
   artifacts:
     name: docs
     when: on_success

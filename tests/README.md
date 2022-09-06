@@ -27,7 +27,6 @@ There is also a helpful tutorial on `pytest` located \[here\]\[pytest-realpython
 Running the full test suite is easy:
 
 ```bash
-redis-server &
 pytest
 ```
 

@@ -1,35 +1,74 @@
 """:class:`.Job` handler classes that manage agent propagation logic."""
+from __future__ import annotations
+
 # Standard Library Imports
 import json
 import os.path
 import pickle
-from abc import ABCMeta
 from collections import defaultdict
 from enum import Flag
+from typing import TYPE_CHECKING
 
 # Third Party Imports
+from mjolnir import Job, KeyValueStore
 from numpy import ndarray
 from sqlalchemy.orm import Query
 
 # Local Imports
-from ...common.behavioral_config import BehavioralConfig
-from ...common.exceptions import AgentProcessingError, MissingEphemerisError
-from ...common.utilities import getTypeString
-from ...data.ephemeris import TruthEphemeris
-from ...data.events import EventScope, getRelevantEvents
-from ...data.importer_database import ImporterDatabase
-from ...data.query_util import addAlmostEqualFilter
-from ...data.resonaate_database import ResonaateDatabase
-from ...estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-from ...physics.time.stardate import JulianDate, ScenarioTime
-from ...physics.transforms.reductions import getReductionParameters
-from .. import getRedisConnection
-from ..async_functions import asyncPropagate
-from ..job import CallbackRegistration, Job
-from .job_handler import JobHandler
+from ..common.behavioral_config import BehavioralConfig
+from ..common.exceptions import AgentProcessingError, MissingEphemerisError
+from ..common.utilities import getTypeString
+from ..data.ephemeris import TruthEphemeris
+from ..data.events import EventScope, getRelevantEvents
+from ..data.importer_database import ImporterDatabase
+from ..data.query_util import addAlmostEqualFilter
+from ..data.resonaate_database import ResonaateDatabase
+from ..estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
+from ..physics.time.stardate import JulianDate, ScenarioTime
+from ..physics.transforms.reductions import getReductionParameters
+from .base import CallbackRegistration, JobHandler
+
+if TYPE_CHECKING:
+    # Local Imports
+    from ..data.events.base import Event
+    from ..dynamics.dynamics_base import Dynamics
+    from ..dynamics.integration_events.station_keeping import StationKeeper
 
 
-class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
+def asyncPropagate(
+    dynamics: Dynamics,
+    init_time: ScenarioTime,
+    final_time: ScenarioTime,
+    initial_state: ndarray,
+    station_keeping: list[StationKeeper] = None,
+    scheduled_events: list[Event] = None,
+) -> ndarray:
+    """Wrap a dynamics propagation method for use with a parallel job submission module.
+
+    Hint:
+        The dynamics object needs to have :meth:`~.Dynamics.propagate` implemented.
+
+    Args:
+        dynamics (:class:`.Dynamics`): dynamics object to propagate
+        init_time (:class:`.ScenarioTime`): initial time to propagate from
+        final_time (:class:`.ScenarioTime`): time during the scenario to propagate to
+        initial_state (``ndarray``): state of object before propagation
+        station_keeping (``list``, optional): :class:`.StationKeeper` objects
+        scheduled_events (``list``, optional): :class:`.Event` objects
+
+    Returns:
+        ``ndarray``: 6x1 final state vector of the object being propagated
+    """
+    return dynamics.propagate(
+        init_time,
+        final_time,
+        initial_state,
+        station_keeping=station_keeping,
+        scheduled_events=scheduled_events,
+    )
+
+
+class PropagationJobHandler(JobHandler):
     """Handle parallel propagation jobs during the simulation."""
 
     def handleProcessedJob(self, job):
@@ -46,7 +85,7 @@ class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
         Raises:
             :class:`.AgentProcessingError`: raised if job completed in an error state.
         """
-        if job.status == "processed":
+        if job.status == Job.Status.PROCESSED:
             self.job_id_registration_dict[job.id].jobCompleteCallback(job)
 
         else:
@@ -130,7 +169,7 @@ class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
                 }
             )
         if getTypeString(registrant) == "EstimateAgent":
-            target_agents = pickle.loads(getRedisConnection().get("target_agents"))
+            target_agents = pickle.loads(KeyValueStore.getValue("target_agents"))
             tgt_agent = None
             for tgt_id, target in target_agents.items():
                 if tgt_id == registrant.simulation_id:

@@ -355,7 +355,7 @@ start-after: Docker
 
 Different jobs often require similar shell commands to be run, such as installing `apt` & `pip` packages.
 The `/.gitlab/ci/scripts.gitlab-ci.yml` file is used to store the shell commands that can be reused across multiple jobs.
-The scripts are organized by type: `common`, `pip`, `apt`, & `redis`.
+The scripts are organized by type: `common`, `pip`, & `apt`.
 Any scripts that are specific to a job should remain define directly in the job's keywords.
 However, users can reference the these scripts using the `!reference [job, keyword]` syntax.
 

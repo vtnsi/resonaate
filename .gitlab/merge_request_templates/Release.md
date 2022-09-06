@@ -6,7 +6,7 @@ Follow the instructions below first. Then fill out the remaining sections. Final
 Review the [GitLab Quick Actions][quick actions] page if you need help.
 Review the [Contributing Guidelines][contributing] for details on common developer tasks, the MR process, & the release procedure.
 
-1. Assign this issue to the primary author using their GitLab username (e.g. `/assign @bobby`).
+1. Assign this merge request to the primary author using their GitLab username (e.g. `/assign @bobby`).
 1. Fill out the description, **thoroughly**.
 1. Complete the steps laid out in [Release Procedure](#release-procedure)
 

@@ -4,12 +4,14 @@ from __future__ import annotations
 # Standard Library Imports
 import os
 import pickle
+import time
 from typing import TYPE_CHECKING
 from unittest.mock import create_autospec
 
 # Third Party Imports
 import numpy as np
 import pytest
+from mjolnir import Job, KeyValueStore, WorkerManager
 
 # RESONAATE Imports
 from resonaate.agents.estimate_agent import EstimateAgent
@@ -24,24 +26,41 @@ from resonaate.data.importer_database import ImporterDatabase
 from resonaate.dynamics.two_body import TwoBody
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-from resonaate.parallel.handlers.agent_propagation import AgentPropagationJobHandler
-from resonaate.parallel.handlers.job_handler import JobHandler
-from resonaate.parallel.job import CallbackRegistration, Job
+from resonaate.job_handlers.agent_propagation import AgentPropagationJobHandler
+from resonaate.job_handlers.base import CallbackRegistration, JobHandler
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
 from resonaate.scenario.clock import ScenarioClock
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 from resonaate.sensors.sensor_base import Sensor
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
+from .conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
     from typing import Any
 
-    # RESONAATE Imports
-    from resonaate.parallel import Redis
+
+@pytest.fixture(name="worker_manager")
+def createWorkerManager() -> WorkerManager:
+    """Create a valid WorkerManager."""
+    worker_manager = WorkerManager(proc_count=1)
+    worker_manager.startWorkers()
+    yield worker_manager
+    worker_manager.stopWorkers(no_wait=True)
+
+
+@pytest.fixture(name="numpy_add_job")
+def getAddJob() -> Job:
+    """Create Job to call np.add with [1, 2] as arguments."""
+    return Job(np.add, args=[1, 2])
+
+
+@pytest.fixture(name="sleep_job_6s")
+def getLongSleepJob() -> Job:
+    """Create Job to call time.sleep for very long time, be careful!."""
+    return Job(time.sleep, args=[6])
 
 
 @pytest.fixture(scope="class", name="mocked_sensor")
@@ -102,7 +121,7 @@ def createJobHandler(numpy_add_job: Job, mocked_sensing_agent: SensingAgent) -> 
     job_handler = GenericJobHandler()
     job_handler.registerCallback(mocked_sensing_agent)
     yield job_handler
-    job_handler.queue_mgr.shutdown()
+    job_handler.queue_mgr.stopHandling()
 
 
 @pytest.fixture(scope="class", name="mocked_error_job")
@@ -111,12 +130,12 @@ def getMockedErrorJobObject() -> Job:
     job = create_autospec(Job, instance=True)
     job.id = 1
     job.error = "F"
-    job.status = "failed"
+    job.status = Job.Status.FAILED
 
     return job
 
 
-@pytest.mark.usefixtures("redis_setup", "worker_manager")
+@pytest.mark.usefixtures("teardown_kvs", "worker_manager")
 class TestBaseJobHandler:
     """Tests related to job handlers."""
 
@@ -216,7 +235,7 @@ def createEstimateAgent(target_agent: TargetAgent, scenario_clock: ScenarioClock
     return agent
 
 
-@pytest.mark.usefixtures("redis_setup", "worker_manager")
+@pytest.mark.usefixtures("teardown_kvs", "worker_manager")
 class TestAgentPropagateHandler:
     """Tests related to job handlers."""
 
@@ -238,11 +257,11 @@ class TestAgentPropagateHandler:
                 julian_date=target_julian_date,
             )
 
-    def testProblemEstimateAgent(
-        self, redis: Redis, estimate_agent: EstimateAgent, target_agent: TargetAgent
-    ):
+    def testProblemEstimateAgent(self, estimate_agent: EstimateAgent, target_agent: TargetAgent):
         """Test logging a bad estimate when an error occurs."""
-        redis.set("target_agents", pickle.dumps({target_agent.simulation_id: target_agent}))
+        KeyValueStore.setValue(
+            "target_agents", pickle.dumps({target_agent.simulation_id: target_agent})
+        )
         handler = AgentPropagationJobHandler()
         handler.registerCallback(estimate_agent)
         target_scenario_time = ScenarioTime(60)
@@ -260,10 +279,12 @@ class TestAgentPropagateHandler:
             )
 
     def testProblemEstimateAgentNoMatch(
-        self, redis: Redis, estimate_agent: EstimateAgent, target_agent: TargetAgent
+        self, estimate_agent: EstimateAgent, target_agent: TargetAgent
     ):
         """Test logging a bad estimate when an error occurs, but with no matching target agent."""
-        redis.set("target_agents", pickle.dumps({target_agent.simulation_id + 1: target_agent}))
+        KeyValueStore.setValue(
+            "target_agents", pickle.dumps({target_agent.simulation_id + 1: target_agent})
+        )
         handler = AgentPropagationJobHandler()
         handler.registerCallback(estimate_agent)
         target_scenario_time = ScenarioTime(60)

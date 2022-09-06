@@ -183,14 +183,13 @@ def testMissingDataDependency(
     dummy_data_dependency = create_autospec(DataDependency, instance=True)
     dummy_data_dependency.query = "SQL QUERY"
     dummy_data_dependency.createDependency = Mock(  # pylint: disable=invalid-name
-        side_effect=MissingDataDependency("DataType")
-    )
+        side_effect=MissingDataDependency("DataType")  # pylint: disable=invalid-name
+    )  # pylint: disable=invalid-name
 
     # Mock the `getDataDependencies()` method of the `EventConfig` class, so that it returns
     #   the `dummy_data_dependency` object.
-    tgt_event.getDataDependencies = Mock(  # pylint: disable=invalid-name
-        return_value=[dummy_data_dependency]
-    )
+    _mock = Mock(return_value=[dummy_data_dependency])
+    tgt_event.getDataDependencies = _mock  # pylint: disable=invalid-name
 
     # This dependency is not found
     scenario_cfg_dict["events"].append(tgt_event)

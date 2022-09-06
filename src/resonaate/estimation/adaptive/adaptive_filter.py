@@ -7,6 +7,7 @@ from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+from mjolnir import KeyValueStore
 from numpy import argwhere, array, ceil, concatenate, delete, dot, hstack, linspace, ones, outer
 from numpy import round as np_round
 from numpy import sum as np_sum
@@ -17,7 +18,6 @@ from scipy.linalg import norm
 from ...data.queries import fetchEstimatesByJDInterval, fetchObservationsByJDInterval
 from ...data.resonaate_database import ResonaateDatabase
 from ...dynamics.celestial import EarthCollision
-from ...parallel import getRedisConnection
 from ...physics.orbit_determination.lambert import determineTransferDirection
 from ...physics.orbits.utils import getTrueAnomalyFromRV
 from ...physics.time.stardate import JulianDate, ScenarioTime
@@ -193,7 +193,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             ``bool``: Whether or not enough observations and estimates were in the database to start MMAE
         """
         # load path to on-disk database for the current scenario run
-        db_path = loads(getRedisConnection().get("db_path"))
+        db_path = loads(KeyValueStore.getValue("db_path"))
         database = ResonaateDatabase.getSharedInterface(db_path=db_path)
 
         current_jdate = ScenarioTime(self.time).convertToJulianDate(julian_date_start)

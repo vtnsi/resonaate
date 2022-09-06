@@ -47,10 +47,9 @@ Please see software documentation for best installation practices.
   - [concurrent-log-handler](https://github.com/Preston-Landers/concurrent-log-handler)
   - [SQLAlchemy](https://www.sqlalchemy.org/)
   - [matplotlib](https://matplotlib.org/index.html)
-  - [redis](https://github.com/andymccurdy/redis-py)
+  - [mjolnir](https://code.vt.edu/space-research/resonaate/mjolnir)
 - Software
-  - [Python >= 3.7](https://www.python.org)
-  - [Redis server > 5.0.10](https://redis.io/)
+  - [Python >= 3.7.9](https://www.python.org)
 
 ### Installation
 
@@ -71,12 +70,6 @@ This is accomplished by altering the values of configuration files which makes M
 Simple instructions for the RESONAATE CLI are described below along with a short definition of the configuration schema.
 
 ### CLI Tool
-
-- Get Redis server running
-
-  ```bash
-  redis-server &
-  ```
 
 - Run example, replacing `<init_file>` and `<number_of_hours>` with appropriate values
 
@@ -105,12 +98,6 @@ Simple instructions for the RESONAATE CLI are described below along with a short
                           Path to RESONAATE database
     -i IMPORTER_DB_PATH, --importer-db-path IMPORTER_DB_PATH
                           Path to Importer database
-  ```
-
-- Users should stop Redis when they are done working running/simulations
-
-  ```bash
-  redis-cli shutdown
   ```
 
 ### Initialization
@@ -152,7 +139,6 @@ Users can specify the `ImporterDatabase` file path with the `-i` or `--importer-
 ### Python Example
 
 If users wish to incorporate RESONAATE into a separate tool, they can start with this minimal example that will properly run a simulation.
-**NOTE**: Redis will still need to be started before this code is executed (see [RESONAATE CLI](#resonaate-cli)), but that can be performed programmatically if needed.
 
 ```python
 # Standard Library Imports
@@ -161,12 +147,8 @@ from datetime import timedelta
 # RESONAATE Imports
 from resonaate.common.logger import Logger
 from resonaate.data.resonaate_database import ResonaateDatabase
-from .parallel import isMaster
 from .physics.time.conversions import getTargetJulianDate
 from .scenario import buildScenarioFromConfigFile
-
-# Establish Redis connection
-isMaster()
 
 # Points to a valid main configuration file
 init_file = "scenarios/main/test1.json"
@@ -201,7 +183,7 @@ else:
     scenario.logger.info("Simulation complete")
 finally:
     # Gracefully shutdown the simulation
-    scenario.shutdown(flushall=True)
+    scenario.shutdown()
 ```
 
 ## Contributing
@@ -239,11 +221,6 @@ pip install -e ".[dev,test,doc]"
 
 ### Testing
 
-- Get Redis server running
-
-  ```bash
-  redis-server &
-  ```
 
 - Run unit tests only (~30 s)
 
@@ -263,10 +240,11 @@ pip install -e ".[dev,test,doc]"
 - Navigate into the `docs/` directory
 
   ```bash
-  cd docs
+  pytest -m "not (event or scenario)"
+
   ```
 
-- Build the documentation
+- Run entire test suite (~4 m)
 
   ```bash
   make clean; make html

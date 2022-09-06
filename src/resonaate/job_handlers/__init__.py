@@ -19,7 +19,8 @@ Examples:
 
     .. sourcecode:: python
 
-        from resonaate.parallel.job import CallbackRegistration, Job
+        from mjolnir import Job
+        from resonaate.job_handler.base import CallbackRegistration
 
         class NewCallback(CallbackRegistration):
             def jobCreateCallback(self, **kwargs):
@@ -33,7 +34,7 @@ Examples:
 
     .. sourcecode:: python
 
-        from resonaate.parallel.handlers.job_handler import JobHandler
+        from resonaate.job_handlers.base import JobHandler
 
         class NewJobHandler(JobHandler):
 
