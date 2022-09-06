@@ -29,9 +29,13 @@ ______________________________________________________________________
 ```{rubric} Format Changelog
 ```
 
+- 2022-09-06: RESONAATE v2.0.0
+- 2022-08-26: RESONAATE v1.5.2
+- 2022-08-26: RESONAATE v1.5.1
+- 2022-08-24: RESONAATE v1.5.0
 - 2022-07-20: RESONAATE v1.4.0
-- 2022-06-06: RESONAATE v1.4.0
-- 2022-03-04: RESONAATE v1.3.0
+- 2022-06-06: RESONAATE v1.3.0
+- 2022-03-04: RESONAATE v1.2.0
 - 2021-08-10: RESONAATE v1.1.1
 - 2021-01-22: RESONAATE v1.0.0
 - 2020-10-16: RESONAATE v0.9.0
