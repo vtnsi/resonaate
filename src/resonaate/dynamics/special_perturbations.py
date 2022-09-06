@@ -326,7 +326,11 @@ def _getGeneralRelativityAcceleration(r_eci: ndarray, v_eci: ndarray) -> ndarray
 
 
 def _getGeneralRelativityAccelerationIERS(
-    r_eci: ndarray, v_eci: ndarray, sun_eci: ndarray, beta: float = 1.0, gamma: float = 1.0
+    r_eci: ndarray[float, float, float],
+    v_eci: ndarray[float, float, float],
+    sun_eci: ndarray[float, float, float],
+    beta: float = 1.0,
+    gamma: float = 1.0,
 ) -> ndarray:
     """Calculate the relativistic acceleration term of an Earth orbiting satellite.
 
@@ -349,7 +353,7 @@ def _getGeneralRelativityAccelerationIERS(
     # Earth & Sun Gravitational constants (km^3/sec^2)
     gme, gms = Earth.mu, Sun.mu
     # Earth's angular momentum per unit mass (km^2/s)
-    j_e = array([0.0, 0.0, 980])
+    j_e: ndarray[float, float, float] = array([0.0, 0.0, 980])
     # speed of light squared (km/s)^2
     c_sq = (const.SPEED_OF_LIGHT / 1000) ** 2
     # Intermediate terms

@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from ...sensors.sensor_base import ObservationTuple
 
 
-def eci2ecef(x_eci):
+def eci2ecef(x_eci: ndarray[float, float, float, float, float, float]) -> ndarray:
     """Convert an ECI state vector into an ECEF state vector.
 
     References:
@@ -57,14 +57,15 @@ def eci2ecef(x_eci):
     """
     reduction = getReductionParameters()
     r_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[:3]))
-    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
-    v_correction = cross(om_earth, matmul(reduction["rot_w"], r_ecef))
+    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)], dtype=float)
+    vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], r_ecef)
+    v_correction = cross(om_earth, vel_pef)
     v_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[3:]) - v_correction)
 
     return concatenate((r_ecef, v_ecef), axis=0)
 
 
-def ecef2eci(x_ecef):
+def ecef2eci(x_ecef: ndarray[float, float, float, float, float, float]) -> ndarray:
     """Convert an ECEF state vector into an ECI state vector.
 
     References:
@@ -81,8 +82,9 @@ def ecef2eci(x_ecef):
     """
     reduction = getReductionParameters()
     r_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[:3]))
-    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
-    v_correction = cross(om_earth, matmul(reduction["rot_w"], x_ecef[:3]))
+    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)], dtype=float)
+    vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], x_ecef[:3])
+    v_correction = cross(om_earth, vel_pef)
     v_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[3:]) + v_correction)
 
     return concatenate((r_eci, v_eci), axis=0)
@@ -262,7 +264,10 @@ def ecef2lla(x_ecef):
     return asarray([lat, lon, alt])
 
 
-def rsw2eci(x_eci, x_rsw):
+def rsw2eci(
+    x_eci: ndarray[float, float, float, float, float, float],
+    x_rsw: ndarray[float, float, float, float, float, float],
+):
     """Convert a RSW relative state vector to a 6x1 ECI state vector.
 
     This converts the relative RSW state into an absolute ECI state relative to a given ECI state.
@@ -284,8 +289,10 @@ def rsw2eci(x_eci, x_rsw):
     Returns:
         (``np.ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
     """
-    r_hat = x_eci[:3] / norm(x_eci[:3])
-    w_hat = cross(x_eci[:3], x_eci[3:]) / norm(cross(x_eci[:3], x_eci[3:]))
+    r_hat: ndarray[float, float, float] = x_eci[:3] / norm(x_eci[:3])
+    w_hat: ndarray[float, float, float] = cross(x_eci[:3], x_eci[3:]) / norm(
+        cross(x_eci[:3], x_eci[3:])
+    )
     s_hat = cross(w_hat, r_hat)
 
     rsw_2_eci_rotation = asarray([r_hat, s_hat, w_hat]).T
@@ -298,7 +305,10 @@ def rsw2eci(x_eci, x_rsw):
     )
 
 
-def ntw2eci(x_eci, x_ntw):
+def ntw2eci(
+    x_eci: ndarray[float, float, float, float, float, float],
+    x_ntw: ndarray[float, float, float, float, float, float],
+):
     """Convert a NTW relative state vector to a 6x1 ECI state vector.
 
     This converts the relative NTW state into an absolute ECI state relative to a given ECI state.
@@ -320,8 +330,10 @@ def ntw2eci(x_eci, x_ntw):
     Returns:
         (``np.ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
     """
-    t_hat = x_eci[3:] / norm(x_eci[3:])
-    w_hat = cross(x_eci[:3], x_eci[3:]) / norm(cross(x_eci[:3], x_eci[3:]))
+    t_hat: ndarray[float, float, float] = x_eci[3:] / norm(x_eci[3:])
+    w_hat: ndarray[float, float, float] = cross(x_eci[:3], x_eci[3:]) / norm(
+        cross(x_eci[:3], x_eci[3:])
+    )
     n_hat = cross(t_hat, w_hat)
 
     ntw_2_eci_rotation = asarray([n_hat, t_hat, w_hat]).T

@@ -44,8 +44,8 @@ def determineTransferDirection(initial_true_anomaly: float, final_true_anomaly: 
 
 
 def lambertBattin(
-    initial_position: ndarray,
-    current_position: ndarray,
+    initial_position: ndarray[float, float, float],
+    current_position: ndarray[float, float, float],
     delta_time: float,
     transfer_method: int,
     mu: float = Earth.mu,
