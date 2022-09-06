@@ -32,6 +32,44 @@ ______________________________________________________________________
 
 ### Changed
 
+*for changes in existing functionality*
+
+### Deprecated
+
+*for soon-to-be removed features*
+
+### Removed
+
+*for now removed features*
+
+### Fixed
+
+*for any bug fixes*
+
+### Security
+
+*in case of vulnerabilities*
+
+### Test
+
+*for test suite specific improvements*
+
+### Development
+
+*for improving developer tools & environment*
+
+### CI
+
+*related to the continuous integration system*
+
+## [2.0.0][v2.0.0] - 2022-09-06
+
+### Added
+
+*for new features*
+
+### Changed
+
 - all references to Redis throughout the code have been refactored to use the `mjolnir` package
 - all references to Redis throughout the documentation have been removed
 
@@ -512,7 +550,7 @@ Initial version ported to a new repository.
 [old - #77]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/77
 [old - #78]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/78
 [old - #79]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/79
-[unreleased-diff]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.2...develop
+[unreleased-diff]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v2.0.0...develop
 [v1.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/commits/v1.0.0
 [v1.0.1]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.0.0...v1.0.1
 [v1.1.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.0.1...v1.1.0
@@ -523,6 +561,7 @@ Initial version ported to a new repository.
 [v1.5.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.4.0...v1.5.0
 [v1.5.1]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.0...v1.5.1
 [v1.5.2]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.1...v1.5.2
+[v2.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.2...v2.0.0
 [`black`]: https://black.readthedocs.io/en/stable/index.html
 [`isort`]: https://pycqa.github.io/isort/
 [`pre-commit`]: https://pre-commit.com/
