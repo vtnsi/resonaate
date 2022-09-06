@@ -66,40 +66,29 @@ ______________________________________________________________________
 
 ### Added
 
-*for new features*
+- Initial state vectors (at the initial `Epoch`) are saved to the DB, see #114
 
 ### Changed
 
-- all references to Redis throughout the code have been refactored to use the `mjolnir` package
-- all references to Redis throughout the documentation have been removed
-
-### Deprecated
-
-*for soon-to-be removed features*
+- all references to Redis throughout the code have been refactored to use the `mjolnir` package, see #52
+- all references to Redis throughout the documentation have been removed, see #52
+- stop overuse of `ABC` when no abstract methods declared
 
 ### Removed
 
-- RESONAATE no longer requires Redis to be running in the background to work
+- RESONAATE no longer requires Redis to be running in the background to work, see #52
 
 ### Fixed
 
-*for any bug fixes*
-
-### Security
-
-*in case of vulnerabilities*
-
-### Test
-
-*for test suite specific improvements*
+- null `Observation` objects produced during tasking when not using FoV feature, see !69
 
 ### Development
 
-*for improving developer tools & environment*
+- pylance "unreachable code" false-positive caused by `np.cross()`
 
 ### CI
 
-*related to the continuous integration system*
+- Changed removed `cobertura` field for `junit` to produce XML test data
 
 ## [1.5.2][v1.5.2] - 2022-08-26
 
