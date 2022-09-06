@@ -45,7 +45,7 @@ greenlet==1.1.2
 importlib-metadata==4.11.3
 kiwisolver==1.4.2
 matplotlib==3.5.1
-mjolnir==1.1.1
+mjolnir==1.1.2
 numpy==1.21.6
 packaging==21.3
 Pillow==9.1.0
