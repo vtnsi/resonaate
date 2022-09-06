@@ -97,7 +97,7 @@ class BehavioralConfig:
         "database": {
             "DatabasePath": "sqlite://",
         },
-        "parallel": {"RedisHostname": "localhost", "RedisPort": 6379, "WorkerCount": None},
+        "parallel": {"WorkerCount": None},
         "debugging": {
             "OutputDirectory": "debugging",
             "NearestPD": False,
@@ -117,7 +117,6 @@ class BehavioralConfig:
     STR_ITEMS: Dict[str, Tuple[str, ...]] = {
         "logging": ("OutputLocation",),
         "database": ("DatabasePath",),
-        "parallel": ("RedisHostname",),
         "debugging": (
             "OutputDirectory",
             "NearestPDDirectory",
@@ -132,7 +131,6 @@ class BehavioralConfig:
             "MaxFileSize",
             "MaxFileCount",
         ),
-        "parallel": ("RedisPort",),
     }
 
     NULL_INT_ITEMS: Dict[str, Tuple[str, ...]] = {"parallel": ("WorkerCount",)}

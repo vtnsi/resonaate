@@ -40,7 +40,6 @@ Run the following command to show the Docker images:
 docker images
 REPOSITORY   TAG             IMAGE ID       CREATED          SIZE
 resonaate    v1.2.0          9c31555933ce   30 minutes ago   459MB
-redis        5.0.10-alpine   df4672527181   5 months ago     29.3MB
 ```
 
 ## Usage
@@ -58,7 +57,7 @@ Users can remove the containers and the images with the following commands:
 
 ```shell
 docker-compose -f docker-compose-external.yml down
-docker image rm resonaate:<tag> redis:<tag>
+docker image rm resonaate:<tag>
 ```
 
 Make sure to replace `<tag>` with the appropriate version number (e.g. `resonaate:v1.2.0`).
@@ -110,6 +109,6 @@ This must be executed in the same directory as the **docker-compose.yml** file, 
 ### Configuration
 
 The container can be built with different RESONAATE configurations by altering options in **behavior.docker.config**.
-This allows users to control the log levels & locations, the Redis hostname & port number, and various debugging options.
+This allows users to control the log levels & locations and various debugging options.
 Also, one can change the **req.docker.txt** to alter the enforced Python dependencies when building the RESONAATE image.
 However, one must make sure that they have access to the corresponding versions.

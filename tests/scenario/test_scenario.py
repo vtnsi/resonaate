@@ -31,13 +31,12 @@ from ..conftest import (
 # Type Checking Imports
 if TYPE_CHECKING:
     # RESONAATE Imports
-    from resonaate.parallel import Redis
     from resonaate.scenario import Scenario
 
 
 @pytest.fixture()
-def _fixtureSetup(redis: Redis, reset_shared_db: None) -> None:
-    """Instantiate redis & reset DB properly."""
+def _fixtureSetup(teardown_kvs, reset_shared_db: None) -> None:
+    """Reset key value store and DB properly."""
 
 
 def propagateScenario(
@@ -75,7 +74,7 @@ def propagateScenario(
 
     assert app.clock.julian_date_epoch == target_julian_date
 
-    app.shutdown(flushall=True)
+    app.shutdown()
 
     return app
 

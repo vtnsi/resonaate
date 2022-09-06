@@ -1,14 +1,66 @@
-"""Defines the abstract :class:`.JobHandler` base class that specifies the common API for all parallel execution."""
+"""Defines abstract base classes used throughout the ``job_handlers`` subpackage."""
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod
 
+# Third Party Imports
+from mjolnir import Job, JobTimeoutError, QueueManager
+
 # Local Imports
-from ...common.exceptions import JobProcessingError, JobTimeoutError
-from ...common.utilities import getTimeout
-from .. import ParallelMixin
-from ..job import CallbackRegistration
-from ..producer import QueueManager
+from ..common.exceptions import JobProcessingError
+from ..common.utilities import getTimeout
+
+
+class ParallelMixin(ABC):
+    """Class which provides an interface for all parallel-related classes.
+
+    This class is intended to be subclassed by a class which contains parallel processing
+    code. The purpose it to enforce good practices for parallel processing by requiring
+    certain methods be explicitly defined.
+    """
+
+    @abstractmethod
+    def shutdown(self):
+        """Properly shutdown the parallel processing jobs & managers.
+
+        This method should be called once the class is no longer used. This method must be
+        overridden by all subclasses. The defined method should call any necessary shutdown
+        logic internal to the class, including calling :meth:`.shutdown` on any contained classes.
+        """
+        raise NotImplementedError
+
+
+class CallbackRegistration(ABC):
+    """Abstract registration that is registered to a :attr:`~.JobHandler.callback_registry`."""
+
+    def __init__(self, registrant):
+        """Initialize a callback registration defining parallel job handling.
+
+        Args:
+            registrant (``object``): reference to the registration's calling object.
+        """
+        self.registrant = registrant
+
+    @abstractmethod
+    def jobCreateCallback(self, **kwargs):
+        """Create a job to be processed in parallel.
+
+        KeywordArgs:
+            kwargs (``dict``): arguments specific to an implemented :class:`.CallbackRegistration`.
+
+        Returns
+            :class:`.Job`: job to be processed by :class:`.QueueManager`.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def jobCompleteCallback(self, job):
+        """Process a completed :class:`.Job`'s results.
+
+        Args:
+            job (:class:`.Job`): job that's returned when a job completes.
+        """
+        raise NotImplementedError
 
 
 class JobHandler(ParallelMixin, ABC):
@@ -91,7 +143,7 @@ class JobHandler(ParallelMixin, ABC):
         Raises:
             :class:`.JobProcessingError`: raised if job completed in an error state
         """
-        if job.status == "processed":
+        if job.status == Job.Status.PROCESSED:
             self.job_id_registration_dict[job.id].jobCompleteCallback(job)
 
         else:
@@ -122,4 +174,4 @@ class JobHandler(ParallelMixin, ABC):
 
     def shutdown(self):
         """Shutdown the :class:`.QueueManager`."""
-        self.queue_mgr.shutdown()
+        self.queue_mgr.stopHandling()

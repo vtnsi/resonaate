@@ -188,9 +188,8 @@ def testMissingDataDependency(
 
     # Mock the `getDataDependencies()` method of the `EventConfig` class, so that it returns
     #   the `dummy_data_dependency` object.
-    tgt_event.getDataDependencies = Mock(  # pylint: disable=invalid-name
-        return_value=[dummy_data_dependency]  # pylint: disable=invalid-name
-    )  # pylint: disable=invalid-name
+    _mock = Mock(return_value=[dummy_data_dependency])
+    tgt_event.getDataDependencies = _mock  # pylint: disable=invalid-name
 
     # This dependency is not found
     scenario_cfg_dict["events"].append(tgt_event)

@@ -25,10 +25,12 @@ def buildScenarioFromConfigFile(
     # Standard Library Imports
     from pickle import dumps
 
+    # Third Party Imports
+    from mjolnir import KeyValueStore
+
     # Local Imports
     from ..data import createDatabasePath
     from ..data.resonaate_database import ResonaateDatabase
-    from ..parallel import getRedisConnection
     from .config import ScenarioConfig
 
     # [NOTE][avoid-circular-import]: Import done inside of function to avoid circular imports for
@@ -40,8 +42,7 @@ def buildScenarioFromConfigFile(
     #    The only way around the intended behavior now is to improperly call it before this
     #    function (aka in __main__.py), or bypass this function entirely.
     _ = ResonaateDatabase.getSharedInterface(database_path)
-    red = getRedisConnection()
-    red.set("db_path", dumps(database_path))
+    KeyValueStore.setValue("db_path", dumps(database_path))
 
     # Load input/external DB
     importer_database_path = None

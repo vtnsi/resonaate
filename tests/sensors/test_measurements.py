@@ -28,9 +28,6 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
-    # RESONAATE Imports
-    from resonaate.parallel import Redis
-
 # Vallado example 4-1 (pg. 273), second part
 ECI: ndarray = np.asarray(
     [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093]
@@ -61,7 +58,7 @@ EOP: EarthOrientationParameter = EarthOrientationParameter(
 
 
 @pytest.fixture(name="sez_state")
-def convertToSEZ(redis: Redis) -> ndarray:
+def convertToSEZ(teardown_kvs) -> ndarray:
     """Fixture to get properly converted SEZ observation vector."""
     # pylint: disable=unused-argument
     updateReductionParameters(JULIAN_DATE, eops=EOP)

@@ -7,6 +7,7 @@ from uuid import uuid4
 
 # Third Party Imports
 import numpy as np
+from mjolnir import KeyValueStore
 from scipy.linalg import cholesky, inv, norm
 from scipy.spatial.distance import mahalanobis
 from sqlalchemy.orm import Query
@@ -17,7 +18,6 @@ from ..common.utilities import getTypeString
 from ..data.ephemeris import TruthEphemeris
 from ..data.query_util import addAlmostEqualFilter
 from ..data.resonaate_database import ResonaateDatabase
-from ..parallel import getRedisConnection
 from ..physics.math import nearestPD
 from ..physics.transforms.methods import ecef2sez, eci2ecef
 from ..sensors.measurements import getAzimuth, getElevation, getRange, getRangeRate
@@ -51,8 +51,8 @@ def debugToJSONFile(base_filename, debug_dir, json_dict):
 
 def checkThreeSigmaObs(current_obs, sigma=3):
     """Check if an :class:`.Observation`'s absolute error is greater than 3 std."""
-    target_agents = pickle.loads(getRedisConnection().get("target_agents"))
-    sensor_agents = pickle.loads(getRedisConnection().get("sensor_agents"))
+    target_agents = pickle.loads(KeyValueStore.getValue("target_agents"))
+    sensor_agents = pickle.loads(KeyValueStore.getValue("sensor_agents"))
     shared_interface = ResonaateDatabase.getSharedInterface()
     filenames = []
     for observation in current_obs:
@@ -210,7 +210,7 @@ def logFilterStep(filter_obj, observations, truth_state):
         filter_obj,
         observations,
         truth_state,
-        pickle.loads(getRedisConnection().get("sensor_agents")),
+        pickle.loads(KeyValueStore.getValue("sensor_agents")),
     )
 
     # Write information to output file

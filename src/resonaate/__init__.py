@@ -44,15 +44,11 @@ def runResonaate(
 
     # Local Imports
     from .common.behavioral_config import BehavioralConfig
-    from .parallel import isMaster
     from .physics.time.conversions import getTargetJulianDate
     from .scenario import buildScenarioFromConfigFile
 
     if debug_mode:
         BehavioralConfig.getConfig().debugging.ParallelDebugMode = True
-
-    # Establish Redis connection
-    isMaster()
 
     # Build the Scenario application from the JSON init
     app = buildScenarioFromConfigFile(
@@ -75,7 +71,7 @@ def runResonaate(
         app.logger.info("Simulation complete")
     finally:
         # Gracefully shutdown the simulation
-        app.shutdown(flushall=True)
+        app.shutdown()
 
 
 def main() -> None:

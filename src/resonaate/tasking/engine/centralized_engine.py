@@ -14,9 +14,9 @@ from ...data.events import EventScope, handleRelevantEvents
 from ...data.query_util import addAlmostEqualFilter
 from ...data.resonaate_database import ResonaateDatabase
 from ...data.task import Task
-from ...parallel import ParallelMixin
-from ...parallel.handlers.task_execution import TaskExecutionJobHandler
-from ...parallel.handlers.task_prediction import TaskPredictionJobHandler
+from ...job_handlers.base import ParallelMixin
+from ...job_handlers.task_execution import TaskExecutionJobHandler
+from ...job_handlers.task_prediction import TaskPredictionJobHandler
 from .engine_base import TaskingEngine
 
 # Type Checking Imports

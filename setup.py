@@ -25,7 +25,7 @@ setuptools.setup(
         "concurrent-log-handler>=0.9.19",
         "sqlalchemy>=1.3",
         "matplotlib>=3.3",
-        "redis>=3.3.0",
+        "mjolnir>=1.1.2",
         "pywin32 >= 1.0; platform_system=='Windows'",
     ],
     extras_require={
@@ -42,7 +42,6 @@ setuptools.setup(
             # Type Checking
             "mypy==0.971",
             "types-sqlalchemy==1.4.50",
-            "types-redis==4.3.12",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
             "black==22.8.0",

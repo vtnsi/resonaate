@@ -21,6 +21,7 @@
     - python3 -m pip install --upgrade pip virtualenv
     - virtualenv .venv
     - source .venv/bin/activate
+    - python3 -m pip install mjolnir[test] --index-url https://gitlab-ci-token:$CI_JOB_TOKEN@code.vt.edu/api/v4/projects/16484/packages/pypi/simple
     - echo -e "\e[0Ksection_end:`date +%s`:venv\r\e[0K"
 
 # `pip install` RESONAATE only
@@ -87,40 +88,3 @@
     - echo -e "\e[0Ksection_start:`date +%s`:install_buildah[collapsed=true]\r\e[0K Install buildah "
     - apt-get -y -qq install buildah
     - echo -e "\e[0Ksection_end:`date +%s`:install_buildah\r\e[0K"
-
-# Add `redis` repository to `apt`
-.add-redis-repo:
-  before_script:
-    - echo -e "\e[0Ksection_start:`date +%s`:add_redis_repo[collapsed=true]\r\e[0K Add redis repository to apt"
-    - apt-get install -y -qq lsb-release
-    - curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
-    - echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list
-    - echo -e "\e[0Ksection_end:`date +%s`:add_redis_repo\r\e[0K"
-
-# Install redis to image using `apt` - should be in the 'before_script' key
-# [NOTE]: https://redis.io/docs/getting-started/installation/install-redis-on-linux/
-.install-redis:
-  before_script:
-    - !reference [.apt-update, before_script]
-    - !reference [.install-curl, before_script]
-    - !reference [.add-redis-repo, before_script]
-    - !reference [.apt-update, before_script]
-    - echo -e "\e[0Ksection_start:`date +%s`:install_redis[collapsed=true]\r\e[0K Install redis"
-    - apt-get install -y -qq redis
-    - echo -e "\e[0Ksection_end:`date +%s`:install_redis\r\e[0K"
-
-# ==========================================
-# Redis Scripts
-# ==========================================
-
-# Start redis - must include in the 'script' key before job commands are run
-# [NOTE]: Relies on '.install-redis'
-.start-redis:
-  script:
-    - redis-server 2>&1 > redis.log &
-
-# Stop redis - must include in the 'script' key after job commands are run
-# [NOTE]: Relies on '.install-redis'
-.stop-redis:
-  script:
-    - redis-cli shutdown

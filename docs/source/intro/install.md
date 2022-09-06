@@ -30,75 +30,6 @@ The minimum OS versions officially supported:
 RESONAATE requires the following items to be present on a system:
 
 - Python >= 3.7
-- Redis >= 5.0.10
-
-(install-redis)=
-
-### Installing Redis
-
-#### Install Redis with a Package Manager
-
-Unless there is good reason, please install Redis according to the instructions for your operating system described in the [Redis Install][redis install main] page.
-This page has easy to follow instructions for the most common operating systems, and it will also install in such a way that you can easily upgrade the Redis version via your package manager.
-
-#### Install Redis from Source
-
-If you have a specific need, or can't use a package manager, you can also install Redis from [source][redis source install].
-The following tools are required in order to install Redis:
-
-- A GCC Compiler
-- `make`
-- `libc`/`glibc`
-
-If using an Ubuntu distribution of Linux, you can ensure these requirements are installed with:
-
-```bash
-sudo apt install build-essential
-```
-
-```{note}
-This installs **much more** than the minimum requirements, but will guarantee those are met.
-```
-
-The exact release of Redis can be downloaded from <https://download.redis.io/releases/>.
-Once downloaded (or provided already), it's simple to build Redis.
-
-1. Extract Redis source, replacing `<version>` as necessary:
-   ```bash
-   tar xzf redis-<version>.tar.gz
-   ```
-1. Change directory into extracted Redis source directory:
-   ```bash
-   cd redis-<version>
-   ```
-1. Compile the Redis tool using `make` (`-j` allows for a parallel build):
-   ```bash
-   make -j
-   ```
-1. Test Redis build:
-   ```bash
-   make test
-   ```
-1. (Optional) Install Redis binaries in your path:
-   ```bash
-   sudo make install
-   ```
-
-If you installed Redis correctly, you should be able to run:
-
-```bash
-src/redis-server
-```
-
-You can interact with Redis using the built-in client:
-
-```bash
-src/redis-cli
-redis> set foo bar
-OK
-redis> get foo
-"bar"
-```
 
 ### RESONAATE Dependencies
 
@@ -114,13 +45,13 @@ greenlet==1.1.2
 importlib-metadata==4.11.3
 kiwisolver==1.4.2
 matplotlib==3.5.1
+mjolnir==1.1.2
 numpy==1.21.6
 packaging==21.3
 Pillow==9.1.0
 portalocker==2.4.0
 pyparsing==3.0.8
 python-dateutil==2.8.2
-redis==4.2.2
 scipy==1.7.3
 six==1.16.0
 SQLAlchemy==1.4.35
@@ -128,6 +59,10 @@ typing_extensions==4.2.0
 wrapt==1.14.0
 zipp==3.8.0
 ```
+
+`mjolnir` is a special case amongst these packages, as it is not available on PyPI.
+To install `mjolnir`, you'll need to clone the repository (available [here](https://code.vt.edu/space-research/resonaate/mjolnir)) and install in development mode *or*
+install `mjolnir` from its package registry (instructions available [here](https://code.vt.edu/space-research/resonaate/mjolnir/-/packages/827)).
 
 If provided with an actual directory of the required packages (usually called **deps-vX.Y.Z**), users can install without accessing PyPI:
 
@@ -142,6 +77,3 @@ Once the dependencies are installed, navigate into the RESONAATE source code dir
 ```bash
 python3 -m pip install -e .
 ```
-
-[redis install main]: https://redis.io/docs/getting-started/installation/
-[redis source install]: https://redis.io/docs/getting-started/installation/install-redis-from-source/
