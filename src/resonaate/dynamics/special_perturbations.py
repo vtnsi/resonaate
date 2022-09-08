@@ -49,7 +49,7 @@ class SpecialPerturbations(Celestial):
         geopotential: GeopotentialConfig,
         perturbations: PerturbationsConfig,
         sat_ratio: float,
-        method=RK45_LABEL,
+        method: str = RK45_LABEL,
     ):
         """Construct a SpecialPerturbations object.
 
