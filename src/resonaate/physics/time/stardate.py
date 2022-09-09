@@ -259,7 +259,7 @@ def datetimeToJulianDate(date_time):
         date_time.day,
         date_time.hour,
         date_time.minute,
-        date_time.second,
+        date_time.second + date_time.microsecond / 1e6,
     )
 
 
