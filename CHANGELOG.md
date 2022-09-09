@@ -53,6 +53,7 @@ ______________________________________________________________________
 ### Test
 
 - `pytest-cov` as a testing dependency to better manage coverage results
+- small typing fix that was incompatible with 3.7
 
 ### Development
 
