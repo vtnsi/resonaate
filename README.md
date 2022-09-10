@@ -198,12 +198,13 @@ pip install -e .[dev,test,doc]
 pre-commit install
 ```
 
-````{note}
+**Note:**
+
 If you use `zsh`, you may need to use the following command instead:
 ```zsh
 pip install -e ".[dev,test,doc]"
+pre-commit install
 ```
-````
 
 ### Linting
 
