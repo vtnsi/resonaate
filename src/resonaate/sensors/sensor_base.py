@@ -150,12 +150,16 @@ class Sensor(ABC):
         return array([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
 
     def collectObservations(
-        self, pointing_agent: EstimateAgent, background_agents: list[TargetAgent]
+        self,
+        estimate_agent: EstimateAgent,
+        target_agent: TargetAgent,
+        background_agents: list[TargetAgent],
     ) -> list[ObservationTuple]:
         """Collect observations on all targets within the sensor's FOV.
 
         Args:
-            pointing_agent (:class:`.EstimateAgent`): agent that sensor is pointing at
+            estimate_agent (:class:`.EstimateAgent`): Estimate agent that sensor is pointing at
+            target_agent (:class:`.TargetAgent`): Target agent that sensor is pointing at
             background_agents (``list``): list of possible `.TargetAgent` objects in FoV
 
         Returns:
@@ -163,18 +167,19 @@ class Sensor(ABC):
         """
         obs_list = []
         # Check if sensor will slew to point in time
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, pointing_agent.eci_state)
+        slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_agent.eci_state)
         if self.canSlew(slant_range_sez):
             if self.calculate_field_of_view:
                 targets_in_fov = self.checkTargetsInView(slant_range_sez, background_agents)
-                obs_list = [
-                    self.makeNoisyObservation(tgt)
-                    for tgt in targets_in_fov
-                    if self.makeNoisyObservation(tgt).observation
-                ]
+                obs_list = list(
+                    filter(  # pylint:disable=bad-builtin
+                        lambda ob_tuple: ob_tuple.observation,
+                        (self.makeNoisyObservation(tgt) for tgt in targets_in_fov),
+                    )
+                )  # pylint:disable=bad-builtin
 
             else:
-                observation_tuple = self.makeNoisyObservation(pointing_agent)
+                observation_tuple = self.makeNoisyObservation(target_agent)
                 if observation_tuple.observation:
                     obs_list.append(observation_tuple)
 

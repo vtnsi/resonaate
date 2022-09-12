@@ -33,13 +33,16 @@ def asyncExecuteTasking(tasked_sensors: List[SensingAgent], target_id: int) -> d
     sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
     target_agents = loads(KeyValueStore.getValue("target_agents"))
     estimate_agent = loads(KeyValueStore.getValue("estimate_agents"))[target_id]
+    target_agent = loads(KeyValueStore.getValue("target_agents"))[target_id]
     sensor_list = list(sensor_agents.values())
     target_list = list(target_agents.values())
 
     if len(tasked_sensors) > 0:
         for sensor in tasked_sensors:
             successful_obs.extend(
-                sensor_list[sensor].sensors.collectObservations(estimate_agent, target_list)
+                sensor_list[sensor].sensors.collectObservations(
+                    estimate_agent, target_agent, target_list
+                )
             )
 
     return {"target_id": target_id, "observations": successful_obs}
