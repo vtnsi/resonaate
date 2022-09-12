@@ -2,6 +2,6 @@
 numpy==1.21.6
 scipy==1.7.3
 concurrent-log-handler==0.9.20
-sqlalchemy==1.4.40
+sqlalchemy==1.4.41
 matplotlib==3.5.3
 mjolnir==1.1.2
