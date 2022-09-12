@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-# Standard Library Imports
-from typing import TYPE_CHECKING
-
 # Third Party Imports
 import pytest
 from numpy import cos, deg2rad, sin, tan
@@ -14,11 +11,6 @@ from resonaate.physics.orbits.utils import getEccentricityFromEQE, getInclinatio
 
 # Local Imports
 from .conftest import ANOM, ARGP, ECC, INC, LEO, RAAN, SMA, H, K, P, Q
-
-# Type Checking Imports
-if TYPE_CHECKING:
-    # Third Party Imports
-    from typing_extensions import TypeAlias
 
 COE_CONFIGS: list[dict[str, float]] = [
     {
@@ -65,13 +57,12 @@ EQE_CONFIGS: list[dict[str, float]] = [
 ]
 
 
-ElemType: TypeAlias = tuple[float, float, float, float, float, float]
+COE_SET: tuple[tuple[float, float, float, float, float, float]] = tuple(
+    zip(SMA, ECC, INC, RAAN, ARGP, ANOM)
+)
+EQE_SET: tuple[tuple[float, float, float, float, float, float]] = tuple(zip(SMA, H, K, P, Q, ANOM))
 
-
-COE_SET: tuple[ElemType] = tuple(zip(SMA, ECC, INC, RAAN, ARGP, ANOM))
-EQE_SET: tuple[ElemType] = tuple(zip(SMA, H, K, P, Q, ANOM))
-
-BAD_COES: list[ElemType] = [
+BAD_COES: list[tuple[float, float, float, float, float, float]] = [
     (LEO, -0.001, INC[2], RAAN[2], ARGP[3], ANOM[1]),
     (LEO, 1.0001, INC[2], RAAN[2], ARGP[3], ANOM[1]),
     (LEO, 1.0, INC[2], RAAN[2], ARGP[3], ANOM[1]),
@@ -79,7 +70,7 @@ BAD_COES: list[ElemType] = [
     (LEO, 0.0001, deg2rad(181), RAAN[2], ARGP[3], ANOM[1]),
 ]
 
-BAD_EQES: list[ElemType] = [
+BAD_EQES: list[tuple[float, float, float, float, float, float]] = [
     (LEO, 1, 1, 2, 2, ANOM[1]),
     (LEO, 1, 0, 2, 2, ANOM[1]),
     (LEO, 0.1, 0.1, 10e10, 10e10, ANOM[1]),

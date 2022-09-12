@@ -52,7 +52,8 @@ ______________________________________________________________________
 
 ### Test
 
-*for test suite specific improvements*
+- `pytest-cov` as a testing dependency to better manage coverage results
+- small typing fix that was incompatible with 3.7
 
 ### Development
 
@@ -60,7 +61,8 @@ ______________________________________________________________________
 
 ### CI
 
-*related to the continuous integration system*
+- test jobs run against a *properly* installed RESONAATE package, see #32
+- only the unit tests are included in coverage statistics
 
 ## [2.0.0][v2.0.0] - 2022-09-06
 

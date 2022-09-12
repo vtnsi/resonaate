@@ -41,12 +41,11 @@ from .conftest import (
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
-    from typing_extensions import TypeAlias
 
-ElemType: TypeAlias = tuple[float, float, float, float, float, float]
-
-COE_SET: tuple[ElemType] = tuple(zip(SMA, ECC, INC, RAAN, ARGP, ANOM))
-EQE_SET: tuple[ElemType] = tuple(zip(SMA, H, K, P, Q, ANOM))
+COE_SET: tuple[tuple[float, float, float, float, float, float]] = tuple(
+    zip(SMA, ECC, INC, RAAN, ARGP, ANOM)
+)
+EQE_SET: tuple[tuple[float, float, float, float, float, float]] = tuple(zip(SMA, H, K, P, Q, ANOM))
 RV_CASES: tuple[tuple[ndarray, ndarray]] = tuple(zip(POS_TEST_CASES, VEL_TEST_CASES))
 
 

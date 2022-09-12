@@ -1,7 +1,13 @@
 # Controls coverage behavior
+[paths]
+# Required for proper coverage testing across multiple jobs
+source =
+    src
+    */site-packages
+
 [run]
+source = resonaate
 parallel = True
-include = src/*
 omit =
     tests/*
     docs/*
@@ -25,5 +31,8 @@ exclude_lines =
     # Don't complain for type-checking guard:
     if TYPE_CHECKING:
 
+precision = 2
+
 [html]
 directory = coverage
+show_contexts = True
