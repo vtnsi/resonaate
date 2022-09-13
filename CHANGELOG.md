@@ -40,7 +40,8 @@ ______________________________________________________________________
 
 ### Removed
 
-*for now removed features*
+- `"dynamics_noise_magnitude"` & `"dynamics_noise_type"` from `NoiseConfig` because they are not used
+- `process_noise` property from `TargetAgent` because it is not used
 
 ### Fixed
 

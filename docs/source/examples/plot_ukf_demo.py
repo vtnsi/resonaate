@@ -54,7 +54,6 @@ t0 = clock.time
 # Also, users must define a :class:`.Dynamics` object that handles propagating the satellite forward in time.
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.dynamics.two_body import TwoBody
-from resonaate.physics.noise import simpleNoise
 
 # Initial information
 sat1_id = 10001  # Unique ID number of satellite
@@ -68,9 +67,6 @@ sat1_x0 = np.array([10000.0, 0.0, 0.0, 0.0, 6.3134776, 0.0])  # Position (km)  #
 # Create a two body dynamics object for simple Keplerian propagation
 two_body_dynamics = TwoBody()
 
-# Noise added to true state vector, for use in filtering
-two_body_noise = simpleNoise(dt, 1e-25)
-
 # Construct the satellite object
 sat1_agent = TargetAgent(
     sat1_id,
@@ -80,7 +76,6 @@ sat1_agent = TargetAgent(
     clock,
     two_body_dynamics,
     realtime,
-    two_body_noise,
     25.0,
     100,
     0.21,

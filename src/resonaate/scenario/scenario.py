@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 from mjolnir import KeyValueStore, WorkerManager
 from numpy import around, seterr
 from numpy.random import default_rng
-from scipy.linalg import norm
 
 # Local Imports
 from ..agents.estimate_agent import EstimateAgent
@@ -154,14 +153,6 @@ class Scenario(ParallelMixin):
         pos_std = self.scenario_config.noise.init_position_std_km
         vel_std = self.scenario_config.noise.init_velocity_std_km_p_sec
         self.logger.info(f"Initial estimate error std: {pos_std} km; {vel_std} km/sec")
-        dynamics_noise = norm(
-            noiseCovarianceFactory(
-                self.scenario_config.noise.dynamics_noise_type,
-                self.scenario_config.time.physics_step_sec,
-                self.scenario_config.noise.dynamics_noise_magnitude,
-            )
-        )
-        self.logger.info(f"Dynamics process noise magnitude: {dynamics_noise}")
         self.logger.info(f"Random seed: {config.noise.random_seed}")
         self.logger.info(
             f"Using real-time propagation for RSO truth data: {config.propagation.target_realtime_propagation}"
@@ -417,12 +408,6 @@ class Scenario(ParallelMixin):
             method=self.scenario_config.propagation.integration_method,
         )
 
-        dynamics_noise = noiseCovarianceFactory(
-            self.scenario_config.noise.dynamics_noise_type,
-            self.scenario_config.time.physics_step_sec,
-            self.scenario_config.noise.dynamics_noise_magnitude,
-        )
-
         filter_dynamics = spacecraftDynamicsFactory(
             self.scenario_config.propagation.propagation_model,
             self.clock,
@@ -443,8 +428,6 @@ class Scenario(ParallelMixin):
             "dynamics": target_dynamics,
             "realtime": self.scenario_config.propagation.target_realtime_propagation,
             "station_keeping": target_spec.station_keeping,
-            "noise": dynamics_noise,
-            "random_seed": self.scenario_config.noise.random_seed,
         }
         target_agent = TargetAgent.fromConfig(target_factory_config)
         self.target_agents[target_spec.sat_num] = target_agent

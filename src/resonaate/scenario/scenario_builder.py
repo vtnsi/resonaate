@@ -298,19 +298,12 @@ class ScenarioBuilder:
                 method=self.config.propagation.integration_method,
             )
 
-            dynamics_noise = noiseCovarianceFactory(
-                self.config.noise.dynamics_noise_type,
-                self.config.time.physics_step_sec,
-                self.config.noise.dynamics_noise_magnitude,
-            )
             config = {
                 "target": target_conf,
                 "clock": self.clock,
                 "dynamics": dynamics_method,
                 "realtime": self.config.propagation.target_realtime_propagation,
                 "station_keeping": station_keeping,
-                "noise": dynamics_noise,
-                "random_seed": self.config.noise.random_seed,
             }
             targets[target_conf.sat_num] = TargetAgent.fromConfig(config)
 

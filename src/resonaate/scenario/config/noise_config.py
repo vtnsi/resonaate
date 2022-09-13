@@ -47,12 +47,6 @@ class NoiseConfig(ConfigObject):
     init_velocity_std_km_p_sec: float = DEFAULT_VELOCITY_STD
     """``float``: Standard deviation of initial RSO velocity estimate (km/sec)."""
 
-    dynamics_noise_type: str = SIMPLE_NOISE_LABEL
-    """``str``: String describing noise used in dynamics propagation."""
-
-    dynamics_noise_magnitude: float = 1e-20
-    """float: 'Variance' of noise added in dynamics propagation."""
-
     filter_noise_type: str = CONTINUOUS_WHITE_NOISE_LABEL
     """``str``: String describing noise used in filter propagation."""
 
@@ -90,18 +84,8 @@ class NoiseConfig(ConfigObject):
                 (DEFAULT_RANDOM_SEED_VALUE, None, "or any positive int"),
             )
 
-        if self.dynamics_noise_type not in VALID_NOISE_TYPES:
-            raise ConfigValueError(
-                "dynamics_noise_type", self.dynamics_noise_type, VALID_NOISE_TYPES
-            )
-
         if self.filter_noise_type not in VALID_NOISE_TYPES:
             raise ConfigValueError("filter_noise_type", self.filter_noise_type, VALID_NOISE_TYPES)
-
-        if self.dynamics_noise_magnitude <= 0.0:
-            raise ConfigValueError(
-                "dynamics_noise_magnitude", self.dynamics_noise_magnitude, "> 0.0"
-            )
 
         if self.filter_noise_magnitude <= 0.0:
             raise ConfigValueError("filter_noise_magnitude", self.filter_noise_magnitude, "> 0.0")

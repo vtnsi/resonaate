@@ -8,8 +8,6 @@
   "noise": {
     "init_position_std_km": 1e-3,
     "init_velocity_std_km_p_sec": 1e-6,
-    "dynamics_noise_type": "simple_noise",
-    "dynamics_noise_magnitude": 1e-25,
     "filter_noise_type": "continuous_white_noise",
     "filter_noise_magnitude": 3.0e-14,
     "random_seed": "os"

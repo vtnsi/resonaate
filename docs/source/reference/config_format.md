@@ -562,8 +562,6 @@ See {mod}`~.physics.noise` for details on different types of noise/uncertainty.
 "noise": {
     "init_position_std_km": float,        # Optional
     "init_velocity_std_km_p_sec": float,  # Optional
-    "dynamics_noise_type": str,           # Optional
-    "dynamics_noise_magnitude": float,    # Optional
     "filter_noise_type": str,             # Optional
     "filter_noise_magnitude": float,      # Optional
     "random_seed": str | int,             # Optional

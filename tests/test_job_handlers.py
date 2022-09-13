@@ -195,7 +195,6 @@ def createTargetAgent(scenario_clock: ScenarioClock) -> TargetAgent:
         scenario_clock,
         TwoBody(),
         True,
-        np.diagflat([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         25.0,
         500.0,
         0.21,
