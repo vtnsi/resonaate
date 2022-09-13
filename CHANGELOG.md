@@ -28,11 +28,11 @@ ______________________________________________________________________
 
 ### Added
 
-*for new features*
+- infinite loop catch in `lambertUniversal()` (see fe802bd2dd)
 
 ### Changed
 
-*for changes in existing functionality*
+- updated EOP values included within RESONAATE (see 1ec535b7a)
 
 ### Deprecated
 
@@ -40,12 +40,14 @@ ______________________________________________________________________
 
 ### Removed
 
-- `"dynamics_noise_magnitude"` & `"dynamics_noise_type"` from `NoiseConfig` because they are not used
-- `process_noise` property from `TargetAgent` because it is not used
+- `"dynamics_noise_magnitude"` & `"dynamics_noise_type"` from `NoiseConfig` because they are not used (see 58f72522)
+- `process_noise` property from `TargetAgent` because it is not used (see 58f72522)
 
 ### Fixed
 
-*for any bug fixes*
+- rounding of seconds when converting `datetime` objects to `JulianDate` objects (see 58d032bd)
+- `asyncExecuteTasking()` was calling `collectObservations()` on `EstimateAgents` (see bdfc3834, introduced by !2)
+- double `isVisible()` calls from within `collectObservations()` (see bdfc3834)
 
 ### Security
 
@@ -58,7 +60,7 @@ ______________________________________________________________________
 
 ### Development
 
-*for improving developer tools & environment*
+- Several small documentation clarifications
 
 ### CI
 
