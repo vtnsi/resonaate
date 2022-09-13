@@ -29,6 +29,7 @@ ______________________________________________________________________
 ### Added
 
 - infinite loop catch in `lambertUniversal()` (see fe802bd2dd)
+- Passing in Estimate ECI state vector instead of entire Agent to `collectObservations()`
 
 ### Changed
 

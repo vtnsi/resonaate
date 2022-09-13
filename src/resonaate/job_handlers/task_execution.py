@@ -41,7 +41,7 @@ def asyncExecuteTasking(tasked_sensors: List[SensingAgent], target_id: int) -> d
         for sensor in tasked_sensors:
             successful_obs.extend(
                 sensor_list[sensor].sensors.collectObservations(
-                    estimate_agent, target_agent, target_list
+                    estimate_agent.eci_state, target_agent, target_list
                 )
             )
 

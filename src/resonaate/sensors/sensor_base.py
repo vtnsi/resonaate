@@ -151,14 +151,14 @@ class Sensor(ABC):
 
     def collectObservations(
         self,
-        estimate_agent: EstimateAgent,
+        estimate_eci: ndarray,
         target_agent: TargetAgent,
         background_agents: list[TargetAgent],
     ) -> list[ObservationTuple]:
         """Collect observations on all targets within the sensor's FOV.
 
         Args:
-            estimate_agent (:class:`.EstimateAgent`): Estimate agent that sensor is pointing at
+            estimate_eci (``ndarray``): Estimate state vector that sensor is pointing at
             target_agent (:class:`.TargetAgent`): Target agent that sensor is pointing at
             background_agents (``list``): list of possible `.TargetAgent` objects in FoV
 
@@ -167,7 +167,7 @@ class Sensor(ABC):
         """
         obs_list = []
         # Check if sensor will slew to point in time
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_agent.eci_state)
+        slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_eci)
         if self.canSlew(slant_range_sez):
             if self.calculate_field_of_view:
                 targets_in_fov = self.checkTargetsInView(slant_range_sez, background_agents)
