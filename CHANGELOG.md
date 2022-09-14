@@ -34,6 +34,7 @@ ______________________________________________________________________
 ### Changed
 
 - updated EOP values included within RESONAATE (see 1ec535b7a)
+- bump `mjolnir` version to 1.1.3
 
 ### Deprecated
 
@@ -79,6 +80,7 @@ ______________________________________________________________________
 - all references to Redis throughout the code have been refactored to use the `mjolnir` package, see #52
 - all references to Redis throughout the documentation have been removed, see #52
 - stop overuse of `ABC` when no abstract methods declared
+- `WorkerManager` instantiation in `Scenario` object now adheres to `debugging.ParallelDebugMode` config option
 
 ### Removed
 
