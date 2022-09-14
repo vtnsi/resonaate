@@ -147,7 +147,7 @@ class Scenario(ParallelMixin):
             if proc_count is None:
                 proc_count = cpu_count()
             watchdog_terminate_after = WorkerManager.DEFAULT_WATCHDOG_TERMINATE_AFTER
-            if BehavioralConfig.getConfig().debugging.ParallelDebuggingMode:
+            if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
                 watchdog_terminate_after = None
 
             self.worker_mgr = WorkerManager(
