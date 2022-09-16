@@ -146,7 +146,13 @@ class Scenario(ParallelMixin):
             proc_count = BehavioralConfig.getConfig().parallel.WorkerCount
             if proc_count is None:
                 proc_count = cpu_count()
-            self.worker_mgr = WorkerManager(proc_count=proc_count)
+            watchdog_terminate_after = WorkerManager.DEFAULT_WATCHDOG_TERMINATE_AFTER
+            if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
+                watchdog_terminate_after = None
+
+            self.worker_mgr = WorkerManager(
+                proc_count=proc_count, watchdog_terminate_after=watchdog_terminate_after
+            )
             self.worker_mgr.startWorkers()
 
         # Log some basic information about propagation for this simulation
