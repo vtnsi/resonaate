@@ -281,7 +281,7 @@ def getTestEarthSensor() -> AdvRadar:
         efficiency=0.9,
         exemplar=array([1, 40744]),
         field_of_view={"fov_shape": "conic"},
-        background_observations=False,
+        calculate_fov=False,
         power_tx=120000.0,
         frequency=10000000000.0,
         slew_rate=3.0000000000000004,

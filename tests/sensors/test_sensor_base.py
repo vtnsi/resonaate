@@ -29,7 +29,7 @@ def getSensorArgs() -> dict:
         "exemplar": np.array((1.0, 42000.0)),
         "slew_rate": 1.0,
         "field_of_view": {"fov_shape": "conic"},
-        "background_observations": True,
+        "calculate_fov": True,
         "minimum_range": 0.0,
         "maximum_range": np.inf,
     }

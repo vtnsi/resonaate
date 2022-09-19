@@ -243,7 +243,7 @@ class SensingAgentConfig(ConfigObject):
     init_eqe: dict[str, float] | None = None
     R"""``dict[str, float]```, optional: initial EQE set, see :meth:`.EquinoctialElements.fromConfig` for details. Defaults to ``None``."""
 
-    background_observations: bool = False
+    calculate_fov: bool = False
     R"""``bool``, optional: whether this sensor uses its :attr:`.filed_of_view` to determine if other agents are visible. Defaults to ``False``"""
 
     detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG

@@ -16,8 +16,8 @@ class ObservationConfig(ConfigObject):
     CONFIG_LABEL: ClassVar[str] = "observation"
     """``str``: Key where settings are stored in the configuration dictionary."""
 
-    background: bool = True
-    """``bool``: whether or not to do field of view on background rso calculations.
+    field_of_view: bool = True
+    """``bool``: whether or not to do field of view calculations.
 
     Note:
         This setting turns background (serendipitous) observations on for all sensors. This will

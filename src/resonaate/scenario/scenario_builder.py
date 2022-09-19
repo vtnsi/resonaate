@@ -168,8 +168,8 @@ class ScenarioBuilder:
         self.sensor_network: list[SensingAgent] = []
         for sensor_config in sensor_configs.values():
             # Assign Sensor FoV from init if not set
-            if self.config.observation.background:
-                sensor_config.background_observations = True
+            if self.config.observation.field_of_view:
+                sensor_config.calculate_fov = True
             sat_ratio = calcSatRatio(
                 sensor_config.visual_cross_section,
                 sensor_config.mass,

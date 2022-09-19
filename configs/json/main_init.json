@@ -21,7 +21,7 @@
     "realtime_observation": true
   },
   "observation": {
-    "background": true
+    "field_of_view": false
   },
   "geopotential": {
     "model": "egm96.txt",

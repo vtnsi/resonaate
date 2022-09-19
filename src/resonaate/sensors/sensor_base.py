@@ -57,7 +57,7 @@ class Sensor(ABC):
         exemplar: ndarray,
         slew_rate: float,
         field_of_view: FieldOfView,
-        background_observations: bool,
+        calculate_fov: bool,
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
@@ -73,7 +73,7 @@ class Sensor(ABC):
             exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power  calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (:class:`.FieldOfView`): field of view of sensor
-            background_observations (``bool``): whether or not to calculate Field of View, default=True
+            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
@@ -91,7 +91,7 @@ class Sensor(ABC):
         self.exemplar = squeeze(exemplar)
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view
-        self.calculate_background = background_observations
+        self.calculate_field_of_view = calculate_fov
         self.minimum_range = minimum_range
         self.maximum_range = maximum_range
 
@@ -169,8 +169,7 @@ class Sensor(ABC):
         # Check if sensor will slew to point in time
         slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_eci)
         if self.canSlew(slant_range_sez):
-            # If doing Serendipitous Observations
-            if self.calculate_background:
+            if self.calculate_field_of_view:
                 targets_in_fov = self.checkTargetsInView(slant_range_sez, background_agents)
                 obs_list = list(
                     filter(  # pylint:disable=bad-builtin
@@ -180,11 +179,9 @@ class Sensor(ABC):
                 )  # pylint:disable=bad-builtin
 
             else:
-                # Check if primary RSO is FoV
-                if len(self.checkTargetsInView(slant_range_sez, [target_agent])) == 1:
-                    observation_tuple = self.makeNoisyObservation(target_agent)
-                    if observation_tuple.observation:
-                        obs_list.append(observation_tuple)
+                observation_tuple = self.makeNoisyObservation(target_agent)
+                if observation_tuple.observation:
+                    obs_list.append(observation_tuple)
 
             self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
             if obs_list:  # only update time_last_ob if obs are made
