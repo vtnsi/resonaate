@@ -596,7 +596,6 @@ Optional object defining how RSOs are propagated.
     "station_keeping": bool,              # Optional
     "target_realtime_propagation": bool,  # Optional
     "sensor_realtime_propagation": bool,  # Optional
-    "realtime_observation": bool,         # Optional
     "truth_simulation_only": bool,        # Optional
 }
 ```
@@ -624,7 +623,8 @@ Optional object defining observation behavior preferences.
 
 ```python
 "observation": {
-    "background": bool,  # Optional
+    "background": bool,              # Optional
+    "realtime_observation": bool,    # Optional
 }
 ```
 

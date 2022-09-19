@@ -17,9 +17,7 @@ class ObservationConfig(ConfigObject):
     """``str``: Key where settings are stored in the configuration dictionary."""
 
     background: bool = True
-    """``bool``: whether or not to do field of view on background rso calculations.
+    """``bool``: whether or not to do field of view on background rso calculations."""
 
-    Note:
-        This setting turns background (serendipitous) observations on for all sensors. This will
-        also force each sensor to have a FOV config.
-    """
+    realtime_observation: bool = True
+    """``bool``: whether to generate observations during the simulation."""

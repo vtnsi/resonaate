@@ -167,7 +167,7 @@ class Scenario(ParallelMixin):
             f"Using real-time propagation for sensor truth data: {config.propagation.sensor_realtime_propagation}"
         )
         self.logger.info(
-            f"Using real-time observation for tasking: {config.propagation.realtime_observation}"
+            f"Using real-time observation for tasking: {config.observation.realtime_observation}"
         )
         self.logger.info(
             f"Spacecraft truth dynamics model: {config.propagation.propagation_model}"
