@@ -32,7 +32,7 @@ def getSensorConfigGround():
         "sensor_type": "Optical",
         "exemplar": [0.0014320086173409336, 32500.0],
         "field_of_view": {"fov_shape": "conic"},
-        "calculate_fov": False,
+        "background_observations": False,
         "lat": 0.1,
         "lon": 1.1,
         "alt": 1.0,
@@ -63,7 +63,7 @@ def getSensorConfigSpace():
         ],
         "exemplar": [1, 36000],
         "field_of_view": {"fov_shape": "conic"},
-        "calculate_fov": False,
+        "background_observations": False,
         "host_type": "Spacecraft",
         "station_keeping": {"routines": ["LEO"]},
         "tx_power": 3e6,
@@ -203,7 +203,7 @@ class TestSensorAdditionEvent:
             exemplar_cross_section=0.0014320086173409336,
             exemplar_range=32500.0,
             fov_shape="conic",
-            calculate_fov=False,
+            background_observations=False,
             station_keeping_json=dumps([]),
         )
         impulse_event.handleEvent(mocked_scenario)

@@ -624,7 +624,7 @@ Optional object defining observation behavior preferences.
 
 ```python
 "observation": {
-    "field_of_view": bool,  # Optional
+    "background": bool,  # Optional
 }
 ```
 
@@ -794,7 +794,7 @@ These are the required fields defined for all types of sensor objects.
         "efficiency": float,                      # Required
         "slew_rate": float,                       # Required
         "exemplar": list[float, float],           # Required
-        "calculate_fov": bool,                    # Optional
+        "background_observations": bool,                    # Optional
         "detectable_vismag": float,               # Optional
         "minimum_range": float,                   # Optional
         "maximum_range": float,                   # Optional

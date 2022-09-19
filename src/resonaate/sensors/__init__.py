@@ -69,7 +69,7 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
         "slew_rate": sensor_config.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(sensor_config.exemplar),
         "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),
-        "calculate_fov": sensor_config.calculate_fov,
+        "background_observations": sensor_config.background_observations,
         "minimum_range": sensor_config.minimum_range,
         "maximum_range": sensor_config.maximum_range,
     }

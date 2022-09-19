@@ -128,7 +128,7 @@ class SensorAdditionEvent(Event):
     fov_angle_2 = Column(Float, nullable=True)
     """``float``: Second angle (vertical angle for `rectangular`."""
 
-    calculate_fov = Column(Boolean)
+    background_observations = Column(Boolean)
     """``bool``: whether to do FoV calcs."""
 
     tx_power = Column(Float)
@@ -174,7 +174,7 @@ class SensorAdditionEvent(Event):
         "fov_shape",
         "fov_angle_1",
         "fov_angle_2",
-        "calculate_fov",
+        "background_observations",
         "tx_power",
         "tx_frequency",
         "station_keeping_json",
@@ -330,7 +330,7 @@ class SensorAdditionEvent(Event):
             fov_shape=sensor.field_of_view.fov_shape,
             fov_angle_1=fov_angle_1,
             fov_angle_2=fov_angle_2,
-            calculate_fov=sensor.calculate_fov,
+            background_observations=sensor.background_observations,
             tx_power=tx_power,
             tx_frequency=tx_frequency,
             station_keeping_json=dumps(sensor.station_keeping.toJSON()),
