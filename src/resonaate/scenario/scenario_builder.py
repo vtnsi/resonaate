@@ -116,7 +116,7 @@ class ScenarioBuilder:
                 reward,
                 decision,
                 importer_db_path,
-                self.config.observation.realtime_observation,
+                self.config.propagation.realtime_observation,
             )
 
             self.tasking_engines[tasking_engine.unique_id] = tasking_engine

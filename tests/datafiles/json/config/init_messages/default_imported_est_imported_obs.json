@@ -17,9 +17,7 @@
     "integration_method": "RK45",
     "station_keeping": true,
     "target_realtime_propagation": false,
-    "sensor_realtime_propagation": false
-  },
-  "observation": {
+    "sensor_realtime_propagation": false,
     "realtime_observation": false
   },
   "geopotential": {

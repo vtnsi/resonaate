@@ -54,6 +54,9 @@ class PropagationConfig(ConfigObject):
     sensor_realtime_propagation: bool = True
     """``bool``: whether to use the internal propagation for the truth model."""
 
+    realtime_observation: bool = True
+    """``bool``: whether to generate observations during the simulation."""
+
     truth_simulation_only: bool = False
     """``bool``: whether to skip estimation and tasking during the simulation."""
 

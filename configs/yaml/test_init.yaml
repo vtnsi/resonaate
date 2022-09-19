@@ -27,6 +27,7 @@ perturbations:
 propagation:
   integration_method: RK45
   propagation_model: special_perturbations
+  realtime_observation: true
   sensor_realtime_propagation: true
   station_keeping: false
   target_realtime_propagation: true

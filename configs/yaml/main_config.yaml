@@ -15,6 +15,7 @@ propagation:
   station_keeping: false
   target_realtime_propagation: true
   sensor_realtime_propagation: true
+  realtime_observation: true
   truth_simulation_only: false
 geopotential:
   model: egm96.txt
