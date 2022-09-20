@@ -295,3 +295,4 @@ For additional information on the development of the RESONAATE Tool, see the fol
 - Contributors
   - Connor Segal: <csegal@vt.edu>
   - Amit Bala: <agbala@vt.edu>
+  - Dylan Penn: <dylanrpenn@vt.edu>
