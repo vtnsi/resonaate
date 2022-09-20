@@ -18,7 +18,6 @@
     "station_keeping": false,
     "target_realtime_propagation": true,
     "sensor_realtime_propagation": true,
-    "realtime_observation": true,
     "truth_simulation_only": true
   },
   "geopotential": {

@@ -37,7 +37,7 @@ SENSOR_CONFIG = {
     "aperture_area": 530.929158456675,
     "sensor_type": "Radar",
     "exemplar": [0.04908738521234052, 40500.0],
-    "calculate_fov": True,
+    "background_observations": True,
     "lat": 0.2281347875532986,
     "lon": 0.5432822498364406,
     "alt": 0.095,

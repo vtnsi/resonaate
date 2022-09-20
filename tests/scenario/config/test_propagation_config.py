@@ -22,7 +22,6 @@ def getPropagationConfig() -> dict:
         "station_keeping": False,
         "target_realtime_propagation": True,
         "sensor_realtime_propagation": True,
-        "realtime_observation": True,
         "truth_simulation_only": False,
     }
 
@@ -36,7 +35,6 @@ def testCreatePropagationConfig(propagation_cfg_dict: dict):
     assert cfg.station_keeping is False
     assert cfg.target_realtime_propagation is True
     assert cfg.sensor_realtime_propagation is True
-    assert cfg.realtime_observation is True
     assert cfg.truth_simulation_only is False
 
     # Test that this can be created from an empty dictionary
@@ -48,7 +46,7 @@ def testCreatePropagationConfig(propagation_cfg_dict: dict):
 
     # Ensure the correct amount of req/opt keys
     assert len(PropagationConfig.getRequiredFields()) == 0
-    assert len(PropagationConfig.getOptionalFields()) == 7
+    assert len(PropagationConfig.getOptionalFields()) == 6
 
 
 def testInputsPropagationConfig(propagation_cfg_dict: dict):

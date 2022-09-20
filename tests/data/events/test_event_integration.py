@@ -430,7 +430,7 @@ class TestEventIntegration:
             "field_of_view": {
                 "fov_shape": "conic",
             },
-            "calculate_fov": False,
+            "background_observations": False,
             "detectable_vismag": 25.0,
             "minimum_range": 0.0,
             "maximum_range": 99000,

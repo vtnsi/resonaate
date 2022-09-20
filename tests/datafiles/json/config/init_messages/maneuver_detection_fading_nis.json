@@ -14,8 +14,7 @@
   },
   "propagation": {
     "propagation_model": "special_perturbations",
-    "integration_method": "RK45",
-    "realtime_observation": true
+    "integration_method": "RK45"
   },
   "geopotential": {
     "model": "egm96.txt",

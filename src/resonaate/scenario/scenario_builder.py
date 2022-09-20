@@ -116,7 +116,7 @@ class ScenarioBuilder:
                 reward,
                 decision,
                 importer_db_path,
-                self.config.propagation.realtime_observation,
+                self.config.observation.realtime_observation,
             )
 
             self.tasking_engines[tasking_engine.unique_id] = tasking_engine
@@ -168,8 +168,8 @@ class ScenarioBuilder:
         self.sensor_network: list[SensingAgent] = []
         for sensor_config in sensor_configs.values():
             # Assign Sensor FoV from init if not set
-            if self.config.observation.field_of_view:
-                sensor_config.calculate_fov = True
+            if self.config.observation.background:
+                sensor_config.background_observations = True
             sat_ratio = calcSatRatio(
                 sensor_config.visual_cross_section,
                 sensor_config.mass,
