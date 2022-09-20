@@ -11,9 +11,12 @@ import pytest
 
 # RESONAATE Imports
 from resonaate.agents.sensing_agent import SensingAgent
+from resonaate.agents.target_agent import TargetAgent
 from resonaate.common.exceptions import ShapeError
+from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.time.stardate import ScenarioTime
 from resonaate.sensors import FieldOfView
+from resonaate.sensors.radar import Radar
 from resonaate.sensors.sensor_base import Sensor
 
 
@@ -29,7 +32,7 @@ def getSensorArgs() -> dict:
         "exemplar": np.array((1.0, 42000.0)),
         "slew_rate": 1.0,
         "field_of_view": {"fov_shape": "conic"},
-        "calculate_fov": True,
+        "background_observations": True,
         "minimum_range": 0.0,
         "maximum_range": np.inf,
     }
@@ -45,6 +48,22 @@ def getSensorAgent() -> SensingAgent:
     sensor_agent.agent_type = "Spacecraft"
     sensor_agent.truth_state = np.array((0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
     return sensor_agent
+
+
+@pytest.fixture(name="mocked_primary_target")
+def getTargetAgent() -> TargetAgent:
+    """Crate a mocked Target agent object."""
+    target_agent = create_autospec(spec=TargetAgent, instance=True)
+    target_agent.initial_state = np.array((0.0, Earth.radius * 2, 0.0, 0.0, 0.0, 0.0))
+    return target_agent
+
+
+@pytest.fixture(name="mocked_background_target")
+def getBackgroundTargetAgent() -> TargetAgent:
+    """Crate a mocked Target agent object."""
+    background_target = create_autospec(spec=TargetAgent, instance=True)
+    background_target.initial_state = np.array((0.0, Earth.radius * 2 + 1, 0.0, 0.0, 0.0, 0.0))
+    return background_target
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
@@ -460,8 +479,114 @@ def testIsVisible(sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
 
 
-def testCollectObservations():
-    """To be implemented."""
+@patch.multiple(Sensor, __abstractmethods__=set())
+@patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
+def testCollectObservationsInFoVNoBackground(
+    sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+):
+    """Test that an RSO is in the FoV."""
+    sensor_args["power_tx"] = 1.0
+    sensor_args["frequency"] = 1.0
+    sensor_args["r_matrix"] = np.ones(
+        4,
+    )
+    sensor = Radar(**sensor_args)
+    sensor.host = mocked_sensing_agent
+    sensor.calculate_background = False
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
+    sensor.field_of_view.fov_shape = "conic"
+    sensor.field_of_view.cone_angle = np.pi
+    sensor.maximum_range = 100000
+
+    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.eci_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.time = ScenarioTime(300)
+    mocked_sensing_agent.sensor_time_bias_event_queue = []
+    mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+
+    mocked_primary_target.eci_state = mocked_primary_target.initial_state
+    mocked_primary_target.visual_cross_section = 25.0
+    result = mocked_sensing_agent.sensors.collectObservations(
+        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+    )
+    assert len(result) == 1
+
+
+@patch.multiple(Sensor, __abstractmethods__=set())
+@patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
+def testCollectObservationsNotInFoVNoBackground(
+    sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+):
+    """Test that an RSO is Not in the FoV."""
+    sensor_args["power_tx"] = 1.0
+    sensor_args["frequency"] = 1.0
+    sensor_args["r_matrix"] = np.ones(
+        4,
+    )
+    sensor = Radar(**sensor_args)
+    sensor.host = mocked_sensing_agent
+    sensor.calculate_background = False
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
+    sensor.field_of_view.fov_shape = "conic"
+    sensor.field_of_view.cone_angle = np.pi
+    sensor.maximum_range = 100000
+
+    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.eci_state = np.array((0.0, -Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.time = ScenarioTime(300)
+    mocked_sensing_agent.sensor_time_bias_event_queue = []
+    mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+
+    mocked_primary_target.eci_state = mocked_primary_target.initial_state
+    mocked_primary_target.visual_cross_section = 25.0
+    result = mocked_sensing_agent.sensors.collectObservations(
+        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+    )
+    assert not result
+
+
+@patch.multiple(Sensor, __abstractmethods__=set())
+@patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
+def testCollectObservationsWithBackground(
+    sensor_args: dict,
+    mocked_sensing_agent: SensingAgent,
+    mocked_primary_target: TargetAgent,
+    mocked_background_target: TargetAgent,
+):
+    """Test that background RSO is in the FoV."""
+    sensor_args["power_tx"] = 1.0
+    sensor_args["frequency"] = 1.0
+    sensor_args["r_matrix"] = np.ones(
+        4,
+    )
+    sensor = Radar(**sensor_args)
+    sensor.host = mocked_sensing_agent
+    sensor.calculate_background = True
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
+    sensor.field_of_view.fov_shape = "conic"
+    sensor.field_of_view.cone_angle = np.pi
+    sensor.maximum_range = 100000
+
+    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.eci_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.time = ScenarioTime(300)
+    mocked_sensing_agent.sensor_time_bias_event_queue = []
+    mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+
+    mocked_primary_target.eci_state = mocked_primary_target.initial_state
+    mocked_primary_target.visual_cross_section = 25.0
+
+    mocked_background_target.eci_state = mocked_background_target.initial_state
+    mocked_background_target.visual_cross_section = 25.0
+    result = mocked_sensing_agent.sensors.collectObservations(
+        mocked_primary_target.initial_state,
+        mocked_primary_target,
+        [mocked_primary_target, mocked_background_target],
+    )
+    assert len(result) == 2
 
 
 def testBuildSigmaObs():

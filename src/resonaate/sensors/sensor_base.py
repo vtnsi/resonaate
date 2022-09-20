@@ -27,11 +27,9 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     # Local Imports
-    from ..agents.estimate_agent import EstimateAgent
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from . import FieldOfView
-    from .measurements import IsAngle
 
 
 ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles"])
@@ -57,7 +55,7 @@ class Sensor(ABC):
         exemplar: ndarray,
         slew_rate: float,
         field_of_view: FieldOfView,
-        calculate_fov: bool,
+        background_observations: bool,
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
@@ -73,7 +71,7 @@ class Sensor(ABC):
             exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power  calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (:class:`.FieldOfView`): field of view of sensor
-            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
+            background_observations (``bool``): whether or not to calculate Field of View, default=True
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
@@ -91,7 +89,7 @@ class Sensor(ABC):
         self.exemplar = squeeze(exemplar)
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view
-        self.calculate_field_of_view = calculate_fov
+        self.calculate_background = background_observations
         self.minimum_range = minimum_range
         self.maximum_range = maximum_range
 
@@ -169,7 +167,8 @@ class Sensor(ABC):
         # Check if sensor will slew to point in time
         slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_eci)
         if self.canSlew(slant_range_sez):
-            if self.calculate_field_of_view:
+            # If doing Serendipitous Observations
+            if self.calculate_background:
                 targets_in_fov = self.checkTargetsInView(slant_range_sez, background_agents)
                 obs_list = list(
                     filter(  # pylint:disable=bad-builtin
@@ -177,8 +176,8 @@ class Sensor(ABC):
                         (self.makeNoisyObservation(tgt) for tgt in targets_in_fov),
                     )
                 )  # pylint:disable=bad-builtin
-
-            else:
+            # Check if primary RSO is FoV
+            elif len(self.checkTargetsInView(slant_range_sez, [target_agent])) == 1:
                 observation_tuple = self.makeNoisyObservation(target_agent)
                 if observation_tuple.observation:
                     obs_list.append(observation_tuple)

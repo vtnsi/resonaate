@@ -68,7 +68,7 @@ class Optical(Sensor):
         exemplar: ndarray,
         slew_rate: float,
         field_of_view: FieldOfView,
-        calculate_fov: bool,
+        background_observations: bool,
         detectable_vismag: float,
         minimum_range: float,
         maximum_range: float,
@@ -85,7 +85,7 @@ class Optical(Sensor):
             exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
-            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
+            background_observations (``bool``): whether or not to calculate serendipitous observations, default=True
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
@@ -100,7 +100,7 @@ class Optical(Sensor):
             exemplar,
             slew_rate,
             field_of_view,
-            calculate_fov,
+            background_observations,
             minimum_range,
             maximum_range,
             **sensor_args,

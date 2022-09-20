@@ -35,6 +35,7 @@ ______________________________________________________________________
 
 - updated EOP values included within RESONAATE (see 1ec535b7a)
 - bump `mjolnir` version to 1.1.3
+- moved `realtime_observation` from `PropagationConfig` to `ObservationConfig` & renamed `field_of_view` in `ObservationConfig` to `background`, see !83
 
 ### Deprecated
 
@@ -50,6 +51,7 @@ ______________________________________________________________________
 - rounding of seconds when converting `datetime` objects to `JulianDate` objects (see 58d032bd)
 - `asyncExecuteTasking()` was calling `collectObservations()` on `EstimateAgents` (see bdfc3834, introduced by !2)
 - double `isVisible()` calls from within `collectObservations()` (see bdfc3834)
+- FoV for the tasked `TargetAgent` is now also checked when `background` observations are not being collected (see !83)
 
 ### Security
 
