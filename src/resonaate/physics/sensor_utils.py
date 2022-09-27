@@ -98,7 +98,7 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
 
     # Full occultation, see Eqn 3.89
     if c < abs(b - a):
-        return 0
+        return 0.0
 
     # Partial occultation, see Eqn 3.89
     if c < abs(a + b):
@@ -112,7 +112,7 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
         # Partial occultation
         return 1.0 - A / (PI * a**2)
 
-    return 1  # No occultation by the Earth
+    return 1.0  # No occultation by the Earth
 
 
 def calculateIncidentSolarFlux(

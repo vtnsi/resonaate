@@ -30,25 +30,25 @@ def testApparentVisualMagnitude():
         lambertianPhaseFunction(SOLAR_PHASE_ANGLE),
         NORM_BORESIGHT,
     )
-    assert apparent_vismag == -7.7103627546277025
+    assert isclose(apparent_vismag, -7.7103627546277025)
 
 
 def testCalculateIncidentSolarFlux():
     """Test calculateIncidentSolarFlux()."""
     flux = calculateIncidentSolarFlux(VISUAL_CROSS_SECTION, RSO_POSITION, SUN_POSITION)
-    assert flux == 0.0
+    assert isclose(flux, 0.0)
 
 
 def testCalculatePhaseAngle():
     """Test calculatePhaseAngle()."""
     phase = calculatePhaseAngle(SUN_POSITION, RSO_POSITION, SENSOR_POSITION)
-    assert phase == 0.1859393122433178
+    assert isclose(phase, 0.1859393122433178)
 
 
 def testCalculateSunVizFraction():
     """Test calculateSunVizFraction()."""
     fraction = calculateSunVizFraction(RSO_POSITION, SUN_POSITION)
-    assert fraction == 0.0
+    assert isclose(fraction, 0.0)
 
 
 def testLambertianPhaseFunction():
