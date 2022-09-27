@@ -61,6 +61,7 @@ ______________________________________________________________________
 
 - `pytest-cov` as a testing dependency to better manage coverage results
 - small typing fix that was incompatible with 3.7
+- add back cobertura coverage report for MR coverage gutters (see !85)
 
 ### Development
 
