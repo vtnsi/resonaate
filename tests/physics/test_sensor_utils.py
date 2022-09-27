@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # Third Party Imports
-from numpy import array
+from numpy import array, isclose
 
 # RESONAATE Imports
 from resonaate.physics.sensor_utils import (
@@ -54,4 +54,4 @@ def testCalculateSunVizFraction():
 def testLambertianPhaseFunction():
     """Test lambertianPhaseFunction()."""
     phase = lambertianPhaseFunction(SOLAR_PHASE_ANGLE)
-    assert phase == 0.18897354431642885
+    assert isclose(phase, 0.18897354431642885)
