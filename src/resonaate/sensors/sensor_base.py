@@ -174,8 +174,10 @@ class Sensor(ABC):
                     )
                 )  # pylint:disable=bad-builtin
 
-            else:
-                obs_list.append(self.makeNoisyObservation(pointing_agent))
+            elif len(self.checkTargetsInView(slant_range_sez, [pointing_agent])) == 1:
+                observation_tuple = self.makeNoisyObservation(pointing_agent)
+                if observation_tuple.observation:
+                    obs_list.append(observation_tuple)
 
             self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
             if obs_list:  # only update time_last_ob if obs are made
