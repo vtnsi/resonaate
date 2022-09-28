@@ -315,7 +315,7 @@ def getTestRadarObservationTuple(
     radar_observation: Observation, sensor_agent: AgentModel
 ) -> ObservationTuple:
     """Create a custom :class:`ObservationTuple` object for a sensor."""
-    return ObservationTuple(radar_observation, sensor_agent, array([2, 3, 1, 1]))
+    return ObservationTuple(radar_observation, sensor_agent, array([2, 3, 1, 1]), "Visible")
 
 
 @pytest.fixture(name="optical_observation")
@@ -339,7 +339,7 @@ def getTestOpticalObservationTuple(
     optical_observation: Observation, sensor_agent: AgentModel
 ) -> ObservationTuple:
     """Create a custom :class:`ObservationTuple` object for a sensor."""
-    return ObservationTuple(optical_observation, sensor_agent, array([2, 3, 1, 1]))
+    return ObservationTuple(optical_observation, sensor_agent, array([2, 3, 1, 1]), "Visible")
 
 
 @pytest.fixture(name="update_reduction_parameters", autouse=True)

@@ -278,7 +278,9 @@ observation = Observation.fromSEZVector(
 )
 
 # Need to pass observations as tuple for required information
-obs_tuple = ObservationTuple(observation, sensor_agent, sensor_agent.sensors.angle_measurements)
+obs_tuple = ObservationTuple(
+    observation, sensor_agent, sensor_agent.sensors.angle_measurements, "Visible"
+)
 print(obs_tuple.observation)
 
 # %%

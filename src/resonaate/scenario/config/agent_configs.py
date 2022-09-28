@@ -10,7 +10,7 @@ from numpy import inf
 from numpy.linalg import norm
 
 # Local Imports
-from ...agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
+from ...agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from ...agents.target_agent import (
     GEO_DEFAULT_MASS,
     GEO_DEFAULT_VCS,

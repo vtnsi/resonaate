@@ -9,6 +9,8 @@ from numpy import array
 from scipy.linalg import norm
 
 # Local Imports
+from ..agents import SPACECRAFT_LABEL
+from ..data.missed_observation import MissedObservation
 from ..physics.bodies import Sun
 from ..physics.sensor_utils import (
     apparentVisualMagnitude,
@@ -143,7 +145,7 @@ class Optical(Sensor):
         viz_cross_section: float,
         reflectivity: float,
         slant_range_sez: ndarray,
-    ) -> bool:
+    ) -> tuple[bool, MissedObservation.Explanation]:
         """Determine if the target is in view of the sensor.
 
         This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical
@@ -161,12 +163,20 @@ class Optical(Sensor):
 
         Returns:
             ``bool``: True if target is visible; False if target is not visible
+            :class:`.MissedObservation.Explanation`: Reason observation was visible or not
         """
         jd = self.host.julian_date_epoch
         sun_eci_position = Sun.getPosition(jd)
         boresight_eci = tgt_eci_state - self.host.eci_state
 
-        # Early Exit if RSO is too dim
+        # Check if target is illuminated
+        tgt_solar_flux = calculateIncidentSolarFlux(
+            viz_cross_section, tgt_eci_state[:3], sun_eci_position
+        )
+        if tgt_solar_flux <= 0:
+            return False, MissedObservation.Explanation.SOLAR_FLUX
+
+        # Check visual magnitude of RSO
         solar_phase_angle = calculatePhaseAngle(
             sun_eci_position, tgt_eci_state[:3], self.host.eci_state[:3]
         )
@@ -177,18 +187,15 @@ class Optical(Sensor):
             norm(boresight_eci),
         )
         if rso_apparent_vismag > self.detectable_vismag:
-            return False
+            return False, MissedObservation.Explanation.VIZ_MAG
 
-        # Calculate the illumination of the target object
-        tgt_solar_flux = calculateIncidentSolarFlux(
-            viz_cross_section, tgt_eci_state[:3], sun_eci_position
-        )
-
-        if self.host.agent_type == "Spacecraft":
+        if self.host.agent_type == SPACECRAFT_LABEL:
             # Check if sensor is pointed at the Sun
-            lighting = checkSpaceSensorLightingConditions(
+            space_lighting = checkSpaceSensorLightingConditions(
                 boresight_eci[:3], sun_eci_position / norm(sun_eci_position)
             )
+            if not space_lighting:
+                return False, MissedObservation.Explanation.SPACE_ILLUMINATION
 
             # Check if target is in front of the Earth's limb
             elevation = getElevation(slant_range_sez)
@@ -198,19 +205,16 @@ class Optical(Sensor):
             # [NOTE]: The fields of regard of EO/IR space-based sensors are dynamically limited by
             #           the limb of the Earth. Therefore, they cannot observe a target if the Earth
             #           or its atmosphere is in the background.
-            can_observe = lighting and limb_angle <= elevation
+            if limb_angle > elevation:
+                return False, MissedObservation.Explanation.LIMB_OF_EARTH
 
+        # Ground based require eclipse conditions
         else:
-            # Ground based require eclipse conditions
-            can_observe = checkGroundSensorLightingConditions(
+            ground_lighting = checkGroundSensorLightingConditions(
                 self.host.eci_state[:3], sun_eci_position / norm(sun_eci_position)
             )
+            if not ground_lighting:
+                return False, MissedObservation.Explanation.GROUND_ILLUMINATION
 
-        # Check if target is illuminated & if sensor has good lighting conditions
-        if tgt_solar_flux > 0 and can_observe:
-            # Call base class' visibility check
-            return super().isVisible(
-                tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
-            )
-
-        return False
+        # Passed all phenomenology-specific tests, call base class' visibility check
+        return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)
