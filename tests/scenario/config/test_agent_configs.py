@@ -8,7 +8,7 @@ from copy import deepcopy
 import pytest
 
 # RESONAATE Imports
-from resonaate.agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
+from resonaate.agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from resonaate.scenario.config.agent_configs import (
     DEFAULT_VIEWING_ANGLE,
     ConfigError,

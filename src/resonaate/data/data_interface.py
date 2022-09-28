@@ -20,6 +20,7 @@ from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .epoch import Epoch
 from .events import Event
 from .filter_step import FilterStep
+from .missed_observation import MissedObservation
 from .observation import Observation
 from .task import Task
 
@@ -31,17 +32,17 @@ class DataInterface(metaclass=ABCMeta):
     """
 
     # pylint: disable=no-member
-
     VALID_DATA_TYPES = {
-        Epoch.__tablename__: Epoch,
         AgentModel.__tablename__: AgentModel,
-        TruthEphemeris.__tablename__: TruthEphemeris,
+        Epoch.__tablename__: Epoch,
+        DetectedManeuver.__tablename__: DetectedManeuver,
         EstimateEphemeris.__tablename__: EstimateEphemeris,
+        Event.__tablename__: Event,
+        FilterStep.__tablename__: FilterStep,
+        MissedObservation.__tablename__: MissedObservation,
         Observation.__tablename__: Observation,
         Task.__tablename__: Task,
-        Event.__tablename__: Event,
-        DetectedManeuver.__tablename__: DetectedManeuver,
-        FilterStep.__tablename__: FilterStep,
+        TruthEphemeris.__tablename__: TruthEphemeris,
     }
 
     SQLITE_PREFIX = "sqlite://"

@@ -288,15 +288,19 @@ class Scenario(ParallelMixin):
 
             # Grab `Observations` from current time step
             for tasking_engine in self._tasking_engines.values():
+                # Save Successful Observations
                 obs_tuples = tasking_engine.getCurrentObservations()
                 if obs_tuples:
-                    msg = f"Committing {len(obs_tuples)} observations of targets "
-                    observed_targets = set()
-                    for obs_tuple in obs_tuples:
-                        observed_targets.add(obs_tuple.observation.target_id)
-                    msg += f"{observed_targets} to the database."
-                    self.logger.debug(msg)
+                    self._logObservations(obs_tuples)
                 output_data.extend(obs_tuple.observation for obs_tuple in obs_tuples)
+
+                # Save Missed Observations
+                missed_observations = tasking_engine.getCurrentMissedObservations()
+                if missed_observations:
+                    self._logMissedObservations(missed_observations)
+                output_data.extend(
+                    missed_observation for missed_observation in missed_observations
+                )
                 # Grab tasking data
                 output_data.extend(
                     tasking
@@ -370,6 +374,24 @@ class Scenario(ParallelMixin):
 
         # Flush events from event stack
         EventStack.logAndFlushEvents()
+
+    def _logObservations(self, obs_list):
+        """Log :class:`.Observation` objects."""
+        msg = f"Committing {len(obs_list)} observations of targets "
+        observed_targets = set()
+        for obs_tuple in obs_list:
+            observed_targets.add(obs_tuple.observation.target_id)
+        msg += f"{observed_targets} to the database."
+        self.logger.debug(msg)
+
+    def _logMissedObservations(self, missed_observations):
+        """Log :class:`.MissedObservation` objects."""
+        msg = "Missed Observations of targets "
+        missed_targets = set()
+        for miss in missed_observations:
+            missed_targets.add(miss.target_id)
+        msg += f"{missed_targets}"
+        self.logger.debug(msg)
 
     @methdispatch
     def addTarget(self, target_spec: TargetAgentConfig | dict, tasking_engine_id: int) -> None:

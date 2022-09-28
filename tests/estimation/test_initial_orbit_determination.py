@@ -34,7 +34,7 @@ def getObservationTuple():
         sez=[-1144.1534998427103, 110.21257500982736, 422.5099063584762],
         sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
     )
-    return ObservationTuple(observation, None, array([2, 3, 1, 1]))
+    return ObservationTuple(observation, None, array([2, 3, 1, 1]), "Visible")
 
 
 @pytest.fixture(name="observation")

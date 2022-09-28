@@ -12,6 +12,7 @@ import pytest
 
 # RESONAATE Imports
 from resonaate.data.importer_database import ImporterDatabase
+from resonaate.data.missed_observation import MissedObservation
 from resonaate.data.observation import Observation
 from resonaate.job_handlers.task_execution import TaskExecutionJobHandler
 from resonaate.job_handlers.task_prediction import TaskPredictionJobHandler
@@ -221,6 +222,38 @@ def testGetSaveObservation(centralized_tasking_engine: CentralizedTaskingEngine)
     assert centralized_tasking_engine.getCurrentObservations() == [mock_obs, mock_obs]
     # Test that the saved observations are cleared
     assert centralized_tasking_engine._saved_observations == []
+
+
+def testGetSaveMissedObservation(centralized_tasking_engine: CentralizedTaskingEngine):
+    """Test getCurrentMissedObservations()."""
+    assert centralized_tasking_engine.missed_observations == []
+    assert centralized_tasking_engine._saved_missed_observations == []
+    assert centralized_tasking_engine.getCurrentMissedObservations() == []
+    assert centralized_tasking_engine.missed_observations == []
+    assert centralized_tasking_engine._saved_missed_observations == []
+
+    # Test saving no missed observations
+    centralized_tasking_engine.saveMissedObservations([])
+    assert centralized_tasking_engine._saved_missed_observations == []
+    assert centralized_tasking_engine.getCurrentObservations() == []
+    assert centralized_tasking_engine.missed_observations == []
+    assert centralized_tasking_engine._saved_missed_observations == []
+
+    # Test saving missed observations
+    mock_missed_obs = create_autospec(MissedObservation, instance=True)
+    centralized_tasking_engine.saveMissedObservations([mock_missed_obs])
+    assert centralized_tasking_engine.missed_observations == [mock_missed_obs]
+    centralized_tasking_engine.saveMissedObservations([mock_missed_obs])
+    assert centralized_tasking_engine._saved_missed_observations == [
+        mock_missed_obs,
+        mock_missed_obs,
+    ]
+    assert centralized_tasking_engine.getCurrentMissedObservations() == [
+        mock_missed_obs,
+        mock_missed_obs,
+    ]
+    # Test that the saved missed observations are cleared
+    assert centralized_tasking_engine._saved_missed_observations == []
 
 
 @patch.object(TaskExecutionJobHandler, "shutdown", autospec=True)

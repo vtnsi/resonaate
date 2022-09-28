@@ -25,26 +25,37 @@ def asyncExecuteTasking(tasked_sensor_ids: list[int], target_id: int) -> dict:
 
     Returns:
         ``dict``: execute result dictionary contains:
-
         :``"observations"``: (``list``): successful :class:`.Observation` objects of target(s).
         :``"target_id"``: (``int``): ID of the :class:`.TargetAgent` observations were made of.
+        :``"missed_observations"``: (``list``): list of :class:`.MissedObservation` objects of :class:`.Target_agent`
     """
-    successful_obs = []
     sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
     target_agents = loads(KeyValueStore.getValue("target_agents"))
     estimate_agent = loads(KeyValueStore.getValue("estimate_agents"))[target_id]
-    target_agent = loads(KeyValueStore.getValue("target_agents"))[target_id]
-    target_list = list(target_agents.values())
 
+    # Remove Primary Target from Target list
+    primary_tgt = target_agents[target_id]
+    del target_agents[target_id]
+    background_targets = list(target_agents.values())
+
+    successful_obs = []
+    unsuccessful_obs = []
     if len(tasked_sensor_ids) > 0:
         for sensor_id in tasked_sensor_ids:
-            successful_obs.extend(
-                sensor_agents[sensor_id].sensors.collectObservations(
-                    estimate_agent.eci_state, target_agent, target_list
-                )
+            sensing_agent = sensor_agents[sensor_id]
+            made_obs, missed_obs = sensing_agent.sensors.collectObservations(
+                estimate_agent.eci_state,
+                primary_tgt,
+                background_targets,
             )
+            successful_obs.extend(made_obs)
+            unsuccessful_obs.extend(missed_obs)
 
-    return {"target_id": target_id, "observations": successful_obs}
+    return {
+        "target_id": target_id,
+        "observations": successful_obs,
+        "missed_observations": unsuccessful_obs,
+    }
 
 
 class TaskExecutionRegistration(CallbackRegistration):
@@ -66,12 +77,13 @@ class TaskExecutionRegistration(CallbackRegistration):
         return Job(asyncExecuteTasking, args=[kwargs["tasked_sensor_ids"], kwargs["target_id"]])
 
     def jobCompleteCallback(self, job):
-        """Save successful :class:`.Observation` objects of this target to be applied to it's estimate.
+        """Save :class:`.Observation` and :class:`.MissedObservation` objects of this target to be applied to it's estimate.
 
         Args:
             job (:class:`.Job`): job object that's returned when a job completes.
         """
         self.registrant.saveObservations(job.retval["observations"])
+        self.registrant.saveMissedObservations(job.retval["missed_observations"])
 
 
 class TaskExecutionJobHandler(JobHandler):
@@ -84,7 +96,7 @@ class TaskExecutionJobHandler(JobHandler):
         """Generate list of :class:`.Task` execution jobs to submit to the :class:`.QueueManager`.
 
         KeywordArgs:
-            decision_matrix (``numpy.ndarray``): optimized decision matrix, from which tasks are generated.
+            decision_matrix (``ndarray``): optimized decision matrix, from which tasks are generated.
 
         Returns:
             ``list``: :class:`.Job` objects that will be submitted

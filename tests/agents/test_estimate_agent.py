@@ -120,7 +120,7 @@ def getObsTuples(sensor_agent: SensingAgent) -> ObservationTuple:
         sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
     )
 
-    return ObservationTuple(radar_observation, sensor_agent, np.array([2, 3, 1, 1]))
+    return ObservationTuple(radar_observation, sensor_agent, np.array([2, 3, 1, 1]), "Test")
 
 
 @pytest.fixture(name="nominal_filter")

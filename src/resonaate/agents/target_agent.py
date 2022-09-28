@@ -13,6 +13,7 @@ from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
+from . import SPACECRAFT_LABEL
 from .agent_base import Agent
 
 # Type checking
@@ -149,7 +150,7 @@ class TargetAgent(Agent):
         return cls(
             tgt.sat_num,
             tgt.sat_name,
-            "Spacecraft",
+            SPACECRAFT_LABEL,
             initial_state,
             config["clock"],
             config["dynamics"],

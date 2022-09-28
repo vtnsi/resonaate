@@ -17,6 +17,7 @@ from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2eci, ecef2lla, eci2ecef, lla2ecef
 from ..sensors import sensorFactory
 from ..sensors.sensor_base import Sensor
+from . import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from .agent_base import Agent
 
 # Type checking
@@ -35,13 +36,6 @@ if TYPE_CHECKING:
     from ..dynamics.dynamics_base import Dynamics
     from ..scenario.clock import ScenarioClock
     from ..scenario.config.agent_configs import SensingAgentConfig
-
-
-GROUND_FACILITY_LABEL = "GroundFacility"
-"""str: Constant string used to describe ground facility sensors."""
-
-SPACECRAFT_LABEL = "Spacecraft"
-"""str: Constant string used to describe spacecraft-based sensors."""
 
 
 class SensingAgent(Agent):

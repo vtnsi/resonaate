@@ -377,7 +377,8 @@ def testCheckTargetsInView(sensor_args: dict, mocked_sensing_agent: SensingAgent
 
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testIsVisible(sensor_args: dict, mocked_sensing_agent: SensingAgent):
-    """To be implemented."""
+    """Test that and RSO `isVisible`."""
+    # pylint: disable=too-many-statements
     sensor = Sensor(**sensor_args)
     # Requires self.host.eci_state to be set
     sensor.host = mocked_sensing_agent
@@ -386,97 +387,126 @@ def testIsVisible(sensor_args: dict, mocked_sensing_agent: SensingAgent):
     # Target is visible initially
     tgt_eci_state = np.array((7800.0, 0.0, 0.0, 0.0, 0.0, 0.0))
     sez_state = np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
 
     # Test min range with large enough to force failure
     sensor.minimum_range = 1e6
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     # reasonable min range, but not zero
     sensor.minimum_range = 10.0
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     # min range of None
     sensor.minimum_range = None
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     # min range of zero
     sensor.minimum_range = 0.0
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     # min range reasonable, but not large enough
     sensor.minimum_range = 100.0
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
 
     # Test max range with small enough to force failure
     sensor.maximum_range = 10.0
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     # reasonable max range, but not infinity
     sensor.maximum_range = 1e6
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     # max range of None
     sensor.maximum_range = None
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     # max range of zero
     sensor.maximum_range = 0.0
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     # max range of infinity
     sensor.maximum_range = np.inf
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
-
-    # Test LOS in view & on opposite side of Earth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
-    assert not sensor.isVisible(-tgt_eci_state, 10.0, 10.0, sez_state)
-
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
+    # Test LOS in view
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
+    # LOS not in View
+    visibility, _ = sensor.isVisible(-tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     # Test elevation mask constraint
     # Pass on boundaries
     sez_state = np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 0 elevation
     sensor.el_mask = np.deg2rad(np.array((0.0, 90.0)))
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     sez_state = np.array((0.0, 0.0, 1422.0, 0.0, 0.0, 0.0))  # 90 elevation
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     # Fail outside boundaries
     sez_state = np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 0 elevation
     sensor.el_mask = np.deg2rad(np.array((1.0, 89.0)))
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     sez_state = np.array((0.0, 0.0, 1422.0, 0.0, 0.0, 0.0))  # 90 elevation
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
 
     # Pass in more normal case
     sez_state = np.array((0.0, 800.0, 1422.0, 0.0, 0.0, 0.0))  # 60 elevation
     sensor.el_mask = np.deg2rad(np.array((10.0, 89.9)))
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
 
     # Test azimuth mask constraint
     sensor.el_mask = np.deg2rad(np.array((0.0, 90.0)))
     sensor.az_mask = np.deg2rad(np.array((0.0, 180.0)))
     sez_state = np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 180 azimuth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     sez_state = np.array((-1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 0 azimuth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     sez_state = np.array((-1422, 800.0, 0.0, 0.0, 0.0, 0.0))  # 30 azimuth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
 
     sensor.az_mask = np.deg2rad(np.array((10.0, 170.0)))
     sez_state = np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 180 azimuth
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     sez_state = np.array((-1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 0 azimuth
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     sez_state = np.array((-1422, 800.0, 0.0, 0.0, 0.0, 0.0))  # 30 azimuth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
 
     # Test azimuth mask constraint with flipped mask
     sensor.az_mask = np.deg2rad(np.array((180.0, 0.0)))
     sez_state = np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 180 azimuth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     sez_state = np.array((-1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 0 azimuth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
     sez_state = np.array((-1422, -800.0, 0.0, 0.0, 0.0, 0.0))  # 330 azimuth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
 
     sensor.az_mask = np.deg2rad(np.array((190.0, 350.0)))
     sez_state = np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 180 azimuth
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     sez_state = np.array((-1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 0 azimuth
-    assert not sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert not visibility
     sez_state = np.array((-1422, -800.0, 0.0, 0.0, 0.0, 0.0))  # 330 azimuth
-    assert sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    visibility, _ = sensor.isVisible(tgt_eci_state, 10.0, 10.0, sez_state)
+    assert visibility
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
@@ -507,10 +537,10 @@ def testCollectObservationsInFoVNoBackground(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
-    result = mocked_sensing_agent.sensors.collectObservations(
+    good_obs, _ = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
     )
-    assert len(result) == 1
+    assert len(good_obs) == 1
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
@@ -541,10 +571,10 @@ def testCollectObservationsNotInFoVNoBackground(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
-    result = mocked_sensing_agent.sensors.collectObservations(
+    good_obs, _ = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
     )
-    assert not result
+    assert not good_obs
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
@@ -581,12 +611,80 @@ def testCollectObservationsWithBackground(
 
     mocked_background_target.eci_state = mocked_background_target.initial_state
     mocked_background_target.visual_cross_section = 25.0
-    result = mocked_sensing_agent.sensors.collectObservations(
+    good_obs, _ = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
-        [mocked_primary_target, mocked_background_target],
+        [mocked_background_target],
     )
-    assert len(result) == 2
+    assert len(good_obs) == 2
+
+
+@patch.multiple(Sensor, __abstractmethods__=set())
+@patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
+def testNoMissedObservation(
+    sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+):
+    """Test that an RSO is in the FoV."""
+    sensor_args["power_tx"] = 1.0
+    sensor_args["frequency"] = 1.0
+    sensor_args["r_matrix"] = np.ones(
+        4,
+    )
+    sensor = Radar(**sensor_args)
+    sensor.host = mocked_sensing_agent
+    sensor.calculate_background = False
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
+    sensor.field_of_view.fov_shape = "conic"
+    sensor.field_of_view.cone_angle = np.pi
+    sensor.maximum_range = 100000
+
+    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.eci_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.time = ScenarioTime(300)
+    mocked_sensing_agent.sensor_time_bias_event_queue = []
+    mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+
+    mocked_primary_target.eci_state = mocked_primary_target.initial_state
+    mocked_primary_target.visual_cross_section = 25.0
+    _, missed_obs = mocked_sensing_agent.sensors.collectObservations(
+        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+    )
+    assert not missed_obs
+
+
+@patch.multiple(Sensor, __abstractmethods__=set())
+@patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
+def testMissedObservation(
+    sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+):
+    """Test that an RSO is Not in the FoV."""
+    sensor_args["power_tx"] = 1.0
+    sensor_args["frequency"] = 1.0
+    sensor_args["r_matrix"] = np.ones(
+        4,
+    )
+    sensor = Radar(**sensor_args)
+    sensor.host = mocked_sensing_agent
+    sensor.calculate_background = False
+    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
+    sensor.field_of_view.fov_shape = "conic"
+    sensor.field_of_view.cone_angle = np.pi
+    sensor.maximum_range = 100000
+
+    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.eci_state = np.array((0.0, -Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    mocked_sensing_agent.time = ScenarioTime(300)
+    mocked_sensing_agent.sensor_time_bias_event_queue = []
+    mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+
+    mocked_primary_target.eci_state = mocked_primary_target.initial_state
+    mocked_primary_target.visual_cross_section = 25.0
+    _, bad_obs = mocked_sensing_agent.sensors.collectObservations(
+        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+    )
+    assert len(bad_obs) == 1
 
 
 def testBuildSigmaObs():

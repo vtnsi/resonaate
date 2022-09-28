@@ -211,6 +211,18 @@ class TestScenarioApp:
         observation_query = Query(Observation)
         assert len(app.database.getData(observation_query, multi=True)) == 29
 
+    @pytest.mark.realtime()
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testSaveObservation(self, datafiles: str):
+        """Test `_saveObservation` function."""
+        # pylint: disable=protected-access
+        init_filepath = "main_init.json"
+        elapsed_time = timedelta(minutes=5)
+        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        app.saveDatabaseOutput()
+        app._logObservations(app.tasking_engines[2].observations)
+        app._logMissedObservations(app.tasking_engines[2].missed_observations)
+
 
 @pytest.mark.scenario()
 @pytest.mark.usefixtures("_fixtureSetup")

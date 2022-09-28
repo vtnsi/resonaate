@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from numpy import array
 
 # Local Imports
+from ..data.missed_observation import MissedObservation
 from ..physics import constants as const
 from ..physics.sensor_utils import calculateRadarCrossSection, getWavelengthFromString
 from .measurements import IsAngle, getAzimuth, getElevation, getRange, getRangeRate
@@ -196,7 +197,7 @@ class Radar(Sensor):
         viz_cross_section: float,
         reflectivity: float,
         slant_range_sez: ndarray,
-    ) -> bool:
+    ) -> tuple[bool, MissedObservation.Explanation]:
         """Determine if the target is in view of the sensor.
 
         Args:
@@ -206,12 +207,14 @@ class Radar(Sensor):
             slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
 
         Returns:
-            bool: ``bool``: True if target is visible; False if target is not visible
+            ``bool``: True if target is visible; False if target is not visible
+            :class:`.MissedObservation.Explanation`: Reason observation was visible or not
         """
-        # Early exit if target not in radar sensor's range, or a LOS doesn't exist
+        # Early exit if target not in radar sensor's range
         if getRange(slant_range_sez) > self.maximumRangeTo(viz_cross_section):
-            return False
+            return False, MissedObservation.Explanation.RADAR_SENSITIVITY
 
+        # Passed all phenomenology-specific tests, call base class' visibility check
         return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)
 
     def maximumRangeTo(self, viz_cross_section: float) -> float:
