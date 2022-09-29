@@ -1,4 +1,4 @@
-# pylint: disable=abstract-class-instantiated
+# pylint: disable=abstract-class-instantiated, invalid-name
 from __future__ import annotations
 
 # Standard Library Imports
@@ -260,22 +260,21 @@ def testCanSlew(sensor_args: dict, mocked_sensing_agent: SensingAgent):
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
-def testGetMeasurements(sensor_args: dict):
+def testMeasurements(sensor_args: dict):
     """Test calling getMeasurement & getNoisyMeasurement."""
-    # pylint: disable=invalid-name
     sensor = Sensor(**sensor_args)
-    sensor.getMeasurements = Mock()  # pylint: disable=invalid-name
-    sensor.getMeasurements.return_value = {
+    sensor.measurements = Mock()
+    sensor.measurements.return_value = {
         "measurement_1": 1.0,
         "measurement_2": 20.0,
     }
-    _ = sensor.getMeasurements(None, noisy=False)
-    sensor.getMeasurements.assert_called_once()
-    sensor.getMeasurements.assert_called_with(None, noisy=False)
-    sensor.getMeasurements.reset_mock()
+    _ = sensor.measurements(None, noisy=False)
+    sensor.measurements.assert_called_once()
+    sensor.measurements.assert_called_with(None, noisy=False)
+    sensor.measurements.reset_mock()
     sensor.getNoisyMeasurements(None)
-    sensor.getMeasurements.assert_called_once()
-    sensor.getMeasurements.assert_called_with(None, noisy=True)
+    sensor.measurements.assert_called_once()
+    sensor.measurements.assert_called_with(None, noisy=True)
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())

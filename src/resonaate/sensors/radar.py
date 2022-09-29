@@ -161,7 +161,7 @@ class Radar(Sensor):
             dtype=int,
         )
 
-    def getMeasurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
+    def measurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:

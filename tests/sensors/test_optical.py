@@ -77,7 +77,7 @@ def testGetMeasurements(sensor_args: dict):
         sensor_args (dict):  dictionary of valid arguments to Sensor init
     """
     optical_sensor = Optical(**sensor_args)
-    measurements = optical_sensor.getMeasurements(np.array([1, 2, 3]), noisy=True)
+    measurements = optical_sensor.measurements(np.array([1, 2, 3]), noisy=True)
     assert measurements
 
 

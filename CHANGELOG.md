@@ -81,6 +81,7 @@ ______________________________________________________________________
 ### Development
 
 - Several small documentation clarifications
+- attempt to fix `pylint` false positives of `invalid-name` in tests (see #129)
 
 ### CI
 
