@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
-    from . import FieldOfView
+    from .field_of_view import FieldOfView
 
 
 ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles", "reason"])
@@ -238,62 +238,13 @@ class Sensor(ABC):
         # filter out targets outside of FOV
         agents_in_fov = list(
             filter(  # pylint:disable=bad-builtin
-                lambda agent: self.inFOV(
+                lambda agent: self.field_of_view.inFieldOfView(
                     slant_range_sez, getSlantRangeVector(self.host.ecef_state, agent.eci_state)
                 ),
                 background_agents,
             )
         )  # pylint:disable=bad-builtin
         return agents_in_fov
-
-    def inFOV(self, pointing_sez: ndarray, background_sez: ndarray) -> bool:
-        """Perform bulk FOV check on all RSOs.
-
-        Args:
-            pointing_sez (``ndarray``): 3x1 slant range vector that sensor is pointing towards
-            background_sez (``ndarray``): 3x1 slant range vector of possible agent in FoV
-
-        Returns:
-            ``bool``: whether or not a `.TargetAgent` object is within sensor FoV
-        """
-        if self.field_of_view.fov_shape == "conic":
-            angle = subtendedAngle(background_sez[:3], pointing_sez[:3])
-            return angle <= self.field_of_view.cone_angle / 2
-
-        if self.field_of_view.fov_shape == "rectangular":
-            pointing_azimuth = getAzimuth(pointing_sez)
-            pointing_elevation = getElevation(pointing_sez)
-
-            background_azimuth = getAzimuth(background_sez)
-            background_elevation = getElevation(background_sez)
-
-            azimuth_angle = abs(pointing_azimuth - background_azimuth)
-            elevation_angle = abs(pointing_elevation - background_elevation)
-            return (
-                azimuth_angle <= self.field_of_view.azimuth_angle / 2
-                and elevation_angle <= self.field_of_view.elevation_angle / 2
-            )
-
-        raise ValueError(f"Wrong FoV shape: {self.field_of_view.fov_shape}")
-
-    def _checkForMissedObservation(self, obs_list: list[ObservationTuple], target_id: int) -> bool:
-        """Check if the tasked observation of the primary target was missed.
-
-        Args:
-            obs_list (``list``): list of :class:`.ObservationTuple` data objects
-            target_id (``int``): Tasked Target simulation id
-
-        Returns:
-            ``bool``: False if primary RSO was observed; True if it the primary RSO was missed.
-        """
-        if not obs_list:
-            return True
-
-        for observation_tuple in obs_list:
-            if observation_tuple.observation.target_id == target_id:
-                return False
-
-        return True
 
     def buildSigmaObs(self, target_id: int, tgt_eci_state: ndarray) -> Observation:
         """Calculate the measurement data for a sigma point observation.
@@ -316,6 +267,25 @@ class Sensor(ABC):
             sensor_position=self.host.lla_state,
             **self.getMeasurements(slant_range_sez),
         )
+
+    def _checkForMissedObservation(self, obs_list: list[ObservationTuple], target_id: int) -> bool:
+        """Check if the tasked observation of the primary target was missed.
+
+        Args:
+            obs_list (``list``): list of :class:`.ObservationTuple` data objects
+            target_id (``int``): Tasked Target simulation id
+
+        Returns:
+            ``bool``: False if primary RSO was observed; True if it the primary RSO was missed.
+        """
+        if not obs_list:
+            return True
+
+        for observation_tuple in obs_list:
+            if observation_tuple.observation.target_id == target_id:
+                return False
+
+        return True
 
     def makeObservation(
         self,
