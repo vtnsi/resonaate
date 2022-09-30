@@ -14,8 +14,11 @@ from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.common.exceptions import ShapeError
 from resonaate.physics.bodies.earth import Earth
+from resonaate.physics.constants import RAD2DEG
 from resonaate.physics.time.stardate import ScenarioTime
-from resonaate.sensors import FieldOfView
+from resonaate.scenario.config.agent_configs import FieldOfViewConfig
+from resonaate.sensors import CONIC_FOV_LABEL, fieldOfViewFactory
+from resonaate.sensors.field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from resonaate.sensors.radar import Radar
 from resonaate.sensors.sensor_base import Sensor
 
@@ -278,59 +281,45 @@ def testGetMeasurements(sensor_args: dict):
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testInFOVConic(sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
+    # pylint:disable=protected-access
     sensor = Sensor(**sensor_args)
-    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
-    sensor.field_of_view.fov_shape = "conic"
-    sensor.field_of_view.cone_angle = np.pi
+    sensor.field_of_view = ConicFoV(cone_angle=np.pi)
 
-    tgt_sez = np.array((1.0, 0.0, 0.0))
-    bkg_sez = np.array((0.0, 1.0, 0.0))
-    assert sensor.inFOV(tgt_sez, bkg_sez)
+    tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    bkg_sez = np.array((1.0, 1.0, 0.0, 0.0, 0.0, 0.0))
+    assert sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
-    bkg_sez = np.array((0.0, 0.0, 1.0))
-    assert sensor.inFOV(tgt_sez, bkg_sez)
+    bkg_sez = np.array((1.0, 0.0, 1.0, 0.0, 0.0, 0.0))
+    assert sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
-    bkg_sez = np.array((-1.0, 0.0, -1.0))
-    assert not sensor.inFOV(tgt_sez, bkg_sez)
+    bkg_sez = np.array((-1.0, 0.0, -1.0, 0.0, 0.0, 0.0))
+    assert not sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
-    sensor.field_of_view.cone_angle = np.pi / 2
-    bkg_sez = np.array((0.0, 0.5, 0.0))
-    assert not sensor.inFOV(tgt_sez, bkg_sez)
+    sensor.field_of_view._cone_angle = np.pi / 2 - 1
+    bkg_sez = np.array((1.0, 1.0, 0.0, 0.0, 0.0, 0.0))
+    assert not sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testInFOVRegular(sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
+    # pylint:disable=protected-access
     sensor = Sensor(**sensor_args)
-    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
-    sensor.field_of_view.fov_shape = "rectangular"
-    sensor.field_of_view.azimuth_angle = np.pi
-    sensor.field_of_view.elevation_angle = np.pi
-
+    sensor.field_of_view = RectangularFoV(azimuth_angle=np.pi, elevation_angle=np.pi)
     tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
-    bkg_sez = np.array((0.0, 1.0, 0.0, 0.0, 0.0, 0.0))
-    assert sensor.inFOV(tgt_sez, bkg_sez)
+    bkg_sez = np.array((1.0, 1.0, 0.0, 0.0, 0.0, 0.0))
+    assert sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
-    bkg_sez = np.array((0.0, 1.0, 1.0, 0.0, 0.0, 0.0))
-    assert sensor.inFOV(tgt_sez, bkg_sez)
+    bkg_sez = np.array((1.0, 0.0, 1.0, 0.0, 0.0, 0.0))
+    assert sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
     bkg_sez = np.array((-1.0, 0.0, -1.0, 0.0, 0.0, 0.0))
-    assert not sensor.inFOV(tgt_sez, bkg_sez)
+    assert not sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
-    sensor.field_of_view.azimuth_angle = np.pi / 2
-    sensor.field_of_view.elevation_angle = np.pi / 2
-    bkg_sez = np.array((0.0, 0.5, 0.5, 0.0, 0.0, 0.0))
-    assert not sensor.inFOV(tgt_sez, bkg_sez)
-
-
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testInFOVBad(sensor_args: dict):
-    """Test a bad FOV shape."""
-    sensor = Sensor(**sensor_args)
-    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
-    sensor.field_of_view.fov_shape = "bad_fov_shape"
-    with pytest.raises(ValueError, match=r"Wrong FoV shape\w*"):
-        sensor.inFOV(np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)))
+    sensor.field_of_view._azimuth_angle = np.pi / 2 - 1
+    sensor.field_of_view._elevation_angle = np.pi / 2 - 1
+    bkg_sez = np.array((1.0, 1.5, 0.0, 0.0, 0.0, 0.0))
+    assert not sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
 
 def _dummySlantRange(ecef_sensor: np.ndarray, eci_tgt: np.ndarray) -> np.ndarray:
@@ -345,12 +334,11 @@ def testCheckTargetsInView(sensor_args: dict, mocked_sensing_agent: SensingAgent
     """Checks whether list of targets is in the FOV of the sensor."""
     # pylint: disable=abstract-class-instantiated
     sensor = Sensor(**sensor_args)
-    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
-    sensor.field_of_view.fov_shape = "conic"
-    sensor.field_of_view.cone_angle = np.pi
+    conic_fov_config = FieldOfViewConfig(fov_shape=CONIC_FOV_LABEL, cone_angle=np.pi * RAD2DEG - 1)
+    sensor.field_of_view = fieldOfViewFactory(conic_fov_config)
     # Requires self.host.ecef_state to be set
     sensor.host = mocked_sensing_agent
-    sensor.host.ecef_state = np.array((0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    sensor.host.ecef_state = np.zeros(6)
 
     # Target SEZ position
     tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
@@ -360,10 +348,10 @@ def testCheckTargetsInView(sensor_args: dict, mocked_sensing_agent: SensingAgent
     agent_2 = Mock()
     agent_3 = Mock()
     agent_4 = Mock()
-    agent_1.eci_state = np.array((0.0, 1.0, 0.0, 0.0, 0.0, 0.0))
+    agent_1.eci_state = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
     agent_2.eci_state = np.array((-1.0, 0.0, -1.0, 0.0, 0.0, 0.0))  # outside FOV
-    agent_3.eci_state = np.array((0.0, 1.0, 0.0, 0.0, 0.0, 0.0))
-    agent_4.eci_state = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    agent_3.eci_state = np.array((1.0, 1.0, 0.0, 0.0, 0.0, 0.0))
+    agent_4.eci_state = np.array((1.0, 0.0, 1.0, 0.0, 0.0, 0.0))
 
     targets_in_fov = sensor.checkTargetsInView(tgt_sez, [agent_1, agent_2, agent_3, agent_4])
     assert targets_in_fov == [agent_1, agent_3, agent_4]

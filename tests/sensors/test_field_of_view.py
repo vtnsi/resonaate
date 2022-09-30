@@ -170,21 +170,23 @@ def testCheckTargetsInView(
     assert len(agents) == 2
 
 
-def testInFoV(
+def testInFieldOfView(
     primary_rso: EstimateAgent,
     secondary_rso: EstimateAgent,
     conic_sensor_agent: SensingAgent,
     rectangular_sensor_agent: SensingAgent,
 ):
     """Test observations of two RSO with a single sensor at one time."""
-    in_fov = conic_sensor_agent.sensors.inFOV(
+    in_fov = conic_sensor_agent.sensors.field_of_view.inFieldOfView(
         primary_rso.eci_state[:3], secondary_rso.eci_state[:3]
     )
     assert bool(in_fov) is True
-    not_in_fov = conic_sensor_agent.sensors.inFOV(primary_rso.eci_state[:3], array([0, 0.01, 0]))
+    not_in_fov = conic_sensor_agent.sensors.field_of_view.inFieldOfView(
+        primary_rso.eci_state[:3], array([0, 0.01, 0])
+    )
     assert bool(not_in_fov) is False
 
-    rectangle_in_fov = rectangular_sensor_agent.sensors.inFOV(
+    rectangle_in_fov = rectangular_sensor_agent.sensors.field_of_view.inFieldOfView(
         primary_rso.eci_state[:3], secondary_rso.eci_state[:3]
     )
     assert bool(rectangle_in_fov) is True
