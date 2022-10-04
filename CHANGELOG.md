@@ -86,6 +86,7 @@ ______________________________________________________________________
 
 - test jobs run against a *properly* installed RESONAATE package, see #32
 - only the unit tests are included in coverage statistics
+- add scheduled job config for testing against multiple Python versions, see #33
 
 ## [2.0.0][v2.0.0] - 2022-09-06
 
