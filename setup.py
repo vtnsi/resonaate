@@ -62,7 +62,7 @@ setuptools.setup(
             "pytest-cov==3.0.0",
         ],
         "doc": [
-            "sphinx==5.1.1",
+            "sphinx==5.2.3",
             "sphinx_rtd_theme==1.0.0",
             "myst-parser==0.18.0",
             "sphinx-copybutton==0.5.0",
