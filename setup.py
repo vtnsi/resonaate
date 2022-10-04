@@ -59,7 +59,7 @@ setuptools.setup(
             "pytest-datafiles==2.0.1",
             "pytest-randomly==3.12.0",
             "coverage==6.4.4",
-            "pytest-cov==3.0.0",
+            "pytest-cov==4.0.0",
         ],
         "doc": [
             "sphinx==5.1.1",
