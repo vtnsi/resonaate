@@ -5,7 +5,7 @@ import setuptools
 setuptools.setup(
     name="resonaate",
     description="The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE) ",
-    version="1.5.2",
+    version="1.5.4",
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
     package_data={
