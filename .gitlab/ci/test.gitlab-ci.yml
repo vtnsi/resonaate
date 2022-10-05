@@ -100,12 +100,8 @@ coverage:
   before_script:
     - !reference [.pip-test, before_script]
   script:
-    - echo "Combining coverage files from parallel test jobs"
-    - coverage combine
-    - echo "Creating coverage reports"
-    - coverage report
-    - coverage html
-    - coverage xml
+    - echo "Calculating unit test coverage"
+    - pytest --cov --cov-report=html --cov-report=xml --cov-report=term:skip-covered --cov-context=test -m "not (event or scenario)"
   artifacts:
     name: coverage
     paths:
@@ -113,9 +109,7 @@ coverage:
     expose_as: Coverage
     expire_in: 1 week
     reports:
-      cobertura: coverage.xml
-  needs:
-    - pytest-unit
-    - pytest-scenario
-    - pytest-event
-  coverage: /TOTAL.*\s+(\d+\%)/
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  coverage: /TOTAL.*\s+(\d+.\d+\%)/
