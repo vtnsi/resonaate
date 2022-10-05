@@ -76,6 +76,7 @@ ______________________________________________________________________
 - small typing fix that was incompatible with 3.7
 - add back cobertura coverage report for MR coverage gutters (see !85)
 - `MissedObservation` condition tests in `test_sensor_base` and `test_missed_observation.py` in `tests/data/`
+- Skip flaky event integration tests because it's not reproducible (see #115)
 
 ### Development
 
