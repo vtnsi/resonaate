@@ -32,7 +32,6 @@ include:
 
 pytest-unit:
   extends: .test-base
-  variables:
   script:
     - echo "Running unit tests with pytest"
     - pytest -m "not (scenario or event)" $PYTEST_OPTIONS
@@ -53,7 +52,6 @@ pytest-scenario:
 
 pytest-event:
   extends: .test-base
-  variables:
   script:
     - echo "Running event tests with pytest"
     - pytest -m event $PYTEST_OPTIONS

@@ -28,21 +28,29 @@
     - <<: *tag
     - <<: *branch
     - <<: *mr
+    - <<: *schedule
+      when: never
 
 # Only on merge requests
 .rules:mr:
   rules:
     - *mr
+    - <<: *schedule
+      when: never
 
 # Only on pushes to default branch
 .rules:branch:
   rules:
     - *branch
+    - <<: *schedule
+      when: never
 
 # Only on pushed tags
 .rules:tag:
   rules:
     - *tag
+    - <<: *schedule
+      when: never
 
 # Always on scheduled jobs, allow manually for merge requests
 .rules:scheduled:

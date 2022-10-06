@@ -22,6 +22,7 @@ include:
   - local: .gitlab/ci/build.gitlab-ci.yml
   - local: .gitlab/ci/release.gitlab-ci.yml
   - local: .gitlab/ci/publish.gitlab-ci.yml
+  - local: .gitlab/ci/scheduled.gitlab-ci.yml
 
 # ==========================================
 # Default Workflow

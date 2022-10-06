@@ -115,7 +115,7 @@ class Optical(Sensor):
         """``ndarray``: Returns 2x1 integer array of which measurements are angles."""
         return array([IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI], dtype=int)
 
-    def getMeasurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
+    def measurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:

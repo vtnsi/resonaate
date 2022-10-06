@@ -104,7 +104,7 @@ class Sensor(ABC):
         self._sensor_args = sensor_args
 
     @abstractmethod
-    def getMeasurements(self, slant_range_sez: ndarray, noisy: bool = False) -> dict[str, float]:
+    def measurements(self, slant_range_sez: ndarray, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:
@@ -265,7 +265,7 @@ class Sensor(ABC):
             julian_date=julian_date,
             sez=slant_range_sez,
             sensor_position=self.host.lla_state,
-            **self.getMeasurements(slant_range_sez),
+            **self.measurements(slant_range_sez),
         )
 
     def _checkForMissedObservation(self, obs_list: list[ObservationTuple], target_id: int) -> bool:
@@ -385,7 +385,7 @@ class Sensor(ABC):
             :``"range_km"``: (``float``): range measurement (km)
             :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
         """
-        return self.getMeasurements(slant_range_sez, noisy=True)
+        return self.measurements(slant_range_sez, noisy=True)
 
     def isVisible(  # pylint:disable=too-many-return-statements
         self,
