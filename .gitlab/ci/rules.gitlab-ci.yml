@@ -25,32 +25,32 @@
 # Default rule: run on all MR, default branch pushes, & tag pushes
 .rules:default:
   rules:
+    - <<: *schedule
+      when: never
     - <<: *tag
     - <<: *branch
     - <<: *mr
-    - <<: *schedule
-      when: never
 
 # Only on merge requests
 .rules:mr:
   rules:
-    - *mr
     - <<: *schedule
       when: never
+    - *mr
 
 # Only on pushes to default branch
 .rules:branch:
   rules:
-    - *branch
     - <<: *schedule
       when: never
+    - *branch
 
 # Only on pushed tags
 .rules:tag:
   rules:
-    - *tag
     - <<: *schedule
       when: never
+    - *tag
 
 # Always on scheduled jobs, allow manually for merge requests
 .rules:scheduled:
