@@ -34,7 +34,8 @@ scheduled-pytest-3.7:
   extends:
     - .scheduled-pytest
   image: python:3.7-bullseye
-  needs: []
+  needs:
+    - coverage
 
 scheduled-pytest-3.8:
   extends:
