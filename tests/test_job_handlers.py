@@ -159,6 +159,7 @@ class TestBaseJobHandler:
         job_handler.executeJobs()
         assert job_handler.queue_mgr.queued_jobs_processed
 
+    @pytest.mark.no_debug()
     def testLengthyJob(self, job_handler: JobHandler, sleep_job_6s: Job):
         """Test executing a valid job, but longer than timeout."""
 
