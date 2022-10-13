@@ -12,7 +12,7 @@ from resonaate.agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.physics.bodies.earth import Earth
-from resonaate.physics.time.stardate import JulianDate, ScenarioTime
+from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from resonaate.physics.transforms.methods import eci2ecef, getSlantRangeVector
 from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.sensors.optical import Optical
@@ -95,7 +95,7 @@ def testIsVisible(
     mocked_sensing_agent.agent_type = SPACECRAFT_LABEL
     space_optical.host = mocked_sensing_agent
 
-    updateReductionParameters(mocked_sensing_agent.julian_date_epoch)
+    updateReductionParameters(julianDateToDatetime(mocked_sensing_agent.julian_date_epoch))
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
@@ -127,7 +127,7 @@ def testIsNotVisible(
     mocked_sensing_agent.agent_type = GROUND_FACILITY_LABEL
     ground_optical.host = mocked_sensing_agent
 
-    updateReductionParameters(mocked_sensing_agent.julian_date_epoch)
+    updateReductionParameters(julianDateToDatetime(mocked_sensing_agent.julian_date_epoch))
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(

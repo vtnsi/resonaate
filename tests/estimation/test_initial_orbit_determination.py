@@ -9,6 +9,7 @@ from numpy import allclose, array, ndarray
 # RESONAATE Imports
 import resonaate.data.resonaate_database
 import resonaate.estimation.initial_orbit_determination
+from resonaate.data.epoch import Epoch
 from resonaate.data.observation import Observation
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.estimation import initialOrbitDeterminationFactory
@@ -31,6 +32,9 @@ def getObservationTuple():
         target_id=10001,
         sensor_type="AdvRadar",
         julian_date=JulianDate(2459304.270833333),
+        epoch=Epoch(
+            timestampISO="2021-03-30T18:30:00.000000", julian_date=JulianDate(2459304.270833333)
+        ),
         sez=[-1144.1534998427103, 110.21257500982736, 422.5099063584762],
         sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
     )
@@ -42,6 +46,9 @@ def getObservation():
     """Create a custom :class:`.Observation` object for a sensor."""
     return Observation.fromSEZVector(
         julian_date=JulianDate(2459304.374333333),
+        epoch=Epoch(
+            timestampISO="2021-03-30T20:59:02.000000", julian_date=JulianDate(2459304.374333333)
+        ),
         sensor_id=300000,
         target_id=10001,
         sensor_type="AdvRadar",
@@ -67,12 +74,12 @@ class TestLambertInitialOrbitDetermination:
     prior_julian_date = JulianDate(2459304.208333333)
     observation_array = array(
         [
-            -2633.759315270262,
-            -1659.4888414259772,
-            6127.246729070783,
-            0.12101630117705994,
-            -0.19296395220243734,
-            -0.0002437824064893823,
+            -2633.807719527016,
+            -1659.4116569532341,
+            6127.246826579328,
+            0.12101067280870113,
+            -0.19296748190340082,
+            -0.0002437709361113743,
         ]
     )
 
@@ -161,6 +168,7 @@ class TestLambertInitialOrbitDetermination:
             iod (:class:`.LambertIOD): LambertIOD fixture
             observation (:class:`.Observation`): Observation fixture
         """
+        # [TODO]: find Vallado test case for this, if applicable
         result = iod.convertObservationToECI(observation)
         assert allclose(result, self.observation_array)
 

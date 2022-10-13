@@ -47,6 +47,8 @@ ______________________________________________________________________
 - Refactored solar flux check in `Optical.isVisible()` to front of check
 - moved `FieldOfView` class to `field_of_view` module (see !92)
 - moved functionality of `Sensor.inFOV` to `FieldOfView` classes (see !92)
+- `updateReductionParameters` function now takes a `datetime` object as its argument
+- `ScenarioClock` must now be initialized with a `datetime` start date, instead of a `JulianDate`
 
 ### Deprecated
 

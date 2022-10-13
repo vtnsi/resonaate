@@ -4,7 +4,7 @@ This module handles logic pertaining to the FK5 Reduction for properly rotating 
 to/from ECI (GCRF). However, this module may later hold multiple forms of this reduction.
 """
 # Standard Library Imports
-import datetime
+from datetime import datetime
 from pickle import dumps, loads
 
 # Third Party Imports
@@ -14,7 +14,8 @@ from numpy import asarray, cos, dot, fmod, matmul, sin
 # Local Imports
 from .. import constants as const
 from ..math import rot1, rot2, rot3
-from ..time.conversions import JulianDate, dayOfYear, greenwichApparentTime, utc2TerrestrialTime
+from ..time.conversions import dayOfYear, greenwichApparentTime, utc2TerrestrialTime
+from ..time.stardate import datetimeToJulianDate
 from .eops import getEarthOrientationParameters
 from .nutation import get1980NutationSeries
 
@@ -35,15 +36,15 @@ REDUCTION_KEY = "reduction_params"
 """str: Key used to identify the reduction parameters in the key value store."""
 
 
-def updateReductionParameters(julian_date, eops=None):
+def updateReductionParameters(utc_date, eops=None):
     """Update the current set of FK5 data.
 
     Args:
-        julian_date (:class:`.JulianDate`): Julian date to calculate the transformation for
+        utc_date (:class:`datetime`): UTC date to calculate the transformation for
         eops (:class:`.EarthOrientationParameter`, optional): Defaults to None. Specific EOPs to
             use rather than lookup, useful for tests
     """
-    params = _updateFK5Parameters(julian_date, eops=eops)
+    params = _updateFK5Parameters(utc_date, eops=eops)
     KeyValueStore.setValue(REDUCTION_KEY, dumps(dict(zip(REDUCTION_PARAMETER_LABELS, params))))
 
 
@@ -65,7 +66,7 @@ def getReductionParameters():
     return loads(serial_obj)
 
 
-def _updateFK5Parameters(julian_date, eops=None):  # pylint: disable=too-many-locals
+def _updateFK5Parameters(utc_date: datetime, eops=None):  # pylint: disable=too-many-locals
     """Retrieve set of transformation parameters required for FK5 transformation.
 
     Determine the needed nutation parameters to successfully transform between
@@ -77,20 +78,28 @@ def _updateFK5Parameters(julian_date, eops=None):  # pylint: disable=too-many-lo
         :cite:t:`vallado_2013_astro`, Section 3.7
 
     Args:
-        julian_date (:class:`.JulianDate`): Julian date to calculate the transformation for
+        utc_date (:class:`datetime`): UTC date to calculate the transformation for
         eops (:class:`.EarthOrientationParameter`, optional): Defaults to None. Specific EOPs to
             use rather than lookup, useful for tests
     """
-    if not isinstance(julian_date, JulianDate):
-        raise TypeError("_updateFK5Parameters() requires a JulianDate input type")
+    if not isinstance(utc_date, datetime):
+        raise TypeError("_updateFK5Parameters() requires a `datetime` input type")
 
     # Convert year and epoch to mdhms form. Time always in UTC
-    year, month, day, hours, minutes, seconds = julian_date.calendar_date
+    seconds = utc_date.second + utc_date.microsecond / 1e6
 
     # Read EOPs & get terrestrial time, in Julian centuries
     if eops is None:
-        eops = getEarthOrientationParameters(datetime.date(year, month, day))
-    _, ttt = utc2TerrestrialTime(year, month, day, hours, minutes, seconds, eops.delta_atomic_time)
+        eops = getEarthOrientationParameters(utc_date.date())
+    _, ttt = utc2TerrestrialTime(
+        utc_date.year,
+        utc_date.month,
+        utc_date.day,
+        utc_date.hour,
+        utc_date.minute,
+        seconds,
+        eops.delta_atomic_time,
+    )
 
     # Get nutation params. Use all 106 terms, and 2 extra terms in the Eq. of Equinoxes. IAU-76/FK5 Reduction.
     # [NOTE] EOP corrections not added when converting to mean J2000 according to Vallado
@@ -108,10 +117,21 @@ def _updateFK5Parameters(julian_date, eops=None):  # pylint: disable=too-many-lo
     rot_wt = rot_w.T
 
     # Get seconds in UT1 & find days since Jan. 1, 0:0:0.0 (Fractional days minus 1)
-    elapsed_days = dayOfYear(year, month, day, hours, minutes, seconds + eops.delta_ut1) - 1
-
+    elapsed_days = (
+        dayOfYear(
+            utc_date.year,
+            utc_date.month,
+            utc_date.day,
+            utc_date.hour,
+            utc_date.minute,
+            seconds + eops.delta_ut1,
+        )
+        - 1
+    )
     # Find Greenwich apparent sidereal time. [radians]
-    greenwich_apparent_sidereal_time = greenwichApparentTime(year, elapsed_days, eq_equinox)
+    greenwich_apparent_sidereal_time = greenwichApparentTime(
+        utc_date.year, elapsed_days, eq_equinox
+    )
 
     # Get precession angles. Vallado 4th Ed. Eq 3-88
     zeta = (2306.2181 * ttt + 0.30188 * ttt**2 + 0.017998 * ttt**3) * const.ARCSEC2RAD
@@ -135,7 +155,7 @@ def _updateFK5Parameters(julian_date, eops=None):  # pylint: disable=too-many-lo
         eops.length_of_day,
         eq_equinox,
         eops.delta_ut1,
-        julian_date,
+        datetimeToJulianDate(utc_date),
     )
 
 

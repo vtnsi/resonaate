@@ -3,18 +3,13 @@ from __future__ import annotations
 
 # Standard Library Imports
 import logging
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 # Local Imports
 from ..data.epoch import Epoch
 from ..data.resonaate_database import ResonaateDatabase
-from ..physics import constants as const
-from ..physics.time.stardate import (
-    JulianDate,
-    ScenarioTime,
-    datetimeToJulianDate,
-    julianDateToDatetime,
-)
+from ..physics.time.stardate import ScenarioTime, datetimeToJulianDate, julianDateToDatetime
 from ..physics.transforms.reductions import updateReductionParameters
 
 # Type Checking Imports
@@ -34,7 +29,7 @@ class ScenarioClock:
 
     def __init__(
         self,
-        start_date: JulianDate,
+        start_date: datetime,
         time_span: ScenarioTime | float,
         dt_step: ScenarioTime | float,
     ) -> None:
@@ -43,16 +38,19 @@ class ScenarioClock:
         The clock inserts a new epoch into the database for each time step in the simulation.
 
         Args:
-            start_date (:class:`.JulianDate`): starting Julian date of the simulation.
+            start_date (:class:`.datetime`): starting UTC date of the simulation.
             time_span (:class:`.ScenarioTime` | ``float``): total simulation time span, seconds.
             dt_step (:class:`.ScenarioTime` | ``float``): simulation internal time step, seconds.
         """
-        if not isinstance(start_date, JulianDate):
-            raise TypeError("ScenarioClock: start date argument must be a `JulianDate` object.")
+        if not isinstance(start_date, datetime):
+            raise TypeError(
+                "ScenarioClock: start date argument must be a `datetime` or `str` object."
+            )
 
-        self.julian_date_start = start_date
-        self.julian_date_stop = JulianDate(start_date + time_span * const.SEC2DAYS)
-        self.julian_date_epoch = start_date
+        self.datetime_start = start_date
+        self.datetime_stop = start_date + timedelta(seconds=time_span)
+        self.julian_date_start = datetimeToJulianDate(start_date)
+        self.julian_date_stop = datetimeToJulianDate(self.datetime_stop)
         self.initial_time = ScenarioTime(0)
         self.time_span = ScenarioTime(time_span)
         self.dt_step = ScenarioTime(dt_step)
@@ -85,16 +83,14 @@ class ScenarioClock:
         """
         if not dt:
             self.time += self.dt_step
-            self.julian_date_epoch = self.time.convertToJulianDate(self.julian_date_start)
         else:
             self.time += ScenarioTime(dt)
-            self.julian_date_epoch = self.time.convertToJulianDate(self.julian_date_start)
 
         # EOP params & third body positions updated
         # [NOTE]: This assumes that the reduction params & third body positions will always be aligned with
         #           the main simulation time step. If we implement smoothing/multi-step prediction, then we
         #           will have to revisit this implementation. This will likely just change to DB insert/queries
-        updateReductionParameters(self.julian_date_epoch)
+        updateReductionParameters(self.datetime_epoch)
 
     @classmethod
     def fromConfig(cls, config: TimeConfig) -> ScenarioClock:
@@ -108,6 +104,22 @@ class ScenarioClock:
         """
         time_span = (config.stop_timestamp - config.start_timestamp).total_seconds()
 
-        return cls(
-            datetimeToJulianDate(config.start_timestamp), time_span, config.physics_step_sec
-        )
+        return cls(config.start_timestamp, time_span, config.physics_step_sec)
+
+    @property
+    def datetime_epoch(self):
+        """Returns the current epoch of the scenario, as a datetime object.
+
+        Returns:
+            datetime: current scenario epoch
+        """
+        return self.datetime_start + timedelta(seconds=self.time)
+
+    @property
+    def julian_date_epoch(self):
+        """Returns the current epoch of the scenario, as a julian date.
+
+        Returns:
+            JulianDate: current scenario epoch
+        """
+        return self.time.convertToJulianDate(self.julian_date_start)

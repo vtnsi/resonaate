@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import pickle
 import time
+from datetime import datetime
 from typing import TYPE_CHECKING
 from unittest.mock import create_autospec
 
@@ -181,7 +182,7 @@ class TestBaseJobHandler:
 @pytest.fixture(name="scenario_clock")
 def createScenarioClock(reset_shared_db: None) -> ScenarioClock:
     """Create a :class:`.ScenarioClock` object for use in testing."""
-    return ScenarioClock(JulianDate(2458454.0), 300, 60)
+    return ScenarioClock(datetime(2018, 12, 1, 12, 0), 300, 60)
 
 
 @pytest.fixture(name="target_agent")

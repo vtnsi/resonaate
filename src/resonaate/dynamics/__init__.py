@@ -1,13 +1,30 @@
 """Defines dynamics of agents that can be used in RESONAATE simulations."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Local Imports
 from .constants import RK45_LABEL, SPECIAL_PERTURBATIONS_LABEL, TWO_BODY_LABEL
+from .dynamics_base import Dynamics
 from .special_perturbations import SpecialPerturbations
 from .two_body import TwoBody
 
+if TYPE_CHECKING:
+    # Local Imports
+    from ..scenario.clock import ScenarioClock
+    from ..scenario.config.geopotential_config import GeopotentialConfig
+    from ..scenario.config.perturbations_config import PerturbationsConfig
+
 
 def spacecraftDynamicsFactory(
-    model, clock, geopotential, perturbations, sat_ratio=None, method=RK45_LABEL
-):
+    model: str,
+    clock: ScenarioClock,
+    geopotential: GeopotentialConfig,
+    perturbations: PerturbationsConfig,
+    sat_ratio: float = None,
+    method: str = RK45_LABEL,
+) -> Dynamics:
     """Build a :class:`.Dynamics` object for RSO propagation.
 
     Args:

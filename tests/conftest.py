@@ -125,7 +125,8 @@ def getDataInterface() -> ResonaateDatabase:
     shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
 
 
-TEST_START_JD: JulianDate = datetimeToJulianDate(datetime(2018, 12, 1, 12))
+TEST_START_DATETIME = datetime(2018, 12, 1, 12)
+TEST_START_JD: JulianDate = datetimeToJulianDate(TEST_START_DATETIME)
 
 
 @pytest.fixture(name="geopotential_config")
