@@ -40,7 +40,7 @@ def _patchMissingEnvVariables(monkeypatch: pytest.MonkeyPatch) -> None:
     """Automatically delete each environment variable, if set.
 
     Args:
-        monkeypatch (:class:`pytest.monkeypatch.MonkeyPatch`): monkeypatch obj to track changes
+        monkeypatch (:class:`pytest.MonkeyPatch`): monkeypatch obj to track changes
 
     Note:
         This is used so tests can assume a "blank" configuration, and it won't
@@ -51,6 +51,23 @@ def _patchMissingEnvVariables(monkeypatch: pytest.MonkeyPatch) -> None:
         yield
         # Make sure we reset the config after each test function
         BehavioralConfig.getConfig()
+
+
+@pytest.fixture(autouse=True)
+def _debugMode(request: pytest.FixtureRequest) -> None:
+    """Automatically delete each environment variable, if set.
+
+    Args:
+        request (:class:`pytest.FixtureRequest`): request obj to test for marks to bypass this
+
+    Note:
+        This is used so tests can be debugged without the parallel watchdog terminating workers.
+    """
+    if "no_debug" in request.keywords:
+        BehavioralConfig.getConfig().debugging.ParallelDebugMode = False
+        return
+
+    BehavioralConfig.getConfig().debugging.ParallelDebugMode = True
 
 
 @pytest.fixture(scope="session", name="test_logger")
@@ -142,6 +159,7 @@ def pytest_configure(config: pytest.Config) -> None:
     """Configure pytest options without an .ini file."""
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line("markers", "regression: mark test as a regression test")
+    config.addinivalue_line("markers", "no_debug: turn off parallel debug mode for test")
     config.addinivalue_line("markers", "scenario: mark test as a scenario integration test")
     config.addinivalue_line("markers", "event: mark test as an event integration test")
     config.addinivalue_line("markers", "realtime: mark test as using real time propagation")
