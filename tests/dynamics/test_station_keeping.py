@@ -22,7 +22,7 @@ from resonaate.physics.transforms.reductions import getReductionParameters
 from resonaate.scenario.clock import updateReductionParameters
 
 # Local Imports
-from ..conftest import TEST_START_JD
+from ..conftest import TEST_START_DATETIME, TEST_START_JD
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 @pytest.fixture(autouse=True)
 def _updateParams():
     """Make sure reduction parameters and third body positions are up to date."""
-    updateReductionParameters(TEST_START_JD)
+    updateReductionParameters(TEST_START_DATETIME)
 
 
 @pytest.fixture(name="duration")

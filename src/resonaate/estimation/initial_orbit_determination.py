@@ -4,6 +4,7 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pickle import loads
 from typing import TYPE_CHECKING
 
@@ -226,7 +227,7 @@ class LambertIOD(InitialOrbitDetermination):
         Returns:
             ``ndarray``: ECI state of observation
         """
-        updateReductionParameters(JulianDate(observation.julian_date))
+        updateReductionParameters(datetime.fromisoformat(observation.epoch.timestampISO))
         observation_sez = razel2sez(
             observation.range_km, observation.elevation_rad, observation.azimuth_rad, 0, 0, 0
         )

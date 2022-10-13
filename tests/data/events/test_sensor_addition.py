@@ -170,7 +170,7 @@ class TestSensorAdditionEvent:
         """Test :meth:`.SensorAdditionEvent.fromConfig()`."""
         event_config_dict["sensor"] = sen_config_space
         addition_config = SensorAdditionEventConfig(**event_config_dict)
-        updateReductionParameters(datetimeToJulianDate(addition_config.start_time))
+        updateReductionParameters(addition_config.start_time)
         assert SensorAdditionEvent.fromConfig(addition_config)
 
     def testHandleEvent(self, mocked_scenario):

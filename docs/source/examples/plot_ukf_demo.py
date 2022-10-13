@@ -14,6 +14,9 @@ This shows how to directly create and use the following classes:
 
 # pylint: disable=invalid-name, wrong-import-position
 
+# Standard Library Imports
+from datetime import datetime
+
 # Third Party Imports
 # %%
 # Initial Setup
@@ -30,16 +33,15 @@ import numpy as np
 # ----------------------------
 #
 # Creating a clock object requires the Julian date of the initial epoch, a timespan (seconds), and a timestep (seconds).
-from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario.clock import ScenarioClock
 
 # Define time variables
-julian_date_start = JulianDate(2458516.0)
+datetime_start = datetime(2019, 2, 1, 12, 0)
 tspan = 300.0  # seconds
 dt = 60.0  # seconds
 
 # Create the clock object
-clock = ScenarioClock(julian_date_start, tspan, dt)
+clock = ScenarioClock(datetime_start, tspan, dt)
 
 # For convenience, time is initialized to zero
 t0 = clock.time

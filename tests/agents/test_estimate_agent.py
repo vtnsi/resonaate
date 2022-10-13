@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from datetime import datetime
 from unittest.mock import create_autospec
 
 # Third Party Imports
@@ -32,13 +33,15 @@ def getMockedScenarioClock() -> ScenarioClock:
     """Get a mocked :class:`.ScenarioClock` object."""
     mocked_clock = create_autospec(ScenarioClock, instance=True)
     mocked_clock.julian_date_start = JulianDate(2459304.0666666665)
+    mocked_clock.datetime_start = datetime(2021, 3, 30, 13, 36)
     mocked_clock.julian_date_epoch = mocked_clock.julian_date_start
+    mocked_clock.datetime_epoch = mocked_clock.datetime_start
     mocked_clock.julian_date_stop = mocked_clock.julian_date_start + (1 / 3)
     mocked_clock.initial_time = ScenarioTime(0.0)
     mocked_clock.time_span = ScenarioTime(28800.0)
     mocked_clock.time = ScenarioTime(0.0)
     mocked_clock.dt_step = ScenarioTime(300.0)
-    updateReductionParameters(julian_date=mocked_clock.julian_date_start)
+    updateReductionParameters(utc_date=mocked_clock.datetime_start)
     return mocked_clock
 
 

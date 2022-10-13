@@ -28,7 +28,7 @@ from resonaate.estimation.adaptive.smm import StaticMultipleModel
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.time.conversions import getTargetJulianDate
-from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario import buildScenarioFromConfigDict
 from resonaate.scenario.config import ScenarioConfig
@@ -346,7 +346,7 @@ def getTestOpticalObservationTuple(
 def _getUpdateReductionParameters(teardown_kvs) -> None:
     """Run updateReductionParameters."""
     # pylint:disable=unused-argument
-    updateReductionParameters(julian_date=CURRENT_JULIAN_DATE)
+    updateReductionParameters(julianDateToDatetime(CURRENT_JULIAN_DATE))
 
 
 class TestAdaptiveEstimation:
