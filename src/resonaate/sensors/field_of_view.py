@@ -60,7 +60,7 @@ class ConicFoV(FieldOfView):
         Returns:
             ``bool``: True if `background_sez` state is within field of view of current pointing state
         """
-        angle = subtendedAngle(background_sez[:3], pointing_sez[:3])
+        angle = subtendedAngle(background_sez[:3], pointing_sez[:3], safe=True)
         return angle <= self.cone_angle / 2
 
     @property

@@ -8,7 +8,6 @@ from typing import Optional
 
 # Third Party Imports
 from numpy import (
-    allclose,
     amin,
     arccos,
     arctan2,
@@ -407,18 +406,21 @@ def angularMean(
     return result_mean * (high - low) / const.TWOPI + low
 
 
-def subtendedAngle(vector1, vector2):
+def subtendedAngle(vector1: ndarray, vector2: ndarray, safe: bool = False) -> float:
     """Angle subtended by 2 vectors.
 
     Args:
         vector1 (``ndarray``): first vector input
         vector2 (``ndarray``): second vector input
+        safe (``float``, optional): if `True` use :func:`~.safeArccos`, otherwise use `np.arccos`.
+            Defaults to `False`.
 
     Returns:
         ``float``: angle subtended by input vectors, in radians
     """
-    # Ensure primary RSO are observed
-    if allclose(vector1, vector2, rtol=1e-8, atol=1e-10):
-        return 0.0
+    dotted = vdot(vector1, vector2) / (norm(vector1) * norm(vector2))
+    if not safe:
+        return arccos(dotted)
 
-    return arccos(vdot(vector1, vector2) / (norm(vector1) * norm(vector2)))
+    # else
+    return safeArccos(dotted)

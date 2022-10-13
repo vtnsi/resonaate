@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import logical_and, sqrt
-from numpy.linalg import inv
+from scipy.linalg import inv
 from scipy.stats import chi2
 
 if TYPE_CHECKING:
