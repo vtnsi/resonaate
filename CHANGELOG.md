@@ -34,6 +34,7 @@ ______________________________________________________________________
 - `MissedObservation` data table, `checkForMissedObservation` in `Sensor`, `ObservationTuple.reason` for tracking missed observations (see #125)
 - `MissedObservation.Explanation` enum for tracking reasons for missed observations
 - `field_of_view` module for `FieldOfView` classes (see !92)
+- `safe` optional arg to `subtendedAngle()` to use `safeArccos()` instead of `np.arccos()`, but is off be default
 
 ### Changed
 
