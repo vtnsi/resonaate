@@ -20,6 +20,11 @@
     "alt": 0.063,
     "host_type": "GroundFacility",
     "tx_power": 2.5e6,
-    "tx_frequency": 1.5e9
+    "tx_frequency": 1.5e9,
+    "field_of_view": {
+      "fov_shape": "rectangular",
+      "azimuth_angle": 90.0,
+      "elevation_angle": 45.0
+    }
   }
 ]

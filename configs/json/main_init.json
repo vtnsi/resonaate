@@ -19,11 +19,10 @@
     "integration_method": "RK45",
     "station_keeping": true,
     "target_realtime_propagation": true,
-    "sensor_realtime_propagation": true,
-    "realtime_observation": true
+    "sensor_realtime_propagation": true
   },
   "observation": {
-    "field_of_view": false
+    "background": false
   },
   "geopotential": {
     "model": "egm96.txt",
