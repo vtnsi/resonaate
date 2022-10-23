@@ -10,7 +10,7 @@ from numpy import inf
 from numpy.linalg import norm
 
 # Local Imports
-from ...agents.sensing_agent import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
+from ...agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from ...agents.target_agent import (
     GEO_DEFAULT_MASS,
     GEO_DEFAULT_VCS,
@@ -243,7 +243,7 @@ class SensingAgentConfig(ConfigObject):
     init_eqe: dict[str, float] | None = None
     R"""``dict[str, float]```, optional: initial EQE set, see :meth:`.EquinoctialElements.fromConfig` for details. Defaults to ``None``."""
 
-    calculate_fov: bool = False
+    background_observations: bool = False
     R"""``bool``, optional: whether this sensor uses its :attr:`.filed_of_view` to determine if other agents are visible. Defaults to ``False``"""
 
     detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG

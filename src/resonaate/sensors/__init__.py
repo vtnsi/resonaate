@@ -11,6 +11,7 @@ from numpy import asarray, sqrt
 # Local Imports
 from ..physics import constants as const
 from .advanced_radar import AdvRadar
+from .field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from .optical import Optical
 from .radar import Radar
 from .sensor_base import Sensor
@@ -69,7 +70,7 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
         "slew_rate": sensor_config.slew_rate * const.RAD2DEG,  # Assumes radians/sec
         "exemplar": asarray(sensor_config.exemplar),
         "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),
-        "calculate_fov": sensor_config.calculate_fov,
+        "background_observations": sensor_config.background_observations,
         "minimum_range": sensor_config.minimum_range,
         "maximum_range": sensor_config.maximum_range,
     }
@@ -101,49 +102,13 @@ def fieldOfViewFactory(configuration: FieldOfViewConfig) -> FieldOfView:
     Returns:
         :class:`.FieldOfView`
     """
-    if configuration.fov_shape == "conic":
-        return ConicFoV(configuration)
+    if configuration.fov_shape == CONIC_FOV_LABEL:
+        return ConicFoV(configuration.cone_angle * const.DEG2RAD)
 
-    if configuration.fov_shape == "rectangular":
-        return RectangularFoV(configuration)
+    if configuration.fov_shape == RECTANGULAR_FOV_LABEL:
+        return RectangularFoV(
+            azimuth_angle=configuration.azimuth_angle * const.DEG2RAD,
+            elevation_angle=configuration.elevation_angle * const.DEG2RAD,
+        )
 
     raise ValueError(f"wrong FoV shape: {configuration.fov_shape}")
-
-
-class FieldOfView:
-    """Field of View base class."""
-
-    def __init__(self, config: FieldOfViewConfig) -> None:
-        """Initialize a Field of View object.
-
-        Args:
-            config (:class:`.FieldOfViewConfig`): Field of View config object
-        """
-        self.fov_shape = config.fov_shape
-
-
-class ConicFoV(FieldOfView):
-    """Conic Field of View Subclass."""
-
-    def __init__(self, config: FieldOfViewConfig) -> None:
-        """Initialize A ConicFoV object.
-
-        Args:
-            config (:class:`.FieldOfViewConfig`): Field of View config object
-        """
-        super().__init__(config)
-        self.cone_angle = config.cone_angle * const.DEG2RAD
-
-
-class RectangularFoV(FieldOfView):
-    """Rectangular Field of View Subclass."""
-
-    def __init__(self, config: FieldOfViewConfig) -> None:
-        """Initialize A RectangularFoV object.
-
-        Args:
-            config (:class:`.FieldOfViewConfig`): Field of View config object
-        """
-        super().__init__(config)
-        self.azimuth_angle = config.azimuth_angle * const.DEG2RAD
-        self.elevation_angle = config.elevation_angle * const.DEG2RAD

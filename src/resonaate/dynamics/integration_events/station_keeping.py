@@ -9,7 +9,7 @@ from numpy import asarray, cos, sin
 from scipy.linalg import norm
 
 # Local Imports
-from ...physics.constants import DEG2RAD
+from ...physics.constants import DAYS2SEC, DEG2RAD
 from ...physics.math import safeArccos
 from ...physics.orbits.elements import ClassicalElements
 from ...physics.time.stardate import JulianDate
@@ -189,7 +189,7 @@ class KeepGeoEastWest(StationKeeper):
             bool: Indication of whether this :class:`.StationKeeper` needs to activate.
         """
         self.ntw_delta_v = 0
-        julian_date = JulianDate(self.julian_date_start + time / 86400)
+        julian_date = JulianDate(self.julian_date_start + time / DAYS2SEC)
         matrix = _getRotationMatrix(julian_date, self.reductions).T
         delta_lon = self.initial_lon - ecef2lla(matrix.dot(state[:3]))[1]  # radians
         if abs(delta_lon) >= self.LON_DRIFT_THRESHOLD:
@@ -285,7 +285,7 @@ class KeepGeoNorthSouth(StationKeeper):
             bool: Indication of whether this :class:`.StationKeeper` needs to activate.
         """
         self.ntw_delta_v = 0
-        julian_date = JulianDate(self.julian_date_start + time / 86400)
+        julian_date = JulianDate(self.julian_date_start + time / DAYS2SEC)
         matrix = _getRotationMatrix(julian_date, self.reductions).T
         delta_lat = self.initial_lat - ecef2lla(matrix.dot(state[:3]))[0]  # radians
         if abs(delta_lat) >= self.LAT_DRIFT_THRESHOLD:

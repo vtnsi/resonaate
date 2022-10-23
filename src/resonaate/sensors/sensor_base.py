@@ -11,9 +11,11 @@ from numpy import array, cos, diagflat, matmul, random, real, sin, squeeze, zero
 from scipy.linalg import norm, sqrtm
 
 # Local Imports
+from ..agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from ..common.exceptions import ShapeError
 from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
+from ..data.missed_observation import MissedObservation
 from ..data.observation import Observation
 from ..physics import constants as const
 from ..physics.math import isPD, subtendedAngle
@@ -27,20 +29,19 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     # Local Imports
-    from ..agents.estimate_agent import EstimateAgent
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
-    from . import FieldOfView
-    from .measurements import IsAngle
+    from .field_of_view import FieldOfView
 
 
-ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles"])
+ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles", "reason"])
 """Named tuple for correlating an observation, the sensing agent, and its angular values.
 
 Attributes:
     observation (:class:`.Observation` | ``None``): valid or invalid observation
     agent (:class:`.SensingAgent`): reference to `~.Sensor.host`
     angles (``ndarray``): array signifying which measurements are angles via :class:`.IsAngle` enum.
+    reason (``float``): reason why a missed ob occurred
 """
 
 
@@ -57,7 +58,7 @@ class Sensor(ABC):
         exemplar: ndarray,
         slew_rate: float,
         field_of_view: FieldOfView,
-        calculate_fov: bool,
+        background_observations: bool,
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
@@ -73,7 +74,7 @@ class Sensor(ABC):
             exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power  calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (:class:`.FieldOfView`): field of view of sensor
-            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
+            background_observations (``bool``): whether or not to calculate serendipitous observations
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
@@ -91,7 +92,7 @@ class Sensor(ABC):
         self.exemplar = squeeze(exemplar)
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view
-        self.calculate_field_of_view = calculate_fov
+        self.calculate_background = background_observations
         self.minimum_range = minimum_range
         self.maximum_range = maximum_range
 
@@ -103,7 +104,7 @@ class Sensor(ABC):
         self._sensor_args = sensor_args
 
     @abstractmethod
-    def getMeasurements(self, slant_range_sez: ndarray, noisy: bool = False) -> dict[str, float]:
+    def measurements(self, slant_range_sez: ndarray, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:
@@ -150,40 +151,77 @@ class Sensor(ABC):
         return array([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
 
     def collectObservations(
-        self, pointing_agent: EstimateAgent, background_agents: list[TargetAgent]
-    ) -> list[ObservationTuple]:
+        self,
+        estimate_eci: ndarray,
+        target_agent: TargetAgent,
+        background_agents: list[TargetAgent],
+    ) -> tuple[list[ObservationTuple], list[MissedObservation]]:
         """Collect observations on all targets within the sensor's FOV.
 
         Args:
-            pointing_agent (:class:`.EstimateAgent`): agent that sensor is pointing at
-            background_agents (``list``): list of possible `.TargetAgent` objects in FoV
+            estimate_eci (``ndarray``): Estimate state vector that sensor is pointing at
+            target_agent (:class:`.TargetAgent`): Target agent that sensor is pointing at
+            background_agents (``list``): list of possible :class:`.TargetAgent` objects in FoV
 
         Returns:
-            obs_list (``list``): list of `.ObservationTuple`
+            ``list``: :class:`.ObservationTuple` for each successful tasked observation
+            ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
         """
         obs_list = []
+        missed_observation_list = []
         # Check if sensor will slew to point in time
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, pointing_agent.eci_state)
+        slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_eci)
         if self.canSlew(slant_range_sez):
-            if self.calculate_field_of_view:
-                targets_in_fov = self.checkTargetsInView(slant_range_sez, background_agents)
-                obs_list = list(
-                    filter(  # pylint:disable=bad-builtin
-                        lambda ob_tuple: ob_tuple.observation,
-                        (self.makeNoisyObservation(tgt) for tgt in targets_in_fov),
-                    )
-                )  # pylint:disable=bad-builtin
-
-            elif len(self.checkTargetsInView(slant_range_sez, [pointing_agent])) == 1:
-                observation_tuple = self.makeNoisyObservation(pointing_agent)
+            # Check if primary RSO is FoV
+            if len(self.checkTargetsInView(slant_range_sez, [target_agent])) == 1:
+                observation_tuple = self.makeNoisyObservation(target_agent)
                 if observation_tuple.observation:
                     obs_list.append(observation_tuple)
+                else:
+                    reason = observation_tuple.reason
+
+            else:
+                reason = MissedObservation.Explanation.FIELD_OF_VIEW
+
+            # If doing Serendipitous Observations
+            if self.calculate_background:
+                background_targets_in_fov = self.checkTargetsInView(
+                    slant_range_sez, background_agents
+                )
+                obs_list.extend(
+                    list(
+                        filter(  # pylint:disable=bad-builtin
+                            lambda ob_tuple: ob_tuple.observation,
+                            (self.makeNoisyObservation(tgt) for tgt in background_targets_in_fov),
+                        )
+                    )  # pylint:disable=bad-builtin
+                )
 
             self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
-            if obs_list:  # only update time_last_ob if obs are made
+            if obs_list:
                 self.time_last_ob = self.host.time
 
-        return obs_list
+        else:
+            reason = MissedObservation.Explanation.SLEW_DISTANCE
+
+        if self._checkForMissedObservation(obs_list, target_agent.simulation_id):
+            missed_observation_list.append(
+                MissedObservation(
+                    sensor_type=getTypeString(self),
+                    sensor_id=self.host.simulation_id,
+                    target_id=target_agent.simulation_id,
+                    julian_date=self.host.julian_date_epoch,
+                    sez_state_s_km=slant_range_sez[0],
+                    sez_state_e_km=slant_range_sez[1],
+                    sez_state_z_km=slant_range_sez[2],
+                    position_lat_rad=self.host.lla_state[0],
+                    position_lon_rad=self.host.lla_state[1],
+                    position_altitude_km=self.host.lla_state[2],
+                    reason=reason.value,
+                )
+            )
+
+        return obs_list, missed_observation_list
 
     def checkTargetsInView(
         self, slant_range_sez: float, background_agents: list[TargetAgent]
@@ -192,51 +230,21 @@ class Sensor(ABC):
 
         Args:
             slant_range_sez (``ndarray``): 3x1 slant range vector that sensor is pointing towards
-            background_agents (``list``): list of all `.TargetAgents` in scenario
+            background_agents (``list``): list of all background `.TargetAgents` for this observation
 
         Returns:
-            ``list``: list of all visible `.TargetAgents` in scenario
+            ``list``: list of all visible background `.TargetAgents` for this observation
         """
         # filter out targets outside of FOV
         agents_in_fov = list(
             filter(  # pylint:disable=bad-builtin
-                lambda agent: self.inFOV(
+                lambda agent: self.field_of_view.inFieldOfView(
                     slant_range_sez, getSlantRangeVector(self.host.ecef_state, agent.eci_state)
                 ),
                 background_agents,
             )
         )  # pylint:disable=bad-builtin
         return agents_in_fov
-
-    def inFOV(self, pointing_sez: ndarray, background_sez: ndarray) -> bool:
-        """Perform bulk FOV check on all RSOs.
-
-        Args:
-            pointing_sez (``ndarray``): 3x1 slant range vector that sensor is pointing towards
-            background_sez (``ndarray``): 3x1 slant range vector of possible agent in FoV
-
-        Returns:
-            ``bool``: whether or not a `.TargetAgent` object is within sensor FoV
-        """
-        if self.field_of_view.fov_shape == "conic":
-            angle = subtendedAngle(background_sez[:3], pointing_sez[:3])
-            return angle <= self.field_of_view.cone_angle / 2
-
-        if self.field_of_view.fov_shape == "rectangular":
-            pointing_azimuth = getAzimuth(pointing_sez)
-            pointing_elevation = getElevation(pointing_sez)
-
-            background_azimuth = getAzimuth(background_sez)
-            background_elevation = getElevation(background_sez)
-
-            azimuth_angle = abs(pointing_azimuth - background_azimuth)
-            elevation_angle = abs(pointing_elevation - background_elevation)
-            return (
-                azimuth_angle <= self.field_of_view.azimuth_angle / 2
-                and elevation_angle <= self.field_of_view.elevation_angle / 2
-            )
-
-        raise ValueError(f"Wrong FoV shape: {self.field_of_view.fov_shape}")
 
     def buildSigmaObs(self, target_id: int, tgt_eci_state: ndarray) -> Observation:
         """Calculate the measurement data for a sigma point observation.
@@ -257,8 +265,27 @@ class Sensor(ABC):
             julian_date=julian_date,
             sez=slant_range_sez,
             sensor_position=self.host.lla_state,
-            **self.getMeasurements(slant_range_sez),
+            **self.measurements(slant_range_sez),
         )
+
+    def _checkForMissedObservation(self, obs_list: list[ObservationTuple], target_id: int) -> bool:
+        """Check if the tasked observation of the primary target was missed.
+
+        Args:
+            obs_list (``list``): list of :class:`.ObservationTuple` data objects
+            target_id (``int``): Tasked Target simulation id
+
+        Returns:
+            ``bool``: False if primary RSO was observed; True if it the primary RSO was missed.
+        """
+        if not obs_list:
+            return True
+
+        for observation_tuple in obs_list:
+            if observation_tuple.observation.target_id == target_id:
+                return False
+
+        return True
 
     def makeObservation(
         self,
@@ -285,7 +312,10 @@ class Sensor(ABC):
         julian_date = self.host.julian_date_epoch
 
         # Construct observations
-        if self.isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez):
+        visibility, reason = self.isVisible(
+            tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
+        )
+        if visibility:
             # Make a real observation once tasked -> add noise to the measurement
             if real_obs:
                 observation = Observation.fromSEZVector(
@@ -306,7 +336,7 @@ class Sensor(ABC):
         else:
             observation = None
 
-        return ObservationTuple(observation, self.host, self.angle_measurements)
+        return ObservationTuple(observation, self.host, self.angle_measurements, reason)
 
     def makeNoisyObservation(self, target_agent: TargetAgent) -> ObservationTuple:
         """Calculate the measurement data for a single observation with noisy measurements.
@@ -355,7 +385,7 @@ class Sensor(ABC):
             :``"range_km"``: (``float``): range measurement (km)
             :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
         """
-        return self.getMeasurements(slant_range_sez, noisy=True)
+        return self.measurements(slant_range_sez, noisy=True)
 
     def isVisible(  # pylint:disable=too-many-return-statements
         self,
@@ -363,7 +393,7 @@ class Sensor(ABC):
         viz_cross_section: float,
         reflectivity: float,
         slant_range_sez: ndarray,
-    ) -> bool:
+    ) -> tuple[bool, MissedObservation.Explanation]:
         """Determine if the target is in view of the sensor.
 
         References:
@@ -377,19 +407,20 @@ class Sensor(ABC):
 
         Returns:
             ``bool``: True if target is visible; False if target is not visible
+            :class:`.MissedObservation.Explanation`: Reason observation was visible or not
         """
         # pylint:disable=unused-argument
         # Early exit if target not in sensor's minimum range
         if self.minimum_range is not None and getRange(slant_range_sez) < self.minimum_range:
-            return False
+            return False, MissedObservation.Explanation.MINIMUM_RANGE
 
         # Early exit if target not in sensor's maximum range
         if self.maximum_range is not None and getRange(slant_range_sez) > self.maximum_range:
-            return False
+            return False, MissedObservation.Explanation.MAXIMUM_RANGE
 
         # Early exit if a Line of Sight doesn't exist
         if not lineOfSight(tgt_eci_state[:3], self.host.eci_state[:3]):
-            return False
+            return False, MissedObservation.Explanation.LINE_OF_SIGHT
 
         # Get the azimuth and elevation angles
         # [NOTE]: These are assumed to always be in the following ranges:
@@ -401,21 +432,21 @@ class Sensor(ABC):
 
         # Check if the elevation is within sensor bounds
         if elevation < self.el_mask[0] or elevation > self.el_mask[1]:
-            return False
+            return False, MissedObservation.Explanation.ELEVATION_MASK
 
         # [NOTE]: Azimuth check requires two versions:
         #   - az_0 <= az_1 for normal situations
         #   - az_0 > az_1 for when mask transits the 360deg/True North line
         if self.az_mask[0] <= self.az_mask[1] and self.az_mask[0] <= azimuth <= self.az_mask[1]:
-            return True
+            return True, MissedObservation.Explanation.VISIBLE
 
         if self.az_mask[0] > self.az_mask[1] and (
             azimuth >= self.az_mask[0] or azimuth <= self.az_mask[1]
         ):
-            return True
+            return True, MissedObservation.Explanation.VISIBLE
 
         # Default: target satellite is not in view
-        return False
+        return False, MissedObservation.Explanation.AZIMUTH_MASK
 
     def canSlew(self, slant_range_sez: ndarray) -> bool:
         """Check if sensor can slew to target in the allotted time.
@@ -538,14 +569,14 @@ class Sensor(ABC):
             "exemplar": self.exemplar.tolist(),
             "field_of_view": self.field_of_view,
         }
-        if self.host.agent_type == "Spacecraft":
+        if self.host.agent_type == SPACECRAFT_LABEL:
             output_dict["init_eci"] = self.host.truth_state.tolist()
-            output_dict["host_type"] = "Spacecraft"
+            output_dict["host_type"] = SPACECRAFT_LABEL
         else:
             latlon = self.host.lla_state
             output_dict["lat"] = latlon[0]
             output_dict["lon"] = latlon[1]
             output_dict["alt"] = latlon[2]
-            output_dict["host_type"] = "GroundFacility"
+            output_dict["host_type"] = GROUND_FACILITY_LABEL
 
         return output_dict

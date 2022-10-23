@@ -49,7 +49,7 @@ class SpecialPerturbations(Celestial):
         geopotential: GeopotentialConfig,
         perturbations: PerturbationsConfig,
         sat_ratio: float,
-        method=RK45_LABEL,
+        method: str = RK45_LABEL,
     ):
         """Construct a SpecialPerturbations object.
 
@@ -94,7 +94,7 @@ class SpecialPerturbations(Celestial):
         derivative = empty_like(state, dtype=float)
 
         # Calculate the ECI - ECEF transformation for the integration time
-        julian_date = JulianDate(self.init_julian_date + time / 86400)
+        julian_date = JulianDate(self.init_julian_date + time / const.DAYS2SEC)
         ecef_2_eci = _getRotationMatrix(julian_date, getReductionParameters())
 
         # Get third body positions
@@ -326,7 +326,11 @@ def _getGeneralRelativityAcceleration(r_eci: ndarray, v_eci: ndarray) -> ndarray
 
 
 def _getGeneralRelativityAccelerationIERS(
-    r_eci: ndarray, v_eci: ndarray, sun_eci: ndarray, beta: float = 1.0, gamma: float = 1.0
+    r_eci: ndarray[float, float, float],
+    v_eci: ndarray[float, float, float],
+    sun_eci: ndarray[float, float, float],
+    beta: float = 1.0,
+    gamma: float = 1.0,
 ) -> ndarray:
     """Calculate the relativistic acceleration term of an Earth orbiting satellite.
 

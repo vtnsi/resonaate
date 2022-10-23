@@ -142,7 +142,7 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
     }
 
 
-def asyncExecuteTasking(tasked_sensors: List[SensingAgent], target_id: int) -> dict:
+def asyncExecuteTasking(tasked_sensor_ids: List[int], target_id: int) -> dict:
     """Execute tasked observations on a :class:`.TargetAgent`.
 
     Hint:
@@ -150,29 +150,43 @@ def asyncExecuteTasking(tasked_sensors: List[SensingAgent], target_id: int) -> d
         implemented
 
     Args:
-        tasked_sensors (``list``): indices corresponding to sensors tasked to observe the target.
+        tasked_sensor_ids (``list``): indices corresponding to sensors tasked to observe the target.
         target_id (``int``): ID of `.TargetAgent` being tasked on.
 
     Returns:
         ``dict``: execute result dictionary contains:
-
         :``"observations"``: (``list``): successful :class:`.Observation` objects of target(s).
         :``"target_id"``: (``int``): ID of the :class:`.TargetAgent` observations were made of.
+        :``"missed_observations"``: (``list``): list of :class:`.MissedObservation` objects of :class:`.Target_agent`
     """
     successful_obs = []
     sensor_agents = loads(getRedisConnection().get("sensor_agents"))
     target_agents = loads(getRedisConnection().get("target_agents"))
     estimate_agent = loads(getRedisConnection().get("estimate_agents"))[target_id]
-    sensor_list = list(sensor_agents.values())
-    target_list = list(target_agents.values())
 
-    if len(tasked_sensors) > 0:
-        for sensor in tasked_sensors:
-            successful_obs.extend(
-                sensor_list[sensor].sensors.collectObservations(estimate_agent, target_list)
+    # Remove Primary Target from Target list
+    primary_tgt = target_agents[target_id]
+    del target_agents[target_id]
+    background_targets = list(target_agents.values())
+
+    successful_obs = []
+    unsuccessful_obs = []
+    if len(tasked_sensor_ids) > 0:
+        for sensor_id in tasked_sensor_ids:
+            sensing_agent = sensor_agents[sensor_id]
+            made_obs, missed_obs = sensing_agent.sensors.collectObservations(
+                estimate_agent.eci_state,
+                primary_tgt,
+                background_targets,
             )
+            successful_obs.extend(made_obs)
+            unsuccessful_obs.extend(missed_obs)
 
-    return {"target_id": target_id, "observations": successful_obs}
+    return {
+        "target_id": target_id,
+        "observations": successful_obs,
+        "missed_observations": unsuccessful_obs,
+    }
 
 
 def asyncUpdateEstimate(estimate_agent: EstimateAgent, successful_obs: list[Observation]) -> dict:

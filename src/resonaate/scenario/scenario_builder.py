@@ -116,7 +116,7 @@ class ScenarioBuilder:
                 reward,
                 decision,
                 importer_db_path,
-                self.config.propagation.realtime_observation,
+                self.config.observation.realtime_observation,
             )
 
             self.tasking_engines[tasking_engine.unique_id] = tasking_engine
@@ -168,8 +168,8 @@ class ScenarioBuilder:
         self.sensor_network: list[SensingAgent] = []
         for sensor_config in sensor_configs.values():
             # Assign Sensor FoV from init if not set
-            if self.config.observation.field_of_view:
-                sensor_config.calculate_fov = True
+            if self.config.observation.background:
+                sensor_config.background_observations = True
             sat_ratio = calcSatRatio(
                 sensor_config.visual_cross_section,
                 sensor_config.mass,
@@ -298,19 +298,12 @@ class ScenarioBuilder:
                 method=self.config.propagation.integration_method,
             )
 
-            dynamics_noise = noiseCovarianceFactory(
-                self.config.noise.dynamics_noise_type,
-                self.config.time.physics_step_sec,
-                self.config.noise.dynamics_noise_magnitude,
-            )
             config = {
                 "target": target_conf,
                 "clock": self.clock,
                 "dynamics": dynamics_method,
                 "realtime": self.config.propagation.target_realtime_propagation,
                 "station_keeping": station_keeping,
-                "noise": dynamics_noise,
-                "random_seed": self.config.noise.random_seed,
             }
             targets[target_conf.sat_num] = TargetAgent.fromConfig(config)
 

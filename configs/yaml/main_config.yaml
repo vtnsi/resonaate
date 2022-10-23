@@ -6,8 +6,6 @@ time:
 noise:
   init_position_std_km: 1.0e-3
   init_velocity_std_km_p_sec: 1.0e-6
-  dynamics_noise_type: simple_noise
-  dynamics_noise_magnitude: 1.0e-25
   filter_noise_type: continuous_white_noise
   filter_noise_magnitude: 3.0e-14
   random_seed: os
@@ -17,7 +15,6 @@ propagation:
   station_keeping: false
   target_realtime_propagation: true
   sensor_realtime_propagation: true
-  realtime_observation: true
   truth_simulation_only: false
 geopotential:
   model: egm96.txt

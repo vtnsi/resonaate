@@ -152,14 +152,6 @@ class Scenario(ParallelMixin):
         pos_std = self.scenario_config.noise.init_position_std_km
         vel_std = self.scenario_config.noise.init_velocity_std_km_p_sec
         self.logger.info(f"Initial estimate error std: {pos_std} km; {vel_std} km/sec")
-        dynamics_noise = norm(
-            noiseCovarianceFactory(
-                self.scenario_config.noise.dynamics_noise_type,
-                self.scenario_config.time.physics_step_sec,
-                self.scenario_config.noise.dynamics_noise_magnitude,
-            )
-        )
-        self.logger.info(f"Dynamics process noise magnitude: {dynamics_noise}")
         self.logger.info(f"Random seed: {config.noise.random_seed}")
         self.logger.info(
             f"Using real-time propagation for RSO truth data: {config.propagation.target_realtime_propagation}"
@@ -168,7 +160,7 @@ class Scenario(ParallelMixin):
             f"Using real-time propagation for sensor truth data: {config.propagation.sensor_realtime_propagation}"
         )
         self.logger.info(
-            f"Using real-time observation for tasking: {config.propagation.realtime_observation}"
+            f"Using real-time observation for tasking: {config.observation.realtime_observation}"
         )
         self.logger.info(
             f"Spacecraft truth dynamics model: {config.propagation.propagation_model}"
@@ -227,6 +219,9 @@ class Scenario(ParallelMixin):
         self.redis_conn = getRedisConnection()
 
         self.logger.info("Initialized Scenario.")
+
+        # Save initial states to database
+        self.saveDatabaseOutput()
 
     def propagateTo(self, target_time: JulianDate) -> None:
         """Propagate the :class:`.Scenario` forward to the given time.
@@ -289,15 +284,20 @@ class Scenario(ParallelMixin):
 
             # Grab `Observations` from current time step
             for tasking_engine in self._tasking_engines.values():
+                # Save Successful Observations
                 obs_tuples = tasking_engine.getCurrentObservations()
                 if obs_tuples:
-                    msg = f"Committing {len(obs_tuples)} observations of targets "
-                    observed_targets = set()
-                    for obs_tuple in obs_tuples:
-                        observed_targets.add(obs_tuple.observation.target_id)
-                    msg += f"{observed_targets} to the database."
-                    self.logger.debug(msg)
+                    self._logObservations(obs_tuples)
                 output_data.extend(obs_tuple.observation for obs_tuple in obs_tuples)
+
+                # Save Missed Observations
+                missed_observations = tasking_engine.getCurrentMissedObservations()
+                if missed_observations:
+                    self._logMissedObservations(missed_observations)
+                output_data.extend(
+                    missed_observation for missed_observation in missed_observations
+                )
+
                 # Grab tasking data
                 output_data.extend(
                     tasking
@@ -372,6 +372,24 @@ class Scenario(ParallelMixin):
         # Flush events from event stack
         EventStack.logAndFlushEvents()
 
+    def _logObservations(self, obs_list):
+        """Log :class:`.Observation` objects."""
+        msg = f"Committing {len(obs_list)} observations of targets "
+        observed_targets = set()
+        for obs_tuple in obs_list:
+            observed_targets.add(obs_tuple.observation.target_id)
+        msg += f"{observed_targets} to the database."
+        self.logger.debug(msg)
+
+    def _logMissedObservations(self, missed_observations):
+        """Log :class:`.MissedObservation` objects."""
+        msg = "Missed Observations of targets "
+        missed_targets = set()
+        for miss in missed_observations:
+            missed_targets.add(miss.target_id)
+        msg += f"{missed_targets}"
+        self.logger.debug(msg)
+
     @methdispatch
     def addTarget(self, target_spec: TargetAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
@@ -415,12 +433,6 @@ class Scenario(ParallelMixin):
             method=self.scenario_config.propagation.integration_method,
         )
 
-        dynamics_noise = noiseCovarianceFactory(
-            self.scenario_config.noise.dynamics_noise_type,
-            self.scenario_config.time.physics_step_sec,
-            self.scenario_config.noise.dynamics_noise_magnitude,
-        )
-
         filter_dynamics = spacecraftDynamicsFactory(
             self.scenario_config.propagation.propagation_model,
             self.clock,
@@ -441,8 +453,6 @@ class Scenario(ParallelMixin):
             "dynamics": target_dynamics,
             "realtime": self.scenario_config.propagation.target_realtime_propagation,
             "station_keeping": target_spec.station_keeping,
-            "noise": dynamics_noise,
-            "random_seed": self.scenario_config.noise.random_seed,
         }
         target_agent = TargetAgent.fromConfig(target_factory_config)
         self.target_agents[target_spec.sat_num] = target_agent

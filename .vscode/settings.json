@@ -76,5 +76,8 @@
   },
   "python.testing.pytestArgs": [
     "tests"
+  ],
+  "cSpell.words": [
+    "flushall"
   ]
 }

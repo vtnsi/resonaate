@@ -6,22 +6,18 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array, ndarray
-from numpy.random import default_rng
 
 # Local Imports
-from ..common.exceptions import ShapeError
 from ..data.ephemeris import TruthEphemeris
 from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
+from . import SPACECRAFT_LABEL
 from .agent_base import Agent
 
 # Type checking
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Any
-
     # Third Party Imports
     from typing_extensions import Self
 
@@ -65,11 +61,9 @@ class TargetAgent(Agent):
         clock: ScenarioClock,
         dynamics: Dynamics,
         realtime: bool,
-        process_noise: ndarray,
         visual_cross_section: float | int,
         mass: float | int,
         reflectivity: float,
-        seed: int | None = None,
         station_keeping: list[StationKeeper] | None = None,
     ):
         """Construct a TargetAgent object.
@@ -82,11 +76,9 @@ class TargetAgent(Agent):
             clock (:class:`.ScenarioClock`): clock instance for retrieving proper times
             dynamics (:class:`.Dynamics`): TargetAgent's simulation dynamics
             realtime (``bool``): whether to use :attr:`dynamics` or import data for propagation
-            process_noise (``ndarray``): 6x6 process noise covariance
             visual_cross_section (``float, int``): constant visual cross-section of the agent
             mass (``float, int``): constant mass of the agent
             reflectivity (``float``): constant reflectivity of the agent
-            seed (int, optional): number to seed random number generator. Defaults to ``None``.
             station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station keeping to
                 be performed
 
@@ -107,22 +99,6 @@ class TargetAgent(Agent):
             reflectivity=reflectivity,
             station_keeping=station_keeping,
         )
-        if not isinstance(process_noise, ndarray):
-            self._logger.error("Incorrect type for process_noise param")
-            raise TypeError(type(process_noise))
-
-        if process_noise.shape != (6, 6):
-            self._logger.error("Incorrect shape for process_noise param")
-            raise ShapeError(process_noise.shape)
-
-        # Process noise covariance used for generating noise
-        self._process_noise_covar = process_noise
-
-        if not isinstance(seed, int) and seed is not None:
-            self._logger.error("Incorrect type for seed param")
-            raise TypeError(type(seed))
-        # Save the random number generator for generating noise
-        self._rng = default_rng(seed)
 
         # Properly initialize the TargetAgent's state types
         self._truth_state = array(initial_state, copy=True)
@@ -172,16 +148,14 @@ class TargetAgent(Agent):
         return cls(
             tgt.sat_num,
             tgt.sat_name,
-            "Spacecraft",
+            SPACECRAFT_LABEL,
             initial_state,
             config["clock"],
             config["dynamics"],
             config["realtime"],
-            config["noise"],
             tgt.visual_cross_section,
             tgt.mass,
             tgt.reflectivity,
-            seed=config["random_seed"],
             station_keeping=station_keeping,
         )
 
@@ -241,13 +215,3 @@ class TargetAgent(Agent):
     def lla_state(self) -> ndarray:
         """``ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
         return self._lla_state
-
-    @property
-    def process_noise(self) -> ndarray:
-        """``ndarray``: Returns the 6x1 scaled process noise vector."""
-        return self._rng.multivariate_normal(self.eci_state, self.process_noise_covariance)
-
-    @property
-    def process_noise_covariance(self) -> ndarray:
-        """``ndarray``: Returns the 6x6 process noise matrix."""
-        return self._process_noise_covar

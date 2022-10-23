@@ -14,6 +14,9 @@ This shows how to directly create and use the following classes:
 
 # pylint: disable=invalid-name, wrong-import-position
 
+# Standard Library Imports
+from datetime import datetime
+
 # Third Party Imports
 # %%
 # Initial Setup
@@ -48,16 +51,15 @@ import numpy as np
 # ----------------------------
 #
 # Creating a clock object requires the Julian date of the initial epoch, a timespan (seconds), and a timestep (seconds).
-from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario.clock import ScenarioClock
 
 # Define time variables
-julian_date_start = JulianDate(2458516.0)
+datetime_start = datetime(2019, 2, 1, 12, 0)
 tspan = 300.0  # seconds
 dt = 60.0  # seconds
 
 # Create the clock object
-clock = ScenarioClock(julian_date_start, tspan, dt)
+clock = ScenarioClock(datetime_start, tspan, dt)
 
 # For convenience, time is initialized to zero
 t0 = clock.time
@@ -72,7 +74,6 @@ t0 = clock.time
 # Also, users must define a :class:`.Dynamics` object that handles propagating the satellite forward in time.
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.dynamics.two_body import TwoBody
-from resonaate.physics.noise import simpleNoise
 
 # Initial information
 sat1_id = 10001  # Unique ID number of satellite
@@ -86,9 +87,6 @@ sat1_x0 = np.array([10000.0, 0.0, 0.0, 0.0, 6.3134776, 0.0])  # Position (km)  #
 # Create a two body dynamics object for simple Keplerian propagation
 two_body_dynamics = TwoBody()
 
-# Noise added to true state vector, for use in filtering
-two_body_noise = simpleNoise(dt, 1e-25)
-
 # Construct the satellite object
 sat1_agent = TargetAgent(
     sat1_id,
@@ -98,7 +96,6 @@ sat1_agent = TargetAgent(
     clock,
     two_body_dynamics,
     realtime,
-    two_body_noise,
     25.0,
     100,
     0.21,
@@ -301,7 +298,9 @@ observation = Observation.fromSEZVector(
 )
 
 # Need to pass observations as tuple for required information
-obs_tuple = ObservationTuple(observation, sensor_agent, sensor_agent.sensors.angle_measurements)
+obs_tuple = ObservationTuple(
+    observation, sensor_agent, sensor_agent.sensors.angle_measurements, "Visible"
+)
 print(obs_tuple.observation)
 
 # %%

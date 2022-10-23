@@ -39,6 +39,9 @@ from datetime import datetime, timedelta
 # Third Party Imports
 from numpy import floor, remainder
 
+# Local Imports
+from ..constants import DAYS2SEC
+
 # [TODO] Add descriptions for both classes and their methods
 # [TODO] Remove all the operator overload methods. Can be replaced more succinctly
 # [TODO] Assert message cleanup
@@ -175,7 +178,7 @@ class JulianDate(float):
     def convertToScenarioTime(self, julian_date_start):
         """."""
         # Return ScenarioTime in seconds
-        return ScenarioTime((self - julian_date_start) * 24 * 3600)
+        return ScenarioTime((self - julian_date_start) * DAYS2SEC)
 
     @classmethod
     def getJulianDate(cls, year, month, day, hour, minute, second):
@@ -219,7 +222,7 @@ class JulianDate(float):
             raise ValueError("JulianDate: Second must be a float (0-60).")
 
         # Calculate decimal portion of Julian date
-        julian_day_fraction = (second + minute * 60 + hour * 3600) / 86400
+        julian_day_fraction = (second + minute * 60 + hour * 3600) / DAYS2SEC
 
         # Sanity check on the fractional part
         if julian_day_fraction > 1.0:
@@ -259,7 +262,7 @@ def datetimeToJulianDate(date_time):
         date_time.day,
         date_time.hour,
         date_time.minute,
-        date_time.second,
+        date_time.second + date_time.microsecond / 1e6,
     )
 
 

@@ -17,6 +17,7 @@ from ..rewards.reward_base import Reward
 # Type Checking Imports
 if TYPE_CHECKING:
     # Local Imports
+    from ...data.missed_observation import MissedObservation
     from ...data.observation import Observation
     from ...data.task import Task
     from ...physics.time.stardate import JulianDate
@@ -94,6 +95,10 @@ class TaskingEngine(metaclass=ABCMeta):
         """``list``: transient :class:`.Observation` tasked & saved by this engine during the current timestep."""
         self._saved_observations = []
         """``list``: transient :class:`.Observation` tasked & saved by this engine not loaded to the DB."""
+        self._missed_observations = []
+        """``list``: transient :class:`.MissedObservation` tasked & saved by this engine during the current timestep."""
+        self._saved_missed_observations = []
+        """``list``: transient :class:`.MissedObservation` tasked & saved by this engine not loaded to the DB."""
 
         self._importer_db = None
         """:class:`.ImporterDatabase`: Input database object for loading :class:`.Observation` objects."""
@@ -151,6 +156,24 @@ class TaskingEngine(metaclass=ABCMeta):
         self._saved_observations = []
 
         return observations
+
+    def saveMissedObservations(self, missed_observations: list[MissedObservation]) -> None:
+        """Save set of :class:`.MissedObservation` objects to transient lists.
+
+        Args:
+            missed_observations (``list``): :class:`.MissedObservation` to save
+        """
+        for miss in missed_observations:
+            if miss:
+                self._missed_observations.extend(missed_observations)
+                self._saved_missed_observations.extend(missed_observations)
+
+    def getCurrentMissedObservations(self) -> list[Observation]:
+        """``list``: Returns current list of :class:`.MissedObservation` saved internally & resets transient list."""
+        missed_observations = self._saved_missed_observations
+        self._saved_missed_observations = []
+
+        return missed_observations
 
     @abstractmethod
     def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
@@ -230,3 +253,8 @@ class TaskingEngine(metaclass=ABCMeta):
     def observations(self) -> list[Observation]:
         """``list``: Returns the :class:`.Observation` objects for the previous timestep."""
         return self._observations
+
+    @property
+    def missed_observations(self) -> list[MissedObservation]:
+        """``list``: Returns the :class:`.MissedObservation` objects for the previous timestep."""
+        return self._missed_observations

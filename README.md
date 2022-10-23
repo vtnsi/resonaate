@@ -49,7 +49,7 @@ Please see software documentation for best installation practices.
   - [matplotlib](https://matplotlib.org/index.html)
   - [redis](https://github.com/andymccurdy/redis-py)
 - Software
-  - [Python >= 3.7](https://www.python.org)
+  - [Python >= 3.7.9](https://www.python.org)
   - [Redis server > 5.0.10](https://redis.io/)
 
 ### Installation
@@ -202,6 +202,7 @@ else:
 finally:
     # Gracefully shutdown the simulation
     scenario.shutdown(flushall=True)
+    pre-commit install
 ```
 
 ## Contributing
@@ -216,11 +217,14 @@ pip install -e .[dev,test,doc]
 pre-commit install
 ```
 
-````{note}
+**Note:**
+
 If you use `zsh`, you may need to use the following command instead:
+
 ```zsh
 pip install -e ".[dev,test,doc]"
 ```
+
 ````
 
 ### Linting
@@ -316,3 +320,4 @@ For additional information on the development of the RESONAATE Tool, see the fol
 - Contributors
   - Connor Segal: <csegal@vt.edu>
   - Amit Bala: <agbala@vt.edu>
+````

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from numpy import array
 
 # Local Imports
+from ..data.missed_observation import MissedObservation
 from ..physics import constants as const
 from ..physics.sensor_utils import calculateRadarCrossSection, getWavelengthFromString
 from .measurements import IsAngle, getAzimuth, getElevation, getRange, getRangeRate
@@ -60,7 +61,7 @@ class Radar(Sensor):
         frequency: float,
         slew_rate: float,
         field_of_view: FieldOfView,
-        calculate_fov: bool,
+        background_observations: bool,
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
@@ -78,7 +79,7 @@ class Radar(Sensor):
             frequency (``float``|``str``): radar's operating frequency (Hz)
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
-            calculate_fov (``bool``): whether or not to calculate Field of View, default=True
+            background_observations (``bool``): whether or not to calculate serendipitous observations
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
@@ -92,7 +93,7 @@ class Radar(Sensor):
             exemplar,
             slew_rate,
             field_of_view,
-            calculate_fov,
+            background_observations,
             minimum_range,
             maximum_range,
             **sensor_args,
@@ -160,7 +161,7 @@ class Radar(Sensor):
             dtype=int,
         )
 
-    def getMeasurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
+    def measurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
         """Return the measurement state of the measurement.
 
         Args:
@@ -196,7 +197,7 @@ class Radar(Sensor):
         viz_cross_section: float,
         reflectivity: float,
         slant_range_sez: ndarray,
-    ) -> bool:
+    ) -> tuple[bool, MissedObservation.Explanation]:
         """Determine if the target is in view of the sensor.
 
         Args:
@@ -206,12 +207,14 @@ class Radar(Sensor):
             slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
 
         Returns:
-            bool: ``bool``: True if target is visible; False if target is not visible
+            ``bool``: True if target is visible; False if target is not visible
+            :class:`.MissedObservation.Explanation`: Reason observation was visible or not
         """
-        # Early exit if target not in radar sensor's range, or a LOS doesn't exist
+        # Early exit if target not in radar sensor's range
         if getRange(slant_range_sez) > self.maximumRangeTo(viz_cross_section):
-            return False
+            return False, MissedObservation.Explanation.RADAR_SENSITIVITY
 
+        # Passed all phenomenology-specific tests, call base class' visibility check
         return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)
 
     def maximumRangeTo(self, viz_cross_section: float) -> float:

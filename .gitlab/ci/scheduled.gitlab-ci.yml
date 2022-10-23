@@ -1,0 +1,59 @@
+# ==========================================
+# Includes
+# ==========================================
+
+include:
+  - local: .gitlab/ci/base.gitlab-ci.yml
+  - local: .gitlab/ci/rules.gitlab-ci.yml
+  - local: .gitlab/ci/scripts.gitlab-ci.yml
+
+# ==========================================
+# Base Test Job
+# ==========================================
+
+.scheduled-base:
+  stage: test
+  extends:
+    - .rules:scheduled
+  when: always
+
+.scheduled-pytest:
+  extends:
+    - .scheduled-base
+    - .python-base
+  variables:
+    PYTEST_OPTIONS: "-ra -v"
+  before_script:
+    - !reference [.pip-test, before_script]
+  script:
+    - echo "Running unit tests with pytest"
+    - python --version
+    - pytest ${PYTEST_OPTIONS}
+
+scheduled-pytest-3.7:
+  extends:
+    - .scheduled-pytest
+  image: python:3.7-bullseye
+  needs:
+    - coverage
+
+scheduled-pytest-3.8:
+  extends:
+    - .scheduled-pytest
+  image: python:3.8-bullseye
+  needs:
+    - scheduled-pytest-3.7
+
+scheduled-pytest-3.9:
+  extends:
+    - .scheduled-pytest
+  image: python:3.9-bullseye
+  needs:
+    - scheduled-pytest-3.8
+
+scheduled-pytest-3.10:
+  extends:
+    - .scheduled-pytest
+  image: python:3.10-bullseye
+  needs:
+    - scheduled-pytest-3.9

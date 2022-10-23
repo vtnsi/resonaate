@@ -5,7 +5,7 @@ import setuptools
 setuptools.setup(
     name="resonaate",
     description="The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE) ",
-    version="1.5.4",
+    version="1.5.5",
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
     package_data={
@@ -32,22 +32,22 @@ setuptools.setup(
         "dev": [
             # Linting
             "flake8<4.0",  # Keep flake8 below 4.0 b/c of dep conflict
-            "flake8-bugbear==22.7.1",
-            "flake8-builtins==1.5.3",
+            "flake8-bugbear==22.9.23",
+            "flake8-builtins==2.0.0",
             "flake8-docstrings==1.6.0",
             "flake8-plugin-utils==1.3.2",
             "flake8-pytest-style==1.6.0",
             "flake8-rst-docstrings==0.2.7",
-            "pylint==2.14.5",
+            "pylint==2.15.4",
             # Type Checking
-            "mypy==0.971",
-            "types-sqlalchemy==1.4.50",
+            "mypy==0.982",
+            "types-sqlalchemy==1.4.53",
             "types-redis==4.3.12",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
-            "black==22.6.0",
+            "black==22.10.0",
             "isort[colors]==5.10.1",
-            "mdformat==0.7.15",
+            "mdformat==0.7.16",
             "mdformat-myst==0.1.5",
             "mdformat-gfm==0.3.5",
             # Pre-commit stuff
@@ -56,17 +56,18 @@ setuptools.setup(
             "check-manifest>=0.48",
         ],
         "test": [
-            "pytest==7.1.2",
+            "pytest==7.1.3",
             "pytest-datafiles==2.0.1",
             "pytest-randomly==3.12.0",
-            "coverage==6.4.4",
+            "coverage==6.5.0",
+            "pytest-cov==4.0.0",
         ],
         "doc": [
-            "sphinx==5.1.1",
+            "sphinx==5.2.3",
             "sphinx_rtd_theme==1.0.0",
-            "myst-parser==0.18.0",
+            "myst-parser==0.18.1",
             "sphinx-copybutton==0.5.0",
-            "sphinxcontrib-bibtex==2.4.2",
+            "sphinxcontrib-bibtex==2.5.0",
             "sphinxcontrib-mermaid==0.7.1",
             "sphinx-gallery==0.11.1",
             "importlib-metadata==4.11.3; python_version < '3.10'",

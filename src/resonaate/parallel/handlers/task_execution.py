@@ -1,6 +1,6 @@
 """:class:`.Job` handler class that manage task execution logic."""
 # Third Party Imports
-from numpy import where
+from numpy import array, where
 
 # Local Imports
 from ..async_functions import asyncExecuteTasking
@@ -24,7 +24,7 @@ class TaskExecutionRegistration(CallbackRegistration):
         Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
-        return Job(asyncExecuteTasking, args=[kwargs["tasked_sensors"], kwargs["target_id"]])
+        return Job(asyncExecuteTasking, args=[kwargs["tasked_sensor_ids"], kwargs["target_id"]])
 
     def jobCompleteCallback(self, job):
         """Save successful :class:`.Observation` objects of this target to be applied to it's estimate.
@@ -55,11 +55,13 @@ class TaskExecutionJobHandler(JobHandler):
         for registration in self.callback_registry:
             for index, target_id in enumerate(registration.registrant.target_list):
                 # Retrieve all the sensors tasked to this target as a tuple, so [0] is required.
-                tasked_sensors = where(decision_matrix[index, :])[0]
+                tasked_sensor_indices = where(decision_matrix[index, :])[0]
 
-                if len(tasked_sensors) > 0:
+                if len(tasked_sensor_indices) > 0:
+                    sensor_num_array = array(registration.registrant.sensor_list)
                     job = registration.jobCreateCallback(
-                        tasked_sensors=tasked_sensors, target_id=target_id
+                        tasked_sensor_ids=sensor_num_array[tasked_sensor_indices].tolist(),
+                        target_id=target_id,
                     )
                     self.job_id_registration_dict[job.id] = registration
                     jobs.append(job)

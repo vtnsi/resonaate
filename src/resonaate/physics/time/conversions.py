@@ -56,7 +56,7 @@ def greenwichApparentTime(year, elapsed_days, eq_equinox):
     # Earth's rotation rate (Eq. 3-40 Vallado Ed. 4)
     earth_rotation_rate = (
         1.002737909350795
-        + 5.9005e-11 * julian_centuries_jan1
+        + 5.9006e-11 * julian_centuries_jan1
         - 5.9e-15 * julian_centuries_jan1**2
     )
     # GMST of the exact time
@@ -145,7 +145,7 @@ def dayOfYear(year, month, day, hour, minute, second):
         days += days_in_month[count - 1]
         count += 1
 
-    return days + day + hour / 24 + minute / 1440 + second / 86400
+    return days + day + hour / 24 + minute / 1440 + second / const.DAYS2SEC
 
 
 def getTargetJulianDate(start_julian_date, jump_delta):

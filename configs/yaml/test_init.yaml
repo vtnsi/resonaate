@@ -13,8 +13,6 @@ geopotential:
   model: egm96.txt
   order: 4
 noise:
-  dynamics_noise_magnitude: 1.0e-25
-  dynamics_noise_type: simple_noise
   filter_noise_magnitude: 3.0e-14
   filter_noise_type: continuous_white_noise
   init_position_std_km: 0.001
@@ -29,7 +27,6 @@ perturbations:
 propagation:
   integration_method: RK45
   propagation_model: special_perturbations
-  realtime_observation: true
   sensor_realtime_propagation: true
   station_keeping: false
   target_realtime_propagation: true
