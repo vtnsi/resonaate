@@ -44,7 +44,7 @@ TRUE_EL_RT: float = np.radians(0.01495847759)
 
 # Vallado example 4-1
 LLA: ndarray = np.asarray([np.radians(39.007), np.radians(-104.883), 2.19456])
-JULIAN_DATE: JulianDate = JulianDate.getJulianDate(1994, 5, 14, 13, 11, 20.59856)
+CALENDAR_DATE: datetime.datetime = datetime.datetime(1994, 5, 14, 13, 11, 20, 598560)
 
 # From celestrak.com for May 14, 1994
 # 1994 05 14 49486  0.189443  0.306064 -0.1279402  0.0021743 -0.016163 -0.008660  0.000187  0.000039  28
@@ -64,7 +64,7 @@ EOP: EarthOrientationParameter = EarthOrientationParameter(
 def convertToSEZ(redis: Redis) -> ndarray:
     """Fixture to get properly converted SEZ observation vector."""
     # pylint: disable=unused-argument
-    updateReductionParameters(JULIAN_DATE, eops=EOP)
+    updateReductionParameters(CALENDAR_DATE, eops=EOP)
     return getSlantRangeVector(lla2ecef(LLA), ECI)
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -65,7 +66,7 @@ def testNonsphericalAcceleration():
     """Calculate non-spherical acceleration and compare versus STK values."""
     # STK Scenario using HPOP, 4x4 EGM96 gravity model only.
     jd = JulianDate.getJulianDate(2020, 3, 30, 16, 0, 0.0)
-    updateReductionParameters(jd)
+    updateReductionParameters(datetime(2020, 3, 30, 16, 0, 0, 0))
     # Initial state vector
     eci_state = array(
         [
