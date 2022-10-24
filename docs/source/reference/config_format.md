@@ -558,8 +558,6 @@ See {mod}`~.physics.noise` for details on different types of noise/uncertainty.
 "noise": {
     "init_position_std_km": float,        # Optional
     "init_velocity_std_km_p_sec": float,  # Optional
-    "dynamics_noise_type": str,           # Optional
-    "dynamics_noise_magnitude": float,    # Optional
     "filter_noise_type": str,             # Optional
     "filter_noise_magnitude": float,      # Optional
     "random_seed": str | int,             # Optional
@@ -594,7 +592,6 @@ Optional object defining how RSOs are propagated.
     "station_keeping": bool,              # Optional
     "target_realtime_propagation": bool,  # Optional
     "sensor_realtime_propagation": bool,  # Optional
-    "realtime_observation": bool,         # Optional
     "truth_simulation_only": bool,        # Optional
 }
 ```
@@ -622,7 +619,8 @@ Optional object defining observation behavior preferences.
 
 ```python
 "observation": {
-    "field_of_view": bool,  # Optional
+    "background": bool,              # Optional
+    "realtime_observation": bool,    # Optional
 }
 ```
 
@@ -792,7 +790,7 @@ These are the required fields defined for all types of sensor objects.
         "efficiency": float,                      # Required
         "slew_rate": float,                       # Required
         "exemplar": list[float, float],           # Required
-        "calculate_fov": bool,                    # Optional
+        "background_observations": bool,                    # Optional
         "detectable_vismag": float,               # Optional
         "minimum_range": float,                   # Optional
         "maximum_range": float,                   # Optional
