@@ -93,7 +93,7 @@ def testFK5ReductionAlgorithm():
 
 def testValidJulianDate():
     """Test reduction algorithm using only :class:`.JulianDate` as input."""
-    # Julian date
+    # UTC date
     calendar_date = datetime.datetime(2018, 3, 15, 12, 55, 33, 780000)
     # (rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt, eops, gast, eq_equinox)
     updateReductionParameters(calendar_date)

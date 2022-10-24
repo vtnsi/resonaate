@@ -145,7 +145,7 @@ def dayOfYear(year, month, day, hour, minute, second):
         days += days_in_month[count - 1]
         count += 1
 
-    return days + day + hour / 24 + minute / 1440 + second / const.DAYS2SEC
+    return days + day + hour / 24 + minute / 1440 + second / 86400
 
 
 def getTargetJulianDate(start_julian_date, jump_delta):

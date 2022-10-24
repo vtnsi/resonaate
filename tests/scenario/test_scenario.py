@@ -8,11 +8,13 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
+from numpy import isclose
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
 from resonaate.data.detected_maneuver import DetectedManeuver
 from resonaate.data.importer_database import ImporterDatabase
+from resonaate.data.observation import Observation
 from resonaate.physics.time.conversions import getTargetJulianDate
 from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario import buildScenarioFromConfigDict, buildScenarioFromConfigFile
@@ -73,7 +75,7 @@ def propagateScenario(
     # Propagate scenario forward in time
     app.propagateTo(target_julian_date)
 
-    assert app.clock.julian_date_epoch == target_julian_date
+    assert isclose(app.clock.julian_date_epoch, target_julian_date)
 
     app.shutdown(flushall=True)
 
@@ -199,6 +201,28 @@ class TestScenarioApp:
         app = propagateScenario(datafiles, init_filepath, elapsed_time)
         maneuver_query = Query(DetectedManeuver)
         assert app.database.getData(maneuver_query, multi=False) is None
+
+    @pytest.mark.regression()
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testObservationNumber(self, datafiles: str):
+        """Test that the main_init produces 29 observations on the first timestep."""
+        init_filepath = "main_init.json"
+        elapsed_time = timedelta(minutes=5)
+        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        observation_query = Query(Observation)
+        assert len(app.database.getData(observation_query, multi=True)) == 29
+
+    @pytest.mark.realtime()
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testSaveObservation(self, datafiles: str):
+        """Test `_saveObservation` function."""
+        # pylint: disable=protected-access
+        init_filepath = "main_init.json"
+        elapsed_time = timedelta(minutes=5)
+        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        app.saveDatabaseOutput()
+        app._logObservations(app.tasking_engines[2].observations)
+        app._logMissedObservations(app.tasking_engines[2].missed_observations)
 
 
 @pytest.mark.scenario()

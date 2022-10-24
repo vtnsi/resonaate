@@ -19,6 +19,9 @@
     "target_realtime_propagation": false,
     "sensor_realtime_propagation": false
   },
+  "observation": {
+    "realtime_observation": false
+  },
   "geopotential": {
     "model": "egm96.txt",
     "degree": 4,

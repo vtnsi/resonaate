@@ -418,7 +418,6 @@ def subtendedAngle(vector1: ndarray, vector2: ndarray, safe: bool = False) -> fl
     Returns:
         ``float``: angle subtended by input vectors, in radians
     """
-    # Ensure primary RSO are observed
     dotted = vdot(vector1, vector2) / (norm(vector1) * norm(vector2))
     if not safe:
         return arccos(dotted)

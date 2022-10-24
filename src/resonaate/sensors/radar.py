@@ -79,7 +79,7 @@ class Radar(Sensor):
             frequency (``float``|``str``): radar's operating frequency (Hz)
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
-            background_observations (``bool``): whether or not to calculate serendipitous observations
+            background_observations (``bool``): whether or not to calculate serendipitous observations, default=True
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface

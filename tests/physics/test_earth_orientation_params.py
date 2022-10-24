@@ -94,7 +94,7 @@ def testDefaultEOPFile():
     assert isinstance(eops.date, datetime.date)
     assert eops.delta_atomic_time == 37
     assert eops.length_of_day == 0.0009668
-    assert eops.delta_ut1 == 0.1532160
+    assert eops.delta_ut1 == 0.1532194
 
 
 def testInvalidDate():

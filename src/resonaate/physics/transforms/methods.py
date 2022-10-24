@@ -57,9 +57,7 @@ def eci2ecef(x_eci: ndarray[float, float, float, float, float, float]) -> ndarra
     """
     reduction = getReductionParameters()
     r_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[:3]))
-    om_earth = asarray(
-        [0, 0, Earth.spin_rate * (1 - reduction["lod"] / const.DAYS2SEC)], dtype=float
-    )
+    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)], dtype=float)
     vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], r_ecef)
     v_correction = cross(om_earth, vel_pef)
     v_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[3:]) - v_correction)
@@ -84,9 +82,7 @@ def ecef2eci(x_ecef: ndarray[float, float, float, float, float, float]) -> ndarr
     """
     reduction = getReductionParameters()
     r_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[:3]))
-    om_earth = asarray(
-        [0, 0, Earth.spin_rate * (1 - reduction["lod"] / const.DAYS2SEC)], dtype=float
-    )
+    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)], dtype=float)
     vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], x_ecef[:3])
     v_correction = cross(om_earth, vel_pef)
     v_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[3:]) + v_correction)
@@ -271,7 +267,7 @@ def ecef2lla(x_ecef):
 def rsw2eci(
     x_eci: ndarray[float, float, float, float, float, float],
     x_rsw: ndarray[float, float, float, float, float, float],
-) -> ndarray:
+):
     """Convert a RSW relative state vector to a 6x1 ECI state vector.
 
     This converts the relative RSW state into an absolute ECI state relative to a given ECI state.
@@ -287,11 +283,11 @@ def rsw2eci(
         :cite:t:`vallado_2013_astro`, Section 3.4.1, Eqn 3-20
 
     Args:
-        x_eci (``ndarray``): 6x1 ECI reference state vector, (km; km/sec)
-        x_rsw (``ndarray``): 6x1 RSW state vector, relative to `x_eci`, (km; km/sec)
+        x_eci (``np.ndarray``): 6x1 ECI reference state vector, (km; km/sec)
+        x_rsw (``np.ndarray``): 6x1 RSW state vector, relative to `x_eci`, (km; km/sec)
 
     Returns:
-        (``ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
+        (``np.ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
     """
     r_hat: ndarray[float, float, float] = x_eci[:3] / norm(x_eci[:3])
     w_hat: ndarray[float, float, float] = cross(x_eci[:3], x_eci[3:]) / norm(
@@ -312,7 +308,7 @@ def rsw2eci(
 def ntw2eci(
     x_eci: ndarray[float, float, float, float, float, float],
     x_ntw: ndarray[float, float, float, float, float, float],
-) -> ndarray:
+):
     """Convert a NTW relative state vector to a 6x1 ECI state vector.
 
     This converts the relative NTW state into an absolute ECI state relative to a given ECI state.
@@ -328,11 +324,11 @@ def ntw2eci(
         :cite:t:`vallado_2013_astro`, Section 3.4.1, Eqn 3-21
 
     Args:
-        x_eci (``ndarray``): 6x1 ECI reference state vector, (km; km/sec)
-        x_ntw (``ndarray``): 6x1 NTW state vector, relative to `x_eci`, (km; km/sec)
+        x_eci (``np.ndarray``): 6x1 ECI reference state vector, (km; km/sec)
+        x_ntw (``np.ndarray``): 6x1 NTW state vector, relative to `x_eci`, (km; km/sec)
 
     Returns:
-        (``ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
+        (``np.ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
     """
     t_hat: ndarray[float, float, float] = x_eci[3:] / norm(x_eci[3:])
     w_hat: ndarray[float, float, float] = cross(x_eci[:3], x_eci[3:]) / norm(

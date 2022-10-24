@@ -87,7 +87,7 @@ class Optical(Sensor):
             exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
-            background_observations (``bool``): whether or not to calculate serendipitous observations
+            background_observations (``bool``): whether or not to calculate serendipitous observations, default=True
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
@@ -208,8 +208,8 @@ class Optical(Sensor):
             if limb_angle > elevation:
                 return False, MissedObservation.Explanation.LIMB_OF_EARTH
 
+        # Ground based require eclipse conditions
         else:
-            # Ground based require eclipse conditions
             ground_lighting = checkGroundSensorLightingConditions(
                 self.host.eci_state[:3], sun_eci_position / norm(sun_eci_position)
             )

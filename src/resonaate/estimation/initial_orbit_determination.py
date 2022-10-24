@@ -4,6 +4,7 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pickle import loads
 from typing import TYPE_CHECKING
 
@@ -21,7 +22,7 @@ from ..physics.constants import DAYS2SEC
 from ..physics.orbit_determination import OrbitDeterminationFunction
 from ..physics.orbit_determination.lambert import determineTransferDirection
 from ..physics.orbits.utils import getPeriod, getSemiMajorAxis, getTrueAnomalyFromRV
-from ..physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
+from ..physics.time.stardate import JulianDate, ScenarioTime
 from ..physics.transforms.methods import ecef2eci, lla2ecef, razel2sez, sez2ecef
 from ..physics.transforms.reductions import updateReductionParameters
 from ..sensors.sensor_base import ObservationTuple
@@ -226,7 +227,7 @@ class LambertIOD(InitialOrbitDetermination):
         Returns:
             ``ndarray``: ECI state of observation
         """
-        updateReductionParameters(julianDateToDatetime(JulianDate(observation.julian_date)))
+        updateReductionParameters(datetime.fromisoformat(observation.epoch.timestampISO))
         observation_sez = razel2sez(
             observation.range_km, observation.elevation_rad, observation.azimuth_rad, 0, 0, 0
         )
