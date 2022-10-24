@@ -29,7 +29,7 @@ from ..job import CallbackRegistration, Job
 from .job_handler import JobHandler
 
 
-class PropagationJobHandler(JobHandler, metaclass=ABCMeta):
+class PropagationJobHandler(JobHandler):
     """Handle parallel propagation jobs during the simulation."""
 
     def handleProcessedJob(self, job):
