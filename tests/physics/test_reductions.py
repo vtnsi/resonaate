@@ -10,7 +10,7 @@ import pytest
 # RESONAATE Imports
 import resonaate.physics.constants as const
 from resonaate.physics.time.conversions import utc2TerrestrialTime
-from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.eops import EarthOrientationParameter
 from resonaate.physics.transforms.reductions import (
     getReductionParameters,
@@ -47,9 +47,9 @@ def testFK5ReductionAlgorithm():
     )
 
     # Given UTC
-    year, month, day, hour, minute, second = 2007, 4, 5, 12, 0, 0.0
+    year, month, day, hour, minute, second = 2007, 4, 5, 12, 0, 0
     # Given Julian date & Julian date at 0 hrs
-    julian_date = JulianDate.getJulianDate(year, month, day, hour, minute, second)
+    calendar_date = datetime.datetime(year, month, day, hour, minute, second)
     julian_day = JulianDate.getJulianDate(year, month, day, 0, 0, 0)
     # Given Polar motion (arcsec -> rad)
     x_p = 0.0349282 * const.ARCSEC2RAD
@@ -76,7 +76,7 @@ def testFK5ReductionAlgorithm():
         datetime.date(year, month, day), x_p, y_p, ddp80, dde80, dut1, lod, dat
     )
     # (rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt, eops, gast, eq_equinox)
-    updateReductionParameters(julian_date, eops=eops)
+    updateReductionParameters(calendar_date, eops=eops)
     params = getReductionParameters()
     rot_wt = params["rot_wt"]
     rot_rnp = params["rot_rnp"]
@@ -94,9 +94,9 @@ def testFK5ReductionAlgorithm():
 def testValidJulianDate():
     """Test reduction algorithm using only :class:`.JulianDate` as input."""
     # Julian date
-    julian_date = JulianDate.getJulianDate(2018, 3, 15, 12, 55, 33.78)
+    calendar_date = datetime.datetime(2018, 3, 15, 12, 55, 33, 780000)
     # (rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt, eops, gast, eq_equinox)
-    updateReductionParameters(julian_date)
+    updateReductionParameters(calendar_date)
     params = getReductionParameters()
     rot_w = params["rot_w"]
     rot_pn = params["rot_pn"]
@@ -110,18 +110,18 @@ def testValidJulianDate():
 
 def testInvalidJulianDate():
     """Test catching a bad :class:`.JulianDate` objects."""
-    # Ridiculous Julian date
+    # Ridiculous date
     julian_date = JulianDate(3)
     error_msg = r"year [-]*\d+ is out of range"
     with pytest.raises(ValueError, match=error_msg):
-        updateReductionParameters(julian_date)
+        julianDateToDatetime(julian_date)
 
-    # Less ridiculous Julian date, but before range of EOPs
-    julian_date = JulianDate.getJulianDate(2000, 1, 24, 7, 23, 56.9)
+    # Less ridiculous date, but before range of EOPs
+    calendar_date = datetime.datetime(2000, 1, 24, 7, 23, 56, 900000)
     with pytest.raises(KeyError):
-        updateReductionParameters(julian_date)
+        updateReductionParameters(calendar_date)
 
-    # Less ridiculous Julian date, but after range of EOPs
-    julian_date = JulianDate.getJulianDate(2050, 1, 24, 7, 23, 56.9)
+    # Date past range of EOPs
+    calendar_date = datetime.datetime(2050, 1, 24, 7, 23, 56, 900000)
     with pytest.raises(KeyError):
-        updateReductionParameters(julian_date)
+        updateReductionParameters(calendar_date)
