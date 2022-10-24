@@ -117,6 +117,7 @@ def getMockedErrorJobObject() -> Job:
     return job
 
 
+@pytest.mark.no_debug()
 @pytest.mark.usefixtures("redis_setup", "worker_manager")
 class TestBaseJobHandler:
     """Tests related to job handlers."""
