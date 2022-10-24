@@ -12,7 +12,7 @@ from .discrete_state_change_event import DiscreteStateChangeEvent
 from .event_stack import EventRecord, EventStack
 
 
-class ScheduledImpulse(DiscreteStateChangeEvent, metaclass=ABCMeta):
+class ScheduledImpulse(DiscreteStateChangeEvent, metaclass=ABCMeta):  # noqa: B024
     """Describes an impulsive maneuver that takes place at a specific time."""
 
     def __init__(self, time, delta_v, scope_instance_id):

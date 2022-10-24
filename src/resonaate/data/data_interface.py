@@ -32,7 +32,6 @@ class DataInterface(metaclass=ABCMeta):
     """
 
     # pylint: disable=no-member
-
     VALID_DATA_TYPES = {
         AgentModel.__tablename__: AgentModel,
         Epoch.__tablename__: Epoch,

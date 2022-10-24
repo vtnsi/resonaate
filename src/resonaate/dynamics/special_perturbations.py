@@ -94,7 +94,7 @@ class SpecialPerturbations(Celestial):
         derivative = empty_like(state, dtype=float)
 
         # Calculate the ECI - ECEF transformation for the integration time
-        julian_date = JulianDate(self.init_julian_date + time / const.DAYS2SEC)
+        julian_date = JulianDate(self.init_julian_date + time / 86400)
         ecef_2_eci = _getRotationMatrix(julian_date, getReductionParameters())
 
         # Get third body positions
@@ -353,7 +353,7 @@ def _getGeneralRelativityAccelerationIERS(
     # Earth & Sun Gravitational constants (km^3/sec^2)
     gme, gms = Earth.mu, Sun.mu
     # Earth's angular momentum per unit mass (km^2/s)
-    j_e = array([0.0, 0.0, 980])
+    j_e: ndarray[float, float, float] = array([0.0, 0.0, 980])
     # speed of light squared (km/s)^2
     c_sq = (const.SPEED_OF_LIGHT / 1000) ** 2
     # Intermediate terms
