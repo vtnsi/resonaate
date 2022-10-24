@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, List
 from numpy import zeros, zeros_like
 
 # Local Imports
-from ..agents.sensing_agent import SensingAgent
 from ..estimation.sequential.sequential_filter import FilterFlag
 
 # Package Imports

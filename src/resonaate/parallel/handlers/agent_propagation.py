@@ -3,7 +3,6 @@
 import json
 import os.path
 import pickle
-from abc import ABCMeta
 from collections import defaultdict
 from enum import Flag
 

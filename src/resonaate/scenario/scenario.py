@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 from numpy import around, seterr
 from numpy.random import default_rng
-from scipy.linalg import norm
 
 # Local Imports
 from ..agents.estimate_agent import EstimateAgent
