@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     # Standard Library Imports
     from typing import Any, Callable, Dict, List, Optional, Tuple
 
+    # Third Party Imports
+    from typing_extensions import Self
+
 
 class SubConfig:
     """Class that represents a section in the configuration.

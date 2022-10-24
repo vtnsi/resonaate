@@ -18,6 +18,9 @@ from .agent_base import Agent
 
 # Type checking
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
+
     # Third Party Imports
     from typing_extensions import Self
 
@@ -99,7 +102,6 @@ class TargetAgent(Agent):
             reflectivity=reflectivity,
             station_keeping=station_keeping,
         )
-
         # Properly initialize the TargetAgent's state types
         self._truth_state = array(initial_state, copy=True)
         self._ecef_state = eci2ecef(self._truth_state)
