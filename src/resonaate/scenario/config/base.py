@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from typing import Any, Type
 
 
-class BaseConfigError(Exception):
+class BaseConfigError(Exception, ABC):
     """Base exception for configuration errors."""
 
     def __init__(self, config_label: str) -> None:
