@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from datetime import datetime
 from unittest.mock import create_autospec
 
 # Third Party Imports
@@ -32,13 +33,15 @@ def getMockedScenarioClock() -> ScenarioClock:
     """Get a mocked :class:`.ScenarioClock` object."""
     mocked_clock = create_autospec(ScenarioClock, instance=True)
     mocked_clock.julian_date_start = JulianDate(2459304.0666666665)
+    mocked_clock.datetime_start = datetime(2021, 3, 30, 13, 36)
     mocked_clock.julian_date_epoch = mocked_clock.julian_date_start
+    mocked_clock.datetime_epoch = mocked_clock.datetime_start
     mocked_clock.julian_date_stop = mocked_clock.julian_date_start + (1 / 3)
     mocked_clock.initial_time = ScenarioTime(0.0)
     mocked_clock.time_span = ScenarioTime(28800.0)
     mocked_clock.time = ScenarioTime(0.0)
     mocked_clock.dt_step = ScenarioTime(300.0)
-    updateReductionParameters(julian_date=mocked_clock.julian_date_start)
+    updateReductionParameters(utc_date=mocked_clock.datetime_start)
     return mocked_clock
 
 
@@ -53,7 +56,7 @@ def getTestEarthSensor() -> AdvRadar:
         efficiency=0.9,
         exemplar=np.array([1, 40744]),
         field_of_view={"fov_shape": "conic"},
-        calculate_fov=False,
+        background_observations=False,
         power_tx=120000.0,
         frequency=10000000000.0,
         slew_rate=3.0000000000000004,
@@ -120,7 +123,7 @@ def getObsTuples(sensor_agent: SensingAgent) -> ObservationTuple:
         sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
     )
 
-    return ObservationTuple(radar_observation, sensor_agent, np.array([2, 3, 1, 1]))
+    return ObservationTuple(radar_observation, sensor_agent, np.array([2, 3, 1, 1]), "Test")
 
 
 @pytest.fixture(name="nominal_filter")

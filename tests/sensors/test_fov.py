@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from copy import deepcopy
+from datetime import datetime
 
 # Third Party Imports
 import pytest
@@ -14,7 +15,7 @@ from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.dynamics.two_body import TwoBody
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-from resonaate.physics.time.stardate import JulianDate, ScenarioTime
+from resonaate.physics.time.stardate import ScenarioTime
 from resonaate.physics.transforms.methods import getSlantRangeVector
 from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario.clock import ScenarioClock
@@ -37,7 +38,7 @@ SENSOR_CONFIG = {
     "aperture_area": 530.929158456675,
     "sensor_type": "Radar",
     "exemplar": [0.04908738521234052, 40500.0],
-    "calculate_fov": True,
+    "background_observations": True,
     "lat": 0.2281347875532986,
     "lon": 0.5432822498364406,
     "alt": 0.095,
@@ -50,8 +51,8 @@ SENSOR_CONFIG = {
 @pytest.fixture(name="clock")
 def getScenarioClock(reset_shared_db: None) -> ScenarioClock:
     """Get a ScenarioClock."""
-    julian_date = JulianDate(2459006.5)
-    return ScenarioClock(julian_date, 60.0, 30.0)
+    start_date = datetime(2020, 6, 6, 0, 0)
+    return ScenarioClock(start_date, 60.0, 30.0)
 
 
 @pytest.fixture(name="conic_sensor_agent")
@@ -160,7 +161,7 @@ def testCheckTargetsInView(
     conic_sensor_agent: SensingAgent,
 ):
     """Test if multiple targets are in the Field of View."""
-    updateReductionParameters(clock.julian_date_epoch)
+    updateReductionParameters(clock.datetime_epoch)
     slant_range_sez = getSlantRangeVector(
         conic_sensor_agent.sensors.host.ecef_state, primary_rso.eci_state
     )
@@ -170,21 +171,23 @@ def testCheckTargetsInView(
     assert len(agents) == 2
 
 
-def testInFoV(
+def testInFieldOfView(
     primary_rso: EstimateAgent,
     secondary_rso: EstimateAgent,
     conic_sensor_agent: SensingAgent,
     rectangular_sensor_agent: SensingAgent,
 ):
     """Test observations of two RSO with a single sensor at one time."""
-    in_fov = conic_sensor_agent.sensors.inFOV(
+    in_fov = conic_sensor_agent.sensors.field_of_view.inFieldOfView(
         primary_rso.eci_state[:3], secondary_rso.eci_state[:3]
     )
     assert bool(in_fov) is True
-    not_in_fov = conic_sensor_agent.sensors.inFOV(primary_rso.eci_state[:3], array([0, 0.01, 0]))
+    not_in_fov = conic_sensor_agent.sensors.field_of_view.inFieldOfView(
+        primary_rso.eci_state[:3], array([0, 0.01, 0])
+    )
     assert bool(not_in_fov) is False
 
-    rectangle_in_fov = rectangular_sensor_agent.sensors.inFOV(
+    rectangle_in_fov = rectangular_sensor_agent.sensors.field_of_view.inFieldOfView(
         primary_rso.eci_state[:3], secondary_rso.eci_state[:3]
     )
     assert bool(rectangle_in_fov) is True

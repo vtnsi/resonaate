@@ -28,7 +28,7 @@ from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.parallel import getRedisConnection
 from resonaate.physics.time.conversions import getTargetJulianDate
-from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario import buildScenarioFromConfigDict
 from resonaate.scenario.config import ScenarioConfig
@@ -283,7 +283,7 @@ def getTestEarthSensor() -> AdvRadar:
         efficiency=0.9,
         exemplar=array([1, 40744]),
         field_of_view={"fov_shape": "conic"},
-        calculate_fov=False,
+        background_observations=False,
         power_tx=120000.0,
         frequency=10000000000.0,
         slew_rate=3.0000000000000004,
@@ -317,7 +317,7 @@ def getTestRadarObservationTuple(
     radar_observation: Observation, sensor_agent: AgentModel
 ) -> ObservationTuple:
     """Create a custom :class:`ObservationTuple` object for a sensor."""
-    return ObservationTuple(radar_observation, sensor_agent, array([2, 3, 1, 1]))
+    return ObservationTuple(radar_observation, sensor_agent, array([2, 3, 1, 1]), "Visible")
 
 
 @pytest.fixture(name="optical_observation")
@@ -341,14 +341,14 @@ def getTestOpticalObservationTuple(
     optical_observation: Observation, sensor_agent: AgentModel
 ) -> ObservationTuple:
     """Create a custom :class:`ObservationTuple` object for a sensor."""
-    return ObservationTuple(optical_observation, sensor_agent, array([2, 3, 1, 1]))
+    return ObservationTuple(optical_observation, sensor_agent, array([2, 3, 1, 1]), "Visible")
 
 
 @pytest.fixture(name="update_reduction_parameters", autouse=True)
 def _getUpdateReductionParameters(redis: Redis) -> None:
     """Run updateReductionParameters."""
     # pylint:disable=unused-argument
-    updateReductionParameters(julian_date=CURRENT_JULIAN_DATE)
+    updateReductionParameters(julianDateToDatetime(CURRENT_JULIAN_DATE))
 
 
 class TestAdaptiveEstimation:

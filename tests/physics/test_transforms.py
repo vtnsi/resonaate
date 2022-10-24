@@ -52,9 +52,9 @@ class TestECI:
         self.v_gcrf = np.asarray([-4.743220157, 0.790536497, 5.533755727])  # km/sec
 
         # Given UTC
-        year, month, day, hour, minute, second = 2004, 4, 6, 7, 51, 28.386009
+        year, month, day, hour, minute, second, microsecond = 2004, 4, 6, 7, 51, 28, 386009
         # Julian date & Julian date at 0 hrs
-        self.julian_date = JulianDate.getJulianDate(year, month, day, hour, minute, second)
+        self.calendar_date = datetime.datetime(year, month, day, hour, minute, second, microsecond)
         # Given polar motion (arcsec -> rad)
         x_p = -0.140682 * const.ARCSEC2RAD
         y_p = 0.333309 * const.ARCSEC2RAD
@@ -74,7 +74,7 @@ class TestECI:
             datetime.date(year, month, day), x_p, y_p, ddp80, dde80, dut1, lod, dat
         )
         # Actually update with our test values
-        updateReductionParameters(self.julian_date, eops=self.eops)
+        updateReductionParameters(self.calendar_date, eops=self.eops)
 
     def testEci2Ecef(self):
         """Test conversion from ECI (inertial) to ECEF (fixed)."""
@@ -264,7 +264,7 @@ class TestRaDecRazelSEZ:
             ]
         )
         self.lla = np.asarray([np.radians(39.007), np.radians(-104.883), 2.19456])
-        self.jdate = JulianDate.getJulianDate(1994, 5, 14, 13, 11, 20.59856)
+        self.calendar_date = datetime.datetime(1994, 5, 14, 13, 11, 20, 598560)
         self.eci = np.asarray(
             [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093]
         )
@@ -280,7 +280,7 @@ class TestRaDecRazelSEZ:
             0.0021743,
             28,
         )
-        updateReductionParameters(self.jdate, eops=self.eops)
+        updateReductionParameters(self.calendar_date, eops=self.eops)
 
     def testAzEl2RaDec(
         self,

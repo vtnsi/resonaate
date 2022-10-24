@@ -330,7 +330,7 @@ class SensorAdditionEvent(Event):
             fov_shape=sensor.field_of_view.fov_shape,
             fov_angle_1=fov_angle_1,
             fov_angle_2=fov_angle_2,
-            calculate_fov=sensor.background_observations,
+            background_observations=sensor.background_observations,
             tx_power=tx_power,
             tx_frequency=tx_frequency,
             station_keeping_json=dumps(sensor.station_keeping.toJSON()),
