@@ -10,7 +10,6 @@ import pytest
 
 # RESONAATE Imports
 import resonaate.physics.constants as const
-from resonaate.physics.time.stardate import JulianDate
 from resonaate.physics.transforms.eops import EarthOrientationParameter
 from resonaate.physics.transforms.methods import getSlantRangeVector, lla2ecef
 from resonaate.physics.transforms.reductions import updateReductionParameters

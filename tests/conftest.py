@@ -55,6 +55,23 @@ def _patchMissingEnvVariables(monkeypatch: pytest.MonkeyPatch) -> None:
         BehavioralConfig.getConfig()
 
 
+@pytest.fixture(autouse=True)
+def _debugMode(request: pytest.FixtureRequest) -> None:
+    """Automatically delete each environment variable, if set.
+
+    Args:
+        request (:class:`pytest.FixtureRequest`): request obj to test for marks to bypass this
+
+    Note:
+        This is used so tests can be debugged without the parallel watchdog terminating workers.
+    """
+    if "no_debug" in request.keywords:
+        BehavioralConfig.getConfig().debugging.ParallelDebugMode = False
+        return
+
+    BehavioralConfig.getConfig().debugging.ParallelDebugMode = True
+
+
 @pytest.fixture(scope="session", name="test_logger")
 def getTestLoggerObject() -> Logger:
     """Create a custom :class:`logging.Logger` object."""
