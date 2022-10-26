@@ -22,7 +22,6 @@ setuptools.setup(
     install_requires=[
         "numpy>=1.19",
         "scipy>=1.6",
-        "concurrent-log-handler>=0.9.19",
         "sqlalchemy>=1.3",
         "matplotlib>=3.3",
         "mjolnir>=1.1.3",

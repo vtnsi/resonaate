@@ -37,7 +37,6 @@ To install RESONAATE package, the following dependencies must be installed first
 
 ```bash
 async-timeout==4.0.2
-concurrent-log-handler==0.9.20
 cycler==0.11.0
 Deprecated==1.2.13
 fonttools==4.32.0

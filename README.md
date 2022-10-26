@@ -44,7 +44,6 @@ Please see software documentation for best installation practices.
 - Python (PIP) Packages
   - [NumPy](https://www.numpy.org/)
   - [SciPy](https://www.scipy.org/scipylib/index.html)
-  - [concurrent-log-handler](https://github.com/Preston-Landers/concurrent-log-handler)
   - [SQLAlchemy](https://www.sqlalchemy.org/)
   - [matplotlib](https://matplotlib.org/index.html)
   - [mjolnir](https://code.vt.edu/space-research/resonaate/mjolnir)
@@ -201,6 +200,7 @@ pre-commit install
 **Note:**
 
 If you use `zsh`, you may need to use the following command instead:
+
 ```zsh
 pip install -e ".[dev,test,doc]"
 pre-commit install
@@ -221,7 +221,6 @@ pre-commit install
   ```
 
 ### Testing
-
 
 - Run unit tests only (~30 s)
 

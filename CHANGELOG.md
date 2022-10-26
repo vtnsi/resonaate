@@ -59,6 +59,7 @@ ______________________________________________________________________
 - `"dynamics_noise_magnitude"` & `"dynamics_noise_type"` from `NoiseConfig` because they are not used (see 58f72522)
 - `process_noise` property from `TargetAgent` because it is not used (see 58f72522)
 - `Sensor.inFOV` class function is now redundant thanks to `FieldOfView.inFieldOfView()`
+- `concurrent-log-handler` as a dependency
 
 ### Fixed
 
