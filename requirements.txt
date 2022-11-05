@@ -1,6 +1,6 @@
 # Base requirements - pinned for development
 numpy==1.21.6
 scipy==1.7.3
-sqlalchemy==1.4.41
+sqlalchemy==1.4.42
 matplotlib==3.5.3
 mjolnir==1.1.3
