@@ -37,10 +37,10 @@ setuptools.setup(
             "flake8-plugin-utils==1.3.2",
             "flake8-pytest-style==1.6.0",
             "flake8-rst-docstrings==0.3.0",
-            "pylint==2.15.6",
+            "pylint==2.15.7",
             # Type Checking
             "mypy==0.991",
-            "types-sqlalchemy==1.4.53.17",
+            "types-sqlalchemy==1.4.53.18",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
             "black==22.10.0",
