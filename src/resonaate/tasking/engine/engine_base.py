@@ -16,6 +16,9 @@ from ..rewards.reward_base import Reward
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from datetime import datetime
+
     # Local Imports
     from ...data.missed_observation import MissedObservation
     from ...data.observation import Observation
@@ -176,14 +179,14 @@ class TaskingEngine(metaclass=ABCMeta):
         return missed_observations
 
     @abstractmethod
-    def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
+    def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
 
         Must be overridden by implemented classes.
 
         Args:
-            prior_julian_date (:class:`.JulianDate`): previous epoch
-            julian_date (:class:`.JulianDate`): epoch at which to perform analysis
+            prior_datetime_epoch (datetime): previous epoch
+            datetime_epoch (datetime): epoch at which to perform analysis
         """
         raise NotImplementedError
 

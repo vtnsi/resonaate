@@ -2,26 +2,34 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+from mjolnir import KeyValueStore
 from numpy import zeros
 from sqlalchemy.orm import Query
 
 # Local Imports
-from ...data.data_interface import Observation
+from ...data.epoch import Epoch
 from ...data.events import EventScope, handleRelevantEvents
-from ...data.query_util import addAlmostEqualFilter
+from ...data.observation import Observation
 from ...data.resonaate_database import ResonaateDatabase
 from ...data.task import Task
 from ...job_handlers.base import ParallelMixin
 from ...job_handlers.task_execution import TaskExecutionJobHandler
 from ...job_handlers.task_prediction import TaskPredictionJobHandler
+from ...physics.time.stardate import datetimeToJulianDate
+from ...sensors.sensor_base import ObservationTuple
 from .engine_base import TaskingEngine
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from datetime import datetime
+
     # Local Imports
+    from ...agents.sensing_agent import SensingAgent
     from ...physics.time.stardate import JulianDate
     from ..decisions import Decision
     from ..rewards import Reward
@@ -68,7 +76,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self._execute_handler = TaskExecutionJobHandler()
         self._execute_handler.registerCallback(self)
 
-    def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
+    def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
 
         #. The rewards for all possible tasks are computed
@@ -76,8 +84,8 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         #. The optimized tasking strategy is applied and observations are collected
 
         Args:
-            prior_julian_date (:class:`.JulianDate`): previous epoch
-            julian_date (:class:`.JulianDate`): epoch at which to perform analysis
+            prior_datetime_epoch (datetime): previous epoch
+            datetime_epoch (datetime): epoch at which to perform analysis
         """
         # Pre-conditions: reset values to ensure clean tasking state at start of every timestep
         self._observations = []
@@ -92,8 +100,8 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
                 self,
                 ResonaateDatabase.getSharedInterface(),
                 EventScope.TASK_REWARD_GENERATION,
-                prior_julian_date,
-                julian_date,
+                datetimeToJulianDate(prior_datetime_epoch),
+                datetimeToJulianDate(datetime_epoch),
                 self.logger,
                 scope_instance_id=self.unique_id,
             )
@@ -102,7 +110,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         # Load imported observations
         if self._importer_db:
-            self.saveObservations(self.loadImportedObservations(julian_date))
+            self.saveObservations(self.loadImportedObservations(datetime_epoch))
 
         tasked_sensors = set()
         observed_targets = set()
@@ -119,19 +127,23 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         """Create tasking solution based on the current simulation state."""
         self.decision_matrix = self._decision(self.reward_matrix)
 
-    def loadImportedObservations(self, epoch: JulianDate) -> list[Observation]:
+    def loadImportedObservations(self, datetime_epoch: datetime) -> list[ObservationTuple]:
         """Load imported :class:`.Observation` objects from :class:`.ImporterDatabase`.
 
         Args:
-            epoch (:class:`.JulianDate`): epoch at which to query the DB for observations
+            datetime_epoch (datetime): epoch at which to query the DB for observations
 
         Returns:
-            ``list``: :class:`.Observation` objects imported from database
+            ``list``: :class:`.ObservationTuple` objects constructed from imported database
         """
-        query = addAlmostEqualFilter(Query(Observation), Observation, "julian_date", epoch)
+        query = (
+            Query(Observation)
+            .join(Epoch)
+            .filter(Epoch.timestampISO == datetime_epoch.isoformat(timespec="microseconds"))
+        )
         imported_observation_data = self._importer_db.getData(query)
 
-        imported_observations = []
+        imported_observations: list[Observation] = []
         sensor_position_set = set()
         for observation in imported_observation_data:
             position_key = (
@@ -151,7 +163,22 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             msg = f"Imported {len(imported_observations)} observations"
             self.logger.debug(msg)
 
-        return imported_observations
+        sensor_agents = self._fetchSensorAgents()
+
+        imported_obs_tuples = [
+            ObservationTuple(
+                observation,
+                sensor_agents[observation.sensor_id],
+                sensor_agents[observation.sensor_id].sensors.angle_measurements,
+                "Visible",
+            )
+            for observation in imported_observations
+        ]
+
+        return imported_obs_tuples
+
+    def _fetchSensorAgents(self) -> dict[int, SensingAgent]:
+        return loads(KeyValueStore.getValue("sensor_agents"))
 
     def getCurrentTasking(self, julian_date: JulianDate) -> Task:
         """Return current tasking solution.

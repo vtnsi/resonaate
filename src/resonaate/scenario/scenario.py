@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from mjolnir import KeyValueStore, WorkerManager
 from numpy import around, seterr
 from numpy.random import default_rng
+from sqlalchemy.orm import Query
 
 # Local Imports
 from ..agents.estimate_agent import EstimateAgent
@@ -19,6 +20,7 @@ from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
+from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import spacecraftDynamicsFactory
@@ -268,6 +270,19 @@ class Scenario(ParallelMixin):
     def saveDatabaseOutput(self) -> None:
         """Save Truth, Estimate, and Observation data to the output database."""
         # Grab `TruthEphemeris` for targets & sensors
+        if not self.database.getData(
+            Query(Epoch).filter(
+                Epoch.timestampISO == self.clock.datetime_epoch.isoformat(timespec="microseconds")
+            ),
+            multi=False,
+        ):
+            self.database.insertData(
+                Epoch(
+                    julian_date=self.clock.julian_date_epoch,
+                    timestampISO=self.clock.datetime_epoch.isoformat(timespec="microseconds"),
+                )
+            )
+
         output_data = [tgt.getCurrentEphemeris() for tgt in self.target_agents.values()]
         output_data.extend(sensor.getCurrentEphemeris() for sensor in self.sensor_agents.values())
 
@@ -313,6 +328,7 @@ class Scenario(ParallelMixin):
     def stepForward(self) -> None:
         """Propagate the simulation forward by a single timestep."""
         prior_jd = self.current_julian_date
+        prior_datetime = self.clock.datetime_epoch
         next_jd = JulianDate(float(prior_jd) + self.clock.dt_step * SEC2DAYS)
         handleRelevantEvents(
             self, self.database, EventScope.SCENARIO_STEP, prior_jd, next_jd, self.logger
@@ -329,6 +345,7 @@ class Scenario(ParallelMixin):
             prior_julian_date=prior_jd,
             julian_date=self.clock.julian_date_epoch,
             epoch_time=self.clock.time,
+            datetime_epoch=self.clock.datetime_epoch,
         )
 
         KeyValueStore.setValue("target_agents", dumps(self.target_agents))
@@ -364,7 +381,7 @@ class Scenario(ParallelMixin):
             self.logger.debug("Assess")
             obs_dict = defaultdict(list)
             for tasking_engine in self._tasking_engines.values():
-                tasking_engine.assess(prior_jd, self.clock.julian_date_epoch)
+                tasking_engine.assess(prior_datetime, self.clock.datetime_epoch)
                 for obs_tuple in tasking_engine.observations:
                     obs_dict[obs_tuple.observation.target_id].append(obs_tuple)
 

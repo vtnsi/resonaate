@@ -13,6 +13,7 @@ from sqlalchemy.orm import Query
 
 # RESONAATE Imports
 from resonaate.data.detected_maneuver import DetectedManeuver
+from resonaate.data.epoch import Epoch
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.observation import Observation
 from resonaate.physics.time.conversions import getTargetJulianDate
@@ -33,7 +34,7 @@ from ..conftest import (
 # Type Checking Imports
 if TYPE_CHECKING:
     # RESONAATE Imports
-    from resonaate.scenario import Scenario
+    from resonaate.scenario.scenario import Scenario
 
 
 @pytest.fixture()
@@ -222,6 +223,19 @@ class TestScenarioApp:
         app.saveDatabaseOutput()
         app._logObservations(app.tasking_engines[2].observations)
         app._logMissedObservations(app.tasking_engines[2].missed_observations)
+
+    @pytest.mark.realtime()
+    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    def testSaveObservationInsertsEpochs(self, datafiles: str):
+        """Test `saveDatabaseOutput` function will insert `Epoch` rows to the DB if they do not already exist."""
+        # pylint: disable=protected-access
+        init_filepath = "quick_init.json"
+        elapsed_time = timedelta(minutes=6)
+        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        epoch_query = Query(Epoch).filter(Epoch.timestampISO == "2021-03-30T16:06:00.000000")
+        assert app.database.getData(epoch_query, multi=False) is None
+        app.saveDatabaseOutput()
+        assert app.database.getData(epoch_query, multi=False) is not None
 
 
 @pytest.mark.scenario()

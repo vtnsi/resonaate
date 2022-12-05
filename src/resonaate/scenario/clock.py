@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 # Local Imports
 from ..data.epoch import Epoch
 from ..data.resonaate_database import ResonaateDatabase
-from ..physics.time.stardate import ScenarioTime, datetimeToJulianDate, julianDateToDatetime
+from ..physics.time.stardate import ScenarioTime, datetimeToJulianDate
 from ..physics.transforms.reductions import updateReductionParameters
 
 # Type Checking Imports
@@ -66,7 +66,12 @@ class ScenarioClock:
         while sim_time_iter <= self.time_span:
             jd_iter = sim_time_iter.convertToJulianDate(self.julian_date_start)
             epochs.append(
-                Epoch(julian_date=jd_iter, timestampISO=julianDateToDatetime(jd_iter).isoformat())
+                Epoch(
+                    julian_date=jd_iter,
+                    timestampISO=(start_date + timedelta(seconds=sim_time_iter)).isoformat(
+                        timespec="microseconds"
+                    ),
+                )
             )
 
             sim_time_iter += self.dt_step

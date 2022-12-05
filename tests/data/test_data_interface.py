@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from copy import deepcopy
 from os.path import abspath, exists, join
 from typing import TYPE_CHECKING
 
@@ -18,6 +19,7 @@ from resonaate.data.agent import AgentModel
 from resonaate.data.ephemeris import TruthEphemeris
 from resonaate.data.epoch import Epoch
 from resonaate.data.importer_database import ImporterDatabase
+from resonaate.data.queries import fetchTruthByJDInterval
 from resonaate.data.resonaate_database import ResonaateDatabase
 
 # Local Imports
@@ -456,3 +458,125 @@ class TestImporterDatabase:
         assert result.agent.name == EXAMPLE_RSO[1]["name"]
         assert allclose(result.eci, eci)
         importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
+
+
+# SET UP EPOCH ENTRIES
+EXAMPLE_JD = [
+    2458207.010416667,
+    2459304.21527778,
+    2459304.21875,
+]
+EXAMPLE_JD_WITH_PRECISION_ERROR = [
+    2458207.010416666,
+    2459304.215277778,
+    2459304.218750001,
+]
+EXAMPLE_TIMESTAMPS = [
+    "2019-01-01T00:01:00.000",
+    "2021-03-30T17:10:00.000",
+    "2021-03-30T17:15:00.000",
+]
+EXAMPLE_EPOCHS = [
+    {"julian_date": jd, "timestampISO": ts} for jd, ts in zip(EXAMPLE_JD, EXAMPLE_TIMESTAMPS)
+]
+
+# SET UP AGENT ENTRIES
+RSO_UNIQUE_ID = 24601
+EXAMPLE_RSO_AGENT = {"name": "Sat1", "unique_id": RSO_UNIQUE_ID}
+
+# SET UP TRUTH ENTRIES
+EXAMPLE_ECI_STATES = [
+    [32832.44359, -26125.770428, -4175.978356, 1.920657, 2.399111, 0.090893],
+    [2586.058936, 6348.302803, 3801.942400, -3.304773, -2.193913, 5.915754],
+    [1296.645611, -2457.821083, 5721.873513, 0.179231, 0.093705, -0.000365],
+]
+EXAMPLE_TRUTH = [
+    {"julian_date": jd, "agent_id": RSO_UNIQUE_ID, "eci": eci}
+    for jd, eci in zip(EXAMPLE_JD, EXAMPLE_ECI_STATES)
+]
+EXAMPLE_TRUTH_WITH_JD_PRECISION_ERROR = [
+    {"julian_date": jd, "agent_id": RSO_UNIQUE_ID, "eci": eci}
+    for jd, eci in zip(EXAMPLE_JD_WITH_PRECISION_ERROR, EXAMPLE_ECI_STATES)
+]
+
+
+class TestDatabaseIssues:
+    """Write tests that demonstrate tricky issues that can result in lost data in queries."""
+
+    @pytest.fixture(name="epochs")
+    def getMultipleEpochs(self) -> list[Epoch]:
+        """Create several valid :class:`.Epoch` objects."""
+        epochs: list[Epoch] = []
+        for epoch in EXAMPLE_EPOCHS:
+            epochs.append(Epoch(**epoch))
+        return epochs
+
+    @pytest.fixture(name="agent")
+    def getAgent(self):
+        """Create a valid :class:`.AgentModel` object."""
+        return AgentModel(**EXAMPLE_RSO_AGENT)
+
+    @pytest.fixture(name="matched_ephems")
+    def getMultipleEphemerisData(self) -> list[TruthEphemeris]:
+        """Create several valid :class:`.TruthEphemeris` objects."""
+        ephems: list[TruthEphemeris] = []
+        for ex_ephem in EXAMPLE_TRUTH:
+            ephems.append(TruthEphemeris.fromECIVector(**ex_ephem))
+        return ephems
+
+    @pytest.fixture(name="unmatched_ephems")
+    def getMultipleRoundedEphemerisData(self) -> list[TruthEphemeris]:
+        """Create several valid :class:`.TruthEphemeris` objects."""
+        ephems: list[TruthEphemeris] = []
+        for ex_ephem in EXAMPLE_TRUTH_WITH_JD_PRECISION_ERROR:
+            ephems.append(TruthEphemeris.fromECIVector(**ex_ephem))
+        return ephems
+
+    @pytest.fixture(name="matched_epoch_db")
+    def createMatchedDB(
+        self, epochs: list[Epoch], agent: AgentModel, matched_ephems: list[TruthEphemeris]
+    ):
+        """Create a DB object where the `TruthEphemeris` table entries have matching julian dates in the `Epoch` table.
+
+        Yields:
+            :class:`.ResonaateDatabase`: properly constructed DB object
+        """
+        # Create & yield instance.
+        matched_db = ResonaateDatabase(db_path=None)
+        matched_db.insertData(deepcopy(agent))
+        matched_db.bulkSave(deepcopy(epochs + matched_ephems))
+        yield matched_db
+        matched_db.resetData(ResonaateDatabase.VALID_DATA_TYPES)
+
+    @pytest.fixture(name="unmatched_epoch_db")
+    def createUnmatchedDB(
+        self, epochs: list[Epoch], agent: AgentModel, unmatched_ephems: list[TruthEphemeris]
+    ):
+        """Create a DB object where the `TruthEphemeris` table entries where julian dates have truncated precision from the `Epoch` table.
+
+        Yields:
+            :class:`.ResonaateDatabase`: properly constructed DB object
+        """
+        # Create & yield instance.
+        unmatched_db = ResonaateDatabase(db_path=None)
+        unmatched_db.insertData(deepcopy(agent))
+        unmatched_db.bulkSave(deepcopy(epochs + unmatched_ephems))
+        yield unmatched_db
+        unmatched_db.resetData(ResonaateDatabase.VALID_DATA_TYPES)
+
+    def testBadJDJoin(
+        self, matched_epoch_db: ResonaateDatabase, unmatched_epoch_db: ResonaateDatabase
+    ):
+        """Test that ephemeris queries only return the correct number of ephemeris when there is a matching epoch entry in the `Epoch` table.
+
+        This test demonstrates that precision loss in julian date entries can result in lost queries.
+
+        Args:
+            matched_epoch_db (ResonaateDatabase): database where julian date entries in `TruthEphemeris` table have matching values in `Epoch` table.
+            unmatched_epoch_db (ResonaateDatabase): database where julian date entries in `TruthEphemeris` table do not have matching values in `Epoch` table.
+        """
+        matched_epoch_truth = fetchTruthByJDInterval(matched_epoch_db, [RSO_UNIQUE_ID])
+        unmatched_epoch_truth = fetchTruthByJDInterval(unmatched_epoch_db, [RSO_UNIQUE_ID])
+        assert len(matched_epoch_truth) != len(unmatched_epoch_truth)
+        assert len(unmatched_epoch_truth) == 0
+        assert len(matched_epoch_truth) == len(EXAMPLE_ECI_STATES)

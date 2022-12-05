@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 FIXTURE_DATA_DIR = Path(__file__).parent / "datafiles"
 IMPORTER_DB_PATH = Path("db/importer.sqlite3")
-SHARED_DB_PATH = Path("db/importer.sqlite3")
+SHARED_DB_PATH = Path("db/shared.sqlite3")
 JSON_INIT_PATH = Path("json/config/init_messages")
 JSON_RSO_TRUTH = Path("json/rso_truth")
 JSON_SENSOR_TRUTH = Path("json/sat_sensor_truth")

@@ -116,13 +116,13 @@ class TestDataDependency:
             Query([Epoch]),
             {
                 "julian_date": datetimeToJulianDate(timestamp),
-                "timestampISO": timestamp.isoformat(),
+                "timestampISO": timestamp.isoformat(timespec="microseconds"),
             },
         )
         created_dep = dep.createDependency()
         assert isinstance(created_dep, Epoch)
         assert created_dep.julian_date == datetimeToJulianDate(timestamp)
-        assert created_dep.timestampISO == timestamp.isoformat()
+        assert created_dep.timestampISO == timestamp.isoformat(timespec="microseconds")
 
 
 class TestEventConfigClass:

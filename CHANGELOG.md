@@ -35,6 +35,7 @@ ______________________________________________________________________
 - `MissedObservation.Explanation` enum for tracking reasons for missed observations
 - `field_of_view` module for `FieldOfView` classes (see !92)
 - `safe` optional arg to `subtendedAngle()` to use `safeArccos()` instead of `np.arccos()`, but is off be default
+- `saveDatabaseOutput` from `scenario.py` now inserts the time into the `Epoch` database table if it does not already exist
 
 ### Changed
 
@@ -49,6 +50,8 @@ ______________________________________________________________________
 - moved functionality of `Sensor.inFOV` to `FieldOfView` classes (see !92)
 - `updateReductionParameters` function now takes a `datetime` object as its argument
 - `ScenarioClock` must now be initialized with a `datetime` start date, instead of a `JulianDate`
+- Tasking engines now `assess` timesteps based on `datetime` bounds instead of `JulianDate` bounds
+- Queries for imported observations and ephemeris now query off of `Epoch.timestampISO` instead of `julian_date`
 
 ### Deprecated
 

@@ -19,9 +19,9 @@ from ..common.behavioral_config import BehavioralConfig
 from ..common.exceptions import AgentProcessingError, MissingEphemerisError
 from ..common.utilities import getTypeString
 from ..data.ephemeris import TruthEphemeris
+from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents
 from ..data.importer_database import ImporterDatabase
-from ..data.query_util import addAlmostEqualFilter
 from ..data.resonaate_database import ResonaateDatabase
 from ..estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from ..physics.time.stardate import JulianDate, ScenarioTime
@@ -29,6 +29,9 @@ from ..physics.transforms.reductions import getReductionParameters
 from .base import CallbackRegistration, JobHandler
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from datetime import datetime
+
     # Local Imports
     from ..data.events.base import Event
     from ..dynamics.dynamics_base import Dynamics
@@ -417,18 +420,18 @@ class AgentPropagationJobHandler(PropagationJobHandler):
         Overrides :meth:`.JobHandler.executeJobs` to import external ephemerides.
 
         KeywordArgs:
-            julian_date (:class:`.JulianDate`): current simulation epoch.
+            datetime_epoch (datetime): current simulation epoch.
         """
         if self._importer_db:
-            self._importEphmerides(kwargs["julian_date"])
+            self._importEphmerides(kwargs["datetime_epoch"])
 
         super().executeJobs(**kwargs)
 
-    def _importEphmerides(self, julian_date):
+    def _importEphmerides(self, datetime_epoch: datetime):
         """Import :class:`.TruthEphemeris` data from :class:`.ImporterDatabase`.
 
         Args:
-            julian_date (:class:`.JulianDate`): current simulation epoch.
+            datetime_epoch (datetime): current simulation epoch.
 
         Raises:
             :class:`.MissingEphemerisError`: raised if the amount of :class:`.TruthEphemeris`
@@ -436,19 +439,22 @@ class AgentPropagationJobHandler(PropagationJobHandler):
                 :attr:`.importer_registry`.
         """
         # This is the "Bulk Importer" implementation.
-        query = Query([TruthEphemeris])
-        query = addAlmostEqualFilter(query, TruthEphemeris, "julian_date", julian_date)
+        query = (
+            Query([TruthEphemeris])
+            .join(Epoch)
+            .filter(Epoch.timestampISO == datetime_epoch.isoformat(timespec="microseconds"))
+        )
         current_ephemerides = self._importer_db.getData(query)
 
         # Ensure we have at least as many ephems as register import callbacks
         if len(current_ephemerides) < len(self.importer_registry):
-            msg = f"Missing ephemeris data for importer model at time: {julian_date}"
+            msg = f"Missing ephemeris data for importer model at time: {datetime_epoch.isoformat(timespec='microseconds')}"
             self.logger.error(msg)
             msg1 = f"Importer registry: {self.importer_registry}"
             self.logger.error(msg1)
             msg2 = f"Retrieved ephemerides: {current_ephemerides}"
             self.logger.error(msg2)
-            raise MissingEphemerisError(julian_date)
+            raise MissingEphemerisError(datetime_epoch.isoformat(timespec="microseconds"))
 
         # Call registered importer callbacks
         for ephem in current_ephemerides:
@@ -468,7 +474,7 @@ class AgentPropagationJobHandler(PropagationJobHandler):
     def _logMissingImporterCallbacks(self):
         """Log agents that don't have the corresponding target registered in :attr:`importer_registry`.
 
-        This means we are using real-time propagation only, but their are agent ephemerides for
+        This means we are using real-time propagation only, but there are agent ephemerides for
         this timestep in the database.
         """
         # Logs if we found imported ephemerides for targets that didn't register
