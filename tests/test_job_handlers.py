@@ -29,7 +29,7 @@ from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.job_handlers.agent_propagation import AgentPropagationJobHandler
 from resonaate.job_handlers.base import CallbackRegistration, JobHandler
-from resonaate.physics.time.stardate import JulianDate, ScenarioTime
+from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from resonaate.scenario.clock import ScenarioClock
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 from resonaate.sensors.sensor_base import Sensor
@@ -269,6 +269,7 @@ class TestAgentPropagateHandler:
         target_julian_date = target_scenario_time.convertToJulianDate(
             target_agent.julian_date_epoch
         )
+        target_datetime = target_scenario_time.convertToDatetime(target_agent.datetime_epoch)
         prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
 
         # Spacecraft collides with Earth
@@ -277,6 +278,7 @@ class TestAgentPropagateHandler:
                 epoch_time=target_scenario_time,
                 prior_julian_date=prior_julian_date,
                 julian_date=target_julian_date,
+                datetime_epoch=target_datetime,
             )
 
     def testProblemEstimateAgentNoMatch(
@@ -292,6 +294,7 @@ class TestAgentPropagateHandler:
         target_julian_date = target_scenario_time.convertToJulianDate(
             target_agent.julian_date_epoch
         )
+        target_datetime = target_scenario_time.convertToDatetime(target_agent.datetime_epoch)
         prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
 
         # Spacecraft collides with Earth
@@ -300,6 +303,7 @@ class TestAgentPropagateHandler:
                 epoch_time=target_scenario_time,
                 prior_julian_date=prior_julian_date,
                 julian_date=target_julian_date,
+                datetime_epoch=target_datetime,
             )
 
         # Check for log, doesn't seem to work?
@@ -342,4 +346,8 @@ class TestAgentPropagateHandler:
         # Spacecraft collides with Earth
         j_date = epoch_time.convertToJulianDate(jd_start)
         with pytest.raises(MissingEphemerisError):
-            handler.executeJobs(julian_date=j_date, epoch_time=epoch_time)
+            handler.executeJobs(
+                julian_date=j_date,
+                epoch_time=epoch_time,
+                datetime_epoch=julianDateToDatetime(j_date),
+            )

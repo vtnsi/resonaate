@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 import re
+from datetime import datetime
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, create_autospec, patch
 
@@ -11,6 +12,7 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
+from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.missed_observation import MissedObservation
 from resonaate.data.observation import Observation
@@ -19,7 +21,7 @@ from resonaate.job_handlers.task_prediction import TaskPredictionJobHandler
 from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario.config.decision_config import DecisionConfig
 from resonaate.scenario.config.reward_config import RewardConfig
-from resonaate.sensors.sensor_base import ObservationTuple
+from resonaate.sensors.sensor_base import ObservationTuple, Sensor
 from resonaate.tasking.decisions import decisionFactory
 from resonaate.tasking.engine.centralized_engine import CentralizedTaskingEngine
 from resonaate.tasking.engine.engine_base import TaskingEngine
@@ -142,8 +144,8 @@ def testAssessWithObservations(
     event_handler_mock: MagicMock, centralized_tasking_engine: CentralizedTaskingEngine
 ):
     """Test assess() when no observations occur."""
-    julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 42, 23.2)
-    next_julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 43, 23.2)
+    datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
+    next_datetime_epoch = datetime(2019, 1, 23, 17, 43, 23, 200000)
     # Create obs tuples to store
     obs_1 = create_autospec(ObservationTuple, instance=True)
     obs_1.observation.sensor_id = 100000
@@ -162,7 +164,7 @@ def testAssessWithObservations(
 
     centralized_tasking_engine._predict_handler.executeJobs = MagicMock()
     centralized_tasking_engine._execute_handler.executeJobs = MagicMock()
-    centralized_tasking_engine.assess(julian_date, next_julian_date)
+    centralized_tasking_engine.assess(datetime_epoch, next_datetime_epoch)
     # Assert handlers are called
     centralized_tasking_engine._predict_handler.executeJobs.assert_called_once_with()
     centralized_tasking_engine._execute_handler.executeJobs.assert_called_once()
@@ -188,13 +190,13 @@ def testAssessWithImportedObservations(
     centralized_tasking_engine._importer_db = True
     mock_obs = create_autospec(Observation, instance=True)
     load_obs_mock.return_value = [mock_obs]
-    julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 42, 23.2)
-    next_julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 43, 23.2)
+    datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
+    next_datetime_epoch = datetime(2019, 1, 23, 17, 43, 23, 200000)
     # Set realtime_obs to False to test that the engine does not attempt to handle events
     centralized_tasking_engine._realtime_obs = False
-    centralized_tasking_engine.assess(julian_date, next_julian_date)
+    centralized_tasking_engine.assess(datetime_epoch, next_datetime_epoch)
     # Assert handlers are not called
-    load_obs_mock.assert_called_once_with(next_julian_date)
+    load_obs_mock.assert_called_once_with(next_datetime_epoch)
     save_obs_mock.assert_called_once_with([mock_obs])
 
 
@@ -320,68 +322,95 @@ def testGetCurrentTasking(reward: Reward, decision: Decision):
         assert task.julian_date == julian_date
 
 
-@patch("resonaate.tasking.engine.centralized_engine.addAlmostEqualFilter", autospec=True)
+def getMockedSensingAgentObject(agent_id: int) -> SensingAgent:
+    """Create a mocked :class:`.SensingAgent` object."""
+    mocked_sensor = create_autospec(Sensor, instance=True)
+    sensing_agent = create_autospec(SensingAgent, instance=True)
+    sensing_agent._id = agent_id
+
+    sensing_agent.sensors = mocked_sensor
+    return sensing_agent
+
+
 @patch("resonaate.tasking.engine.engine_base.ImporterDatabase", autospec=True)
 def testLoadImportedObservation(
     mocked_importer_db: MagicMock,
-    mocked_add_filter: MagicMock,
     centralized_tasking_engine: CentralizedTaskingEngine,
 ):
     """Test loadImportedObservations()."""
     mocked_importer_db.getData = MagicMock()
+    centralized_tasking_engine._fetchSensorAgents = MagicMock()
     centralized_tasking_engine._importer_db = mocked_importer_db
     # pylint: disable=invalid-name
-    julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 42, 23.2)
+    datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     # Create mock observations
     obs_1 = create_autospec(Observation, instance=True)
     obs_2 = create_autospec(Observation, instance=True)
+    sensing_agent_1_id = 1111
     obs_1.position_lat_rad = np.deg2rad(45.0)
     obs_1.position_lon_rad = np.deg2rad(-105.0)
     obs_1.target_id = 1
+    obs_1.sensor_id = sensing_agent_1_id
     obs_1.makeDictionary = MagicMock()
+    sensing_agent_2_id = 1112
     obs_2.position_lat_rad = np.deg2rad(15.0)
     obs_2.position_lon_rad = np.deg2rad(50.0)
     obs_2.target_id = 1
+    obs_2.sensor_id = sensing_agent_2_id
     obs_2.makeDictionary = MagicMock()
 
     # Test observations that aren't from duplicate sensors
     mocked_importer_db.getData.return_value = [obs_1, obs_2]
-    centralized_tasking_engine.loadImportedObservations(julian_date)
+    sensing_agent_1 = getMockedSensingAgentObject(sensing_agent_1_id)
+    sensing_agent_2 = getMockedSensingAgentObject(sensing_agent_2_id)
+    centralized_tasking_engine._fetchSensorAgents.return_value = {
+        sensing_agent_1_id: sensing_agent_1,
+        sensing_agent_2_id: sensing_agent_2,
+    }
+    imported_obs = centralized_tasking_engine.loadImportedObservations(datetime_epoch)
+
+    # Assert mock calls
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_not_called()
-    mocked_add_filter.assert_called_once()
     mocked_importer_db.getData.assert_called_once()
+    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
+    for imported_ob in imported_obs:
+        assert isinstance(imported_ob, ObservationTuple)
 
     # Reset mocks
     mocked_importer_db.getData.reset_mock()
-    mocked_add_filter.reset_mock()
     obs_1.makeDictionary.reset_mock()
     obs_2.makeDictionary.reset_mock()
+    centralized_tasking_engine._fetchSensorAgents.reset_mock()
 
     # Test observations that are from duplicate sensors
     obs_2.position_lat_rad = np.deg2rad(45.0)
     obs_2.position_lon_rad = np.deg2rad(-105.0)
     mocked_importer_db.getData.return_value = [obs_1, obs_2]
-    centralized_tasking_engine.loadImportedObservations(julian_date)
+    centralized_tasking_engine.loadImportedObservations(datetime_epoch)
     # [NOTE]: Only the second one will be seen as a duplicate
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_called_once()
-    mocked_add_filter.assert_called_once()
     mocked_importer_db.getData.assert_called_once()
+    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
+    for imported_ob in imported_obs:
+        assert isinstance(imported_ob, ObservationTuple)
 
     # Reset mocks
     mocked_importer_db.getData.reset_mock()
-    mocked_add_filter.reset_mock()
     obs_1.makeDictionary.reset_mock()
     obs_2.makeDictionary.reset_mock()
+    centralized_tasking_engine._fetchSensorAgents.reset_mock()
 
     # Test no imported observations
     mocked_importer_db.getData.return_value = []
-    centralized_tasking_engine.loadImportedObservations(julian_date)
+    centralized_tasking_engine.loadImportedObservations(datetime_epoch)
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_not_called()
-    mocked_add_filter.assert_called_once()
     mocked_importer_db.getData.assert_called_once()
+    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
+    for imported_ob in imported_obs:
+        assert isinstance(imported_ob, ObservationTuple)
 
 
 @patch.multiple(TaskingEngine, __abstractmethods__=set())

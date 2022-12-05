@@ -22,6 +22,7 @@ from ..scenario.clock import ScenarioClock
 
 if TYPE_CHECKING:
     # Standard Library Imports
+    from datetime import datetime
     from typing import Any
 
     # Third Party Imports
@@ -102,6 +103,8 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         self._dt_step = clock.dt_step
         # Julian date of start time
         self.julian_date_start = clock.julian_date_start
+        # Datetime of start time
+        self.datetime_start = clock.datetime_start
         # Dynamics class for propagating the Agent's state
         self._dynamics = dynamics
         # Flag for using real-time propagation
@@ -221,6 +224,15 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
     def julian_date_epoch(self) -> JulianDate:
         """:class:`.JulianDate`: Returns the current Julian date."""
         return self._time.convertToJulianDate(self.julian_date_start)
+
+    @property
+    def datetime_epoch(self) -> datetime:
+        """Returns the current epoch as a datetime object.
+
+        Returns:
+            datetime: current epoch.
+        """
+        return self._time.convertToDatetime(self.datetime_start)
 
     @property
     def name(self) -> str:
