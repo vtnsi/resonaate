@@ -92,15 +92,10 @@ EXAMPLE_ESTIMATES = [dict(ephem, **estimate_kwargs) for ephem in deepcopy(EXAMPL
 # SET UP OBSERVATION ENTRIES
 azimuths = linspace(0, 2 * PI, num=len(EXAMPLE_RSO))
 elevations = linspace(0, PI, num=len(EXAMPLE_RSO))
-sez_s = linspace(0.0, 10.0, num=len(EXAMPLE_RSO))
-sez_e = linspace(0.0, 20.0, num=len(EXAMPLE_RSO))
-sez_z = linspace(390.0, 450.0, num=len(EXAMPLE_RSO))
 lat = [0.0, 1.0, 2.0] * 3
 lon = [0.5, 1.5, 2.5] * 3
 alt = [0.0, 50.0, 100.0] * 3
-obs_vals = zip(
-    RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, azimuths, elevations, sez_s, sez_e, sez_z, lat, lon, alt
-)
+obs_vals = zip(RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, azimuths, elevations, lat, lon, alt)
 EXAMPLE_OBSERVATIONS = [
     {
         "julian_date": jd,
@@ -109,14 +104,11 @@ EXAMPLE_OBSERVATIONS = [
         "sensor_type": "Optical",
         "azimuth_rad": a_rad,
         "elevation_rad": e_rad,
-        "sez_state_s_km": sez_s,
-        "sez_state_e_km": sez_e,
-        "sez_state_z_km": sez_z,
         "position_lat_rad": lat,
-        "position_long_rad": lon,
+        "position_lon_rad": lon,
         "position_altitude_km": alt,
     }
-    for jd, uid, a_rad, e_rad, sez_s, sez_e, sez_z, lat, lon, alt in obs_vals
+    for jd, uid, a_rad, e_rad, lat, lon, alt in obs_vals
 ]
 
 

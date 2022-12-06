@@ -52,6 +52,7 @@ ______________________________________________________________________
 - `ScenarioClock` must now be initialized with a `datetime` start date, instead of a `JulianDate`
 - Tasking engines now `assess` timesteps based on `datetime` bounds instead of `JulianDate` bounds
 - Queries for imported observations and ephemeris now query off of `Epoch.timestampISO` instead of `julian_date`
+- `position_long_rad` in `Observation` is now `position_lon_rad`
 
 ### Deprecated
 
@@ -63,6 +64,7 @@ ______________________________________________________________________
 - `process_noise` property from `TargetAgent` because it is not used (see 58f72522)
 - `Sensor.inFOV` class function is now redundant thanks to `FieldOfView.inFieldOfView()`
 - `concurrent-log-handler` as a dependency
+- `Observation.fromSEZVector` method & `Observation.sez` property
 
 ### Fixed
 

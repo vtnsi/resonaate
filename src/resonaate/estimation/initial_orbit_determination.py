@@ -235,13 +235,13 @@ class LambertIOD(InitialOrbitDetermination):
             array(
                 [
                     observation.position_lat_rad,
-                    observation.position_long_rad,
+                    observation.position_lon_rad,
                     observation.position_altitude_km,
                 ]
             )
         )
         observation_ecef = (
-            sez2ecef(observation_sez, observation.position_lat_rad, observation.position_long_rad)
+            sez2ecef(observation_sez, observation.position_lat_rad, observation.position_lon_rad)
             + sensor_ecef
         )
         return ecef2eci(observation_ecef)

@@ -295,7 +295,7 @@ def getTestEarthSensor() -> AdvRadar:
 @pytest.fixture(name="radar_observation")
 def getTestRadarObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
-    radar_observation = Observation.fromSEZVector(
+    radar_observation = Observation(
         julian_date=JulianDate(2459304.270833333),
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
@@ -304,8 +304,9 @@ def getTestRadarObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> 
         elevation_rad=0.3522603731619839,
         range_km=1224.6425779127965,
         range_rate_km_p_sec=3.5594024876519974,
-        sez=[-1144.153499652772, 110.21257527177865, 422.5099064611074],
-        sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
+        position_lat_rad=1.228134787553298,
+        position_lon_rad=0.5432822498364407,
+        position_altitude_km=0.06300000000101136,
     )
     return radar_observation
 
@@ -321,15 +322,16 @@ def getTestRadarObservationTuple(
 @pytest.fixture(name="optical_observation")
 def getTestOpticalObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
-    optical_observation = Observation.fromSEZVector(
+    optical_observation = Observation(
         julian_date=JulianDate(2459304.270833333),
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
         sensor_type="Optical",
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
-        sez=[-1144.153499652772, 110.21257527177865, 422.5099064611074],
-        sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
+        position_lat_rad=1.228134787553298,
+        position_lon_rad=0.5432822498364407,
+        position_altitude_km=0.06300000000101136,
     )
     return optical_observation
 
@@ -674,7 +676,7 @@ class TestAdaptiveEstimation:
         assert len(result["true_y"]) == 2
 
     def testResumeSequentialFiltering(self, adaptive_filter: AdaptiveFilter):
-        """Test reinitializing nominal filter after MMAE ends."""
+        """Test re-initializing nominal filter after MMAE ends."""
         adaptive_filter._resumeSequentialFiltering()
         assert adaptive_filter.converged_filter is not None
 

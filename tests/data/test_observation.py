@@ -8,6 +8,7 @@ from sqlalchemy.orm import Query
 
 # RESONAATE Imports
 from resonaate.data.observation import Observation
+from resonaate.sensors import OPTICAL_LABEL
 
 
 class TestObservationTable:
@@ -22,6 +23,13 @@ class TestObservationTable:
         -2.338646528282177,
     ]
 
+    azimuth_rad = 1.010036549841
+    elevation_rad = 0.33006189181
+    position_lat_rad = 0.44393147656176574
+    position_lon_rad = 1.124890532
+    position_altitude_km = 0.6253
+    sensor_type = OPTICAL_LABEL
+
     def testInit(self):
         """Test the init of Observation database table."""
         _ = Observation()
@@ -32,78 +40,80 @@ class TestObservationTable:
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez_state_s_km=-4957.659229144096,
-            sez_state_e_km=7894.2462525123365,
-            sez_state_z_km=3193.92927600744,
-            position_lat_rad=0.44393147656176574,
-            position_long_rad=1.124890532,
-            position_altitude_km=0.6253,
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
 
     def testfromSEZVector(self, epoch, target_agent, sensor_agent):
         """Test initializing the keywords of the table."""
-        _ = Observation.fromSEZVector(
+        _ = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
 
     def testReprAndDict(self, epoch, target_agent, sensor_agent):
         """Test printing DB table object & making into dict."""
-        obs = Observation.fromSEZVector(
+        obs = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
         print(obs)
         obs.makeDictionary()
 
     def testEquality(self, epoch, target_agent, sensor_agent):
         """Test equals and not equals operators."""
-        obs1 = Observation.fromSEZVector(
+        obs1 = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
 
-        obs2 = Observation.fromSEZVector(
+        obs2 = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
 
-        obs3 = Observation.fromSEZVector(
+        obs3 = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
         obs3.range_km = 500
 
@@ -111,24 +121,9 @@ class TestObservationTable:
         assert obs1 == obs2
         assert obs1 != obs3
 
-    def testSEZProperty(self, epoch, target_agent, sensor_agent):
-        """Test sez property."""
-        obs = Observation.fromSEZVector(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
-        )
-        assert isinstance(obs.sez, list)
-        assert len(obs.sez) == 3
-
     def testMeasurementProperty(self, epoch, target_agent, sensor_agent):
         """Test sez property."""
-        obs = Observation.fromSEZVector(
+        obs = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
@@ -137,23 +132,25 @@ class TestObservationTable:
             elevation_rad=0.33006189181,
             range_km=1500.0,
             range_rate_km_p_sec=0.10,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            position_lat_rad=0.44393147656176574,
+            position_lon_rad=1.124890532,
+            position_altitude_km=0.6253,
         )
         assert isinstance(obs.measurements, list)
         assert len(obs.measurements) == 4
 
     def testInsertWithRelationship(self, database, epoch, target_agent, sensor_agent):
         """Test inserting observation with related objects."""
-        obs = Observation.fromSEZVector(
+        obs = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
 
         # Test insert of object
@@ -161,15 +158,16 @@ class TestObservationTable:
 
     def testInsertWithForeignKeys(self, database, epoch, target_agent, sensor_agent):
         """Test inserting observation with only foreign keys."""
-        obs = Observation.fromSEZVector(
+        obs = Observation(
             julian_date=epoch.julian_date,
             sensor_id=sensor_agent.unique_id,
             target_id=target_agent.unique_id,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
         # Pre-insert required objects
         database.insertData(epoch)
@@ -184,15 +182,16 @@ class TestObservationTable:
         julian_date = epoch.julian_date
         target_id = target_agent.unique_id
         sensor_id = sensor_agent.unique_id
-        obs = Observation.fromSEZVector(
+        obs = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
         database.insertData(obs)
 
@@ -208,15 +207,16 @@ class TestObservationTable:
         target_copy = deepcopy(target_agent)
         sensor_copy = deepcopy(sensor_agent)
 
-        obs = Observation.fromSEZVector(
+        obs = Observation(
             epoch=epoch,
             sensor=sensor_agent,
             target=target_agent,
-            sensor_type="Optical",
-            azimuth_rad=1.010036549841,
-            elevation_rad=0.33006189181,
-            sez=self.sez,
-            sensor_position=[0.44393147656176574, 1.124890532, 0.6253],
+            sensor_type=self.sensor_type,
+            azimuth_rad=self.azimuth_rad,
+            elevation_rad=self.elevation_rad,
+            position_lat_rad=self.position_lat_rad,
+            position_lon_rad=self.position_lon_rad,
+            position_altitude_km=self.position_altitude_km,
         )
         database.insertData(obs)
 

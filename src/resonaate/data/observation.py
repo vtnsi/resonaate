@@ -43,20 +43,11 @@ class Observation(Base, _DataMixin):
     # Observed range rate of target from observing sensor in kilometers per second
     range_rate_km_p_sec = Column(Float, nullable=True)
 
-    # South component of SEZ vector describing observation in kilometers
-    sez_state_s_km = Column(Float)
-
-    # East component of SEZ vector describing observation in kilometers
-    sez_state_e_km = Column(Float)
-
-    # Zenith component of SEZ vector describing observation in kilometers
-    sez_state_z_km = Column(Float)
-
     # Latitude of observing sensor in radians
     position_lat_rad = Column(Float)
 
     # Longitude of observing sensor in radians
-    position_long_rad = Column(Float)
+    position_lon_rad = Column(Float)
 
     # Altitude of observing sensor in kilometers
     position_altitude_km = Column(Float)
@@ -70,50 +61,15 @@ class Observation(Base, _DataMixin):
         "elevation_rad",
         "range_km",
         "range_rate_km_p_sec",
-        "sez_state_s_km",
-        "sez_state_e_km",
-        "sez_state_z_km",
         "position_lat_rad",
-        "position_long_rad",
+        "position_lon_rad",
         "position_altitude_km",
     )
 
-    @classmethod
-    def fromSEZVector(cls, **kwargs):
-        """Construct an :class:`.EphemerisMixin` object using a different format of keyword arguments.
-
-        An `eci` keyword is provided as a 6x1 vector instead of the `pos[dimension]` and
-        `vel[dimension]` keywords.
-        """
-        assert (
-            kwargs.get("sez") is not None
-        ), "[Ephemeris.fromSEZVector()] Missing keyword argument 'xSEZ'."
-
-        # Parse SEZ position vector into separate columns
-        kwargs["sez_state_s_km"] = kwargs["sez"][0]
-        kwargs["sez_state_e_km"] = kwargs["sez"][1]
-        kwargs["sez_state_z_km"] = kwargs["sez"][2]
-
-        # Delete SEZ position vector form kwargs
-        del kwargs["sez"]
-
-        msg = "[Ephemeris.fromSEZVector()] Missing keyword argument 'sensor_position'."
-        assert kwargs.get("sensor_position") is not None, msg
-
-        # Parse SEZ position vector into separate columns
-        kwargs["position_lat_rad"] = kwargs["sensor_position"][0]
-        kwargs["position_long_rad"] = kwargs["sensor_position"][1]
-        kwargs["position_altitude_km"] = kwargs["sensor_position"][2]
-
-        # Delete SEZ position vector form kwargs
-        del kwargs["sensor_position"]
-
-        return cls(**kwargs)
-
     @property
-    def sez(self):
-        """``list``: Three element coordinate vector in the SEZ frame."""
-        return [self.sez_state_s_km, self.sez_state_e_km, self.sez_state_z_km]
+    def lla(self):
+        """``list``: Three element coordinate vector in the LLA frame."""
+        return [self.position_lat_rad, self.position_lon_rad, self.position_altitude_km]
 
     @property
     def measurements(self):

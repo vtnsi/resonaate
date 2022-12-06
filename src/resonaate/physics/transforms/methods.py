@@ -361,7 +361,7 @@ def radarObs2eciPosition(obs_tuple: ObservationTuple) -> ndarray:
     x_j2000_relative = sez2eci(
         x_sez=razel2sez(range_, elevation, azimuth, 0, 0, 0),
         lat=obs_tuple.observation.position_lat_rad,
-        lon=obs_tuple.observation.position_long_rad,
+        lon=obs_tuple.observation.position_lon_rad,
     )
     # [NOTE]: Only valid for positions
     return x_j2000_relative[:3] + obs_tuple.agent.eci_state[:3]

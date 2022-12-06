@@ -110,7 +110,7 @@ def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> S
 @pytest.fixture(name="obs_tuples")
 def getObsTuples(sensor_agent: SensingAgent) -> ObservationTuple:
     """Create a custom :class:`ObservationTuple` object for a sensor."""
-    radar_observation = Observation.fromSEZVector(
+    radar_observation = Observation(
         julian_date=JulianDate(2459304.267361111),
         sensor_id=300000,
         target_id=10001,
@@ -119,8 +119,9 @@ def getObsTuples(sensor_agent: SensingAgent) -> ObservationTuple:
         elevation_rad=0.5432822498364404,
         range_km=1953.3903221962914,
         range_rate_km_p_sec=-6.147282606743988,
-        sez=[247.45853451777919, 1923.5170160471882, 233.61929237537493],
-        sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
+        position_lat_rad=1.228134787553298,
+        position_lon_rad=0.5432822498364407,
+        position_altitude_km=0.06300000000101136,
     )
 
     return ObservationTuple(radar_observation, sensor_agent, np.array([2, 3, 1, 1]), "Test")
