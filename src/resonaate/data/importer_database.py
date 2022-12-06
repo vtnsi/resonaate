@@ -287,7 +287,7 @@ class ImporterDatabase(DataInterface):
                     "sez_state_e_km": observation["sez_state"][1],
                     "sez_state_z_km": observation["sez_state"][2],
                     "position_lat_rad": observation["position"][0],
-                    "position_long_rad": observation["position"][1],
+                    "position_lon_rad": observation["position"][1],
                     "position_altitude_km": observation["position"][2],
                 }
 

@@ -23,7 +23,7 @@ from resonaate.sensors.sensor_base import ObservationTuple
 @pytest.fixture(name="observation_tuple")
 def getObservationTuple():
     """Create a custom :class:`.ObservationTuple` object for a sensor."""
-    observation = Observation.fromSEZVector(
+    observation = Observation(
         azimuth_rad=0.09602716376813725,
         elevation_rad=0.35224625415803246,
         range_km=1224.6424141388,
@@ -35,8 +35,9 @@ def getObservationTuple():
         epoch=Epoch(
             timestampISO="2021-03-30T18:30:00.000000", julian_date=JulianDate(2459304.270833333)
         ),
-        sez=[-1144.1534998427103, 110.21257500982736, 422.5099063584762],
-        sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
+        position_lat_rad=1.228134787553298,
+        position_lon_rad=0.5432822498364407,
+        position_altitude_km=0.06300000000101136,
     )
     return ObservationTuple(observation, None, array([2, 3, 1, 1]), "Visible")
 
@@ -44,7 +45,7 @@ def getObservationTuple():
 @pytest.fixture(name="observation")
 def getObservation():
     """Create a custom :class:`.Observation` object for a sensor."""
-    return Observation.fromSEZVector(
+    return Observation(
         julian_date=JulianDate(2459304.374333333),
         epoch=Epoch(
             timestampISO="2021-03-30T20:59:02.000000", julian_date=JulianDate(2459304.374333333)
@@ -56,8 +57,9 @@ def getObservation():
         elevation_rad=0.11988405069764828,
         range_km=1953.389877894924,
         range_rate_km_p_sec=-6.1473412228123365,
-        sez=[247.45853451777919, 1923.5170160471882, 233.61929237537493],
-        sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
+        position_lat_rad=1.228134787553298,
+        position_lon_rad=0.5432822498364407,
+        position_altitude_km=0.06300000000101136,
     )
 
 

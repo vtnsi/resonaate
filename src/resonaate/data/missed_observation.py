@@ -36,15 +36,6 @@ class MissedObservation(Base, _DataMixin):
     # Type of the observing sensor (Optical, Radar, AdvRadar)
     sensor_type = Column(String(128), nullable=False)
 
-    # South component of SEZ vector describing observation in kilometers
-    sez_state_s_km = Column(Float)
-
-    # East component of SEZ vector describing observation in kilometers
-    sez_state_e_km = Column(Float)
-
-    # Zenith component of SEZ vector describing observation in kilometers
-    sez_state_z_km = Column(Float)
-
     # Latitude of observing sensor in radians
     position_lat_rad = Column(Float)
 
@@ -62,9 +53,6 @@ class MissedObservation(Base, _DataMixin):
         "sensor_id",
         "target_id",
         "sensor_type",
-        "sez_state_s_km",
-        "sez_state_e_km",
-        "sez_state_z_km",
         "position_lat_rad",
         "position_lon_rad",
         "position_altitude_km",

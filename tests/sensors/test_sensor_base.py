@@ -15,7 +15,7 @@ from resonaate.agents.target_agent import TargetAgent
 from resonaate.common.exceptions import ShapeError
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG
-from resonaate.physics.time.stardate import ScenarioTime
+from resonaate.physics.time.stardate import JulianDate, ScenarioTime
 from resonaate.scenario.config.agent_configs import FieldOfViewConfig
 from resonaate.sensors import CONIC_FOV_LABEL, fieldOfViewFactory
 from resonaate.sensors.field_of_view import ConicFoV, FieldOfView, RectangularFoV
@@ -521,6 +521,7 @@ def testCollectObservationsInFoVNoBackground(
     mocked_sensing_agent.time = ScenarioTime(300)
     mocked_sensing_agent.sensor_time_bias_event_queue = []
     mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+    mocked_sensing_agent.julian_date_epoch = JulianDate(2459304.1701388885)
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
@@ -555,6 +556,7 @@ def testCollectObservationsNotInFoVNoBackground(
     mocked_sensing_agent.time = ScenarioTime(300)
     mocked_sensing_agent.sensor_time_bias_event_queue = []
     mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+    mocked_sensing_agent.julian_date_epoch = JulianDate(2459304.1701388885)
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
@@ -592,6 +594,7 @@ def testCollectObservationsWithBackground(
     mocked_sensing_agent.time = ScenarioTime(300)
     mocked_sensing_agent.sensor_time_bias_event_queue = []
     mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+    mocked_sensing_agent.julian_date_epoch = JulianDate(2459304.1701388885)
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
@@ -631,6 +634,7 @@ def testNoMissedObservation(
     mocked_sensing_agent.time = ScenarioTime(300)
     mocked_sensing_agent.sensor_time_bias_event_queue = []
     mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+    mocked_sensing_agent.julian_date_epoch = JulianDate(2459304.1701388885)
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
@@ -665,6 +669,7 @@ def testMissedObservation(
     mocked_sensing_agent.time = ScenarioTime(300)
     mocked_sensing_agent.sensor_time_bias_event_queue = []
     mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
+    mocked_sensing_agent.julian_date_epoch = JulianDate(2459304.1701388885)
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0

@@ -15,12 +15,13 @@ from ..agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from ..common.exceptions import ShapeError
 from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
+from ..data.epoch import Epoch
 from ..data.missed_observation import MissedObservation
 from ..data.observation import Observation
 from ..physics import constants as const
 from ..physics.math import isPD, subtendedAngle
 from ..physics.sensor_utils import lineOfSight
-from ..physics.time.stardate import ScenarioTime
+from ..physics.time.stardate import ScenarioTime, julianDateToDatetime
 from ..physics.transforms.methods import getSlantRangeVector
 from .measurements import getAzimuth, getElevation, getRange
 
@@ -211,9 +212,6 @@ class Sensor(ABC):
                     sensor_id=self.host.simulation_id,
                     target_id=target_agent.simulation_id,
                     julian_date=self.host.julian_date_epoch,
-                    sez_state_s_km=slant_range_sez[0],
-                    sez_state_e_km=slant_range_sez[1],
-                    sez_state_z_km=slant_range_sez[2],
                     position_lat_rad=self.host.lla_state[0],
                     position_lon_rad=self.host.lla_state[1],
                     position_altitude_km=self.host.lla_state[2],
@@ -258,13 +256,16 @@ class Sensor(ABC):
         """
         slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state)
         julian_date = self.host.julian_date_epoch
-        return Observation.fromSEZVector(
+        date_time = julianDateToDatetime(julian_date)
+        return Observation(
+            julian_date=julian_date,
+            epoch=Epoch(timestampISO=date_time.isoformat(), julian_date=julian_date),
             sensor_type=getTypeString(self),
             sensor_id=self.host.simulation_id,
             target_id=target_id,
-            julian_date=julian_date,
-            sez=slant_range_sez,
-            sensor_position=self.host.lla_state,
+            position_lat_rad=self.host.lla_state[0],
+            position_lon_rad=self.host.lla_state[1],
+            position_altitude_km=self.host.lla_state[2],
             **self.measurements(slant_range_sez),
         )
 
@@ -310,6 +311,7 @@ class Sensor(ABC):
         # Calculate common values
         slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state)
         julian_date = self.host.julian_date_epoch
+        date_time = julianDateToDatetime(julian_date)
 
         # Construct observations
         visibility, reason = self.isVisible(
@@ -318,13 +320,15 @@ class Sensor(ABC):
         if visibility:
             # Make a real observation once tasked -> add noise to the measurement
             if real_obs:
-                observation = Observation.fromSEZVector(
+                observation = Observation(
+                    julian_date=julian_date,
+                    epoch=Epoch(timestampISO=date_time.isoformat(), julian_date=julian_date),
                     sensor_type=getTypeString(self),
                     sensor_id=self.host.simulation_id,
                     target_id=tgt_id,
-                    julian_date=julian_date,
-                    sez=slant_range_sez,
-                    sensor_position=self.host.lla_state,
+                    position_lat_rad=self.host.lla_state[0],
+                    position_lon_rad=self.host.lla_state[1],
+                    position_altitude_km=self.host.lla_state[2],
                     **self.getNoisyMeasurements(slant_range_sez),
                 )
                 self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])

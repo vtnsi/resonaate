@@ -269,13 +269,14 @@ measurements["elevation_rad"] += np.sqrt(r_matrix[1, 1]) * np.random.rand()
 measurements["range_km"] += np.sqrt(r_matrix[2, 2]) * np.random.rand()
 measurements["range_rate_km_p_sec"] += np.sqrt(r_matrix[3, 3]) * np.random.rand()
 
-observation = Observation.fromSEZVector(
+observation = Observation(
     sensor_type="Radar",
     sensor_id=sensor_id,
     target_id=sat1_agent.simulation_id,
     julian_date=clock.julian_date_epoch,
-    sez=slant_range_sez,
-    sensor_position=sensor_lla,
+    position_lat_rad=sensor_lla[0],
+    position_lon_rad=sensor_lla[1],
+    position_altitude_km=sensor_lla[2],
     **measurements,
 )
 

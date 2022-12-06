@@ -148,7 +148,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         for observation in imported_observation_data:
             position_key = (
                 int(observation.position_lat_rad * 1000000),
-                int(observation.position_long_rad * 1000000),
+                int(observation.position_lon_rad * 1000000),
                 observation.target_id,
             )
             if position_key not in sensor_position_set:
