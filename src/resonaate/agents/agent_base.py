@@ -17,7 +17,7 @@ from ..dynamics.integration_events.finite_thrust import (
     ScheduledFiniteManeuver,
 )
 from ..dynamics.integration_events.station_keeping import StationKeeper
-from ..physics.math import fpe_equals
+from ..physics.maths import fpe_equals
 from ..scenario.clock import ScenarioClock
 
 if TYPE_CHECKING:

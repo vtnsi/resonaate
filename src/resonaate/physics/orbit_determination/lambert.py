@@ -12,7 +12,7 @@ from numpy.linalg import norm
 # Local Imports
 from ..bodies.earth import Earth
 from ..constants import PI
-from ..math import _ATOL, _MAX_ITER, fpe_equals, wrapAngle2Pi
+from ..maths import _ATOL, _MAX_ITER, fpe_equals, wrapAngle2Pi
 from ..orbits.utils import universalC2C3
 
 if TYPE_CHECKING:

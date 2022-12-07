@@ -12,7 +12,7 @@ from numpy import array, isclose, ndarray
 # Local Imports
 from .. import constants as const
 from ..bodies import Earth
-from ..math import wrapAngle2Pi
+from ..maths import wrapAngle2Pi
 from . import isEccentric, isInclined
 from .anomaly import meanLong2EccLong, trueAnom2MeanAnom
 from .conversions import coe2eci, coe2eqe, eci2coe, eci2eqe, eqe2coe, eqe2eci

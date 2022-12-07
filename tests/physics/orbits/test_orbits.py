@@ -9,7 +9,7 @@ from numpy import deg2rad, linspace
 
 # RESONAATE Imports
 import resonaate.physics.constants as const
-from resonaate.physics.math import wrapAngle2Pi
+from resonaate.physics.maths import wrapAngle2Pi
 from resonaate.physics.orbits import (
     EccentricityError,
     InclinationError,
@@ -174,7 +174,7 @@ ANOM_WRAP_TEST: ndarray = linspace(-5, 5, 21) * const.PI
 
 @pytest.mark.parametrize(("angle", "check"), QUAD_CHECK_TEST)
 def testQuadCheckDecorator(angle: float, check: float):
-    """Test quadarant check function."""
+    """Test quadrant check function."""
     if check >= 0:
         assert fixAngleQuadrant(angle, check) == angle
     else:

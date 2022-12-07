@@ -13,7 +13,7 @@ from numpy import asarray, cos, dot, fmod, matmul, sin
 
 # Local Imports
 from .. import constants as const
-from ..math import rot1, rot2, rot3
+from ..maths import rot1, rot2, rot3
 from ..time.conversions import dayOfYear, greenwichApparentTime, utc2TerrestrialTime
 from ..time.stardate import datetimeToJulianDate
 from .eops import getEarthOrientationParameters

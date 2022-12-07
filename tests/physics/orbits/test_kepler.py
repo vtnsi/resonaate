@@ -10,7 +10,7 @@ from numpy import allclose, array, concatenate, cos, deg2rad, isclose, isfinite,
 # RESONAATE Imports
 from resonaate.physics import constants as const
 from resonaate.physics.bodies import Earth
-from resonaate.physics.math import _ATOL, rot1, rot3
+from resonaate.physics.maths import _ATOL, rot1, rot3
 from resonaate.physics.orbits.kepler import (
     KeplerProblemError,
     keplerSolveCOE,
@@ -95,7 +95,7 @@ def testKeplerEQECircular(M):
     assert isclose(M, keplerSolveEQE(lam, h, k, lam) - raan - argp, rtol=0, atol=_ATOL)
 
 
-def testKeplerProblemAcccuracy():
+def testKeplerProblemAccuracy():
     """Test the accuracy of Kepler's problem using Example 2-4 from Vallado."""
     # pylint: disable=invalid-name
     init_eci = [1131.340, -2282.343, 6672.423, -5.64305, 4.30333, 2.42879]
@@ -118,7 +118,7 @@ def testKeplerProblemCases(tof, pos, vel):
 
 
 @pytest.mark.parametrize(("p", "e"), [PAR_CASE, HYP_CASE])
-def testKeplerProblemParabolichyperbolic(p, e):
+def testKeplerProblemParabolicHyperbolic(p, e):
     """Test Kepler's problem raises error for parabolic case."""
     # pylint: disable=invalid-name
     tof = 3600

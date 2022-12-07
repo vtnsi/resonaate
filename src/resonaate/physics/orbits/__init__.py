@@ -13,7 +13,7 @@ from typing import Callable, Tuple
 
 # Local Imports
 from .. import constants as const
-from ..math import wrapAngle2Pi
+from ..maths import wrapAngle2Pi
 
 # Limits taken from Vallado AAS paper & verified to provide "constant" COEs across multiple orbits
 ECCENTRICITY_LIMIT = 1e-7

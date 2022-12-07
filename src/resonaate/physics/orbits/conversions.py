@@ -8,7 +8,7 @@ from scipy.linalg import norm
 
 # Local Imports
 from ..bodies import Earth
-from ..math import fpe_equals, rot1, rot3
+from ..maths import fpe_equals, rot1, rot3
 from . import isEccentric, isInclined
 from .anomaly import eccLong2MeanLong, meanLong2EccLong, meanLong2TrueAnom, trueAnom2MeanLong
 from .utils import (

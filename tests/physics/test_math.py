@@ -9,7 +9,7 @@ from numpy import array, deg2rad, isclose, linspace
 
 # RESONAATE Imports
 from resonaate.physics.constants import PI, TWOPI
-from resonaate.physics.math import ShapeError, angularMean, wrapAngle2Pi, wrapAngleNegPiPi
+from resonaate.physics.maths import ShapeError, angularMean, wrapAngle2Pi, wrapAngleNegPiPi
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -172,7 +172,7 @@ WEIGHTED_ANGULAR_MEAN: list[tuple[ndarray, float, ndarray]] = [
 @pytest.mark.parametrize(
     ("unwrapped_angle", "wrapped_angle"), zip(UNWRAPPED_ANGLES, WRAPPED_NEG_PI)
 )
-def testwrapAngleNegPiPi(unwrapped_angle: float, wrapped_angle: float):
+def testWrapAngleNegPiPi(unwrapped_angle: float, wrapped_angle: float):
     """Test wrapAngleNegPiPi."""
     assert isclose(wrapAngleNegPiPi(unwrapped_angle), wrapped_angle)
 
@@ -180,7 +180,7 @@ def testwrapAngleNegPiPi(unwrapped_angle: float, wrapped_angle: float):
 @pytest.mark.parametrize(
     ("unwrapped_angle", "wrapped_angle"), zip(UNWRAPPED_ANGLES, WRAPPED_TWO_PI)
 )
-def testwrapAngle2Pi(unwrapped_angle: float, wrapped_angle: float):
+def testWrapAngle2Pi(unwrapped_angle: float, wrapped_angle: float):
     """Test wrapAngle2Pi."""
     assert isclose(wrapAngle2Pi(unwrapped_angle), wrapped_angle)
 

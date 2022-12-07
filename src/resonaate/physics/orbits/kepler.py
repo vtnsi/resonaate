@@ -25,7 +25,7 @@ from scipy.optimize import newton
 # Local Imports
 from ...common.logger import resonaateLogError
 from ..bodies import Earth
-from ..math import _ATOL, _MAX_ITER
+from ..maths import _ATOL, _MAX_ITER
 from .utils import getAngularMomentum, universalC2C3
 
 
