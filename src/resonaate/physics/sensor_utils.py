@@ -249,8 +249,9 @@ def apparentVisualMagnitude(
     References:
         :cite:t:`cognion_2013_amos`, Eqn 3
     """
+    vcs_km2 = visual_cross_section * 1e-6
     return Sun.absolute_magnitude - 2.5 * log10(
-        (visual_cross_section * reflectivity * phase_function) / rso_range**2
+        (vcs_km2 * reflectivity * phase_function) / rso_range**2
     )
 
 

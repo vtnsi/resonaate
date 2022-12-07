@@ -36,6 +36,7 @@ ______________________________________________________________________
 - `field_of_view` module for `FieldOfView` classes (see !92)
 - `safe` optional arg to `subtendedAngle()` to use `safeArccos()` instead of `np.arccos()`, but is off be default
 - `saveDatabaseOutput` from `scenario.py` now inserts the time into the `Epoch` database table if it does not already exist
+- `eci2lla`, `eci2rsw`, `eci2radec` in `physics/transforms/methods`
 
 ### Changed
 
@@ -74,6 +75,7 @@ ______________________________________________________________________
 - FoV for the tasked `TargetAgent` is now also checked when `background` observations are not being collected (see !83)
 - Sensors were being tasked to observe non-visible RSO's because of incorrect indexing calls on sensor agents (see !90)
 - Only passing background RSO from `asyncExecuteTasking` to `collectObservations` (see !84)
+- `apparentVisualMagnitude` calculation was wrong due to VCS units
 
 ### Security
 

@@ -376,7 +376,7 @@ This is an optional field in `"estimation"` defining the adaptive estimation tec
 
 #### InitialOrbitDeterminationConfig
 
-This is an optional field in `"estimation"` defining the initial orbi technique that is used if a maneuver is detected.
+This is an optional field in `"estimation"` defining the initial orbit determination technique that is used if a maneuver is detected.
 
 ```{rubric} Python Definition
 ```
@@ -794,7 +794,7 @@ These are the required fields defined for all types of sensor objects.
         "efficiency": float,                      # Required
         "slew_rate": float,                       # Required
         "exemplar": list[float, float],           # Required
-        "background_observations": bool,                    # Optional
+        "background_observations": bool,          # Optional
         "detectable_vismag": float,               # Optional
         "minimum_range": float,                   # Optional
         "maximum_range": float,                   # Optional
