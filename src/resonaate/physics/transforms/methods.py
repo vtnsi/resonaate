@@ -279,8 +279,8 @@ def eci2lla(x_eci: ndarray) -> ndarray:
 
 
 def rsw2eci(
-    x_eci: ndarray,
-    x_rsw: ndarray,
+    x_eci: ndarray[float, float, float, float, float, float],
+    x_rsw: ndarray[float, float, float, float, float, float],
 ) -> ndarray:
     """Convert a RSW relative state vector to a 6x1 ECI state vector.
 
@@ -303,11 +303,11 @@ def rsw2eci(
     Returns:
         (``np.ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
     """
-    r_hat = x_eci[:3] / norm(x_eci[:3])
-    w_hat = cross(x_eci[:3], x_eci[3:], dtype=float) / norm(
-        cross(x_eci[:3], x_eci[3:], dtype=float)
+    r_hat: ndarray[float, float, float] = x_eci[:3] / norm(x_eci[:3])
+    w_hat: ndarray[float, float, float] = cross(x_eci[:3], x_eci[3:]) / norm(
+        cross(x_eci[:3], x_eci[3:])
     )
-    s_hat = cross(w_hat, r_hat, dtype=float)
+    s_hat: ndarray[float, float, float] = cross(w_hat, r_hat)
 
     rsw_2_eci_rotation = asarray([r_hat, s_hat, w_hat]).T
     return concatenate(
@@ -320,8 +320,8 @@ def rsw2eci(
 
 
 def eci2rsw(
-    target_eci: ndarray,
-    chaser_eci: ndarray,
+    target_eci: ndarray[float, float, float, float, float, float],
+    chaser_eci: ndarray[float, float, float, float, float, float],
 ) -> ndarray:
     """Convert an ECI state vector to a RSW relative state vector.
 
@@ -341,11 +341,11 @@ def eci2rsw(
     Returns:
         x_rsw (``np.ndarray``): 6x1 RSW state vector, relative to `target_eci`, (km; km/sec)
     """
-    r_hat = target_eci[:3] / norm(target_eci[:3])
-    w_hat = cross(target_eci[:3], target_eci[3:], dtype=float) / norm(
-        cross(target_eci[:3], target_eci[3:], dtype=float)
+    r_hat: ndarray[float, float, float] = target_eci[:3] / norm(target_eci[:3])
+    w_hat: ndarray[float, float, float] = cross(target_eci[:3], target_eci[3:]) / norm(
+        cross(target_eci[:3], target_eci[3:])
     )
-    s_hat = cross(w_hat, r_hat, dtype=float)
+    s_hat: ndarray[float, float, float] = cross(w_hat, r_hat)
     # Create the transformation matrix from ECI to RSW
     eci_2_rsw_rotation = asarray([r_hat, s_hat, w_hat])
     delta_eci = asarray(target_eci - chaser_eci)
@@ -362,8 +362,8 @@ def eci2rsw(
 
 
 def ntw2eci(
-    x_eci: ndarray,
-    x_ntw: ndarray,
+    x_eci: ndarray[float, float, float, float, float, float],
+    x_ntw: ndarray[float, float, float, float, float, float],
 ) -> ndarray:
     """Convert a NTW relative state vector to a 6x1 ECI state vector.
 
@@ -386,11 +386,11 @@ def ntw2eci(
     Returns:
         (``np.ndarray``): 6x1 ECI state vector of the relative state, (km; km/sec)
     """
-    t_hat = x_eci[3:] / norm(x_eci[3:])
-    w_hat = cross(x_eci[:3], x_eci[3:], dtype=float) / norm(
-        cross(x_eci[:3], x_eci[3:], dtype=float)
+    t_hat: ndarray[float, float, float] = x_eci[3:] / norm(x_eci[3:])
+    w_hat: ndarray[float, float, float] = cross(x_eci[:3], x_eci[3:]) / norm(
+        cross(x_eci[:3], x_eci[3:])
     )
-    n_hat = cross(t_hat, w_hat, dtype=float)
+    n_hat: ndarray[float, float, float] = cross(t_hat, w_hat)
 
     ntw_2_eci_rotation = asarray([n_hat, t_hat, w_hat]).T
     return concatenate(
