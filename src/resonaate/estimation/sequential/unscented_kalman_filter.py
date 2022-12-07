@@ -11,7 +11,7 @@ from scipy.linalg import block_diag
 
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
-from ...physics.math import angularMean, wrapAngleNegPiPi
+from ...physics.maths import angularMean, wrapAngleNegPiPi
 from ...physics.statistics import chiSquareQuadraticForm
 from ...sensors.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ..debug_utils import findNearestPositiveDefiniteMatrix

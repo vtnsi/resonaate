@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ..physics.math import subtendedAngle
+from ..physics.maths import subtendedAngle
 from .measurements import getAzimuth, getElevation
 
 if TYPE_CHECKING:

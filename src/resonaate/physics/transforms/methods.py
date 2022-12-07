@@ -29,7 +29,7 @@ from scipy.linalg import norm
 # Local Imports
 from .. import constants as const
 from ..bodies import Earth
-from ..math import rot2, rot3, wrapAngle2Pi
+from ..maths import rot2, rot3, wrapAngle2Pi
 from .reductions import getReductionParameters
 
 if TYPE_CHECKING:

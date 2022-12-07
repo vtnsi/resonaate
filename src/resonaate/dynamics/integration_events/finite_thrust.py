@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from numpy import array, concatenate, zeros
 
 # Local Imports
-from ...physics.math import fpe_equals
+from ...physics.maths import fpe_equals
 from ...physics.transforms.methods import ntw2eci
 from .continuous_state_change_event import ContinuousStateChangeEvent
 from .event_stack import EventRecord, EventStack

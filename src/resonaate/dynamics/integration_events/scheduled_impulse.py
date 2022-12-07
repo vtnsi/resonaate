@@ -6,7 +6,7 @@ from abc import ABCMeta
 from numpy import concatenate, zeros
 
 # Local Imports
-from ...physics.math import fpe_equals
+from ...physics.maths import fpe_equals
 from ...physics.transforms.methods import ntw2eci
 from .discrete_state_change_event import DiscreteStateChangeEvent
 from .event_stack import EventRecord, EventStack

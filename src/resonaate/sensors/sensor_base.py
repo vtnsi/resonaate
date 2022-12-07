@@ -19,7 +19,7 @@ from ..data.epoch import Epoch
 from ..data.missed_observation import MissedObservation
 from ..data.observation import Observation
 from ..physics import constants as const
-from ..physics.math import isPD, subtendedAngle
+from ..physics.maths import isPD, subtendedAngle
 from ..physics.sensor_utils import lineOfSight
 from ..physics.time.stardate import ScenarioTime, julianDateToDatetime
 from ..physics.transforms.methods import getSlantRangeVector

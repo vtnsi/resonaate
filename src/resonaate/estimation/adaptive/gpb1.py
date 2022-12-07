@@ -10,7 +10,7 @@ from scipy.linalg import det
 
 # Local Imports
 from ...physics import constants as const
-from ...physics.math import fpe_equals
+from ...physics.maths import fpe_equals
 from ...physics.statistics import oneSidedChiSquareTest
 from .adaptive_filter import AdaptiveFilter
 

@@ -12,7 +12,7 @@ from scipy.linalg import norm
 from .bodies import Earth
 from .bodies.third_body import Sun
 from .constants import PI, SOLAR_FLUX, SPEED_OF_LIGHT
-from .math import subtendedAngle
+from .maths import subtendedAngle
 
 if TYPE_CHECKING:
     # Third Party Imports

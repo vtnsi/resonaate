@@ -10,7 +10,7 @@ from numpy import arcsin, arctan2, array, concatenate, dot, pi, sin, sqrt
 from scipy.linalg import norm
 
 # Local Imports
-from ..physics.math import fpe_equals, wrapAngle2Pi
+from ..physics.maths import fpe_equals, wrapAngle2Pi
 
 # Type Checking Imports
 if TYPE_CHECKING:

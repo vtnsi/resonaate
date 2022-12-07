@@ -10,7 +10,7 @@ import pytest
 
 # RESONAATE Imports
 import resonaate.physics.constants as const
-from resonaate.physics.math import rot1, rot3
+from resonaate.physics.maths import rot1, rot3
 from resonaate.physics.orbits.elements import ClassicalElements
 from resonaate.physics.orbits.utils import getFlightPathAngle
 from resonaate.physics.time.stardate import JulianDate
@@ -197,12 +197,12 @@ class TestLLA:
 
     def testConvertToGeocentricLatitude(self):
         """Test converting geodetic latitude to geocentric latitude."""
-        # Vallad example 3-1
+        # Vallado example 3-1
         assert np.isclose(geodetic2geocentric(np.radians(34.352496)), np.radians(34.173429))
 
     def testConvertToGeodeticLatitude(self):
         """Test converting geocentric latitude to geodetic latitude."""
-        # Vallad example 3-1
+        # Vallado example 3-1
         assert np.isclose(geocentric2geodetic(np.radians(34.173429)), np.radians(34.352496))
 
     def testLLA(self):

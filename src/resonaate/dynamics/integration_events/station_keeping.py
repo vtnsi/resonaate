@@ -10,7 +10,7 @@ from scipy.linalg import norm
 
 # Local Imports
 from ...physics.constants import DEG2RAD
-from ...physics.math import safeArccos
+from ...physics.maths import safeArccos
 from ...physics.orbits.elements import ClassicalElements
 from ...physics.time.stardate import JulianDate
 from ...physics.transforms.methods import ecef2lla, eci2ecef, ntw2eci

@@ -18,7 +18,7 @@ from ..physics.bodies.gravitational_potential import (
     loadGeopotentialCoefficients,
     nonSphericalAcceleration,
 )
-from ..physics.math import rot3
+from ..physics.maths import rot3
 from ..physics.sensor_utils import calculateSunVizFraction
 from ..physics.time.conversions import dayOfYear, greenwichApparentTime
 from ..physics.time.stardate import JulianDate

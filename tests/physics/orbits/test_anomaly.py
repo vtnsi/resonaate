@@ -9,7 +9,7 @@ import pytest
 from numpy import cos, deg2rad, isclose, rad2deg, sin
 
 # RESONAATE Imports
-from resonaate.physics.math import _ATOL, wrapAngle2Pi
+from resonaate.physics.maths import _ATOL, wrapAngle2Pi
 from resonaate.physics.orbits.anomaly import (
     eccAnom2MeanAnom,
     eccAnom2TrueAnom,

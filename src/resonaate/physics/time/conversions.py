@@ -7,7 +7,7 @@ from numpy import floor, remainder
 
 # Local Imports
 from ...physics import constants as const
-from ..math import wrapAngle2Pi
+from ..maths import wrapAngle2Pi
 from .stardate import JulianDate, julianDateToDatetime
 
 

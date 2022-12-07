@@ -18,7 +18,7 @@ from ..common.utilities import getTypeString
 from ..data.ephemeris import TruthEphemeris
 from ..data.query_util import addAlmostEqualFilter
 from ..data.resonaate_database import ResonaateDatabase
-from ..physics.math import nearestPD
+from ..physics.maths import nearestPD
 from ..physics.transforms.methods import ecef2sez, eci2ecef
 from ..sensors.measurements import getAzimuth, getElevation, getRange, getRangeRate
 

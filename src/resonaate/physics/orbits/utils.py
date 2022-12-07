@@ -11,7 +11,7 @@ from scipy.linalg import norm
 # Local Imports
 from ..bodies import Earth
 from ..constants import PI, RAD2DEG, TWOPI
-from ..math import fpe_equals, safeArccos, wrapAngle2Pi
+from ..maths import fpe_equals, safeArccos, wrapAngle2Pi
 from . import (
     EccentricityError,
     InclinationError,
