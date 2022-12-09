@@ -11,7 +11,9 @@ import pytest
 from resonaate.agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
+from resonaate.data.missed_observation import MissedObservation
 from resonaate.physics.bodies.earth import Earth
+from resonaate.physics.sensor_utils import GALACTIC_BELT_ECI
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from resonaate.physics.transforms.methods import eci2ecef, getSlantRangeVector
 from resonaate.physics.transforms.reductions import updateReductionParameters
@@ -133,6 +135,8 @@ def testIsNotVisible(
     slant_range_sez = getSlantRangeVector(
         mocked_sensing_agent.ecef_state, mocked_primary_target.initial_state
     )
+
+    # Check Ground Illumination
     visibility, explanation = ground_optical.isVisible(
         mocked_primary_target.initial_state,
         mocked_primary_target.visual_cross_section,
@@ -140,8 +144,9 @@ def testIsNotVisible(
         slant_range_sez,
     )
     assert not visibility
-    assert explanation.name == "GROUND_ILLUMINATION"
+    assert explanation == MissedObservation.Explanation.GROUND_ILLUMINATION
 
+    # Check Solar Flux
     visibility, explanation = ground_optical.isVisible(
         mocked_primary_target.initial_state,
         0.0,
@@ -149,8 +154,9 @@ def testIsNotVisible(
         slant_range_sez,
     )
     assert not visibility
-    assert explanation.name == "SOLAR_FLUX"
+    assert explanation == MissedObservation.Explanation.SOLAR_FLUX
 
+    # Check Visual Magnitude
     visibility, explanation = ground_optical.isVisible(
         mocked_primary_target.initial_state,
         0.0000000000001,
@@ -158,4 +164,26 @@ def testIsNotVisible(
         slant_range_sez,
     )
     assert not visibility
-    assert explanation.name == "VIZ_MAG"
+    assert explanation == MissedObservation.Explanation.VIZ_MAG
+
+    # Check Galactic Belt
+    galactic_belt_state = np.array(
+        [
+            GALACTIC_BELT_ECI[0] * 1e-12,
+            GALACTIC_BELT_ECI[1] * 1e-12,
+            GALACTIC_BELT_ECI[2] * 1e-12,
+            0,
+            0,
+            0,
+        ]
+    )
+
+    visibility, explanation = ground_optical.isVisible(
+        galactic_belt_state,
+        mocked_primary_target.visual_cross_section,
+        mocked_primary_target.reflectivity,
+        slant_range_sez,
+    )
+
+    assert not visibility
+    assert explanation == MissedObservation.Explanation.GALACTIC_EXCLUSION
