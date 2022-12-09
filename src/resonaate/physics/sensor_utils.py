@@ -11,12 +11,23 @@ from scipy.linalg import norm
 # Local Imports
 from .bodies import Earth
 from .bodies.third_body import Sun
-from .constants import PI, SOLAR_FLUX, SPEED_OF_LIGHT
+from .constants import DEG2RAD, PI, SOLAR_FLUX, SPEED_OF_LIGHT
 from .maths import subtendedAngle
+from .transforms.methods import spherical2cartesian
 
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
+
+
+GALACTIC_BELT_ECI = spherical2cartesian(
+    rho=2.46e17,
+    theta=-29.007805555555555556 * DEG2RAD,
+    phi=4.649850924403647,
+    rho_dot=0.0,
+    theta_dot=0.0,
+    phi_dot=0.0,
+)
 
 
 def getEarthLimbConeAngle(eci_state: ndarray) -> float:
@@ -287,3 +298,17 @@ def calculatePhaseAngle(emitter: ndarray, reflector: ndarray, observer: ndarray)
     )
 
     return phase_angle
+
+
+def checkGalacticExclusionZone(boresight_eci_vector, cone_angle=PI / 30):
+    """Determine if a sensor has appropriate lighting conditions.
+
+    RA 17h 45m 40.04s (radians: 4.649850924403647),
+    Dec -29° 00` 28.1″ (degrees: -29.007805555555555556)
+    range ~26 kilolight-years
+    """
+    boresight_belt_angle = arccos(
+        dot(GALACTIC_BELT_ECI[:3], boresight_eci_vector)
+        / (norm(GALACTIC_BELT_ECI[:3]) * norm(boresight_eci_vector))
+    )
+    return boresight_belt_angle >= cone_angle

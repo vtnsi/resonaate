@@ -16,6 +16,7 @@ from ..physics.sensor_utils import (
     apparentVisualMagnitude,
     calculateIncidentSolarFlux,
     calculatePhaseAngle,
+    checkGalacticExclusionZone,
     checkGroundSensorLightingConditions,
     checkSpaceSensorLightingConditions,
     getEarthLimbConeAngle,
@@ -165,6 +166,7 @@ class Optical(Sensor):
             ``bool``: True if target is visible; False if target is not visible
             :class:`.MissedObservation.Explanation`: Reason observation was visible or not
         """
+        # pylint:disable=too-many-return-statements
         jd = self.host.julian_date_epoch
         sun_eci_position = Sun.getPosition(jd)
         boresight_eci = tgt_eci_state - self.host.eci_state
@@ -188,6 +190,11 @@ class Optical(Sensor):
         )
         if rso_apparent_vismag > self.detectable_vismag:
             return False, MissedObservation.Explanation.VIZ_MAG
+
+        # Check if sensor is pointed at the galactic center
+        galactic = checkGalacticExclusionZone(boresight_eci[:3])
+        if not galactic:
+            return False, MissedObservation.Explanation.GALACTIC_EXCLUSION
 
         if self.host.agent_type == SPACECRAFT_LABEL:
             # Check if sensor is pointed at the Sun

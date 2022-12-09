@@ -37,6 +37,7 @@ ______________________________________________________________________
 - `safe` optional arg to `subtendedAngle()` to use `safeArccos()` instead of `np.arccos()`, but is off be default
 - `saveDatabaseOutput` from `scenario.py` now inserts the time into the `Epoch` database table if it does not already exist
 - `eci2lla`, `eci2rsw`, `eci2radec` in `physics/transforms/methods`
+- `checkGalacticExclusionZone` to `physics.sensor_utils`
 
 ### Changed
 
