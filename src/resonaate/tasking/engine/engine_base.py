@@ -65,11 +65,6 @@ class TaskingEngine(metaclass=ABCMeta):
         if not isinstance(decision, Decision):
             raise TypeError("Engine constructor requires an instantiated `Decision` object.")
 
-        self._reward = reward
-        """:class:`.Reward`: callable that determines tasking priority based on various metric."""
-        self._decision = decision
-        """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
-
         self.sensor_list = sorted(sensor_ids)
         """``list``: sorted sensor agent ID numbers."""
 
@@ -82,6 +77,11 @@ class TaskingEngine(metaclass=ABCMeta):
         self.target_indices = {}
         """``dict``: mapping of sorted target agent ID numbers to indices in :attr:`.target_list`."""
 
+        self._reward = reward
+        """:class:`.Reward`: callable that determines tasking priority based on various metric."""
+        self._decision = decision
+        """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
+
         # Sort sensors & targets - also creates index mappings
         self._sortSensors()
         self._sortTargets()
@@ -92,6 +92,10 @@ class TaskingEngine(metaclass=ABCMeta):
         """``ndarray``: NxM array defining the tasking decision for every target/sensor pair."""
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         """``ndarray``: NxM array defining the visibility condition for every target/sensor pair."""
+        self.metric_matrix = zeros(
+            (self.num_targets, self.num_sensors, self.num_metrics), dtype=float
+        )
+        """``ndarray``: NxMxP array defining the metrics for every target/sensor pair."""
 
         # List of transient observations (current timestep only)
         self._observations = []
@@ -226,6 +230,11 @@ class TaskingEngine(metaclass=ABCMeta):
         """Sort sensor list & index mapping, for use after adding/removing sensor(s)."""
         self.sensor_list.sort()
         self.sensor_indices = {_id: idx for idx, _id in enumerate(self.sensor_list)}
+
+    @property
+    def num_metrics(self):
+        """``int``: Returns the number of metrics."""
+        return len(self.reward.metrics)
 
     @property
     def reward(self) -> Reward:

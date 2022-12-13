@@ -21,8 +21,10 @@ class DeltaPosition(SensorMetric):
         :cite:t:`nastasi_2018_diss`, Eqn 5.5
     """
 
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Calculate the change in angular position required for an observation.
 
@@ -39,8 +41,10 @@ class DeltaPosition(SensorMetric):
 class SlewCycle(SensorMetric):
     """Slew cycle sensor metric."""
 
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Calculate the slew frequency for the proposed observation.
 
@@ -65,8 +69,10 @@ class TimeToTransit(SensorMetric):
         """
         self._norm_factor = norm_factor
 
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Calculate the time to slew the sensor from the current position to the proposed observation.
 

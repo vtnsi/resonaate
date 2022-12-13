@@ -3,8 +3,12 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
+
+# Third Party Imports
+from numpy import array
 
 # Local Imports
 from ..metrics.metric_base import Metric
@@ -34,6 +38,7 @@ class Reward(metaclass=ABCMeta):
             TypeError: raised if invalid :class:`.Metric` objects are passed
         """
         if isinstance(metrics, Metric):
+            # Make metrics a list if there is only one metric
             metrics = [metrics]
         elif not isinstance(metrics, Iterable):
             raise TypeError("Reward constructor must be given Metric objects.")
@@ -41,6 +46,17 @@ class Reward(metaclass=ABCMeta):
         if not all(isinstance(metric, Metric) for metric in metrics):
             raise TypeError("Reward constructor must be given Metric objects.")
         self._metrics = metrics
+
+        self._metric_type_indices = defaultdict(list)
+
+        self._metric_class_indices: dict[type[Metric], int] = {}
+
+        for metric in metrics:
+            # Fill metric type indexes
+            self._metric_type_indices[metric.metric_type].append(metrics.index(metric))
+
+            # Fill metric class indexes
+            self._metric_class_indices[metric.__class__] = metrics.index(metric)
 
     @classmethod
     def register(cls, reward: Reward) -> None:
@@ -62,8 +78,8 @@ class Reward(metaclass=ABCMeta):
         return self.__class__.__name__ in self.REGISTRY
 
     def calculateMetrics(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> dict[Metric, float]:
+        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent
+    ) -> ndarray:
         """Calculate each metric and saves to a dictionary.
 
         Args:
@@ -71,45 +87,35 @@ class Reward(metaclass=ABCMeta):
             sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            (``dict``): calculated metrics for the current simulation state
+            (``ndarray``): calculated metrics for the current simulation state
         """
-        metric_solutions = {}
-        for metric in self.metrics:
-            metric_solutions[metric] = metric(estimate_agent, sensor_agent, **kwargs)
+        return array([metric.calculate(estimate_agent, sensor_agent) for metric in self.metrics])
 
-        return metric_solutions
+    def normalizeMetrics(self, metric_matrix: ndarray) -> ndarray:
+        """Normalize a given metric between 0 and 1 across the current predict.
+
+        [TODO]: Add functionality for different normalization techniques.
+        """
+        for met in range(len(self.metrics)):
+            if metric_matrix[..., met].max() > 0.0:
+                metric_matrix[..., met] /= metric_matrix[..., met].max()
+
+        return metric_matrix
 
     @abstractmethod
-    def _calculateReward(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> ndarray:
+    def calculate(self, metric_matrix: ndarray) -> ndarray:
         """Abstract function for calculating rewards based on the simulation state.
 
         Note:
             Must be overridden by implementors.
 
         Args:
-            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
-            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
+            metric_matrix (``ndarray``): 2D array of metrics
 
         Returns:
             ``ndarray``: calculated reward
         """
         raise NotImplementedError
-
-    def __call__(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> ndarray:
-        """Call operator '()' for reward objects.
-
-        Args:
-            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
-            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
-
-        Returns:
-            ``ndarray``: calculated reward
-        """
-        return self._calculateReward(estimate_agent, sensor_agent, **kwargs)
 
     @property
     def metrics(self) -> list[Metric]:

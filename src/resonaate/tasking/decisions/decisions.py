@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 class MyopicNaiveGreedyDecision(Decision):
     """Optimizes for each sensor independently."""
 
-    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
+    def calculate(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Select the optimal tasking for each sensor, disregarding the effect on other sensors.
 
         References:
@@ -49,7 +49,7 @@ class MyopicNaiveGreedyDecision(Decision):
 class MunkresDecision(Decision):
     """Optimizes the reward matrix as a bipartite graph using the Hungarian algorithm."""
 
-    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
+    def calculate(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Select optimal tasking for each sensor, constrained to "perfect matching".
 
         References:
@@ -84,7 +84,7 @@ class RandomDecision(Decision):
         """
         self._seed = default_rng(seed)
 
-    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
+    def calculate(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Select random tasking for each sensor.
 
         Args:
@@ -107,7 +107,7 @@ class RandomDecision(Decision):
 class AllVisibleDecision(Decision):
     """Optimizes for each sensor independently and tasks all AllVisibleDecision options."""
 
-    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
+    def calculate(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Task each sensor to every available target.
 
         Args:

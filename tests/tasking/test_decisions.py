@@ -20,7 +20,7 @@ def mockedDecisionClass() -> Decision:
     """Return reference to a minimal :class:`.Decision` class."""
 
     class MockedDecision(Decision):
-        def _makeDecision(self, reward_matrix, **kwargs):
+        def calculate(self, reward_matrix, **kwargs):
             return 3
 
     return MockedDecision
@@ -53,7 +53,7 @@ class TestDecisionBase:
         """Test the call function of the Decision base class."""
         reward_matrix = asarray([[10, 1.1, 0], [4, 15.9, 1], [2.1, 3, 11]])
         decision = mocked_decision_class()
-        decision(reward_matrix)
+        decision.calculate(reward_matrix)
 
 
 class TestMyopicNaiveGreedyDecision:
@@ -72,7 +72,7 @@ class TestMyopicNaiveGreedyDecision:
         expected = [[True, False, False], [False, True, True], [False, False, False]]
 
         # Perform decision making, test expected
-        decision = myopic_decision(reward_matrix)
+        decision = myopic_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
         # Assert constraint that single sensor cannot be tasked more than once
         tasked_sensors = nonzero(decision)[1]
@@ -86,7 +86,7 @@ class TestMyopicNaiveGreedyDecision:
         expected = [[False, False, False], [False, False, False], [False, False, False]]
 
         # Perform decision making, test expected
-        decision = myopic_decision(reward_matrix)
+        decision = myopic_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
         # Assert constraint that single sensor cannot be tasked more than once
         tasked_sensors = nonzero(decision)[1]
@@ -100,7 +100,7 @@ class TestMyopicNaiveGreedyDecision:
         expected = [[True, True, True], [False, False, False], [False, False, False]]
 
         # Perform decision making, test expected
-        decision = myopic_decision(reward_matrix)
+        decision = myopic_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
         # Assert constraint that single sensor cannot be tasked more than once
         tasked_sensors = nonzero(decision)[1]
@@ -113,7 +113,7 @@ class TestMyopicNaiveGreedyDecision:
         reward_matrix = asarray([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         # Perform decision making, test expected null-tasking
-        assert not np_any(myopic_decision(reward_matrix))
+        assert not np_any(myopic_decision.calculate(reward_matrix))
 
 
 class TestMunkresDecision:
@@ -132,7 +132,7 @@ class TestMunkresDecision:
         expected = [[False, False, True], [False, True, False], [True, False, False]]
 
         # Perform decision making, test expected
-        decision = munkres_decision(reward_matrix)
+        decision = munkres_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
         # Assert constraint that single sensor cannot be tasked more than once
         tasked_sensors = nonzero(decision)[1]
@@ -146,7 +146,7 @@ class TestMunkresDecision:
         expected = [[False, False, False], [False, False, False], [False, False, False]]
 
         # Perform decision making, test expected
-        decision = munkres_decision(reward_matrix)
+        decision = munkres_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
         # Assert constraint that single sensor cannot be tasked more than once
         tasked_sensors = nonzero(decision)[1]
@@ -160,7 +160,7 @@ class TestMunkresDecision:
         expected = [[True, False, False], [False, True, False], [False, False, True]]
 
         # Perform decision making, test expected
-        decision = munkres_decision(reward_matrix)
+        decision = munkres_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
         # Assert constraint that single sensor cannot be tasked more than once
         tasked_sensors = nonzero(decision)[1]
@@ -173,7 +173,7 @@ class TestMunkresDecision:
         reward_matrix = asarray([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         # Perform decision making, test expected null-tasking
-        assert not np_any(munkres_decision(reward_matrix))
+        assert not np_any(munkres_decision.calculate(reward_matrix))
 
 
 class TestRandomDecision:
@@ -192,7 +192,7 @@ class TestRandomDecision:
         expected = [[False, False, False], [False, True, False], [True, False, True]]
 
         # Perform decision making, test expected
-        decision = random_decision(reward_matrix)
+        decision = random_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
         # Assert constraint that single sensor cannot be tasked more than once
         tasked_sensors = nonzero(decision)[1]
@@ -206,7 +206,7 @@ class TestRandomDecision:
         expected = [[False, False, True], [True, False, False], [False, True, False]]
 
         # Perform decision making, test expected
-        decision = random_decision(reward_matrix)
+        decision = random_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
         # Assert constraint that single sensor cannot be tasked more than once
         tasked_sensors = nonzero(decision)[1]
@@ -219,7 +219,7 @@ class TestRandomDecision:
         reward_matrix = asarray([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         # Perform decision making, test expected null-tasking
-        assert not np_any(random_decision(reward_matrix))
+        assert not np_any(random_decision.calculate(reward_matrix))
 
 
 class TestAllVisibleDecision:
@@ -238,7 +238,7 @@ class TestAllVisibleDecision:
         expected = [[True, False, True], [False, True, True], [True, True, True]]
 
         # Perform decision making, test expected
-        decision = all_visible_decision(reward_matrix)
+        decision = all_visible_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
 
     def testNegativeDecision(self):
@@ -249,7 +249,7 @@ class TestAllVisibleDecision:
         expected = [[False, False, False], [False, False, False], [False, False, False]]
 
         # Perform decision making, test expected
-        decision = all_visible_decision(reward_matrix)
+        decision = all_visible_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
 
     def testEqualDecision(self):
@@ -260,7 +260,7 @@ class TestAllVisibleDecision:
         expected = [[True, True, True], [True, True, True], [True, True, True]]
 
         # Perform decision making, test expected
-        decision = all_visible_decision(reward_matrix)
+        decision = all_visible_decision.calculate(reward_matrix)
         assert array_equal(decision, expected)
 
     def testNullDecision(self):
@@ -270,4 +270,4 @@ class TestAllVisibleDecision:
         reward_matrix = asarray([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         # Perform decision making, test expected null-tasking
-        assert not np_any(all_visible_decision(reward_matrix))
+        assert not np_any(all_visible_decision.calculate(reward_matrix))

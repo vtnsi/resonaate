@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from mjolnir import Job, KeyValueStore
-from numpy import zeros, zeros_like
+from numpy import zeros
 
 # Local Imports
 from .base import CallbackRegistration, JobHandler
@@ -43,9 +43,9 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
     estimate_agents = loads(KeyValueStore.getValue("estimate_agents"))
     estimate = estimate_agents[estimate_id]
 
-    # Ensure the visibility and reward matrices are the same scale as in the tasking engine
+    # Ensure the visibility and metric matrices are the same scale as in the tasking engine
     visibility = zeros(len(sensor_list), dtype=bool)
-    reward_matrix = zeros_like(visibility, dtype=float)
+    metric_matrix = zeros((len(sensor_list), len(reward.metrics)), dtype=float)
 
     for sensor_index, sensor_id in enumerate(sensor_list):
         sensor_agent = sensor_agents[sensor_id]
@@ -64,12 +64,12 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation_tuple])
             visibility[sensor_index] = True
-            reward_matrix[sensor_index] = reward(estimate, sensor_agent)
+            metric_matrix[sensor_index] = reward.calculateMetrics(estimate, sensor_agent)
 
     return {
         "estimate_id": estimate_id,
         "visibility": visibility,
-        "reward_matrix": reward_matrix,
+        "metric_matrix": metric_matrix,
     }
 
 
@@ -103,7 +103,7 @@ class TaskPredictionRegistration(CallbackRegistration):
         """
         row = self.registrant.target_list.index(job.retval["estimate_id"])
         self.registrant.visibility_matrix[row] = job.retval["visibility"]
-        self.registrant.reward_matrix[row] = job.retval["reward_matrix"]
+        self.registrant.metric_matrix[row] = job.retval["metric_matrix"]
 
 
 class TaskPredictionJobHandler(JobHandler):
