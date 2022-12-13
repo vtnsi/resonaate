@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import pickle
 import time
-from datetime import datetime
 from typing import TYPE_CHECKING
 from unittest.mock import create_autospec
 
@@ -15,32 +14,28 @@ import pytest
 from mjolnir import Job, KeyValueStore, WorkerManager
 
 # RESONAATE Imports
-from resonaate.agents.estimate_agent import EstimateAgent
-from resonaate.agents.sensing_agent import SensingAgent
-from resonaate.agents.target_agent import TargetAgent
 from resonaate.common.exceptions import (
     AgentProcessingError,
     JobProcessingError,
     MissingEphemerisError,
 )
 from resonaate.data.importer_database import ImporterDatabase
-from resonaate.dynamics.two_body import TwoBody
-from resonaate.estimation.maneuver_detection import StandardNis
-from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.job_handlers.agent_propagation import AgentPropagationJobHandler
 from resonaate.job_handlers.base import CallbackRegistration, JobHandler
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
-from resonaate.scenario.clock import ScenarioClock
-from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
-from resonaate.sensors.sensor_base import Sensor
 
 # Local Imports
-from .conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
+from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
     from typing import Any
+
+    # RESONAATE Imports
+    from resonaate.agents.estimate_agent import EstimateAgent
+    from resonaate.agents.sensing_agent import SensingAgent
+    from resonaate.agents.target_agent import TargetAgent
 
 
 @pytest.fixture(name="worker_manager")
@@ -64,30 +59,8 @@ def getLongSleepJob() -> Job:
     return Job(time.sleep, args=[6])
 
 
-@pytest.fixture(scope="class", name="mocked_sensor")
-def getMockedSensorObject() -> Sensor:
-    """Create a mocked :class:`.Sensor` object."""
-    sensor = create_autospec(Sensor, instance=True)
-    sensor.r_matrix = np.array([[7.0e-4, 0.0, 0.0], [0.0, 6.5e-4, 0.0], [0.0, 0.0, 8.0e-4]])
-    sensor.delta_boresight = 4.0
-    sensor.slew_rate = 2.0
-    return sensor
-
-
-@pytest.fixture(scope="class", name="mocked_sensing_agent")
-def getMockedSensingAgentObject(mocked_sensor: Sensor) -> SensingAgent:
-    """Create a mocked :class:`.SensingAgent` object."""
-    sensing_agent = create_autospec(SensingAgent, instance=True)
-    mocked_sensor.r_matrix = np.array([[7.0e-4, 0.0, 0.0], [0.0, 6.5e-4, 0.0], [0.0, 0.0, 8.0e-4]])
-    mocked_sensor.delta_boresight = 4.0
-    mocked_sensor.slew_rate = 2.0
-
-    sensing_agent.sensors = mocked_sensor
-    return sensing_agent
-
-
 @pytest.fixture(name="job_handler")
-def createJobHandler(numpy_add_job: Job, mocked_sensing_agent: SensingAgent) -> JobHandler:
+def createJobHandler(numpy_add_job: Job, sensor_agent: SensingAgent) -> JobHandler:
     """Create a valid JobHandler."""
 
     class GenericCallback(CallbackRegistration):
@@ -120,7 +93,7 @@ def createJobHandler(numpy_add_job: Job, mocked_sensing_agent: SensingAgent) -> 
             self.callback_registry.pop()
 
     job_handler = GenericJobHandler()
-    job_handler.registerCallback(mocked_sensing_agent)
+    job_handler.registerCallback(sensor_agent)
     yield job_handler
     job_handler.queue_mgr.stopHandling()
 
@@ -178,62 +151,6 @@ class TestBaseJobHandler:
         job_handler.callback_registry = [GenericCallback(self)]
         job_handler.executeJobs()
         assert not job_handler.queue_mgr.queued_jobs_processed
-
-
-@pytest.fixture(name="scenario_clock")
-def createScenarioClock(reset_shared_db: None) -> ScenarioClock:
-    """Create a :class:`.ScenarioClock` object for use in testing."""
-    return ScenarioClock(datetime(2018, 12, 1, 12, 0), 300, 60)
-
-
-@pytest.fixture(name="target_agent")
-def createTargetAgent(scenario_clock: ScenarioClock) -> TargetAgent:
-    """Create valid target agent for testing propagate jobs."""
-    agent = TargetAgent(
-        11111,
-        "test_tgt",
-        "Spacecraft",
-        np.asarray([400.0, 2.0, 10.0, 0.0, 0.0, 0.0]),
-        scenario_clock,
-        TwoBody(),
-        True,
-        25.0,
-        500.0,
-        0.21,
-    )
-    return agent
-
-
-@pytest.fixture(name="estimate_agent")
-def createEstimateAgent(target_agent: TargetAgent, scenario_clock: ScenarioClock) -> EstimateAgent:
-    """Create valid estimate agent for testing propagate jobs."""
-    est_x = np.asarray([6378.0, 2.0, 10.0, 0.0, 0.0, 0.0])
-    est_p = np.diagflat([1.0, 2.0, 1.0, 0.001, 0.002, 0.001])
-    agent = EstimateAgent(
-        target_agent.simulation_id,
-        target_agent.name,
-        target_agent.agent_type,
-        scenario_clock,
-        est_x,
-        est_p,
-        UnscentedKalmanFilter(
-            target_agent.simulation_id,
-            scenario_clock.time,
-            est_x,
-            est_p,
-            TwoBody(),
-            3 * est_p,
-            StandardNis(0.01),
-            None,
-            False,
-        ),
-        None,
-        InitialOrbitDeterminationConfig(),
-        25.0,
-        500.0,
-        0.21,
-    )
-    return agent
 
 
 @pytest.mark.usefixtures("teardown_kvs", "worker_manager")

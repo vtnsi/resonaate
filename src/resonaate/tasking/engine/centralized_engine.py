@@ -52,7 +52,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         decision: Decision,
         importer_db_path: str | None,
         realtime_obs: bool,
-    ):
+    ) -> None:
         """Initialize a centralized tasking engine.
 
         Args:
@@ -92,6 +92,9 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         self.decision_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         self.reward_matrix = zeros((self.num_targets, self.num_sensors), dtype=float)
+        self.metric_matrix = zeros(
+            (self.num_targets, self.num_sensors, self.num_metrics), dtype=float
+        )
 
         # Only task if we say so.... :P
         if self._realtime_obs:
@@ -105,6 +108,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
                 self.logger,
                 scope_instance_id=self.unique_id,
             )
+            self.calculateRewards()
             self.generateTasking()
             self._execute_handler.executeJobs(decision_matrix=self.decision_matrix)
 
@@ -123,9 +127,15 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         msg += f" on {len(observed_targets)} targets {observed_targets}"
         self.logger.info(msg)
 
+    def calculateRewards(self) -> None:
+        """Calculate rewards based off of normalized metrics."""
+        metrics = self.reward.normalizeMetrics(self.metric_matrix)
+        rewards = self.reward.calculate(metrics)
+        self.reward_matrix = rewards.reshape(self.num_targets, self.num_sensors)
+
     def generateTasking(self) -> None:
         """Create tasking solution based on the current simulation state."""
-        self.decision_matrix = self._decision(self.reward_matrix)
+        self.decision_matrix = self.decision.calculate(self.reward_matrix)
 
     def loadImportedObservations(self, datetime_epoch: datetime) -> list[ObservationTuple]:
         """Load imported :class:`.Observation` objects from :class:`.ImporterDatabase`.

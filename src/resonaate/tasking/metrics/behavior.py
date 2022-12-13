@@ -16,9 +16,7 @@ if TYPE_CHECKING:
 class TimeSinceObservation(BehaviorMetric):
     """Time since observation behavior metric."""
 
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> float:
+    def calculate(self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent) -> float:
         """Calculate the total minutes since the last observation of this target.
 
         Args:

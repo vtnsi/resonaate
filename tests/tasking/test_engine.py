@@ -63,7 +63,15 @@ def getReward() -> Reward:
 
 @pytest.fixture(name="centralized_tasking_engine")
 def getCentralizedEngineClass(reward: Reward, decision: Decision) -> CentralizedTaskingEngine:
-    """Return reference to a minimal :class:`.Engine` class."""
+    """Return reference to a minimal :class:`.Engine` class.
+
+    Args:
+        reward (:class:`.Reward`): Loaded reward object
+        decision (:class:`.Decision`): Loaded decision object
+
+    Returns:
+        :class:`.CentralizedTaskingEngine`
+    """
     engine = CentralizedTaskingEngine(
         engine_id=0,
         sensor_ids=SENSOR_NUMS,
@@ -85,7 +93,14 @@ def testCreation(
     reward: Reward,
     decision: Decision,
 ):
-    """Create a tasking engine with different configurations."""
+    """Create a tasking engine with different configurations.
+
+    Args:
+        mocked_method_pred_handler (``MagicMock``): Fake prediction handler
+        mocked_method_exec_handler (``MagicMock``): Fake execution handler
+        reward (:class:`.Reward`): Loaded reward object
+        decision (:class:`.Decision`): Loaded decision object
+    """
     engine = CentralizedTaskingEngine(
         engine_id=0,
         sensor_ids=SENSOR_NUMS,
@@ -103,7 +118,11 @@ def testCreation(
 
 
 def testGenerateTaskingNull(centralized_tasking_engine: CentralizedTaskingEngine):
-    """Test generateTasking()."""
+    """Test generateTasking() null case.
+
+    Args:
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     centralized_tasking_engine.visibility_matrix = np.array([[0, 0, 0]], dtype=bool)
     centralized_tasking_engine.reward_matrix = np.array([[0, 0, 0]], dtype=float)
     centralized_tasking_engine.decision_matrix = np.zeros((3, 1), dtype=bool)
@@ -111,8 +130,36 @@ def testGenerateTaskingNull(centralized_tasking_engine: CentralizedTaskingEngine
     assert np.array_equal(centralized_tasking_engine.decision_matrix, [[False, False, False]])
 
 
+def testNormalizeMetrics(centralized_tasking_engine: CentralizedTaskingEngine):
+    """Test normalizeMetrics().
+
+    Args:
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
+    metric_matrix = np.array([[[0.1, 0.0, 0.0]], [[0.0, 2.0, 0.0]], [[0.0, 0.0, 3.0]]])
+    metrics = centralized_tasking_engine.reward.normalizeMetrics(metric_matrix)
+    assert metrics.max() <= 1.0
+
+
+def testCalculateRewards(centralized_tasking_engine: CentralizedTaskingEngine):
+    """Test calculateRewards().
+
+    Args:
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
+    centralized_tasking_engine.metric_matrix = np.eye(3)
+    centralized_tasking_engine.calculateRewards()
+    assert np.isclose(
+        centralized_tasking_engine.reward_matrix, np.array([[0.85], [-0.15], [0.85]])
+    ).all()
+
+
 def testGenerateTasking(centralized_tasking_engine: CentralizedTaskingEngine):
-    """Test generateTasking()."""
+    """Test generateTasking().
+
+    Args:
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     centralized_tasking_engine.visibility_matrix = np.array([[1, 0.1, 3.0]], dtype=bool)
     centralized_tasking_engine.reward_matrix = np.array([[7.0, 5.0, 0]], dtype=float)
     centralized_tasking_engine.decision_matrix = np.zeros((3, 1), dtype=bool)
@@ -124,7 +171,12 @@ def testGenerateTasking(centralized_tasking_engine: CentralizedTaskingEngine):
 def testAssessWithNoObservations(
     event_handler_mock: MagicMock, centralized_tasking_engine: CentralizedTaskingEngine
 ):
-    """Test assess() when no observations occur."""
+    """Test assess() when no observations occur.
+
+    Args:
+        event_handler_mock (``MagicMock``): Fake event handler
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 42, 23.2)
     next_julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 43, 23.2)
     # Set realtime_obs to False to test that the engine does not attempt to handle events
@@ -143,7 +195,12 @@ def testAssessWithNoObservations(
 def testAssessWithObservations(
     event_handler_mock: MagicMock, centralized_tasking_engine: CentralizedTaskingEngine
 ):
-    """Test assess() when no observations occur."""
+    """Test assess() when no observations occur.
+
+    Args:
+        event_handler_mock (``MagicMock``): Fake event handler
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     next_datetime_epoch = datetime(2019, 1, 23, 17, 43, 23, 200000)
     # Create obs tuples to store
@@ -157,7 +214,11 @@ def testAssessWithObservations(
     #   This is required because the engine resets the observations at the beginning of each
     #   assess()
     def handleEvents(engine: CentralizedTaskingEngine, *args, **kwargs):
-        """Mock a side effect to dynamically set the observations."""
+        """Mock a side effect to dynamically set the observations.
+
+        Args:
+            engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+        """
         engine._observations = [obs_1, obs_2]
 
     event_handler_mock.side_effect = handleEvents
@@ -185,7 +246,13 @@ def testAssessWithImportedObservations(
     load_obs_mock: MagicMock,
     centralized_tasking_engine: CentralizedTaskingEngine,
 ):
-    """Test assess() when no observations occur."""
+    """Test assess() when no observations occur.
+
+    Args:
+        save_obs_mock (``MagicMock``): Fake saveObservations()
+        load_obs_mock (``MagicMock``): Fake loadImportedObservations()
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     centralized_tasking_engine._realtime_obs = False
     centralized_tasking_engine._importer_db = True
     mock_obs = create_autospec(Observation, instance=True)
@@ -201,7 +268,11 @@ def testAssessWithImportedObservations(
 
 
 def testGetSaveObservation(centralized_tasking_engine: CentralizedTaskingEngine):
-    """Test getCurrentObservations()."""
+    """Test saveObservations().
+
+    Args:
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     assert centralized_tasking_engine.observations == []
     assert centralized_tasking_engine._saved_observations == []
     assert centralized_tasking_engine.getCurrentObservations() == []
@@ -227,7 +298,11 @@ def testGetSaveObservation(centralized_tasking_engine: CentralizedTaskingEngine)
 
 
 def testGetSaveMissedObservation(centralized_tasking_engine: CentralizedTaskingEngine):
-    """Test getCurrentMissedObservations()."""
+    """Test saveMissedObservations().
+
+    Args:
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     assert centralized_tasking_engine.missed_observations == []
     assert centralized_tasking_engine._saved_missed_observations == []
     assert centralized_tasking_engine.getCurrentMissedObservations() == []
@@ -265,7 +340,13 @@ def testShutdown(
     exec_shutdown_mock: MagicMock,
     centralized_tasking_engine: CentralizedTaskingEngine,
 ):
-    """Test shutdown() method calls shutdown on handler classes."""
+    """Test shutdown() method calls shutdown on handler classes.
+
+    Args:
+        pred_shutdown_mock (``MagicMock``): Fake prediction shutdown
+        exec_shutdown_mock (``MagicMock``): Fake execution shutdown
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     pred_handler = centralized_tasking_engine._predict_handler
     exec_handler = centralized_tasking_engine._execute_handler
     centralized_tasking_engine.shutdown()
@@ -274,7 +355,12 @@ def testShutdown(
 
 
 def testGetCurrentTasking(reward: Reward, decision: Decision):
-    """Test getCurrentTasking() returns valid tasks."""
+    """Test getCurrentTasking() returns valid tasks.
+
+    Args:
+        reward (:class:`.Reward`): Loaded reward object
+        decision (:class:`.Decision`): Loaded decision object
+    """
     rng = np.random.default_rng(seed=654135132156)
     sensor_list = set(rng.integers(low=10000, high=20000, size=20))
     target_list = set(rng.integers(low=60000, high=70000, size=100))
@@ -323,7 +409,14 @@ def testGetCurrentTasking(reward: Reward, decision: Decision):
 
 
 def getMockedSensingAgentObject(agent_id: int) -> SensingAgent:
-    """Create a mocked :class:`.SensingAgent` object."""
+    """Create a mocked :class:`.SensingAgent` object.
+
+    Args:
+        agent_id (``int``): satcat ID
+
+    Returns:
+        :class:`.SensingAgent`
+    """
     mocked_sensor = create_autospec(Sensor, instance=True)
     sensing_agent = create_autospec(SensingAgent, instance=True)
     sensing_agent._id = agent_id
@@ -337,7 +430,12 @@ def testLoadImportedObservation(
     mocked_importer_db: MagicMock,
     centralized_tasking_engine: CentralizedTaskingEngine,
 ):
-    """Test loadImportedObservations()."""
+    """Test loadImportedObservations().
+
+    Args:
+        mocked_importer_db (``MagicMock``): Fake imported database
+        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+    """
     mocked_importer_db.getData = MagicMock()
     centralized_tasking_engine._fetchSensorAgents = MagicMock()
     centralized_tasking_engine._importer_db = mocked_importer_db
@@ -416,7 +514,13 @@ def testLoadImportedObservation(
 @patch.multiple(TaskingEngine, __abstractmethods__=set())
 @patch("resonaate.tasking.engine.engine_base.ImporterDatabase.getSharedInterface")
 def testCreateTaskingEngine(get_shared_mock: MagicMock, reward: Reward, decision: Decision):
-    """Test creating the base class & basic functionality."""
+    """Test creating the base class & basic functionality.
+
+    Args:
+        get_shared_mock (``MagicMock``): Fake shared mock
+        reward (:class:`.Reward`): Loaded reward object
+        decision (:class:`.Decision`): Loaded decision object
+    """
     # pylint: disable=abstract-class-instantiated
 
     # Valid creation
@@ -469,7 +573,12 @@ def testCreateTaskingEngine(get_shared_mock: MagicMock, reward: Reward, decision
 
 @patch.multiple(TaskingEngine, __abstractmethods__=set())
 def testSortOnCreation(reward: Reward, decision: Decision):
-    """Test that the sensor & target lists are sorted on creation."""
+    """Test that the sensor & target lists are sorted on creation.
+
+    Args:
+        reward (:class:`.Reward`): Loaded reward object
+        decision (:class:`.Decision`): Loaded decision object
+    """
     # pylint: disable=abstract-class-instantiated
     rng = np.random.default_rng(seed=654135132156)
     sensor_list = set(rng.integers(low=10000, high=20000, size=200))
@@ -493,7 +602,12 @@ def testSortOnCreation(reward: Reward, decision: Decision):
 
 @patch.multiple(TaskingEngine, __abstractmethods__=set())
 def testAddingRemovingSensors(reward: Reward, decision: Decision):
-    """Test adding/removing senors."""
+    """Test adding/removing senors.
+
+    Args:
+        reward (:class:`.Reward`): Loaded reward object
+        decision (:class:`.Decision`): Loaded decision object
+    """
     # pylint: disable=abstract-class-instantiated
     engine = TaskingEngine(
         engine_id=0,
@@ -547,7 +661,12 @@ def testAddingRemovingSensors(reward: Reward, decision: Decision):
 
 @patch.multiple(TaskingEngine, __abstractmethods__=set())
 def testAddingRemovingTargets(reward: Reward, decision: Decision):
-    """Test adding/removing targets."""
+    """Test adding/removing targets.
+
+    Args:
+        reward (:class:`.Reward`): Loaded reward object
+        decision (:class:`.Decision`): Loaded decision object
+    """
     # pylint: disable=abstract-class-instantiated
     engine = TaskingEngine(
         engine_id=0,

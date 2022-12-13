@@ -29,8 +29,10 @@ class FisherInformation(InformationMetric):
         #. :cite:t:`williams_2012_diss`
     """
 
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Calculate the determinant of the Fisher information gain.
 
@@ -64,8 +66,10 @@ class ShannonInformation(InformationMetric):
         #. :cite:t:`williams_2012_diss`
     """
 
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Calculate the log of the Shannon Information gain.
 
@@ -86,8 +90,10 @@ class ShannonInformation(InformationMetric):
 class KLDivergence(InformationMetric):
     """Kullback-Leibler Divergence metric."""
 
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Calculate the Kullback-Leibler Divergence.
 

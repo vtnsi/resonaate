@@ -38,6 +38,8 @@ ______________________________________________________________________
 - `saveDatabaseOutput` from `scenario.py` now inserts the time into the `Epoch` database table if it does not already exist
 - `eci2lla`, `eci2rsw`, `eci2radec` in `physics/transforms/methods`
 - `checkGalacticExclusionZone` to `physics.sensor_utils`
+- `num_metrics` to `engine_base` and `calculateRewards` to `centralized_engine`
+- `normalizeMetrics`, `metric_type_indices` and `metric_class_indices` to `reward_base` for creating dictionaries of metric class and specific types
 
 ### Changed
 
@@ -55,6 +57,8 @@ ______________________________________________________________________
 - Tasking engines now `assess` timesteps based on `datetime` bounds instead of `JulianDate` bounds
 - Queries for imported observations and ephemeris now query off of `Epoch.timestampISO` instead of `julian_date`
 - `position_long_rad` in `Observation` is now `position_lon_rad`
+- Calculation of individual metrics instead of reward functions in `task_prediction` (see !131)
+- refactored metric type strings into LABEL constants in `metric_base`
 
 ### Deprecated
 
@@ -67,6 +71,7 @@ ______________________________________________________________________
 - `Sensor.inFOV` class function is now redundant thanks to `FieldOfView.inFieldOfView()`
 - `concurrent-log-handler` as a dependency
 - `Observation.fromSEZVector` method & `Observation.sez` property
+- `__call__` functions in `reward_base`, `decision_base` and `metric_base`
 
 ### Fixed
 

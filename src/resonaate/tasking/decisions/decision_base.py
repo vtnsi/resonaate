@@ -38,7 +38,7 @@ class Decision(metaclass=ABCMeta):
         return self.__class__.__name__ in self.REGISTRY
 
     @abstractmethod
-    def _makeDecision(self, reward_matrix: ndarray, **kwargs) -> ndarray:
+    def calculate(self, reward_matrix: ndarray, **kwargs) -> ndarray:
         """Abstract function for making decisions based on the given reward matrix.
 
         Note:
@@ -51,14 +51,3 @@ class Decision(metaclass=ABCMeta):
             ``ndarray``: optimal decision set
         """
         raise NotImplementedError
-
-    def __call__(self, reward_matrix: ndarray, **kwargs) -> ndarray:
-        """Call operator '()' for decision objects.
-
-        Args:
-            reward_matrix (``ndarray``): reward matrix to optimize
-
-        Returns:
-            ``ndarray``: optimal decision set
-        """
-        return self._makeDecision(reward_matrix, **kwargs)

@@ -11,6 +11,13 @@ if TYPE_CHECKING:
     from ...agents.sensing_agent import SensingAgent
 
 
+# Metric type labels
+BEHAVIOR_METRIC_LABEL = "behavior"
+INFORMATION_METRIC_LABEL = "information"
+SENSOR_METRIC_LABEL = "sensor"
+STABILITY_METRIC_LABEL = "stability"
+
+
 class Metric(metaclass=ABCMeta):
     """Abstract base class to encapsulate behavior of general metrics."""
 
@@ -41,8 +48,10 @@ class Metric(metaclass=ABCMeta):
         return self.__class__.__name__ in self.REGISTRY
 
     @abstractmethod
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Abstract function for calculating the metric based on the set of targets & sensors.
 
@@ -58,20 +67,6 @@ class Metric(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def __call__(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> float:
-        """Call operator '()' for metric objects.
-
-        Args:
-            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
-            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
-
-        Returns:
-            ``float``: single, target-sensor paired metric value
-        """
-        return self._calculateMetric(estimate_agent, sensor_agent, **kwargs)
-
     @property
     def metric_type(self) -> str:
         """``str``: return the type of metric in str format, for convenience."""
@@ -85,13 +80,11 @@ class InformationMetric(Metric):
     predicted observations/estimates. These prioritize pure estimation performance.
     """
 
-    METRIC_TYPE: str = "information"
+    METRIC_TYPE: str = INFORMATION_METRIC_LABEL
     """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> float:
+    def calculate(self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent) -> float:
         """Define logic for calculating metrics based on the given target/sensor sets.
 
         Must be overridden by implementors.
@@ -106,12 +99,14 @@ class StabilityMetric(Metric):
     well-estimated/observed targets.
     """
 
-    METRIC_TYPE: str = "stability"
+    METRIC_TYPE: str = STABILITY_METRIC_LABEL
     """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Define logic for calculating metrics based on the given target/sensor sets.
 
@@ -127,12 +122,14 @@ class SensorMetric(Metric):
     limit "costly" collections.
     """
 
-    METRIC_TYPE: str = "sensor"
+    METRIC_TYPE: str = SENSOR_METRIC_LABEL
     """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Define logic for calculating metrics based on the given target/sensor sets.
 
@@ -148,12 +145,14 @@ class BehaviorMetric(Metric):
     prioritize specific behaviors of the sensors/estimates.
     """
 
-    METRIC_TYPE: str = "behavior"
+    METRIC_TYPE: str = BEHAVIOR_METRIC_LABEL
     """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> float:
         """Define logic for calculating metrics based on the given target/sensor sets.
 

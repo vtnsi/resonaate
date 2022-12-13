@@ -26,6 +26,12 @@ def _fixtureSetup(teardown_kvs, reset_shared_db: None) -> None:  # pylint: disab
     """Reset key value store and DB properly."""
 
 
+def _getMainConfig(datafiles_dir: str) -> ScenarioConfig:
+    """Set up a main :class:`.ScenarioConfig` object."""
+    init_file = os.path.join(datafiles_dir, JSON_INIT_PATH, "main_init.json")
+    return ScenarioConfig.fromConfigFile(init_file)
+
+
 def _getMinimalConfig(datafiles_dir: str) -> ScenarioConfig:
     """Set up a minimal :class:`.ScenarioConfig` object."""
     init_file = os.path.join(datafiles_dir, JSON_INIT_PATH, "minimal_init.json")
@@ -492,7 +498,7 @@ class TestEventIntegration:
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteAgentRemovalTarget(self, datafiles: str, caplog: pytest.LogCaptureFixture):
         """Validate that a AgentRemoval of a target is handled correctly."""
-        minimal_config = _getMinimalConfig(datafiles)
+        minimal_config = _getMainConfig(datafiles)
 
         tasking_engine = minimal_config.engines[0]
         removed_target = tasking_engine.targets[0]

@@ -6,8 +6,15 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import sign
+from numpy import sum as np_sum
 
 # Local Imports
+from ..metrics.metric_base import (
+    BEHAVIOR_METRIC_LABEL,
+    INFORMATION_METRIC_LABEL,
+    SENSOR_METRIC_LABEL,
+    STABILITY_METRIC_LABEL,
+)
 from .reward_base import Reward
 
 if TYPE_CHECKING:
@@ -15,9 +22,7 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     # Local Imports
-    from ...agents.estimate_agent import EstimateAgent
-    from ...agents.sensing_agent import SensingAgent
-    from ..metrics import Metric
+    from ..metrics.metric_base import Metric
 
 
 class CostConstrainedReward(Reward):
@@ -40,7 +45,7 @@ class CostConstrainedReward(Reward):
                 - :class:`.Sensor`
 
         Args:
-            metrics (``list``): metrics instances for calculating the reward
+            metrics (``list``): :class:`.Metric` instances for calculating the reward
             delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
 
@@ -55,19 +60,17 @@ class CostConstrainedReward(Reward):
             raise ValueError("Incorrect number of metrics being passed")
         stability, information, sensor = False, False, False
         for metric in metrics:
-            if metric.metric_type == "stability":
+            if metric.metric_type == STABILITY_METRIC_LABEL:
                 stability = True
-            if metric.metric_type == "information":
+            if metric.metric_type == INFORMATION_METRIC_LABEL:
                 information = True
-            if metric.metric_type == "sensor":
+            if metric.metric_type == SENSOR_METRIC_LABEL:
                 sensor = True
 
         if not all([stability, information, sensor]):
             raise TypeError("Incorrect assignment of metrics")
 
-    def _calculateReward(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> ndarray:
+    def calculate(self, metric_matrix: ndarray) -> float:
         """Calculate the cost-constrained reward.
 
         Note:
@@ -75,20 +78,16 @@ class CostConstrainedReward(Reward):
                 r = delta * (sign(stab) + info) - (1 - delta) * sens
 
         Args:
-            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
-            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
+            metric_matrix (``ndarray``): 2D array of metrics
 
         Returns:
-            ``ndarray``: calculated reward
+            ``float``: Cost constrained reward
         """
-        metrics = self.calculateMetrics(estimate_agent, sensor_agent, **kwargs)
-        for metric, value in metrics.items():
-            if metric.metric_type == "stability":
-                stability = value
-            if metric.metric_type == "information":
-                information = value
-            if metric.metric_type == "sensor":
-                sensor = value
+        stability = metric_matrix[..., self._metric_type_indices[STABILITY_METRIC_LABEL]].squeeze()
+        information = metric_matrix[
+            ..., self._metric_type_indices[INFORMATION_METRIC_LABEL]
+        ].squeeze()
+        sensor = metric_matrix[..., self._metric_type_indices[SENSOR_METRIC_LABEL]].squeeze()
 
         return self._delta * (sign(stability) + information) - (1 - self._delta) * sensor
 
@@ -99,22 +98,19 @@ class SimpleSummationReward(Reward):
     This function takes any range of metrics, and sums them all together.
     """
 
-    def _calculateReward(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> ndarray:
+    def calculate(self, metric_matrix: ndarray) -> float:
         """Calculate the reward as the direct sum of each metric.
 
         References:
             :cite:t:`kadan_2021_scitech_parametric`
 
         Args:
-            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
-            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
+            metric_matrix (``ndarray``): 2D array of metrics
 
         Returns:
-            ``ndarray``: summed reward
+            ``float``: Summation reward
         """
-        return sum(self.calculateMetrics(estimate_agent, sensor_agent, **kwargs).values())
+        return np_sum(metric_matrix, axis=2)
 
 
 class CombinedReward(Reward):
@@ -135,7 +131,7 @@ class CombinedReward(Reward):
                 - :class:`.Behavior`
 
         Args:
-            metrics (``list``): metrics instances for calculating the reward
+            metrics (``list``): :class:`.Metric` instances for calculating the reward
             delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
 
@@ -150,21 +146,19 @@ class CombinedReward(Reward):
             raise ValueError("Incorrect number of metrics being passed")
         stability, information, sensor, behavior = False, False, False, False
         for metric in metrics:
-            if metric.metric_type == "stability":
+            if metric.metric_type == STABILITY_METRIC_LABEL:
                 stability = True
-            if metric.metric_type == "information":
+            if metric.metric_type == INFORMATION_METRIC_LABEL:
                 information = True
-            if metric.metric_type == "sensor":
+            if metric.metric_type == SENSOR_METRIC_LABEL:
                 sensor = True
-            if metric.metric_type == "behavior":
+            if metric.metric_type == BEHAVIOR_METRIC_LABEL:
                 behavior = True
 
         if not all([stability, information, sensor, behavior]):
             raise TypeError("Incorrect assignment of metrics")
 
-    def _calculateReward(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> ndarray:
+    def calculate(self, metric_matrix: ndarray) -> float:
         """Calculate the Combined cost-constrained staleness reward.
 
         References:
@@ -175,22 +169,17 @@ class CombinedReward(Reward):
                 r = delta * (sign(stab) + info) - (1 - delta) * sens + staleness
 
         Args:
-            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
-            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
+            metric_matrix (``ndarray``): 2D array of metrics
 
         Returns:
-            ``ndarray``: calculated reward
+            ``float``: Combined reward
         """
-        metrics = self.calculateMetrics(estimate_agent, sensor_agent, **kwargs)
-        for metric, value in metrics.items():
-            if metric.metric_type == "stability":
-                stability = value
-            if metric.metric_type == "information":
-                information = value
-            if metric.metric_type == "sensor":
-                sensor = value
-            if metric.metric_type == "behavior":
-                behavior = value
+        stability = metric_matrix[..., self._metric_type_indices[STABILITY_METRIC_LABEL]].squeeze()
+        information = metric_matrix[
+            ..., self._metric_type_indices[INFORMATION_METRIC_LABEL]
+        ].squeeze()
+        sensor = metric_matrix[..., self._metric_type_indices[SENSOR_METRIC_LABEL]].squeeze()
+        behavior = metric_matrix[..., self._metric_type_indices[BEHAVIOR_METRIC_LABEL]].squeeze()
 
         return (
             self._delta * (sign(stability) + information) - (1 - self._delta) * sensor
