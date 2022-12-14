@@ -1,5 +1,5 @@
 {
-  "unique_id": 3,
+  "unique_id": 2,
   "reward": {
     "name": "SimpleSummationReward",
     "metrics": [
@@ -14,6 +14,6 @@
     "name": "MunkresDecision",
     "parameters": {}
   },
-  "targets_file": "../target_sets/no_targets.json",
-  "sensors_file": "../sensor_sets/small_network.json"
+  "targets_file": "../target_sets/small_target_set.json",
+  "sensors_file": "../sensor_sets/ssn_network.json"
 }

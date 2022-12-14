@@ -1,18 +1,10 @@
 {
-  "unique_id": 2,
+  "unique_id": 1,
   "reward": {
-    "name": "CostConstrainedReward",
+    "name": "SimpleSummationReward",
     "metrics": [
       {
         "name": "ShannonInformation",
-        "parameters": {}
-      },
-      {
-        "name": "DeltaPosition",
-        "parameters": {}
-      },
-      {
-        "name": "LyapunovStability",
         "parameters": {}
       }
     ],
@@ -23,5 +15,5 @@
     "parameters": {}
   },
   "targets_file": "../target_sets/small_target_set.json",
-  "sensors_file": "../sensor_sets/ssn_network.json"
+  "sensors_file": "../sensor_sets/sat_sensors.json"
 }

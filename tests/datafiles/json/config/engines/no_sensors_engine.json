@@ -1,18 +1,10 @@
 {
   "unique_id": 1,
   "reward": {
-    "name": "CostConstrainedReward",
+    "name": "SimpleSummationReward",
     "metrics": [
       {
-        "name": "ShannonInformation",
-        "parameters": {}
-      },
-      {
-        "name": "DeltaPosition",
-        "parameters": {}
-      },
-      {
-        "name": "LyapunovStability",
+        "name": "TimeSinceObservation",
         "parameters": {}
       }
     ],

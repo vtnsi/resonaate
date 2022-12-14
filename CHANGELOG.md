@@ -59,6 +59,8 @@ ______________________________________________________________________
 - `position_long_rad` in `Observation` is now `position_lon_rad`
 - Calculation of individual metrics instead of reward functions in `task_prediction` (see !131)
 - refactored metric type strings into LABEL constants in `metric_base`
+- Changed default engines to use `SimpleSummationReward` and `TimeSinceObservation` metric
+- Renamed `cost_constrained_ssn` to `summation_ssn` and `cost_constrained_space` to `summation_space`
 
 ### Deprecated
 

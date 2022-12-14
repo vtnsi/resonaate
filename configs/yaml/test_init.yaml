@@ -1,5 +1,5 @@
 engines_files:
-  - engines/cost_constrained_ssn.yaml
+  - engines/summation_ssn.yaml
 events: []
 filter:
   dynamics_model: special_perturbations

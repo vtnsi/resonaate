@@ -6,10 +6,6 @@
       {
         "name": "TimeSinceObservation",
         "parameters": {}
-      },
-      {
-        "name": "ShannonInformation",
-        "parameters": {}
       }
     ],
     "parameters": {}

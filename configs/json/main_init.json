@@ -44,6 +44,6 @@
     },
     "adaptive_filter": null
   },
-  "engines_files": ["engines/cost_constrained_ssn.json"],
+  "engines_files": ["engines/summation_ssn.json"],
   "events": []
 }
