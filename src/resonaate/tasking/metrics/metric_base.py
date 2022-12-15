@@ -12,10 +12,12 @@ if TYPE_CHECKING:
 
 
 # Metric type labels
-BEHAVIOR_METRIC_LABEL = "behavior"
 INFORMATION_METRIC_LABEL = "information"
 SENSOR_METRIC_LABEL = "sensor"
 STABILITY_METRIC_LABEL = "stability"
+STATE_METRIC_LABEL = "state"
+TARGET_METRIC_LABEL = "target"
+UNCERTAINTY_METRIC_LABEL = "uncertainty"
 
 
 class Metric(metaclass=ABCMeta):
@@ -76,12 +78,30 @@ class Metric(metaclass=ABCMeta):
 class InformationMetric(Metric):
     """Information metric type base class.
 
-    These metrics should quantify the information (or uncertainty reduction) from
-    predicted observations/estimates. These prioritize pure estimation performance.
+    These metrics should quantify the information from predicted observations/estimates.
+    These prioritize pure estimation performance. These consist of information gain equations.
     """
 
     METRIC_TYPE: str = INFORMATION_METRIC_LABEL
     """``str``: Type of metric in str format, for reward logic."""
+
+    @abstractmethod
+    def calculate(self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent) -> float:
+        """Define logic for calculating metrics based on the given target/sensor sets.
+
+        Must be overridden by implementors.
+        """
+        raise NotImplementedError
+
+
+class UncertaintyMetric(Metric):
+    """Uncertainty metric type base class.
+
+    These metrics should quantify the uncertainty reduction from predicted observations/estimates.
+    These prioritize uncertainty reduction. These are operations directly on the covariance.
+    """
+
+    METRIC_TYPE: str = UNCERTAINTY_METRIC_LABEL
 
     @abstractmethod
     def calculate(self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent) -> float:
@@ -138,15 +158,37 @@ class SensorMetric(Metric):
         raise NotImplementedError
 
 
-class BehaviorMetric(Metric):
-    """Behavior metric type base class.
+class TargetMetric(Metric):
+    """Target metric type base class.
 
-    These metrics are ad-hoc behaviors that do not fit into another metric type. These
-    prioritize specific behaviors of the sensors/estimates.
+    These metrics quantify the impact of observations on the actual target agent. They focus on
+    the recency of the last observation, tasking priority, and orbital regime.
     """
 
-    METRIC_TYPE: str = BEHAVIOR_METRIC_LABEL
+    METRIC_TYPE: str = TARGET_METRIC_LABEL
     """``str``: Type of metric in str format, for reward logic."""
+
+    @abstractmethod
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
+    ) -> float:
+        """Define logic for calculating metrics based on the given target/sensor sets.
+
+        Must be overridden by implementors.
+        """
+        raise NotImplementedError
+
+
+class StateMetric(Metric):
+    """State metric type base class.
+
+    These metrics quantify the state of a target, and limit observations based on orientation,
+    background lighting, attitude, and range.
+    """
+
+    METRIC_TYPE: str = STATE_METRIC_LABEL
 
     @abstractmethod
     def calculate(

@@ -88,7 +88,11 @@ class ShannonInformation(InformationMetric):
 
 
 class KLDivergence(InformationMetric):
-    """Kullback-Leibler Divergence metric."""
+    """Kullback-Leibler Divergence metric.
+
+    References:
+        #. :cite:t:`kullback_jstor_1951_info`
+    """
 
     def calculate(
         self,
@@ -96,9 +100,6 @@ class KLDivergence(InformationMetric):
         sensor_agent: SensingAgent,
     ) -> float:
         """Calculate the Kullback-Leibler Divergence.
-
-        References:
-            :cite:t:`kullback_jstor_1951_info`
 
         Args:
             estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated

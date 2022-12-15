@@ -10,10 +10,10 @@ from numpy import sum as np_sum
 
 # Local Imports
 from ..metrics.metric_base import (
-    BEHAVIOR_METRIC_LABEL,
     INFORMATION_METRIC_LABEL,
     SENSOR_METRIC_LABEL,
     STABILITY_METRIC_LABEL,
+    TARGET_METRIC_LABEL,
 )
 from .reward_base import Reward
 
@@ -152,7 +152,7 @@ class CombinedReward(Reward):
                 information = True
             if metric.metric_type == SENSOR_METRIC_LABEL:
                 sensor = True
-            if metric.metric_type == BEHAVIOR_METRIC_LABEL:
+            if metric.metric_type == TARGET_METRIC_LABEL:
                 behavior = True
 
         if not all([stability, information, sensor, behavior]):
@@ -179,7 +179,7 @@ class CombinedReward(Reward):
             ..., self._metric_type_indices[INFORMATION_METRIC_LABEL]
         ].squeeze()
         sensor = metric_matrix[..., self._metric_type_indices[SENSOR_METRIC_LABEL]].squeeze()
-        behavior = metric_matrix[..., self._metric_type_indices[BEHAVIOR_METRIC_LABEL]].squeeze()
+        behavior = metric_matrix[..., self._metric_type_indices[TARGET_METRIC_LABEL]].squeeze()
 
         return (
             self._delta * (sign(stability) + information) - (1 - self._delta) * sensor
