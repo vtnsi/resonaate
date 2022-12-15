@@ -59,7 +59,11 @@ class SlewCycle(SensorMetric):
 
 
 class TimeToTransit(SensorMetric):
-    """Time-to-transit sensor metric."""
+    """Time-to-transit sensor metric.
+
+    References:
+        :cite:t:`nastasi_2018_diss`, Eqn 5.11 - 5.12
+    """
 
     def __init__(self, norm_factor: float):
         """Create a :class`.TimeToTransit` metric with a normalization factor.
@@ -75,9 +79,6 @@ class TimeToTransit(SensorMetric):
         sensor_agent: SensingAgent,
     ) -> float:
         """Calculate the time to slew the sensor from the current position to the proposed observation.
-
-        References:
-            :cite:t:`nastasi_2018_diss`, Eqn 5.11 - 5.12
 
         Args:
             estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
