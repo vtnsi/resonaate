@@ -40,7 +40,8 @@ ______________________________________________________________________
 - `checkGalacticExclusionZone` to `physics.sensor_utils`
 - `num_metrics` to `engine_base` and `calculateRewards` to `centralized_engine`
 - `normalizeMetrics`, `metric_type_indices` and `metric_class_indices` to `reward_base` for creating dictionaries of metric class and specific types
-- `UncertaintyMetric` & `StateMetric` base classes and several implementations for covariance/state focused metrics, resp. (see #153 & !136 )
+- `UncertaintyMetric` & `StateMetric` base classes and several implementations for covariance/state focused metrics, resp. (see #153 & !136)
+- `Measurement` and `MeasurementType` classes to decouple sensor and measurement logic (see #146 and !130)
 
 ### Changed
 
@@ -62,7 +63,8 @@ ______________________________________________________________________
 - refactored metric type strings into LABEL constants in `metric_base`
 - Changed default engines to use `SimpleSummationReward` and `TimeSinceObservation` metric
 - Renamed `cost_constrained_ssn` to `summation_ssn` and `cost_constrained_space` to `summation_space`
-- renamed `BehaviorMetric` to `targetMetric`
+- Renamed `BehaviorMetric` to `TargetMetric`
+- Moved various measurement pure functions to `physics.measurement_utils` module.
 
 ### Deprecated
 

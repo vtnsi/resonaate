@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from abc import ABC, abstractmethod
 from collections import namedtuple
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, cos, diagflat, matmul, random, real, sin, squeeze, zeros_like
-from scipy.linalg import norm, sqrtm
+from numpy import array, cos, sin, squeeze, zeros_like
+from scipy.linalg import norm
 
 # Local Imports
 from ..agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
@@ -19,11 +18,11 @@ from ..data.epoch import Epoch
 from ..data.missed_observation import MissedObservation
 from ..data.observation import Observation
 from ..physics import constants as const
-from ..physics.maths import isPD, subtendedAngle
+from ..physics.maths import subtendedAngle
+from ..physics.measurement_utils import getAzimuth, getElevation, getRange
 from ..physics.sensor_utils import lineOfSight
 from ..physics.time.stardate import ScenarioTime, julianDateToDatetime
 from ..physics.transforms.methods import getSlantRangeVector
-from .measurements import getAzimuth, getElevation, getRange
 
 if TYPE_CHECKING:
     # Third Party Imports
@@ -33,6 +32,7 @@ if TYPE_CHECKING:
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from .field_of_view import FieldOfView
+    from .measurement import Measurement
 
 
 ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles", "reason"])
@@ -46,14 +46,14 @@ Attributes:
 """
 
 
-class Sensor(ABC):
+class Sensor:
     """Abstract base class for a generic Sensor object."""
 
     def __init__(
         self,
+        measurement: Measurement,
         az_mask: ndarray,
         el_mask: ndarray,
-        r_matrix: ndarray,
         diameter: float,
         efficiency: float,
         exemplar: ndarray,
@@ -67,9 +67,9 @@ class Sensor(ABC):
         """Construct a generic `Sensor` object.
 
         Args:
+            measurement (:class:`.Measurement`): defines the measurement data produced by this sensor
             az_mask (``ndarray``): azimuth mask for visibility conditions
             el_mask (``ndarray``): elevation mask for visibility conditions
-            r_matrix (``ndarray``): measurement noise covariance matrix
             diameter (``float``): diameter of sensor dish (m)
             efficiency (``float``): efficiency percentage of the sensor
             exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power  calculation [cross sectional area (m^2), range (km)]
@@ -81,13 +81,11 @@ class Sensor(ABC):
             maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
+        self._measurement = measurement
         self._az_mask = zeros_like(az_mask)
         self._el_mask = zeros_like(el_mask)
-        self._r_matrix = zeros_like(r_matrix)
-        self._sqrt_noise_covar = zeros_like(r_matrix)
         self.az_mask = const.DEG2RAD * az_mask
         self.el_mask = const.DEG2RAD * el_mask
-        self.r_matrix = r_matrix
         self.aperture_area = const.PI * ((diameter / 2.0) ** 2)
         self.efficiency = efficiency
         self.exemplar = squeeze(exemplar)
@@ -104,26 +102,7 @@ class Sensor(ABC):
         self._host = None
         self._sensor_args = sensor_args
 
-    @abstractmethod
-    def measurements(self, slant_range_sez: ndarray, noisy: bool = False) -> dict[str, float]:
-        """Return the measurement state of the measurement.
-
-        Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
-            noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
-
-        Returns:
-            ``dict``: measurements made by the sensor
-
-            :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
-            :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
-            :``"range_km"``: (``float``): range measurement (km)
-            :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
-        """
-        raise NotImplementedError
-
     @property
-    @abstractmethod
     def angle_measurements(self) -> ndarray:
         """Returns which measurements are angles as integer values.
 
@@ -135,7 +114,7 @@ class Sensor(ABC):
         Returns:
             ``ndarray``: integer array defining angular measurements
         """
-        raise NotImplementedError
+        return self._measurement.angular_values
 
     def _setInitialBoresight(self) -> ndarray:
         """Determine the initial boresight vector as the center of the field of regard."""
@@ -266,7 +245,7 @@ class Sensor(ABC):
             position_lat_rad=self.host.lla_state[0],
             position_lon_rad=self.host.lla_state[1],
             position_altitude_km=self.host.lla_state[2],
-            **self.measurements(slant_range_sez),
+            **self._measurement.calculateMeasurement(slant_range_sez),
         )
 
     def _checkForMissedObservation(self, obs_list: list[ObservationTuple], target_id: int) -> bool:
@@ -389,7 +368,7 @@ class Sensor(ABC):
             :``"range_km"``: (``float``): range measurement (km)
             :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
         """
-        return self.measurements(slant_range_sez, noisy=True)
+        return self._measurement.calculateNoisyMeasurement(slant_range_sez)
 
     def isVisible(  # pylint:disable=too-many-return-statements
         self,
@@ -509,28 +488,7 @@ class Sensor(ABC):
     @property
     def r_matrix(self) -> ndarray:
         r"""``ndarray``: Returns the :math:`n_z \times n_z` measurement noise covariance matrix."""
-        return self._r_matrix
-
-    @r_matrix.setter
-    def r_matrix(self, r_matrix: ndarray):
-        r"""Ensure the measurement noise matrix is a square matrix.
-
-        Args:
-            r_matrix (``ndarray``): measurement noise matrix for a particular sensor
-        """
-        if r_matrix.ndim == 1:
-            self._r_matrix = diagflat(r_matrix.ravel()) ** 2.0
-        elif r_matrix.shape[0] == r_matrix.shape[1]:
-            self._r_matrix = r_matrix
-        else:
-            raise ShapeError(f"Sensor: Invalid shape for r_matrix: {r_matrix.shape}")
-
-        if not isPD(self._r_matrix):
-            raise ValueError(f"Sensor: non-positive definite r_matrix: {r_matrix}")
-
-        # Save the sqrt form of the R matrix to save computation time
-        # [FIXME]: not initialized as `None` in `__init__` because variable not overwritten by this line...
-        self._sqrt_noise_covar = real(sqrtm(self._r_matrix))
+        return self._measurement.r_matrix
 
     @property
     def host(self) -> SensingAgent:
@@ -546,17 +504,6 @@ class Sensor(ABC):
         """
         self._host = host
         self.time_last_ob = host.time
-
-    @property
-    def measurement_noise(self) -> ndarray:
-        r"""``ndarray``: Return randomly-generated measurement :math:`n_z \times 1` noise vector.
-
-        .. math::
-
-            v_k \simeq N(0; R)
-
-        """
-        return matmul(self._sqrt_noise_covar, random.randn(self._r_matrix.shape[0]))
 
     def getSensorData(self) -> dict:
         """``dict``: Returns a this sensor's formatted information."""

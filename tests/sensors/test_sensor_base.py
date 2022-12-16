@@ -23,24 +23,6 @@ from resonaate.sensors.radar import Radar
 from resonaate.sensors.sensor_base import Sensor
 
 
-@pytest.fixture(name="sensor_args")
-def getSensorArgs() -> dict:
-    """Create dictionary of valid arguments to Sensor init."""
-    return {
-        "az_mask": np.array((0.0, 360.0)),
-        "el_mask": np.array((0.0, 90.0)),
-        "r_matrix": np.diag((1.0e-4, 2.5e-5)),
-        "diameter": 10,
-        "efficiency": 0.95,
-        "exemplar": np.array((1.0, 42000.0)),
-        "slew_rate": 1.0,
-        "field_of_view": {"fov_shape": "conic"},
-        "background_observations": True,
-        "minimum_range": 0.0,
-        "maximum_range": np.inf,
-    }
-
-
 @pytest.fixture(name="mocked_sensing_agent")
 def getSensorAgent() -> SensingAgent:
     """Create a mocked sensing agent object."""
@@ -69,15 +51,14 @@ def getBackgroundTargetAgent() -> TargetAgent:
     return background_target
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testSensorInit(sensor_args: dict, mocked_sensing_agent: SensingAgent):
+def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test initializing Sensor base class."""
-    base_sensor = Sensor(**sensor_args)
+    base_sensor = Sensor(**base_sensor_args)
     assert base_sensor
-    assert np.allclose(base_sensor.az_mask, np.deg2rad(sensor_args["az_mask"]))
-    assert np.allclose(base_sensor.el_mask, np.deg2rad(sensor_args["el_mask"]))
-    assert np.isclose(base_sensor.aperture_area, np.pi * (sensor_args["diameter"] * 0.5) ** 2)
-    assert np.isclose(base_sensor.slew_rate, np.deg2rad(sensor_args["slew_rate"]))
+    assert np.allclose(base_sensor.az_mask, np.deg2rad(base_sensor_args["az_mask"]))
+    assert np.allclose(base_sensor.el_mask, np.deg2rad(base_sensor_args["el_mask"]))
+    assert np.isclose(base_sensor.aperture_area, np.pi * (base_sensor_args["diameter"] * 0.5) ** 2)
+    assert np.isclose(base_sensor.slew_rate, np.deg2rad(base_sensor_args["slew_rate"]))
     assert base_sensor.field_of_view is not None
     assert base_sensor.time_last_ob >= 0.0
     assert base_sensor.delta_boresight == 0.0
@@ -90,18 +71,15 @@ def testSensorInit(sensor_args: dict, mocked_sensing_agent: SensingAgent):
         ]
     )
     assert np.allclose(base_sensor.boresight, init_boresight)
-    assert base_sensor.measurement_noise.shape == (2,)
-    assert all(abs(base_sensor.measurement_noise) > 0.0)
 
     base_sensor.host = mocked_sensing_agent
     assert base_sensor.host is not None
     assert base_sensor.time_last_ob > 0.0
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testSensorInitAzElMask(sensor_args: dict):
+def testSensorInitAzElMask(base_sensor_args: dict):
     """Test edge case values for the az/el mask."""
-    sen_args = deepcopy(sensor_args)
+    sen_args = deepcopy(base_sensor_args)
 
     # Limits test
     sen_args["az_mask"] = np.array((0.0, 360.0))
@@ -120,100 +98,61 @@ def testSensorInitAzElMask(sensor_args: dict):
     _ = Sensor(**sen_args)
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testSensorInitAzElMaskBadValues(sensor_args: dict):
+def testSensorInitAzElMaskBadValues(base_sensor_args: dict):
     """Test bad values for the az/el mask."""
     value_err_msg = r"\w*Invalid value \[0, 2π] for az_mask\w*"
-    sen_args = deepcopy(sensor_args)
+    sen_args = deepcopy(base_sensor_args)
     sen_args["az_mask"] = np.array((-181.0, 180.0))
     with pytest.raises(ValueError, match=value_err_msg):
         _ = Sensor(**sen_args)
 
-    sen_args = deepcopy(sensor_args)
+    sen_args = deepcopy(base_sensor_args)
     sen_args["az_mask"] = np.array((0.0, 400.0))
     with pytest.raises(ValueError, match=value_err_msg):
         _ = Sensor(**sen_args)
 
     value_err_msg = r"\w*Invalid value \[-π/2, π/2] for el_mask\w*"
-    sen_args = deepcopy(sensor_args)
+    sen_args = deepcopy(base_sensor_args)
     sen_args["el_mask"] = np.array((-91.0, 90.0))
     with pytest.raises(ValueError, match=value_err_msg):
         _ = Sensor(**sen_args)
 
-    sen_args = deepcopy(sensor_args)
+    sen_args = deepcopy(base_sensor_args)
     sen_args["el_mask"] = np.array((-90.0, 100.0))
     with pytest.raises(ValueError, match=value_err_msg):
         _ = Sensor(**sen_args)
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testSensorInitAzElMaskTypes(sensor_args: dict):
+def testSensorInitAzElMaskTypes(base_sensor_args: dict):
     """Test bad types for the az/el mask."""
-    sen_args = deepcopy(sensor_args)
+    sen_args = deepcopy(base_sensor_args)
     sen_args["az_mask"] = np.array((-180.0, 180.0, 0.0))
     with pytest.raises(ShapeError, match=r"\w*Invalid shape for az_mask\w*"):
         _ = Sensor(**sen_args)
 
-    sen_args = deepcopy(sensor_args)
+    sen_args = deepcopy(base_sensor_args)
     sen_args["el_mask"] = np.array((-90.0, 90.0, 0.0))
     with pytest.raises(ShapeError, match=r"\w*Invalid shape for el_mask\w*"):
         _ = Sensor(**sen_args)
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testSensorInitRMatrix(sensor_args: dict):
-    """Test good shapes for R matrix."""
-    sen_args = deepcopy(sensor_args)
-    sen_args["r_matrix"] = np.eye(2)
-    _ = Sensor(**sen_args)
-    sen_args["r_matrix"] = np.eye(3)
-    _ = Sensor(**sen_args)
-    sen_args["r_matrix"] = np.eye(4)
-    _ = Sensor(**sen_args)
-    sen_args["r_matrix"] = np.array((1.0, 1.0))
-    _ = Sensor(**sen_args)
-    sen_args["r_matrix"] = np.array(((2.0, 1.0, 4.0)))
-    _ = Sensor(**sen_args)
-    sen_args["r_matrix"] = np.array(((2.0), (1.0), (4.0)))
-    _ = Sensor(**sen_args)
-
-
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testSensorInitBadRMatrix(sensor_args: dict):
-    """Test bad shapes & value for R matrix."""
-    shape_err_msg = r"\w*Invalid shape for r_matrix\w*"
-    sen_args = deepcopy(sensor_args)
-    sen_args["r_matrix"] = 10.0
-    with pytest.raises(AttributeError):
-        _ = Sensor(**sen_args)
-
-    sen_args["r_matrix"] = np.array(((2, 3, 0), (4, 5, 7)))
-    with pytest.raises(ShapeError, match=shape_err_msg):
-        _ = Sensor(**sen_args)
-
-    sen_args["r_matrix"] = np.array(((-5, 0.5), (1, 1)))
-    with pytest.raises(ValueError, match=r"\w*non-positive definite r_matrix\w*"):
-        _ = Sensor(**sen_args)
-
-
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testGetSensorData(sensor_args: dict, mocked_sensing_agent: SensingAgent):
+def testGetSensorData(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test retrieve dictionary of sensor data."""
-    sensor = Sensor(**sensor_args)
+    sensor = Sensor(**base_sensor_args)
     sensor.host = mocked_sensing_agent
 
     # Test space sensor types
     expected = {
         "name": mocked_sensing_agent.name,
         "id": mocked_sensing_agent.simulation_id,
-        "covariance": sensor_args["r_matrix"].tolist(),
-        "slew_rate": np.deg2rad(sensor_args["slew_rate"]),
-        "azimuth_range": np.deg2rad(sensor_args["az_mask"]).tolist(),
-        "elevation_range": np.deg2rad(sensor_args["el_mask"]).tolist(),
-        "efficiency": sensor_args["efficiency"],
-        "aperture_area": np.pi * (sensor_args["diameter"] * 0.5) ** 2,
+        "covariance": base_sensor_args["r_matrix"].tolist(),
+        "slew_rate": np.deg2rad(base_sensor_args["slew_rate"]),
+        "azimuth_range": np.deg2rad(base_sensor_args["az_mask"]).tolist(),
+        "elevation_range": np.deg2rad(base_sensor_args["el_mask"]).tolist(),
+        "efficiency": base_sensor_args["efficiency"],
+        "aperture_area": np.pi * (base_sensor_args["diameter"] * 0.5) ** 2,
         "sensor_type": "Sensor",
-        "exemplar": sensor_args["exemplar"].tolist(),
+        "exemplar": base_sensor_args["exemplar"].tolist(),
         "field_of_view": sensor.field_of_view,
     }
 
@@ -243,10 +182,9 @@ def testGetSensorData(sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert sensor.getSensorData() == expected_ground
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testCanSlew(sensor_args: dict, mocked_sensing_agent: SensingAgent):
+def testCanSlew(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test whether the sensor can slew to a target or not."""
-    sensor = Sensor(**sensor_args)
+    sensor = Sensor(**base_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.time_last_ob = 0.0
 
@@ -259,29 +197,10 @@ def testCanSlew(sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert sensor.canSlew(np.array((-0.2, 0.0, 0.7)))
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testMeasurements(sensor_args: dict):
-    """Test calling getMeasurement & getNoisyMeasurement."""
-    sensor = Sensor(**sensor_args)
-    sensor.measurements = Mock()
-    sensor.measurements.return_value = {
-        "measurement_1": 1.0,
-        "measurement_2": 20.0,
-    }
-    _ = sensor.measurements(None, noisy=False)
-    sensor.measurements.assert_called_once()
-    sensor.measurements.assert_called_with(None, noisy=False)
-    sensor.measurements.reset_mock()
-    sensor.getNoisyMeasurements(None)
-    sensor.measurements.assert_called_once()
-    sensor.measurements.assert_called_with(None, noisy=True)
-
-
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testInFOVConic(sensor_args: dict):
+def testInFOVConic(base_sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
     # pylint:disable=protected-access
-    sensor = Sensor(**sensor_args)
+    sensor = Sensor(**base_sensor_args)
     sensor.field_of_view = ConicFoV(cone_angle=np.pi)
 
     tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
@@ -299,11 +218,10 @@ def testInFOVConic(sensor_args: dict):
     assert not sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testInFOVRegular(sensor_args: dict):
+def testInFOVRegular(base_sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
     # pylint:disable=protected-access
-    sensor = Sensor(**sensor_args)
+    sensor = Sensor(**base_sensor_args)
     sensor.field_of_view = RectangularFoV(azimuth_angle=np.pi, elevation_angle=np.pi)
     tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
     bkg_sez = np.array((1.0, 1.0, 0.0, 0.0, 0.0, 0.0))
@@ -328,11 +246,10 @@ def _dummySlantRange(ecef_sensor: np.ndarray, eci_tgt: np.ndarray) -> np.ndarray
 
 
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testCheckTargetsInView(sensor_args: dict, mocked_sensing_agent: SensingAgent):
+def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Checks whether list of targets is in the FOV of the sensor."""
     # pylint: disable=abstract-class-instantiated
-    sensor = Sensor(**sensor_args)
+    sensor = Sensor(**base_sensor_args)
     conic_fov_config = FieldOfViewConfig(fov_shape=CONIC_FOV_LABEL, cone_angle=np.pi * RAD2DEG - 1)
     sensor.field_of_view = fieldOfViewFactory(conic_fov_config)
     # Requires self.host.ecef_state to be set
@@ -362,11 +279,10 @@ def testCheckTargetsInView(sensor_args: dict, mocked_sensing_agent: SensingAgent
     assert not targets_in_fov
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
-def testIsVisible(sensor_args: dict, mocked_sensing_agent: SensingAgent):
+def testIsVisible(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test that and RSO `isVisible`."""
     # pylint: disable=too-many-statements
-    sensor = Sensor(**sensor_args)
+    sensor = Sensor(**base_sensor_args)
     # Requires self.host.eci_state to be set
     sensor.host = mocked_sensing_agent
     sensor.host.eci_state = np.array((6378.0, 0.0, 0.0, 0.0, 0.0, 0.0))
@@ -496,18 +412,12 @@ def testIsVisible(sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert visibility
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testCollectObservationsInFoVNoBackground(
-    sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+    radar_sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
 ):
     """Test that an RSO is in the FoV."""
-    sensor_args["power_tx"] = 1.0
-    sensor_args["frequency"] = 1.0
-    sensor_args["r_matrix"] = np.ones(
-        4,
-    )
-    sensor = Radar(**sensor_args)
+    sensor = Radar(**radar_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.calculate_background = False
     sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
@@ -531,18 +441,12 @@ def testCollectObservationsInFoVNoBackground(
     assert len(good_obs) == 1
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testCollectObservationsNotInFoVNoBackground(
-    sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+    radar_sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
 ):
     """Test that an RSO is Not in the FoV."""
-    sensor_args["power_tx"] = 1.0
-    sensor_args["frequency"] = 1.0
-    sensor_args["r_matrix"] = np.ones(
-        4,
-    )
-    sensor = Radar(**sensor_args)
+    sensor = Radar(**radar_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.calculate_background = False
     sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
@@ -566,21 +470,15 @@ def testCollectObservationsNotInFoVNoBackground(
     assert not good_obs
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testCollectObservationsWithBackground(
-    sensor_args: dict,
+    radar_sensor_args: dict,
     mocked_sensing_agent: SensingAgent,
     mocked_primary_target: TargetAgent,
     mocked_background_target: TargetAgent,
 ):
     """Test that background RSO is in the FoV."""
-    sensor_args["power_tx"] = 1.0
-    sensor_args["frequency"] = 1.0
-    sensor_args["r_matrix"] = np.ones(
-        4,
-    )
-    sensor = Radar(**sensor_args)
+    sensor = Radar(**radar_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.calculate_background = True
     sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
@@ -609,18 +507,12 @@ def testCollectObservationsWithBackground(
     assert len(good_obs) == 2
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testNoMissedObservation(
-    sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+    radar_sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
 ):
     """Test that an RSO is in the FoV."""
-    sensor_args["power_tx"] = 1.0
-    sensor_args["frequency"] = 1.0
-    sensor_args["r_matrix"] = np.ones(
-        4,
-    )
-    sensor = Radar(**sensor_args)
+    sensor = Radar(**radar_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.calculate_background = False
     sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
@@ -644,18 +536,12 @@ def testNoMissedObservation(
     assert not missed_obs
 
 
-@patch.multiple(Sensor, __abstractmethods__=set())
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testMissedObservation(
-    sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+    radar_sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
 ):
     """Test that an RSO is Not in the FoV."""
-    sensor_args["power_tx"] = 1.0
-    sensor_args["frequency"] = 1.0
-    sensor_args["r_matrix"] = np.ones(
-        4,
-    )
-    sensor = Radar(**sensor_args)
+    sensor = Radar(**radar_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.calculate_background = False
     sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)

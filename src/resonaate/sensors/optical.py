@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array
 from scipy.linalg import norm
 
 # Local Imports
 from ..agents import SPACECRAFT_LABEL
 from ..data.missed_observation import MissedObservation
 from ..physics.bodies import Sun
+from ..physics.measurement_utils import getElevation
 from ..physics.sensor_utils import (
     apparentVisualMagnitude,
     calculateIncidentSolarFlux,
@@ -22,7 +22,7 @@ from ..physics.sensor_utils import (
     getEarthLimbConeAngle,
     lambertianPhaseFunction,
 )
-from .measurements import IsAngle, getAzimuth, getElevation
+from .measurement import Measurement
 from .sensor_base import Sensor
 
 if TYPE_CHECKING:
@@ -94,10 +94,11 @@ class Optical(Sensor):
             maximum_range (``float``): maximum RSO range needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
+        measurement = Measurement.fromMeasurementLabels(["azimuth_rad", "elevation_rad"], r_matrix)
         super().__init__(
+            measurement,
             az_mask,
             el_mask,
-            r_matrix,
             diameter,
             efficiency,
             exemplar,
@@ -110,35 +111,6 @@ class Optical(Sensor):
         )
 
         self.detectable_vismag = detectable_vismag
-
-    @property
-    def angle_measurements(self) -> ndarray:
-        """``ndarray``: Returns 2x1 integer array of which measurements are angles."""
-        return array([IsAngle.ANGLE_0_2PI, IsAngle.ANGLE_NEG_PI_PI], dtype=int)
-
-    def measurements(self, slant_range_sez: float, noisy: bool = False) -> dict[str, float]:
-        """Return the measurement state of the measurement.
-
-        Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
-            noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
-
-        Returns:
-            ``dict``: measurements made by the sensor
-
-            :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
-            :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
-        """
-        measurements = {
-            "azimuth_rad": getAzimuth(slant_range_sez),
-            "elevation_rad": getElevation(slant_range_sez),
-        }
-        if noisy:
-            meas_noise = self.measurement_noise
-            measurements["azimuth_rad"] += meas_noise[0]
-            measurements["elevation_rad"] += meas_noise[1]
-
-        return measurements
 
     def isVisible(
         self,

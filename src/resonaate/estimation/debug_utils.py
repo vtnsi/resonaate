@@ -19,8 +19,8 @@ from ..data.ephemeris import TruthEphemeris
 from ..data.query_util import addAlmostEqualFilter
 from ..data.resonaate_database import ResonaateDatabase
 from ..physics.maths import nearestPD
+from ..physics.measurement_utils import getAzimuth, getElevation, getRange, getRangeRate
 from ..physics.transforms.methods import ecef2sez, eci2ecef
-from ..sensors.measurements import getAzimuth, getElevation, getRange, getRangeRate
 
 
 def debugToJSONFile(base_filename, debug_dir, json_dict):

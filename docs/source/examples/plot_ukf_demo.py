@@ -248,8 +248,8 @@ print(prior_error)
 # -----------------------------
 #
 from resonaate.data.observation import Observation
+from resonaate.physics.measurement_utils import getAzimuth, getElevation, getRange, getRangeRate
 from resonaate.physics.transforms.methods import getSlantRangeVector
-from resonaate.sensors.measurements import getAzimuth, getElevation, getRange, getRangeRate
 from resonaate.sensors.sensor_base import ObservationTuple
 
 # Get the SEZ slant range vector from sensor to target
