@@ -10,10 +10,7 @@ import pytest
 
 # RESONAATE Imports
 import resonaate.physics.constants as const
-from resonaate.physics.transforms.eops import EarthOrientationParameter
-from resonaate.physics.transforms.methods import getSlantRangeVector, lla2ecef
-from resonaate.physics.transforms.reductions import updateReductionParameters
-from resonaate.sensors.measurements import (
+from resonaate.physics.measurement_utils import (
     getAzimuth,
     getAzimuthRate,
     getElevation,
@@ -21,6 +18,9 @@ from resonaate.sensors.measurements import (
     getRange,
     getRangeRate,
 )
+from resonaate.physics.transforms.eops import EarthOrientationParameter
+from resonaate.physics.transforms.methods import getSlantRangeVector, lla2ecef
+from resonaate.physics.transforms.reductions import updateReductionParameters
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
 # Vallado example 4-1 (pg. 273), second part
-ECI: ndarray = np.asarray(
+ECI: ndarray = np.array(
     [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093]
 )
 TRUE_RNG: float = 11710.812
@@ -39,7 +39,7 @@ TRUE_AZ_RT: float = np.radians(0.00384011466)
 TRUE_EL_RT: float = np.radians(0.01495847759)
 
 # Vallado example 4-1
-LLA: ndarray = np.asarray([np.radians(39.007), np.radians(-104.883), 2.19456])
+LLA: ndarray = np.array([np.radians(39.007), np.radians(-104.883), 2.19456])
 CALENDAR_DATE: datetime.datetime = datetime.datetime(1994, 5, 14, 13, 11, 20, 598560)
 
 # From celestrak.com for May 14, 1994

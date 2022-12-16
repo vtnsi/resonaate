@@ -64,8 +64,10 @@ def testLambertBattinHyperbolic(vallado_inputs):
     assert final_velocity is not None
 
 
+@pytest.mark.filterwarnings("ignore: invalid value encountered in double_scalars")
 def testLambertBattinParabolic(vallado_inputs):
     """Test Lambert Battin but sma == 0.0."""
+    # [NOTE]: warning filtered b/c shortcut of SMA=0.0 to get parabolic case.
     with pytest.raises(NotImplementedError, match="Parabolic case is not implemented"):
         _, _ = lambertBattin(
             vallado_inputs[0],

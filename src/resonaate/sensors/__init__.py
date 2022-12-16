@@ -6,7 +6,7 @@ from copy import copy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import asarray, sqrt
+from numpy import array, sqrt
 
 # Local Imports
 from ..physics import constants as const
@@ -62,13 +62,13 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
     """
     # Build generic sensor kwargs
     sensor_args = {
-        "az_mask": asarray(sensor_config.azimuth_range) * const.RAD2DEG,  # Assumes radians
-        "el_mask": asarray(sensor_config.elevation_range) * const.RAD2DEG,  # Assumes radians
-        "r_matrix": asarray(sensor_config.covariance),
+        "az_mask": array(sensor_config.azimuth_range) * const.RAD2DEG,  # Assumes radians
+        "el_mask": array(sensor_config.elevation_range) * const.RAD2DEG,  # Assumes radians
+        "r_matrix": array(sensor_config.covariance),
         "diameter": sqrt(sensor_config.aperture_area / const.PI) * 2.0,  # Assumes meters^2
         "efficiency": sensor_config.efficiency,
         "slew_rate": sensor_config.slew_rate * const.RAD2DEG,  # Assumes radians/sec
-        "exemplar": asarray(sensor_config.exemplar),
+        "exemplar": array(sensor_config.exemplar),
         "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),
         "background_observations": sensor_config.background_observations,
         "minimum_range": sensor_config.minimum_range,
@@ -88,7 +88,7 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
         sensor_args["frequency"] = sensor_config.tx_frequency
         sensor = AdvRadar(**sensor_args)
     else:
-        raise ValueError(sensor_config.sensor_type)
+        raise ValueError(f"Invalid sensor type provided to config: {sensor_config.sensor_type}")
 
     return sensor
 

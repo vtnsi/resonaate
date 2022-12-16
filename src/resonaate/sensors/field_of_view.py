@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 # Local Imports
 from ..physics.maths import subtendedAngle
-from .measurements import getAzimuth, getElevation
+from ..physics.measurement_utils import getAzimuth, getElevation
 
 if TYPE_CHECKING:
     # Third Party Imports
