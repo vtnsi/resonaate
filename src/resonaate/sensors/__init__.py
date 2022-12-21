@@ -14,38 +14,18 @@ from .advanced_radar import AdvRadar
 from .field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from .optical import Optical
 from .radar import Radar
-from .sensor_base import Sensor
+from .sensor_base import (
+    ADV_RADAR_LABEL,
+    CONIC_FOV_LABEL,
+    OPTICAL_LABEL,
+    RADAR_LABEL,
+    RECTANGULAR_FOV_LABEL,
+    Sensor,
+)
 
 if TYPE_CHECKING:
     # Local Imports
     from ..scenario.config.agent_configs import FieldOfViewConfig, SensingAgentConfig
-
-OPTICAL_LABEL: str = "Optical"
-"""``str``: Constant string used to describe optical sensors."""
-
-RADAR_LABEL: str = "Radar"
-"""``str``: Constant string used to describe radar sensors."""
-
-ADV_RADAR_LABEL: str = "AdvRadar"
-"""``str``: Constant string used to describe advanced radar sensors."""
-
-CONIC_FOV_LABEL: str = "conic"
-"""``str``: Constant string used to describe conic field of view."""
-
-RECTANGULAR_FOV_LABEL: str = "rectangular"
-"""str: Constant string used to describe rectangular field of view."""
-
-VALID_SENSOR_FOV_LABELS: tuple[str] = (
-    CONIC_FOV_LABEL,
-    RECTANGULAR_FOV_LABEL,
-)
-"""``tuple``: Contains valid sensor Field of View configurations."""
-
-SOLAR_PANEL_REFLECTIVITY: float = 0.21
-"""``float``: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`, unit-less."""
-
-DEFAULT_VIEWING_ANGLE: float = 1.0
-"""``float``: default angle for a sensor's FoV, degrees."""
 
 
 def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
@@ -68,7 +48,6 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
         "diameter": sqrt(sensor_config.aperture_area / const.PI) * 2.0,  # Assumes meters^2
         "efficiency": sensor_config.efficiency,
         "slew_rate": sensor_config.slew_rate * const.RAD2DEG,  # Assumes radians/sec
-        "exemplar": array(sensor_config.exemplar),
         "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),
         "background_observations": sensor_config.background_observations,
         "minimum_range": sensor_config.minimum_range,
@@ -80,12 +59,14 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
         sensor_args["detectable_vismag"] = sensor_config.detectable_vismag
         sensor = Optical(**sensor_args)
     elif sensor_config.sensor_type == RADAR_LABEL:
-        sensor_args["power_tx"] = sensor_config.tx_power
-        sensor_args["frequency"] = sensor_config.tx_frequency
+        sensor_args["tx_power"] = sensor_config.tx_power
+        sensor_args["tx_frequency"] = sensor_config.tx_frequency
+        sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
         sensor = Radar(**sensor_args)
     elif sensor_config.sensor_type == ADV_RADAR_LABEL:
-        sensor_args["power_tx"] = sensor_config.tx_power
-        sensor_args["frequency"] = sensor_config.tx_frequency
+        sensor_args["tx_power"] = sensor_config.tx_power
+        sensor_args["tx_frequency"] = sensor_config.tx_frequency
+        sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
         sensor = AdvRadar(**sensor_args)
     else:
         raise ValueError(f"Invalid sensor type provided to config: {sensor_config.sensor_type}")

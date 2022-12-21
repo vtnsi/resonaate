@@ -14,12 +14,12 @@
     "efficiency": 0.9,
     "aperture_area": 572.5552611167398,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 40744],
     "lat": 1.2281347875532986,
     "lon": 0.5432822498364406,
     "alt": 0.063,
     "host_type": "GroundFacility",
     "tx_power": 120e3,
-    "tx_frequency": 10e9
+    "tx_frequency": 10e9,
+    "min_detectable_power": 1.4314085925969573e-14
   }
 ]

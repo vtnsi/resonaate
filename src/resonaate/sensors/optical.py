@@ -68,7 +68,6 @@ class Optical(Sensor):
         r_matrix: ndarray,
         diameter: float,
         efficiency: float,
-        exemplar: ndarray,
         slew_rate: float,
         field_of_view: FieldOfView,
         background_observations: bool,
@@ -85,7 +84,6 @@ class Optical(Sensor):
             r_matrix (``ndarray``): measurement noise covariance matrix
             diameter (``float``): size of sensor (m)
             efficiency (``float``): efficiency percentage of the sensor
-            exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
             background_observations (``bool``): whether or not to calculate serendipitous observations, default=True
@@ -101,7 +99,6 @@ class Optical(Sensor):
             el_mask,
             diameter,
             efficiency,
-            exemplar,
             slew_rate,
             field_of_view,
             background_observations,

@@ -157,7 +157,6 @@ class TestSensorConfig:
         assert sen_cfg_obj.covariance == sen_dict["covariance"]
         assert sen_cfg_obj.aperture_area == sen_dict["aperture_area"]
         assert sen_cfg_obj.efficiency == sen_dict["efficiency"]
-        assert sen_cfg_obj.exemplar == sen_dict["exemplar"]
         assert sen_cfg_obj.aperture_area == sen_dict["aperture_area"]
         assert sen_cfg_obj.host_type == sen_dict["host_type"]
         assert sen_cfg_obj.host_type in (GROUND_FACILITY_LABEL, SPACECRAFT_LABEL)
@@ -183,6 +182,14 @@ class TestSensorConfig:
         if sen_cfg_obj.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL):
             assert sen_cfg_obj.tx_frequency == sen_dict["tx_frequency"]
             assert sen_cfg_obj.tx_power == sen_dict["tx_power"]
+            assert sen_cfg_obj.min_detectable_power == sen_dict["min_detectable_power"]
+
+    def testStringTxFrequency(self):
+        """Test radar sensor required inputs."""
+        sen_dict = deepcopy(EARTH_SENSORS[0])
+        sen_dict["tx_frequency"] = "L"
+        sen_cfg_obj = SensingAgentConfig(**sen_dict)
+        assert sen_cfg_obj.tx_frequency == 1.5 * 1e9
 
     @pytest.mark.parametrize("sen_dict", SPACE_SENSORS)
     def testMultiStateConflictSpace(self, monkeypatch, sen_dict):
@@ -314,6 +321,11 @@ class TestSensorConfig:
         with pytest.raises(ConfigError):
             _ = SensingAgentConfig(**sen_dict)
 
+        sen_dict = deepcopy(EARTH_SENSORS[0])
+        del sen_dict["min_detectable_power"]
+        with pytest.raises(ConfigError):
+            _ = SensingAgentConfig(**sen_dict)
+
     def testInvalidHostType(self):
         """Test invalid host type."""
         with pytest.raises(ConfigError):
@@ -328,7 +340,6 @@ class TestSensorConfig:
                 aperture_area=10.0,
                 efficiency=0.99,
                 slew_rate=2.0,
-                exemplar=[2.0, 42000.0],
                 init_eci=[7000.0, 0, 0, 0, 0, 0],
             )
 
@@ -346,7 +357,6 @@ class TestSensorConfig:
                 aperture_area=10.0,
                 efficiency=0.99,
                 slew_rate=2.0,
-                exemplar=[2.0, 42000.0],
                 init_eci=[7000.0, 0, 0, 0, 0, 0],
             )
 

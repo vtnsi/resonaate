@@ -433,7 +433,6 @@ class TestEventIntegration:
                 3.0793657899539326,
                 0.08063602923669937,
             ],
-            "exemplar": [1, 10000],
             "field_of_view": {
                 "fov_shape": "conic",
             },

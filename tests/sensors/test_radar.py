@@ -1,4 +1,4 @@
-"""Defines Optical Sensor unit tests."""
+"""Defines Radar Sensor unit tests."""
 from __future__ import annotations
 
 # Standard Library Imports
@@ -14,11 +14,10 @@ from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.data.missed_observation import MissedObservation
 from resonaate.physics.bodies.earth import Earth
-from resonaate.physics.sensor_utils import GALACTIC_CENTER_ECI
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from resonaate.physics.transforms.methods import eci2ecef, getSlantRangeVector
 from resonaate.physics.transforms.reductions import updateReductionParameters
-from resonaate.sensors.optical import Optical
+from resonaate.sensors.radar import Radar
 
 
 @pytest.fixture(name="mocked_sensing_agent")
@@ -43,32 +42,32 @@ def getTargetAgent() -> TargetAgent:
     return target_agent
 
 
-def testSensorInit(optical_sensor_args: dict):
-    """Test Optical Sensor Initialization.
+def testSensorInit(radar_sensor_args: dict):
+    """Test Radar Sensor Initialization.
 
     Args:
-        optical_sensor_args (``dict``):  dictionary of valid arguments to Sensor init
+        radar_sensor_args (``dict``):  dictionary of valid arguments to Sensor init
     """
-    optical_sensor = Optical(**optical_sensor_args)
-    assert optical_sensor
-    assert optical_sensor.detectable_vismag == optical_sensor_args["detectable_vismag"]
+    radar_sensor = Radar(**radar_sensor_args)
+    assert radar_sensor
+    assert radar_sensor.tx_power == radar_sensor_args["tx_power"]
 
 
 def testIsVisible(
     mocked_sensing_agent: SensingAgent,
-    optical_sensor_args: dict,
+    radar_sensor_args: dict,
     mocked_primary_target: TargetAgent,
 ):
     """Test Optical sensor `isVisible` function.
 
     Args:
         mocked_sensing_agent (:class:`.SensingAgent`): mocked sensing agent object
-        optical_sensor_args (``dict``):  dictionary of valid arguments to Sensor init
+        radar_sensor_args (``dict``):  dictionary of valid arguments to Sensor init
         mocked_primary_target (:class:`.TargetAgent`): mocked Target agent object
     """
-    space_optical = Optical(**optical_sensor_args)
+    radar_sensor = Radar(**radar_sensor_args)
     mocked_sensing_agent.agent_type = SPACECRAFT_LABEL
-    space_optical.host = mocked_sensing_agent
+    radar_sensor.host = mocked_sensing_agent
 
     updateReductionParameters(julianDateToDatetime(mocked_sensing_agent.julian_date_epoch))
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state)
@@ -77,7 +76,7 @@ def testIsVisible(
         mocked_sensing_agent.ecef_state, mocked_primary_target.initial_state
     )
 
-    visibility, explanation = space_optical.isVisible(
+    visibility, explanation = radar_sensor.isVisible(
         mocked_primary_target.initial_state,
         mocked_primary_target.visual_cross_section,
         mocked_primary_target.reflectivity,
@@ -90,75 +89,31 @@ def testIsVisible(
 
 def testIsNotVisible(
     mocked_sensing_agent: SensingAgent,
-    optical_sensor_args: dict,
+    radar_sensor_args: dict,
     mocked_primary_target: TargetAgent,
 ):
     """Test Optical sensor `getMeasurements` function.
 
     Args:
         mocked_sensing_agent (:class:`.SensingAgent`): mocked sensing agent object
-        optical_sensor_args (``dict``):  dictionary of valid arguments to Sensor init
+        radar_sensor_args (``dict``):  dictionary of valid arguments to Sensor init
         mocked_primary_target (:class:`.TargetAgent`): mocked Target agent object
     """
-    ground_optical = Optical(**optical_sensor_args)
+    radar_sensor = Radar(**radar_sensor_args)
     mocked_sensing_agent.agent_type = GROUND_FACILITY_LABEL
-    ground_optical.host = mocked_sensing_agent
+    radar_sensor.host = mocked_sensing_agent
 
     updateReductionParameters(julianDateToDatetime(mocked_sensing_agent.julian_date_epoch))
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
-    slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.ecef_state, mocked_primary_target.initial_state
-    )
+    slant_range_sez = np.array([1e10, 1e10, 1e10, 0.0, 0.0, 0.0])
 
     # Check Ground Illumination
-    visibility, explanation = ground_optical.isVisible(
+    visibility, explanation = radar_sensor.isVisible(
         mocked_primary_target.initial_state,
         mocked_primary_target.visual_cross_section,
         mocked_primary_target.reflectivity,
         slant_range_sez,
     )
     assert not visibility
-    assert explanation == MissedObservation.Explanation.GROUND_ILLUMINATION
-
-    # Check Solar Flux
-    visibility, explanation = ground_optical.isVisible(
-        mocked_primary_target.initial_state,
-        0.0,
-        mocked_primary_target.reflectivity,
-        slant_range_sez,
-    )
-    assert not visibility
-    assert explanation == MissedObservation.Explanation.SOLAR_FLUX
-
-    # Check Visual Magnitude
-    visibility, explanation = ground_optical.isVisible(
-        mocked_primary_target.initial_state,
-        0.0000000000001,
-        0.0000000000001,
-        slant_range_sez,
-    )
-    assert not visibility
-    assert explanation == MissedObservation.Explanation.VIZ_MAG
-
-    # Check Galactic Belt
-    galactic_belt_state = np.array(
-        [
-            GALACTIC_CENTER_ECI[0] * 1e-12,
-            GALACTIC_CENTER_ECI[1] * 1e-12,
-            GALACTIC_CENTER_ECI[2] * 1e-12,
-            0,
-            0,
-            0,
-        ]
-    )
-
-    visibility, explanation = ground_optical.isVisible(
-        galactic_belt_state,
-        mocked_primary_target.visual_cross_section,
-        mocked_primary_target.reflectivity,
-        slant_range_sez,
-    )
-
-    assert not visibility
-    assert explanation == MissedObservation.Explanation.GALACTIC_EXCLUSION
+    assert explanation == MissedObservation.Explanation.RADAR_SENSITIVITY

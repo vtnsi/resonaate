@@ -793,7 +793,7 @@ These are the required fields defined for all types of sensor objects.
         "aperture_area": float,                   # Required
         "efficiency": float,                      # Required
         "slew_rate": float,                       # Required
-        "exemplar": list[float, float],           # Required
+        "min_detectable_power": float,            # Required
         "background_observations": bool,          # Optional
         "detectable_vismag": float,               # Optional
         "minimum_range": float,                   # Optional

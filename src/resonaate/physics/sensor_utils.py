@@ -11,7 +11,7 @@ from scipy.linalg import norm
 # Local Imports
 from .bodies import Earth
 from .bodies.third_body import Sun
-from .constants import DEG2RAD, PI, SOLAR_FLUX, SPEED_OF_LIGHT
+from .constants import DEG2RAD, M2KM, PI, SOLAR_FLUX, SPEED_OF_LIGHT
 from .maths import subtendedAngle
 from .transforms.methods import spherical2cartesian
 
@@ -19,15 +19,17 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
-
-GALACTIC_BELT_ECI = spherical2cartesian(
+GALACTIC_CENTER_ECI = spherical2cartesian(
     rho=2.46e17,
     theta=-29.007805555555555556 * DEG2RAD,
     phi=4.649850924403647,
     rho_dot=0.0,
     theta_dot=0.0,
     phi_dot=0.0,
-)
+)  # location of the galactic center
+
+
+## Optical Support Functions
 
 
 def getEarthLimbConeAngle(eci_state: ndarray) -> float:
@@ -200,49 +202,6 @@ def checkSpaceSensorLightingConditions(
     return boresight_sun_angle >= cone_angle
 
 
-def calculateRadarCrossSection(viz_cross_section: float, wavelength: float) -> float:
-    r"""Calculate the effective area seen by a radar signal.
-
-    This equation assumes radar is reflected perpendicularly from a flat plat and
-    returns the maximum possible cross section.
-
-    References:
-        :cite:t:`nastasi_2018_diss`, Pg 46, Eqn 3.5
-
-    Args:
-        viz_cross_section (``float``): area of the object facing the signal (m\ :sup:`2`)
-        wavelength (``float``): wavelength of the signal (m)
-
-    Returns:
-        ``float``: effective cross-sectional area (m\ :sup:`2`)
-    """
-    return 4 * PI * viz_cross_section**2 / wavelength**2
-
-
-def getWavelengthFromString(freq: str):
-    r"""Return the wavelength of the given frequency band.
-
-    Args:
-        freq (``str``): frequency band to get the wavelength of
-
-    Returns:
-        ``float``: wavelength of the given frequency band (m)
-    """
-    return {
-        "VHF": SPEED_OF_LIGHT / (165.0 * (1e6)),
-        "UHF": SPEED_OF_LIGHT / (650.0 * (1e6)),
-        "L": SPEED_OF_LIGHT / (1.5 * (1e9)),
-        "S": SPEED_OF_LIGHT / (3.0 * (1e9)),
-        "C": SPEED_OF_LIGHT / (6.0 * (1e9)),
-        "X": SPEED_OF_LIGHT / (10.0 * (1e9)),
-        "Ku": SPEED_OF_LIGHT / (15.0 * (1e9)),
-        "K": SPEED_OF_LIGHT / (20.0 * (1e9)),
-        "Ka": SPEED_OF_LIGHT / (30.0 * (1e9)),
-        "V": SPEED_OF_LIGHT / (60.0 * (1e9)),
-        "W": SPEED_OF_LIGHT / (15.0 * (1e9)),
-    }[freq]
-
-
 def apparentVisualMagnitude(
     visual_cross_section: float, reflectivity: float, phase_function: float, rso_range: float
 ) -> float:
@@ -308,7 +267,65 @@ def checkGalacticExclusionZone(boresight_eci_vector, cone_angle=PI / 30):
     range ~26 kilolight-years
     """
     boresight_belt_angle = arccos(
-        dot(GALACTIC_BELT_ECI[:3], boresight_eci_vector)
-        / (norm(GALACTIC_BELT_ECI[:3]) * norm(boresight_eci_vector))
+        dot(GALACTIC_CENTER_ECI[:3], boresight_eci_vector)
+        / (norm(GALACTIC_CENTER_ECI[:3]) * norm(boresight_eci_vector))
     )
     return boresight_belt_angle >= cone_angle
+
+
+## Radar Support Functions
+
+
+def calculateRadarCrossSection(viz_cross_section: float, wavelength: float) -> float:
+    r"""Calculate the effective area seen by a radar signal.
+
+    This equation assumes radar is reflected perpendicularly from a flat plat and
+    returns the maximum possible cross section.
+
+    References:
+        :cite:t:`nastasi_2018_diss`, Pg 46, Eqn 3.5
+
+    Args:
+        viz_cross_section (``float``): area of the object facing the signal (m\ :sup:`2`)
+        wavelength (``float``): wavelength of the signal (m)
+
+    Returns:
+        ``float``: effective cross-sectional area (m\ :sup:`2`)
+    """
+    return 4 * PI * viz_cross_section**2 / wavelength**2
+
+
+def calculateMinRadarRange(tx_frequency: float) -> float:
+    """Calculate the minimum range of a Radar Sensor.
+
+    Args:
+        tx_frequency (``float``|``str``): radar's operating frequency (Hz)
+
+    Returns:
+        ``float``: minimum unambiguous range (km)
+    """
+    return (SPEED_OF_LIGHT / tx_frequency / 2) * M2KM
+
+
+def getFrequencyFromString(frequency_string: str):
+    r"""Return the frequency of the given band.
+
+    Args:
+        frequency_string (``str``): frequency band string
+
+    Returns:
+        ``float``: median frequency (Hz)
+    """
+    return {
+        "VHF": 165.0 * 1e6,
+        "UHF": 650.0 * 1e6,
+        "L": 1.5 * 1e9,
+        "S": 3.0 * 1e9,
+        "C": 6.0 * 1e9,
+        "X": 10.0 * 1e9,
+        "Ku": 15.0 * 1e9,
+        "K": 20.0 * 1e9,
+        "Ka": 30.0 * 1e9,
+        "V": 60.0 * 1e9,
+        "W": 15.0 * 1e9,
+    }[frequency_string]

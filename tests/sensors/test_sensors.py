@@ -53,12 +53,12 @@ def getRadarAgentConfig() -> SensingAgentConfig:
         aperture_area=10.0,
         efficiency=0.95,
         slew_rate=PI / 180,
-        exemplar=(1.0, 36000.0),
         lat=20.0,
         lon=-40.0,
         alt=0.5,
         tx_power=1.0,
         tx_frequency=1.0,
+        min_detectable_power=1.0,
     )
 
 
@@ -76,12 +76,12 @@ def getAdvRadarAgentConfig() -> SensingAgentConfig:
         aperture_area=10.0,
         efficiency=0.95,
         slew_rate=PI / 180,
-        exemplar=(1.0, 36000.0),
         lat=20.0,
         lon=-40.0,
         alt=0.5,
         tx_power=1.0,
         tx_frequency=1.0,
+        min_detectable_power=1.0,
     )
 
 
@@ -99,7 +99,6 @@ def getOpticalAgentConfig() -> SensingAgentConfig:
         aperture_area=10.0,
         efficiency=0.95,
         slew_rate=PI / 180,
-        exemplar=(1.0, 36000.0),
         lat=20.0,
         lon=-40.0,
         alt=0.5,

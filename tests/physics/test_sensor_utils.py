@@ -9,6 +9,7 @@ from resonaate.physics.sensor_utils import (
     calculateIncidentSolarFlux,
     calculatePhaseAngle,
     calculateSunVizFraction,
+    getFrequencyFromString,
     lambertianPhaseFunction,
 )
 
@@ -54,3 +55,10 @@ def testLambertianPhaseFunction():
     """Test lambertianPhaseFunction()."""
     phase = lambertianPhaseFunction(SOLAR_PHASE_ANGLE)
     assert np.isclose(phase, 0.18897354431642885)
+
+
+def testGetFrequencyFromString():
+    """Test getFrequencyFromString()."""
+    frequency_string = "L"
+    frequency = getFrequencyFromString(frequency_string)
+    assert frequency == 1.5 * 1e9

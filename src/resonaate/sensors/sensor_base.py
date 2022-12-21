@@ -6,7 +6,7 @@ from collections import namedtuple
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, cos, sin, squeeze, zeros_like
+from numpy import array, cos, sin, zeros_like
 from scipy.linalg import norm
 
 # Local Imports
@@ -34,6 +34,34 @@ if TYPE_CHECKING:
     from .measurement import Measurement
 
 
+OPTICAL_LABEL: str = "Optical"
+"""``str``: Constant string used to describe optical sensors."""
+
+RADAR_LABEL: str = "Radar"
+"""``str``: Constant string used to describe radar sensors."""
+
+ADV_RADAR_LABEL: str = "AdvRadar"
+"""``str``: Constant string used to describe advanced radar sensors."""
+
+CONIC_FOV_LABEL: str = "conic"
+"""``str``: Constant string used to describe conic field of view."""
+
+RECTANGULAR_FOV_LABEL: str = "rectangular"
+"""str: Constant string used to describe rectangular field of view."""
+
+VALID_SENSOR_FOV_LABELS: tuple[str] = (
+    CONIC_FOV_LABEL,
+    RECTANGULAR_FOV_LABEL,
+)
+"""``tuple``: Contains valid sensor Field of View configurations."""
+
+SOLAR_PANEL_REFLECTIVITY: float = 0.21
+"""``float``: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`, unit-less."""
+
+DEFAULT_VIEWING_ANGLE: float = 1.0
+"""``float``: default angle for a sensor's FoV, degrees."""
+
+
 ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles", "reason"])
 """Named tuple for correlating an observation, the sensing agent, and its angular values.
 
@@ -55,7 +83,6 @@ class Sensor:
         el_mask: ndarray,
         diameter: float,
         efficiency: float,
-        exemplar: ndarray,
         slew_rate: float,
         field_of_view: FieldOfView,
         background_observations: bool,
@@ -71,13 +98,12 @@ class Sensor:
             el_mask (``ndarray``): elevation mask for visibility conditions
             diameter (``float``): diameter of sensor dish (m)
             efficiency (``float``): efficiency percentage of the sensor
-            exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power  calculation [cross sectional area (m^2), range (km)]
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (:class:`.FieldOfView`): field of view of sensor
             background_observations (``bool``): whether or not to calculate Field of View, default=True
-            detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
+            detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         self._measurement = measurement
@@ -87,7 +113,6 @@ class Sensor:
         self.el_mask = const.DEG2RAD * el_mask
         self.aperture_area = const.PI * ((diameter / 2.0) ** 2)
         self.efficiency = efficiency
-        self.exemplar = squeeze(exemplar)
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view
         self.calculate_background = background_observations

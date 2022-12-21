@@ -14,13 +14,13 @@
     "efficiency": 0.95,
     "aperture_area": 1963.4954084936207,
     "sensor_type": "AdvRadar",
-    "exemplar": [0.0014320086173409336, 5000.0],
     "lat": 0.5335858986440608,
     "lon": -1.5047258407631,
     "alt": 0.036,
     "host_type": "GroundFacility",
     "tx_power": 35e6,
-    "tx_frequency": 442e6
+    "tx_frequency": 442e6,
+    "min_detectable_power": 1.8879589456640846e-18
   },
   {
     "name": "Eglin AN/FPS-85 DS",
@@ -37,13 +37,13 @@
     "efficiency": 0.95,
     "aperture_area": 1963.4954084936207,
     "sensor_type": "AdvRadar",
-    "exemplar": [0.04908738521234052, 40744.0],
     "lat": 0.5335858986440608,
     "lon": -1.5047258407631,
     "alt": 0.036,
     "host_type": "GroundFacility",
     "tx_power": 35e6,
-    "tx_frequency": 442e6
+    "tx_frequency": 442e6,
+    "min_detectable_power": 5.0311404977095e-19
   },
   {
     "name": "Globus II AN/FPS-129",
@@ -60,13 +60,13 @@
     "efficiency": 0.9,
     "aperture_area": 572.5552611167398,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 40744],
     "lat": 1.2281347875532986,
     "lon": 0.5432822498364406,
     "alt": 0.063,
     "host_type": "GroundFacility",
     "tx_power": 120e3,
-    "tx_frequency": 10e9
+    "tx_frequency": 10e9,
+    "min_detectable_power": 1.4314085925969573e-14
   },
   {
     "name": "Socorro AN/FSD-3 1",
@@ -81,7 +81,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": 0.5902169459493712,
     "lon": -1.8615681801771518,
     "alt": 1.51,
@@ -100,7 +99,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": 0.5902169459493712,
     "lon": -1.8615681801771518,
     "alt": 1.51,
@@ -119,7 +117,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": 0.5902169459493712,
     "lon": -1.8615681801771518,
     "alt": 1.51,
@@ -138,7 +135,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": 0.36142382870053696,
     "lon": -2.727217629778851,
     "alt": 3.0586,
@@ -157,7 +153,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": 0.36142382870053696,
     "lon": -2.727217629778851,
     "alt": 3.0586,
@@ -176,7 +171,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": 0.36142382870053696,
     "lon": -2.727217629778851,
     "alt": 3.0586,
@@ -195,7 +189,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": -0.12934827072747695,
     "lon": 1.2645249024573804,
     "alt": -0.0612,
@@ -214,7 +207,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": -0.12934827072747695,
     "lon": 1.2645249024573804,
     "alt": -0.0612,
@@ -233,7 +225,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.8107319665559964,
     "sensor_type": "Optical",
-    "exemplar": [0.0014320086173409336, 32500.0],
     "lat": -0.12934827072747695,
     "lon": 1.2645249024573804,
     "alt": -0.0612,
@@ -254,13 +245,13 @@
     "efficiency": 0.95,
     "aperture_area": 514.7185403641517,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 6000],
     "lat": 0.9487901283826258,
     "lon": -0.011693705988362009,
     "alt": 0.258,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 6.115665268298432e-14
   },
   {
     "name": "BMEWS SE AN/FPS-126",
@@ -277,13 +268,13 @@
     "efficiency": 0.95,
     "aperture_area": 514.7185403641517,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 6000],
     "lat": 0.9487901283826258,
     "lon": -0.011693705988362009,
     "alt": 0.258,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 6.115665268298432e-14
   },
   {
     "name": "BMEWS SW AN/FPS-126",
@@ -300,13 +291,13 @@
     "efficiency": 0.95,
     "aperture_area": 514.7185403641517,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 6000],
     "lat": 0.9487901283826258,
     "lon": -0.011693705988362009,
     "alt": 0.258,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 6.115665268298432e-14
   },
   {
     "name": "BMEWS N AN/FPS-123 v7",
@@ -323,13 +314,13 @@
     "efficiency": 0.95,
     "aperture_area": 706.8583470577034,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 4828],
     "lat": 1.1222515959542596,
     "lon": -2.6038518241284345,
     "alt": 0.175,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 2.7510901402369937e-13
   },
   {
     "name": "BMEWS S AN/FPS-123 v7",
@@ -346,13 +337,13 @@
     "efficiency": 0.95,
     "aperture_area": 706.8583470577034,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 4828],
     "lat": 1.1222515959542596,
     "lon": -2.6038518241284345,
     "alt": 0.175,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 2.7510901402369937e-13
   },
   {
     "name": "BMEWS SE AN/FPS-120",
@@ -369,13 +360,13 @@
     "efficiency": 0.95,
     "aperture_area": 514.7185403641517,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 4828],
     "lat": 1.3364034951739636,
     "lon": -1.1920453928793355,
     "alt": 0.424,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 2.7510901402369937e-13
   },
   {
     "name": "BMEWS N AN/FPS-120",
@@ -392,13 +383,13 @@
     "efficiency": 0.95,
     "aperture_area": 514.7185403641517,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 4828],
     "lat": 1.3364034951739636,
     "lon": -1.1920453928793355,
     "alt": 0.424,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 2.7510901402369937e-13
   },
   {
     "name": "Ascension AN/FPQ-15",
@@ -415,13 +406,13 @@
     "efficiency": 0.95,
     "aperture_area": 56.74501730546564,
     "sensor_type": "AdvRadar",
-    "exemplar": [1, 3000],
     "lat": -0.13798765052484888,
     "lon": -0.2513710455184833,
     "alt": 0.059,
     "host_type": "GroundFacility",
     "tx_power": 3e6,
-    "tx_frequency": 6e9
+    "tx_frequency": 6e9,
+    "min_detectable_power": 1.7268757935476968e-11
   },
   {
     "name": "PAVE PAWS NE AN/FPS-123",
@@ -438,13 +429,13 @@
     "efficiency": 0.95,
     "aperture_area": 514.7185403641517,
     "sensor_type": "AdvRadar",
-    "exemplar": [9.869604401089358, 5556.0],
     "lat": 0.7287184214060073,
     "lon": -1.2311213949693114,
     "alt": 0.067,
     "host_type": "GroundFacility",
     "tx_power": 10e3,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 5.401420544223818e-15
   },
   {
     "name": "PAVE PAWS SE AN/FPS-123",
@@ -461,13 +452,13 @@
     "efficiency": 0.95,
     "aperture_area": 514.7185403641517,
     "sensor_type": "AdvRadar",
-    "exemplar": [9.869604401089358, 5556.0],
     "lat": 0.7287184214060073,
     "lon": -1.2311213949693114,
     "alt": 0.067,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 5.401420544223818e-15
   },
   {
     "name": "PAVE PAWS SW AN/FPS-123",
@@ -484,13 +475,13 @@
     "efficiency": 0.95,
     "aperture_area": 380.132711084365,
     "sensor_type": "AdvRadar",
-    "exemplar": [9.869604401089358, 5556.0],
     "lat": 0.683053975922678,
     "lon": -2.117976420449816,
     "alt": 0.117,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 5.401420544223818e-15
   },
   {
     "name": "PAVE PAWS NW AN/FPS-123",
@@ -507,13 +498,13 @@
     "efficiency": 0.95,
     "aperture_area": 380.132711084365,
     "sensor_type": "AdvRadar",
-    "exemplar": [9.869604401089358, 5556.0],
     "lat": 0.683053975922678,
     "lon": -2.117976420449816,
     "alt": 0.117,
     "host_type": "GroundFacility",
     "tx_power": 15e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 5.401420544223818e-15
   },
   {
     "name": "PARCS AN/FPQ-16",
@@ -530,13 +521,13 @@
     "efficiency": 0.95,
     "aperture_area": 706.8583470577034,
     "sensor_type": "AdvRadar",
-    "exemplar": [0.04908738521234052, 3300.0],
     "lat": 0.8504067911123314,
     "lon": -1.708672450780543,
     "alt": 0.344,
     "host_type": "GroundFacility",
     "tx_power": 715e3,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 1.4476803739585788e-16
   },
   {
     "name": "Cobra Dane Lower AN/FPS-108",
@@ -553,13 +544,13 @@
     "efficiency": 0.9,
     "aperture_area": 660.519855417254,
     "sensor_type": "AdvRadar",
-    "exemplar": [0.04908738521234052, 5000.0],
     "lat": 0.920438127348604,
     "lon": 3.03845818102972,
     "alt": 0.068,
     "host_type": "GroundFacility",
     "tx_power": 14e6,
-    "tx_frequency": 1.5e9
+    "tx_frequency": 1.5e9,
+    "min_detectable_power": 1.1954373300571727e-14
   },
   {
     "name": "Millstone L-Band",
@@ -576,13 +567,13 @@
     "efficiency": 0.95,
     "aperture_area": 530.929158456675,
     "sensor_type": "Radar",
-    "exemplar": [0.04908738521234052, 40500.0],
     "lat": 0.7438156939686834,
     "lon": -1.2477552554054434,
     "alt": 0.123,
     "host_type": "GroundFacility",
     "tx_power": 2.5e6,
-    "tx_frequency": 1.5e9
+    "tx_frequency": 1.5e9,
+    "min_detectable_power": 3.5699513926877067e-19
   },
   {
     "name": "Millstone UHF",
@@ -599,13 +590,13 @@
     "efficiency": 0.95,
     "aperture_area": 1661.9025137490005,
     "sensor_type": "Radar",
-    "exemplar": [0.04908738521234052, 40500.0],
     "lat": 0.7438495533561721,
     "lon": -1.2477601423273488,
     "alt": 0.127,
     "host_type": "GroundFacility",
     "tx_power": 2.5e6,
-    "tx_frequency": 440e6
+    "tx_frequency": 440e6,
+    "min_detectable_power": 2.5896788356879898e-20
   },
   {
     "name": "Haystack LRIR",
@@ -622,13 +613,13 @@
     "efficiency": 0.95,
     "aperture_area": 1052.0879637606859,
     "sensor_type": "Radar",
-    "exemplar": [0.00845698910148891, 1000.0],
     "lat": 0.7439174466640747,
     "lon": -1.247706735252238,
     "alt": 0.12,
     "host_type": "GroundFacility",
     "tx_power": 250e3,
-    "tx_frequency": 10e9
+    "tx_frequency": 10e9,
+    "min_detectable_power": 2.2112612410604566e-11
   },
   {
     "name": "Haystack AUX",
@@ -645,13 +636,13 @@
     "efficiency": 0.95,
     "aperture_area": 116.89866264007618,
     "sensor_type": "Radar",
-    "exemplar": [0.012081413002127016, 1000.0],
     "lat": 0.7439078473531887,
     "lon": -1.2476873620975406,
     "alt": 0.12,
     "host_type": "GroundFacility",
     "tx_power": 50e3,
-    "tx_frequency": 16.7e9
+    "tx_frequency": 16.7e9,
+    "min_detectable_power": 8.666721381036611e-13
   },
   {
     "name": "RTS ALCOR",
@@ -668,13 +659,13 @@
     "efficiency": 0.95,
     "aperture_area": 116.89866264007618,
     "sensor_type": "Radar",
-    "exemplar": [0.16517556838845532, 1000.0],
     "lat": 0.16403668961086426,
     "lon": 2.9231259513933083,
     "alt": 0.047,
     "host_type": "GroundFacility",
     "tx_power": 4e6,
-    "tx_frequency": 5.6e9
+    "tx_frequency": 5.6e9,
+    "min_detectable_power": 1.6386537777117765e-10
   },
   {
     "name": "RTS ALTAIR UHF",
@@ -691,13 +682,13 @@
     "efficiency": 0.95,
     "aperture_area": 1640.296210273937,
     "sensor_type": "Radar",
-    "exemplar": [1, 40500],
     "lat": 0.16398345706867842,
     "lon": 2.926488851796051,
     "alt": 0.066,
     "host_type": "GroundFacility",
     "tx_power": 6e6,
-    "tx_frequency": 422e6
+    "tx_frequency": 422e6,
+    "min_detectable_power": 2.126130527585626e-17
   },
   {
     "name": "RTS ALTAIR VHF",
@@ -714,13 +705,13 @@
     "efficiency": 0.95,
     "aperture_area": 1640.296210273937,
     "sensor_type": "Radar",
-    "exemplar": [1, 40500],
     "lat": 0.16398345706867842,
     "lon": 2.926488851796051,
     "alt": 0.066,
     "host_type": "GroundFacility",
     "tx_power": 6e6,
-    "tx_frequency": 160e6
+    "tx_frequency": 160e6,
+    "min_detectable_power": 2.126130527585626e-17
   },
   {
     "name": "RTS MMW",
@@ -737,13 +728,13 @@
     "efficiency": 0.95,
     "aperture_area": 615.7521601035994,
     "sensor_type": "AdvRadar",
-    "exemplar": [0.002416282600425403, 1000.0],
     "lat": 0.16401242953426154,
     "lon": 2.9230968043948002,
     "alt": 0.095,
     "host_type": "GroundFacility",
     "tx_power": 60e3,
-    "tx_frequency": 35e9
+    "tx_frequency": 35e9,
+    "min_detectable_power": 2.2268715552507622e-11
   },
   {
     "name": "RTS TRADEX",
@@ -760,13 +751,13 @@
     "efficiency": 0.95,
     "aperture_area": 572.5552611167398,
     "sensor_type": "Radar",
-    "exemplar": [0.05637992734325941, 1000.0],
     "lat": 0.16403668961086426,
     "lon": 2.9231161775494976,
     "alt": 0.095,
     "host_type": "GroundFacility",
     "tx_power": 145e3,
-    "tx_frequency": 1.5e9
+    "tx_frequency": 1.5e9,
+    "min_detectable_power": 8.546361922142329e-14
   },
   {
     "name": "MSSS AEOS",
@@ -781,7 +772,6 @@
     "efficiency": 0.98,
     "aperture_area": 10.17876019763093,
     "sensor_type": "Optical",
-    "exemplar": [0.04908738521234052, 32500.0],
     "lat": 0.36142382870053696,
     "lon": -2.727193369702248,
     "alt": 3.0756,
@@ -800,7 +790,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.5026548245743669,
     "sensor_type": "Optical",
-    "exemplar": [9.869604401089358, 32500.0],
     "lat": 0.36142854108951733,
     "lon": -2.7272078559350392,
     "alt": 3.0587,
@@ -819,7 +808,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.12566370614359174,
     "sensor_type": "Optical",
-    "exemplar": [9.869604401089358, 32500.0],
     "lat": 0.36142854108951733,
     "lon": -2.727202969013134,
     "alt": 3.0585,
@@ -840,12 +828,12 @@
     "efficiency": 0.95,
     "aperture_area": 1963.4954084936207,
     "sensor_type": "AdvRadar",
-    "exemplar": [0.0043802459820395006, 10000.0],
     "lat": 0.23762992869119182,
     "lon": 2.52821499648024,
     "alt": 0.216,
     "host_type": "GroundFacility",
     "tx_power": 32e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 4.720897636212837e-18
   }
 ]

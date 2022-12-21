@@ -16,6 +16,7 @@ from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.time.stardate import datetimeToJulianDate
 from ...physics.transforms.methods import ecef2eci, lla2ecef
 from ...sensors import ADV_RADAR_LABEL, RADAR_LABEL
+from ...sensors.sensor_base import CONIC_FOV_LABEL, RECTANGULAR_FOV_LABEL
 from .base import Event, EventScope
 
 # Type Checking Imports
@@ -113,12 +114,6 @@ class SensorAdditionEvent(Event):
     sensor_type = Column(String(64))
     """``str``: Label for type of sensor this sensor is."""
 
-    exemplar_cross_section = Column(Float)
-    """``float``: Cross sectional area (m^2) exemplar capability."""
-
-    exemplar_range = Column(Float)
-    """``float``: Range (km) exemplar capability."""
-
     fov_shape = Column(String(64))
     """``str``: fov_shape string."""
 
@@ -139,6 +134,12 @@ class SensorAdditionEvent(Event):
 
     tx_frequency = Column(Float)
     """``float``: Transmit frequency of radar sensor.
+
+    Defaults to 0.0 unless :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
+    """
+
+    min_detectable_power = Column(Float)
+    """``float``: The smallest received power that can be detected by the radar, W.
 
     Defaults to 0.0 unless :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
     """
@@ -169,14 +170,13 @@ class SensorAdditionEvent(Event):
         "efficiency",
         "slew_rate",
         "sensor_type",
-        "exemplar_cross_section",
-        "exemplar_range",
         "fov_shape",
         "fov_angle_1",
         "fov_angle_2",
         "background_observations",
         "tx_power",
         "tx_frequency",
+        "min_detectable_power",
         "station_keeping_json",
     )
 
@@ -208,11 +208,6 @@ class SensorAdditionEvent(Event):
         return loads(self.covariance_json)
 
     @property
-    def exemplar(self) -> list[float]:
-        """``list``: Two element list of exemplar capabilities, used in min detectable power calculation."""
-        return [self.exemplar_cross_section, self.exemplar_range]
-
-    @property
     def station_keeping(self) -> dict:
         """``dict``: station keeping key words for this target."""
         return loads(self.station_keeping_json)
@@ -220,10 +215,10 @@ class SensorAdditionEvent(Event):
     @property
     def field_of_view(self) -> dict:
         """``dict``: Field of view dictionary object."""
-        if self.fov_shape == "conic":
+        if self.fov_shape == CONIC_FOV_LABEL:
             return {"fov_shape": self.fov_shape, "cone_angle": self.fov_angle_1}
 
-        if self.fov_shape == "rectangular":
+        if self.fov_shape == RECTANGULAR_FOV_LABEL:
             return {
                 "fov_shape": self.fov_shape,
                 "azimuth_angle": self.fov_angle_1,
@@ -249,11 +244,11 @@ class SensorAdditionEvent(Event):
             "aperture_area": self.aperture_area,
             "efficiency": self.efficiency,
             "slew_rate": self.slew_rate,
-            "exemplar": self.exemplar,
             "field_of_view": self.field_of_view,
             "sensor_type": self.sensor_type,
             "tx_power": self.tx_power,
             "tx_frequency": self.tx_frequency,
+            "min_detectable_power": self.min_detectable_power,
             "station_keeping": self.station_keeping,
         }
         scope_instance.addSensor(sensor_spec, self.tasking_engine_id)
@@ -288,14 +283,16 @@ class SensorAdditionEvent(Event):
         if sensor.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL):
             tx_power = sensor.tx_power
             tx_frequency = sensor.tx_frequency
+            min_detectable_power = sensor.min_detectable_power
         else:
             tx_power = 0.0
             tx_frequency = 0.0
+            min_detectable_power = 0.0
 
-        if sensor.field_of_view.fov_shape == "conic":
+        if sensor.field_of_view.fov_shape == CONIC_FOV_LABEL:
             fov_angle_1 = sensor.field_of_view.cone_angle
             fov_angle_2 = 0.0
-        elif sensor.field_of_view.fov_shape == "rectangular":
+        elif sensor.field_of_view.fov_shape == RECTANGULAR_FOV_LABEL:
             fov_angle_1 = sensor.field_of_view.azimuth_angle
             fov_angle_2 = sensor.field_of_view.elevation_angle
         else:
@@ -325,13 +322,12 @@ class SensorAdditionEvent(Event):
             efficiency=sensor.efficiency,
             slew_rate=sensor.slew_rate,
             sensor_type=sensor.sensor_type,
-            exemplar_cross_section=sensor.exemplar[0],
-            exemplar_range=sensor.exemplar[1],
             fov_shape=sensor.field_of_view.fov_shape,
             fov_angle_1=fov_angle_1,
             fov_angle_2=fov_angle_2,
             background_observations=sensor.background_observations,
             tx_power=tx_power,
             tx_frequency=tx_frequency,
+            min_detectable_power=min_detectable_power,
             station_keeping_json=dumps(sensor.station_keeping.toJSON()),
         )
