@@ -161,9 +161,7 @@ efficiency = 0.95  # Sensor efficiency (unitless)
 diameter = 14  # Effective aperture diameter (m)
 tx_power = 2500000.0  # Sensor transmit power (W)
 tx_frequency = 1.5 * 1e9  # Sensor transmit center frequency (Hz)
-
-# Exemplar is akin to sensor capability descriptions found in OV-1s (baseball at LEO, basketball at GEO)
-exemplar = [0.04908738521234052, 40500.0]  # Exemplar area (m^2)  # Exemplar range (km)
+min_detectable_power = 1.1954373300571727e-14  # Minimum detectable power by radar (W)
 field_of_view = "conic"
 calc_background = True
 
@@ -173,9 +171,9 @@ radar_sensor = Radar(
     r_matrix,
     diameter,
     efficiency,
-    exemplar,
     tx_power,
     tx_frequency,
+    min_detectable_power,
     np.radians(slew_rate),
     field_of_view,
     calc_background,

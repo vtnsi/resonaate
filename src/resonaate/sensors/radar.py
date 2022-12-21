@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING
 
 # Local Imports
 from ..data.missed_observation import MissedObservation
-from ..physics import constants as const
+from ..physics.constants import M2KM, PI, SPEED_OF_LIGHT
 from ..physics.measurement_utils import getRange
-from ..physics.sensor_utils import calculateRadarCrossSection, getWavelengthFromString
+from ..physics.sensor_utils import calculateRadarCrossSection
 from .measurement import Measurement
-from .sensor_base import Sensor
+from .sensor_base import RECTANGULAR_FOV_LABEL, Sensor
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 RADAR_DEFAULT_FOV: dict[str, Any] = {
-    "fov_shape": "conic",
+    "fov_shape": RECTANGULAR_FOV_LABEL,
     "cone_angle": 1.0,
 }
 """``dict``: Default Field of View (conic) of a radar sensor, degrees."""
@@ -54,9 +54,9 @@ class Radar(Sensor):
         r_matrix: ndarray,
         diameter: float,
         efficiency: float,
-        exemplar: ndarray,
-        power_tx: float,
-        frequency: float,
+        tx_power: float,
+        tx_frequency: float,
+        min_detectable_power: float,
         slew_rate: float,
         field_of_view: FieldOfView,
         background_observations: bool,
@@ -72,9 +72,9 @@ class Radar(Sensor):
             r_matrix (``ndarray``): measurement noise covariance matrix
             diameter (``float``): size of sensor (m)
             efficiency (``float``): efficiency percentage of the sensor
-            exemplar (``ndarray``): 2x1 array of exemplar capabilities, used in min detectable power calculation [cross sectional area (m^2), range (km)]
-            power_tx (``float``): radar's transmit power (W)
-            frequency (``float``|``str``): radar's operating frequency (Hz)
+            tx_power (``float``): radar's transmit power (W)
+            tx_frequency (``float``): radar's operating frequency (Hz)
+            min_detectable_power (``float``): The smallest received power that can be detected by the radar` (W)
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (``float``): Angular field of view of sensor (deg)
             background_observations (``bool``): whether or not to calculate serendipitous observations, default=True
@@ -91,7 +91,6 @@ class Radar(Sensor):
             el_mask,
             diameter,
             efficiency,
-            exemplar,
             slew_rate,
             field_of_view,
             background_observations,
@@ -101,39 +100,13 @@ class Radar(Sensor):
         )
 
         # Save extra class variables
-        if isinstance(frequency, str):
-            self._wavelength = getWavelengthFromString(frequency)
-        else:
-            self._wavelength = const.SPEED_OF_LIGHT / frequency
-        self.tx_power = power_tx
+        self.tx_power = tx_power
+        self.tx_frequency = tx_frequency
+        self.min_detectable_power = min_detectable_power
+        self.wavelength = SPEED_OF_LIGHT / tx_frequency
 
-        # Calculate minimum detectable power & maximum auxiliary range
-        min_detect = self._minimumDetectablePower(self.exemplar[0], self.exemplar[1] * 1000)
-        self.max_range_aux = self._maximumDetectableRange(diameter, min_detect)
-
-    def _minimumDetectablePower(self, exemplar_area: float, exemplar_range: float) -> float:
-        """Calculate the minimum detectable power based on exemplar criterion.
-
-        References:
-            #. :cite:t:`nastasi_2018_diss`, Pg 46, Eqn 3.5 & 3.7
-            #. :cite:t:`rees_2013_remote_sensing`, Pg 283
-
-        Args:
-            exemplar_area (``float``): cross-sectional area of the exemplar target, m^2
-            exemplar_range (``float``): range to exemplar target, m
-
-        Returns:
-            ``float``: minimum detectable power for this sensors, W
-        """
-        four_pi = 4 * const.PI
-        lam_sq = self.wavelength**2
-        # Validated against Nastasi's equations
-        return (
-            four_pi
-            * self.tx_power
-            * (self.aperture_area * self.efficiency) ** 2
-            * (four_pi * exemplar_area**2 / lam_sq)
-        ) / (lam_sq * (four_pi * exemplar_range**2.0) ** 2.0)
+        # Calculate maximum auxiliary range
+        self.max_range_aux = self._maximumDetectableRange(diameter, min_detectable_power)
 
     def _maximumDetectableRange(self, diameter: float, min_detect_power: float) -> float:
         """Calculate the auxiliary maximum range for a detection.
@@ -150,9 +123,9 @@ class Radar(Sensor):
         Returns:
             ``float``: auxiliary maximum range, m^1/2
         """
-        numerator = const.PI * self.tx_power * diameter**4 * self.efficiency**2
+        numerator = PI * self.tx_power * diameter**4 * self.efficiency**2
         denominator = 64 * self.wavelength**2 * min_detect_power
-        return (numerator / denominator) ** 0.25
+        return ((numerator / denominator) ** 0.25) * M2KM
 
     def isVisible(
         self,
@@ -190,9 +163,4 @@ class Radar(Sensor):
             ``float``: maximum possible range to target at which this sensor can make valid observations (km)
         """
         rcs = calculateRadarCrossSection(viz_cross_section, self.wavelength)
-        return rcs**0.25 * self.max_range_aux / 1000.0
-
-    @property
-    def wavelength(self) -> float:
-        """``float``: Returns wavelength of sensor's operating center frequency (m)."""
-        return self._wavelength
+        return rcs**0.25 * self.max_range_aux

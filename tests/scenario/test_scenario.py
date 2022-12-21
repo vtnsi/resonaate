@@ -205,12 +205,12 @@ class TestScenarioApp:
     @pytest.mark.regression()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testObservationNumber(self, datafiles: str):
-        """Test that the main_init produces 29 observations on the first timestep."""
+        """Test that the main_init produces 30 observations on the first timestep."""
         init_filepath = "main_init.json"
         elapsed_time = timedelta(minutes=5)
         app = propagateScenario(datafiles, init_filepath, elapsed_time)
         observation_query = Query(Observation)
-        assert len(app.database.getData(observation_query, multi=True)) == 29
+        assert len(app.database.getData(observation_query, multi=True)) == 30
 
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)

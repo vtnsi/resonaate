@@ -37,7 +37,6 @@ SENSOR_CONFIG = {
     "efficiency": 0.95,
     "aperture_area": 530.929158456675,
     "sensor_type": "Radar",
-    "exemplar": [0.04908738521234052, 40500.0],
     "background_observations": True,
     "lat": 0.2281347875532986,
     "lon": 0.5432822498364406,
@@ -45,6 +44,7 @@ SENSOR_CONFIG = {
     "host_type": "GroundFacility",
     "tx_power": 2.5e6,
     "tx_frequency": 1.5e9,
+    "min_detectable_power": 1.4314085925969573e-14,
 }
 
 

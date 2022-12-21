@@ -29,6 +29,11 @@ MEO_ALTITUDE_LIMIT = 30000
 GEO_ALTITUDE_LIMIT = 45000
 """``int``: Maximum altitude for "Geostationary Earth Orbit" RSO designation (km)"""
 
+# Orbit labels
+LEO_ORBIT_LABEL = "leo"
+MEO_ORBIT_LABEL = "meo"
+GEO_ORBIT_LABEL = "geo"
+
 
 class InclinationError(Exception):
     r"""Exception indicating that an invalid inclination angle was used."""

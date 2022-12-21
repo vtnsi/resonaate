@@ -377,7 +377,8 @@ def testCollectObservationsInFoVNoBackground(
     sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
     sensor.field_of_view.fov_shape = "conic"
     sensor.field_of_view.cone_angle = np.pi
-    sensor.maximum_range = 100000
+    sensor.maximum_range = 1000000
+    sensor.minimum_range = 1.0
 
     mocked_sensing_agent.sensors = sensor
     mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
@@ -472,7 +473,7 @@ def testNoMissedObservation(
     sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
     sensor.field_of_view.fov_shape = "conic"
     sensor.field_of_view.cone_angle = np.pi
-    sensor.maximum_range = 100000
+    sensor.maximum_range = 10000000
 
     mocked_sensing_agent.sensors = sensor
     mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))

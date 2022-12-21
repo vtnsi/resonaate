@@ -42,6 +42,8 @@ ______________________________________________________________________
 - `normalizeMetrics`, `metric_type_indices` and `metric_class_indices` to `reward_base` for creating dictionaries of metric class and specific types
 - `UncertaintyMetric` & `StateMetric` base classes and several implementations for covariance/state focused metrics, resp. (see #153 & !136)
 - `Measurement` and `MeasurementType` classes to decouple sensor and measurement logic (see #146 and !130)
+- `min_detectable_power` as a necessary `Radar` sensor config input
+- `calculateMinRadarRange` in `sensor_utils` to set for `Radar` if `min_range` not set in config
 
 ### Changed
 
@@ -65,6 +67,8 @@ ______________________________________________________________________
 - Renamed `cost_constrained_ssn` to `summation_ssn` and `cost_constrained_space` to `summation_space`
 - Renamed `BehaviorMetric` to `TargetMetric`
 - Moved various measurement pure functions to `physics.measurement_utils` module.
+- `getWavelengthFromString` to `getFrequencyFromString` for `Radar` sensors
+- `min_range` defaults to None and is dynamically set based on sensor type
 
 ### Deprecated
 
@@ -78,6 +82,8 @@ ______________________________________________________________________
 - `concurrent-log-handler` as a dependency
 - `Observation.fromSEZVector` method & `Observation.sez` property
 - `__call__` functions in `reward_base`, `decision_base` and `metric_base`
+- `exemplar` sensor config
+- `_minimumDetectablePower()` function in `Radar`
 
 ### Fixed
 

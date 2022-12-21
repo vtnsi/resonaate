@@ -14,13 +14,13 @@
     "efficiency": 0.95,
     "aperture_area": 615.7521601035994,
     "sensor_type": "AdvRadar",
-    "exemplar": [0.002416282600425403, 1000.0],
     "lat": 0.16401242953426154,
     "lon": 2.9230968043948002,
     "alt": 0.095,
     "host_type": "GroundFacility",
     "tx_power": 60e3,
-    "tx_frequency": 35e9
+    "tx_frequency": 35e9,
+    "min_detectable_power": 2.2268715552507622e-11
   },
   {
     "name": "RTS TRADEX",
@@ -37,13 +37,13 @@
     "efficiency": 0.95,
     "aperture_area": 572.5552611167398,
     "sensor_type": "Radar",
-    "exemplar": [0.05637992734325941, 1000.0],
     "lat": 0.16403668961086426,
     "lon": 2.9231161775494976,
     "alt": 0.095,
     "host_type": "GroundFacility",
     "tx_power": 145e3,
-    "tx_frequency": 1.5e9
+    "tx_frequency": 1.5e9,
+    "min_detectable_power": 8.546361922142329e-14
   },
   {
     "name": "MSSS AEOS",
@@ -58,7 +58,6 @@
     "efficiency": 0.98,
     "aperture_area": 10.17876019763093,
     "sensor_type": "Optical",
-    "exemplar": [0.04908738521234052, 32500.0],
     "lat": 0.36142382870053696,
     "lon": -2.727193369702248,
     "alt": 3.0756,
@@ -77,7 +76,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.5026548245743669,
     "sensor_type": "Optical",
-    "exemplar": [9.869604401089358, 32500.0],
     "lat": 0.36142854108951733,
     "lon": -2.7272078559350392,
     "alt": 3.0587,
@@ -96,7 +94,6 @@
     "efficiency": 0.98,
     "aperture_area": 0.12566370614359174,
     "sensor_type": "Optical",
-    "exemplar": [9.869604401089358, 32500.0],
     "lat": 0.36142854108951733,
     "lon": -2.727202969013134,
     "alt": 3.0585,
@@ -117,12 +114,12 @@
     "efficiency": 0.95,
     "aperture_area": 1963.4954084936207,
     "sensor_type": "AdvRadar",
-    "exemplar": [0.0043802459820395006, 10000.0],
     "lat": 0.23762992869119182,
     "lon": 2.52821499648024,
     "alt": 0.216,
     "host_type": "GroundFacility",
     "tx_power": 32e6,
-    "tx_frequency": 650e6
+    "tx_frequency": 650e6,
+    "min_detectable_power": 4.720897636212837e-18
   }
 ]

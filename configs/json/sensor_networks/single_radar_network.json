@@ -14,12 +14,12 @@
     "efficiency": 0.95,
     "aperture_area": 530.929158456675,
     "sensor_type": "Radar",
-    "exemplar": [0.04908738521234052, 40500.0],
     "lat": 0.2281347875532986,
     "lon": 0.5432822498364406,
     "alt": 0.095,
     "host_type": "GroundFacility",
     "tx_power": 2.5e6,
-    "tx_frequency": 1.5e9
+    "tx_frequency": 1.5e9,
+    "min_detectable_power": 3.5699513926877067e-19
   }
 ]

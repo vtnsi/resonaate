@@ -21,8 +21,17 @@ from ...agents.target_agent import (
 )
 from ...dynamics.integration_events.station_keeping import VALID_STATION_KEEPING_ROUTINES
 from ...physics.bodies.earth import Earth
-from ...physics.orbits import GEO_ALTITUDE_LIMIT, LEO_ALTITUDE_LIMIT, MEO_ALTITUDE_LIMIT
-from ...sensors import (
+from ...physics.orbits import (
+    GEO_ALTITUDE_LIMIT,
+    GEO_ORBIT_LABEL,
+    LEO_ALTITUDE_LIMIT,
+    LEO_ORBIT_LABEL,
+    MEO_ALTITUDE_LIMIT,
+    MEO_ORBIT_LABEL,
+)
+from ...physics.sensor_utils import calculateMinRadarRange, getFrequencyFromString
+from ...sensors.optical import OPTICAL_DETECTABLE_VISMAG
+from ...sensors.sensor_base import (
     ADV_RADAR_LABEL,
     CONIC_FOV_LABEL,
     DEFAULT_VIEWING_ANGLE,
@@ -32,7 +41,6 @@ from ...sensors import (
     SOLAR_PANEL_REFLECTIVITY,
     VALID_SENSOR_FOV_LABELS,
 )
-from ...sensors.optical import OPTICAL_DETECTABLE_VISMAG
 from .base import ConfigError, ConfigObject, ConfigValueError
 
 
@@ -113,11 +121,11 @@ class TargetAgentConfig(ConfigObject):
             altitude = self.init_coe["sma"] - Earth.radius
 
         if altitude <= LEO_ALTITUDE_LIMIT:
-            orbital_regime = "leo"
+            orbital_regime = LEO_ORBIT_LABEL
         elif altitude <= MEO_ALTITUDE_LIMIT:
-            orbital_regime = "meo"
+            orbital_regime = MEO_ORBIT_LABEL
         elif altitude <= GEO_ALTITUDE_LIMIT:
-            orbital_regime = "geo"
+            orbital_regime = GEO_ORBIT_LABEL
         else:
             err = "RSO altitude above GEO, unable to set a default mass value"
             raise ConfigError(self.__class__.__name__, err)
@@ -125,18 +133,18 @@ class TargetAgentConfig(ConfigObject):
         # Set mass
         if self.mass is None:
             mass_dict = {
-                "leo": LEO_DEFAULT_MASS,
-                "meo": MEO_DEFAULT_MASS,
-                "geo": GEO_DEFAULT_MASS,
+                LEO_ORBIT_LABEL: LEO_DEFAULT_MASS,
+                MEO_ORBIT_LABEL: MEO_DEFAULT_MASS,
+                GEO_ORBIT_LABEL: GEO_DEFAULT_MASS,
             }
             self.mass = mass_dict[orbital_regime]
 
         # Set Visual Cross Section
         if self.visual_cross_section is None:
             vcs_dict = {
-                "leo": LEO_DEFAULT_VCS,
-                "meo": MEO_DEFAULT_VCS,
-                "geo": GEO_DEFAULT_VCS,
+                LEO_ORBIT_LABEL: LEO_DEFAULT_VCS,
+                MEO_ORBIT_LABEL: MEO_DEFAULT_VCS,
+                GEO_ORBIT_LABEL: GEO_DEFAULT_VCS,
             }
             self.visual_cross_section = vcs_dict[orbital_regime]
 
@@ -222,9 +230,6 @@ class SensingAgentConfig(ConfigObject):
     slew_rate: float
     R"""``float``: sensor maximum slew rate, rad/sec."""
 
-    exemplar: list[float]
-    R"""``list[float]``: 2-element sensor exemplar set of `(size, distance)`, (m^2, km)."""
-
     lat: float | None = None
     R"""``float``, optional: sensor geodetic latitude, :math:`\in [-\frac{\pi}{2}, \frac{\pi}{2}]` radians. Defaults to ``None``"""
 
@@ -249,8 +254,8 @@ class SensingAgentConfig(ConfigObject):
     detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG
     R"""``float, optional``: minimum detectable visual magnitude value, used for visibility constraints, unit-less. Defaults to :data:`.OPTICAL_DETECTABLE_VISMAG`."""
 
-    minimum_range: float = 0.0
-    R"""``float, optional``: minimum range at which this sensor can observe targets, km. Defaults to ``0.0`` (no minimum)."""
+    minimum_range: float | None = None
+    R"""``float, optional``: minimum range at which this sensor can observe targets, km. Defaults to a value based on sensor type."""
 
     maximum_range: float = inf
     R"""``float, optional``: maximum range at which this sensor can observe targets, km. Defaults to ``np.inf`` (no maximum)."""
@@ -267,8 +272,11 @@ class SensingAgentConfig(ConfigObject):
     tx_power: float | None = None
     R"""``float``, optional: radar transmission power, W. Defaults to ``None``, but required for ``"Radar" | "AdvRadar"``."""
 
-    tx_frequency: float | None = None
+    tx_frequency: float | str | None = None
     R"""``float``, optional: radar transmission center frequency, Hz. Defaults to ``None``, but required for ``"Radar" | "AdvRadar"``."""
+
+    min_detectable_power: float | None = None
+    R"""``float``: The smallest received power that can be detected by the radar`, W.  Defaults to ``None``, but required for ``"Radar" | "AdvRadar"``."""
 
     field_of_view: FieldOfViewConfig | dict | None = None
     R""":class:`.FieldOfViewConfig`, optional: FOV type size to use in calculating visibility. Defaults to a conic FOV with default cone angle."""
@@ -343,21 +351,33 @@ class SensingAgentConfig(ConfigObject):
             altitude = self.init_coe["sma"] - Earth.radius
 
         is_radar = self.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL)
-        tx_not_set = self.tx_power is None or self.tx_frequency is None
-        if is_radar and tx_not_set:
-            err = f"Sensor {self.id}: Radar transmit parameters not set"
+        is_optical = self.sensor_type in (OPTICAL_LABEL)
+        radar_not_set = (
+            self.tx_power is None or self.tx_frequency is None or self.min_detectable_power is None
+        )
+        if is_radar and radar_not_set:
+            err = f"Sensor {self.id}: Radar specific parameters not set"
             raise ConfigError(self.__class__.__name__, err)
+
+        if is_radar and isinstance(self.tx_frequency, str):
+            self.tx_frequency = getFrequencyFromString(self.tx_frequency)
+
+        min_range_not_set = self.minimum_range is None
+        if is_radar and min_range_not_set:
+            self.minimum_range = calculateMinRadarRange(self.tx_frequency)
+        elif is_optical and min_range_not_set:
+            self.minimum_range = 0.0
 
         if self.host_type is GROUND_FACILITY_LABEL and self.station_keeping.routines:
             err = "Ground based sensors cannot perform station keeping"
             raise ConfigError(self.__class__.__name__, err)
 
         if altitude <= LEO_ALTITUDE_LIMIT:
-            orbital_regime = "leo"
+            orbital_regime = LEO_ORBIT_LABEL
         elif altitude <= MEO_ALTITUDE_LIMIT:
-            orbital_regime = "meo"
+            orbital_regime = MEO_ORBIT_LABEL
         elif altitude <= GEO_ALTITUDE_LIMIT:
-            orbital_regime = "geo"
+            orbital_regime = GEO_ORBIT_LABEL
         else:
             err = "RSO altitude above GEO, unable to set a default mass value"
             raise ConfigError(self.__class__.__name__, err)
@@ -365,18 +385,18 @@ class SensingAgentConfig(ConfigObject):
         # Set mass
         if self.mass is None:
             mass_dict = {
-                "leo": LEO_DEFAULT_MASS,
-                "meo": MEO_DEFAULT_MASS,
-                "geo": GEO_DEFAULT_MASS,
+                LEO_ORBIT_LABEL: LEO_DEFAULT_MASS,
+                MEO_ORBIT_LABEL: MEO_DEFAULT_MASS,
+                GEO_ORBIT_LABEL: GEO_DEFAULT_MASS,
             }
             self.mass = mass_dict[orbital_regime]
 
         # Set Visual Cross Section
         if self.visual_cross_section is None:
             vcs_dict = {
-                "leo": LEO_DEFAULT_VCS,
-                "meo": MEO_DEFAULT_VCS,
-                "geo": GEO_DEFAULT_VCS,
+                LEO_ORBIT_LABEL: LEO_DEFAULT_VCS,
+                MEO_ORBIT_LABEL: MEO_DEFAULT_VCS,
+                GEO_ORBIT_LABEL: GEO_DEFAULT_VCS,
             }
             self.visual_cross_section = vcs_dict[orbital_regime]
 
