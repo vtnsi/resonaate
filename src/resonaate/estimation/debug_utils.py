@@ -126,7 +126,6 @@ def checkThreeSigmaObs(current_obs, sigma=3):
                 "measurement_difference": meas_diff,
                 "noise_limit_mag": noise_limit,
                 "observation": observation.makeDictionary(),
-                "sensor": sensor_agent.sensors.getSensorData(),
                 "sensing_agent": sensor_agent.getCurrentEphemeris().makeDictionary(),
                 "target_agent": target.getCurrentEphemeris().makeDictionary(),
             }
@@ -249,7 +248,6 @@ def createFilterDebugDict(filter_obj, observations, truth_state, sensor_agents):
     for item, observation in enumerate(observations):
         sensor_agent = sensor_agents[observation.unique_id]
         description[f"observation_{item}"] = observation.makeDictionary()
-        description[f"sensor_{item}"] = sensor_agent.sensors.getSensorData()
         description[f"facility_{item}"] = sensor_agent.getCurrentEphemeris().makeDictionary()
         description[f"facility_{item}"].update(
             {

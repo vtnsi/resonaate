@@ -10,7 +10,6 @@ from numpy import array, cos, sin, squeeze, zeros_like
 from scipy.linalg import norm
 
 # Local Imports
-from ..agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from ..common.exceptions import ShapeError
 from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
@@ -504,30 +503,3 @@ class Sensor:
         """
         self._host = host
         self.time_last_ob = host.time
-
-    def getSensorData(self) -> dict:
-        """``dict``: Returns a this sensor's formatted information."""
-        output_dict = {
-            "name": self.host.name,
-            "id": self.host.simulation_id,
-            "covariance": self.r_matrix.tolist(),
-            "slew_rate": self.slew_rate,
-            "azimuth_range": self.az_mask.tolist(),
-            "elevation_range": self.el_mask.tolist(),
-            "efficiency": self.efficiency,
-            "aperture_area": self.aperture_area,
-            "sensor_type": getTypeString(self),
-            "exemplar": self.exemplar.tolist(),
-            "field_of_view": self.field_of_view,
-        }
-        if self.host.agent_type == SPACECRAFT_LABEL:
-            output_dict["init_eci"] = self.host.truth_state.tolist()
-            output_dict["host_type"] = SPACECRAFT_LABEL
-        else:
-            latlon = self.host.lla_state
-            output_dict["lat"] = latlon[0]
-            output_dict["lon"] = latlon[1]
-            output_dict["alt"] = latlon[2]
-            output_dict["host_type"] = GROUND_FACILITY_LABEL
-
-        return output_dict

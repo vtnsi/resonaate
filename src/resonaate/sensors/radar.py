@@ -196,12 +196,3 @@ class Radar(Sensor):
     def wavelength(self) -> float:
         """``float``: Returns wavelength of sensor's operating center frequency (m)."""
         return self._wavelength
-
-    def getSensorData(self) -> dict:
-        """``dict``: Returns a this sensor's formatted information."""
-        result = super().getSensorData()
-        result["tx_power"] = self.tx_power  # pylint: disable=no-member
-        result["tx_frequency"] = (
-            const.SPEED_OF_LIGHT / self.wavelength  # pylint: disable=no-member
-        )
-        return result

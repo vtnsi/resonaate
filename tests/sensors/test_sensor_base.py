@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from copy import copy, deepcopy
+from copy import deepcopy
 from unittest.mock import Mock, create_autospec, patch
 
 # Third Party Imports
@@ -134,52 +134,6 @@ def testSensorInitAzElMaskTypes(base_sensor_args: dict):
     sen_args["el_mask"] = np.array((-90.0, 90.0, 0.0))
     with pytest.raises(ShapeError, match=r"\w*Invalid shape for el_mask\w*"):
         _ = Sensor(**sen_args)
-
-
-def testGetSensorData(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
-    """Test retrieve dictionary of sensor data."""
-    sensor = Sensor(**base_sensor_args)
-    sensor.host = mocked_sensing_agent
-
-    # Test space sensor types
-    expected = {
-        "name": mocked_sensing_agent.name,
-        "id": mocked_sensing_agent.simulation_id,
-        "covariance": base_sensor_args["r_matrix"].tolist(),
-        "slew_rate": np.deg2rad(base_sensor_args["slew_rate"]),
-        "azimuth_range": np.deg2rad(base_sensor_args["az_mask"]).tolist(),
-        "elevation_range": np.deg2rad(base_sensor_args["el_mask"]).tolist(),
-        "efficiency": base_sensor_args["efficiency"],
-        "aperture_area": np.pi * (base_sensor_args["diameter"] * 0.5) ** 2,
-        "sensor_type": "Sensor",
-        "exemplar": base_sensor_args["exemplar"].tolist(),
-        "field_of_view": sensor.field_of_view,
-    }
-
-    expected_space = deepcopy(expected)
-    expected_space.update(
-        {
-            "host_type": mocked_sensing_agent.agent_type,
-            "init_eci": mocked_sensing_agent.truth_state.tolist(),
-        }
-    )
-    assert sensor.getSensorData() == expected_space
-
-    # Test ground sensor types
-    ground_sensor_agent = copy(mocked_sensing_agent)
-    ground_sensor_agent.agent_type = "GroundFacility"
-    ground_sensor_agent.lla_state = np.array((10, 2.5, 0.3))
-    expected_ground = deepcopy(expected)
-    expected_ground.update(
-        {
-            "host_type": ground_sensor_agent.agent_type,
-            "lat": ground_sensor_agent.lla_state[0],
-            "lon": ground_sensor_agent.lla_state[1],
-            "alt": ground_sensor_agent.lla_state[2],
-        }
-    )
-    sensor.host = ground_sensor_agent
-    assert sensor.getSensorData() == expected_ground
 
 
 def testCanSlew(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
