@@ -94,6 +94,7 @@ ______________________________________________________________________
 - Sensors were being tasked to observe non-visible RSO's because of incorrect indexing calls on sensor agents (see !90)
 - Only passing background RSO from `asyncExecuteTasking` to `collectObservations` (see !84)
 - `apparentVisualMagnitude` calculation was wrong due to VCS units
+- `checkSpaceSensorLightingConditions` had wrong sun unit vector (see #161)
 
 ### Security
 

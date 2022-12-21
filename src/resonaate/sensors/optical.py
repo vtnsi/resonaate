@@ -167,8 +167,11 @@ class Optical(Sensor):
 
         if self.host.agent_type == SPACECRAFT_LABEL:
             # Check if sensor is pointed at the Sun
+            target_sun_unit_vector_eci = (tgt_eci_state[:3] - sun_eci_position) / norm(
+                tgt_eci_state[:3] - sun_eci_position
+            )
             space_lighting = checkSpaceSensorLightingConditions(
-                boresight_eci[:3], sun_eci_position / norm(sun_eci_position)
+                boresight_eci[:3], target_sun_unit_vector_eci
             )
             if not space_lighting:
                 return False, MissedObservation.Explanation.SPACE_ILLUMINATION

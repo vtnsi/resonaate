@@ -189,7 +189,7 @@ def checkSpaceSensorLightingConditions(
 
     Args:
         boresight_eci_vector (``ndarray``): 3x1 ECI boresight vector from the sensor to the target (km)
-        sun_eci_unit_vector (``ndarray``): 3x1 ECI unit position vector of the Sun, relative to the Earth (km)
+        sun_eci_unit_vector (``ndarray``): 3x1 ECI boresight unit vector from the sensor to the sun (unitless)
         cone_angle (``float``, optional): minimum cone angle the sensor can have with the sun
             (rad). Defaults to :math:`\frac{\pi}{12}`.
 
