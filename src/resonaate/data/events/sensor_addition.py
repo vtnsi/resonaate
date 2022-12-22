@@ -268,7 +268,7 @@ class SensorAdditionEvent(Event):
             ecef_state = lla2ecef(
                 array([sensor.lat, sensor.lon, sensor.alt])  # radians, radians, km
             )
-            initial_state = ecef2eci(ecef_state)
+            initial_state = ecef2eci(ecef_state, config.start_time)
         elif sensor.eci_set:
             initial_state = array(sensor.init_eci)
         elif sensor.coe_set:

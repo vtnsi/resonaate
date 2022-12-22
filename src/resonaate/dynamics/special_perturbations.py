@@ -21,7 +21,7 @@ from ..physics.bodies.gravitational_potential import (
 from ..physics.maths import rot3
 from ..physics.sensor_utils import calculateSunVizFraction
 from ..physics.time.conversions import dayOfYear, greenwichApparentTime
-from ..physics.time.stardate import JulianDate
+from ..physics.time.stardate import JulianDate, julianDateToDatetime
 from ..physics.transforms.reductions import getReductionParameters
 from .celestial import Celestial, checkEarthCollision
 from .constants import RK45_LABEL
@@ -95,7 +95,8 @@ class SpecialPerturbations(Celestial):
 
         # Calculate the ECI - ECEF transformation for the integration time
         julian_date = JulianDate(self.init_julian_date + time / 86400)
-        ecef_2_eci = _getRotationMatrix(julian_date, getReductionParameters())
+        _datetime = julianDateToDatetime(julian_date)
+        ecef_2_eci = _getRotationMatrix(julian_date, getReductionParameters(_datetime))
 
         # Get third body positions
         positions = {body: body.getPosition(julian_date) for body in self.third_bodies}

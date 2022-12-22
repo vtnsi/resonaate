@@ -12,7 +12,7 @@ from scipy.linalg import norm
 from ...physics.constants import DEG2RAD
 from ...physics.maths import safeArccos
 from ...physics.orbits.elements import ClassicalElements
-from ...physics.time.stardate import JulianDate
+from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ...physics.transforms.methods import ecef2lla, eci2ecef, ntw2eci
 from ..special_perturbations import _getRotationMatrix
 from .discrete_state_change_event import DiscreteStateChangeEvent
@@ -169,7 +169,9 @@ class KeepGeoEastWest(StationKeeper):
         See Also:
             :meth:`.StationKeeper.fromInitECI()`
         """
-        initial_lon = ecef2lla(eci2ecef(initial_eci))[1]  # radians
+        initial_lon = ecef2lla(eci2ecef(initial_eci, julianDateToDatetime(julian_date_start)))[
+            1
+        ]  # radians
         initial_coe = ClassicalElements.fromECI(initial_eci)
         return cls(rso_id, initial_eci, initial_lon, initial_coe, julian_date_start)
 
@@ -265,7 +267,7 @@ class KeepGeoNorthSouth(StationKeeper):
         See Also:
             :meth:`.StationKeeper.fromInitECI()`
         """
-        initial_lat = ecef2lla(eci2ecef(initial_eci))[0]  # radians
+        initial_lat = ecef2lla(eci2ecef(initial_eci, julianDateToDatetime(julian_date_start)))[0]  # radians
         initial_coe = ClassicalElements.fromECI(initial_eci)
         return cls(rso_id, initial_eci, initial_lat, initial_coe, julian_date_start)
 

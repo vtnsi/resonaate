@@ -15,7 +15,6 @@ from numpy import asarray, cos, dot, fmod, matmul, sin
 from .. import constants as const
 from ..maths import rot1, rot2, rot3
 from ..time.conversions import dayOfYear, greenwichApparentTime, utc2TerrestrialTime
-from ..time.stardate import datetimeToJulianDate
 from .eops import getEarthOrientationParameters
 from .nutation import get1980NutationSeries
 
@@ -28,7 +27,7 @@ REDUCTION_PARAMETER_LABELS = (
     "lod",
     "eq_equinox",
     "dut1",
-    "julian_date",
+    "datetime",
 )
 """list: List of keys used to construct reduction parameter dictionary."""
 
@@ -48,22 +47,30 @@ def updateReductionParameters(utc_date, eops=None):
     KeyValueStore.setValue(REDUCTION_KEY, dumps(dict(zip(REDUCTION_PARAMETER_LABELS, params))))
 
 
-def getReductionParameters():
+def getReductionParameters(utc_date: datetime) -> dict:
     """Retrieve current set of reduction parameters from the key value store.
 
-    Note:
-        :meth:`.updateReductionParameters()` *must* be called before this function.
+    Args:
+        utc_date (:class:`datetime`): UTC date to calculate the transformation for
 
-    Raises:
-        ValueError: If :meth:`.updateReductionParameters()` hasn't been previously called to set
-            the reduction parameters.
+    Returns:
+        dict: Dictionary of reduction parameters.
     """
     serial_obj = KeyValueStore.getValue(REDUCTION_KEY)
 
     if serial_obj is None:
-        raise ValueError("Reduction parameters have not been updated.")
+        # parameters haven't been set
+        param_dict = dict(zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date)))
+        KeyValueStore.setValue(REDUCTION_KEY, dumps(param_dict))
+    else:
+        param_dict = loads(serial_obj)
 
-    return loads(serial_obj)
+    if param_dict["datetime"] != utc_date.isoformat():
+        # parameters are set to wrong julian date
+        param_dict = dict(zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date)))
+        KeyValueStore.setValue(REDUCTION_KEY, dumps(param_dict))
+
+    return param_dict
 
 
 def _updateFK5Parameters(utc_date: datetime, eops=None):  # pylint: disable=too-many-locals
@@ -155,7 +162,7 @@ def _updateFK5Parameters(utc_date: datetime, eops=None):  # pylint: disable=too-
         eops.length_of_day,
         eq_equinox,
         eops.delta_ut1,
-        datetimeToJulianDate(utc_date),
+        utc_date.isoformat(),
     )
 
 

@@ -18,12 +18,9 @@ from resonaate.physics.bodies.gravitational_potential import (
     loadGeopotentialCoefficients,
     nonSphericalAcceleration,
 )
-from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.physics.transforms.methods import eci2ecef
-from resonaate.physics.transforms.reductions import (
-    getReductionParameters,
-    updateReductionParameters,
-)
+from resonaate.physics.transforms.reductions import getReductionParameters
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -65,8 +62,8 @@ def testGeoPotentialFunction(degree: int, order: int, truth: ndarray):
 def testNonsphericalAcceleration():
     """Calculate non-spherical acceleration and compare versus STK values."""
     # STK Scenario using HPOP, 4x4 EGM96 gravity model only.
-    jd = JulianDate.getJulianDate(2020, 3, 30, 16, 0, 0.0)
-    updateReductionParameters(datetime(2020, 3, 30, 16, 0, 0, 0))
+    _datetime = datetime(2020, 3, 30, 16)
+    jd = datetimeToJulianDate(_datetime)
     # Initial state vector
     eci_state = array(
         [
@@ -80,8 +77,8 @@ def testNonsphericalAcceleration():
     )
     # Full acceleration values
     eci_accel = array([2.383405021e-03, -7.611372878e-03, -4.087216625e-03])
-    ecef_state = eci2ecef(eci_state)
-    ecef2eci = _getRotationMatrix(jd, getReductionParameters())
+    ecef_state = eci2ecef(eci_state, _datetime)
+    ecef2eci = _getRotationMatrix(jd, getReductionParameters(_datetime))
 
     c_nm, s_nm = loadGeopotentialCoefficients("egm96.txt")
 

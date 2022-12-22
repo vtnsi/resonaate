@@ -17,7 +17,6 @@ from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.sensor_utils import GALACTIC_CENTER_ECI
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from resonaate.physics.transforms.methods import eci2ecef, getSlantRangeVector
-from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.sensors.optical import Optical
 
 
@@ -70,11 +69,11 @@ def testIsVisible(
     mocked_sensing_agent.agent_type = SPACECRAFT_LABEL
     space_optical.host = mocked_sensing_agent
 
-    updateReductionParameters(julianDateToDatetime(mocked_sensing_agent.julian_date_epoch))
-    mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state)
+    utc_datetime = julianDateToDatetime(mocked_sensing_agent.julian_date_epoch)
+    mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state, utc_datetime)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.ecef_state, mocked_primary_target.initial_state
+        mocked_sensing_agent.ecef_state, mocked_primary_target.initial_state, utc_datetime
     )
 
     visibility, explanation = space_optical.isVisible(
@@ -104,11 +103,11 @@ def testIsNotVisible(
     mocked_sensing_agent.agent_type = GROUND_FACILITY_LABEL
     ground_optical.host = mocked_sensing_agent
 
-    updateReductionParameters(julianDateToDatetime(mocked_sensing_agent.julian_date_epoch))
-    mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state)
+    utc_datetime = julianDateToDatetime(mocked_sensing_agent.julian_date_epoch)
+    mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state, utc_datetime)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.ecef_state, mocked_primary_target.initial_state
+        mocked_sensing_agent.ecef_state, mocked_primary_target.initial_state, utc_datetime
     )
 
     # Check Ground Illumination

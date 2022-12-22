@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from copy import deepcopy
+from datetime import datetime
 from unittest.mock import Mock, create_autospec, patch
 
 # Third Party Imports
@@ -193,7 +194,9 @@ def testInFOVRegular(base_sensor_args: dict):
     assert not sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
 
-def _dummySlantRange(ecef_sensor: np.ndarray, eci_tgt: np.ndarray) -> np.ndarray:
+def _dummySlantRange(
+    ecef_sensor: np.ndarray, eci_tgt: np.ndarray, utc_date: datetime
+) -> np.ndarray:
     """Dummy slant range function; passes through the eci_tgt parameter."""
     # pylint: disable=unused-argument
     return eci_tgt
@@ -209,6 +212,7 @@ def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: Sensing
     # Requires self.host.ecef_state to be set
     sensor.host = mocked_sensing_agent
     sensor.host.ecef_state = np.zeros(6)
+    sensor.host.julian_date_epoch = JulianDate(2459569.75)
 
     # Target SEZ position
     tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
@@ -240,6 +244,7 @@ def testIsVisible(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     # Requires self.host.eci_state to be set
     sensor.host = mocked_sensing_agent
     sensor.host.eci_state = np.array((6378.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    sensor.host.julian_date_epoch = JulianDate(2459569.75)
 
     # Target is visible initially
     tgt_eci_state = np.array((7800.0, 0.0, 0.0, 0.0, 0.0, 0.0))

@@ -174,7 +174,8 @@ class Sensor:
         obs_list = []
         missed_observation_list = []
         # Check if sensor will slew to point in time
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_eci)
+        datetime_epoch = julianDateToDatetime(self.host.julian_date_epoch)
+        slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_eci, datetime_epoch)
         if self.canSlew(slant_range_sez):
             # Check if primary RSO is FoV
             if len(self.checkTargetsInView(slant_range_sez, [target_agent])) == 1:
@@ -236,11 +237,13 @@ class Sensor:
         Returns:
             ``list``: list of all visible background `.TargetAgents` for this observation
         """
+        datetime_epoch = julianDateToDatetime(self.host.julian_date_epoch)
         # filter out targets outside of FOV
         agents_in_fov = list(
             filter(  # pylint:disable=bad-builtin
                 lambda agent: self.field_of_view.inFieldOfView(
-                    slant_range_sez, getSlantRangeVector(self.host.ecef_state, agent.eci_state)
+                    slant_range_sez,
+                    getSlantRangeVector(self.host.ecef_state, agent.eci_state, datetime_epoch),
                 ),
                 background_agents,
             )
@@ -257,7 +260,8 @@ class Sensor:
         Returns:
             :class:`.Observation`: observation data object.
         """
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state)
+        datetime_epoch = julianDateToDatetime(self.host.julian_date_epoch)
+        slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state, datetime_epoch)
         julian_date = self.host.julian_date_epoch
         date_time = julianDateToDatetime(julian_date)
         return Observation(
@@ -312,9 +316,9 @@ class Sensor:
             :class:`.ObservationTuple`: observation tuple object
         """
         # Calculate common values
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state)
         julian_date = self.host.julian_date_epoch
-        date_time = julianDateToDatetime(julian_date)
+        datetime_epoch = julianDateToDatetime(julian_date)
+        slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state, datetime_epoch)
 
         # Construct observations
         visibility, reason = self.isVisible(
@@ -325,7 +329,7 @@ class Sensor:
             if real_obs:
                 observation = Observation(
                     julian_date=julian_date,
-                    epoch=Epoch(timestampISO=date_time.isoformat(), julian_date=julian_date),
+                    epoch=Epoch(timestampISO=datetime_epoch.isoformat(), julian_date=julian_date),
                     sensor_type=getTypeString(self),
                     sensor_id=self.host.simulation_id,
                     target_id=tgt_id,

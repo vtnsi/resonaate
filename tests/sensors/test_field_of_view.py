@@ -17,7 +17,6 @@ from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.time.stardate import ScenarioTime
 from resonaate.physics.transforms.methods import getSlantRangeVector
-from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario.clock import ScenarioClock
 from resonaate.scenario.config.agent_configs import SensingAgentConfig
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
@@ -161,9 +160,8 @@ def testCheckTargetsInView(
     conic_sensor_agent: SensingAgent,
 ):
     """Test if multiple targets are in the Field of View."""
-    updateReductionParameters(clock.datetime_epoch)
     slant_range_sez = getSlantRangeVector(
-        conic_sensor_agent.sensors.host.ecef_state, primary_rso.eci_state
+        conic_sensor_agent.sensors.host.ecef_state, primary_rso.eci_state, clock.datetime_epoch
     )
     agents = conic_sensor_agent.sensors.checkTargetsInView(
         slant_range_sez, [primary_rso, secondary_rso]
