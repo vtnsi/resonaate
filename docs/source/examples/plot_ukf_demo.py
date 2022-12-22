@@ -200,7 +200,7 @@ sensor_agent = SensingAgent(
     sensor_id,
     sensor_name,
     sensor_type,
-    ecef2eci(sensor_ecef),
+    ecef2eci(sensor_ecef, clock.datetime_start),
     clock,
     radar_sensor,
     sensor_dynamics,
@@ -251,7 +251,7 @@ from resonaate.physics.transforms.methods import getSlantRangeVector
 from resonaate.sensors.sensor_base import ObservationTuple
 
 # Get the SEZ slant range vector from sensor to target
-slant_range_sez = getSlantRangeVector(sensor_ecef, sat1_agent.eci_state)
+slant_range_sez = getSlantRangeVector(sensor_ecef, sat1_agent.eci_state, clock.datetime_epoch)
 
 # Determine measurements from SEZ slant range
 measurements = {

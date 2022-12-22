@@ -20,6 +20,7 @@ from ..estimation import (
 )
 from ..estimation.sequential.sequential_filter import FilterFlag, SequentialFilter
 from ..physics.noise import initialEstimateNoise
+from ..physics.time.stardate import julianDateToDatetime
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from .agent_base import Agent
 
@@ -117,7 +118,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         # Properly initialize the EstimateAgent's state types
         self._state_estimate = initial_state.copy()
-        self._ecef_state = eci2ecef(initial_state)
+        self._ecef_state = eci2ecef(initial_state, julianDateToDatetime(self.julian_date_epoch))
         self._lla_state = ecef2lla(self._ecef_state)
 
         # Set the EstimateAgent's filter & set itself to the filter's host
@@ -487,7 +488,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             new_state (``ndarray``): 6x1 ECI state vector
         """
         self._state_estimate = new_state
-        self._ecef_state = eci2ecef(new_state)
+        self._ecef_state = eci2ecef(new_state, julianDateToDatetime(self.julian_date_epoch))
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property

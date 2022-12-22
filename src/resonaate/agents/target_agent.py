@@ -11,7 +11,7 @@ from numpy import array, ndarray
 from ..data.ephemeris import TruthEphemeris
 from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
-from ..physics.time.stardate import JulianDate
+from ..physics.time.stardate import JulianDate, julianDateToDatetime
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from . import SPACECRAFT_LABEL
 from .agent_base import Agent
@@ -104,7 +104,9 @@ class TargetAgent(Agent):
         )
         # Properly initialize the TargetAgent's state types
         self._truth_state = array(initial_state, copy=True)
-        self._ecef_state = eci2ecef(self._truth_state)
+        self._ecef_state = eci2ecef(
+            self._truth_state, julianDateToDatetime(self.julian_date_epoch)
+        )
         self._lla_state = ecef2lla(self._ecef_state)
         self._previous_state = array(initial_state, copy=True)
 
@@ -200,7 +202,7 @@ class TargetAgent(Agent):
         """
         self._previous_state = self._truth_state
         self._truth_state = new_state
-        self._ecef_state = eci2ecef(new_state)
+        self._ecef_state = eci2ecef(new_state, julianDateToDatetime(self.julian_date_epoch))
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property

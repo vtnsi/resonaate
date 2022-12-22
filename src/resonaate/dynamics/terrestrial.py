@@ -1,5 +1,9 @@
 """Defines the :class:`.Terrestrial` class for agents that are stationary on the Earth."""
+# Standard Library Imports
+from datetime import timedelta
+
 # Local Imports
+from ..physics.time.stardate import julianDateToDatetime
 from ..physics.transforms.methods import ecef2eci
 from .dynamics_base import Dynamics
 
@@ -15,6 +19,7 @@ class Terrestrial(Dynamics):
             x_ecef (``numpy.ndarray``): Earth-fixed location of the ground-based object
         """
         self.julian_date_start = jd_start
+        self.datetime_start = julianDateToDatetime(jd_start)
         self.x_ecef = x_ecef
 
     def propagate(
@@ -35,4 +40,5 @@ class Terrestrial(Dynamics):
                 "Terrestrial: Invalid input for final_time. final_time must be greater than initial_time."
             )
 
-        return ecef2eci(self.x_ecef)
+        final_datetime = self.datetime_start + timedelta(seconds=final_time)
+        return ecef2eci(self.x_ecef, final_datetime)

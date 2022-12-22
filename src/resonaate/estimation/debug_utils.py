@@ -20,6 +20,7 @@ from ..data.query_util import addAlmostEqualFilter
 from ..data.resonaate_database import ResonaateDatabase
 from ..physics.maths import nearestPD
 from ..physics.measurement_utils import getAzimuth, getElevation, getRange, getRangeRate
+from ..physics.time.stardate import julianDateToDatetime
 from ..physics.transforms.methods import ecef2sez, eci2ecef
 
 
@@ -64,7 +65,8 @@ def checkThreeSigmaObs(current_obs, sigma=3):
 
         # Calculate SEZ vector from ephemeris state
         sensor_agent = sensor_agents[observation.unique_id]
-        ephem_minus_sensor_ecef = eci2ecef(np.asarray(ephem.eci)) - sensor_agent.ecef_state
+        ob_ephem = eci2ecef(np.asarray(ephem.eci), julianDateToDatetime(observation.julian_date))
+        ephem_minus_sensor_ecef = ob_ephem - sensor_agent.ecef_state
         ephem_sez = ecef2sez(
             ephem_minus_sensor_ecef, sensor_agent.lla_state[0], sensor_agent.lla_state[1]
         )

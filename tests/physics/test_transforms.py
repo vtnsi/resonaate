@@ -78,7 +78,9 @@ class TestECI:
 
     def testEci2Ecef(self):
         """Test conversion from ECI (inertial) to ECEF (fixed)."""
-        ecef_state = eci2ecef(np.concatenate((self.r_gcrf, self.v_gcrf), axis=0))
+        ecef_state = eci2ecef(
+            np.concatenate((self.r_gcrf, self.v_gcrf), axis=0), self.calendar_date
+        )
         assert isinstance(ecef_state, np.ndarray)
         assert ecef_state.shape == (6,)
         assert np.allclose(ecef_state[:3], self.r_itrf, atol=1e-11, rtol=1e-8)
@@ -86,7 +88,9 @@ class TestECI:
 
     def testEcef2Eci(self):
         """Test conversion from ECEF (fixed) to ECI (inertial)."""
-        eci_state = ecef2eci(np.concatenate((self.r_itrf, self.v_itrf), axis=0))
+        eci_state = ecef2eci(
+            np.concatenate((self.r_itrf, self.v_itrf), axis=0), self.calendar_date
+        )
         assert isinstance(eci_state, np.ndarray)
         assert eci_state.shape == (6,)
         assert np.allclose(eci_state[:3], self.r_gcrf, atol=1e-11, rtol=1e-8)
@@ -294,11 +298,19 @@ class TestRaDecRazelSEZ:
             self.true_azel[3],
             self.true_azel[4],
             self.true_azel[5],
-            ecef2eci(observer_ecef),
+            ecef2eci(observer_ecef, self.calendar_date),
+            self.calendar_date,
         )
 
         azel = radec2razel(
-            radec[0], radec[1], radec[2], radec[3], radec[4], radec[5], ecef2eci(observer_ecef)
+            radec[0],
+            radec[1],
+            radec[2],
+            radec[3],
+            radec[4],
+            radec[5],
+            ecef2eci(observer_ecef, self.calendar_date),
+            self.calendar_date,
         )
 
         assert np.allclose(
@@ -321,11 +333,19 @@ class TestRaDecRazelSEZ:
             self.true_radec_topo[3],
             self.true_radec_topo[4],
             self.true_radec_topo[5],
-            ecef2eci(observer_ecef),
+            ecef2eci(observer_ecef, self.calendar_date),
+            self.calendar_date,
         )
 
         radec = razel2radec(
-            azel[0], azel[1], azel[2], azel[3], azel[4], azel[5], ecef2eci(observer_ecef)
+            azel[0],
+            azel[1],
+            azel[2],
+            azel[3],
+            azel[4],
+            azel[5],
+            ecef2eci(observer_ecef, self.calendar_date),
+            self.calendar_date,
         )
 
         assert np.allclose(
@@ -340,7 +360,12 @@ class TestRaDecRazelSEZ:
 
     def testRazel(self):
         """Test converting ECI to AzEl."""
-        assert np.allclose(eci2razel(self.eci, ecef2eci(lla2ecef(self.lla))), self.true_azel)
+        assert np.allclose(
+            eci2razel(
+                self.eci, ecef2eci(lla2ecef(self.lla), self.calendar_date), self.calendar_date
+            ),
+            self.true_azel,
+        )
 
     def testAzEl2SEZ(self):
         """Test converting AzEl to SEZ state."""
@@ -357,28 +382,31 @@ class TestRaDecRazelSEZ:
             self.lla[0],
             self.lla[1],
         )
-        assert np.allclose(tgt_ecef, eci2ecef(self.eci))
+        assert np.allclose(tgt_ecef, eci2ecef(self.eci, self.calendar_date))
 
     def testSEZ2ECI(self):
         """Test converting to ECI from SEZ."""
         observer_ecef = lla2ecef(self.lla)
-        tgt_sez = getSlantRangeVector(observer_ecef, self.eci)
-        observer_eci = ecef2eci(observer_ecef)
-        tgt_eci = observer_eci + sez2eci(tgt_sez, self.lla[0], self.lla[1])
+        tgt_sez = getSlantRangeVector(observer_ecef, self.eci, self.calendar_date)
+        observer_eci = ecef2eci(observer_ecef, self.calendar_date)
+        tgt_eci = observer_eci + sez2eci(tgt_sez, self.lla[0], self.lla[1], self.calendar_date)
         assert np.allclose(tgt_eci, self.eci)
 
     def testECI2SEZ(self):
         """Test converting to SEZ from ECI."""
         observer_ecef = lla2ecef(self.lla)
-        observer_eci = ecef2eci(observer_ecef)
+        observer_eci = ecef2eci(observer_ecef, self.calendar_date)
         slant_range_eci = self.eci - observer_eci
-        tgt_sez = eci2sez(slant_range_eci, self.lla[0], self.lla[1])
-        assert np.allclose(getSlantRangeVector(observer_ecef, self.eci), tgt_sez)
+        tgt_sez = eci2sez(slant_range_eci, self.lla[0], self.lla[1], self.calendar_date)
+        assert np.allclose(
+            getSlantRangeVector(observer_ecef, self.eci, self.calendar_date), tgt_sez
+        )
 
     def testTopocentricRaDec(self):
         """Test converting ECI to topocentric RaDec."""
         assert np.allclose(
-            cartesian2spherical(self.eci - ecef2eci(lla2ecef(self.lla))), self.true_radec_topo
+            cartesian2spherical(self.eci - ecef2eci(lla2ecef(self.lla), self.calendar_date)),
+            self.true_radec_topo,
         )
 
     def testGeocentricRaDec(self):

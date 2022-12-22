@@ -61,7 +61,7 @@ def convertToSEZ(teardown_kvs) -> ndarray:
     """Fixture to get properly converted SEZ observation vector."""
     # pylint: disable=unused-argument
     updateReductionParameters(CALENDAR_DATE, eops=EOP)
-    return getSlantRangeVector(lla2ecef(LLA), ECI)
+    return getSlantRangeVector(lla2ecef(LLA), ECI, CALENDAR_DATE)
 
 
 def testMeasurements(sez_state: ndarray):
