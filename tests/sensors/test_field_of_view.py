@@ -161,7 +161,7 @@ def testCheckTargetsInView(
 ):
     """Test if multiple targets are in the Field of View."""
     slant_range_sez = getSlantRangeVector(
-        conic_sensor_agent.sensors.host.ecef_state, primary_rso.eci_state, clock.datetime_epoch
+        conic_sensor_agent.sensors.host.eci_state, primary_rso.eci_state, clock.datetime_epoch
     )
     agents = conic_sensor_agent.sensors.checkTargetsInView(
         slant_range_sez, [primary_rso, secondary_rso]

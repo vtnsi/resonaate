@@ -19,7 +19,7 @@ from resonaate.physics.measurement_utils import (
     getRangeRate,
 )
 from resonaate.physics.transforms.eops import EarthOrientationParameter
-from resonaate.physics.transforms.methods import getSlantRangeVector, lla2ecef
+from resonaate.physics.transforms.methods import ecef2eci, getSlantRangeVector, lla2ecef
 from resonaate.physics.transforms.reductions import updateReductionParameters
 
 # Type Checking Imports
@@ -61,7 +61,7 @@ def convertToSEZ(teardown_kvs) -> ndarray:
     """Fixture to get properly converted SEZ observation vector."""
     # pylint: disable=unused-argument
     updateReductionParameters(CALENDAR_DATE, eops=EOP)
-    return getSlantRangeVector(lla2ecef(LLA), ECI, CALENDAR_DATE)
+    return getSlantRangeVector(ecef2eci(lla2ecef(LLA), CALENDAR_DATE), ECI, CALENDAR_DATE)
 
 
 def testMeasurements(sez_state: ndarray):

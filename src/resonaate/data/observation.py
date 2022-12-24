@@ -11,7 +11,7 @@ from sqlalchemy.orm import relationship
 
 # Local Imports
 from ..physics.time.stardate import JulianDate, julianDateToDatetime
-from ..physics.transforms.methods import ecef2lla, eci2ecef, getSlantRangeVector
+from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..sensors.measurement import MEASUREMENT_TYPE_MAP, Measurement
 from . import Base, _DataMixin
 from .missed_observation import MissedObservation
@@ -137,9 +137,6 @@ class Observation(Base, _DataMixin):
     ) -> Self:
         r"""Alternative constructor for creating observation objects."""
         utc_datetime = julianDateToDatetime(JulianDate(epoch_jd))
-        slant_range_sez = getSlantRangeVector(
-            eci2ecef(sen_eci_state, utc_datetime), tgt_eci_state, utc_datetime
-        )
         return cls(
             julian_date=epoch_jd,
             target_id=target_id,
@@ -147,7 +144,9 @@ class Observation(Base, _DataMixin):
             sensor_type=sensor_type,
             sen_eci_state=sen_eci_state,
             measurement=measurement,
-            **measurement.calculateMeasurement(slant_range_sez, noisy=noisy),
+            **measurement.calculateMeasurement(
+                sen_eci_state, tgt_eci_state, utc_datetime, noisy=noisy
+            ),
         )
 
     @property

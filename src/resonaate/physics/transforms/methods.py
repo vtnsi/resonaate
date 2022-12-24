@@ -662,7 +662,7 @@ def eci2razel(
         el_rate (``float``): topocentric horizon elevation angular rate (radians/sec)
         az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
     """
-    return sez2razel(getSlantRangeVector(eci2ecef(observer_eci, utc_date), target_eci, utc_date))
+    return sez2razel(getSlantRangeVector(observer_eci, target_eci, utc_date))
 
 
 def sez2razel(slant_range_sez: ndarray) -> tuple[float, float, float, float, float, float]:
@@ -715,19 +715,21 @@ def geodetic2geocentric(geodetic_latitude: float) -> float:
     return arctan((1.0 - Earth.eccentricity**2) * tan(geodetic_latitude))
 
 
-def getSlantRangeVector(sensor_ecef: ndarray, tgt_state: ndarray, utc_date: datetime) -> ndarray:
+def getSlantRangeVector(sensor_eci: ndarray, target_eci: ndarray, utc_date: datetime) -> ndarray:
     """Calculate the slant range vector in the SEZ frame from the observer to the target.
 
     References:
         :cite:t:`vallado_2013_astro`, Section 4.4.3, Eqn 4-6
 
     Args:
-        sensor_ecef (``np.ndarray``): 6x1 ECEF state vector of the :class:`.SensingAgent` (km; km/sec)
-        tgt_state (``np.ndarray``): 6x1 ECI state vector of the :class:`TargetAgent` (km; km/sec)
+        sensor_eci (``np.ndarray``): 6x1 ECI vector of the sensor (km; km/sec)
+        target_eci (``np.ndarray``): 6x1 ECI vector of the target (km; km/sec)
         utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         ``np.ndarray``: 6x1 SEZ slant range vector (km; km/sec)
     """
+    sensor_ecef = eci2ecef(sensor_eci, utc_date)
+    target_ecef = eci2ecef(target_eci, utc_date)
     lla_state = ecef2lla(sensor_ecef)
-    return ecef2sez(eci2ecef(tgt_state, utc_date) - sensor_ecef, lla_state[0], lla_state[1])
+    return ecef2sez(target_ecef - sensor_ecef, lla_state[0], lla_state[1])

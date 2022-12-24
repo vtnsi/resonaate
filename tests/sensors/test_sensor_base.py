@@ -195,7 +195,7 @@ def testInFOVRegular(base_sensor_args: dict):
 
 
 def _dummySlantRange(
-    ecef_sensor: np.ndarray, eci_tgt: np.ndarray, utc_date: datetime
+    eci_sensor: np.ndarray, eci_tgt: np.ndarray, utc_date: datetime
 ) -> np.ndarray:
     """Dummy slant range function; passes through the eci_tgt parameter."""
     # pylint: disable=unused-argument

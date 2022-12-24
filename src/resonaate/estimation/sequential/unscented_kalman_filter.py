@@ -15,7 +15,6 @@ from ...physics.maths import angularMean, wrapAngleNegPiPi
 from ...physics.measurement_utils import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ...physics.statistics import chiSquareQuadraticForm
 from ...physics.time.stardate import JulianDate, julianDateToDatetime
-from ...physics.transforms.methods import eci2ecef, getSlantRangeVector
 from ..debug_utils import findNearestPositiveDefiniteMatrix
 from .sequential_filter import FilterFlag, SequentialFilter
 
@@ -322,13 +321,11 @@ class UnscentedKalmanFilter(SequentialFilter):
             is_angular = []
             for observation in observations:
                 utc_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
-                slant_range_sez = getSlantRangeVector(
-                    eci2ecef(observation.sensor_eci, utc_datetime),
+                sigma_measurement = observation.measurement.calculateMeasurement(
+                    observation.sensor_eci,
                     self.sigma_points[:, sigma_idx],
                     utc_datetime,
-                )
-                sigma_measurement = observation.measurement.calculateMeasurement(
-                    slant_range_sez, noisy=False
+                    noisy=False,
                 )
                 obs_states.append(list(sigma_measurement.values()))
                 is_angular.append(observation.measurement.angular_values)
