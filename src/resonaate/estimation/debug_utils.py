@@ -81,16 +81,16 @@ def checkThreeSigmaObs(current_obs, sigma=3):
             ]
         )
 
-        if len(observation.measurements) > 2:
+        if observation.dim > 2:
             obs_sez_from_azel = observation.range_km * obs_sez_from_azel_hat
 
         else:
             obs_sez_from_azel = norm(ephem_sez[0:3]) * obs_sez_from_azel_hat
 
         true_measurements = [getAzimuth(ephem_sez), getElevation(ephem_sez)]
-        if len(observation.measurements) == 3:
+        if observation.dim == 3:
             true_measurements.append(getRange(ephem_sez))
-        elif len(observation.measurements) == 4:
+        elif observation.dim == 4:
             true_measurements.append(getRange(ephem_sez))
             true_measurements.append(getRangeRate(ephem_sez))
 
@@ -100,10 +100,10 @@ def checkThreeSigmaObs(current_obs, sigma=3):
         sez_diff = np.absolute(norm(ephem_sez[0:3] - observation.sez[0:3]))
 
         dist = mahalanobis(
-            true_measurements, observation.measurements, inv(sensor_agent.sensors.r_matrix)
+            true_measurements, observation.measurement_states, inv(sensor_agent.sensors.r_matrix)
         )
 
-        meas_diff = norm(true_measurements - np.asarray(observation.measurements))
+        meas_diff = norm(true_measurements - np.asarray(observation.measurement_states))
 
         # Difference between SEZ vector calculated from ephemeris and SEZ vector calculated
         # from observation measurements. These values are expected to be different due to

@@ -1,15 +1,18 @@
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, invalid-name
 from __future__ import annotations
 
 # Standard Library Imports
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, create_autospec
 
 # Third Party Imports
+import numpy as np
 import pytest
 
 # RESONAATE Imports
 import resonaate.estimation.sequential.unscented_kalman_filter
 import resonaate.job_handlers.task_prediction
+from resonaate.data.observation import Observation
 from resonaate.job_handlers.task_prediction import asyncCalculateReward
 from resonaate.tasking.metrics.metric_base import INFORMATION_METRIC_LABEL, Metric
 from resonaate.tasking.rewards import SimpleSummationReward
@@ -71,16 +74,35 @@ def testAsyncCalculateReward(
     )
     monkeypatch.setattr(resonaate.job_handlers.task_prediction, "loads", mocked_pickle_loads_func)
 
-    def mockForecast(*args, **kwargs):  # pylint:disable=unused-argument
-        return None
-
-    monkeypatch.setattr(
-        resonaate.estimation.sequential.unscented_kalman_filter.UnscentedKalmanFilter,
-        "forecast",
-        mockForecast,
+    base_reward = 10.0
+    # Predicted Observation
+    reward_class.calculateMetrics = MagicMock(return_value=base_reward)
+    estimate_agent.nominal_filter.forecast = MagicMock()
+    sensor_agent.sensors.attemptObservation = MagicMock(
+        return_value=create_autospec(Observation, instance=True)
     )
 
     reward_dict = asyncCalculateReward(
         estimate_agent.simulation_id, reward_class, [sensor_agent.simulation_id]
     )
+    sensor_agent.sensors.attemptObservation.assert_called_once()
+    estimate_agent.nominal_filter.forecast.assert_called_once()
+    reward_class.calculateMetrics.assert_called_once()
+    assert reward_dict["estimate_id"] == estimate_agent.simulation_id
     assert reward_dict["visibility"][0]
+    assert reward_dict["metric_matrix"] == np.ones_like(reward_dict["metric_matrix"]) * base_reward
+
+    # No Predicted Observation
+    reward_class.calculateMetrics.reset_mock()
+    estimate_agent.nominal_filter.forecast.reset_mock()
+    sensor_agent.sensors.attemptObservation = MagicMock()
+
+    reward_dict = asyncCalculateReward(
+        estimate_agent.simulation_id, reward_class, [sensor_agent.simulation_id]
+    )
+    sensor_agent.sensors.attemptObservation.assert_called_once()
+    estimate_agent.nominal_filter.forecast.assert_not_called()
+    reward_class.calculateMetrics.assert_not_called()
+    assert reward_dict["estimate_id"] == estimate_agent.simulation_id
+    assert not reward_dict["visibility"][0]
+    assert reward_dict["metric_matrix"] == np.zeros_like(reward_dict["metric_matrix"])

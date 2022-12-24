@@ -30,7 +30,10 @@ from resonaate.data.queries import (
 )
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.physics.constants import PI
-from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
+from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
+from resonaate.physics.transforms.reductions import updateReductionParameters
+from resonaate.sensors.measurement import Measurement
 
 # SET UP RSO AGENTS
 RSO_UNIQUE_IDS = [24601, 41914, 27839]
@@ -96,6 +99,8 @@ lat = [0.0, 1.0, 2.0] * 3
 lon = [0.5, 1.5, 2.5] * 3
 alt = [0.0, 50.0, 100.0] * 3
 obs_vals = zip(RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, azimuths, elevations, lat, lon, alt)
+# [FIXME]: Very tmp solution to make test work
+updateReductionParameters(julianDateToDatetime(JulianDate(EXAMPLE_JD[0])))
 EXAMPLE_OBSERVATIONS = [
     {
         "julian_date": jd,
@@ -104,9 +109,8 @@ EXAMPLE_OBSERVATIONS = [
         "sensor_type": "Optical",
         "azimuth_rad": a_rad,
         "elevation_rad": e_rad,
-        "position_lat_rad": lat,
-        "position_lon_rad": lon,
-        "position_altitude_km": alt,
+        "sen_eci_state": ecef2eci(lla2ecef([lat, lon, alt]), julianDateToDatetime(JulianDate(jd))),
+        "measurement": Measurement.fromMeasurementLabels(["azimuth_rad", "elevation_rad"], eye(2)),
     }
     for jd, uid, a_rad, e_rad, lat, lon, alt in obs_vals
 ]

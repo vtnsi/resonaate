@@ -71,6 +71,7 @@ ______________________________________________________________________
 - `min_range` defaults to None and is dynamically set based on sensor type
 - frame transformations which require reductions directly or indirectly now require the `utc_date` as an argument (see #49 and !80)
 - `getReductionParameters()` also takes a `utc_date` argument and will re-calculate if the value in the KVS doesn't exist or doesn't match (see #49 and !80)
+- Attached `Measurement` to `Observation` object (see #156 and !141)
 
 ### Deprecated
 
@@ -86,6 +87,7 @@ ______________________________________________________________________
 - `__call__` functions in `reward_base`, `decision_base` and `metric_base`
 - `exemplar` sensor config
 - `_minimumDetectablePower()` function in `Radar`
+- `ObservationTuple` and `Sensor.buildSigmaObs()` (see #156 and !141)
 
 ### Fixed
 

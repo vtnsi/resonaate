@@ -20,7 +20,6 @@ from ...job_handlers.base import ParallelMixin
 from ...job_handlers.task_execution import TaskExecutionJobHandler
 from ...job_handlers.task_prediction import TaskPredictionJobHandler
 from ...physics.time.stardate import datetimeToJulianDate
-from ...sensors.sensor_base import ObservationTuple
 from .engine_base import TaskingEngine
 
 # Type Checking Imports
@@ -31,6 +30,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ...agents.sensing_agent import SensingAgent
     from ...physics.time.stardate import JulianDate
+    from ...sensors.sensor_base import Sensor
     from ..decisions import Decision
     from ..rewards import Reward
 
@@ -118,9 +118,9 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         tasked_sensors = set()
         observed_targets = set()
-        for cur_obs_tuple in self._observations:
-            tasked_sensors.add(cur_obs_tuple.observation.sensor_id)
-            observed_targets.add(cur_obs_tuple.observation.target_id)
+        for cur_obs in self._observations:
+            tasked_sensors.add(cur_obs.sensor_id)
+            observed_targets.add(cur_obs.target_id)
 
         msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
         msg += f"{len(tasked_sensors)} sensors {tasked_sensors}"
@@ -137,14 +137,14 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         """Create tasking solution based on the current simulation state."""
         self.decision_matrix = self.decision.calculate(self.reward_matrix)
 
-    def loadImportedObservations(self, datetime_epoch: datetime) -> list[ObservationTuple]:
+    def loadImportedObservations(self, datetime_epoch: datetime) -> list[Observation]:
         """Load imported :class:`.Observation` objects from :class:`.ImporterDatabase`.
 
         Args:
             datetime_epoch (datetime): epoch at which to query the DB for observations
 
         Returns:
-            ``list``: :class:`.ObservationTuple` objects constructed from imported database
+            ``list``: :class:`.Observation` objects constructed from imported database
         """
         query = (
             Query(Observation)
@@ -174,21 +174,17 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             self.logger.debug(msg)
 
         sensor_agents = self._fetchSensorAgents()
-
-        imported_obs_tuples = [
-            ObservationTuple(
-                observation,
-                sensor_agents[observation.sensor_id],
-                sensor_agents[observation.sensor_id].sensors.angle_measurements,
-                "Visible",
-            )
+        return [
+            self._createLoadedObs(observation, sensor_agents[observation.sensor_id].sensors)
             for observation in imported_observations
         ]
 
-        return imported_obs_tuples
-
     def _fetchSensorAgents(self) -> dict[int, SensingAgent]:
         return loads(KeyValueStore.getValue("sensor_agents"))
+
+    def _createLoadedObs(self, observation: Observation, sensor: Sensor) -> Observation:
+        observation.measurement = sensor.measurement
+        return observation
 
     def getCurrentTasking(self, julian_date: JulianDate) -> Task:
         """Return current tasking solution.

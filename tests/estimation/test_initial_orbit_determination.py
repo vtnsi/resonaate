@@ -4,52 +4,42 @@ from copy import deepcopy
 
 # Third Party Imports
 import pytest
-from numpy import allclose, array, ndarray
+from numpy import allclose, array, eye, ndarray
 
 # RESONAATE Imports
 import resonaate.data.resonaate_database
 import resonaate.estimation.initial_orbit_determination
-from resonaate.data.epoch import Epoch
 from resonaate.data.observation import Observation
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.estimation import initialOrbitDeterminationFactory
 from resonaate.estimation.initial_orbit_determination import LambertIOD
 from resonaate.physics.orbit_determination.lambert import lambertUniversal
-from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
+from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
+from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
-from resonaate.sensors.sensor_base import ObservationTuple
-
-
-@pytest.fixture(name="observation_tuple")
-def getObservationTuple():
-    """Create a custom :class:`.ObservationTuple` object for a sensor."""
-    observation = Observation(
-        azimuth_rad=0.09602716376813725,
-        elevation_rad=0.35224625415803246,
-        range_km=1224.6424141388,
-        range_rate_km_p_sec=3.5593828053095304,
-        sensor_id=300000,
-        target_id=10001,
-        sensor_type="AdvRadar",
-        julian_date=JulianDate(2459304.270833333),
-        epoch=Epoch(
-            timestampISO="2021-03-30T18:30:00.000000", julian_date=JulianDate(2459304.270833333)
-        ),
-        position_lat_rad=1.228134787553298,
-        position_lon_rad=0.5432822498364407,
-        position_altitude_km=0.06300000000101136,
-    )
-    return ObservationTuple(observation, None, array([2, 3, 1, 1]), "Visible")
+from resonaate.sensors.measurement import Measurement
 
 
 @pytest.fixture(name="observation")
 def getObservation():
     """Create a custom :class:`.Observation` object for a sensor."""
-    return Observation(
-        julian_date=JulianDate(2459304.374333333),
-        epoch=Epoch(
-            timestampISO="2021-03-30T20:59:02.000000", julian_date=JulianDate(2459304.374333333)
+    # [FIXME]: Very tmp solution to make test work
+    jd = JulianDate(2459304.374333333)
+    utc_datetime = julianDateToDatetime(jd)
+    updateReductionParameters(utc_datetime)
+    sen_eci_state = ecef2eci(
+        lla2ecef(
+            [
+                1.228134787553298,
+                0.5432822498364407,
+                0.06300000000101136,
+            ]
         ),
+        utc_datetime,
+    )
+    return Observation(
+        julian_date=jd,
         sensor_id=300000,
         target_id=10001,
         sensor_type="AdvRadar",
@@ -57,9 +47,10 @@ def getObservation():
         elevation_rad=0.11988405069764828,
         range_km=1953.389877894924,
         range_rate_km_p_sec=-6.1473412228123365,
-        position_lat_rad=1.228134787553298,
-        position_lon_rad=0.5432822498364407,
-        position_altitude_km=0.06300000000101136,
+        sen_eci_state=sen_eci_state,
+        measurement=Measurement.fromMeasurementLabels(
+            ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], eye(4)
+        ),
     )
 
 
@@ -203,7 +194,6 @@ class TestLambertInitialOrbitDetermination:
     def testDetermineNewEstimateState(
         self,
         observation: Observation,
-        observation_tuple: ObservationTuple,
         caplog: pytest.CaptureFixture,
         monkeypatch: pytest.MonkeyPatch,
         iod: LambertIOD,
@@ -212,7 +202,6 @@ class TestLambertInitialOrbitDetermination:
 
         Args:
             observation (:class:`.Observation`): Observation fixture
-            observation_tuple (:class:`.ObservationTuple`): ObservationTuple fixture
             caplog (:class:`.LogCaptureFixture`): pytest logging capture
             monkeypatch (``:class:`.MonkeyPatch``): patch of function
             iod (:class:`.LambertIOD`): LambertIOD fixture
@@ -221,7 +210,7 @@ class TestLambertInitialOrbitDetermination:
         prior_scenario_time = self.prior_julian_date.convertToScenarioTime(self.start_julian_date)
         current_scenario_time = iod.julian_date_start.convertToScenarioTime(self.start_julian_date)
         result = iod.determineNewEstimateState([], prior_scenario_time, current_scenario_time)
-        assert caplog.record_tuples[-1][-1] == "No ObservationTuples for IOD"
+        assert caplog.record_tuples[-1][-1] == "No Observations for IOD"
 
         # Monkey Patch json loads
         def mockLoads(*args, **kwargs):  # pylint:disable=unused-argument
@@ -230,7 +219,7 @@ class TestLambertInitialOrbitDetermination:
         monkeypatch.setattr(resonaate.estimation.initial_orbit_determination, "loads", mockLoads)
 
         result = iod.determineNewEstimateState(
-            observation_tuple, prior_scenario_time, current_scenario_time
+            observation, prior_scenario_time, current_scenario_time
         )
 
         assert caplog.record_tuples[-1][-1] == "Not enough observations to perform IOD 0"
@@ -245,10 +234,10 @@ class TestLambertInitialOrbitDetermination:
             mockGetPreviousObservations,
         )
 
-        bad_obs_tuple = deepcopy(observation_tuple)
-        bad_obs_tuple.observation.range_km = None
+        bad_obs = deepcopy(observation)
+        bad_obs.range_km = None
         result = iod.determineNewEstimateState(
-            [bad_obs_tuple], prior_scenario_time, current_scenario_time
+            [bad_obs], prior_scenario_time, current_scenario_time
         )
 
         assert caplog.record_tuples[-1][-1] == "No Radar observations to perform Lambert IOD"
@@ -265,7 +254,7 @@ class TestLambertInitialOrbitDetermination:
             )
 
             result = iod.determineNewEstimateState(
-                [observation_tuple], prior_scenario_time, current_scenario_time
+                [observation], prior_scenario_time, current_scenario_time
             )
 
             assert caplog.record_tuples[-1][-1] == "Observations not from a single pass"
@@ -273,7 +262,7 @@ class TestLambertInitialOrbitDetermination:
         # Test Successful IOD
 
         result = iod.determineNewEstimateState(
-            [observation_tuple], prior_scenario_time, current_scenario_time
+            [observation], prior_scenario_time, current_scenario_time
         )
 
         assert isinstance(result[0], ndarray)

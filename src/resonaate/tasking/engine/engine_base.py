@@ -68,13 +68,13 @@ class TaskingEngine(metaclass=ABCMeta):
         self.sensor_list = sorted(sensor_ids)
         """``list``: sorted sensor agent ID numbers."""
 
-        self.sensor_indices = {}
+        self.sensor_indices: dict[int, int] = {}
         """``dict``: mapping of sorted sensor agent ID numbers to indices in :attr:`.sensor_list`."""
 
         self.target_list = sorted(target_ids)
         """``list``: sorted target agent ID numbers."""
 
-        self.target_indices = {}
+        self.target_indices: dict[int, int] = {}
         """``dict``: mapping of sorted target agent ID numbers to indices in :attr:`.target_list`."""
 
         self._reward = reward
@@ -98,16 +98,16 @@ class TaskingEngine(metaclass=ABCMeta):
         """``ndarray``: NxMxP array defining the metrics for every target/sensor pair."""
 
         # List of transient observations (current timestep only)
-        self._observations = []
+        self._observations: list[Observation] = []
         """``list``: transient :class:`.Observation` tasked & saved by this engine during the current timestep."""
-        self._saved_observations = []
+        self._saved_observations: list[Observation] = []
         """``list``: transient :class:`.Observation` tasked & saved by this engine not loaded to the DB."""
-        self._missed_observations = []
+        self._missed_observations: list[MissedObservation] = []
         """``list``: transient :class:`.MissedObservation` tasked & saved by this engine during the current timestep."""
-        self._saved_missed_observations = []
+        self._saved_missed_observations: list[MissedObservation] = []
         """``list``: transient :class:`.MissedObservation` tasked & saved by this engine not loaded to the DB."""
 
-        self._importer_db = None
+        self._importer_db: ImporterDatabase | None = None
         """:class:`.ImporterDatabase`: Input database object for loading :class:`.Observation` objects."""
         if importer_db_path:
             self._importer_db = ImporterDatabase.getSharedInterface(db_path=importer_db_path)

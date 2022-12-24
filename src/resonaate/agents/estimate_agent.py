@@ -43,7 +43,7 @@ if TYPE_CHECKING:
         AdaptiveEstimationConfig,
         InitialOrbitDeterminationConfig,
     )
-    from ..sensors.sensor_base import ObservationTuple
+    from ..sensors.sensor_base import Observation
 
 
 class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
@@ -199,7 +199,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         # Return properly initialized `EstimateAgent`
         return est
 
-    def updateEstimate(self, obs_tuples: list[ObservationTuple]) -> None:
+    def updateEstimate(self, observations: list[Observation]) -> None:
         """Update the :attr:`nominal_filter`, state estimate, & covariance.
 
         This is the local update function. See :meth:`.updateFromAsyncUpdateEstimate` for details
@@ -209,10 +209,10 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             :func:`.asyncExecuteTasking` to see how the result is computed
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with this timestep
+            observations (``list``): :class:`.Observation` objects associated with this timestep
         """
-        self.nominal_filter.update(obs_tuples)
-        self._update(obs_tuples)
+        self.nominal_filter.update(observations)
+        self._update(observations)
 
     def updateFromAsyncPredict(self, async_result: dict[str, Any]) -> None:
         """Perform predict using EstimateAgent's :attr:`nominal_filter`'s async result.
@@ -263,13 +263,13 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             covariance=self.error_covariance.tolist(),
         )
 
-    def _saveDetectedManeuver(self, obs_tuples: list[ObservationTuple]) -> None:
+    def _saveDetectedManeuver(self, observations: list[Observation]) -> None:
         """Save :class:`.DetectedManeuver` events to insert into the DB later.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects corresponding to the detected maneuver.
+            observations (``list``): :class:`.Observation` objects corresponding to the detected maneuver.
         """
-        sensor_nums = {obs_tuple.agent.simulation_id for obs_tuple in obs_tuples}
+        sensor_nums = {ob.sensor_id for ob in observations}
         # [FIXME]: Lazy way to implement multiple sensor IDs before moving to postgres
         self._detected_maneuvers.append(
             DetectedManeuver(
@@ -313,41 +313,41 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         """``bool``: Returns whether detected maneuvers are stored for this estimate agent."""
         return bool(self._detected_maneuvers)
 
-    def _logFilterEvents(self, obs_tuples: list[ObservationTuple]) -> None:
+    def _logFilterEvents(self, observations: list[Observation]) -> None:
         """Log filter events and perform debugging steps.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` made of the agent during the timestep.
+            observations (``list``): :class:`.Observation` made of the agent during the timestep.
         """
         # Check if a maneuver was detected
         if FilterFlag.MANEUVER_DETECTION in self.nominal_filter.flags:
-            sensor_nums = {ob.agent.simulation_id for ob in obs_tuples}
+            sensor_nums = {ob.sensor_id for ob in observations}
             tgt = self.simulation_id
             jd = self.julian_date_epoch
             msg = f"Maneuver Detected for RSO {tgt} by sensors {sensor_nums} at time {jd}"
             self._logger.info(msg)
 
-    def _update(self, obs_tuples: list[ObservationTuple]) -> None:
+    def _update(self, observations: list[Observation]) -> None:
         """Perform update of :attr:`nominal_filter`, state estimate, & covariance.
 
         Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. Also, log
         filter events if the truth is passed in, typically done locally.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
         """
-        self._logFilterEvents(obs_tuples)
+        self._logFilterEvents(observations)
 
-        if obs_tuples:
+        if observations:
             self.last_observed_at = self.julian_date_epoch
             self._saveFilterStep()
-            self._attemptInitialOrbitDetermination(obs_tuples)
+            self._attemptInitialOrbitDetermination(observations)
             if self.nominal_filter.maneuver_detected:
-                self._saveDetectedManeuver(obs_tuples)
+                self._saveDetectedManeuver(observations)
                 if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
                     self.resetFilter(self.nominal_filter.converged_filter)
-                self._attemptAdaptiveEstimation(obs_tuples)
-                self._attemptInitialOrbitDetermination(obs_tuples)
+                self._attemptAdaptiveEstimation(observations)
+                self._attemptInitialOrbitDetermination(observations)
 
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
@@ -363,11 +363,11 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         """
         raise NotImplementedError("Cannot load state estimates directly into simulation")
 
-    def _attemptAdaptiveEstimation(self, obs_tuples: list[ObservationTuple]) -> None:
+    def _attemptAdaptiveEstimation(self, observations: list[Observation]) -> None:
         """Try to start adaptive estimation on this RSO.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
         """
         # MMAE initialization checks
         if FilterFlag.ADAPTIVE_ESTIMATION_START in self.nominal_filter.flags:
@@ -378,18 +378,18 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
             # Create a multiple_model_filter
             mmae_started = adaptive_filter.initialize(
-                obs_tuples=obs_tuples,
+                observations=observations,
                 julian_date_start=self.julian_date_start,
             )
 
             if mmae_started:
                 self.resetFilter(adaptive_filter)
 
-    def _attemptInitialOrbitDetermination(self, obs_tuples: list[ObservationTuple]):
+    def _attemptInitialOrbitDetermination(self, observations: list[Observation]):
         """Try to start initial orbit determination on this RSO.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
         """
         if not self.initial_orbit_determination:
             return
@@ -404,7 +404,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
             self._logger.info(msg)
             iod_est_x, success = self.initial_orbit_determination.determineNewEstimateState(
-                obs_tuples, self.iod_start_time, self.time
+                observations, self.iod_start_time, self.time
             )
             if success:
                 self.iod_start_time = None

@@ -7,6 +7,7 @@ from datetime import timedelta
 from math import isclose
 from pickle import dumps
 from typing import TYPE_CHECKING
+from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
@@ -16,7 +17,8 @@ from numpy import array, diagflat, ones, zeros
 # RESONAATE Imports
 import resonaate.data.resonaate_database
 import resonaate.estimation.adaptive.adaptive_filter
-from resonaate.data.agent import AgentModel
+from resonaate.agents.sensing_agent import SensingAgent
+from resonaate.agents.target_agent import TargetAgent
 from resonaate.data.ephemeris import EstimateEphemeris
 from resonaate.data.observation import Observation
 from resonaate.dynamics.two_body import TwoBody
@@ -34,7 +36,6 @@ from resonaate.scenario import buildScenarioFromConfigDict
 from resonaate.scenario.config import ScenarioConfig
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
-from resonaate.sensors.sensor_base import ObservationTuple
 
 # Local Imports
 from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
@@ -223,9 +224,9 @@ def getTestAdaptiveFilter() -> AdaptiveFilter:
 
 
 @pytest.fixture(name="rso_agent")
-def getTestRSOAgent() -> AgentModel:
-    """Create a custom :class:`AgentModel` object for an RSO."""
-    rso_agent = AgentModel()
+def getTestRSOAgent() -> TargetAgent:
+    """Create a custom :class:`TargetAgent` object for an RSO."""
+    rso_agent = create_autospec(TargetAgent, instance=True)
     rso_agent.unique_id = 10001
     rso_agent.name = "Test_sat"
     rso_agent.eci_state = array(
@@ -235,9 +236,9 @@ def getTestRSOAgent() -> AgentModel:
 
 
 @pytest.fixture(name="sensor_agent")
-def getTestSensorAgent(earth_sensor: Sensor) -> AgentModel:
-    """Create a custom :class:`AgentModel` object for a sensor."""
-    sensor_agent = AgentModel()
+def getTestSensorAgent(earth_sensor: Sensor) -> SensingAgent:
+    """Create a custom :class:`SensingAgent` object for a sensor."""
+    sensor_agent = create_autospec(SensingAgent, instance=True)
     sensor_agent.unique_id = 100001
     sensor_agent.name = "Test_sensor"
     sensor_agent.eci_state = array(
@@ -272,7 +273,7 @@ def getTestSensorAgent(earth_sensor: Sensor) -> AgentModel:
 
 @pytest.fixture(name="earth_sensor")
 def getTestEarthSensor() -> AdvRadar:
-    """Create a custom :class:`AgentModel` object for a sensor."""
+    """Create a custom :class:`Sensor` object for a sensor."""
     earth_sensor = AdvRadar(
         az_mask=array([0.0, 359.99999]),
         el_mask=array([1.0, 89.0]),
@@ -293,7 +294,7 @@ def getTestEarthSensor() -> AdvRadar:
 
 
 @pytest.fixture(name="radar_observation")
-def getTestRadarObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> Observation:
+def getTestRadarObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
     radar_observation = Observation(
         julian_date=JulianDate(2459304.270833333),
@@ -304,23 +305,14 @@ def getTestRadarObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> 
         elevation_rad=0.3522603731619839,
         range_km=1224.6425779127965,
         range_rate_km_p_sec=3.5594024876519974,
-        position_lat_rad=1.228134787553298,
-        position_lon_rad=0.5432822498364407,
-        position_altitude_km=0.06300000000101136,
+        sen_eci_state=sensor_agent.eci_state,
+        measurement=sensor_agent.sensors.measurement,
     )
     return radar_observation
 
 
-@pytest.fixture(name="radar_observation_tuple")
-def getTestRadarObservationTuple(
-    radar_observation: Observation, sensor_agent: AgentModel
-) -> ObservationTuple:
-    """Create a custom :class:`ObservationTuple` object for a sensor."""
-    return ObservationTuple(radar_observation, sensor_agent, array([2, 3, 1, 1]), "Visible")
-
-
 @pytest.fixture(name="optical_observation")
-def getTestOpticalObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> Observation:
+def getTestOpticalObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
     optical_observation = Observation(
         julian_date=JulianDate(2459304.270833333),
@@ -329,19 +321,10 @@ def getTestOpticalObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -
         sensor_type="Optical",
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
-        position_lat_rad=1.228134787553298,
-        position_lon_rad=0.5432822498364407,
-        position_altitude_km=0.06300000000101136,
+        sen_eci_state=sensor_agent.eci_state,
+        measurement=sensor_agent.sensors.measurement,
     )
     return optical_observation
-
-
-@pytest.fixture(name="optical_observation_tuple")
-def getTestOpticalObservationTuple(
-    optical_observation: Observation, sensor_agent: AgentModel
-) -> ObservationTuple:
-    """Create a custom :class:`ObservationTuple` object for a sensor."""
-    return ObservationTuple(optical_observation, sensor_agent, array([2, 3, 1, 1]), "Visible")
 
 
 @pytest.fixture(name="update_reduction_parameters", autouse=True)
@@ -380,7 +363,6 @@ class TestAdaptiveEstimation:
         monkeypatch: pytest.MonkeyPatch,
         adaptive_filter: AdaptiveFilter,
         radar_observation: Observation,
-        radar_observation_tuple: ObservationTuple,
     ):
         """Test initialization of adaptive estimation & various conditions."""
         estimate_ephem = [EST1, EST2, EST3]
@@ -420,7 +402,7 @@ class TestAdaptiveEstimation:
             mockObsBad,
         )
 
-        bad_init_obs = adaptive_filter.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        bad_init_obs = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert bad_init_obs is False
 
         def mockObsGood(*args, **kwargs):  # pylint:disable=unused-argument
@@ -431,18 +413,16 @@ class TestAdaptiveEstimation:
             "fetchObservationsByJDInterval",
             mockObsGood,
         )
-        bad_init_models = adaptive_filter.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        bad_init_models = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert bad_init_models is False
 
         adaptive_filter.previous_obs_window = 3
-        bad_init_obs_window = adaptive_filter.initialize(
-            [radar_observation_tuple], JULIAN_DATE_START
-        )
+        bad_init_obs_window = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert bad_init_obs_window is False
 
         adaptive_filter.previous_obs_window = 1
         adaptive_filter.time = 9300
-        good_init = adaptive_filter.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        good_init = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert good_init is True
 
     def testCalcNominalStates(
@@ -504,8 +484,8 @@ class TestAdaptiveEstimation:
     def testGenerateHypothesisManeuvers(
         self,
         adaptive_filter: AdaptiveFilter,
-        radar_observation_tuple: ObservationTuple,
-        optical_observation_tuple: ObservationTuple,
+        radar_observation: Observation,
+        optical_observation: Observation,
     ):
         """Test generating maneuver hypotheses."""
         adaptive_filter.num_models = 3
@@ -514,12 +494,12 @@ class TestAdaptiveEstimation:
         )
         adaptive_filter.time = 9000
         delta_v = adaptive_filter._generateHypothesisManeuvers(
-            [radar_observation_tuple], HYPOTHESIS_STATES, MANEUVER_TIMES
+            [radar_observation], HYPOTHESIS_STATES, MANEUVER_TIMES
         )
         assert delta_v.shape == (3, 3)
         # Test Optical option
         optical_v = adaptive_filter._generateHypothesisManeuvers(
-            [optical_observation_tuple], HYPOTHESIS_STATES, MANEUVER_TIMES
+            [optical_observation], HYPOTHESIS_STATES, MANEUVER_TIMES
         )
         assert optical_v.shape == (3, 3)
 
@@ -558,27 +538,23 @@ class TestAdaptiveEstimation:
 
         assert adaptive_filter.time == new_time
 
-    def testForecast(
-        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
-    ):
+    def testForecast(self, adaptive_filter: AdaptiveFilter, radar_observation: Observation):
         """Test Adaptive Filter Predict Test."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         new_time = 600
         adaptive_filter.model_weights = [1 / 3, 1 / 3, 1 / 3]
         adaptive_filter.predict(new_time)
-        adaptive_filter.forecast([radar_observation_tuple])
-        adaptive_filter._compileForecastStep([radar_observation_tuple])
+        adaptive_filter.forecast([radar_observation])
+        adaptive_filter._compileForecastStep([radar_observation])
 
-    def testUpdate(
-        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
-    ):
+    def testUpdate(self, adaptive_filter: AdaptiveFilter, radar_observation: Observation):
         """Test Adaptive Filter Predict Test."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         new_time = 600
         adaptive_filter.model_weights = [1 / 3, 1 / 3, 1 / 3]
         adaptive_filter.predict(new_time)
         # Test Measurement Update
-        adaptive_filter.update([radar_observation_tuple])
+        adaptive_filter.update([radar_observation])
         # Test Propagation Update
         adaptive_filter.update([])
 
@@ -591,9 +567,7 @@ class TestAdaptiveEstimation:
         adaptive_filter.model_weights = [1, 2, 3]
         adaptive_filter._compilePredictStep()
 
-    def testCompileUpdate(
-        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
-    ):
+    def testCompileUpdate(self, adaptive_filter: AdaptiveFilter, radar_observation: Observation):
         """Test compiling update step attributes."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         for model in adaptive_filter.models:
@@ -614,7 +588,7 @@ class TestAdaptiveEstimation:
             model.kalman_gain = ones((adaptive_filter.x_dim, Y_DIM))
 
         adaptive_filter.model_weights = ones(3) / 1
-        adaptive_filter._compileUpdateStep([radar_observation_tuple])
+        adaptive_filter._compileUpdateStep([radar_observation])
 
     def testPruning(self, adaptive_filter: AdaptiveFilter):
         """Test pruning hypotheses."""
@@ -718,7 +692,6 @@ class TestSMM:
         self,
         monkeypatch: pytest.MonkeyPatch,
         radar_observation: Observation,
-        radar_observation_tuple: ObservationTuple,
         smm: StaticMultipleModel,
     ):
         """Test custom initialization process."""
@@ -761,10 +734,10 @@ class TestSMM:
 
         smm.previous_obs_window = 1
         smm.time = 9300
-        good_init = smm.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        good_init = smm.initialize([radar_observation], JULIAN_DATE_START)
         assert good_init is True
 
-    def testUpdate(self, radar_observation_tuple: ObservationTuple, smm: StaticMultipleModel):
+    def testUpdate(self, radar_observation: Observation, smm: StaticMultipleModel):
         """Test custom update process."""
         smm.models = smm._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -772,7 +745,7 @@ class TestSMM:
         smm.model_likelihoods = array([1, 2, 3])
         smm.predict(new_time)
         # Test Measurement Update
-        smm.update([radar_observation_tuple])
+        smm.update([radar_observation])
 
     def testPruneToSingleModel(self, smm: StaticMultipleModel):
         """Test pruning to single model."""
@@ -799,12 +772,12 @@ class TestSMM:
         converge = smm._convergedToSingleModel([])
         assert converge is True
 
-    def testPreWeight(self, smm: StaticMultipleModel, radar_observation_tuple: ObservationTuple):
+    def testPreWeight(self, smm: StaticMultipleModel, radar_observation: Observation):
         """Test pre weighting of SMM."""
         smm.models = smm._createModels(HYPOTHESIS_STATES)
         for model in smm.models:
             model.pred_x = EST_X
-        smm._preWeight([radar_observation_tuple])
+        smm._preWeight([radar_observation])
 
 
 @pytest.fixture(name="gpb1")
@@ -842,9 +815,8 @@ class TestGPB1:
 
     def testInitialize(
         self,
-        radar_observation: ObservationTuple,
         monkeypatch: pytest.MonkeyPatch,
-        radar_observation_tuple: Observation,
+        radar_observation: Observation,
         gpb1: GeneralizedPseudoBayesian1,
     ):
         """Test custom initialization process."""
@@ -887,12 +859,10 @@ class TestGPB1:
 
         gpb1.previous_obs_window = 1
         gpb1.time = 9300
-        good_init = gpb1.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        good_init = gpb1.initialize([radar_observation], JULIAN_DATE_START)
         assert good_init is True
 
-    def testUpdate(
-        self, gpb1: GeneralizedPseudoBayesian1, radar_observation_tuple: ObservationTuple
-    ):
+    def testUpdate(self, gpb1: GeneralizedPseudoBayesian1, radar_observation: Observation):
         """Test custom update process."""
         gpb1.models = gpb1._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -900,7 +870,7 @@ class TestGPB1:
         gpb1.model_likelihoods = array([1, 2, 3])
         gpb1.predict(new_time)
         # Test Measurement Update
-        gpb1.update([radar_observation_tuple])
+        gpb1.update([radar_observation])
 
     def testConstructMixMatrix(self, gpb1: GeneralizedPseudoBayesian1):
         """Test custom update process."""

@@ -46,6 +46,7 @@ def getMockedSensingAgentObject(mocked_sensor: Sensor) -> SensingAgent:
     """Create a mocked :class:`.SensingAgent` object."""
     sensing_agent = create_autospec(SensingAgent, instance=True)
     sensing_agent.sensors = mocked_sensor
+    sensing_agent.simulation_id = 11111
     return sensing_agent
 
 

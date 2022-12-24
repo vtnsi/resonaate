@@ -4,7 +4,6 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
 from pickle import loads
 from typing import TYPE_CHECKING
 
@@ -22,9 +21,9 @@ from ..physics.constants import DAYS2SEC
 from ..physics.orbit_determination import OrbitDeterminationFunction
 from ..physics.orbit_determination.lambert import determineTransferDirection
 from ..physics.orbits.utils import getPeriod, getSemiMajorAxis, getTrueAnomalyFromRV
-from ..physics.time.stardate import JulianDate, ScenarioTime
+from ..physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from ..physics.transforms.methods import ecef2eci, lla2ecef, razel2sez, sez2ecef
-from ..sensors.sensor_base import ObservationTuple
+from ..physics.transforms.reductions import updateReductionParameters
 from .adaptive.initialization import lambertInitializationFactory
 
 if TYPE_CHECKING:
@@ -144,14 +143,14 @@ class InitialOrbitDetermination(ABC):
     @abstractmethod
     def determineNewEstimateState(
         self,
-        obs_tuples: list[ObservationTuple],
+        observations: list[Observation],
         detection_time: ScenarioTime,
         current_time: ScenarioTime,
     ) -> ndarray:
         r"""Determine the state vector of an RSO estimate via IOD.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
             detection_time (:class:`.ScenarioTime`): Lower Bound for query.
             current_time (:class:`.ScenarioTime`): Upper Bound for query.
 
@@ -226,6 +225,8 @@ class LambertIOD(InitialOrbitDetermination):
         Returns:
             ``ndarray``: ECI state of observation
         """
+        utc_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
+        updateReductionParameters(utc_datetime)
         observation_sez = razel2sez(
             observation.range_km, observation.elevation_rad, observation.azimuth_rad, 0, 0, 0
         )
@@ -242,18 +243,18 @@ class LambertIOD(InitialOrbitDetermination):
             sez2ecef(observation_sez, observation.position_lat_rad, observation.position_lon_rad)
             + sensor_ecef
         )
-        return ecef2eci(observation_ecef, datetime.fromisoformat(observation.epoch.timestampISO))
+        return ecef2eci(observation_ecef, utc_datetime)
 
     def determineNewEstimateState(
         self,
-        obs_tuples: list[ObservationTuple],
+        observations: list[Observation],
         detection_time: ScenarioTime,
         current_time: ScenarioTime,
     ) -> tuple[ndarray | None, bool]:
         r"""Determine the state vector of an RSO estimate via IOD.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
             detection_time (:class:`.ScenarioTime`): time that IOD is flagged
             current_time (:class:`.ScenarioTime`): current scenario time
 
@@ -263,8 +264,8 @@ class LambertIOD(InitialOrbitDetermination):
             :``ndarray| None``: Estimate state determined from IOD
             :``bool``: whether or not IOD was successful
         """
-        if not obs_tuples:
-            msg = "No ObservationTuples for IOD"
+        if not observations:
+            msg = "No Observations for IOD"
             self._logger.warning(msg)
             return None, False
 
@@ -290,7 +291,7 @@ class LambertIOD(InitialOrbitDetermination):
         initial_state = self.convertObservationToECI(previous_observation[-1])
 
         # Get position from Radar observation from current timestep
-        final_state = self._determineFinalState(obs_tuples)
+        final_state = self._determineFinalState(observations)
         if final_state is None:
             msg = "No Radar observations to perform Lambert IOD"
             self._logger.warning(msg)
@@ -320,18 +321,18 @@ class LambertIOD(InitialOrbitDetermination):
         final_state[3:] = final_velocity
         return final_state, True
 
-    def _determineFinalState(self, obs_tuples: list[ObservationTuple]) -> ndarray | None:
+    def _determineFinalState(self, observations: list[Observation]) -> ndarray | None:
         """Calculate Position vector at the current time given observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects at the current time
+            observations (``list``): :class:`.Observation` objects at the current time
 
         Returns:
             ``ndarray`` | ``None``: [6x1] ECI state vector at the current time, but only the position is valid
         """
-        # [TODO]: put a method that checks for the obs_tuple with the smallest residual?
-        for obs_tuple in obs_tuples:
-            if obs_tuple.observation.range_km:
-                return self.convertObservationToECI(obs_tuple.observation)
+        # [TODO]: put a method that checks for the obs with the smallest residual?
+        for observation in observations:
+            if observation.range_km:
+                return self.convertObservationToECI(observation)
 
         return None

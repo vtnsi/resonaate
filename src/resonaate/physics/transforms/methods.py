@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     # Local Imports
-    from ...sensors.sensor_base import ObservationTuple
+    from ...data.observation import Observation
 
 
 def eci2ecef(x_eci: ndarray, utc_date: datetime) -> ndarray:
@@ -403,27 +403,27 @@ def ntw2eci(
     )
 
 
-def radarObs2eciPosition(obs_tuple: ObservationTuple) -> ndarray:
+def radarObs2eciPosition(observation: Observation) -> ndarray:
     """Convert Radar observation from RAZEL to ECI position vector.
 
     Args:
-        obs_tuple (:class:`.ObservationTuple`): `ObservationTuple` associated with observation
+        observation (:class:`.Observation`): radar observation to convert to ECI
 
     Returns:
         ``ndarray``: 3x1 ECI Position State based on radar observation
     """
-    range_ = obs_tuple.observation.range_km
-    azimuth = obs_tuple.observation.azimuth_rad
-    elevation = obs_tuple.observation.elevation_rad
-    ob_datetime = julianDateToDatetime(JulianDate(obs_tuple.observation.julian_date))
+    ob_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
+    range_ = observation.range_km
+    azimuth = observation.azimuth_rad
+    elevation = observation.elevation_rad
     x_j2000_relative = sez2eci(
         x_sez=razel2sez(range_, elevation, azimuth, 0, 0, 0),
-        lat=obs_tuple.observation.position_lat_rad,
-        lon=obs_tuple.observation.position_lon_rad,
+        lat=observation.position_lat_rad,
+        lon=observation.position_lon_rad,
         utc_date=ob_datetime,
     )
     # [NOTE]: Only valid for positions
-    return x_j2000_relative[:3] + obs_tuple.agent.eci_state[:3]
+    return x_j2000_relative[:3] + observation.sensor_eci[:3]
 
 
 def spherical2cartesian(

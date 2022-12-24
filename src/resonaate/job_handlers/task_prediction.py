@@ -10,6 +10,7 @@ from mjolnir import Job, KeyValueStore
 from numpy import zeros
 
 # Local Imports
+from ..data.observation import Observation
 from .base import CallbackRegistration, JobHandler
 
 if TYPE_CHECKING:
@@ -51,7 +52,7 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
         sensor_agent = sensor_agents[sensor_id]
 
         # Attempt predicted observations, in order to perform sensor tasking
-        predicted_observation_tuple = sensor_agent.sensors.makeObservation(
+        predicted_observation = sensor_agent.sensors.attemptObservation(
             estimate_id,
             estimate.state_estimate,
             estimate.visual_cross_section,
@@ -60,9 +61,9 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
         )
 
         # Only calculate metrics if the estimate is observable
-        if predicted_observation_tuple.observation:
+        if isinstance(predicted_observation, Observation):
             # This is required to update the metrics attached to the UKF/KF for this observation
-            estimate.nominal_filter.forecast([predicted_observation_tuple])
+            estimate.nominal_filter.forecast([predicted_observation])
             visibility[sensor_index] = True
             metric_matrix[sensor_index] = reward.calculateMetrics(estimate, sensor_agent)
 
@@ -80,7 +81,7 @@ class TaskPredictionRegistration(CallbackRegistration):
         """Create a :func:`.asyncCalculateReward` job.
 
         This relies on a common interface for :meth:`.SequentialFilter.forecast` and for
-        :meth:`.Sensor.makeObservation`.
+        :meth:`.Sensor.attemptObservation`.
 
         KeywordArgs:
             estimate_id (``int``): ID associated with the :class:`.EstimateAgent`.
