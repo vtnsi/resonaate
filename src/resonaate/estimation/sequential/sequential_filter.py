@@ -21,17 +21,16 @@ from ..debug_utils import checkThreeSigmaObs, logFilterStep
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Optional
+    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
 
     # Local Imports
+    from ...data.observation import Observation
     from ...dynamics.dynamics_base import Dynamics
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.time.stardate import ScenarioTime
-    from ...sensors.sensor_base import ObservationTuple
-    from ..initial_orbit_determination import InitialOrbitDetermination
     from ..maneuver_detection import ManeuverDetection
 
 
@@ -133,10 +132,10 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         est_p: ndarray,
         dynamics: Dynamics,
         q_matrix: ndarray,
-        maneuver_detection: Optional[ManeuverDetection],
+        maneuver_detection: ManeuverDetection | None,
         initial_orbit_determination: bool,
         adaptive_estimation: bool,
-        extra_parameters: Optional[dict[str, Any]] = None,
+        extra_parameters: dict[str, Any] | None = None,
     ):
         r"""Initialize a generic sequential filter class.
 
@@ -165,7 +164,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.q_matrix = q_matrix
 
         # Maneuver detection attributes
-        self.maneuver_metric: Optional[float] = None
+        self.maneuver_metric: float | None = None
         self.maneuver_detected = False
         self.maneuver_detection = maneuver_detection
 
@@ -177,7 +176,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.est_p = est_p
         self.pred_x = array([])
         self.pred_p = array([])
-        self.source: Optional[str] = "Initialization"
+        self.source: str | None = "Initialization"
 
         # MMAE products
         self.true_y = array([])
@@ -203,7 +202,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
     def predict(
         self,
         final_time: ScenarioTime,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ):
         """Propagate the state estimate and error covariance with uncertainty.
 
@@ -216,20 +215,20 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         raise NotImplementedError
 
     @abstractmethod
-    def forecast(self, obs_tuples: list[ObservationTuple]):
+    def forecast(self, observations: list[Observation]):
         """Update the error covariance with observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
         """
         raise NotImplementedError
 
     @abstractmethod
-    def update(self, obs_tuples: list[ObservationTuple]):
+    def update(self, observations: list[Observation]):
         """Update the state estimate with observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
         """
         raise NotImplementedError
 
@@ -310,7 +309,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
     def propagate(
         self,
         final_time: ScenarioTime,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ) -> tuple[ndarray, ndarray]:
         r"""Enable a filter to propagate the state forward in time like a :class:`.Dynamics` object.
 
@@ -327,27 +326,25 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.predict(final_time, scheduled_events=scheduled_events)
         return self.pred_x, self.pred_p
 
-    def _debugChecks(self, obs_tuples):
+    def _debugChecks(self, observations: list[Observation]):
         """Debugging checks if flags are set to do so."""
         # Check if error inflation is too large
         if BehavioralConfig.getConfig().debugging.EstimateErrorInflation:
             db_path = loads(KeyValueStore.getValue("db_path"))
             database = ResonaateDatabase.getSharedInterface(db_path=db_path)
-            truth = fetchTruthByJDEpoch(
-                database, self.target_id, obs_tuples[0].observation.julian_date
-            )
+            truth = fetchTruthByJDEpoch(database, self.target_id, observations[0].julian_date)
             tol_km = 5  # Estimate inflation error tolerance (km)
             pred_error = fabs(norm(truth[:3] - self.pred_x[:3]))
             est_error = fabs(norm(truth[:3] - self.est_x[:3]))
 
             # If error increase is larger than desired log the debug information
             if est_error > pred_error + tol_km:
-                file_name = logFilterStep(self, obs_tuples, truth)
+                file_name = logFilterStep(self, observations, truth)
                 msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
                 self._logger.warning(msg)
 
         if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
-            filenames = checkThreeSigmaObs(obs_tuples, sigma=3)
+            filenames = checkThreeSigmaObs(observations, sigma=3)
             msg = "Made bad observation, debugging info:\n\t"
             for filename in filenames:
                 self._logger.warning(msg + f"{filename}")

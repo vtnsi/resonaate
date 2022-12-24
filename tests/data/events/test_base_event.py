@@ -50,6 +50,8 @@ class TestBaseEventClass:
 
         class TestChild(Event):
 
+            __abstract__ = True
+
             EVENT_TYPE = "test_event"
 
             def handleEvent(self, scope_instance):

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from collections import namedtuple
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -13,7 +12,6 @@ from scipy.linalg import norm
 from ..common.exceptions import ShapeError
 from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
-from ..data.epoch import Epoch
 from ..data.missed_observation import MissedObservation
 from ..data.observation import Observation
 from ..physics import constants as const
@@ -60,17 +58,6 @@ SOLAR_PANEL_REFLECTIVITY: float = 0.21
 
 DEFAULT_VIEWING_ANGLE: float = 1.0
 """``float``: default angle for a sensor's FoV, degrees."""
-
-
-ObservationTuple = namedtuple("ObservationTuple", ["observation", "agent", "angles", "reason"])
-"""Named tuple for correlating an observation, the sensing agent, and its angular values.
-
-Attributes:
-    observation (:class:`.Observation` | ``None``): valid or invalid observation
-    agent (:class:`.SensingAgent`): reference to `~.Sensor.host`
-    angles (``ndarray``): array signifying which measurements are angles via :class:`.IsAngle` enum.
-    reason (``float``): reason why a missed ob occurred
-"""
 
 
 class Sensor:
@@ -159,7 +146,7 @@ class Sensor:
         estimate_eci: ndarray,
         target_agent: TargetAgent,
         background_agents: list[TargetAgent],
-    ) -> tuple[list[ObservationTuple], list[MissedObservation]]:
+    ) -> tuple[list[Observation], list[MissedObservation]]:
         """Collect observations on all targets within the sensor's FOV.
 
         Args:
@@ -168,7 +155,7 @@ class Sensor:
             background_agents (``list``): list of possible :class:`.TargetAgent` objects in FoV
 
         Returns:
-            ``list``: :class:`.ObservationTuple` for each successful tasked observation
+            ``list``: :class:`.Observation` for each successful tasked observation
             ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
         """
         obs_list = []
@@ -179,47 +166,42 @@ class Sensor:
         if self.canSlew(slant_range_sez):
             # Check if primary RSO is FoV
             if len(self.checkTargetsInView(slant_range_sez, [target_agent])) == 1:
-                observation_tuple = self.makeNoisyObservation(target_agent)
-                if observation_tuple.observation:
-                    obs_list.append(observation_tuple)
+                observation = self.attemptNoisyObservation(target_agent)
+                if isinstance(observation, MissedObservation):
+                    reason = observation.reason
                 else:
-                    reason = observation_tuple.reason
+                    obs_list.append(observation)
 
             else:
-                reason = MissedObservation.Explanation.FIELD_OF_VIEW
+                reason = MissedObservation.Explanation.FIELD_OF_VIEW.value
 
             # If doing Serendipitous Observations
             if self.calculate_background:
                 background_targets_in_fov = self.checkTargetsInView(
                     slant_range_sez, background_agents
                 )
-                obs_list.extend(
-                    list(
-                        filter(  # pylint:disable=bad-builtin
-                            lambda ob_tuple: ob_tuple.observation,
-                            (self.makeNoisyObservation(tgt) for tgt in background_targets_in_fov),
-                        )
-                    )  # pylint:disable=bad-builtin
+                visible_observations = filter(  # pylint:disable=bad-builtin
+                    lambda observation: isinstance(observation, Observation),
+                    (self.attemptNoisyObservation(tgt) for tgt in background_targets_in_fov),
                 )
+                obs_list.extend(tuple(visible_observations))
 
             self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
             if obs_list:
                 self.time_last_ob = self.host.time
 
         else:
-            reason = MissedObservation.Explanation.SLEW_DISTANCE
+            reason = MissedObservation.Explanation.SLEW_DISTANCE.value
 
         if self._checkForMissedObservation(obs_list, target_agent.simulation_id):
             missed_observation_list.append(
                 MissedObservation(
+                    julian_date=self.host.julian_date_epoch,
                     sensor_type=getTypeString(self),
                     sensor_id=self.host.simulation_id,
                     target_id=target_agent.simulation_id,
-                    julian_date=self.host.julian_date_epoch,
-                    position_lat_rad=self.host.lla_state[0],
-                    position_lon_rad=self.host.lla_state[1],
-                    position_altitude_km=self.host.lla_state[2],
-                    reason=reason.value,
+                    sensor_eci=self.host.eci_state,
+                    reason=reason,
                 )
             )
 
@@ -250,37 +232,11 @@ class Sensor:
         )  # pylint:disable=bad-builtin
         return agents_in_fov
 
-    def buildSigmaObs(self, target_id: int, tgt_eci_state: ndarray) -> Observation:
-        """Calculate the measurement data for a sigma point observation.
-
-        Args:
-            target_id (``int``): simulation ID associated with current target.
-            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target (km; km/sec).
-
-        Returns:
-            :class:`.Observation`: observation data object.
-        """
-        datetime_epoch = julianDateToDatetime(self.host.julian_date_epoch)
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state, datetime_epoch)
-        julian_date = self.host.julian_date_epoch
-        date_time = julianDateToDatetime(julian_date)
-        return Observation(
-            julian_date=julian_date,
-            epoch=Epoch(timestampISO=date_time.isoformat(), julian_date=julian_date),
-            sensor_type=getTypeString(self),
-            sensor_id=self.host.simulation_id,
-            target_id=target_id,
-            position_lat_rad=self.host.lla_state[0],
-            position_lon_rad=self.host.lla_state[1],
-            position_altitude_km=self.host.lla_state[2],
-            **self._measurement.calculateMeasurement(slant_range_sez),
-        )
-
-    def _checkForMissedObservation(self, obs_list: list[ObservationTuple], target_id: int) -> bool:
+    def _checkForMissedObservation(self, obs_list: list[Observation], target_id: int) -> bool:
         """Check if the tasked observation of the primary target was missed.
 
         Args:
-            obs_list (``list``): list of :class:`.ObservationTuple` data objects
+            obs_list (``list``): :class:`.Observation` data objects
             target_id (``int``): Tasked Target simulation id
 
         Returns:
@@ -289,20 +245,20 @@ class Sensor:
         if not obs_list:
             return True
 
-        for observation_tuple in obs_list:
-            if observation_tuple.observation.target_id == target_id:
+        for obs in obs_list:
+            if obs.target_id == target_id:
                 return False
 
         return True
 
-    def makeObservation(
+    def attemptObservation(
         self,
         tgt_id: int,
         tgt_eci_state: ndarray,
         viz_cross_section: float,
         reflectivity: float,
         real_obs: bool = False,
-    ) -> ObservationTuple:
+    ) -> Observation | MissedObservation:
         """Calculate the measurement data for a single observation.
 
         Args:
@@ -313,7 +269,8 @@ class Sensor:
             real_obs (``bool``, optional): whether observation should include noisy measurements. Defaults to ``False``.
 
         Returns:
-            :class:`.ObservationTuple`: observation tuple object
+            :class:`.Observation` | :class:`.MissedObservation`: constructed observation or a _missed_ observation and
+                reason it isn't visible.
         """
         # Calculate common values
         julian_date = self.host.julian_date_epoch
@@ -326,37 +283,45 @@ class Sensor:
         )
         if visibility:
             # Make a real observation once tasked -> add noise to the measurement
+            # Forecasting an observation for reward matrix purposes
+            observation = Observation.fromMeasurement(
+                epoch_jd=julian_date,
+                target_id=tgt_id,
+                tgt_eci_state=tgt_eci_state,
+                sensor_id=self.host.simulation_id,
+                sen_eci_state=self.host.eci_state,
+                sensor_type=getTypeString(self),
+                measurement=self._measurement,
+                noisy=real_obs,
+            )
+
+            # Also move boresight if making a real observation
             if real_obs:
-                observation = Observation(
-                    julian_date=julian_date,
-                    epoch=Epoch(timestampISO=datetime_epoch.isoformat(), julian_date=julian_date),
-                    sensor_type=getTypeString(self),
-                    sensor_id=self.host.simulation_id,
-                    target_id=tgt_id,
-                    position_lat_rad=self.host.lla_state[0],
-                    position_lon_rad=self.host.lla_state[1],
-                    position_altitude_km=self.host.lla_state[2],
-                    **self.getNoisyMeasurements(slant_range_sez),
-                )
                 self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
 
-            else:
-                # Forecasting an observation for reward matrix purposes
-                observation = self.buildSigmaObs(tgt_id, tgt_eci_state)
+            return observation
 
-        else:
-            observation = None
+        # else
+        return MissedObservation(
+            julian_date=julian_date,
+            sensor_type=getTypeString(self),
+            sensor_id=self.host.simulation_id,
+            target_id=tgt_id,
+            sensor_eci=self.host.eci_state,
+            reason=reason.value,
+        )
 
-        return ObservationTuple(observation, self.host, self.angle_measurements, reason)
-
-    def makeNoisyObservation(self, target_agent: TargetAgent) -> ObservationTuple:
+    def attemptNoisyObservation(
+        self, target_agent: TargetAgent
+    ) -> Observation | MissedObservation:
         """Calculate the measurement data for a single observation with noisy measurements.
 
         Args:
             target_agent (`:class:.TargetAgent`): Target Agent being observed
 
         Returns:
-            :class:`.ObservationTuple`: observation tuple object
+            :class:`.Observation` | :class:`.MissedObservation`: constructed observation or a _missed_ observation and
+                reason it isn't visible.
         """
         # [NOTE][parallel-time-bias-event-handling] Step three: Check if a sensor has bias events
         tgt_eci_state = target_agent.eci_state
@@ -374,7 +339,7 @@ class Sensor:
             msg += f"seconds applied to sensor {self.host.simulation_id}"
             resonaateLogInfo(msg)
 
-        return self.makeObservation(
+        return self.attemptObservation(
             target_agent.simulation_id,
             tgt_eci_state,
             target_agent.visual_cross_section,
@@ -398,7 +363,7 @@ class Sensor:
         """
         return self._measurement.calculateNoisyMeasurement(slant_range_sez)
 
-    def isVisible(  # pylint:disable=too-many-return-statements
+    def isVisible(
         self,
         tgt_eci_state: ndarray,
         viz_cross_section: float,
@@ -420,7 +385,7 @@ class Sensor:
             ``bool``: True if target is visible; False if target is not visible
             :class:`.MissedObservation.Explanation`: Reason observation was visible or not
         """
-        # pylint:disable=unused-argument
+        # pylint:disable=unused-argument, too-many-return-statements
         # Early exit if target not in sensor's minimum range
         if self.minimum_range is not None and getRange(slant_range_sez) < self.minimum_range:
             return False, MissedObservation.Explanation.MINIMUM_RANGE
@@ -517,6 +482,11 @@ class Sensor:
     def r_matrix(self) -> ndarray:
         r"""``ndarray``: Returns the :math:`n_z \times n_z` measurement noise covariance matrix."""
         return self._measurement.r_matrix
+
+    @property
+    def measurement(self) -> Measurement:
+        r""":class:`.Measurement`: Returns measurement object for this sensor."""
+        return self._measurement
 
     @property
     def host(self) -> SensingAgent:

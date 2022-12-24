@@ -39,7 +39,8 @@ pylint:
     - !reference [.pip-test, before_script]
   script:
     - echo "Linting with pylint"
-    - pylint $LINT_SOURCES | tee pylint.log
+    - pylint *.py src docs | tee pylint.log
+    - pylint tests --disable=invalid-name | tee -a pylint.log
   artifacts:
     name: pylint
     paths:

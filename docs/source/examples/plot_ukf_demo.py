@@ -246,43 +246,19 @@ print(prior_error)
 # -----------------------------
 #
 from resonaate.data.observation import Observation
-from resonaate.physics.measurement_utils import getAzimuth, getElevation, getRange, getRangeRate
-from resonaate.physics.transforms.methods import getSlantRangeVector
-from resonaate.sensors.sensor_base import ObservationTuple
 
-# Get the SEZ slant range vector from sensor to target
-slant_range_sez = getSlantRangeVector(sensor_ecef, sat1_agent.eci_state, clock.datetime_epoch)
-
-# Determine measurements from SEZ slant range
-measurements = {
-    "azimuth_rad": getAzimuth(slant_range_sez),
-    "elevation_rad": getElevation(slant_range_sez),
-    "range_km": getRange(slant_range_sez),
-    "range_rate_km_p_sec": getRangeRate(slant_range_sez),
-}
-
-# Add noise to measurements for imperfect sensor
-measurements["azimuth_rad"] += np.sqrt(r_matrix[0, 0]) * np.random.rand()
-measurements["elevation_rad"] += np.sqrt(r_matrix[1, 1]) * np.random.rand()
-measurements["range_km"] += np.sqrt(r_matrix[2, 2]) * np.random.rand()
-measurements["range_rate_km_p_sec"] += np.sqrt(r_matrix[3, 3]) * np.random.rand()
-
-observation = Observation(
+observation = Observation.fromMeasurement(
     sensor_type="Radar",
     sensor_id=sensor_id,
     target_id=sat1_agent.simulation_id,
-    julian_date=clock.julian_date_epoch,
-    position_lat_rad=sensor_lla[0],
-    position_lon_rad=sensor_lla[1],
-    position_altitude_km=sensor_lla[2],
-    **measurements,
+    tgt_eci_state=sat1_agent.eci_state,
+    sen_eci_state=sensor_agent.eci_state,
+    epoch_jd=clock.julian_date_epoch,
+    measurement=radar_sensor.measurement,
+    noisy=True,
 )
 
-# Need to pass observations as tuple for required information
-obs_tuple = ObservationTuple(
-    observation, sensor_agent, sensor_agent.sensors.angle_measurements, "Visible"
-)
-print(obs_tuple.observation)
+print(observation)
 
 # %%
 #
@@ -291,7 +267,7 @@ print(obs_tuple.observation)
 #
 
 # Update estimate's filter via the measurement update step (a posteriori)
-sat1_estimate_agent.nominal_filter.update([obs_tuple])
+sat1_estimate_agent.nominal_filter.update([observation])
 
 # Apply filter measurement update step to estimate's state
 sat1_estimate_agent.state_estimate = sat1_estimate_agent.nominal_filter.est_x

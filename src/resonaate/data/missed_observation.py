@@ -3,13 +3,22 @@ from __future__ import annotations
 
 # Standard Library Imports
 from enum import Enum, unique
+from typing import TYPE_CHECKING
 
 # Third Party Imports
+from numpy import array
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 # Local Imports
+from ..physics.time.stardate import JulianDate, julianDateToDatetime
+from ..physics.transforms.methods import ecef2lla, eci2ecef
 from . import Base, _DataMixin
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
 
 
 class MissedObservation(Base, _DataMixin):
@@ -48,6 +57,8 @@ class MissedObservation(Base, _DataMixin):
     # True reason why observation was missed, for debugging only!
     reason = Column(String, nullable=False)
 
+    # [TODO]: Make this align more with new Observation API
+
     MUTABLE_COLUMN_NAMES = (
         "julian_date",
         "sensor_id",
@@ -59,10 +70,37 @@ class MissedObservation(Base, _DataMixin):
         "reason",
     )
 
+    def __init__(
+        self,
+        julian_date: JulianDate | float,
+        sensor_id: int,
+        target_id: int,
+        sensor_type: str,
+        sensor_eci: ndarray,
+        reason: str,
+    ) -> None:
+        """Explicit constructor for creating an Observation."""
+        self.julian_date = julian_date
+        self.sensor_id = sensor_id
+        self.target_id = target_id
+        self.sensor_type = sensor_type
+        self._sensor_eci = sensor_eci
+        utc_datetime = julianDateToDatetime(JulianDate(julian_date))
+        sensor_lla = ecef2lla(eci2ecef(sensor_eci, utc_datetime))
+        self.position_lat_rad = sensor_lla[0]
+        self.position_lon_rad = sensor_lla[1]
+        self.position_altitude_km = sensor_lla[2]
+        self.reason = reason
+
     @property
-    def lla(self):
-        """``list``: Three element coordinate vector in the LLA frame."""
-        return [self.position_lat_rad, self.position_lon_rad, self.position_altitude_km]
+    def lla(self) -> ndarray:
+        """``ndarray``: Three element coordinate vector in the LLA frame."""
+        return array([self.position_lat_rad, self.position_lon_rad, self.position_altitude_km])
+
+    @property
+    def sensor_eci(self) -> ndarray:
+        r"""``ndarray``: Returns the sensor's 6x1 ECI state vector at the time of observation."""
+        return self._sensor_eci
 
     @unique
     class Explanation(Enum):

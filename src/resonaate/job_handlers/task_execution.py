@@ -64,7 +64,7 @@ class TaskExecutionRegistration(CallbackRegistration):
     def jobCreateCallback(self, **kwargs):
         """Create a :func:`.asyncExecuteTasking` job.
 
-        This relies on a common interface for for :meth:`.Sensor.makeNoisyObservation`.
+        This relies on a common interface for for :meth:`.Sensor.collectObservations`.
 
         KeywordArgs:
             target_id (``int``): ID associated with the :class:`.TargetAgent`.

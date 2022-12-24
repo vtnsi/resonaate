@@ -2,19 +2,47 @@ from __future__ import annotations
 
 # Standard Library Imports
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 # Third Party Imports
+import numpy as np
+import pytest
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
 from resonaate.data.missed_observation import MissedObservation
+from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
+from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
+from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.sensors import OPTICAL_LABEL
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+    # RESONAATE Imports
+    from resonaate.data.agent import AgentModel
+    from resonaate.data.epoch import Epoch
+    from resonaate.data.resonaate_database import ResonaateDatabase
+
+
+@pytest.fixture(name="sensor_eci")
+def getSensorECI(epoch: Epoch) -> ndarray:
+    """Convert LLA state to ECI."""
+    lat_rad = 0.44393147656176574
+    lon_rad = 1.124890532
+    altitude_km = 0.6253
+    # [FIXME]: Very tmp solution to make test work
+    utc_datetime = julianDateToDatetime(JulianDate(epoch.julian_date))
+    updateReductionParameters(utc_datetime)
+    return ecef2eci(lla2ecef(np.array([lat_rad, lon_rad, altitude_km])), utc_datetime)
 
 
 class TestMissedObservationTable:
     """Test class for :class:`.MissedObservation` database table class."""
 
-    _type = OPTICAL_LABEL
+    sensor_type = OPTICAL_LABEL
 
     sez = [
         -4957.659229144096,
@@ -22,76 +50,74 @@ class TestMissedObservationTable:
         3193.9292760074436,
     ]
 
-    lla = [
-        0.44393147656176574,
-        1.124890532,
-        0.6253,
-    ]
-
-    def testInit(self):
-        """Test the init of MissedObservation database table."""
-        _ = MissedObservation()
-
-    def testInitKwargs(self, epoch, target_agent, sensor_agent):
+    def testInitKwargs(
+        self,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
         """Test initializing the keywords of the table."""
         _ = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.VISIBLE.value,
         )
 
-    def testReprAndDict(self, epoch, target_agent, sensor_agent):
+    def testReprAndDict(
+        self,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
         """Test printing DB table object & making into dict."""
         missed_ob = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.MINIMUM_RANGE.value,
         )
         print(missed_ob)
         missed_ob.makeDictionary()
 
-    def testEquality(self, epoch, target_agent, sensor_agent):
+    def testEquality(
+        self,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
         """Test equals and not equals operators."""
         obs1 = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.MAXIMUM_RANGE.value,
         )
 
         obs2 = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.MAXIMUM_RANGE.value,
         )
 
         obs3 = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.MAXIMUM_RANGE.value,
         )
         obs3.position_altitude_km = 500
@@ -100,47 +126,79 @@ class TestMissedObservationTable:
         assert obs1 == obs2
         assert obs1 != obs3
 
-    def testLLAProperty(self, epoch, target_agent, sensor_agent):
+    def testLLAProperty(
+        self,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
         """Test lla property."""
         obs = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.LINE_OF_SIGHT.value,
         )
-        assert isinstance(obs.lla, list)
-        assert len(obs.lla) == 3
+        assert obs.lla.shape == (3,)
 
-    def testInsertWithRelationship(self, database, epoch, target_agent, sensor_agent):
+    def testSensorECIProperty(
+        self,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
+        """Test lla property."""
+        obs = MissedObservation(
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
+            reason=MissedObservation.Explanation.LINE_OF_SIGHT.value,
+        )
+        assert obs.sensor_eci.shape == (6,)
+        assert np.array_equal(obs.sensor_eci, sensor_eci)
+
+    def testInsertWithRelationship(
+        self,
+        database: ResonaateDatabase,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
         """Test inserting MissedObservation with related objects."""
         obs = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.AZIMUTH_MASK.value,
         )
 
         # Test insert of object
         database.insertData(obs)
 
-    def testInsertWithForeignKeys(self, database, epoch, target_agent, sensor_agent):
+    def testInsertWithForeignKeys(
+        self,
+        database: ResonaateDatabase,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
         """Test inserting missed observation with only foreign keys."""
         obs = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.ELEVATION_MASK.value,
         )
         # Pre-insert required objects
@@ -151,21 +209,29 @@ class TestMissedObservationTable:
         # Test insert of object via FK
         database.insertData(obs)
 
-    def testManyToOneLazyLoading(self, database, epoch, target_agent, sensor_agent):
+    def testManyToOneLazyLoading(
+        self,
+        database: ResonaateDatabase,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
         """Test many to one lazy-loading attributes."""
         julian_date = epoch.julian_date
         target_id = target_agent.unique_id
         sensor_id = sensor_agent.unique_id
         obs = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.VIZ_MAG.value,
         )
+        database.insertData(epoch)
+        database.insertData(target_agent)
+        database.insertData(sensor_agent)
         database.insertData(obs)
 
         new_obs = database.getData(Query(MissedObservation), multi=False)
@@ -174,22 +240,30 @@ class TestMissedObservationTable:
         assert new_obs.target.unique_id == target_id
         assert new_obs.sensor.unique_id == sensor_id
 
-    def testManyToOneQuery(self, database, epoch, target_agent, sensor_agent):
+    def testManyToOneQuery(
+        self,
+        database: ResonaateDatabase,
+        epoch: Epoch,
+        target_agent: AgentModel,
+        sensor_agent: AgentModel,
+        sensor_eci: ndarray,
+    ):
         """Test many to one relationship queries."""
         epoch_copy = deepcopy(epoch)
         target_copy = deepcopy(target_agent)
         sensor_copy = deepcopy(sensor_agent)
 
         obs = MissedObservation(
-            epoch=epoch,
-            sensor=sensor_agent,
-            target=target_agent,
-            sensor_type=self._type,
-            position_lat_rad=self.lla[0],
-            position_lon_rad=self.lla[1],
-            position_altitude_km=self.lla[2],
+            julian_date=epoch.julian_date,
+            sensor_id=sensor_agent.unique_id,
+            target_id=target_agent.unique_id,
+            sensor_type=self.sensor_type,
+            sensor_eci=sensor_eci,
             reason=MissedObservation.Explanation.SOLAR_FLUX.value,
         )
+        database.insertData(epoch)
+        database.insertData(target_agent)
+        database.insertData(sensor_agent)
         database.insertData(obs)
 
         # Test querying by Target

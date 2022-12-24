@@ -34,10 +34,10 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     # Local Imports
+    from ...data.observation import Observation
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.orbit_determination import OrbitDeterminationFunction
     from ...scenario.config.estimation_config import AdaptiveEstimationConfig
-    from ...sensors.sensor_base import ObservationTuple
 
 
 class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attributes
@@ -167,7 +167,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
 
     def initialize(
         self,
-        obs_tuples: list[ObservationTuple],
+        observations: list[Observation],
         julian_date_start: JulianDate,
     ) -> bool:
         """Initialize MMAE models.
@@ -186,7 +186,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         #. number of models is not greater than 1
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
             julian_date_start (:class:`.JulianDate`): julian date at the start of the scenario
 
         Returns:
@@ -248,7 +248,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
 
         # Calculate the required impulsive maneuver for each model
         hypothesis_maneuvers = self._generateHypothesisManeuvers(
-            obs_tuples, nominal_states, maneuver_times
+            observations, nominal_states, maneuver_times
         )
 
         # Determine new states for each hypothesis at the MMAE antecedent time
@@ -411,12 +411,12 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         return time_step, int(ceil(gap_time / time_step) + 1)
 
     def _generateHypothesisManeuvers(
-        self, obs_tuples: list[ObservationTuple], nominal_states: ndarray, maneuver_times: ndarray
+        self, observations: list[Observation], nominal_states: ndarray, maneuver_times: ndarray
     ) -> ndarray:
         """Generate deltaV hypotheses for each timestep.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
             nominal_states (``ndarray``): Nx6 array of nominal ECI state vectors.
             maneuver_times (``ndarray``): Nx1 array of scenario times of each maneuver hypothesis
 
@@ -425,11 +425,11 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         """
         # [TODO]: only observed by optical sensors -- future work is range hypothesis
         tgt_eci_position = self.est_x[:3]
-        for obs_tuple in obs_tuples:
-            measured_range = getattr(obs_tuple.observation, "range_km", None)
+        for observation in observations:
+            measured_range = getattr(observation, "range_km", None)
             if measured_range is not None:
                 # [TODO]: Only applies the last radar observation
-                tgt_eci_position = radarObs2eciPosition(obs_tuple)
+                tgt_eci_position = radarObs2eciPosition(observation)
 
         return self._calculateDeltaV(nominal_states[1:], maneuver_times[1:], tgt_eci_position)
 
@@ -518,25 +518,25 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         # Update time
         self.time = final_time
 
-    def forecast(self, obs_tuples: list[ObservationTuple]):
+    def forecast(self, observations: list[Observation]):
         """Update the error covariance with observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
 
         References:
             :cite:t:`nastasi_2018_diss`, Section 2.4.4, Algorithm 2.4, Eq 2.90-2.96, Pg 34
         """
         for model in self.models:
-            model.forecast(obs_tuples)
+            model.forecast(observations)
 
-        self._compileForecastStep(obs_tuples)
+        self._compileForecastStep(observations)
 
-    def update(self, obs_tuples: list[ObservationTuple]):
+    def update(self, observations: list[Observation]):
         """Update the state estimate with observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
 
         References:
             #. :cite:t:`nastasi_2018_diss`, Section 2.4.4, Algorithm 2.5, Eq 2.97-2.99, Pg 35
@@ -544,7 +544,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             #. :cite:t:`nastasi_2018_diss`, Section 4.5, Algorithm 4.4, Pg 65
         """
         for model in self.models:
-            model.update(obs_tuples)
+            model.update(observations)
 
     def _compilePredictStep(self):
         """Combine model predict step attributes into single, combined prediction."""
@@ -559,11 +559,11 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             x_diff_pred = model.pred_x - self.pred_x
             self.pred_p += weight * (model.pred_p + outer(x_diff_pred, x_diff_pred))
 
-    def _compileForecastStep(self, obs_tuples: list[ObservationTuple]):
+    def _compileForecastStep(self, observations: list[Observation]):
         """Combine the filter data from each MMAE model to produce integrated filter matrices.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
 
         References:
             :cite:t:`nastasi_2018_diss`, Section 4.5, Algorithm 4.3, Eq 4.12-4.13, Pg 64
@@ -574,7 +574,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             x_diff_est = model.est_x - self.est_x
             self.est_p += weight * (model.est_p + outer(x_diff_est, x_diff_est))
 
-        if obs_tuples:
+        if observations:
             self.is_angular = self.models[0].is_angular
             self.r_matrix = self.models[0].r_matrix
             self.mean_pred_y = dot(
@@ -589,16 +589,16 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
                 self.innov_cvr += weight * model.innov_cvr
                 self.kalman_gain += weight * model.kalman_gain
 
-    def _compileUpdateStep(self, obs_tuples: list[ObservationTuple]):
+    def _compileUpdateStep(self, observations: list[Observation]):
         """Combine the filter data from each MMAE model to produce an integrated filter estimate.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
 
         References:
             :cite:t:`nastasi_2018_diss`, Section 4.5, Algorithm 4.3, Eq 4.12-4.13, Pg 64
         """
-        self._compileForecastStep(obs_tuples)
+        self._compileForecastStep(observations)
         self.time = self.models[0].time
         self.source = self.models[0].source
         self.pred_x, self.est_x = self.stacking_method(self.models, self.model_weights)
@@ -611,19 +611,19 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             self.pred_p += weight * (model.pred_p + outer(x_diff_pred, x_diff_pred))
             self.est_p += weight * (model.est_p + outer(x_diff_est, x_diff_est))
 
-        if obs_tuples:
+        if observations:
             self.true_y = self.models[0].true_y
             self.innovation = dot(
                 vstack([[x.innovation for x in self.models]]).T, self.model_weights
             )
             self.nis = dot([x.nis for x in self.models], self.model_weights)
 
-    def prune(self, prune_index: ndarray, obs_tuples: list[ObservationTuple]):
+    def prune(self, prune_index: ndarray, observations: list[Observation]):
         """Prune off filter candidate solutions.
 
         Args:
             prune_index (``ndarray``): indices of models to be pruned
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
         """
         for index in reversed(prune_index):
             # Don't prune everything
@@ -635,7 +635,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
                 self.mode_probabilities = delete(self.mode_probabilities, index)
 
         self.model_weights = self.model_weights / np_sum(self.model_weights)
-        self._compileUpdateStep(obs_tuples)
+        self._compileUpdateStep(observations)
 
     def _calculateDeltaV(
         self, pre_maneuver_states: ndarray, maneuver_times: list[float], tgt_eci_position: ndarray

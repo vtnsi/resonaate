@@ -21,7 +21,7 @@ from resonaate.job_handlers.task_prediction import TaskPredictionJobHandler
 from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario.config.decision_config import DecisionConfig
 from resonaate.scenario.config.reward_config import RewardConfig
-from resonaate.sensors.sensor_base import ObservationTuple, Sensor
+from resonaate.sensors.sensor_base import Sensor
 from resonaate.tasking.decisions import decisionFactory
 from resonaate.tasking.engine.centralized_engine import CentralizedTaskingEngine
 from resonaate.tasking.engine.engine_base import TaskingEngine
@@ -204,10 +204,10 @@ def testAssessWithObservations(
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     next_datetime_epoch = datetime(2019, 1, 23, 17, 43, 23, 200000)
     # Create obs tuples to store
-    obs_1 = create_autospec(ObservationTuple, instance=True)
-    obs_1.observation.sensor_id = 100000
-    obs_2 = create_autospec(ObservationTuple, instance=True)
-    obs_2.observation.sensor_id = 100001
+    obs_1 = create_autospec(Observation, instance=True)
+    obs_1.sensor_id = 100000
+    obs_2 = create_autospec(Observation, instance=True)
+    obs_2.sensor_id = 100001
     # centralized_tasking_engine._observations = [obs_1, obs_2]
 
     # [FIXME]: This is a hack to get the engine to store the observations
@@ -473,7 +473,7 @@ def testLoadImportedObservation(
     mocked_importer_db.getData.assert_called_once()
     centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
-        assert isinstance(imported_ob, ObservationTuple)
+        assert isinstance(imported_ob, Observation)
 
     # Reset mocks
     mocked_importer_db.getData.reset_mock()
@@ -492,7 +492,7 @@ def testLoadImportedObservation(
     mocked_importer_db.getData.assert_called_once()
     centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
-        assert isinstance(imported_ob, ObservationTuple)
+        assert isinstance(imported_ob, Observation)
 
     # Reset mocks
     mocked_importer_db.getData.reset_mock()
@@ -508,7 +508,7 @@ def testLoadImportedObservation(
     mocked_importer_db.getData.assert_called_once()
     centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
-        assert isinstance(imported_ob, ObservationTuple)
+        assert isinstance(imported_ob, Observation)
 
 
 @patch.multiple(TaskingEngine, __abstractmethods__=set())

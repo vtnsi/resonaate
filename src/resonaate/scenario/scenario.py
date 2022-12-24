@@ -40,6 +40,8 @@ if TYPE_CHECKING:
     from typing import Callable
 
     # Local Imports
+    from ..data.missed_observation import MissedObservation
+    from ..data.observation import Observation
     from ..physics.time.stardate import ScenarioTime
     from ..tasking.engine.engine_base import TaskingEngine
     from .clock import ScenarioClock
@@ -304,10 +306,10 @@ class Scenario(ParallelMixin):
             # Grab `Observations` from current time step
             for tasking_engine in self._tasking_engines.values():
                 # Save Successful Observations
-                obs_tuples = tasking_engine.getCurrentObservations()
-                if obs_tuples:
-                    self._logObservations(obs_tuples)
-                output_data.extend(obs_tuple.observation for obs_tuple in obs_tuples)
+                observations = tasking_engine.getCurrentObservations()
+                if observations:
+                    self._logObservations(observations)
+                output_data.extend(observations)
 
                 # Save Missed Observations
                 missed_observations = tasking_engine.getCurrentMissedObservations()
@@ -382,8 +384,8 @@ class Scenario(ParallelMixin):
             obs_dict = defaultdict(list)
             for tasking_engine in self._tasking_engines.values():
                 tasking_engine.assess(prior_datetime, self.clock.datetime_epoch)
-                for obs_tuple in tasking_engine.observations:
-                    obs_dict[obs_tuple.observation.target_id].append(obs_tuple)
+                for observation in tasking_engine.observations:
+                    obs_dict[observation.target_id].append(observation)
 
             # Estimate and covariance are stored as the updated state estimate and covariance
             # If there are no observations, there is no update information and the predicted state
@@ -392,16 +394,16 @@ class Scenario(ParallelMixin):
         # Flush events from event stack
         EventStack.logAndFlushEvents()
 
-    def _logObservations(self, obs_list):
+    def _logObservations(self, observations: list[Observation]):
         """Log :class:`.Observation` objects."""
-        msg = f"Committing {len(obs_list)} observations of targets "
+        msg = f"Committing {len(observations)} observations of targets "
         observed_targets = set()
-        for obs_tuple in obs_list:
-            observed_targets.add(obs_tuple.observation.target_id)
+        for observation in observations:
+            observed_targets.add(observation.target_id)
         msg += f"{observed_targets} to the database."
         self.logger.debug(msg)
 
-    def _logMissedObservations(self, missed_observations):
+    def _logMissedObservations(self, missed_observations: list[MissedObservation]):
         """Log :class:`.MissedObservation` objects."""
         msg = "Missed Observations of targets "
         missed_targets = set()

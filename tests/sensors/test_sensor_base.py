@@ -529,9 +529,9 @@ def testBuildSigmaObs():
     """To be implemented."""
 
 
-def testMakeObservation():
+def testAttemptObservation():
     """To be implemented."""
 
 
-def testMakeNoisyObservation():
+def testAttemptNoisyObservation():
     """To be implemented."""
