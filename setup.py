@@ -57,7 +57,7 @@ setuptools.setup(
             "pytest==7.2.0",
             "pytest-datafiles==2.0.1",
             "pytest-randomly==3.12.0",
-            "coverage==6.5.0",
+            "coverage==7.0.1",
             "pytest-cov==4.0.0",
         ],
         "doc": [
