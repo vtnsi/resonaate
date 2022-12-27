@@ -8,6 +8,7 @@ extend-select = C,D,E,F,W,W504,B,B950,PT,RST
 # The rest are opinionated.
 
 extend-ignore =
+    A001,  # A001: '_' is a python builtin
     E203,  # E203: whitespace before ':' - black
     E266,  # E266: too many leading '#' for block comment
     E501,  # E501: line too long - black
