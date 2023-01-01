@@ -49,7 +49,7 @@ setuptools.setup(
             "mdformat-myst==0.1.5",
             "mdformat-gfm==0.3.5",
             # Pre-commit stuff
-            "pre-commit==2.20.0",
+            "pre-commit==2.21.0",
             # Misc.
             "check-manifest>=0.48",
         ],
