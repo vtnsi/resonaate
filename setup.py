@@ -24,8 +24,7 @@ setuptools.setup(
         "scipy>=1.6",
         "sqlalchemy>=1.3",
         "matplotlib>=3.3",
-        "mjolnir>=1.1.3",
-        "pywin32 >= 1.0; platform_system=='Windows'",
+        "mjolnir>=1.2.0",
     ],
     extras_require={
         "dev": [

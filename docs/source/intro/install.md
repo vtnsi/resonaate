@@ -44,7 +44,7 @@ greenlet==1.1.2
 importlib-metadata==4.11.3
 kiwisolver==1.4.2
 matplotlib==3.5.1
-mjolnir==1.1.3
+mjolnir==1.2.0
 numpy==1.21.6
 packaging==21.3
 Pillow==9.1.0
@@ -62,12 +62,6 @@ zipp==3.8.0
 `mjolnir` is a special case amongst these packages, as it is not available on PyPI.
 To install `mjolnir`, you'll need to clone the repository (available [here](https://code.vt.edu/space-research/resonaate/mjolnir)) and install in development mode *or*
 install `mjolnir` from its package registry (instructions available [here](https://code.vt.edu/space-research/resonaate/mjolnir/-/packages/827)).
-
-If provided with an actual directory of the required packages (usually called **deps-vX.Y.Z**), users can install without accessing PyPI:
-
-```bash
-python3 -m pip install --no-index --find-links=rel/path/to/deps-vX.Y.Z/ -r requirements.txt
-```
 
 ## RESONAATE Package
 
