@@ -71,7 +71,7 @@ ______________________________________________________________________
 - frame transformations which require reductions directly or indirectly now require the `utc_date` as an argument (see #49 and !80)
 - `getReductionParameters()` also takes a `utc_date` argument and will re-calculate if the value in the KVS doesn't exist or doesn't match (see #49 and !80)
 - Attached `Measurement` to `Observation` object (see #156 and !141)
-- bump `mjolnir` version to 1.2.0
+- bump `mjolnir` version to 1.1.3
 
 ### Deprecated
 

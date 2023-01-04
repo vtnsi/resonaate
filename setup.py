@@ -24,7 +24,7 @@ setuptools.setup(
         "scipy>=1.6",
         "sqlalchemy>=1.3",
         "matplotlib>=3.3",
-        "mjolnir>=1.2.0",
+        "mjolnir>=1.1.3",
     ],
     extras_require={
         "dev": [
