@@ -162,7 +162,7 @@ class Sensor:
         missed_observation_list = []
         # Check if sensor will slew to point in time
         datetime_epoch = julianDateToDatetime(self.host.julian_date_epoch)
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, estimate_eci, datetime_epoch)
+        slant_range_sez = getSlantRangeVector(self.host.eci_state, estimate_eci, datetime_epoch)
         if self.canSlew(slant_range_sez):
             # Check if primary RSO is FoV
             if len(self.checkTargetsInView(slant_range_sez, [target_agent])) == 1:
@@ -225,7 +225,7 @@ class Sensor:
             filter(  # pylint:disable=bad-builtin
                 lambda agent: self.field_of_view.inFieldOfView(
                     slant_range_sez,
-                    getSlantRangeVector(self.host.ecef_state, agent.eci_state, datetime_epoch),
+                    getSlantRangeVector(self.host.eci_state, agent.eci_state, datetime_epoch),
                 ),
                 background_agents,
             )
@@ -275,7 +275,7 @@ class Sensor:
         # Calculate common values
         julian_date = self.host.julian_date_epoch
         datetime_epoch = julianDateToDatetime(julian_date)
-        slant_range_sez = getSlantRangeVector(self.host.ecef_state, tgt_eci_state, datetime_epoch)
+        slant_range_sez = getSlantRangeVector(self.host.eci_state, tgt_eci_state, datetime_epoch)
 
         # Construct observations
         visibility, reason = self.isVisible(
@@ -346,22 +346,6 @@ class Sensor:
             target_agent.reflectivity,
             real_obs=True,
         )
-
-    def getNoisyMeasurements(self, slant_range_sez: ndarray) -> dict[str, float]:
-        """Return noisy measurements.
-
-        Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
-
-        Returns:
-            ``dict``: noisy measurements made by the sensor
-
-            :``"azimuth_rad"``: (``float``): azimuth angle measurement (radians)
-            :``"elevation_rad"``: (``float``): elevation angle measurement (radians)
-            :``"range_km"``: (``float``): range measurement (km)
-            :``"range_rate_km_p_sec"``: (``float``): range rate measurement (km/sec)
-        """
-        return self._measurement.calculateNoisyMeasurement(slant_range_sez)
 
     def isVisible(
         self,

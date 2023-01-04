@@ -387,8 +387,8 @@ class TestRaDecRazelSEZ:
     def testSEZ2ECI(self):
         """Test converting to ECI from SEZ."""
         observer_ecef = lla2ecef(self.lla)
-        tgt_sez = getSlantRangeVector(observer_ecef, self.eci, self.calendar_date)
         observer_eci = ecef2eci(observer_ecef, self.calendar_date)
+        tgt_sez = getSlantRangeVector(observer_eci, self.eci, self.calendar_date)
         tgt_eci = observer_eci + sez2eci(tgt_sez, self.lla[0], self.lla[1], self.calendar_date)
         assert np.allclose(tgt_eci, self.eci)
 
@@ -399,7 +399,7 @@ class TestRaDecRazelSEZ:
         slant_range_eci = self.eci - observer_eci
         tgt_sez = eci2sez(slant_range_eci, self.lla[0], self.lla[1], self.calendar_date)
         assert np.allclose(
-            getSlantRangeVector(observer_ecef, self.eci, self.calendar_date), tgt_sez
+            getSlantRangeVector(observer_eci, self.eci, self.calendar_date), tgt_sez
         )
 
     def testTopocentricRaDec(self):

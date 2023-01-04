@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from datetime import datetime
 from itertools import permutations
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -13,6 +14,7 @@ import pytest
 from resonaate.common.exceptions import ShapeError
 from resonaate.data.observation import Observation
 from resonaate.physics.measurement_utils import IsAngle
+from resonaate.physics.transforms.methods import ecef2eci, lla2ecef, sez2eci
 from resonaate.sensors.measurement import (
     MEASUREMENT_TYPE_MAP,
     Azimuth,
@@ -37,6 +39,12 @@ TEST_SEZ_STATE = np.array(
         1.95015349e00,
     ]
 )
+TEST_SEN_LLA = np.array((0.4, -1.2, 0.4))
+TEST_DATETIME = datetime(2021, 6, 14, 5, 8, 22)
+TEST_SEN_ECI = ecef2eci(lla2ecef(TEST_SEN_LLA), TEST_DATETIME)
+TEST_TGT_ECI = (
+    sez2eci(TEST_SEZ_STATE, TEST_SEN_LLA[0], TEST_SEN_LLA[1], TEST_DATETIME) + TEST_SEN_ECI
+)
 
 
 @patch("resonaate.sensors.measurement.getRange")
@@ -45,7 +53,7 @@ def testRange(mocked_range_func: MagicMock) -> None:
     range_meas = Range()
     assert range_meas.LABEL in Observation.MUTABLE_COLUMN_NAMES
     assert isinstance(range_meas.is_angular, IsAngle)
-    range_meas.calculate(TEST_SEZ_STATE)
+    range_meas.calculate(TEST_SEN_ECI, TEST_TGT_ECI, TEST_DATETIME)
     mocked_range_func.assert_called_once()
 
 
@@ -55,7 +63,7 @@ def testRangeRate(mocked_range_rate_func: MagicMock):
     range_rate_meas = RangeRate()
     assert range_rate_meas.LABEL in Observation.MUTABLE_COLUMN_NAMES
     assert isinstance(range_rate_meas.is_angular, IsAngle)
-    range_rate_meas.calculate(TEST_SEZ_STATE)
+    range_rate_meas.calculate(TEST_SEN_ECI, TEST_TGT_ECI, TEST_DATETIME)
     mocked_range_rate_func.assert_called_once()
 
 
@@ -65,7 +73,7 @@ def testAzimuth(mocked_azimuth_func: MagicMock):
     azimuth_meas = Azimuth()
     assert azimuth_meas.LABEL in Observation.MUTABLE_COLUMN_NAMES
     assert isinstance(azimuth_meas.is_angular, IsAngle)
-    azimuth_meas.calculate(TEST_SEZ_STATE)
+    azimuth_meas.calculate(TEST_SEN_ECI, TEST_TGT_ECI, TEST_DATETIME)
     mocked_azimuth_func.assert_called_once()
 
 
@@ -75,7 +83,7 @@ def testElevation(mocked_elevation_func: MagicMock):
     elevation_meas = Elevation()
     assert elevation_meas.LABEL in Observation.MUTABLE_COLUMN_NAMES
     assert isinstance(elevation_meas.is_angular, IsAngle)
-    elevation_meas.calculate(TEST_SEZ_STATE)
+    elevation_meas.calculate(TEST_SEN_ECI, TEST_TGT_ECI, TEST_DATETIME)
     mocked_elevation_func.assert_called_once()
 
 
@@ -181,8 +189,12 @@ def testNoise(measurement: Measurement) -> None:
 
 def testCalculateMeasurement(measurement: Measurement) -> None:
     """Tests calculating normal and noisy measurement vectors."""
-    norm_meas_vector = measurement.calculateMeasurement(TEST_SEZ_STATE, noisy=False)
-    noisy_meas_vector = measurement.calculateNoisyMeasurement(TEST_SEZ_STATE)
+    norm_meas_vector = measurement.calculateMeasurement(
+        TEST_SEN_ECI, TEST_TGT_ECI, TEST_DATETIME, noisy=False
+    )
+    noisy_meas_vector = measurement.calculateNoisyMeasurement(
+        TEST_SEN_ECI, TEST_TGT_ECI, TEST_DATETIME
+    )
     assert norm_meas_vector.keys() == noisy_meas_vector.keys()
     for meas_type, noisy_val in noisy_meas_vector.items():
         assert noisy_val != norm_meas_vector[meas_type]

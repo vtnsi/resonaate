@@ -13,11 +13,13 @@ from scipy.linalg import sqrtm
 from ..common.exceptions import ShapeError
 from ..physics.maths import isPD
 from ..physics.measurement_utils import IsAngle, getAzimuth, getElevation, getRange, getRangeRate
+from ..physics.transforms.methods import getSlantRangeVector
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Sequence
+    from datetime import datetime
 
     # Third Party Imports
     from numpy import ndarray
@@ -40,14 +42,18 @@ class MeasurementType(ABC):
     """
 
     @abstractmethod
-    def calculate(self, slant_range_sez: ndarray) -> float:
+    def calculate(
+        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+    ) -> float:
         r"""Calculate the measurement value given a sensor/target configuration.
 
         Note:
             This must be overridden by subclasses.
 
         Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            sen_eci_state (``ndarray``): 6x1 ECI vector of the sensor (km; km/sec).
+            tgt_eci_state (``ndarray``): 6x1 ECI vector of the target (km; km/sec).
+            utc_date (``datetime``): UTC datetime at which this measurement takes place.
 
         Returns:
             ``float``: calculated measurement value
@@ -71,15 +77,20 @@ class Range(MeasurementType):
     LABEL: str = "range_km"
     r"""``str``: corresponding range measurement label in :class:`.SensingAgentConfig` and :class:`.Observation` table."""
 
-    def calculate(self, slant_range_sez: ndarray) -> float:
-        r"""Using the slant range, calculate the range to the target.
+    def calculate(
+        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+    ) -> float:
+        r"""Calculate the range of the target relative to the sensor.
 
         Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            sen_eci_state (``ndarray``): 6x1 ECI vector of the sensor (km; km/sec).
+            tgt_eci_state (``ndarray``): 6x1 ECI vector of the target (km; km/sec).
+            utc_date (``datetime``): UTC datetime at which this measurement takes place.
 
         Returns:
             ``float``: calculated range value, km
         """
+        slant_range_sez = getSlantRangeVector(sen_eci_state, tgt_eci_state, utc_date)
         return getRange(slant_range_sez)
 
     @property
@@ -94,15 +105,20 @@ class RangeRate(MeasurementType):
     LABEL: str = "range_rate_km_p_sec"
     r"""``str``: corresponding range rate measurement label in :class:`.SensingAgentConfig` and :class:`.Observation` table."""
 
-    def calculate(self, slant_range_sez: ndarray) -> float:
-        r"""Using the slant range, calculate the range rate to the target.
+    def calculate(
+        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+    ) -> float:
+        r"""Calculate the range rate of the target relative to the sensor.
 
         Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            sen_eci_state (``ndarray``): 6x1 ECI vector of the sensor (km; km/sec).
+            tgt_eci_state (``ndarray``): 6x1 ECI vector of the target (km; km/sec).
+            utc_date (``datetime``): UTC datetime at which this measurement takes place.
 
         Returns:
             ``float``: calculated range rate value, km/sec
         """
+        slant_range_sez = getSlantRangeVector(sen_eci_state, tgt_eci_state, utc_date)
         return getRangeRate(slant_range_sez)
 
     @property
@@ -117,15 +133,20 @@ class Azimuth(MeasurementType):
     LABEL: str = "azimuth_rad"
     r"""``str``: corresponding azimuth measurement label in :class:`.SensingAgentConfig` and :class:`.Observation` table."""
 
-    def calculate(self, slant_range_sez: ndarray) -> float:
-        r"""Using the slant range, calculate the azimuth of the target.
+    def calculate(
+        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+    ) -> float:
+        r"""Calculate the azimuth of the target relative to the sensor.
 
         Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            sen_eci_state (``ndarray``): 6x1 ECI vector of the sensor (km; km/sec).
+            tgt_eci_state (``ndarray``): 6x1 ECI vector of the target (km; km/sec).
+            utc_date (``datetime``): UTC datetime at which this measurement takes place.
 
         Returns:
             ``float``: calculated azimuth value, rad
         """
+        slant_range_sez = getSlantRangeVector(sen_eci_state, tgt_eci_state, utc_date)
         return getAzimuth(slant_range_sez)
 
     @property
@@ -140,15 +161,20 @@ class Elevation(MeasurementType):
     LABEL: str = "elevation_rad"
     r"""``str``: corresponding elevation rate measurement label in :class:`.SensingAgentConfig` and :class:`.Observation` table."""
 
-    def calculate(self, slant_range_sez: ndarray) -> float:
-        r"""Using the slant range, calculate the elevation of the target.
+    def calculate(
+        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+    ) -> float:
+        r"""Calculate the elevation of the target relative to the sensor.
 
         Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            sen_eci_state (``ndarray``): 6x1 ECI vector of the sensor (km; km/sec).
+            tgt_eci_state (``ndarray``): 6x1 ECI vector of the target (km; km/sec).
+            utc_date (``datetime``): UTC datetime at which this measurement takes place.
 
         Returns:
             ``float``: calculated elevation value, rad
         """
+        slant_range_sez = getSlantRangeVector(sen_eci_state, tgt_eci_state, utc_date)
         return getElevation(slant_range_sez)
 
     @property
@@ -203,32 +229,47 @@ class Measurement:
         return cls(measurements, r_matrix)
 
     def calculateMeasurement(
-        self, slant_range_sez: ndarray, noisy: bool = False
+        self,
+        sen_eci_state: ndarray,
+        tgt_eci_state: ndarray,
+        utc_date: datetime,
+        noisy: bool = False,
     ) -> dict[str, float]:
         r"""Calculate the measurement state of for the given sensor/target configuration.
 
         Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            sen_eci_state (``ndarray``): 6x1 ECI vector of the sensor (km; km/sec).
+            tgt_eci_state (``ndarray``): 6x1 ECI vector of the target (km; km/sec).
+            utc_date (``datetime``): UTC datetime at which this measurement takes place.
             noisy (``bool``, optional): whether measurements should include sensor noise. Defaults to ``False``.
 
         Returns:
             ``dict``: measurements made by the sensor
         """
-        meas_state = array([meas.calculate(slant_range_sez) for meas in self._measurements])
+        meas_state = array(
+            [meas.calculate(sen_eci_state, tgt_eci_state, utc_date) for meas in self._measurements]
+        )
         if noisy:
             meas_state += self.noise
         return dict(zip(self.labels, meas_state))
 
-    def calculateNoisyMeasurement(self, slant_range_sez: ndarray) -> dict[str, float]:
+    def calculateNoisyMeasurement(
+        self,
+        sen_eci_state: ndarray,
+        tgt_eci_state: ndarray,
+        utc_date: datetime,
+    ) -> dict[str, float]:
         r"""Calculate a noisy measurements.
 
         Args:
-            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+            sen_eci_state (``ndarray``): 6x1 ECI vector of the sensor (km; km/sec).
+            tgt_eci_state (``ndarray``): 6x1 ECI vector of the target (km; km/sec).
+            utc_date (``datetime``): UTC datetime at which this measurement takes place.
 
         Returns:
             ``dict``: noisy measurements made by the sensor
         """
-        return self.calculateMeasurement(slant_range_sez, noisy=True)
+        return self.calculateMeasurement(sen_eci_state, tgt_eci_state, utc_date, noisy=True)
 
     @property
     def angular_values(self) -> list[IsAngle]:
