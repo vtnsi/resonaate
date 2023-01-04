@@ -57,7 +57,7 @@ EOP: EarthOrientationParameter = EarthOrientationParameter(
 
 
 @pytest.fixture(name="sez_state")
-def convertToSEZ(teardown_kvs) -> ndarray:
+def convertToSEZ() -> ndarray:
     """Fixture to get properly converted SEZ observation vector."""
     # pylint: disable=unused-argument
     updateReductionParameters(CALENDAR_DATE, eops=EOP)

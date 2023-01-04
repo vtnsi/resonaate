@@ -71,9 +71,9 @@ ______________________________________________________________________
 - frame transformations which require reductions directly or indirectly now require the `utc_date` as an argument (see #49 and !80)
 - `getReductionParameters()` also takes a `utc_date` argument and will re-calculate if the value in the KVS doesn't exist or doesn't match (see #49 and !80)
 - Attached `Measurement` to `Observation` object (see #156 and !141)
-- bump `mjolnir` version to 1.1.3
 - `MeasurementType.calculate()`, `Measurement.calculateMeasurement()`, and `getSlantRangeVector()` all take sensor/target ECI states and UTC as parameters (see #158)
 - Stopped overuse of `updateReductionParameters()` since `getReductionParameters()` properly handles if they aren't updated (see #142)
+- bump `mjolnir` version to 1.3.0
 
 ### Deprecated
 
@@ -102,6 +102,7 @@ ______________________________________________________________________
 - Only passing background RSO from `asyncExecuteTasking` to `collectObservations` (see !84)
 - `apparentVisualMagnitude` calculation was wrong due to VCS units
 - `checkSpaceSensorLightingConditions` had wrong sun unit vector (see #161)
+- unit test failures due to ZMQ errors in `mjolnir`, see (#159)
 
 ### Security
 

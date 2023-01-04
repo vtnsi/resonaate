@@ -42,7 +42,7 @@ class TestECI:
     """Test cases for validating the ECI transforms."""
 
     @pytest.fixture(autouse=True)
-    def _setUpECITransforms(self, teardown_kvs):  # pylint: disable=unused-argument
+    def _setUpECITransforms(self):
         """Prepare the test fixture."""
         # Correct values, taken from Vallado examples
         self.r_itrf = np.asarray([-1033.4793830, 7901.2952754, 6380.3565958])  # km
@@ -170,7 +170,7 @@ class TestLLA:
     )
 
     @pytest.fixture(autouse=True)
-    def _setUpLLA(self, teardown_kvs):  # pylint: disable=unused-argument
+    def _setUpLLA(self):
         """Fixture to setup LLA conversion tests."""
         # Vallado example 4-1 (pg. 273), second part
         self.eci = np.asarray(

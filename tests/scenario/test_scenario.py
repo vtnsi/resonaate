@@ -37,11 +37,6 @@ if TYPE_CHECKING:
     from resonaate.scenario.scenario import Scenario
 
 
-@pytest.fixture()
-def _fixtureSetup(teardown_kvs, reset_shared_db: None) -> None:
-    """Reset key value store and DB properly."""
-
-
 def propagateScenario(
     data_directory: str,
     init_filepath: str,
@@ -99,7 +94,7 @@ def loadSensorTruthData(directory: str, importer_database: ImporterDatabase) -> 
 
 
 @pytest.mark.scenario()
-@pytest.mark.usefixtures("_fixtureSetup")
+@pytest.mark.usefixtures("reset_shared_db")
 class TestScenarioApp:
     """Test class for scenario class."""
 
@@ -239,7 +234,7 @@ class TestScenarioApp:
 
 
 @pytest.mark.scenario()
-@pytest.mark.usefixtures("_fixtureSetup")
+@pytest.mark.usefixtures("reset_shared_db")
 class TestScenarioFactory:
     """Tests for :func:`.scenarioFactory`."""
 

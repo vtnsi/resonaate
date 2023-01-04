@@ -21,11 +21,6 @@ from resonaate.scenario.scenario_builder import ScenarioBuilder
 from ...conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
 
-@pytest.fixture()
-def _fixtureSetup(teardown_kvs, reset_shared_db: None) -> None:  # pylint: disable=unused-argument
-    """Reset key value store and DB properly."""
-
-
 def _getMainConfig(datafiles_dir: str) -> ScenarioConfig:
     """Set up a main :class:`.ScenarioConfig` object."""
     init_file = os.path.join(datafiles_dir, JSON_INIT_PATH, "main_init.json")
@@ -45,7 +40,7 @@ def _getManeuverDetectionConfig(datafiles_dir: str) -> ScenarioConfig:
 
 
 @pytest.mark.event()
-@pytest.mark.usefixtures("_fixtureSetup")
+@pytest.mark.usefixtures("reset_shared_db")
 class TestEventIntegration:
     """Test class encapsulating tests that exercise event integration."""
 
