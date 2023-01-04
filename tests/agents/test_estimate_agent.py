@@ -21,7 +21,6 @@ from resonaate.estimation import initialOrbitDeterminationFactory
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
-from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario.clock import ScenarioClock
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
@@ -40,7 +39,6 @@ def getMockedScenarioClock() -> ScenarioClock:
     mocked_clock.time_span = ScenarioTime(28800.0)
     mocked_clock.time = ScenarioTime(0.0)
     mocked_clock.dt_step = ScenarioTime(300.0)
-    updateReductionParameters(utc_date=mocked_clock.datetime_start)
     return mocked_clock
 
 

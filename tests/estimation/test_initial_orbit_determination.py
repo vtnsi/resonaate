@@ -16,7 +16,6 @@ from resonaate.estimation.initial_orbit_determination import LambertIOD
 from resonaate.physics.orbit_determination.lambert import lambertUniversal
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
-from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 from resonaate.sensors.measurement import Measurement
 
@@ -24,10 +23,8 @@ from resonaate.sensors.measurement import Measurement
 @pytest.fixture(name="observation")
 def getObservation():
     """Create a custom :class:`.Observation` object for a sensor."""
-    # [FIXME]: Very tmp solution to make test work
     jd = JulianDate(2459304.374333333)
     utc_datetime = julianDateToDatetime(jd)
-    updateReductionParameters(utc_datetime)
     sen_eci_state = ecef2eci(
         lla2ecef(
             [

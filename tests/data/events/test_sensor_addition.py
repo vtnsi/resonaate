@@ -13,7 +13,6 @@ import pytest
 from resonaate.data.data_interface import AgentModel
 from resonaate.data.events import SensorAdditionEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
-from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.scenario.config.base import ConfigError
 from resonaate.scenario.config.event_configs import SensorAdditionEventConfig
 from resonaate.sensors.sensor_base import (
@@ -227,7 +226,6 @@ class TestSensorAdditionEvent:
         """
         event_config_dict["sensor"] = optical_space_config
         addition_config = SensorAdditionEventConfig(**event_config_dict)
-        updateReductionParameters(addition_config.start_time)
         assert SensorAdditionEvent.fromConfig(addition_config)
 
     def testFromConfigOptical(self, radar_ground_config: dict, event_config_dict: dict):
@@ -239,7 +237,6 @@ class TestSensorAdditionEvent:
         """
         event_config_dict["sensor"] = radar_ground_config
         addition_config = SensorAdditionEventConfig(**event_config_dict)
-        updateReductionParameters(addition_config.start_time)
         assert SensorAdditionEvent.fromConfig(addition_config)
 
     def testHandleEventOptical(self, mocked_scenario: MagicMock):
