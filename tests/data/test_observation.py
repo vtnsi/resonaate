@@ -14,7 +14,6 @@ from resonaate.data.observation import Observation
 from resonaate.physics.measurement_utils import IsAngle
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
-from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.sensors import OPTICAL_LABEL
 from resonaate.sensors.measurement import Measurement
 
@@ -35,9 +34,7 @@ def getSensorECI(epoch: Epoch) -> ndarray:
     lat_rad = 0.44393147656176574
     lon_rad = 1.124890532
     altitude_km = 0.6253
-    # [FIXME]: Very tmp solution to make test work
     utc_datetime = julianDateToDatetime(JulianDate(epoch.julian_date))
-    updateReductionParameters(utc_datetime)
     return ecef2eci(lla2ecef(np.array([lat_rad, lon_rad, altitude_km])), utc_datetime)
 
 

@@ -32,7 +32,6 @@ from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.physics.constants import PI
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
-from resonaate.physics.transforms.reductions import updateReductionParameters
 from resonaate.sensors.measurement import Measurement
 
 # SET UP RSO AGENTS
@@ -99,8 +98,6 @@ lat = [0.0, 1.0, 2.0] * 3
 lon = [0.5, 1.5, 2.5] * 3
 alt = [0.0, 50.0, 100.0] * 3
 obs_vals = zip(RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, azimuths, elevations, lat, lon, alt)
-# [FIXME]: Very tmp solution to make test work
-updateReductionParameters(julianDateToDatetime(JulianDate(EXAMPLE_JD[0])))
 EXAMPLE_OBSERVATIONS = [
     {
         "julian_date": jd,

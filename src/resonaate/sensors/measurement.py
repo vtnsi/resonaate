@@ -334,5 +334,4 @@ class Measurement:
             raise ValueError(f"Measurement: non-positive definite r_matrix: {r_matrix}")
 
         # Save the sqrt form of the R matrix to save computation time
-        # [FIXME]: not initialized as `None` in `__init__` because variable not overwritten by this line...
         self._sqrt_noise_covar = real(sqrtm(self._r_matrix))
