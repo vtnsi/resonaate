@@ -150,7 +150,7 @@ class TestResonaateDatabase:
         class NewEpoch(declarative_base()):
             __tablename__ = "new_epochs"
 
-            id = Column(Integer, primary_key=True)  # noqa: A003
+            id = Column(Integer, primary_key=True)
 
             julian_date = Column(Float, index=True, unique=True, nullable=False)
 
@@ -195,7 +195,7 @@ class TestResonaateDatabase:
         class NewEpoch(declarative_base()):
             __tablename__ = "new_epochs"
 
-            id = Column(Integer, primary_key=True)  # noqa: A003
+            id = Column(Integer, primary_key=True)
 
             julian_date = Column(Float, index=True, unique=True, nullable=False)
 

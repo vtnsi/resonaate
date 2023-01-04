@@ -183,7 +183,7 @@ class SensingAgentConfig(ConfigObject):
     R"""``str``: Key where settings are stored in the configuration dictionary."""
 
     # Basic dataclass attributes
-    id: int  # noqa: A003
+    id: int
     R"""``int``: unique ID of the sensor."""
 
     name: str

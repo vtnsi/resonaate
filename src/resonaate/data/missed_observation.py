@@ -25,7 +25,7 @@ class MissedObservation(Base, _DataMixin):
     """Represents singular missed observation information in the database."""
 
     __tablename__ = "missed_observations"
-    id = Column(Integer, primary_key=True)  # noqa: A003
+    id = Column(Integer, primary_key=True)
 
     ## Defines the epoch associated with the observation data
     # Many to one relation with :class:`.Epoch`
