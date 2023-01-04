@@ -76,10 +76,7 @@ class Event(_DataMixin, Base):
     EVENT_TYPE: str = "event"
     """``str``: Name of this type of event."""
 
-    id = Column(  # noqa: A003
-        Integer,
-        primary_key=True,
-    )
+    id = Column(Integer, primary_key=True)
     """``int``: Primary key for the 'events' table."""
 
     scope = Column(String(128), nullable=False)

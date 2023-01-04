@@ -33,7 +33,7 @@ except ImportError:
 # -- Project information -----------------------------------------------------
 
 project = "RESONAATE"
-copyright = "2018-2022, Virginia Tech"  # noqa: A001
+copyright = "2018-2022, Virginia Tech"
 author = "Dylan Thomas, David Kusterer, Jon Kadan, Cameron Harris"
 
 project_ver = version(project)
