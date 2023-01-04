@@ -31,7 +31,7 @@ def _reductionsCheck(reductions: dict, other_reductions: dict) -> None:
             assert val == other_reductions[key]
 
 
-def testGetReductionParameters(teardown_kvs: None) -> None:
+def testGetReductionParameters() -> None:
     """Test creation and retrieving of values in KVS."""
     # pylint: disable=unused-argument
     utc = datetime.datetime(2022, 6, 10, 4, 12, 30)

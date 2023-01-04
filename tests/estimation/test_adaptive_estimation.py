@@ -46,11 +46,6 @@ if TYPE_CHECKING:
     from resonaate.sensors.sensor_base import Sensor
 
 
-@pytest.fixture()
-def _fixtureSetup(teardown_kvs, reset_shared_db: None):  # pylint: disable=unused-argument
-    """Reset key value store and DB properly."""
-
-
 def propagateScenario(
     datafiles: str,
     init_filepath: str,
@@ -89,7 +84,7 @@ def propagateScenario(
 
 
 @pytest.mark.scenario()
-@pytest.mark.usefixtures("_fixtureSetup")
+@pytest.mark.usefixtures("reset_shared_db")
 class TestAdaptiveEstimationIntegration:
     """Integration test :class:`.AdaptiveFilter` classes."""
 

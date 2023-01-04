@@ -81,11 +81,11 @@ def getTestLoggerObject() -> Logger:
     return logger
 
 
-@pytest.fixture(name="teardown_kvs")
+@pytest.fixture(name="teardown_kvs", autouse=True)
 def _teardownKeyValueStore():
-    """Make sure that :class:`.KeyValueStore.Server` is shut down after each test that uses it."""
+    """Make sure that :class:`.KeyValueStore.Server` is flushed after each test, but not shutdown."""
     yield
-    KeyValueStore.stopServerProcess()
+    KeyValueStore.flush()
 
 
 @pytest.fixture(name="reset_shared_db")

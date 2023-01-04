@@ -109,7 +109,7 @@ def getMockedErrorJobObject() -> Job:
     return job
 
 
-@pytest.mark.usefixtures("teardown_kvs", "worker_manager")
+@pytest.mark.usefixtures("worker_manager")
 class TestBaseJobHandler:
     """Tests related to job handlers."""
 
@@ -153,7 +153,7 @@ class TestBaseJobHandler:
         assert not job_handler.queue_mgr.queued_jobs_processed
 
 
-@pytest.mark.usefixtures("teardown_kvs", "worker_manager")
+@pytest.mark.usefixtures("worker_manager")
 class TestAgentPropagateHandler:
     """Tests related to job handlers."""
 
