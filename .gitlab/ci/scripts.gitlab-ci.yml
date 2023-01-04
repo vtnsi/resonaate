@@ -21,7 +21,7 @@
     - python3 -m pip install --upgrade pip virtualenv
     - virtualenv .venv
     - source .venv/bin/activate
-    - python3 -m pip install mjolnir[test] --index-url https://gitlab-ci-token:$CI_JOB_TOKEN@code.vt.edu/api/v4/projects/16484/packages/pypi/simple
+    - python3 -m pip install mjolnir --index-url https://gitlab-ci-token:$CI_JOB_TOKEN@code.vt.edu/api/v4/projects/16484/packages/pypi/simple
     - echo -e "\e[0Ksection_end:`date +%s`:venv\r\e[0K"
 
 # `pip install` RESONAATE only
