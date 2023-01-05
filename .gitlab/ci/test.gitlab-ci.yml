@@ -44,6 +44,8 @@ pytest-scenario:
   extends: .test-base
   script:
     - echo "Running scenario tests with pytest"
+    # [FIXME]: This is a temporary fix for
+    - export MJOLNIR_SOCKET_PROTOCOL=ipc
     - pytest -m scenario $PYTEST_OPTIONS
 
 # ==========================================
@@ -54,6 +56,8 @@ pytest-event:
   extends: .test-base
   script:
     - echo "Running event tests with pytest"
+    # [FIXME]: This is a temporary fix for
+    - export MJOLNIR_SOCKET_PROTOCOL=ipc
     - pytest -m event $PYTEST_OPTIONS
 
 # ==========================================
