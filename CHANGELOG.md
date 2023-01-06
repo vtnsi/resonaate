@@ -44,6 +44,7 @@ ______________________________________________________________________
 - `Measurement` and `MeasurementType` classes to decouple sensor and measurement logic (see #146 and !130)
 - `min_detectable_power` as a necessary `Radar` sensor config input
 - `calculateMinRadarRange` in `sensor_utils` to set for `Radar` if `min_range` not set in config
+- `Decision.calculate()` now ANDs the decision and visibility matrices (see #154 and !147)
 
 ### Changed
 
@@ -74,6 +75,7 @@ ______________________________________________________________________
 - `MeasurementType.calculate()`, `Measurement.calculateMeasurement()`, and `getSlantRangeVector()` all take sensor/target ECI states and UTC as parameters (see #158)
 - Stopped overuse of `updateReductionParameters()` since `getReductionParameters()` properly handles if they aren't updated (see #142)
 - bump `mjolnir` version to 1.3.0
+- `Decision.calculate()` now requires the visibility matrix as a parameter (see #154 and !147)
 
 ### Deprecated
 
@@ -91,6 +93,7 @@ ______________________________________________________________________
 - `_minimumDetectablePower()` function in `Radar`
 - `ObservationTuple` and `Sensor.buildSigmaObs()` (see #156 and !141)
 - `requirements.txt` file
+- positive reward requirement (see #154 and !147) 
 
 ### Fixed
 

@@ -38,16 +38,32 @@ class Decision(metaclass=ABCMeta):
         return self.__class__.__name__ in self.REGISTRY
 
     @abstractmethod
-    def calculate(self, reward_matrix: ndarray, **kwargs) -> ndarray:
-        """Abstract function for making decisions based on the given reward matrix.
+    def _calculate(self, reward_matrix: ndarray, visibility_matrix: ndarray) -> ndarray:
+        """Abstract function for making decisions based on the reward and visibility matrices.
 
         Note:
-            Must be overridden by implementors.
+            Must be overridden by implementers.
 
         Args:
             reward_matrix (``ndarray``): reward matrix to optimize
+            visibility_matrix (``ndarray``): visibility matrix to optimize
 
         Returns:
-            ``ndarray``: optimal decision set
+            ``ndarray``: decision set
         """
         raise NotImplementedError
+
+    def calculate(self, reward_matrix: ndarray, visibility_matrix: ndarray) -> ndarray:
+        """Public method for calculating the decision matrix.
+
+        Calls the implemented :meth:`.Decision._calculate()` method, then ANDs with visibility matrix.
+
+        Args:
+            reward_matrix (``ndarray``): reward matrix to optimize
+            visibility_matrix (``ndarray``): visibility matrix to optimize
+
+        Returns:
+            ``ndarray``: decision set
+        """
+        decision_matrix = self._calculate(reward_matrix, visibility_matrix)
+        return decision_matrix & visibility_matrix

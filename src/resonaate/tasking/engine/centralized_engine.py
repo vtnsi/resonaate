@@ -122,20 +122,26 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             tasked_sensors.add(cur_obs.sensor_id)
             observed_targets.add(cur_obs.target_id)
 
+        # Log tasked sensors
         msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
         msg += f"{len(tasked_sensors)} sensors {tasked_sensors}"
         msg += f" on {len(observed_targets)} targets {observed_targets}"
         self.logger.info(msg)
 
+        # Log idle sensors
+        idle_sensors = set(self.sensor_list) - tasked_sensors
+        msg = f"{len(idle_sensors)} sensors {idle_sensors} not tasked"
+        self.logger.info(msg)
+
     def calculateRewards(self) -> None:
-        """Calculate rewards based off of normalized metrics."""
+        """Normalized metrics and calculate reward."""
         metrics = self.reward.normalizeMetrics(self.metric_matrix)
         rewards = self.reward.calculate(metrics)
         self.reward_matrix = rewards.reshape(self.num_targets, self.num_sensors)
 
     def generateTasking(self) -> None:
         """Create tasking solution based on the current simulation state."""
-        self.decision_matrix = self.decision.calculate(self.reward_matrix)
+        self.decision_matrix = self.decision.calculate(self.reward_matrix, self.visibility_matrix)
 
     def loadImportedObservations(self, datetime_epoch: datetime) -> list[Observation]:
         """Load imported :class:`.Observation` objects from :class:`.ImporterDatabase`.
