@@ -25,6 +25,7 @@ from scipy.optimize import newton
 # Local Imports
 from ...common.logger import resonaateLogError
 from ..bodies import Earth
+from ..constants import KM2M, PI
 from ..maths import _ATOL, _MAX_ITER
 from .utils import getAngularMomentum, universalC2C3
 
@@ -287,3 +288,21 @@ def solveKeplerProblemUniversal(
         raise KeplerProblemError(msg)
 
     return concatenate((f * r0 + g * v0, fdot * r0 + gdot * v0))
+
+
+def keplerThirdLaw(position_vector: ndarray) -> float:
+    """Find the Orbital Period of an RSO using Kepler's 3rd law.
+
+    Note:
+        Circular orbit assumed as first approximation.
+
+    Args:
+        position_vector (``ndarray``): 3x1 ECI RSO position vector
+
+    Returns:
+        ``float``: Orbital Period
+    """
+    constant = 4 * (PI**2) * (Earth.radius * KM2M) / Earth.gravity
+    radius_ratio = (norm(position_vector) / Earth.radius) ** 3
+    period = (constant * radius_ratio) ** (1 / 2)
+    return period

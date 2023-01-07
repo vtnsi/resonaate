@@ -76,6 +76,8 @@ ______________________________________________________________________
 - Stopped overuse of `updateReductionParameters()` since `getReductionParameters()` properly handles if they aren't updated (see #142)
 - bump `mjolnir` version to 1.3.0
 - `Decision.calculate()` now requires the visibility matrix as a parameter (see #154 and !147)
+- IOD uses `radarObs2eciPosition` instead of `self.convertObservationToECI`
+- `determineTransferDirection` is now based off of RSO period instead of comparing true anomalies (see #170 and !153)
 
 ### Deprecated
 
@@ -93,7 +95,7 @@ ______________________________________________________________________
 - `_minimumDetectablePower()` function in `Radar`
 - `ObservationTuple` and `Sensor.buildSigmaObs()` (see #156 and !141)
 - `requirements.txt` file
-- positive reward requirement (see #154 and !147) 
+- positive reward requirement (see #154 and !147)
 
 ### Fixed
 

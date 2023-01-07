@@ -13,6 +13,7 @@ from numpy.linalg import norm
 from ..bodies.earth import Earth
 from ..constants import PI
 from ..maths import _ATOL, _MAX_ITER, fpe_equals, wrapAngle2Pi
+from ..orbits.kepler import keplerThirdLaw
 from ..orbits.utils import universalC2C3
 
 if TYPE_CHECKING:
@@ -20,8 +21,10 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
 
-def determineTransferDirection(initial_true_anomaly: float, final_true_anomaly: float) -> int:
+def determineTransferDirection(position_vector: float, transit_time: float) -> int:
     """Corresponds to `transfer_method` inputs in the lambert() functions.
+
+    [NOTE]: Circular orbit assumed as first approximation.
 
     Note:
         "1" corresponds to short path
@@ -29,15 +32,16 @@ def determineTransferDirection(initial_true_anomaly: float, final_true_anomaly: 
         "0" corresponds to an invalid case
 
     Args:
-        initial_true_anomaly (``float``): true anomaly at first ob time
-        final_true_anomaly (``float``): true anomaly at second ob time
+        position_vector (``float``): 3x1 ECI position vector (km)
+        transit_time (``float``): time between initial and final position (sec)
 
     Return:
         ``int``: indication of short or long pass of orbit
     """
-    if abs(initial_true_anomaly - final_true_anomaly) < PI:
+    period = keplerThirdLaw(position_vector)
+    if transit_time < period / 2:
         return 1
-    if abs(initial_true_anomaly - final_true_anomaly) > PI:
+    if transit_time > period / 2:
         return -1
 
     return 0

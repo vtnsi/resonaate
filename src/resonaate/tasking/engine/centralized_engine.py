@@ -123,15 +123,17 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             observed_targets.add(cur_obs.target_id)
 
         # Log tasked sensors
-        msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
-        msg += f"{len(tasked_sensors)} sensors {tasked_sensors}"
-        msg += f" on {len(observed_targets)} targets {observed_targets}"
-        self.logger.info(msg)
+        if tasked_sensors:
+            msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
+            msg += f"{len(tasked_sensors)} sensors {tasked_sensors}"
+            msg += f" on {len(observed_targets)} targets {observed_targets}"
+            self.logger.info(msg)
 
         # Log idle sensors
         idle_sensors = set(self.sensor_list) - tasked_sensors
-        msg = f"{len(idle_sensors)} sensors {idle_sensors} not tasked"
-        self.logger.info(msg)
+        if idle_sensors:
+            msg = f"{len(idle_sensors)} sensors {idle_sensors} not tasked"
+            self.logger.info(msg)
 
     def calculateRewards(self) -> None:
         """Normalized metrics and calculate reward."""
