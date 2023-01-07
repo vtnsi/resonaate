@@ -19,7 +19,6 @@ from ...data.queries import fetchEstimatesByJDInterval, fetchObservationsByJDInt
 from ...data.resonaate_database import ResonaateDatabase
 from ...dynamics.celestial import EarthCollision
 from ...physics.orbit_determination.lambert import determineTransferDirection
-from ...physics.orbits.utils import getTrueAnomalyFromRV
 from ...physics.time.stardate import JulianDate, ScenarioTime
 from ...physics.transforms.methods import radarObs2eciPosition
 from ..sequential.sequential_filter import FilterFlag, SequentialFilter
@@ -662,9 +661,10 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         for idx, (pre_maneuver_state, maneuver_time) in enumerate(
             zip(pre_maneuver_states, maneuver_times)
         ):
+            # [NOTE]: Circular orbit assumed as first approx.
             transfer_method = determineTransferDirection(
-                initial_true_anomaly=getTrueAnomalyFromRV(pre_maneuver_state),
-                final_true_anomaly=getTrueAnomalyFromRV(self.est_x),
+                pre_maneuver_state,
+                self.time - maneuver_time,
             )
             new_velocity, _ = self.orbit_determination_method(
                 pre_maneuver_state[:3],

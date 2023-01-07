@@ -4,7 +4,7 @@ from copy import deepcopy
 
 # Third Party Imports
 import pytest
-from numpy import allclose, array, eye, ndarray
+from numpy import array, eye, ndarray
 
 # RESONAATE Imports
 import resonaate.data.resonaate_database
@@ -150,17 +150,6 @@ class TestLambertInitialOrbitDetermination:
             iod.julian_date_start.convertToScenarioTime(self.start_julian_date),
         )
         assert result == []
-
-    def testConvertObservationToECI(self, iod: LambertIOD, observation: Observation):
-        """Test convertObservationToECI() function.
-
-        Args:
-            iod (:class:`.LambertIOD): LambertIOD fixture
-            observation (:class:`.Observation`): Observation fixture
-        """
-        # [TODO]: find Vallado test case for this, if applicable
-        result = iod.convertObservationToECI(observation)
-        assert allclose(result, self.observation_array)
 
     def testCheckSinglePass(self, iod: LambertIOD):
         """Test checkSinglePass() function.

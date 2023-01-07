@@ -416,14 +416,21 @@ def radarObs2eciPosition(observation: Observation) -> ndarray:
     range_ = observation.range_km
     azimuth = observation.azimuth_rad
     elevation = observation.elevation_rad
-    x_j2000_relative = sez2eci(
+    eci_relative_pos = sez2eci(
         x_sez=razel2sez(range_, elevation, azimuth, 0, 0, 0),
         lat=observation.position_lat_rad,
         lon=observation.position_lon_rad,
         utc_date=ob_datetime,
     )
-    # [NOTE]: Only valid for positions
-    return x_j2000_relative[:3] + observation.sensor_eci[:3]
+    # [FIXME]: Replace with Observation.sensor_eci when ECI saved to DB
+    sensor_ecef = lla2ecef(
+        (
+            observation.position_lat_rad,
+            observation.position_lon_rad,
+            observation.position_altitude_km,
+        )
+    )
+    return eci_relative_pos[:3] + ecef2eci(sensor_ecef, ob_datetime)[:3]
 
 
 def spherical2cartesian(

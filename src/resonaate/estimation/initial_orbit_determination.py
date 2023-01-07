@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from mjolnir import KeyValueStore
-from numpy import array
+from numpy import concatenate
 from scipy.linalg import norm
 from sqlalchemy import asc
 from sqlalchemy.orm import Query
@@ -20,9 +20,10 @@ from ..data.resonaate_database import ResonaateDatabase
 from ..physics.constants import DAYS2SEC
 from ..physics.orbit_determination import OrbitDeterminationFunction
 from ..physics.orbit_determination.lambert import determineTransferDirection
-from ..physics.orbits.utils import getPeriod, getSemiMajorAxis, getTrueAnomalyFromRV
-from ..physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
-from ..physics.transforms.methods import ecef2eci, lla2ecef, razel2sez, sez2ecef
+from ..physics.orbits.utils import getPeriod, getSemiMajorAxis
+from ..physics.time.stardate import JulianDate, ScenarioTime
+from ..physics.transforms.methods import radarObs2eciPosition
+from ..sensors import OPTICAL_LABEL
 from .adaptive.initialization import lambertInitializationFactory
 
 if TYPE_CHECKING:
@@ -83,18 +84,6 @@ class InitialOrbitDetermination(ABC):
             julian_date_start (:class:`.JulianDate`): Starting JulianDate of the scenario
         Returns:
             class:`.InitialOrbitDeterminationConfig`: constructed adaptive estimation object
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def convertObservationToECI(self, observation: Observation) -> ndarray:
-        """Convert Observation to ECI position relative to sensor.
-
-        Args:
-            Observation (:class:`.Observation`): observation object.
-
-        Returns:
-            ``ndarray``: ECI state of observation
         """
         raise NotImplementedError
 
@@ -208,40 +197,12 @@ class LambertIOD(InitialOrbitDetermination):
             .filter(Observation.julian_date <= current_jdate)
             .filter(Observation.julian_date >= start_jdate)
             .filter(
-                Observation.sensor_type != "Optical"  # Only Radar/AdvRadar Obs for Lambert IOD
+                Observation.sensor_type != OPTICAL_LABEL  # Only Radar/AdvRadar Obs for Lambert IOD
             )
             .order_by(asc(Observation.julian_date))
         )
 
         return database.getData(observation_query)
-
-    def convertObservationToECI(self, observation: Observation) -> ndarray:
-        """Convert Observation to ECI position relative to sensor.
-
-        Args:
-            Observation (:class:`.Observation`): observation object.
-
-        Returns:
-            ``ndarray``: ECI state of observation
-        """
-        utc_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
-        observation_sez = razel2sez(
-            observation.range_km, observation.elevation_rad, observation.azimuth_rad, 0, 0, 0
-        )
-        sensor_ecef = lla2ecef(
-            array(
-                [
-                    observation.position_lat_rad,
-                    observation.position_lon_rad,
-                    observation.position_altitude_km,
-                ]
-            )
-        )
-        observation_ecef = (
-            sez2ecef(observation_sez, observation.position_lat_rad, observation.position_lon_rad)
-            + sensor_ecef
-        )
-        return ecef2eci(observation_ecef, utc_datetime)
 
     def determineNewEstimateState(
         self,
@@ -286,38 +247,35 @@ class LambertIOD(InitialOrbitDetermination):
             return None, False
 
         # Get position from Radar observation between maneuver detection time and now
-        initial_state = self.convertObservationToECI(previous_observation[-1])
+        initial_position = radarObs2eciPosition(previous_observation[-1])
 
         # Get position from Radar observation from current timestep
-        final_state = self._determineFinalState(observations)
-        if final_state is None:
+        final_position = self._determineFinalState(observations)
+        if final_position is None:
             msg = "No Radar observations to perform Lambert IOD"
             self._logger.warning(msg)
             return None, False
 
         transit_time = self.checkSinglePass(
-            final_state[:3], previous_observation[-1].julian_date, current_julian_date
+            final_position, previous_observation[-1].julian_date, current_julian_date
         )
         if not transit_time:
             msg = "Observations not from a single pass"
             self._logger.warning(msg)
             return None, False
 
-        transfer_method = determineTransferDirection(
-            initial_true_anomaly=getTrueAnomalyFromRV(initial_state),
-            final_true_anomaly=getTrueAnomalyFromRV(final_state),
-        )
+        # [NOTE]: Circular orbit assumed as first approx.
+        transfer_method = determineTransferDirection(initial_position, transit_time)
 
         # [NOTE] We don't need initial_velocity because we only are improving the current state estimate.
         _, final_velocity = self.orbit_determination_method(
-            initial_state[:3],
-            final_state[:3],
+            initial_position,
+            final_position,
             transit_time,
             transfer_method,
         )
 
-        final_state[3:] = final_velocity
-        return final_state, True
+        return concatenate((final_position, final_velocity)), True
 
     def _determineFinalState(self, observations: list[Observation]) -> ndarray | None:
         """Calculate Position vector at the current time given observations.
@@ -331,6 +289,6 @@ class LambertIOD(InitialOrbitDetermination):
         # [TODO]: put a method that checks for the obs with the smallest residual?
         for observation in observations:
             if observation.range_km:
-                return self.convertObservationToECI(observation)
+                return radarObs2eciPosition(observation)
 
         return None
