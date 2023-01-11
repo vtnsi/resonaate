@@ -11,15 +11,14 @@ from scipy.linalg import norm
 from ..agents import SPACECRAFT_LABEL
 from ..data.missed_observation import MissedObservation
 from ..physics.bodies import Sun
-from ..physics.measurement_utils import getElevation
 from ..physics.sensor_utils import (
     apparentVisualMagnitude,
     calculateIncidentSolarFlux,
     calculatePhaseAngle,
     checkGalacticExclusionZone,
     checkGroundSensorLightingConditions,
+    checkSpaceSensorEarthLimbObscuration,
     checkSpaceSensorLightingConditions,
-    getEarthLimbConeAngle,
     lambertianPhaseFunction,
 )
 from .measurement import Measurement
@@ -177,14 +176,14 @@ class Optical(Sensor):
                 return False, MissedObservation.Explanation.SPACE_ILLUMINATION
 
             # Check if target is in front of the Earth's limb
-            elevation = getElevation(slant_range_sez)
-            limb_angle = getEarthLimbConeAngle(self.host.eci_state)
-
-            # Combine the two conditions
             # [NOTE]: The fields of regard of EO/IR space-based sensors are dynamically limited by
             #           the limb of the Earth. Therefore, they cannot observe a target if the Earth
             #           or its atmosphere is in the background.
-            if limb_angle > elevation:
+            target_is_obscured = checkSpaceSensorEarthLimbObscuration(
+                self.host.eci_state, slant_range_sez
+            )
+
+            if target_is_obscured:
                 return False, MissedObservation.Explanation.LIMB_OF_EARTH
 
         # Ground based require eclipse conditions
