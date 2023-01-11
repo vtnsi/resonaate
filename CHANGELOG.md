@@ -78,6 +78,7 @@ ______________________________________________________________________
 - `Decision.calculate()` now requires the visibility matrix as a parameter (see #154 and !147)
 - IOD uses `radarObs2eciPosition` instead of `self.convertObservationToECI`
 - `determineTransferDirection` is now based off of RSO period instead of comparing true anomalies (see #170 and !153)
+- Refactored (and validated) `getEarthLimbConeAngle()` into a generic `getBodyLimbConeAngle()` function and `checkSpaceSensorEarthLimbObscuration()` logic check (see #155)
 
 ### Deprecated
 

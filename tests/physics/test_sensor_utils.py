@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # Third Party Imports
 import numpy as np
+import pytest
 
 # RESONAATE Imports
 from resonaate.physics.sensor_utils import (
@@ -9,6 +10,7 @@ from resonaate.physics.sensor_utils import (
     calculateIncidentSolarFlux,
     calculatePhaseAngle,
     calculateSunVizFraction,
+    getBodyLimbConeAngle,
     getFrequencyFromString,
     lambertianPhaseFunction,
 )
@@ -62,3 +64,23 @@ def testGetFrequencyFromString():
     frequency_string = "L"
     frequency = getFrequencyFromString(frequency_string)
     assert frequency == 1.5 * 1e9
+
+
+def testBodyLimbConeAngleBadInputs():
+    """Test that invalid inputs to `getBodyLimbConeAngle()` raises a `ValueError`."""
+    with pytest.raises(
+        ValueError, match="Observer distance cannot be less than the celestial body limb."
+    ):
+        getBodyLimbConeAngle(2.0, 1.0)
+
+
+def testBodyLimbConeAngleFarObserver():
+    """Test that an infinitely far away observer sees a body limb half cone angle of zero."""
+    cone_angle = getBodyLimbConeAngle(1.0, np.inf)
+    assert np.isclose(cone_angle, 0.0)
+
+
+def testBodyLimbConeAngleCloseObserver():
+    """Test that an observer on the body sees a half cone angle of 90 degrees."""
+    cone_angle = getBodyLimbConeAngle(1.0, 1.0)
+    assert np.isclose(cone_angle, np.pi / 2)

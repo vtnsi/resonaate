@@ -13,6 +13,7 @@ from .bodies import Earth
 from .bodies.third_body import Sun
 from .constants import DEG2RAD, M2KM, PI, SOLAR_FLUX, SPEED_OF_LIGHT
 from .maths import subtendedAngle
+from .measurement_utils import getElevation
 from .transforms.methods import spherical2cartesian
 
 if TYPE_CHECKING:
@@ -32,27 +33,21 @@ GALACTIC_CENTER_ECI = spherical2cartesian(
 ## Optical Support Functions
 
 
-def getEarthLimbConeAngle(eci_state: ndarray) -> float:
-    r"""Return the elevation angle between a sensor and the limb of the Earth.
-
-    Determine the cone angle that the satellite makes with Earth's limb, which we define as the
-    radius of the Earth plus the height of the atmosphere.
-
-    The limb angle will always be in :math:`[-\frac{\pi}{2}, 0]` for satellites, because elevation is
-    measured from the local SE plane in the SEZ system to the Z axis which points radially
-    outward, along the ECI position direction. Therefore, the sensor's limb angle will always
-    be negative.
-
-    References:
-        :cite:t:`nastasi_2018_scitech_dst`, Section II.C.3
+def getBodyLimbConeAngle(body_limb: float, observer_distance: float) -> float:
+    """Return the cone half-angle of limb of a celestial body from the perspective of an observer.
 
     Args:
-        eci_state (``ndarray``): 6x1 ECI state vector of the sensor satellite (km; km/s)
+        body_limb (``float``): scalar radius of the celestial body's limb -- typically, body radius + atmosphere altitude (km)
+        observer_distance (``float``): distance of the observer relative from the center of the celestial body (km)
 
     Returns:
-        ``float``: angle target makes with the Earth's limb, :math:`[-\frac{\pi}{2}, 0]` (rad)
+        ``float``: cone half-angle of the celestial body's limb, from the observer's perspective at `relative_position`
     """
-    return arcsin((Earth.radius + Earth.atmosphere) / norm(eci_state[:3])) - PI * 0.5
+    # [NOTE]: numpy.arcsin returns `nan` if an invalid argument is entered, which could pass through downstream checks unnoticed.
+    #         Handle bad inputs here.
+    if observer_distance < body_limb:
+        raise ValueError("Observer distance cannot be less than the celestial body limb.")
+    return arcsin(body_limb / observer_distance)
 
 
 def lineOfSight(eci_position_1: ndarray, eci_position_2: ndarray) -> bool:
@@ -200,6 +195,44 @@ def checkSpaceSensorLightingConditions(
         dot(sun_eci_unit_vector, boresight_eci_vector) / norm(boresight_eci_vector)
     )
     return boresight_sun_angle >= cone_angle
+
+
+def checkSpaceSensorEarthLimbObscuration(
+    sensor_eci_state: ndarray,
+    target_sez_state: ndarray,
+):
+    r"""Determine if the target is in front of the limb of the Earth from the perspective of the sensor.
+
+    Note:
+        The fields of regard of EO/IR space-based sensors are dynamically limited by
+    the limb of the Earth. Therefore, they cannot observe a target if the Earth
+    or its atmosphere is in the background.
+
+    Note:
+        The Earth's limb elevation will always be in :math:`[-\frac{\pi}{2}, 0]` for satellites, because elevation
+    is measured from the local SE plane in the SEZ system to the Z axis which points radially
+    outward, along the ECI position direction. Therefore, the Earth's limb elevation angle will always
+    be negative.
+
+    References:
+        :cite:t:`nastasi_2018_scitech_dst`, Section II.C.3
+
+    Args:
+        sensor_eci_state (``ndarray``): 6x1 ECI position vector of the sensor satellite (km; km/s)
+        target_sez (``ndarray``): 6x1 slant range vector of the target (km; km/s)
+
+    Returns:
+        ``bool``: whether the target is in front of the Earth's limb, from the sensor's perspective
+    """
+    target_elevation = getElevation(target_sez_state)
+    limb_elevation = (
+        getBodyLimbConeAngle(
+            body_limb=Earth.radius + Earth.atmosphere,
+            observer_distance=norm(sensor_eci_state[:3]),
+        )
+        - PI / 2  # see [NOTE] #2 in docstring for explanation
+    )
+    return limb_elevation > target_elevation
 
 
 def apparentVisualMagnitude(
