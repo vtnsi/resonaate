@@ -45,6 +45,7 @@ ______________________________________________________________________
 - `min_detectable_power` as a necessary `Radar` sensor config input
 - `calculateMinRadarRange` in `sensor_utils` to set for `Radar` if `min_range` not set in config
 - `Decision.calculate()` now ANDs the decision and visibility matrices (see #154 and !147)
+- sensor ECI state vector columns in `Observation` data class and `sensor_eci` property (see #46 and !127).
 
 ### Changed
 
@@ -79,10 +80,11 @@ ______________________________________________________________________
 - IOD uses `radarObs2eciPosition` instead of `self.convertObservationToECI`
 - `determineTransferDirection` is now based off of RSO period instead of comparing true anomalies (see #170 and !153)
 - Refactored (and validated) `getEarthLimbConeAngle()` into a generic `getBodyLimbConeAngle()` function and `checkSpaceSensorEarthLimbObscuration()` logic check (see #155)
+- moved `MissedObservation` & `MissedObservation.Explanation` into `data/observation` module (see !127)
 
 ### Deprecated
 
-*for soon-to-be removed features*
+- `ImporterDatabase.loadObservationFile` will fail unless the sensor `r_matrix` can be passed in.
 
 ### Removed
 

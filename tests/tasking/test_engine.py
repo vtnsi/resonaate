@@ -14,8 +14,7 @@ import pytest
 # RESONAATE Imports
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.data.importer_database import ImporterDatabase
-from resonaate.data.missed_observation import MissedObservation
-from resonaate.data.observation import Observation
+from resonaate.data.observation import MissedObservation, Observation
 from resonaate.job_handlers.task_execution import TaskExecutionJobHandler
 from resonaate.job_handlers.task_prediction import TaskPredictionJobHandler
 from resonaate.physics.time.stardate import JulianDate
@@ -443,16 +442,25 @@ def testLoadImportedObservation(
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     # Create mock observations
     obs_1 = create_autospec(Observation, instance=True)
-    obs_2 = create_autospec(Observation, instance=True)
     sensing_agent_1_id = 1111
-    obs_1.position_lat_rad = np.deg2rad(45.0)
-    obs_1.position_lon_rad = np.deg2rad(-105.0)
+    obs_1.pos_x_km = 7000
+    obs_1.pos_y_km = 0
+    obs_1.pos_z_km = 0
+    obs_1.vel_x_km_p_sec = 2
+    obs_1.vel_y_km_p_sec = 2
+    obs_1.vel_z_km_p_sec = 2
     obs_1.target_id = 1
     obs_1.sensor_id = sensing_agent_1_id
     obs_1.makeDictionary = MagicMock()
+
     sensing_agent_2_id = 1112
-    obs_2.position_lat_rad = np.deg2rad(15.0)
-    obs_2.position_lon_rad = np.deg2rad(50.0)
+    obs_2 = create_autospec(Observation, instance=True)
+    obs_2.pos_x_km = -7000
+    obs_2.pos_y_km = 0
+    obs_2.pos_z_km = 0
+    obs_2.vel_x_km_p_sec = 2
+    obs_2.vel_y_km_p_sec = 2
+    obs_2.vel_z_km_p_sec = 2
     obs_2.target_id = 1
     obs_2.sensor_id = sensing_agent_2_id
     obs_2.makeDictionary = MagicMock()
@@ -482,8 +490,13 @@ def testLoadImportedObservation(
     centralized_tasking_engine._fetchSensorAgents.reset_mock()
 
     # Test observations that are from duplicate sensors
-    obs_2.position_lat_rad = np.deg2rad(45.0)
-    obs_2.position_lon_rad = np.deg2rad(-105.0)
+    obs_2.pos_x_km = 7000
+    obs_2.pos_y_km = 0
+    obs_2.pos_z_km = 0
+    obs_2.vel_x_km_p_sec = 2
+    obs_2.vel_y_km_p_sec = 2
+    obs_2.vel_z_km_p_sec = 2
+    obs_2.target_id = 1
     mocked_importer_db.getData.return_value = [obs_1, obs_2]
     centralized_tasking_engine.loadImportedObservations(datetime_epoch)
     # [NOTE]: Only the second one will be seen as a duplicate

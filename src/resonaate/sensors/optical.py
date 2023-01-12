@@ -9,7 +9,7 @@ from scipy.linalg import norm
 
 # Local Imports
 from ..agents import SPACECRAFT_LABEL
-from ..data.missed_observation import MissedObservation
+from ..data.observation import Explanation
 from ..physics.bodies import Sun
 from ..physics.sensor_utils import (
     apparentVisualMagnitude,
@@ -114,7 +114,7 @@ class Optical(Sensor):
         viz_cross_section: float,
         reflectivity: float,
         slant_range_sez: ndarray,
-    ) -> tuple[bool, MissedObservation.Explanation]:
+    ) -> tuple[bool, Explanation]:
         """Determine if the target is in view of the sensor.
 
         This method specializes :class:`.Sensor`'s :meth:`~.Sensor.isVisible` for electro-optical
@@ -132,7 +132,7 @@ class Optical(Sensor):
 
         Returns:
             ``bool``: True if target is visible; False if target is not visible
-            :class:`.MissedObservation.Explanation`: Reason observation was visible or not
+            :class:`.Explanation`: Reason observation was visible or not
         """
         # pylint:disable=too-many-return-statements
         jd = self.host.julian_date_epoch
@@ -144,7 +144,7 @@ class Optical(Sensor):
             viz_cross_section, tgt_eci_state[:3], sun_eci_position
         )
         if tgt_solar_flux <= 0:
-            return False, MissedObservation.Explanation.SOLAR_FLUX
+            return False, Explanation.SOLAR_FLUX
 
         # Check visual magnitude of RSO
         solar_phase_angle = calculatePhaseAngle(
@@ -157,12 +157,12 @@ class Optical(Sensor):
             norm(boresight_eci),
         )
         if rso_apparent_vismag > self.detectable_vismag:
-            return False, MissedObservation.Explanation.VIZ_MAG
+            return False, Explanation.VIZ_MAG
 
         # Check if sensor is pointed at the galactic center
         galactic = checkGalacticExclusionZone(boresight_eci[:3])
         if not galactic:
-            return False, MissedObservation.Explanation.GALACTIC_EXCLUSION
+            return False, Explanation.GALACTIC_EXCLUSION
 
         if self.host.agent_type == SPACECRAFT_LABEL:
             # Check if sensor is pointed at the Sun
@@ -173,7 +173,7 @@ class Optical(Sensor):
                 boresight_eci[:3], target_sun_unit_vector_eci
             )
             if not space_lighting:
-                return False, MissedObservation.Explanation.SPACE_ILLUMINATION
+                return False, Explanation.SPACE_ILLUMINATION
 
             # Check if target is in front of the Earth's limb
             # [NOTE]: The fields of regard of EO/IR space-based sensors are dynamically limited by
@@ -184,7 +184,7 @@ class Optical(Sensor):
             )
 
             if target_is_obscured:
-                return False, MissedObservation.Explanation.LIMB_OF_EARTH
+                return False, Explanation.LIMB_OF_EARTH
 
         # Ground based require eclipse conditions
         else:
@@ -192,7 +192,7 @@ class Optical(Sensor):
                 self.host.eci_state[:3], sun_eci_position / norm(sun_eci_position)
             )
             if not ground_lighting:
-                return False, MissedObservation.Explanation.GROUND_ILLUMINATION
+                return False, Explanation.GROUND_ILLUMINATION
 
         # Passed all phenomenology-specific tests, call base class' visibility check
         return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)

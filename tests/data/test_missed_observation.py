@@ -10,9 +10,7 @@ import pytest
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.data.missed_observation import MissedObservation
-from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
-from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
+from resonaate.data.observation import Explanation, MissedObservation
 from resonaate.sensors import OPTICAL_LABEL
 
 # Type Checking Imports
@@ -27,13 +25,18 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(name="sensor_eci")
-def getSensorECI(epoch: Epoch) -> ndarray:
-    """Convert LLA state to ECI."""
-    lat_rad = 0.44393147656176574
-    lon_rad = 1.124890532
-    altitude_km = 0.6253
-    utc_datetime = julianDateToDatetime(JulianDate(epoch.julian_date))
-    return ecef2eci(lla2ecef(np.array([lat_rad, lon_rad, altitude_km])), utc_datetime)
+def getSensorECI() -> ndarray:
+    """Return sensor ECI state vector."""
+    return np.array(
+        [
+            1.51388295e03,
+            5.56288454e03,
+            2.72049770e03,
+            -4.05657378e-01,
+            1.10047360e-01,
+            7.12013028e-04,
+        ]
+    )
 
 
 class TestMissedObservationTable:
@@ -41,11 +44,7 @@ class TestMissedObservationTable:
 
     sensor_type = OPTICAL_LABEL
 
-    sez = [
-        -4957.659229144096,
-        7894.2462525123365,
-        3193.9292760074436,
-    ]
+    eci = [7000.44393147656176574, 1.124890532, 0.6253, 3.0, 2.0, 1.0]
 
     def testInitKwargs(
         self,
@@ -61,7 +60,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.VISIBLE.value,
+            reason=Explanation.VISIBLE.value,
         )
 
     def testReprAndDict(
@@ -78,7 +77,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.MINIMUM_RANGE.value,
+            reason=Explanation.MINIMUM_RANGE.value,
         )
         print(missed_ob)
         missed_ob.makeDictionary()
@@ -97,7 +96,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.MAXIMUM_RANGE.value,
+            reason=Explanation.MAXIMUM_RANGE.value,
         )
 
         obs2 = MissedObservation(
@@ -106,7 +105,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.MAXIMUM_RANGE.value,
+            reason=Explanation.MAXIMUM_RANGE.value,
         )
 
         obs3 = MissedObservation(
@@ -115,31 +114,12 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.MAXIMUM_RANGE.value,
+            reason=Explanation.MINIMUM_RANGE.value,
         )
-        obs3.position_altitude_km = 500
 
         # Test equality and inequality
         assert obs1 == obs2
         assert obs1 != obs3
-
-    def testLLAProperty(
-        self,
-        epoch: Epoch,
-        target_agent: AgentModel,
-        sensor_agent: AgentModel,
-        sensor_eci: ndarray,
-    ):
-        """Test lla property."""
-        obs = MissedObservation(
-            julian_date=epoch.julian_date,
-            sensor_id=sensor_agent.unique_id,
-            target_id=target_agent.unique_id,
-            sensor_type=self.sensor_type,
-            sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.LINE_OF_SIGHT.value,
-        )
-        assert obs.lla.shape == (3,)
 
     def testSensorECIProperty(
         self,
@@ -155,7 +135,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.LINE_OF_SIGHT.value,
+            reason=Explanation.LINE_OF_SIGHT.value,
         )
         assert obs.sensor_eci.shape == (6,)
         assert np.array_equal(obs.sensor_eci, sensor_eci)
@@ -175,7 +155,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.AZIMUTH_MASK.value,
+            reason=Explanation.AZIMUTH_MASK.value,
         )
 
         # Test insert of object
@@ -196,7 +176,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.ELEVATION_MASK.value,
+            reason=Explanation.ELEVATION_MASK.value,
         )
         # Pre-insert required objects
         database.insertData(epoch)
@@ -224,7 +204,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.VIZ_MAG.value,
+            reason=Explanation.VIZ_MAG.value,
         )
         database.insertData(epoch)
         database.insertData(target_agent)
@@ -256,7 +236,7 @@ class TestMissedObservationTable:
             target_id=target_agent.unique_id,
             sensor_type=self.sensor_type,
             sensor_eci=sensor_eci,
-            reason=MissedObservation.Explanation.SOLAR_FLUX.value,
+            reason=Explanation.SOLAR_FLUX.value,
         )
         database.insertData(epoch)
         database.insertData(target_agent)

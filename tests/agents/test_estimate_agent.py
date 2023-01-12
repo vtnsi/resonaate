@@ -116,7 +116,7 @@ def getObservations(sensor_agent: SensingAgent) -> Observation:
         elevation_rad=0.5432822498364404,
         range_km=1953.3903221962914,
         range_rate_km_p_sec=-6.147282606743988,
-        sen_eci_state=sensor_agent.eci_state,
+        sensor_eci=sensor_agent.eci_state,
         measurement=sensor_agent.sensors.measurement,
     )
 

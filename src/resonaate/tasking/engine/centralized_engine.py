@@ -163,10 +163,13 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         imported_observations: list[Observation] = []
         sensor_position_set = set()
+
+        # Make sure there are no duplicate observations
         for observation in imported_observation_data:
             position_key = (
-                int(observation.position_lat_rad * 1000000),
-                int(observation.position_lon_rad * 1000000),
+                int(observation.pos_x_km * 1000000),
+                int(observation.pos_y_km * 1000000),
+                int(observation.pos_z_km * 1000000),
                 observation.target_id,
             )
             if position_key not in sensor_position_set:
@@ -181,6 +184,8 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             msg = f"Imported {len(imported_observations)} observations"
             self.logger.debug(msg)
 
+        # [NOTE]: Measurement metadata isn't saved to the DB. This attaches the correct Measurement metadata to
+        #   imported Observations so they can be processed
         sensor_agents = self._fetchSensorAgents()
         return [
             self._createLoadedObs(observation, sensor_agents[observation.sensor_id].sensors)

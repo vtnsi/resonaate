@@ -12,7 +12,7 @@ import pytest
 from resonaate.agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
-from resonaate.data.missed_observation import MissedObservation
+from resonaate.data.observation import Explanation
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from resonaate.physics.transforms.methods import eci2ecef, getSlantRangeVector
@@ -83,7 +83,7 @@ def testIsVisible(
     )
 
     assert visibility
-    assert explanation == MissedObservation.Explanation.VISIBLE
+    assert explanation == Explanation.VISIBLE
 
 
 def testIsNotVisible(
@@ -115,4 +115,4 @@ def testIsNotVisible(
         slant_range_sez,
     )
     assert not visibility
-    assert explanation == MissedObservation.Explanation.RADAR_SENSITIVITY
+    assert explanation == Explanation.RADAR_SENSITIVITY

@@ -20,8 +20,7 @@ from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .epoch import Epoch
 from .events import Event
 from .filter_step import FilterStep
-from .missed_observation import MissedObservation
-from .observation import Observation
+from .observation import MissedObservation, Observation
 from .task import Task
 
 

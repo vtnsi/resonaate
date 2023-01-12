@@ -14,7 +14,7 @@ from resonaate.data.observation import Observation
 from resonaate.physics.measurement_utils import IsAngle
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
-from resonaate.sensors import OPTICAL_LABEL
+from resonaate.sensors import ADV_RADAR_LABEL, OPTICAL_LABEL
 from resonaate.sensors.measurement import Measurement
 
 # Type Checking Imports
@@ -41,7 +41,7 @@ def getSensorECI(epoch: Epoch) -> ndarray:
 class TestObservationTable:
     """Test class for :class:`.Observation` database table class."""
 
-    sez = [
+    eci = [
         -4957.659229144096,
         7894.2462525123365,
         3193.9292760074436,
@@ -52,7 +52,6 @@ class TestObservationTable:
 
     azimuth_rad = 1.010036549841
     elevation_rad = 0.33006189181
-
     sensor_type = OPTICAL_LABEL
 
     def testInitKwargs(
@@ -70,7 +69,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -91,12 +90,11 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
         )
-        assert obs.lla.shape == (3,)
         assert obs.sensor_eci.shape == (6,)
         assert np.array_equal(obs.sensor_eci, sensor_eci)
         assert obs.dim == 2
@@ -118,7 +116,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -135,7 +133,7 @@ class TestObservationTable:
                 sensor_type=self.sensor_type,
                 azimuth_rad=self.azimuth_rad,
                 elevation_rad=self.elevation_rad,
-                sen_eci_state=sensor_eci,
+                sensor_eci=sensor_eci,
                 measurement=["azimuth_rad", "elevation_rad"],
             )
 
@@ -154,7 +152,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -177,7 +175,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -190,7 +188,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -203,7 +201,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -221,17 +219,17 @@ class TestObservationTable:
         sensor_agent: AgentModel,
         sensor_eci: ndarray,
     ):
-        """Test sez property."""
+        """Test measurement property."""
         obs = Observation(
             julian_date=epoch.julian_date,
             sensor_id=sensor_agent.unique_id,
             target_id=target_agent.unique_id,
-            sensor_type="AdvRadar",
+            sensor_type=ADV_RADAR_LABEL,
             azimuth_rad=1.010036549841,
             elevation_rad=0.33006189181,
             range_km=1500.0,
             range_rate_km_p_sec=0.10,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], np.eye(4)
             ),
@@ -254,7 +252,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -279,7 +277,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -311,7 +309,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),
@@ -347,7 +345,7 @@ class TestObservationTable:
             sensor_type=self.sensor_type,
             azimuth_rad=self.azimuth_rad,
             elevation_rad=self.elevation_rad,
-            sen_eci_state=sensor_eci,
+            sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
                 ["azimuth_rad", "elevation_rad"], np.eye(2)
             ),

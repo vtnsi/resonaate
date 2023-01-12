@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ..data.missed_observation import MissedObservation
+from ..data.observation import Explanation
 from ..physics.constants import M2KM, PI, SPEED_OF_LIGHT
 from ..physics.measurement_utils import getRange
 from ..physics.sensor_utils import calculateRadarCrossSection
@@ -133,7 +133,7 @@ class Radar(Sensor):
         viz_cross_section: float,
         reflectivity: float,
         slant_range_sez: ndarray,
-    ) -> tuple[bool, MissedObservation.Explanation]:
+    ) -> tuple[bool, Explanation]:
         """Determine if the target is in view of the sensor.
 
         Args:
@@ -144,11 +144,11 @@ class Radar(Sensor):
 
         Returns:
             ``bool``: True if target is visible; False if target is not visible
-            :class:`.MissedObservation.Explanation`: Reason observation was visible or not
+            :class:`.Explanation`: Reason observation was visible or not
         """
         # Early exit if target not in radar sensor's range
         if getRange(slant_range_sez) > self.maximumRangeTo(viz_cross_section):
-            return False, MissedObservation.Explanation.RADAR_SENSITIVITY
+            return False, Explanation.RADAR_SENSITIVITY
 
         # Passed all phenomenology-specific tests, call base class' visibility check
         return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)
