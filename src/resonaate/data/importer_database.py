@@ -3,16 +3,19 @@
 import os
 
 # Third Party Imports
+from numpy import array, concatenate
 from sqlalchemy.orm import Query
 
 # Local Imports
 from ..common.logger import resonaateLogError
 from ..common.utilities import loadJSONFile
 from ..physics.time.stardate import JulianDate
+from ..sensors.measurement import Measurement
 from .agent import AgentModel
 from .data_interface import DataInterface
 from .ephemeris import TruthEphemeris
 from .epoch import Epoch
+from .observation import Observation
 
 
 class ImporterDatabase(DataInterface):
@@ -270,26 +273,33 @@ class ImporterDatabase(DataInterface):
                     self.logger.info(f"Found ending Julian date: {stop}")
                     continue
 
+                # [FIXME]: find a way to actually get the r_matrix of the sensor
+                measurement = Measurement(
+                    [
+                        observation["azimuth"],
+                        observation["elevation"],
+                        observation["range"],
+                        observation["range_rate"],
+                    ],
+                    observation["r_matrix"],
+                )
+                sensor_eci = concatenate(
+                    (array(observation["position"]), array(observation["velocity"]))
+                )
+
                 # Build new observation entry
-                obs_entry = {
-                    "julian_date": observation["julian_date"],
-                    "timestampISO": observation["timestampISO"],
-                    "observer": observation["observer"],
-                    "sensor_type": observation["sensor_type"],
-                    "unique_id": observation["sensor_id"],
-                    "target_id": observation["sat_num"],
-                    "target_name": observation["sat_name"],
-                    "azimuth_rad": observation["azimuth"],
-                    "elevation_rad": observation["elevation"],
-                    "range_km": observation["range"],
-                    "range_rate_km_p_sec": observation["range_rate"],
-                    "sez_state_s_km": observation["sez_state"][0],
-                    "sez_state_e_km": observation["sez_state"][1],
-                    "sez_state_z_km": observation["sez_state"][2],
-                    "position_lat_rad": observation["position"][0],
-                    "position_lon_rad": observation["position"][1],
-                    "position_altitude_km": observation["position"][2],
-                }
+                obs_entry = Observation(
+                    observation["julian_date"],
+                    observation["sat_num"],
+                    observation["sensor_id"],
+                    observation["sensor_type"],
+                    sensor_eci,
+                    measurement,
+                    observation["azimuth"],
+                    observation["elevation"],
+                    observation["range"],
+                    observation["range_rate"],
+                )
 
                 # only add valid observations to database
                 valid_observations.append(obs_entry)

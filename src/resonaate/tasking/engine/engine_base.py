@@ -20,8 +20,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
-    from ...data.missed_observation import MissedObservation
-    from ...data.observation import Observation
+    from ...data.observation import MissedObservation, Observation
     from ...data.task import Task
     from ...physics.time.stardate import JulianDate
 

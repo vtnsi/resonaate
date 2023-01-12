@@ -8,6 +8,7 @@ from . import Base, _DataMixin
 
 
 class _EphemerisMixin(_DataMixin):
+    """Data Columns applicable to both Truth and Estimate Ephemeris Tables."""
 
     id = Column(Integer, primary_key=True)
 

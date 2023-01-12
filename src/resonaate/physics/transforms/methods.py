@@ -11,7 +11,7 @@ from numpy import (
     arcsin,
     arctan,
     arctan2,
-    asarray,
+    array,
     concatenate,
     cos,
     cross,
@@ -57,7 +57,9 @@ def eci2ecef(x_eci: ndarray, utc_date: datetime) -> ndarray:
     """
     reduction = getReductionParameters(utc_date)
     r_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[:3]))
-    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)], dtype=float)
+    om_earth = array(
+        [0, 0, Earth.spin_rate * (1 - reduction["lod"] / const.DAYS2SEC)], dtype=float
+    )
     vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], r_ecef)
     v_correction = cross(om_earth, vel_pef)
     v_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[3:]) - v_correction)
@@ -80,7 +82,9 @@ def ecef2eci(x_ecef: ndarray, utc_date: datetime) -> ndarray:
     """
     reduction = getReductionParameters(utc_date)
     r_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[:3]))
-    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)], dtype=float)
+    om_earth = array(
+        [0, 0, Earth.spin_rate * (1 - reduction["lod"] / const.DAYS2SEC)], dtype=float
+    )
     vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], x_ecef[:3])
     v_correction = cross(om_earth, vel_pef)
     v_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[3:]) + v_correction)
@@ -210,7 +214,7 @@ def lla2ecef(x_lla: ndarray) -> ndarray:
     r_k = (radius_aux + alt) * sin(lat)
 
     # Final ECEF Calculation relating ECEF to Geodetic Latitude, Longitude, and Altitude
-    return asarray([r_delta * cos(lon), r_delta * sin(lon), r_k, 0, 0, 0])
+    return array([r_delta * cos(lon), r_delta * sin(lon), r_k, 0, 0, 0])
 
 
 def ecef2lla(x_ecef: ndarray) -> ndarray:
@@ -261,7 +265,7 @@ def ecef2lla(x_ecef: ndarray) -> ndarray:
     lon = arctan2(r_j, r_i)
     alt = (r_delta - a * t) * cos(lat) + (r_k - b) * sin(lat)
 
-    return asarray([lat, lon, alt])
+    return array([lat, lon, alt])
 
 
 def eci2lla(x_eci: ndarray, utc_date: datetime) -> ndarray:
@@ -310,7 +314,7 @@ def rsw2eci(
     )
     s_hat: ndarray[float, float, float] = cross(w_hat, r_hat)
 
-    rsw_2_eci_rotation = asarray([r_hat, s_hat, w_hat]).T
+    rsw_2_eci_rotation = array([r_hat, s_hat, w_hat]).T
     return concatenate(
         (
             matmul(rsw_2_eci_rotation, x_rsw[:3]),  # Convert position
@@ -348,8 +352,8 @@ def eci2rsw(
     )
     s_hat: ndarray[float, float, float] = cross(w_hat, r_hat)
     # Create the transformation matrix from ECI to RSW
-    eci_2_rsw_rotation = asarray([r_hat, s_hat, w_hat])
-    delta_eci = asarray(target_eci - chaser_eci)
+    eci_2_rsw_rotation = array([r_hat, s_hat, w_hat])
+    delta_eci = array(target_eci - chaser_eci)
     # Return the position and velocity vectors in the RSW reference frame
     rsw_vector = concatenate(
         (
@@ -393,7 +397,7 @@ def ntw2eci(
     )
     n_hat: ndarray[float, float, float] = cross(t_hat, w_hat)
 
-    ntw_2_eci_rotation = asarray([n_hat, t_hat, w_hat]).T
+    ntw_2_eci_rotation = array([n_hat, t_hat, w_hat]).T
     return concatenate(
         (
             matmul(ntw_2_eci_rotation, x_ntw[:3]),  # Convert position
@@ -410,27 +414,25 @@ def radarObs2eciPosition(observation: Observation) -> ndarray:
         observation (:class:`.Observation`): radar observation to convert to ECI
 
     Returns:
-        ``ndarray``: 3x1 ECI Position State based on radar observation
+        ``ndarray``: 3x1 ECI Position vector based on radar observation
     """
+    observation_sez = razel2sez(
+        observation.range_km, observation.elevation_rad, observation.azimuth_rad, 0, 0, 0
+    )
+
+    # calculate observer states
     ob_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
-    range_ = observation.range_km
-    azimuth = observation.azimuth_rad
-    elevation = observation.elevation_rad
+    sensor_ecef = eci2ecef(observation.sensor_eci, ob_datetime)
+    sensor_lla = ecef2lla(sensor_ecef)
+
     eci_relative_pos = sez2eci(
-        x_sez=razel2sez(range_, elevation, azimuth, 0, 0, 0),
-        lat=observation.position_lat_rad,
-        lon=observation.position_lon_rad,
+        x_sez=observation_sez,
+        lat=sensor_lla[0],
+        lon=sensor_lla[1],
         utc_date=ob_datetime,
     )
-    # [FIXME]: Replace with Observation.sensor_eci when ECI saved to DB
-    sensor_ecef = lla2ecef(
-        (
-            observation.position_lat_rad,
-            observation.position_lon_rad,
-            observation.position_altitude_km,
-        )
-    )
-    return eci_relative_pos[:3] + ecef2eci(sensor_ecef, ob_datetime)[:3]
+
+    return eci_relative_pos[:3] + observation.sensor_eci[:3]
 
 
 def spherical2cartesian(
@@ -462,7 +464,7 @@ def spherical2cartesian(
         ``np.ndarray``: 6x1 cartesian state vector in corresponding reference frame.
     """
     c_phi, c_th, s_phi, s_th = cos(phi), cos(theta), sin(phi), sin(theta)
-    return asarray(
+    return array(
         [
             rho * c_th * c_phi,
             rho * c_th * s_phi,

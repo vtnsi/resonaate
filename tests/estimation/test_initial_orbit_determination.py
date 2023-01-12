@@ -18,6 +18,7 @@ from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 from resonaate.sensors.measurement import Measurement
+from resonaate.sensors.sensor_base import ADV_RADAR_LABEL
 
 
 @pytest.fixture(name="observation")
@@ -39,12 +40,12 @@ def getObservation():
         julian_date=jd,
         sensor_id=300000,
         target_id=10001,
-        sensor_type="AdvRadar",
+        sensor_type=ADV_RADAR_LABEL,
         azimuth_rad=1.6987392624304676,
         elevation_rad=0.11988405069764828,
         range_km=1953.389877894924,
         range_rate_km_p_sec=-6.1473412228123365,
-        sen_eci_state=sen_eci_state,
+        sensor_eci=sen_eci_state,
         measurement=Measurement.fromMeasurementLabels(
             ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], eye(4)
         ),

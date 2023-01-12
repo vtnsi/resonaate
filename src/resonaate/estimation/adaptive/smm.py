@@ -168,7 +168,7 @@ class StaticMultipleModel(AdaptiveFilter):
                         target_id=self.target_id,
                         tgt_eci_state=model.pred_x,
                         sensor_id=observation.sensor_id,
-                        sen_eci_state=observation.sensor_eci,
+                        sensor_eci=observation.sensor_eci,
                         sensor_type=observation.sensor_type,
                         measurement=observation.measurement,
                         noisy=False,

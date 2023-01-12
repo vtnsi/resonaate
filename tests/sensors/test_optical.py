@@ -12,7 +12,7 @@ import pytest
 from resonaate.agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
-from resonaate.data.missed_observation import MissedObservation
+from resonaate.data.observation import Explanation
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.sensor_utils import GALACTIC_CENTER_ECI
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
@@ -84,7 +84,7 @@ def testIsVisible(
     )
 
     assert visibility
-    assert explanation == MissedObservation.Explanation.VISIBLE
+    assert explanation == Explanation.VISIBLE
 
 
 def testIsNotVisible(
@@ -118,7 +118,7 @@ def testIsNotVisible(
         slant_range_sez,
     )
     assert not visibility
-    assert explanation == MissedObservation.Explanation.GROUND_ILLUMINATION
+    assert explanation == Explanation.GROUND_ILLUMINATION
 
     # Check Solar Flux
     visibility, explanation = ground_optical.isVisible(
@@ -128,7 +128,7 @@ def testIsNotVisible(
         slant_range_sez,
     )
     assert not visibility
-    assert explanation == MissedObservation.Explanation.SOLAR_FLUX
+    assert explanation == Explanation.SOLAR_FLUX
 
     # Check Visual Magnitude
     visibility, explanation = ground_optical.isVisible(
@@ -138,7 +138,7 @@ def testIsNotVisible(
         slant_range_sez,
     )
     assert not visibility
-    assert explanation == MissedObservation.Explanation.VIZ_MAG
+    assert explanation == Explanation.VIZ_MAG
 
     # Check Galactic Belt
     galactic_belt_state = np.array(
@@ -160,4 +160,4 @@ def testIsNotVisible(
     )
 
     assert not visibility
-    assert explanation == MissedObservation.Explanation.GALACTIC_EXCLUSION
+    assert explanation == Explanation.GALACTIC_EXCLUSION

@@ -6,7 +6,7 @@ from itertools import combinations, permutations
 
 # Third Party Imports
 import pytest
-from numpy import eye, linspace
+from numpy import array, eye, linspace
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
@@ -30,8 +30,7 @@ from resonaate.data.queries import (
 )
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.physics.constants import PI
-from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
-from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
+from resonaate.physics.time.stardate import JulianDate
 from resonaate.sensors.measurement import Measurement
 
 # SET UP RSO AGENTS
@@ -94,10 +93,24 @@ EXAMPLE_ESTIMATES = [dict(ephem, **estimate_kwargs) for ephem in deepcopy(EXAMPL
 # SET UP OBSERVATION ENTRIES
 azimuths = linspace(0, 2 * PI, num=len(EXAMPLE_RSO))
 elevations = linspace(0, PI, num=len(EXAMPLE_RSO))
-lat = [0.0, 1.0, 2.0] * 3
-lon = [0.5, 1.5, 2.5] * 3
-alt = [0.0, 50.0, 100.0] * 3
-obs_vals = zip(RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, azimuths, elevations, lat, lon, alt)
+pos_x = [7000.0, 1.0, 2.0] * 3
+pos_y = [0.5, 1.5, 2.5] * 3
+pos_z = [0.0, 50.0, 100.0] * 3
+vel_x = [2.0, 5.0, 7.0]
+vel_y = [2.0, 5.0, 7.0]
+vel_z = [2.0, 5.0, 7.0]
+obs_vals = zip(
+    RSO_TIMESTEPS,
+    RSO_UNIQUE_IDS * 3,
+    azimuths,
+    elevations,
+    pos_x,
+    pos_y,
+    pos_z,
+    vel_x,
+    vel_y,
+    vel_z,
+)
 EXAMPLE_OBSERVATIONS = [
     {
         "julian_date": jd,
@@ -106,10 +119,10 @@ EXAMPLE_OBSERVATIONS = [
         "sensor_type": "Optical",
         "azimuth_rad": a_rad,
         "elevation_rad": e_rad,
-        "sen_eci_state": ecef2eci(lla2ecef([lat, lon, alt]), julianDateToDatetime(JulianDate(jd))),
+        "sensor_eci": array([pos_x, pos_y, pos_z, vel_x, vel_y, vel_z]),
         "measurement": Measurement.fromMeasurementLabels(["azimuth_rad", "elevation_rad"], eye(2)),
     }
-    for jd, uid, a_rad, e_rad, lat, lon, alt in obs_vals
+    for jd, uid, a_rad, e_rad, pos_x, pos_y, pos_z, vel_x, vel_y, vel_z in obs_vals
 ]
 
 

@@ -35,6 +35,7 @@ from resonaate.scenario import buildScenarioFromConfigDict
 from resonaate.scenario.config import ScenarioConfig
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
+from resonaate.sensors.sensor_base import ADV_RADAR_LABEL, OPTICAL_LABEL
 
 # Local Imports
 from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
@@ -290,16 +291,17 @@ def getTestEarthSensor() -> AdvRadar:
 @pytest.fixture(name="radar_observation")
 def getTestRadarObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
+    julian_date = JulianDate(2459304.270833333)
     radar_observation = Observation(
-        julian_date=JulianDate(2459304.270833333),
+        julian_date=julian_date,
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
-        sensor_type="AdvRadar",
+        sensor_type=ADV_RADAR_LABEL,
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
         range_km=1224.6425779127965,
         range_rate_km_p_sec=3.5594024876519974,
-        sen_eci_state=sensor_agent.eci_state,
+        sensor_eci=sensor_agent.eci_state,
         measurement=sensor_agent.sensors.measurement,
     )
     return radar_observation
@@ -308,14 +310,15 @@ def getTestRadarObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) 
 @pytest.fixture(name="optical_observation")
 def getTestOpticalObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
+    julian_date = JulianDate(2459304.270833333)
     optical_observation = Observation(
-        julian_date=JulianDate(2459304.270833333),
+        julian_date=julian_date,
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
-        sensor_type="Optical",
+        sensor_type=OPTICAL_LABEL,
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
-        sen_eci_state=sensor_agent.eci_state,
+        sensor_eci=sensor_agent.eci_state,
         measurement=sensor_agent.sensors.measurement,
     )
     return optical_observation
