@@ -74,7 +74,6 @@ def lambertGauss(
         initial_velocity (``ndarray``): 3x1 ECI velocity, km/sec
         current_velocity (``ndarray``): 3x1 ECI velocity, km/sec
     """
-    ## [TODO]: Needs review
     # pylint:disable=unused-argument
     # pylint:disable=too-many-locals
     r_mag = norm(current_position)

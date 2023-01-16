@@ -46,6 +46,7 @@ ______________________________________________________________________
 - `calculateMinRadarRange` in `sensor_utils` to set for `Radar` if `min_range` not set in config
 - `Decision.calculate()` now ANDs the decision and visibility matrices (see #154 and !147)
 - sensor ECI state vector columns in `Observation` data class and `sensor_eci` property (see #46 and !127).
+- `lambertGauss()` orbit determination method (see !157)
 
 ### Changed
 
