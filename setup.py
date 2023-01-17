@@ -53,7 +53,7 @@ setuptools.setup(
             "check-manifest>=0.48",
         ],
         "test": [
-            "pytest==7.2.0",
+            "pytest==7.2.1",
             "pytest-datafiles==2.0.1",
             "pytest-randomly==3.12.0",
             "coverage[toml]==7.0.4; python_version < '3.11'",
