@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ...physics.orbit_determination.lambert import lambertBattin, lambertUniversal
+from ...physics.orbit_determination.lambert import lambertBattin, lambertGauss, lambertUniversal
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -16,11 +16,15 @@ if TYPE_CHECKING:
 LAMBERT_BATTIN_LABEL = "lambert_battin"
 """``str``: Constant string used to describe Lambert Battin function."""
 
+LAMBERT_GAUSS_LABEL = "lambert_gauss"
+"""``str``: Constant string used to describe Lambert Gauss function."""
+
 LAMBERT_UNIVERSAL_LABEL = "lambert_universal"
 """``str``: Constant string used to describe Lambert universal function."""
 
 _LAMBERT_IOD_MAP: dict[str, OrbitDeterminationFunction] = {
     LAMBERT_BATTIN_LABEL: lambertBattin,
+    LAMBERT_GAUSS_LABEL: lambertGauss,
     LAMBERT_UNIVERSAL_LABEL: lambertUniversal,
 }
 

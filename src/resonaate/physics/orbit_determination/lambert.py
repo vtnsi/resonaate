@@ -6,7 +6,7 @@ from math import sqrt
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import arcsin, arcsinh, arctan2, array, cos, cosh, cross, dot, sin, sinh
+from numpy import arccos, arcsin, arcsinh, arctan2, array, cos, cosh, cross, dot, sin, sinh
 from numpy.linalg import norm
 
 # Local Imports
@@ -45,6 +45,75 @@ def determineTransferDirection(position_vector: float, transit_time: float) -> i
         return -1
 
     return 0
+
+
+def lambertGauss(
+    initial_position: ndarray,
+    current_position: ndarray,
+    delta_time: float,
+    transfer_method: int,
+    mu: float = Earth.mu,
+    tol: float = _ATOL,
+    max_step: int = _MAX_ITER,
+) -> ndarray:
+    r"""Lambert-Gauss' algorithm.
+
+    References:
+        #. :cite:t:`vallado_2013_astro`, Algorithm 57, pg 478
+
+    Args:
+        initial_position (``ndarray``): 3x1 initial ECI position vector, km
+        current_position (``ndarray``): 3x1 current ECI position vector, km
+        delta_time (``float``): Difference in seconds between initial and current position
+        transfer_method (``int``): Indication of either short or long arc
+        mu (``float``, optional): gravitational parameter of central body (km^3/sec^2). Defaults to :attr:`.Earth.mu`.
+        tol (``float``, optional): convergence criteria tolerance value. Defaults to 1.48e-8
+        max_step (``int``, optional): Maximum number of iterations allowed. Defaults to 100
+
+    Returns:
+        initial_velocity (``ndarray``): 3x1 ECI velocity, km/sec
+        current_velocity (``ndarray``): 3x1 ECI velocity, km/sec
+    """
+    # pylint:disable=unused-argument
+    # pylint:disable=too-many-locals
+    r_mag = norm(current_position)
+    r0_mag = norm(initial_position)
+
+    cos_delta_nu = dot(initial_position, current_position) / (r0_mag * r_mag)
+    sin_delta_nu = transfer_method * sqrt(1 - cos_delta_nu**2)
+
+    cos_half_delta_nu = cos(wrapAngle2Pi(arctan2(sin_delta_nu, cos_delta_nu)) / 2)
+
+    l_val = ((r0_mag + r_mag) / (4 * sqrt(r0_mag * r_mag) * cos_half_delta_nu)) - 0.5
+    m_val = (mu * (delta_time**2)) / ((2 * sqrt(r0_mag * r_mag) * cos_half_delta_nu) ** 3)
+
+    y_val = 1
+    diff_y = 1
+    step = 1
+    while diff_y > tol and step <= max_step:
+        xval_1 = (m_val / (y_val**2)) - l_val
+        delta_ecc = 2 * arccos(1 - 2 * xval_1)
+        xval_2 = (delta_ecc - sin(delta_ecc)) / ((sin(delta_ecc / 2)) ** 3)
+        y_new = 1 + xval_2 * (l_val + xval_1)
+        diff_y = abs(y_val - y_new)
+        y_val = y_new
+        step += 1
+
+    xval_1 = (m_val / (y_val**2)) - l_val
+    half_cos_delta_ecc = 1 - 2 * xval_1
+    p_val = (r0_mag * r_mag * (1 - cos_delta_nu)) / (
+        r0_mag + r_mag - 2 * sqrt(r0_mag * r_mag) * cos_half_delta_nu * half_cos_delta_ecc
+    )
+    gauss_f = 1 - (r_mag / p_val) * (1 - cos_delta_nu)
+    gauss_g = (r0_mag * r_mag * sin_delta_nu) / sqrt(mu * p_val)
+    gauss_g_dot = 1 - (r0_mag / p_val) * (1 - cos_delta_nu)
+    return _calculateVelocities(
+        initial_position=initial_position,
+        current_position=current_position,
+        gauss_f=gauss_f,
+        gauss_g=gauss_g,
+        gauss_g_dot=gauss_g_dot,
+    )
 
 
 def lambertBattin(
