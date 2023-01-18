@@ -46,7 +46,7 @@ class SubConfig:
         already_set = getattr(self, name, None)
         if already_set is not None:
             raise AttributeError(
-                f"SubConfig '{self.section}' already has a value set for '{name}':'{already_set}'"
+                f"SubConfig {self.section!r} already has a value set for {name!r}:{already_set!r}"
             )
         setattr(self, name, value)
 

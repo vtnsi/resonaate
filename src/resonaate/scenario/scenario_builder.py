@@ -217,7 +217,7 @@ class ScenarioBuilder:
                     try:
                         new_dependency = data_dependency.createDependency()
                     except MissingDataDependency as missing_dep:
-                        err = f"Event '{event_config.event_type}' is missing a data dependency."
+                        err = f"Event {event_config.event_type!r} is missing a data dependency."
                         raise ValueError(err) from missing_dep
                     else:
                         self.logger.info(f"Creating event data dependency: {new_dependency}")

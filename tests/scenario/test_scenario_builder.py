@@ -198,6 +198,6 @@ def testMissingDataDependency(
             lambda self, query, multi: None,
         )
 
-        expected = f"Event '{tgt_event.event_type}' is missing a data dependency."
+        expected = f"Event {tgt_event.event_type!r} is missing a data dependency."
         with pytest.raises(ValueError, match=re.escape(expected)):
             _ = ScenarioBuilder(ScenarioConfig(**scenario_cfg_dict))

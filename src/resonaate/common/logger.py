@@ -44,7 +44,7 @@ class Logger:
             else:
                 # Create the path if it doesn't exist.
                 if not exists(path):
-                    print(f"Path did not exist: '{path}'. Creating path...")
+                    print(f"Path did not exist: {path!r}. Creating path...")
                     makedirs(path)
 
                 # Set the timestamp for the file name, and construct the entire filename

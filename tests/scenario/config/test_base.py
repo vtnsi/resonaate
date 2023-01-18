@@ -34,7 +34,7 @@ def testConfigError():
     msg = "This is a Config error!"
     err = ConfigError(config_label=label, message=msg)
 
-    expected = f"Error occurred in '{label}': {msg}"
+    expected = f"Error occurred in {label!r}: {msg}"
     assert str(err) == expected
     with pytest.raises(ConfigError, match=re.escape(expected)):
         raise err
@@ -64,7 +64,7 @@ def testConfigTypeError():
     requirements = (int,)
     err = ConfigTypeError(config_label=label, bad_setting=setting, requirements=requirements)
 
-    expected = f"Setting '{label}' must be in types {requirements}, not {type(setting)}"
+    expected = f"Setting {label!r} must be in types {requirements}, not {type(setting)}"
     assert str(err) == expected
     with pytest.raises(ConfigTypeError, match=re.escape(expected)):
         raise err
@@ -77,7 +77,7 @@ def testConfigValueError():
     requirements = "greater than 0"
     err = ConfigValueError(config_label=label, bad_setting=setting, requirements=requirements)
 
-    expected = f"Setting '{setting}' for '{label}' is not a valid setting: {requirements}"
+    expected = f"Setting {setting!r} for {label!r} is not a valid setting: {requirements}"
     assert str(err) == expected
     with pytest.raises(ConfigValueError, match=re.escape(expected)):
         raise err
@@ -89,7 +89,7 @@ def testConfigMissingRequiredError():
     missing = "missing_field"
     err = ConfigMissingRequiredError(config_label=label, missing=missing)
 
-    expected = f"Missing required '{missing}' in '{label}' config"
+    expected = f"Missing required {missing!r} in {label!r} config"
     assert str(err) == expected
     with pytest.raises(ConfigMissingRequiredError, match=re.escape(expected)):
         raise err

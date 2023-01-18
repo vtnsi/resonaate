@@ -78,7 +78,7 @@ class AgentRemovalEvent(Event):
         elif self.agent_type == self.AgentType.SENSOR.value:
             scope_instance.removeSensor(self.agent_id, self.tasking_engine_id)
         else:
-            err = f"'{self.agent_type}' is not a valid agent type."
+            err = f"{self.agent_type!r} is not a valid agent type."
             raise ValueError(err)
 
     @classmethod
