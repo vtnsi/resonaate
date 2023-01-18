@@ -247,7 +247,7 @@ class ImporterDatabase(DataInterface):
                 )
 
             self.logger.info(
-                f"Loading {len(valid_ephemerides)} ephemerides from file '{filename}'."
+                f"Loading {len(valid_ephemerides)} ephemerides from file {filename!r}."
             )
             self._insertData(*valid_ephemerides)
 
@@ -305,6 +305,6 @@ class ImporterDatabase(DataInterface):
                 valid_observations.append(obs_entry)
 
             self.logger.info(
-                f"Loading {len(valid_observations)} observations from file '{filename}'."
+                f"Loading {len(valid_observations)} observations from file {filename!r}."
             )
             self._insertData(*observations)

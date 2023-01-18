@@ -45,7 +45,7 @@ class ConfigError(BaseConfigError):
 
     def __str__(self) -> str:
         """``str``: string representation of this exception."""
-        return f"Error occurred in '{self.config_label}': {self.message}"
+        return f"Error occurred in {self.config_label!r}: {self.message}"
 
 
 class ConfigSettingError(BaseConfigError):
@@ -69,7 +69,7 @@ class ConfigTypeError(ConfigSettingError):
 
     def __str__(self) -> str:
         """``str``: string representation of this exception."""
-        return f"Setting '{self.config_label}' must be in types {self.requirements}, not {type(self.bad_setting)}"
+        return f"Setting {self.config_label!r} must be in types {self.requirements}, not {type(self.bad_setting)}"
 
 
 class ConfigValueError(ConfigSettingError):
@@ -77,7 +77,7 @@ class ConfigValueError(ConfigSettingError):
 
     def __str__(self) -> str:
         """``str``: string representation of this exception."""
-        return f"Setting '{self.bad_setting}' for '{self.config_label}' is not a valid setting: {self.requirements}"
+        return f"Setting {self.bad_setting!r} for {self.config_label!r} is not a valid setting: {self.requirements}"
 
 
 class ConfigMissingRequiredError(BaseConfigError):
@@ -95,7 +95,7 @@ class ConfigMissingRequiredError(BaseConfigError):
 
     def __str__(self) -> str:
         """``str``: string representation of this exception."""
-        return f"Missing required '{self.missing}' in '{self.config_label}' config"
+        return f"Missing required {self.missing!r} in {self.config_label!r} config"
 
 
 def inclusiveRange(*args):

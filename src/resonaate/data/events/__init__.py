@@ -93,4 +93,4 @@ def handleRelevantEvents(
         event_types.add(event.event_type)
         event_count += 1
     if event_count:
-        logger.info(f"Handled {event_count} '{event_scope.value}' events of types {event_types}")
+        logger.info(f"Handled {event_count} {event_scope.value!r} events of types {event_types}")

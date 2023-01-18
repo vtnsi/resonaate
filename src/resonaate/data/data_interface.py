@@ -134,11 +134,11 @@ class DataInterface(metaclass=ABCMeta):
         for table_name in tables:
             data_type = self.VALID_DATA_TYPES.get(table_name)
             if data_type is None:
-                err = f"No such table: '{table_name}'"
+                err = f"No such table: {table_name!r}"
                 raise ValueError(err)
 
             data_type.__table__.drop(self.engine)
-            self.logger.warning(f"Dropped table '{table_name}'")
+            self.logger.warning(f"Dropped table {table_name!r}")
 
         Base.metadata.create_all(self.engine, checkfirst=True)
 
@@ -149,7 +149,7 @@ class DataInterface(metaclass=ABCMeta):
         """
         if args:
             for arg in args:
-                msg = f"[DataInterface.insertData()] Positional argument is not an valid data object: '{arg}'"
+                msg = f"[DataInterface.insertData()] Positional argument is not an valid data object: {arg!r}"
                 if not isinstance(arg, tuple(self.VALID_DATA_TYPES.values())):
                     self.logger.error(msg)
                     raise TypeError(arg)
@@ -172,7 +172,7 @@ class DataInterface(metaclass=ABCMeta):
         Returns:
             ``VALID_DATA_TYPES``: data object or list of data objects matching the query
         """
-        msg = f"[DataInterface.getData()] `query` argument must be a `sqlalchemy.orm.Query` object, not '{type(query)}'"
+        msg = f"[DataInterface.getData()] `query` argument must be a `sqlalchemy.orm.Query` object, not {type(query)!r}"
         if not isinstance(query, Query):
             self.logger.error(msg)
             raise TypeError(query)
@@ -211,7 +211,7 @@ class DataInterface(metaclass=ABCMeta):
         Returns:
             ``int``: number of data objects that were successfully deleted.
         """
-        msg = f"[DataInterface.deleteData()] `query` argument must be a `sqlalchemy.orm.Query`, not '{type(query)}'"
+        msg = f"[DataInterface.deleteData()] `query` argument must be a `sqlalchemy.orm.Query`, not {type(query)!r}"
         if not isinstance(query, Query):
             self.logger.error(msg)
             raise TypeError(query)

@@ -95,6 +95,6 @@ class TestAgentRemovalEvent:
             agent_id=12345,
             agent_type=bad_agent_type,
         )
-        expected_err = f"'{bad_agent_type}' is not a valid agent type."
+        expected_err = f"{bad_agent_type!r} is not a valid agent type."
         with pytest.raises(ValueError, match=expected_err):
             impulse_event.handleEvent(mocked_scenario)
