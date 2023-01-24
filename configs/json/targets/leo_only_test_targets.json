@@ -1,162 +1,198 @@
 [
   {
-    "sat_name": "RSO 1",
-    "sat_num": 10001,
-    "init_eci": [6388.234341, 1504.29079, 816.763258, -1.999674, 6.626409, 3.597847],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 1",
+    "id": 10001,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [6388.234341, 1504.29079, 816.763258],
+      "velocity": [-1.999674, 6.626409, 3.597847]
     }
   },
   {
-    "sat_name": "RSO 1 baseline",
-    "sat_num": 20001,
-    "init_eci": [6450.585, 1518.97302, 824.735059, -1.999574, 6.558183, 3.560803],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 1 baseline",
+    "id": 20001,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [6450.585, 1518.97302, 824.735059],
+      "velocity": [-1.999574, 6.558183, 3.560803]
     }
   },
   {
-    "sat_name": "RSO 2",
-    "sat_num": 10002,
-    "init_eci": [6611.355635, 0, 0, 0, 6.857768, 3.723464],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 2",
+    "id": 10002,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [6611.355635, 0, 0],
+      "velocity": [0, 6.857768, 3.723464]
     }
   },
   {
-    "sat_name": "RSO 2 baseline",
-    "sat_num": 20002,
-    "init_eci": [6678.137, 0, 0, 0, 6.78953, 3.686414],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 2 baseline",
+    "id": 20002,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": { "type": "eci", "position": [6678.137, 0, 0], "velocity": [0, 6.78953, 3.686414] }
+  },
+  {
+    "name": "RSO 3",
+    "id": 10003,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [5733.206924, 2908.944896, 1579.428211],
+      "velocity": [-3.863073, 5.948098, 3.229554]
     }
   },
   {
-    "sat_name": "RSO 3",
-    "sat_num": 10003,
-    "init_eci": [5733.206924, 2908.944896, 1579.428211, -3.863073, 5.948098, 3.229554],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 3 baseline",
+    "id": 20003,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [5783.436293, 2934.430538, 1593.265786],
+      "velocity": [-3.86288, 5.879906, 3.192528]
     }
   },
   {
-    "sat_name": "RSO 3 baseline",
-    "sat_num": 20003,
-    "init_eci": [5783.436293, 2934.430538, 1593.265786, -3.86288, 5.879906, 3.192528],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 4",
+    "id": 10004,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [4688.530827, 4120.361124, 2237.173557],
+      "velocity": [-5.463211, 4.869062, 2.643685]
     }
   },
   {
-    "sat_name": "RSO 4",
-    "sat_num": 10004,
-    "init_eci": [4688.530827, 4120.361124, 2237.173557, -5.463211, 4.869062, 2.643685],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 4 baseline",
+    "id": 20004,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [4722.155959, 4149.911466, 2253.218083],
+      "velocity": [-5.462937, 4.800923, 2.606688]
     }
   },
   {
-    "sat_name": "RSO 4 baseline",
-    "sat_num": 20004,
-    "init_eci": [4722.155959, 4149.911466, 2253.218083, -5.462937, 4.800923, 2.606688],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 5",
+    "id": 10005,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [3322.123976, 5056.790576, 2745.613265],
+      "velocity": [-6.691039, 3.462834, 1.880165]
     }
   },
   {
-    "sat_name": "RSO 5",
-    "sat_num": 10005,
-    "init_eci": [3322.123976, 5056.790576, 2745.613265, -6.691039, 3.462834, 1.880165],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 5 baseline",
+    "id": 20005,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [3339.068501, 5082.582785, 2759.617292],
+      "velocity": [-6.690705, 3.394765, 1.843207]
     }
   },
   {
-    "sat_name": "RSO 5 baseline",
-    "sat_num": 20005,
-    "init_eci": [3339.068501, 5082.582785, 2759.617292, -6.690705, 3.394765, 1.843207],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 6",
+    "id": 10006,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [1723.794691, 5653.684787, 3069.700379],
+      "velocity": [-7.462884, 1.825246, 0.991028]
     }
   },
   {
-    "sat_name": "RSO 6",
-    "sat_num": 10006,
-    "init_eci": [1723.794691, 5653.684787, 3069.700379, -7.462884, 1.825246, 0.991028],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 6 baseline",
+    "id": 20006,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [1728.429042, 5668.884488, 3077.953143],
+      "velocity": [-7.462511, 1.75726, 0.954114]
     }
   },
   {
-    "sat_name": "RSO 6 baseline",
-    "sat_num": 20006,
-    "init_eci": [1728.429042, 5668.884488, 3077.953143, -7.462511, 1.75726, 0.954114],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 7",
+    "id": 10007,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [0, 5868.274195, 3186.212921],
+      "velocity": [-7.726147, 0.067899, 0.036866]
     }
   },
   {
-    "sat_name": "RSO 7",
-    "sat_num": 10007,
-    "init_eci": [0, 5868.274195, 3186.212921, -7.726147, 0.067899, 0.036866],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 7 baseline",
+    "id": 20007,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [0, 5868.861081, 3186.531574],
+      "velocity": [-7.72576, 0, 0]
     }
   },
   {
-    "sat_name": "RSO 7 baseline",
-    "sat_num": 20007,
-    "init_eci": [0, 5868.861081, 3186.531574, -7.72576, 0, 0],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 8",
+    "id": 10008,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [-2833.997413, 5341.034787, 2899.94528],
+      "velocity": [-7.002267, -2.801624, -1.521158]
     }
   },
   {
-    "sat_name": "RSO 8",
-    "sat_num": 10008,
-    "init_eci": [-2833.997413, 5341.034787, 2899.94528, -7.002267, -2.801624, -1.521158],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 8 baseline",
+    "id": 20008,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [-2822.302654, 5318.9945, 2887.97838],
+      "velocity": [-7.001917, -2.869379, -1.557946]
     }
   },
   {
-    "sat_name": "RSO 8 baseline",
-    "sat_num": 20008,
-    "init_eci": [-2822.302654, 5318.9945, 2887.97838, -7.001917, -2.869379, -1.557946],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 9",
+    "id": 10009,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [-4319.962645, 4524.441386, 2456.571238],
+      "velocity": [-5.918572, -4.296545, -2.332834]
     }
   },
   {
-    "sat_name": "RSO 9",
-    "sat_num": 10009,
-    "init_eci": [-4319.962645, 4524.441386, 2456.571238, -5.918572, -4.296545, -2.332834],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 9 baseline",
+    "id": 20009,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [-4292.623725, 4495.80842, 2441.024806],
+      "velocity": [-5.918276, -4.364226, -2.369581]
     }
   },
   {
-    "sat_name": "RSO 9 baseline",
-    "sat_num": 20009,
-    "init_eci": [-4292.623725, 4495.80842, 2441.024806, -5.918276, -4.364226, -2.369581],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 10",
+    "id": 10010,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [-5515.039094, 3393.703391, 1842.630599],
+      "velocity": [-4.431536, -5.494037, -2.983019]
     }
   },
   {
-    "sat_name": "RSO 10",
-    "sat_num": 10010,
-    "init_eci": [-5515.039094, 3393.703391, 1842.630599, -4.431536, -5.494037, -2.983019],
-    "station_keeping": {
-      "routines": ["LEO"]
-    }
-  },
-  {
-    "sat_name": "RSO 10 baseline",
-    "sat_num": 20010,
-    "init_eci": [-5470.409583, 3366.240426, 1827.719426, -4.431314, -5.561658, -3.019734],
-    "station_keeping": {
-      "routines": ["LEO"]
+    "name": "RSO 10 baseline",
+    "id": 20010,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [-5470.409583, 3366.240426, 1827.719426],
+      "velocity": [-4.431314, -5.561658, -3.019734]
     }
   }
 ]
