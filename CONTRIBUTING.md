@@ -191,6 +191,18 @@ pytest -m "not (event or scenario)"
 
 This runs only the unit tests which are much faster to run.
 
+To include coverage information against the entire codebase, simply add `--cov`:
+
+```bash
+pytest --cov -m "not (event or scenario)"
+```
+
+Also, you can generate coverage statistics for a specific module (or package) by pointing at specific tests/files:
+
+```bash
+pytest --cov=src/resonaate/sensors tests/sensors
+```
+
 ## Communications
 
 The RESONAATE group uses a few different methods of communication: GitLab, Microsoft Teams, Google Group (email).
@@ -211,7 +223,6 @@ Here is a brief description of each channel, and the most appropriate communicat
 - Google Group (email)
   - Official or important emails
   - The most direct way to get everyone's attention
-
 
 [all issues]: https://code.vt.edu/space-research/resonaate/resonaate/-/issues?scope=all&state=all
 [dev-quickstart]: https://code.vt.edu/space-research/developer-quickstart

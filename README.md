@@ -226,7 +226,6 @@ pre-commit install
 
   ```bash
   pytest -m "not (event or scenario)"
-
   ```
 
 - Run entire test suite (~4 m)
@@ -235,13 +234,18 @@ pre-commit install
   pytest
   ```
 
+- Include coverage results
+
+  ```bash
+  pytest --cov -m "not (event or scenario)"
+  ```
+
 ### Generating Documentation
 
 - Navigate into the `docs/` directory
 
   ```bash
-  pytest -m "not (event or scenario)"
-
+  cd docs
   ```
 
 - Run entire test suite (~4 m)
