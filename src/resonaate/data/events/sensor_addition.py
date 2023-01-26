@@ -86,16 +86,16 @@ class SensorAdditionEvent(Event):
         return Event.__table__.c.get("vel_z_km_p_sec", Column(Float))  # pylint: disable=no-member
 
     azimuth_min = Column(Float)
-    """``float``: Minimum amount of motion (radians) this sensor has in the azimuth plane."""
+    """``float``: Minimum amount of motion (degrees) this sensor has in the azimuth plane."""
 
     azimuth_max = Column(Float)
-    """``float``: Maximum amount of motion (radians) this sensor has in the azimuth plane."""
+    """``float``: Maximum amount of motion (degrees) this sensor has in the azimuth plane."""
 
     elevation_min = Column(Float)
-    """``float``: Minimum amount of motion (radians) this sensor has in the elevation plane."""
+    """``float``: Minimum amount of motion (degrees) this sensor has in the elevation plane."""
 
     elevation_max = Column(Float)
-    """``float``: Maximum amount of motion (radians) this sensor has in the elevation plane."""
+    """``float``: Maximum amount of motion (degrees) this sensor has in the elevation plane."""
 
     covariance_json = Column(String(128))
     """``str``: JSON serialized covariance array."""
@@ -107,7 +107,7 @@ class SensorAdditionEvent(Event):
     """``float``: Efficiency percentage of the sensor."""
 
     slew_rate = Column(Float)
-    """``float``: Rate (radians/sec) at which this sensor can slew to acquire new targets."""
+    """``float``: Rate (degrees/sec) at which this sensor can slew to acquire new targets."""
 
     sensor_type = Column(String(64))
     """``str``: Label for type of sensor this sensor is."""

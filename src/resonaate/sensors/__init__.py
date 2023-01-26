@@ -42,12 +42,12 @@ def sensorFactory(sensor_config: SensorConfig) -> Sensor:
     """
     # Build generic sensor kwargs
     sensor_args = {
-        "az_mask": array(sensor_config.azimuth_range) * const.RAD2DEG,  # Assumes radians
-        "el_mask": array(sensor_config.elevation_range) * const.RAD2DEG,  # Assumes radians
+        "az_mask": array(sensor_config.azimuth_range),  # Assumes degrees
+        "el_mask": array(sensor_config.elevation_range),  # Assumes degrees
         "r_matrix": array(sensor_config.covariance),
         "diameter": sqrt(sensor_config.aperture_area / const.PI) * 2.0,  # Assumes meters^2
         "efficiency": sensor_config.efficiency,
-        "slew_rate": sensor_config.slew_rate * const.RAD2DEG,  # Assumes radians/sec
+        "slew_rate": sensor_config.slew_rate,  # Assumes deg/sec
         "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),
         "background_observations": sensor_config.background_observations,
         "minimum_range": sensor_config.minimum_range,

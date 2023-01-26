@@ -14,6 +14,7 @@ from scipy.linalg import norm
 # Local Imports
 from ...common.labels import COE_LABEL, ECI_LABEL, EQE_LABEL, LLA_LABEL
 from ...physics.bodies import Earth
+from ...physics.constants import DEG2RAD
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.transforms.methods import ecef2eci, lla2ecef
 from .base import ConfigError, ConfigObject, ConfigValueError
@@ -134,7 +135,7 @@ class LLAStateConfig(StateConfig):
             ``ndarray``: 6x1 ECI state, [km; km/sec].
         """
         # radians, radians, km
-        lla_orig = array([self.latitude, self.longitude, self.altitude])
+        lla_orig = array([self.latitude * DEG2RAD, self.longitude * DEG2RAD, self.altitude])
         return ecef2eci(lla2ecef(lla_orig), utc_datetime)
 
 
@@ -153,25 +154,25 @@ class COEStateConfig(StateConfig):
     R"""``float``: eccentricity, :math:`e\in[0,1)`."""
 
     inclination: float
-    R"""``float``: inclination angle, :math:`i\in[0,\pi]`, degrees."""
+    R"""``float``: inclination angle, :math:`i\in[0,180]`, degrees."""
 
     true_anomaly: float | None = None
-    R"""``float``: true anomaly, :math:`\nu`, degrees."""
+    R"""``float``: true anomaly, :math:`\nu\in[0,360)`, degrees."""
 
     right_ascension: float | None = None
-    R"""``float``: right ascension of ascending node, :math:`\Omega\in[0,2\pi)`, degrees."""
+    R"""``float``: right ascension of ascending node, :math:`\Omega\in[0,360)`, degrees."""
 
     argument_periapsis: float | None = None
-    R"""``float``: argument of periapsis, :math:`\omega\in[0,2\pi)`, degrees."""
+    R"""``float``: argument of periapsis, :math:`\omega\in[0,360)`, degrees."""
 
     true_longitude_periapsis: float | None = None
-    R"""``float``: true longitude of periapsis, :math:`\tilde{\omega}_{true}\approx\Omega + \omega`, degrees."""
+    R"""``float``: true longitude of periapsis, :math:`\tilde{\omega}_{true}\approx\Omega + \omega\in[0,360)`, degrees."""
 
     argument_latitude: float | None = None
-    R"""``float``: argument of latitude, :math:`u=\omega + \nu`, degrees."""
+    R"""``float``: argument of latitude, :math:`u=\omega + \nu\in[0,360)`, degrees."""
 
     true_longitude: float | None = None
-    R"""``float``: true longitude, :math:`\lambda_{true}\approx\Omega + \omega + \nu`, degrees."""
+    R"""``float``: true longitude, :math:`\lambda_{true}\approx\Omega + \omega + \nu\in[0,360)`, degrees."""
 
     inclined: bool = field(init=False)
     eccentric: bool = field(init=False)
@@ -244,7 +245,7 @@ class EQEStateConfig(StateConfig):
     R"""``float``: inclination term, :math:`q=\psi=\tan(\frac{i}{2})\cos(\Omega)`."""
 
     mean_longitude: float
-    R"""``float``: mean longitude (location) angle, :math:`\lambda_M\in[0,2\pi)`, degrees."""
+    R"""``float``: mean longitude (location) angle, :math:`\lambda_M\in[0,360)`, degrees."""
 
     retrograde: bool = False
     R"""``bool``: whether to use the retrograde conversion equations."""

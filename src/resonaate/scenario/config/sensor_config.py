@@ -43,10 +43,10 @@ class SensorConfig(ConfigObject):
     R"""``str``: type of platform being defined."""
 
     azimuth_range: list[float]
-    R"""``list[float]``: 2-element (order matters!) azimuth range mask :math:`\in [0, 2\pi]` radians."""
+    R"""``list[float]``: 2-element (order matters!) azimuth range mask :math:`\in[0, 360)`, degrees."""
 
     elevation_range: list[float]
-    R"""``list[float]``: 2-element (order independent) elevation range mask :math:`\in [-\frac{\pi}{2}, \frac{\pi}{2}]` radians."""
+    R"""``list[float]``: 2-element (order independent) elevation range mask :math:`\in[-90,90)`, degrees."""
 
     covariance: list[list[float]]
     R"""``list[list[float]]``: (:math:`n_z \times n_z`) measurement noise covariance matrix.
@@ -69,13 +69,13 @@ class SensorConfig(ConfigObject):
     """
 
     aperture_area: float
-    R"""``float``: effective aperture area of the sensor, m^2."""
+    R"""``float``: effective aperture area of the sensor, :math:`\textrm{m}^2`."""
 
     efficiency: float
     R"""``float``: sensor measurement efficiency, unit-less."""
 
     slew_rate: float
-    R"""``float``: sensor maximum slew rate, rad/sec."""
+    R"""``float``: sensor maximum slew rate, degree/sec."""
 
     background_observations: bool = False
     R"""``bool``, optional: whether this sensor uses its :attr:`.filed_of_view` to determine if other agents are visible. Defaults to ``False``"""
@@ -108,7 +108,7 @@ class SensorConfig(ConfigObject):
 
     @classmethod
     def fromDict(cls, sensor_cfg: dict) -> Self:
-        """Construct a sensor config instance from a dictionary.
+        R"""Construct a sensor config instance from a dictionary.
 
         Args:
             sensor_cfg (``dict``): config dictionary
