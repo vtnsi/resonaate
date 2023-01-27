@@ -91,7 +91,7 @@ class ResonaateDatabase(DataInterface):
             print(f"Copied {total-remaining} of {total} pages...")
 
         # Perform backup
-        raw_connection_memory.backup(raw_connection_file.connection, progress=progress)
+        raw_connection_memory.backup(raw_connection_file.driver_connection, progress=progress)
 
         # Close raw connections
         raw_connection_memory.close()

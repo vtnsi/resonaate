@@ -8,13 +8,21 @@ from os import getcwd, makedirs
 from os.path import abspath, dirname, exists, join, normpath
 
 # Third Party Imports
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 # Local Imports
 from ..common.logger import resonaateLogError
 
+
+class _Base:
+    """Dummy class to allow for type hints without Mapped[] until we enforce SQLAlchemy >= 2.0."""
+
+    # [NOTE]: See https://docs.sqlalchemy.org/en/20/changelog/migration_20.html#migration-to-2-0-step-four-use-the-future-flag-on-engine
+    __allow_unmapped__ = True
+
+
 # Base declarative class used by SQLAlchemy to track ORM's
-Base = declarative_base()  # pylint: disable=invalid-name
+Base = declarative_base(cls=_Base)  # pylint: disable=invalid-name
 
 
 def createDatabasePath(path, importer=False):

@@ -11,8 +11,7 @@ import pytest
 from numpy import allclose
 from sqlalchemy import Column, Float, Integer
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, declarative_base
 
 # RESONAATE Imports
 from resonaate.data.agent import AgentModel

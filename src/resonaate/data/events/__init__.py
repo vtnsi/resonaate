@@ -8,8 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from sqlalchemy.orm import Query
-from sqlalchemy.orm.util import with_polymorphic
+from sqlalchemy.orm import Query, with_polymorphic
 
 # Local Imports
 from .agent_removal import AgentRemovalEvent

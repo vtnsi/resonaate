@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 # Third Party Imports
 from sqlalchemy import Boolean, Column, Float, String
@@ -40,7 +40,10 @@ class ScheduledFiniteManeuverEvent(Event):
     MANEUVER_TYPE_PLANE_CHANGE: str = "plane_change"
     """``str``: Configuration string used to delineate plane change maneuver to apply this thrust."""
 
-    VALID_MANEUVER_TYPES: tuple[str] = (MANEUVER_TYPE_SPIRAL, MANEUVER_TYPE_PLANE_CHANGE)
+    # [NOTE]: Old-style type hints required until we either:
+    #   1) Move to SQLAlchemy >= 2.0
+    #   2) Move to Python >= 3.10
+    VALID_MANEUVER_TYPES: Tuple[str] = (MANEUVER_TYPE_SPIRAL, MANEUVER_TYPE_PLANE_CHANGE)
     """``tuple``: Valid values for :attr:`.maneuver_type`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
