@@ -31,13 +31,13 @@ if TYPE_CHECKING:
     from .measurement import Measurement
 
 
-OPTICAL_LABEL: str = "Optical"
+OPTICAL_LABEL: str = "optical"
 """``str``: Constant string used to describe optical sensors."""
 
-RADAR_LABEL: str = "Radar"
+RADAR_LABEL: str = "radar"
 """``str``: Constant string used to describe radar sensors."""
 
-ADV_RADAR_LABEL: str = "AdvRadar"
+ADV_RADAR_LABEL: str = "adv_radar"
 """``str``: Constant string used to describe advanced radar sensors."""
 
 CONIC_FOV_LABEL: str = "conic"
