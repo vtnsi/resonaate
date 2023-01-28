@@ -33,22 +33,27 @@ def getSensorConfigGround():
     return {
         "name": "Test Ground Radar",
         "id": 100000,
-        "covariance": [[2.388200571127795e-11, 0.0], [0.0, 2.388200571127795e-11]],
-        "slew_rate": 0.2617993877991494,
-        "azimuth_range": [0.0, 6.283185132646661],
-        "elevation_range": [0.0, 1.5707961522619713],
-        "efficiency": 0.98,
-        "aperture_area": 0.8107319665559964,
-        "sensor_type": RADAR_LABEL,
-        "field_of_view": {"fov_shape": RECTANGULAR_FOV_LABEL},
-        "background_observations": False,
-        "lat": 0.1,
-        "lon": 1.1,
-        "alt": 1.0,
-        "host_type": "GroundFacility",
-        "tx_power": 3e6,
-        "tx_frequency": 1.5e9,
-        "min_detectable_power": 1.4314085925969573e-14,
+        "platform": {"type": "ground_facility"},
+        "state": {
+            "type": "lla",
+            "latitude": 0.1,
+            "longitude": 1.1,
+            "altitude": 1.0,
+        },
+        "sensor": {
+            "covariance": [[2.388200571127795e-11, 0.0], [0.0, 2.388200571127795e-11]],
+            "slew_rate": 0.2617993877991494,
+            "azimuth_range": [0.0, 6.283185132646661],
+            "elevation_range": [0.0, 1.5707961522619713],
+            "efficiency": 0.98,
+            "aperture_area": 0.8107319665559964,
+            "type": RADAR_LABEL,
+            "field_of_view": {"fov_shape": RECTANGULAR_FOV_LABEL},
+            "background_observations": False,
+            "tx_power": 3e6,
+            "tx_frequency": 1.5e9,
+            "min_detectable_power": 1.4314085925969573e-14,
+        },
     }
 
 
@@ -58,25 +63,34 @@ def getSensorConfigSpace():
     return {
         "name": "Test Space Optical",
         "id": 40001,
-        "covariance": [[9.869604401089358e-14, 0.0], [0.0, 9.869604401089358e-14]],
-        "slew_rate": 0.04363323129985824,
-        "azimuth_range": [0.0, 6.283185132646661],
-        "elevation_range": [-1.5707961522619713, 1.5707961522619713],
-        "efficiency": 0.99,
-        "aperture_area": 0.031415926535897934,
-        "sensor_type": OPTICAL_LABEL,
-        "init_eci": [
-            -6997.811593501495,
-            63.69359356853797,
-            -447.53287804600023,
-            0.48666918798751624,
-            1.0600865385159703,
-            -7.448488839044817,
-        ],
-        "field_of_view": {"fov_shape": CONIC_FOV_LABEL},
-        "background_observations": False,
-        "host_type": "Spacecraft",
-        "station_keeping": {"routines": ["LEO"]},
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["LEO"]},
+        },
+        "state": {
+            "type": "eci",
+            "position": [
+                -6997.811593501495,
+                63.69359356853797,
+                -447.53287804600023,
+            ],
+            "velocity": [
+                0.48666918798751624,
+                1.0600865385159703,
+                -7.448488839044817,
+            ],
+        },
+        "sensor": {
+            "covariance": [[9.869604401089358e-14, 0.0], [0.0, 9.869604401089358e-14]],
+            "slew_rate": 0.04363323129985824,
+            "azimuth_range": [0.0, 6.283185132646661],
+            "elevation_range": [-1.5707961522619713, 1.5707961522619713],
+            "efficiency": 0.99,
+            "aperture_area": 0.031415926535897934,
+            "type": OPTICAL_LABEL,
+            "field_of_view": {"fov_shape": CONIC_FOV_LABEL},
+            "background_observations": False,
+        },
     }
 
 
@@ -116,36 +130,6 @@ class TestSensorAdditionEventConfig:
         event_config_dict["sensor"] = optical_space_config
         assert SensorAdditionEventConfig(**event_config_dict)
 
-    def testInitNoState(self, optical_space_config: dict, event_config_dict: dict):
-        """Test :class:`.SensorAdditionEventConfig` constructor with no state configuration.
-
-        Args:
-            optical_space_config (``dict``): space sensor fixture
-            event_config_dict (``dict``): sensor addition configuration
-        """
-        sen_config = deepcopy(optical_space_config)
-        del sen_config["init_eci"]
-
-        event_config_dict["sensor"] = sen_config
-        with pytest.raises(ConfigError):
-            _ = SensorAdditionEventConfig(**event_config_dict)
-
-    def testInitDuplicateState(self, optical_space_config: dict, event_config_dict: dict):
-        """Test :class:`.SensorAdditionEventConfig` constructor with duplicate state configurations.
-
-        Args:
-            optical_space_config (``dict``): space sensor fixture
-            event_config_dict (``dict``): sensor addition configuration
-        """
-        sen_config = deepcopy(optical_space_config)
-        sen_config["lat"] = 0.1
-        sen_config["lon"] = 1.1
-        sen_config["alt"] = 1.0
-
-        event_config_dict["sensor"] = sen_config
-        with pytest.raises(ConfigError):
-            _ = SensorAdditionEventConfig(**event_config_dict)
-
     def testInitBadECIState(self, optical_space_config: dict, event_config_dict: dict):
         """Test :class:`.SensorAdditionEventConfig` constructor with a bad initial ECI state.
 
@@ -154,44 +138,11 @@ class TestSensorAdditionEventConfig:
             event_config_dict (``dict``): sensor addition configuration
         """
         bad_eci = [0, 1, 2]
-        expected_err = f"ECI vector should have 6 elements, not {len(bad_eci)}"
         sen_config = deepcopy(optical_space_config)
-        sen_config["init_eci"] = bad_eci
+        sen_config["state"]["position"] = bad_eci
 
         event_config_dict["sensor"] = sen_config
-        with pytest.raises(ConfigError, match=expected_err):
-            _ = SensorAdditionEventConfig(**event_config_dict)
-
-    def testInitRadarNoTx(self, radar_ground_config: dict, event_config_dict: dict):
-        """Test :class:`.SensorAdditionEventConfig` constructor with no transmit info for a radar.
-
-        Args:
-            radar_ground_config (``dict``): ground sensor fixture
-            event_config_dict (``dict``): sensor addition configuration
-        """
-        expected_err = r"\w*Sensor \d+: Radar specific parameters not set\w*"
-        sen_config = deepcopy(radar_ground_config)
-        del sen_config["tx_power"]
-
-        event_config_dict["sensor"] = sen_config
-        with pytest.raises(ConfigError, match=expected_err):
-            _ = SensorAdditionEventConfig(**event_config_dict)
-
-    def testInitGroundFacilityWithStationKeeping(
-        self, radar_ground_config: dict, event_config_dict: dict
-    ):
-        """Test :class:`.SensorAdditionEventConfig` constructor with station keeping set for a ground facility.
-
-        Args:
-            radar_ground_config (``dict``): ground sensor fixture
-            event_config_dict (``dict``): sensor addition configuration
-        """
-        expected_err = "Ground based sensors cannot perform station keeping"
-        sen_config = deepcopy(radar_ground_config)
-        sen_config["station_keeping"] = {"routines": ["LEO"]}
-
-        event_config_dict["sensor"] = sen_config
-        with pytest.raises(ConfigError, match=expected_err):
+        with pytest.raises(ConfigError):
             _ = SensorAdditionEventConfig(**event_config_dict)
 
     def testDataDependency(self, optical_space_config: dict, event_config_dict: dict):

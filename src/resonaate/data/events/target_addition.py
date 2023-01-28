@@ -11,7 +11,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
 # Local Imports
-from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
+from ...agents import SPACECRAFT_LABEL
 from ...physics.time.stardate import datetimeToJulianDate
 from .base import Event, EventScope
 
@@ -123,10 +123,17 @@ class TargetAdditionEvent(Event):
             scope_instance (:class:`.Scenario`): :class:`.Scenario` class that's currently executing.
         """
         target_spec = {
-            "sat_num": self.agent_id,
-            "sat_name": self.agent.name,
-            "init_eci": self.eci,
-            "station_keeping": self.station_keeping,
+            "id": self.agent_id,
+            "name": self.agent.name,
+            "state": {
+                "type": "eci",
+                "position": self.eci[:3],
+                "velocity": self.eci[3:],
+            },
+            "platform": {
+                "type": "spacecraft",
+                "station_keeping": self.station_keeping,
+            },
         }
         scope_instance.addTarget(target_spec, self.tasking_engine_id)
 
@@ -140,14 +147,11 @@ class TargetAdditionEvent(Event):
         Returns:
             :class:`.TargetAdditionEvent`: object based on the specified `config`.
         """
-        if config.target.eci_set:
-            initial_state = config.target.init_eci
-        elif config.target.coe_set:
-            orbit = ClassicalElements.fromConfig(config.target.init_coe)
-            initial_state = orbit.toECI()
-        elif config.target.eqe_set:
-            orbit = EquinoctialElements.fromConfig(config.target.init_eqe)
-            initial_state = orbit.toECI()
+        initial_state = config.target.state.toECI(config.start_time)
+
+        station_keeping = ""
+        if config.target.platform.type == SPACECRAFT_LABEL:
+            station_keeping = dumps(config.target.platform.station_keeping.toJSON())
 
         return cls(
             scope=config.scope,
@@ -156,12 +160,12 @@ class TargetAdditionEvent(Event):
             end_time_jd=datetimeToJulianDate(config.end_time),
             event_type=config.event_type,
             tasking_engine_id=config.tasking_engine_id,
-            agent_id=config.target.sat_num,
+            agent_id=config.target.id,
             pos_x_km=initial_state[0],
             pos_y_km=initial_state[1],
             pos_z_km=initial_state[2],
             vel_x_km_p_sec=initial_state[3],
             vel_y_km_p_sec=initial_state[4],
             vel_z_km_p_sec=initial_state[5],
-            station_keeping_json=dumps(config.target.station_keeping.toJSON()),
+            station_keeping_json=station_keeping,
         )

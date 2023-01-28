@@ -52,9 +52,6 @@ VALID_SENSOR_FOV_LABELS: tuple[str] = (
 )
 """``tuple``: Contains valid sensor Field of View configurations."""
 
-SOLAR_PANEL_REFLECTIVITY: float = 0.21
-"""``float``: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`, unit-less."""
-
 DEFAULT_VIEWING_ANGLE: float = 1.0
 """``float``: default angle for a sensor's FoV, degrees."""
 

@@ -22,12 +22,12 @@ from resonaate.scenario.config.reward_config import MetricConfig, RewardConfig
 
 if TYPE_CHECKING:
     # RESONAATE Imports
-    from resonaate.scenario.config.agent_configs import SensingAgentConfig, TargetAgentConfig
+    from resonaate.scenario.config.agent_config import SensingAgentConfig, TargetAgentConfig
 
 
 @pytest.fixture(name="engine_cfg_dict")
-@patch("resonaate.scenario.config.agent_configs.SensingAgentConfig", autospec=True)
-@patch("resonaate.scenario.config.agent_configs.TargetAgentConfig", autospec=True)
+@patch("resonaate.scenario.config.agent_config.SensingAgentConfig", autospec=True)
+@patch("resonaate.scenario.config.agent_config.TargetAgentConfig", autospec=True)
 @patch("resonaate.scenario.config.engine_config.DecisionConfig", autospec=True)
 @patch("resonaate.scenario.config.engine_config.RewardConfig", autospec=True)
 def getEngineConfig(
@@ -38,7 +38,7 @@ def getEngineConfig(
 ) -> dict:
     """Generate the default EngineConfig dictionary."""
     decision.name = "AllVisibleDecision"
-    sen_agent.sensor_type = "AdvRadar"
+    sen_agent.sensor_type = "adv_radar"
     sen_agent.id = 11111
     return {
         "unique_id": 1,

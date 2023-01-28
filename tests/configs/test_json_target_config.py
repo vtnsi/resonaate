@@ -19,17 +19,27 @@ def testStationKeepingAssignment():
             targets = load(target_set)
 
         for target in targets:
-            if "routines" in target["station_keeping"]:
-                pos = array(target["init_eci"][:3])
-                vel = array(target["init_eci"][3:])
-                energy = (norm(vel) ** 2 / 2) - (Earth.mu / norm(pos))
-                semimajor_axis = -Earth.mu / (2 * energy)
+            if "station_keeping" not in target["platform"]:
+                continue
+            station_keeping = target["platform"]["station_keeping"]
 
-                if target["station_keeping"]["routines"] == []:
-                    continue
+            if "routines" not in station_keeping:
+                continue
 
-                # Test assertions
-                if semimajor_axis > 40000:
-                    assert target["station_keeping"]["routines"] == ["GEO EW", "GEO NS"]
-                elif semimajor_axis < 10000:
-                    assert target["station_keeping"]["routines"] == ["LEO"]
+            state = target["state"]
+            if state["type"] != "eci":
+                continue
+
+            pos = array(state["position"])
+            vel = array(state["velocity"])
+            energy = (norm(vel) ** 2 / 2) - (Earth.mu / norm(pos))
+            semimajor_axis = -Earth.mu / (2 * energy)
+
+            if station_keeping["routines"] == []:
+                continue
+
+            # Test assertions
+            if semimajor_axis > 40000:
+                assert station_keeping["routines"] == ["GEO EW", "GEO NS"]
+            elif semimajor_axis < 10000:
+                assert station_keeping["routines"] == ["LEO"]

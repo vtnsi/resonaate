@@ -2,9 +2,11 @@
 
 Users should be able to easily distinguish between different orbit element sets.
 """
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 # Third Party Imports
 from numpy import array, isclose, ndarray
@@ -23,6 +25,10 @@ from .utils import (
     getPeriod,
     singularityCheck,
 )
+
+if TYPE_CHECKING:
+    # Local Imports
+    from ...scenario.config.state_config import COEStateConfig, EQEStateConfig, StateConfig
 
 
 class OrbitalElements(metaclass=ABCMeta):
@@ -71,11 +77,11 @@ class OrbitalElements(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def fromConfig(cls, config: dict):
+    def fromConfig(cls, config: StateConfig):
         """Construct an `OrbitalElements` object from a configuration dictionary.
 
         Args:
-            config (``dict``): arguments that define a valid orbit.
+            config (:class:`.StateConfig`): config object that define a valid orbit.
 
         Returns:
             :class:`.OrbitalElements`: new `OrbitalElements` object constructed from the config.
@@ -115,7 +121,7 @@ class ClassicalElements(OrbitalElements):
         raan: float,
         argp: float,
         true_anom: float,
-        mu: Optional[float] = Earth.mu,
+        mu: float = Earth.mu,
     ):
         r"""Define an orbit from a set of COEs.
 
@@ -168,7 +174,7 @@ class ClassicalElements(OrbitalElements):
         self.mean_anomaly = trueAnom2MeanAnom(true_anom, ecc)
 
     @classmethod
-    def fromECI(cls, eci_state: ndarray, mu: Optional[float] = Earth.mu):
+    def fromECI(cls, eci_state: ndarray, mu: float = Earth.mu):
         r"""Define a set of COEs from a ECI (J2000) position and velocity vector.
 
         See Also:
@@ -215,7 +221,7 @@ class ClassicalElements(OrbitalElements):
         # pylint: disable=invalid-name
         return cls(*eqe2coe(sma, h, k, p, q, mean_long, retro=retro))
 
-    def toECI(self, mu: Optional[float] = Earth.mu) -> ndarray:
+    def toECI(self, mu: float = Earth.mu) -> ndarray:
         r"""Convert a set of COEs to an ECI (J2000) position and velocity vector.
 
         See Also:
@@ -233,39 +239,35 @@ class ClassicalElements(OrbitalElements):
         )
 
     @classmethod
-    def fromConfig(cls, config: dict):
+    def fromConfig(cls, config: COEStateConfig):
         """Construct an `ClassicalElements` object from a configuration dictionary.
 
         Args:
-            config (``dict``): arguments that define a valid orbit.
+            config (:class:`.COEStateConfig`): config object that define a valid orbit.
 
         Returns:
             :class:`.ClassicalElements`: new `ClassicalElements` object constructed from the config.
         """
-        sma = config["sma"]
-        ecc = config["ecc"]
-        inc = config["inc"] * const.DEG2RAD
+        sma = config.semi_major_axis
+        ecc = config.eccentricity
+        inc = config.inclination * const.DEG2RAD
 
         raan, argp, anomaly = 0.0, 0.0, 0.0
-        if all(elem in config.keys() for elem in ("raan", "arg_p", "true_anom")):
-            raan = config["raan"] * const.DEG2RAD
-            argp = config["arg_p"] * const.DEG2RAD
-            anomaly = config["true_anom"] * const.DEG2RAD
+        if config.eccentric and config.inclined:
+            raan = config.right_ascension * const.DEG2RAD
+            argp = config.argument_periapsis * const.DEG2RAD
+            anomaly = config.true_anomaly * const.DEG2RAD
 
-        elif all(elem in config.keys() for elem in ("long_p", "true_anom")):
-            argp = config["long_p"] * const.DEG2RAD
-            anomaly = config["true_anom"] * const.DEG2RAD
+        elif config.eccentric and not config.inclined:
+            argp = config.true_longitude_periapsis * const.DEG2RAD
+            anomaly = config.true_anomaly * const.DEG2RAD
 
-        elif all(elem in config.keys() for elem in ("raan", "arg_lat")):
-            raan = config["raan"] * const.DEG2RAD
-            anomaly = config["arg_lat"] * const.DEG2RAD
-
-        elif "true_long" in config.keys():
-            anomaly = config["true_long"] * const.DEG2RAD
+        elif not config.eccentric and config.inclined:
+            raan = config.right_ascension * const.DEG2RAD
+            anomaly = config.argument_latitude * const.DEG2RAD
 
         else:
-            msg = f"The configuration does not describe a proper set of COEs: {config.keys()}"
-            raise KeyError(msg)
+            anomaly = config.true_longitude * const.DEG2RAD
 
         return cls(sma, ecc, inc, raan, argp, anomaly)
 
@@ -332,9 +334,7 @@ class EquinoctialElements(OrbitalElements):
         return self._is_retro
 
     @classmethod
-    def fromECI(
-        cls, eci_state: ndarray, mu: Optional[float] = Earth.mu, retro: Optional[bool] = False
-    ):
+    def fromECI(cls, eci_state: ndarray, mu: float = Earth.mu, retro: bool = False):
         r"""Define a set of EQEs from a ECI (J2000) position and velocity vector.
 
         See Also:
@@ -381,7 +381,7 @@ class EquinoctialElements(OrbitalElements):
         """
         return cls(*coe2eqe(sma, ecc, inc, raan, argp, true_anom, retro=retro))
 
-    def toECI(self, mu: Optional[float] = Earth.mu) -> ndarray:
+    def toECI(self, mu: float = Earth.mu) -> ndarray:
         r"""Convert a set of EQEs to an ECI (J2000) position and velocity vector.
 
         See Also:
@@ -406,22 +406,21 @@ class EquinoctialElements(OrbitalElements):
         )
 
     @classmethod
-    def fromConfig(cls, config: dict):
+    def fromConfig(cls, config: EQEStateConfig):
         """Construct an `EquinoctialElements` object from a configuration dictionary.
 
         Args:
-            config (``dict``): arguments that define a valid orbit.
+            config (:class:`.EQEStateConfig`): config object that define a valid EQE orbit.
 
         Returns:
             :class:`.EquinoctialElements`: new `EquinoctialElements` object constructed from the config.
         """
-        # pylint: disable=invalid-name
-        sma = config["sma"]
-        h = config["h"]
-        k = config["k"]
-        p = config["p"]
-        q = config["q"]
-        lam = config["lam"] * const.DEG2RAD
-        retro = config.get("retro", False)
-
-        return cls(sma, h, k, p, q, lam, retro=retro)
+        return cls(
+            config.semi_major_axis,
+            config.h,
+            config.k,
+            config.p,
+            config.q,
+            config.mean_longitude * const.DEG2RAD,
+            retro=config.retrograde,
+        )

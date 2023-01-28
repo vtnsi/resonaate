@@ -25,14 +25,14 @@ from .sensor_base import (
 
 if TYPE_CHECKING:
     # Local Imports
-    from ..scenario.config.agent_configs import FieldOfViewConfig, SensingAgentConfig
+    from ..scenario.config.sensor_config import FieldOfViewConfig, SensorConfig
 
 
-def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
+def sensorFactory(sensor_config: SensorConfig) -> Sensor:
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
 
     Args:
-        sensor_config (:class:`.SensingAgentConfig`): describes the sensor and its capabilities
+        sensor_config (:class:`.SensorConfig`): describes the sensor and its capabilities
 
     Raises:
         ValueError: raised if invalid option is designate for `"sensor_type"`
@@ -55,21 +55,21 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
     }
 
     # Instantiate sensor object. Add extra params if needed
-    if sensor_config.sensor_type == OPTICAL_LABEL:
+    if sensor_config.type == OPTICAL_LABEL:
         sensor_args["detectable_vismag"] = sensor_config.detectable_vismag
         sensor = Optical(**sensor_args)
-    elif sensor_config.sensor_type == RADAR_LABEL:
+    elif sensor_config.type == RADAR_LABEL:
         sensor_args["tx_power"] = sensor_config.tx_power
         sensor_args["tx_frequency"] = sensor_config.tx_frequency
         sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
         sensor = Radar(**sensor_args)
-    elif sensor_config.sensor_type == ADV_RADAR_LABEL:
+    elif sensor_config.type == ADV_RADAR_LABEL:
         sensor_args["tx_power"] = sensor_config.tx_power
         sensor_args["tx_frequency"] = sensor_config.tx_frequency
         sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
         sensor = AdvRadar(**sensor_args)
     else:
-        raise ValueError(f"Invalid sensor type provided to config: {sensor_config.sensor_type}")
+        raise ValueError(f"Invalid sensor type provided to config: {sensor_config.type}")
 
     return sensor
 

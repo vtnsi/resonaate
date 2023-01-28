@@ -2,12 +2,8 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from math import isclose
+from copy import deepcopy
 from typing import TYPE_CHECKING
-
-# Third Party Imports
-from numpy import allclose, array
-from numpy.random import default_rng
 
 # Local Imports
 from ..agents.estimate_agent import EstimateAgent
@@ -19,9 +15,7 @@ from ..common.logger import Logger
 from ..data.data_interface import AgentModel
 from ..data.events import Event
 from ..data.resonaate_database import ResonaateDatabase
-from ..dynamics import spacecraftDynamicsFactory
-from ..dynamics.special_perturbations import calcSatRatio
-from ..physics.noise import noiseCovarianceFactory
+from ..dynamics import dynamicsFactory
 from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
 from ..tasking.rewards import rewardsFactory
@@ -32,8 +26,7 @@ from .config.event_configs import MissingDataDependency
 if TYPE_CHECKING:
     # Local Imports
     from ..tasking.engine.engine_base import TaskingEngine
-    from .config import ScenarioConfig
-    from .config.agent_configs import SensingAgentConfig, TargetAgentConfig
+    from .config import EngineConfig, ScenarioConfig, SensingAgentConfig, TargetAgentConfig
 
 
 class ScenarioBuilder:
@@ -66,17 +59,12 @@ class ScenarioBuilder:
         # Instantiate clock based on config's start time and class variables
         self.clock = ScenarioClock.fromConfig(self.config.time)
 
-        q_matrix = noiseCovarianceFactory(
-            self.config.noise.filter_noise_type,
-            self.config.time.physics_step_sec,
-            self.config.noise.filter_noise_magnitude,
-        )
-
         # create target and sensor sets
         target_configs: dict[int, TargetAgentConfig] = {}
         sensor_configs: dict[int, SensingAgentConfig] = {}
         self.tasking_engines: dict[int, TaskingEngine] = {}
 
+        engine_conf: EngineConfig
         for engine_conf in self._config.engines:
             if engine_conf.unique_id in self.tasking_engines:
                 err = f"Engines share a unique ID: {engine_conf.unique_id}"
@@ -90,23 +78,25 @@ class ScenarioBuilder:
 
             # Build target and estimate sets
             engine_targets = []
-            for rso in engine_conf.targets:
-                engine_targets.append(rso.sat_num)
+            tgt: TargetAgentConfig
+            for tgt in engine_conf.targets:
+                engine_targets.append(tgt.id)
 
-                existing_target = target_configs.get(rso.sat_num)
+                existing_target = target_configs.get(tgt.id)
                 if existing_target:
-                    self._validateTargetAddition(rso, existing_target)
-                target_configs[rso.sat_num] = rso
+                    self._validateTargetAddition(tgt, existing_target)
+                target_configs[tgt.id] = tgt
 
             # Build sensor set
             engine_sensors = []
-            for sensor in engine_conf.sensors:
-                engine_sensors.append(sensor.id)
+            sensor_agent: SensingAgentConfig
+            for sensor_agent in engine_conf.sensors:
+                engine_sensors.append(sensor_agent.id)
 
-                if sensor_configs.get(sensor.id):
-                    err = f"Sensor can't be tasked by two engines: {sensor.id}"
+                if sensor_configs.get(sensor_agent.id):
+                    err = f"Sensor can't be tasked by two engines: {sensor_agent.id}"
                     raise DuplicateSensorError(err)
-                sensor_configs[sensor.id] = sensor
+                sensor_configs[sensor_agent.id] = sensor_agent
 
             # Create the tasking engine object
             tasking_engine = CentralizedTaskingEngine(
@@ -124,73 +114,57 @@ class ScenarioBuilder:
                 f"Successfully built tasking engine: {tasking_engine.__class__.__name__}"
             )
 
-        self.target_agents = self.initTargets(
-            list(target_configs.values()), self.config.propagation.station_keeping
-        )
+        self.target_agents = self.initTargets(list(target_configs.values()))
 
         # Build estimate set
         self.estimate_agents: dict[int, EstimateAgent] = {}
+        est_prop_cfg = deepcopy(self.config.propagation)
+        est_prop_cfg.propagation_model = self.config.estimation.sequential_filter.dynamics_model
         for target_id, target_config in target_configs.items():
-            sat_ratio = calcSatRatio(
-                target_config.visual_cross_section,
-                target_config.mass,
-                target_config.reflectivity,
-            )
 
             # Create the base estimation filter for nominal operation
-            filter_dynamics = spacecraftDynamicsFactory(
-                self.config.estimation.sequential_filter.dynamics_model,
-                self.clock,
+            filter_dynamics = dynamicsFactory(
+                target_config,
+                est_prop_cfg,
                 self.config.geopotential,
                 self.config.perturbations,
-                sat_ratio,
-                method=self.config.propagation.integration_method,
+                self.clock,
             )
 
-            config = {
-                "target": target_config,
-                "agent_type": self.target_agents[target_id].agent_type,
-                "position_std": self.config.noise.init_position_std_km,
-                "velocity_std": self.config.noise.init_velocity_std_km_p_sec,
-                "rng": default_rng(self.config.noise.random_seed),
-                "clock": self.clock,
-                "sequential_filter": self.config.estimation.sequential_filter,
-                "adaptive_filter": self.config.estimation.adaptive_filter,
-                "initial_orbit_determination": self.config.estimation.initial_orbit_determination,
-                "seed": self.config.noise.random_seed,
-                "dynamics": filter_dynamics,
-                "q_matrix": q_matrix,
-            }
-            self.estimate_agents[target_id] = EstimateAgent.fromConfig(config)
+            self.estimate_agents[target_id] = EstimateAgent.fromConfig(
+                tgt_cfg=target_config,
+                clock=self.clock,
+                dynamics=filter_dynamics,
+                prop_cfg=self.config.propagation,
+                time_cfg=self.config.time,
+                noise_cfg=self.config.noise,
+                estimation_cfg=self.config.estimation,
+            )
 
         self.logger.info(f"Successfully loaded {len(self.target_agents)} target agents")
 
         self.sensor_network: list[SensingAgent] = []
-        for sensor_config in sensor_configs.values():
+        for sensor_agent_config in sensor_configs.values():
             # Assign Sensor FoV from init if not set
             if self.config.observation.background:
-                sensor_config.background_observations = True
-            sat_ratio = calcSatRatio(
-                sensor_config.visual_cross_section,
-                sensor_config.mass,
-                sensor_config.reflectivity,
+                sensor_agent_config.sensor.background_observations = True
+
+            dynamics = dynamicsFactory(
+                sensor_agent_config,
+                self.config.propagation,
+                self.config.geopotential,
+                self.config.perturbations,
+                self.clock,
             )
 
-            config = {
-                "agent": sensor_config,
-                "clock": self.clock,
-                "satellite_dynamics": spacecraftDynamicsFactory(
-                    self.config.propagation.propagation_model,
-                    self.clock,
-                    self.config.geopotential,
-                    self.config.perturbations,
-                    sat_ratio,
-                    method=self.config.propagation.integration_method,
-                ),
-                "realtime": self.config.propagation.sensor_realtime_propagation,
-            }
-
-            self.sensor_network.append(SensingAgent.fromConfig(config))
+            self.sensor_network.append(
+                SensingAgent.fromConfig(
+                    sen_cfg=sensor_agent_config,
+                    clock=self.clock,
+                    dynamics=dynamics,
+                    prop_cfg=self.config.propagation,
+                )
+            )
 
         self.logger.info(f"Successfully loaded {len(self.sensor_network)} sensor agents")
 
@@ -243,69 +217,40 @@ class ScenarioBuilder:
         Raises:
             :exc:`.DuplicateTargetError`: If the `new_target` and `existing_target` states don't match.
         """
-        if existing_target.eci_set and new_target.eci_set:
-            if allclose(array(existing_target.init_eci), array(new_target.init_eci)):
-                return
+        if existing_target.state == new_target.state:
+            return
 
-        if existing_target.eqe_set and new_target.eqe_set:
-            if allclose(array(existing_target.eqe_set), array(new_target.eqe_set)):
-                return
-
-        if existing_target.coe_set and new_target.coe_set:
-            if len(existing_target.init_coe) == len(new_target.init_coe):
-                orbit_matches = True
-                for orbit_param, existing_setting in existing_target.init_coe.items():
-                    if not isclose(existing_setting, new_target.init_coe[orbit_param]):
-                        orbit_matches = False
-
-                if orbit_matches:
-                    return
-
-        err = f"Duplicate targets specified with different initial states: {new_target.sat_num}"
+        err = f"Duplicate targets specified with different initial states: {new_target.id}"
         raise DuplicateTargetError(err)
 
     def initTargets(
         self,
         target_configs: list[TargetAgentConfig],
-        station_keeping: bool,
     ) -> dict[int, TargetAgent]:
         """Initialize target RSOs based on a given config.
 
         Args:
             target_configs (``list``): :class:`.TargetAgentConfig` objects describing target RSO attributes.
-            station_keeping (``bool``): whether to perform station-keeping burns during the scenario.
-
-        Raises:
-            ValueError: raised if RSO state isn't specified as "init_coe" or "init_eci"
 
         Returns:
             ``dict``: constructed :class:`.Spacecraft` objects for each RSO specified
         """
         targets: dict[int, TargetAgent] = {}
-        for target_conf in target_configs:
-            sat_ratio = calcSatRatio(
-                target_conf.visual_cross_section,
-                target_conf.mass,
-                target_conf.reflectivity,
-            )
-
-            dynamics_method = spacecraftDynamicsFactory(
-                self.config.propagation.propagation_model,
-                self.clock,
+        for tgt_cfg in target_configs:
+            dynamics = dynamicsFactory(
+                tgt_cfg,
+                self.config.propagation,
                 self.config.geopotential,
                 self.config.perturbations,
-                sat_ratio,
-                method=self.config.propagation.integration_method,
+                self.clock,
             )
 
-            config = {
-                "target": target_conf,
-                "clock": self.clock,
-                "dynamics": dynamics_method,
-                "realtime": self.config.propagation.target_realtime_propagation,
-                "station_keeping": station_keeping,
-            }
-            targets[target_conf.sat_num] = TargetAgent.fromConfig(config)
+            targets[tgt_cfg.id] = TargetAgent.fromConfig(
+                tgt_cfg=tgt_cfg,
+                clock=self.clock,
+                dynamics=dynamics,
+                prop_cfg=self.config.propagation,
+            )
 
         return targets
 

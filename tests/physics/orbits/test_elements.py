@@ -8,51 +8,58 @@ from numpy import cos, deg2rad, sin, tan
 from resonaate.physics.orbits import EccentricityError, InclinationError, isEccentric, isInclined
 from resonaate.physics.orbits.elements import ClassicalElements, EquinoctialElements
 from resonaate.physics.orbits.utils import getEccentricityFromEQE, getInclinationFromEQE
+from resonaate.scenario.config.state_config import (
+    COE_LABEL,
+    EQE_LABEL,
+    ConfigError,
+    ECIStateConfig,
+    EQEStateConfig,
+)
 
 # Local Imports
 from .conftest import ANOM, ARGP, ECC, INC, LEO, RAAN, SMA, H, K, P, Q
 
 COE_CONFIGS: list[dict[str, float]] = [
     {
-        "sma": LEO,
-        "ecc": ECC[3],
-        "inc": INC[2],
-        "raan": RAAN[3],
-        "arg_p": ARGP[3],
-        "true_anom": ANOM[3],
+        "semi_major_axis": LEO,
+        "eccentricity": ECC[3],
+        "inclination": INC[2],
+        "right_ascension": RAAN[3],
+        "argument_periapsis": ARGP[3],
+        "true_anomaly": ANOM[3],
     },
     {
-        "sma": LEO,
-        "ecc": ECC[3],
-        "inc": INC[0],
-        "long_p": ARGP[3],
-        "true_anom": ANOM[3],
+        "semi_major_axis": LEO,
+        "eccentricity": ECC[3],
+        "inclination": INC[0],
+        "true_longitude_periapsis": ARGP[3],
+        "true_anomaly": ANOM[3],
     },
     {
-        "sma": LEO,
-        "ecc": ECC[0],
-        "inc": INC[2],
-        "raan": RAAN[3],
-        "arg_lat": ANOM[3],
+        "semi_major_axis": LEO,
+        "eccentricity": ECC[0],
+        "inclination": INC[2],
+        "right_ascension": RAAN[3],
+        "argument_latitude": ANOM[3],
     },
     {
-        "sma": LEO,
-        "ecc": ECC[0],
-        "inc": INC[0],
-        "true_long": ANOM[3],
+        "semi_major_axis": LEO,
+        "eccentricity": ECC[0],
+        "inclination": INC[0],
+        "true_longitude": ANOM[3],
     },
 ]
 
 
 EQE_CONFIGS: list[dict[str, float]] = [
     {
-        "sma": LEO,
+        "semi_major_axis": LEO,
         "h": H[3],
         "k": K[3],
         "p": P[2],
         "q": Q[2],
-        "lam": ANOM[3],
-        "retro": False,
+        "mean_longitude": ANOM[3],
+        "retrograde": False,
     },
 ]
 
@@ -162,53 +169,59 @@ def testBadEQE(sma: float, h: float, k: float, p: float, q: float, anom: float):
 def testCOEFromConfig(monkeypatch: pytest.MonkeyPatch, config: dict[str, float]):
     """Test valid combos of COEs in a config format."""
     # Nominal
-    _ = ClassicalElements.fromConfig(config)
+    config["type"] = COE_LABEL
+    _ = ClassicalElements.fromConfig(ECIStateConfig.fromDict(config))
 
     # Missing required field
     with monkeypatch.context() as m_patch:
-        m_patch.delitem(config, "ecc")
-        with pytest.raises(KeyError):
-            ClassicalElements.fromConfig(config)
+        m_patch.delitem(config, "eccentricity")
+        with pytest.raises(TypeError):
+            ClassicalElements.fromConfig(ECIStateConfig.fromDict(config))
 
 
 def testCOEFromConfigBadCOESet(monkeypatch: pytest.MonkeyPatch):
     """Test invalid combos of COEs in a config format."""
     with monkeypatch.context() as m_patch:
         ecc_inc_config = COE_CONFIGS[0]
-        m_patch.delitem(ecc_inc_config, "raan")
+        ecc_inc_config["type"] = COE_LABEL
+        m_patch.delitem(ecc_inc_config, "right_ascension")
         ecc_eq_config = COE_CONFIGS[1]
-        m_patch.delitem(ecc_eq_config, "long_p")
+        ecc_eq_config["type"] = COE_LABEL
+        m_patch.delitem(ecc_eq_config, "true_longitude_periapsis")
         cir_inc_config = COE_CONFIGS[2]
-        m_patch.delitem(cir_inc_config, "arg_lat")
+        cir_inc_config["type"] = COE_LABEL
+        m_patch.delitem(cir_inc_config, "argument_latitude")
         cir_eq_config = COE_CONFIGS[3]
-        m_patch.delitem(cir_eq_config, "true_long")
-        with pytest.raises(KeyError):
-            ClassicalElements.fromConfig(ecc_inc_config)
-        with pytest.raises(KeyError):
-            ClassicalElements.fromConfig(ecc_eq_config)
-        with pytest.raises(KeyError):
-            ClassicalElements.fromConfig(cir_inc_config)
-        with pytest.raises(KeyError):
-            ClassicalElements.fromConfig(cir_eq_config)
+        cir_eq_config["type"] = COE_LABEL
+        m_patch.delitem(cir_eq_config, "true_longitude")
+        with pytest.raises(ConfigError):
+            ClassicalElements.fromConfig(ECIStateConfig.fromDict(ecc_inc_config))
+        with pytest.raises(ConfigError):
+            ClassicalElements.fromConfig(ECIStateConfig.fromDict(ecc_eq_config))
+        with pytest.raises(ConfigError):
+            ClassicalElements.fromConfig(ECIStateConfig.fromDict(cir_inc_config))
+        with pytest.raises(ConfigError):
+            ClassicalElements.fromConfig(ECIStateConfig.fromDict(cir_eq_config))
 
 
 @pytest.mark.parametrize("config", EQE_CONFIGS)
 def testEQEFromConfig(monkeypatch: pytest.MonkeyPatch, config: dict[str, float]):
     """Test valid combos of EQEs in a config format."""
     # Nominal
-    _ = EquinoctialElements.fromConfig(config)
+    config["type"] = EQE_LABEL
+    _ = EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))
 
     # Missing optional retro
     with monkeypatch.context() as m_patch:
-        m_patch.setitem(config, "retro", True)
-        _ = EquinoctialElements.fromConfig(config)
+        m_patch.setitem(config, "retrograde", True)
+        _ = EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))
 
     with monkeypatch.context() as m_patch:
-        m_patch.delitem(config, "retro")
-        _ = EquinoctialElements.fromConfig(config)
+        m_patch.delitem(config, "retrograde")
+        _ = EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))
 
     # Missing required field
     with monkeypatch.context() as m_patch:
         m_patch.delitem(config, "h")
-        with pytest.raises(KeyError):
-            EquinoctialElements.fromConfig(config)
+        with pytest.raises(TypeError):
+            EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))

@@ -4,6 +4,7 @@ from __future__ import annotations
 # Standard Library Imports
 from copy import deepcopy
 from datetime import datetime
+from unittest.mock import MagicMock, create_autospec
 
 # Third Party Imports
 import pytest
@@ -18,32 +19,37 @@ from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKal
 from resonaate.physics.time.stardate import ScenarioTime
 from resonaate.physics.transforms.methods import getSlantRangeVector
 from resonaate.scenario.clock import ScenarioClock
-from resonaate.scenario.config.agent_configs import SensingAgentConfig
+from resonaate.scenario.config.agent_config import SensingAgentConfig
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
 SENSOR_CONFIG = {
     "name": "Test Radar",
     "id": 200000,
-    "covariance": [
-        [3.0461741978670863e-12, 0.0, 0.0, 0.0],
-        [0.0, 3.0461741978670863e-12, 0.0, 0.0],
-        [0.0, 0.0, 2.5000000000000004e-11, 0.0],
-        [0.0, 0.0, 0.0, 4.0000000000000015e-12],
-    ],
-    "slew_rate": 0.08726646259971647,
-    "azimuth_range": [0.0, 6.283185132646661],
-    "elevation_range": [0.017453292519943295, 1.5707961522619713],
-    "efficiency": 0.95,
-    "aperture_area": 530.929158456675,
-    "sensor_type": "Radar",
-    "background_observations": True,
-    "lat": 0.2281347875532986,
-    "lon": 0.5432822498364406,
-    "alt": 0.095,
-    "host_type": "GroundFacility",
-    "tx_power": 2.5e6,
-    "tx_frequency": 1.5e9,
-    "min_detectable_power": 1.4314085925969573e-14,
+    "platform": {"type": "ground_facility"},
+    "state": {
+        "type": "lla",
+        "latitude": 0.2281347875532986,
+        "longitude": 0.5432822498364406,
+        "altitude": 0.095,
+    },
+    "sensor": {
+        "covariance": [
+            [3.0461741978670863e-12, 0.0, 0.0, 0.0],
+            [0.0, 3.0461741978670863e-12, 0.0, 0.0],
+            [0.0, 0.0, 2.5000000000000004e-11, 0.0],
+            [0.0, 0.0, 0.0, 4.0000000000000015e-12],
+        ],
+        "slew_rate": 5.0,
+        "azimuth_range": [0.0, 360.0],
+        "elevation_range": [5.0, 89.9999],
+        "efficiency": 0.95,
+        "aperture_area": 530.929158456675,
+        "type": "radar",
+        "background_observations": True,
+        "tx_power": 2.5e6,
+        "tx_frequency": 1.5e9,
+        "min_detectable_power": 1.4314085925969573e-14,
+    },
 }
 
 
@@ -59,12 +65,15 @@ def getConicFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
     """Get a SensingAgent with a conic FieldOfView."""
     cfg = deepcopy(SENSOR_CONFIG)
     cfg["field_of_view"] = {"fov_shape": "conic"}
-    conic_sensor_config = {
-        "agent": SensingAgentConfig(**SENSOR_CONFIG),
-        "realtime": True,
-        "clock": clock,
-    }
-    conic_sensor_agent = SensingAgent.fromConfig(conic_sensor_config)
+    prop_cfg = MagicMock()
+    prop_cfg.station_keeping = False
+    prop_cfg.sensor_realtime_propagation = True
+
+    dynamics = create_autospec(TwoBody, instance=True)
+
+    conic_sensor_agent = SensingAgent.fromConfig(
+        SensingAgentConfig(**SENSOR_CONFIG), clock, dynamics, prop_cfg
+    )
     conic_sensor_agent.sensors.host.time = ScenarioTime(30)
     return conic_sensor_agent
 
@@ -73,13 +82,17 @@ def getConicFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
 def getRectangularFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
     """Get a SensingAgent with a rectangular FieldOfView."""
     cfg = deepcopy(SENSOR_CONFIG)
-    cfg["field_of_view"] = {"fov_shape": "rectangular"}
-    rectangular_sensor_config = {
-        "agent": SensingAgentConfig(**cfg),
-        "realtime": True,
-        "clock": clock,
-    }
-    rectangular_sensor_agent = SensingAgent.fromConfig(rectangular_sensor_config)
+    cfg["sensor"]["field_of_view"] = {"fov_shape": "rectangular"}
+
+    prop_cfg = MagicMock()
+    prop_cfg.station_keeping = False
+    prop_cfg.sensor_realtime_propagation = True
+
+    dynamics = create_autospec(TwoBody, instance=True)
+
+    rectangular_sensor_agent = SensingAgent.fromConfig(
+        SensingAgentConfig(**cfg), clock, dynamics, prop_cfg
+    )
     rectangular_sensor_agent.sensors.host.time = ScenarioTime(30)
     return rectangular_sensor_agent
 

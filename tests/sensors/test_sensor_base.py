@@ -17,7 +17,7 @@ from resonaate.common.exceptions import ShapeError
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
-from resonaate.scenario.config.agent_configs import FieldOfViewConfig
+from resonaate.scenario.config.sensor_config import FieldOfViewConfig
 from resonaate.sensors import CONIC_FOV_LABEL, fieldOfViewFactory
 from resonaate.sensors.field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from resonaate.sensors.radar import Radar

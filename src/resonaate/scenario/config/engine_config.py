@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 # Local Imports
 from ...sensors import ADV_RADAR_LABEL
-from .agent_configs import SensingAgentConfig, TargetAgentConfig
+from .agent_config import SensingAgentConfig, TargetAgentConfig
 from .base import ConfigError, ConfigObject, ConfigObjectList
 from .decision_config import DecisionConfig
 from .reward_config import RewardConfig

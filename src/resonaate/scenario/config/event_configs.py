@@ -23,7 +23,7 @@ from ...data.events import (
     TargetAdditionEvent,
     TargetTaskPriority,
 )
-from .agent_configs import SensingAgentConfig, TargetAgentConfig
+from .agent_config import SensingAgentConfig, TargetAgentConfig
 from .base import ConfigError, ConfigObject, ConfigObjectList, ConfigTypeError, ConfigValueError
 from .time_config import TIME_STAMP_FORMAT
 
@@ -330,8 +330,8 @@ class TargetAdditionEventConfig(EventConfig):
         dependency_list.append(
             DataDependency(
                 AgentModel,
-                Query(AgentModel).filter(AgentModel.unique_id == self.target.sat_num),
-                {"unique_id": self.target.sat_num, "name": self.target.sat_name},
+                Query(AgentModel).filter(AgentModel.unique_id == self.target.id),
+                {"unique_id": self.target.id, "name": self.target.name},
             )
         )
         return dependency_list

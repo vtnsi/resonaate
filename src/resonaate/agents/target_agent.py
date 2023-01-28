@@ -10,10 +10,8 @@ from numpy import array, ndarray
 # Local Imports
 from ..data.ephemeris import TruthEphemeris
 from ..dynamics.integration_events.station_keeping import StationKeeper
-from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
-from . import SPACECRAFT_LABEL
 from .agent_base import Agent
 
 # Type checking
@@ -28,21 +26,7 @@ if TYPE_CHECKING:
     from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.dynamics_base import Dynamics
     from ..scenario.clock import ScenarioClock
-
-
-LEO_DEFAULT_MASS = 295.0
-"""``float``: Default mass of LEO RSO (km)  #.  :cite:t:`LEO_RSO_2022_stats`"""
-MEO_DEFAULT_MASS = 2861.0
-"""``float``: Default mass of MEO RSO (km)  #.  :cite:t:`steigenberger_MEO_RSO_2022_stats`"""
-GEO_DEFAULT_MASS = 6200.0
-"""``float``: Default mass of GEO RSO (km)  #.  :cite:t:`GEO_RSO_2022_stats`"""
-
-LEO_DEFAULT_VCS = 10.0
-"""``float``: Default visual cross section of LEO RSO (m^2)  #.  :cite:t:`LEO_RSO_2022_stats`"""
-MEO_DEFAULT_VCS = 37.5
-"""``float``: Default visual cross section of MEO RSO (m^2)  #.  :cite:t:`steigenberger_MEO_RSO_2022_stats`"""
-GEO_DEFAULT_VCS = 90.0
-"""``float``: Default visual cross section of GEO RSO (m^2)  #.  :cite:t:`GEO_RSO_2022_stats`"""
+    from ..scenario.config import PropagationConfig, TargetAgentConfig
 
 
 class TargetAgent(Agent):
@@ -109,55 +93,45 @@ class TargetAgent(Agent):
         self._previous_state = array(initial_state, copy=True)
 
     @classmethod
-    def fromConfig(cls, config: dict) -> Self:
+    def fromConfig(
+        cls,
+        tgt_cfg: TargetAgentConfig,
+        clock: ScenarioClock,
+        dynamics: Dynamics,
+        prop_cfg: PropagationConfig,
+    ) -> Self:
         """Factory to initialize `TargetAgent` objects based on given configuration.
 
         Args:
-            config (``dict``): formatted configuration parameters
+            tgt_cfg (:class:`.TargetAgentConfig`): config from which to generate a target agent.
+            clock (:class:`.ScenarioClock`): common clock object for the simulation.
+            dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
+            prop_cfg (:class:`.PropagationConfig`): various propagation simulation settings.
 
         Returns:
-            :class:`.TargetAgent`: properly constructed `TargetAgent` object
+            :class:`.TargetAgent`: properly constructed agent object.
         """
-        ## [TODO]: Make this not coupled to only `Satellite` targets
-        tgt = config["target"]
+        initial_state = tgt_cfg.state.toECI(clock.datetime_epoch)
 
-        # Determine the target's initial ECI state
-        if tgt.eci_set:
-            initial_state = array(tgt.init_eci)
-        elif tgt.coe_set:
-            orbit = ClassicalElements.fromConfig(tgt.init_coe)
-            initial_state = orbit.toECI()
-        elif tgt.eqe_set:
-            orbit = EquinoctialElements.fromConfig(tgt.init_eqe)
-            initial_state = orbit.toECI()
-        else:
-            raise ValueError(
-                f"TargetAgent config doesn't contain initial state information: {tgt}"
-            )
-
-        station_keeping = []
-        if config["station_keeping"]:
-            for config_str in tgt.station_keeping.routines:
-                station_keeping.append(
-                    StationKeeper.factory(
-                        conf_str=config_str,
-                        rso_id=tgt.sat_num,
-                        initial_eci=initial_state,
-                        julian_date_start=config["clock"].julian_date_start,
-                    )
-                )
+        station_keeping = cls._createStationKeepers(
+            prop_cfg.station_keeping,
+            tgt_cfg.id,
+            tgt_cfg.platform,
+            initial_state,
+            clock.julian_date_start,
+        )
 
         return cls(
-            tgt.sat_num,
-            tgt.sat_name,
-            SPACECRAFT_LABEL,
+            tgt_cfg.id,
+            tgt_cfg.name,
+            tgt_cfg.platform.type,
             initial_state,
-            config["clock"],
-            config["dynamics"],
-            config["realtime"],
-            tgt.visual_cross_section,
-            tgt.mass,
-            tgt.reflectivity,
+            clock,
+            dynamics,
+            prop_cfg.target_realtime_propagation,
+            tgt_cfg.platform.visual_cross_section,
+            tgt_cfg.platform.mass,
+            tgt_cfg.platform.reflectivity,
             station_keeping=station_keeping,
         )
 

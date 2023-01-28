@@ -8,7 +8,7 @@ from dataclasses import fields
 import pytest
 
 # RESONAATE Imports
-from resonaate.dynamics import RK45_LABEL, SPECIAL_PERTURBATIONS_LABEL
+from resonaate.dynamics.constants import RK45_LABEL, SPECIAL_PERTURBATIONS_LABEL
 from resonaate.scenario.config.base import ConfigValueError
 from resonaate.scenario.config.propagation_config import PropagationConfig
 
