@@ -99,7 +99,10 @@ class PlatformConfig(ABC, ConfigObject):
     R"""``str``: type of platform being defined."""
 
     state: InitVar[StateConfig]
-    R""":class:`.StateConfig`: defines the location/dynamics of this agent."""
+    R""":class:`.StateConfig`: defines the location/dynamics of this agent.
+
+    :meta private:
+    """
 
     mass: float | None = None
     R"""``float``, optional: total mass, kg. Defaults to a value based on orbital regime."""
@@ -160,6 +163,9 @@ class PlatformConfig(ABC, ConfigObject):
 @dataclass
 class SpacecraftConfig(PlatformConfig):
     R"""Configuration defining an agent that is a spacecraft platform."""
+
+    type: Literal["spacecraft"]
+    R"""``str``: type of platform being defined."""
 
     station_keeping: StationKeepingConfig | dict | None = None
     R""":class:`.StationKeepingConfig`, optional: types of station-keeping to apply during propagation. Defaults to a no station-keeping routines.
@@ -234,6 +240,9 @@ class SpacecraftConfig(PlatformConfig):
 @dataclass
 class GroundFacilityConfig(PlatformConfig):
     R"""Configuration defining an agent that is a ground facility platform."""
+
+    type: Literal["ground_facility"]
+    R"""``str``: type of platform being defined."""
 
     @property
     def valid_states(self) -> list[str]:

@@ -40,7 +40,7 @@ class SensorConfig(ConfigObject):
     R"""``str``: Key where settings are stored in the configuration dictionary."""
 
     type: Literal["optical", "radar", "adv_radar"]
-    R"""``str``: type of platform being defined."""
+    R"""``str``: type of sensor being defined."""
 
     azimuth_range: list[float]
     R"""``list[float]``: 2-element (order matters!) azimuth range mask :math:`\in[0, 360)`, degrees."""
@@ -78,7 +78,7 @@ class SensorConfig(ConfigObject):
     R"""``float``: sensor maximum slew rate, degree/sec."""
 
     background_observations: bool = False
-    R"""``bool``, optional: whether this sensor uses its :attr:`.filed_of_view` to determine if other agents are visible. Defaults to ``False``"""
+    R"""``bool``, optional: whether this sensor uses its :attr:`.field_of_view` to determine if other agents are visible. Defaults to ``False``"""
 
     minimum_range: float | None = None
     R"""``float, optional``: minimum range at which this sensor can observe targets, km. Defaults to a value based on sensor type."""
@@ -129,6 +129,9 @@ class SensorConfig(ConfigObject):
 class OpticalConfig(SensorConfig):
     R"""Configuration object for a :class:`.Optical`."""
 
+    type: Literal["optical"]
+    R"""``str``: type of sensor being defined."""
+
     detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG
     R"""``float``, optional: minimum detectable visual magnitude value, used for visibility constraints, unit-less. Defaults to :data:`.OPTICAL_DETECTABLE_VISMAG`."""
 
@@ -143,6 +146,9 @@ class OpticalConfig(SensorConfig):
 class RadarConfig(SensorConfig):
     R"""Configuration object for a :class:`.Radar`."""
 
+    type: Literal["radar"]
+    R"""``str``: type of sensor being defined."""
+
     tx_power: float | None = None
     R"""``float``: radar transmission power, W."""
 
@@ -150,7 +156,7 @@ class RadarConfig(SensorConfig):
     R"""``float``: radar transmission center frequency, Hz."""
 
     min_detectable_power: float | None = None
-    R"""``float``: The smallest received power that can be detected by the radar`, W."""
+    R"""``float``: The smallest received power that can be detected by the radar, W."""
 
     def __post_init__(self):
         R"""Runs after the dataclass is initialized."""
@@ -176,6 +182,9 @@ class RadarConfig(SensorConfig):
 @dataclass
 class AdvRadarConfig(RadarConfig):
     R"""Configuration object for a :class:`.AdvRadar`."""
+
+    type: Literal["adv_radar"]
+    R"""``str``: type of sensor being defined."""
 
 
 SENSOR_MAP: dict[str, SensorConfig] = {

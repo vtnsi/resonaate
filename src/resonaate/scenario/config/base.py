@@ -145,7 +145,10 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
     """``str``: Label that this configuration item falls under in the raw configuration dictionary."""
 
     config_type: InitVar[Type[ConfigObject]]
-    """``type``: type of the objects in this list."""
+    """``type``: type of the objects in this list.
+
+    :meta private:
+    """
 
     _config_objects: list[ConfigObject] = field(default_factory=list)
     """``list``: config objects in this list."""

@@ -87,11 +87,14 @@ class StateConfig(ABC, ConfigObject):
 class ECIStateConfig(StateConfig):
     R"""Configuration defining an ECI state."""
 
+    type: Literal["eci"]
+    R"""``str``: type of state being defined."""
+
     position: list[float]
-    R"""``list[float]``: initial ECI position vector, km."""
+    R"""``list[float]``: initial 3x1 ECI position vector, km."""
 
     velocity: list[float]
-    R"""``list[float]``: initial ECI velocity vector, km/sec."""
+    R"""``list[float]``: initial 3x1 ECI velocity vector, km/sec."""
 
     def __post_init__(self):
         R"""Runs after the dataclass is initialized."""
@@ -116,11 +119,14 @@ class ECIStateConfig(StateConfig):
 class LLAStateConfig(StateConfig):
     R"""Configuration defining an lat-lon-alt state."""
 
+    type: Literal["lla"]
+    R"""``str``: type of state being defined."""
+
     latitude: float
-    R"""``float``: initial geodetic latitude, radians."""
+    R"""``float``: initial geodetic latitude, degrees."""
 
     longitude: float
-    R"""``float``: initial longitude, radians."""
+    R"""``float``: initial longitude, degrees."""
 
     altitude: float
     R"""``float``: initial altitude, km."""
@@ -146,6 +152,9 @@ class COEStateConfig(StateConfig):
     See Also:
         :class:`.ClassicalElements` for more details on orbit definitions.
     """
+
+    type: Literal["coe"]
+    R"""``str``: type of state being defined."""
 
     semi_major_axis: float
     R"""``float``: semi-major axis, :math:`a`, km."""
@@ -228,6 +237,9 @@ class EQEStateConfig(StateConfig):
     R"""Configuration defining an EQE state."""
 
     #  pylint: disable=invalid-name
+
+    type: Literal["eqe"]
+    R"""``str``: type of state being defined."""
 
     semi_major_axis: float
     R"""``float``: semi-major axis, :math:`a`, km."""
