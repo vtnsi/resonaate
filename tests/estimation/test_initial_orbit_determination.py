@@ -185,7 +185,6 @@ class TestLambertInitialOrbitDetermination:
     def testDetermineNewEstimateState(
         self,
         observation: Observation,
-        caplog: pytest.LogCaptureFixture,
         monkeypatch: pytest.MonkeyPatch,
         iod: LambertIOD,
     ):
@@ -193,7 +192,6 @@ class TestLambertInitialOrbitDetermination:
 
         Args:
             observation (:class:`.Observation`): Observation fixture
-            caplog (:class:`.LogCaptureFixture`): pytest logging capture
             monkeypatch (``:class:`.MonkeyPatch``): patch of function
             iod (:class:`.LambertIOD`): LambertIOD fixture
         """
@@ -201,7 +199,7 @@ class TestLambertInitialOrbitDetermination:
         prior_scenario_time = self.prior_julian_date.convertToScenarioTime(self.start_julian_date)
         current_scenario_time = iod.julian_date_start.convertToScenarioTime(self.start_julian_date)
         result = iod.determineNewEstimateState([], prior_scenario_time, current_scenario_time)
-        assert caplog.record_tuples[-1][-1] == "No Observations for IOD"
+        assert result[2] == "No Observations for IOD"
 
         def mockDb(*args, **kwargs):
             mocked_db = MagicMock(spec=ResonaateDatabase)
@@ -216,7 +214,7 @@ class TestLambertInitialOrbitDetermination:
             observation, prior_scenario_time, current_scenario_time
         )
 
-        assert caplog.record_tuples[-1][-1] == "Not enough observations to perform IOD 0"
+        assert result[2] == "No observations in database of RSO 10001"
 
         # Monkey Patch get previous observation
         def mockGetPreviousObservations(*args, **kwargs):
@@ -234,7 +232,7 @@ class TestLambertInitialOrbitDetermination:
             [bad_obs], prior_scenario_time, current_scenario_time
         )
 
-        assert caplog.record_tuples[-1][-1] == "No Radar observations to perform Lambert IOD"
+        assert result[2] == "No Radar observations to perform Lambert IOD"
 
         # Monkey Patch get single pass
         def mockCheckSinglePass(*args, **kwargs):
@@ -251,7 +249,7 @@ class TestLambertInitialOrbitDetermination:
                 [observation], prior_scenario_time, current_scenario_time
             )
 
-            assert caplog.record_tuples[-1][-1] == "Observations not from a single pass"
+            assert result[2] == "Observations not from a single pass"
 
         # Test Successful IOD
 

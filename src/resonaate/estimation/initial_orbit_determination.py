@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # Standard Library Imports
-import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -55,8 +54,6 @@ class InitialOrbitDetermination(ABC):
             julian_date_start (:class:`.JulianDate`): Starting JulianDate of the scenario
 
         """
-        self._logger = logging.getLogger("resonaate")
-
         self.minimum_observation_spacing: int = minimum_observation_spacing
         """``int``: minimum number of seconds required between observations."""
         self.orbit_determination_method: OrbitDeterminationFunction = orbit_determination_method
@@ -224,8 +221,7 @@ class LambertIOD(InitialOrbitDetermination):
         """
         if not observations:
             msg = "No Observations for IOD"
-            self._logger.warning(msg)
-            return None, False
+            return None, False, msg
 
         # load path to on-disk database for the current scenario run
         database = getDBConnection()
@@ -241,8 +237,7 @@ class LambertIOD(InitialOrbitDetermination):
         # [NOTE]: the `+1` is here because the observation from the current timestep is not yet in the database
         if len(previous_observation) + 1 < self.min_observations:
             msg = f"Not enough observations to perform IOD {len(previous_observation)}"
-            self._logger.warning(msg)
-            return None, False
+            return None, False, msg
 
         # Get position from Radar observation between maneuver detection time and now
         initial_position = radarObs2eciPosition(previous_observation[-1])
@@ -250,16 +245,14 @@ class LambertIOD(InitialOrbitDetermination):
         # Get position from Radar observation from current timestep
         if (final_position := self._determineFinalState(observations)) is None:
             msg = "No Radar observations to perform Lambert IOD"
-            self._logger.warning(msg)
-            return None, False
+            return None, False, msg
 
         transit_time = self.checkSinglePass(
             final_position, previous_observation[-1].julian_date, current_julian_date
         )
         if not transit_time:
             msg = "Observations not from a single pass"
-            self._logger.warning(msg)
-            return None, False
+            return None, False, msg
 
         # [NOTE]: Circular orbit assumed as first approx.
         transfer_method = determineTransferDirection(initial_position, transit_time)
@@ -272,7 +265,7 @@ class LambertIOD(InitialOrbitDetermination):
             transfer_method,
         )
 
-        return concatenate((final_position, final_velocity)), True
+        return concatenate((final_position, final_velocity)), True, None
 
     def _determineFinalState(self, observations: list[Observation]) -> ndarray | None:
         """Calculate Position vector at the current time given observations.

@@ -194,7 +194,7 @@ def testAttemptInitialOrbitDetermination(
     estimate_agent.initial_orbit_determination = initialOrbitDeterminationFactory(
         iod_config, estimate_agent.simulation_id, estimate_agent.julian_date_start
     )
-    estimate_agent._attemptInitialOrbitDetermination(observations)
+    estimate_agent._beginInitialOrbitDetermination()
     assert estimate_agent.iod_start_time == ScenarioTime(0.0)
 
     # Test unsuccessful IOD
@@ -204,7 +204,7 @@ def testAttemptInitialOrbitDetermination(
     def determineNewEstimateStateBad(
         self, observations, detection_time, current_time
     ):  # pylint:disable=unused-argument
-        return bad_state, False
+        return bad_state, False, None
 
     with monkeypatch.context() as m_patch:
         m_patch.setattr(
@@ -221,7 +221,7 @@ def testAttemptInitialOrbitDetermination(
     good_state = np.array([1, 2, 3, 4, 5, 6])
 
     def determineNewEstimateStateGood(self, observations, detection_time, current_time):
-        return good_state, True
+        return good_state, True, None
 
     with monkeypatch.context() as m_patch:
         m_patch.setattr(
