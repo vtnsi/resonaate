@@ -5,16 +5,11 @@ import pytest
 from numpy import cos, deg2rad, sin, tan
 
 # RESONAATE Imports
+from resonaate.common.labels import StateLabel
 from resonaate.physics.orbits import EccentricityError, InclinationError, isEccentric, isInclined
 from resonaate.physics.orbits.elements import ClassicalElements, EquinoctialElements
 from resonaate.physics.orbits.utils import getEccentricityFromEQE, getInclinationFromEQE
-from resonaate.scenario.config.state_config import (
-    COE_LABEL,
-    EQE_LABEL,
-    ConfigError,
-    ECIStateConfig,
-    EQEStateConfig,
-)
+from resonaate.scenario.config.state_config import ConfigError, ECIStateConfig, EQEStateConfig
 
 # Local Imports
 from .conftest import ANOM, ARGP, ECC, INC, LEO, RAAN, SMA, H, K, P, Q
@@ -169,7 +164,7 @@ def testBadEQE(sma: float, h: float, k: float, p: float, q: float, anom: float):
 def testCOEFromConfig(monkeypatch: pytest.MonkeyPatch, config: dict[str, float]):
     """Test valid combos of COEs in a config format."""
     # Nominal
-    config["type"] = COE_LABEL
+    config["type"] = StateLabel.COE
     _ = ClassicalElements.fromConfig(ECIStateConfig.fromDict(config))
 
     # Missing required field
@@ -183,16 +178,16 @@ def testCOEFromConfigBadCOESet(monkeypatch: pytest.MonkeyPatch):
     """Test invalid combos of COEs in a config format."""
     with monkeypatch.context() as m_patch:
         ecc_inc_config = COE_CONFIGS[0]
-        ecc_inc_config["type"] = COE_LABEL
+        ecc_inc_config["type"] = StateLabel.COE
         m_patch.delitem(ecc_inc_config, "right_ascension")
         ecc_eq_config = COE_CONFIGS[1]
-        ecc_eq_config["type"] = COE_LABEL
+        ecc_eq_config["type"] = StateLabel.COE
         m_patch.delitem(ecc_eq_config, "true_longitude_periapsis")
         cir_inc_config = COE_CONFIGS[2]
-        cir_inc_config["type"] = COE_LABEL
+        cir_inc_config["type"] = StateLabel.COE
         m_patch.delitem(cir_inc_config, "argument_latitude")
         cir_eq_config = COE_CONFIGS[3]
-        cir_eq_config["type"] = COE_LABEL
+        cir_eq_config["type"] = StateLabel.COE
         m_patch.delitem(cir_eq_config, "true_longitude")
         with pytest.raises(ConfigError):
             ClassicalElements.fromConfig(ECIStateConfig.fromDict(ecc_inc_config))
@@ -208,7 +203,7 @@ def testCOEFromConfigBadCOESet(monkeypatch: pytest.MonkeyPatch):
 def testEQEFromConfig(monkeypatch: pytest.MonkeyPatch, config: dict[str, float]):
     """Test valid combos of EQEs in a config format."""
     # Nominal
-    config["type"] = EQE_LABEL
+    config["type"] = StateLabel.EQE
     _ = EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))
 
     # Missing optional retro

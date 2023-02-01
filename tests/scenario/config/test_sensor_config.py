@@ -8,6 +8,7 @@ from copy import deepcopy
 import pytest
 
 # RESONAATE Imports
+from resonaate.common.labels import SensorLabel
 from resonaate.scenario.config.base import ConfigValueError
 from resonaate.scenario.config.sensor_config import (
     AdvRadarConfig,
@@ -16,7 +17,6 @@ from resonaate.scenario.config.sensor_config import (
     RadarConfig,
     SensorConfig,
 )
-from resonaate.sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
 from resonaate.sensors.sensor_base import DEFAULT_VIEWING_ANGLE
 
 
@@ -122,34 +122,34 @@ class TestSensorConfig:
 
 def testOpticalConfig(base_sensor_dict: dict):
     """Test creating sensor config."""
-    base_sensor_dict["type"] = OPTICAL_LABEL
+    base_sensor_dict["type"] = SensorLabel.OPTICAL
     cfg = OpticalConfig(**base_sensor_dict)
     assert cfg
-    assert cfg.type == OPTICAL_LABEL
+    assert cfg.type == SensorLabel.OPTICAL
 
     new_cfg_dict = deepcopy(base_sensor_dict)
     new_cfg_dict["minimum_range"] = 100.0
     cfg = OpticalConfig.fromDict(new_cfg_dict)
     assert cfg
-    assert cfg.type == OPTICAL_LABEL
+    assert cfg.type == SensorLabel.OPTICAL
 
 
 def testRadarConfig(base_sensor_dict: dict):
     """Test creating sensor config."""
-    base_sensor_dict["type"] = RADAR_LABEL
+    base_sensor_dict["type"] = SensorLabel.RADAR
     base_sensor_dict["tx_power"] = 2.5e6
     base_sensor_dict["tx_frequency"] = 1.5e9
     base_sensor_dict["min_detectable_power"] = 1.4314085925969573e-14
     cfg = RadarConfig(**base_sensor_dict)
     assert cfg
-    assert cfg.type == RADAR_LABEL
+    assert cfg.type == SensorLabel.RADAR
 
     new_cfg_dict = deepcopy(base_sensor_dict)
     new_cfg_dict["minimum_range"] = 100.0
     new_cfg_dict["tx_frequency"] = "s"
     cfg = RadarConfig.fromDict(new_cfg_dict)
     assert cfg
-    assert cfg.type == RADAR_LABEL
+    assert cfg.type == SensorLabel.RADAR
 
     new_cfg_dict = deepcopy(base_sensor_dict)
     del new_cfg_dict["min_detectable_power"]
@@ -167,20 +167,20 @@ def testRadarConfig(base_sensor_dict: dict):
 
 def testAdvRadarConfig(base_sensor_dict: dict):
     """Test creating sensor config."""
-    base_sensor_dict["type"] = ADV_RADAR_LABEL
+    base_sensor_dict["type"] = SensorLabel.ADV_RADAR
     base_sensor_dict["tx_power"] = 2.5e6
     base_sensor_dict["tx_frequency"] = 1.5e9
     base_sensor_dict["min_detectable_power"] = 1.4314085925969573e-14
     cfg = AdvRadarConfig(**base_sensor_dict)
     assert cfg
-    assert cfg.type == ADV_RADAR_LABEL
+    assert cfg.type == SensorLabel.ADV_RADAR
 
     new_cfg_dict = deepcopy(base_sensor_dict)
     new_cfg_dict["minimum_range"] = 100.0
     new_cfg_dict["tx_frequency"] = "s"
     cfg = AdvRadarConfig.fromDict(new_cfg_dict)
     assert cfg
-    assert cfg.type == ADV_RADAR_LABEL
+    assert cfg.type == SensorLabel.ADV_RADAR
 
     new_cfg_dict = deepcopy(base_sensor_dict)
     del new_cfg_dict["min_detectable_power"]

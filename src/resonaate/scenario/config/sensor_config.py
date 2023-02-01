@@ -9,17 +9,10 @@ from typing import TYPE_CHECKING, ClassVar
 from numpy import inf
 
 # Local Imports
+from ...common.labels import FoVLabel, SensorLabel
 from ...physics.sensor_utils import calculateMinRadarRange, getFrequencyFromString
 from ...sensors.optical import OPTICAL_DETECTABLE_VISMAG
-from ...sensors.sensor_base import (
-    ADV_RADAR_LABEL,
-    CONIC_FOV_LABEL,
-    DEFAULT_VIEWING_ANGLE,
-    OPTICAL_LABEL,
-    RADAR_LABEL,
-    RECTANGULAR_FOV_LABEL,
-    VALID_SENSOR_FOV_LABELS,
-)
+from ...sensors.sensor_base import DEFAULT_VIEWING_ANGLE
 from .base import ConfigObject, ConfigValueError
 
 # Type Checking Imports
@@ -29,6 +22,13 @@ if TYPE_CHECKING:
 
     # Third Party Imports
     from typing_extensions import Self
+
+
+VALID_SENSOR_FOV_LABELS: tuple[str] = (
+    FoVLabel.CONIC,
+    FoVLabel.RECTANGULAR,
+)
+"""``tuple``: Contains valid sensor Field of View configurations."""
 
 
 @dataclass
@@ -90,9 +90,9 @@ class SensorConfig(ConfigObject):
     R""":class:`.FieldOfViewConfig`, optional: FOV type size to use in calculating visibility. Defaults to a conic FOV with default cone angle."""
 
     VALID_LABELS: ClassVar[list[str]] = [
-        OPTICAL_LABEL,
-        RADAR_LABEL,
-        ADV_RADAR_LABEL,
+        SensorLabel.OPTICAL,
+        SensorLabel.RADAR,
+        SensorLabel.ADV_RADAR,
     ]
 
     def __post_init__(self):
@@ -104,7 +104,7 @@ class SensorConfig(ConfigObject):
             self.field_of_view = FieldOfViewConfig(**self.field_of_view)
 
         if self.field_of_view is None:
-            self.field_of_view = FieldOfViewConfig(CONIC_FOV_LABEL)
+            self.field_of_view = FieldOfViewConfig(FoVLabel.CONIC)
 
     @classmethod
     def fromDict(cls, sensor_cfg: dict) -> Self:
@@ -188,9 +188,9 @@ class AdvRadarConfig(RadarConfig):
 
 
 SENSOR_MAP: dict[str, SensorConfig] = {
-    OPTICAL_LABEL: OpticalConfig,
-    RADAR_LABEL: RadarConfig,
-    ADV_RADAR_LABEL: AdvRadarConfig,
+    SensorLabel.OPTICAL: OpticalConfig,
+    SensorLabel.RADAR: RadarConfig,
+    SensorLabel.ADV_RADAR: AdvRadarConfig,
 }
 
 
@@ -218,11 +218,11 @@ class FieldOfViewConfig(ConfigObject):
         if self.fov_shape not in VALID_SENSOR_FOV_LABELS:
             raise ConfigValueError("fov_shape", self.fov_shape, VALID_SENSOR_FOV_LABELS)
 
-        if self.fov_shape == CONIC_FOV_LABEL:
+        if self.fov_shape == FoVLabel.CONIC:
             if self.cone_angle <= 0 or self.cone_angle >= 180:
                 raise ConfigValueError("cone_angle", self.cone_angle, "between 0 and 180")
 
-        if self.fov_shape == RECTANGULAR_FOV_LABEL:
+        if self.fov_shape == FoVLabel.RECTANGULAR:
             if self.azimuth_angle <= 0 or self.azimuth_angle >= 180:
                 raise ConfigValueError("azimuth_angle", self.azimuth_angle, "between 0 and 180")
 

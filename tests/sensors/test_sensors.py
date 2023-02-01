@@ -8,43 +8,32 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
-from resonaate.agents import GROUND_FACILITY_LABEL
+from resonaate.common.labels import FoVLabel, PlatformLabel, SensorLabel, StateLabel
 from resonaate.scenario.config.agent_config import SensingAgentConfig
 from resonaate.scenario.config.platform_config import PlatformConfig
 from resonaate.scenario.config.sensor_config import FieldOfViewConfig
-from resonaate.scenario.config.state_config import LLA_LABEL, StateConfig
-from resonaate.sensors import (
-    ADV_RADAR_LABEL,
-    CONIC_FOV_LABEL,
-    OPTICAL_LABEL,
-    RADAR_LABEL,
-    RECTANGULAR_FOV_LABEL,
-    AdvRadar,
-    Optical,
-    Radar,
-    fieldOfViewFactory,
-    sensorFactory,
-)
+from resonaate.scenario.config.state_config import StateConfig
+from resonaate.sensors import AdvRadar, Optical, Radar, fieldOfViewFactory, sensorFactory
 
 
 @pytest.fixture(name="fov_conic")
 def getConicFoV() -> FieldOfViewConfig:
     """Create a conic FOV config object."""
-    return FieldOfViewConfig(fov_shape=CONIC_FOV_LABEL, cone_angle=15.0)
+    return FieldOfViewConfig(fov_shape=FoVLabel.CONIC, cone_angle=15.0)
 
 
 @pytest.fixture(name="fov_rect")
 def getRectangularFoV() -> FieldOfViewConfig:
     """Create a rectangular FOV config object."""
     return FieldOfViewConfig(
-        fov_shape=RECTANGULAR_FOV_LABEL, azimuth_angle=5.0, elevation_angle=5.0
+        fov_shape=FoVLabel.RECTANGULAR, azimuth_angle=5.0, elevation_angle=5.0
     )
 
 
 @pytest.fixture(name="platform_cfg")
 def getPlatformConfig(state_cfg: StateConfig) -> PlatformConfig:
     """Create platform config."""
-    return PlatformConfig.fromDict({"type": GROUND_FACILITY_LABEL}, state=state_cfg)
+    return PlatformConfig.fromDict({"type": PlatformLabel.GROUND_FACILITY}, state=state_cfg)
 
 
 @pytest.fixture(name="state_cfg")
@@ -52,7 +41,7 @@ def getStateConfig() -> StateConfig:
     """Create state config."""
     return StateConfig.fromDict(
         {
-            "type": LLA_LABEL,
+            "type": StateLabel.LLA,
             "latitude": 20.0,
             "longitude": -40.0,
             "altitude": 0.5,
@@ -66,7 +55,7 @@ def getRadarAgentConfig(
 ) -> SensingAgentConfig:
     """Create valid Radar Sensing Agent config object."""
     sensor_dict = {
-        "type": RADAR_LABEL,
+        "type": SensorLabel.RADAR,
         "azimuth_range": [0, 360],
         "elevation_range": (0, 90),
         "covariance": np.eye(4),
@@ -92,7 +81,7 @@ def getAdvRadarAgentConfig(
 ) -> SensingAgentConfig:
     """Create valid Advanced Radar Sensing Agent config object."""
     sensor_dict = {
-        "type": ADV_RADAR_LABEL,
+        "type": SensorLabel.ADV_RADAR,
         "azimuth_range": [0, 360],
         "elevation_range": (0, 90),
         "covariance": np.eye(4),
@@ -118,7 +107,7 @@ def getOpticalAgentConfig(
 ) -> SensingAgentConfig:
     """Create valid Optical Sensing Agent config object."""
     sensor_dict = {
-        "type": OPTICAL_LABEL,
+        "type": SensorLabel.OPTICAL,
         "azimuth_range": [0, 360],
         "elevation_range": (0, 90),
         "covariance": np.eye(2),

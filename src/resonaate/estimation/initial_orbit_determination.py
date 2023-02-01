@@ -15,6 +15,7 @@ from sqlalchemy import asc
 from sqlalchemy.orm import Query
 
 # Local Imports
+from ..common.labels import SensorLabel
 from ..data.observation import Observation
 from ..data.resonaate_database import ResonaateDatabase
 from ..physics.constants import DAYS2SEC
@@ -23,7 +24,6 @@ from ..physics.orbit_determination.lambert import determineTransferDirection
 from ..physics.orbits.utils import getPeriod, getSemiMajorAxis
 from ..physics.time.stardate import JulianDate, ScenarioTime
 from ..physics.transforms.methods import radarObs2eciPosition
-from ..sensors import OPTICAL_LABEL
 from .adaptive.initialization import lambertInitializationFactory
 
 if TYPE_CHECKING:
@@ -197,8 +197,8 @@ class LambertIOD(InitialOrbitDetermination):
             .filter(Observation.julian_date <= current_jdate)
             .filter(Observation.julian_date >= start_jdate)
             .filter(
-                Observation.sensor_type != OPTICAL_LABEL  # Only Radar/AdvRadar Obs for Lambert IOD
-            )
+                Observation.sensor_type != SensorLabel.OPTICAL
+            )  # Only Radar/AdvRadar Obs for Lambert IOD
             .order_by(asc(Observation.julian_date))
         )
 

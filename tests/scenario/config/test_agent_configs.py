@@ -8,13 +8,12 @@ from copy import deepcopy
 import pytest
 
 # RESONAATE Imports
-from resonaate.agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
+from resonaate.common.labels import PlatformLabel, SensorLabel
 from resonaate.scenario.config.agent_config import SensingAgentConfig, TargetAgentConfig
 from resonaate.scenario.config.base import ConfigValueError
 from resonaate.scenario.config.platform_config import PlatformConfig
 from resonaate.scenario.config.sensor_config import SensorConfig
 from resonaate.scenario.config.state_config import StateConfig
-from resonaate.sensors.sensor_base import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
 
 # Local Imports
 from .conftest import EARTH_SENSORS, GEO_TARGETS, LEO_TARGETS, SPACE_SENSORS
@@ -31,7 +30,10 @@ class TestTargetConfig:
         assert tgt_cfg_obj.name == tgt_dict["name"]
         assert tgt_cfg_obj.state.type == tgt_dict["state"]["type"]
         assert tgt_cfg_obj.platform.type == tgt_dict["platform"]["type"]
-        assert tgt_cfg_obj.platform.type in (GROUND_FACILITY_LABEL, SPACECRAFT_LABEL)
+        assert tgt_cfg_obj.platform.type in (
+            PlatformLabel.GROUND_FACILITY,
+            PlatformLabel.SPACECRAFT,
+        )
 
         new_cfg_dict = deepcopy(tgt_dict)
         state_cfg = StateConfig.fromDict(tgt_dict["state"])
@@ -72,10 +74,17 @@ class TestSensorConfig:
         assert sen_cfg_obj.state.type == sen_dict["state"]["type"]
         assert sen_cfg_obj.sensor.type == sen_dict["sensor"]["type"]
         assert sen_cfg_obj.platform.type == sen_dict["platform"]["type"]
-        assert sen_cfg_obj.platform.type in (GROUND_FACILITY_LABEL, SPACECRAFT_LABEL)
+        assert sen_cfg_obj.platform.type in (
+            PlatformLabel.GROUND_FACILITY,
+            PlatformLabel.SPACECRAFT,
+        )
 
-        assert sen_cfg_obj.sensor.type in (OPTICAL_LABEL, RADAR_LABEL, ADV_RADAR_LABEL)
-        if sen_cfg_obj.sensor.type in (RADAR_LABEL, ADV_RADAR_LABEL):
+        assert sen_cfg_obj.sensor.type in (
+            SensorLabel.OPTICAL,
+            SensorLabel.RADAR,
+            SensorLabel.ADV_RADAR,
+        )
+        if sen_cfg_obj.sensor.type in (SensorLabel.RADAR, SensorLabel.ADV_RADAR):
             assert sen_cfg_obj.sensor.tx_frequency == sen_dict["sensor"]["tx_frequency"]
             assert sen_cfg_obj.sensor.tx_power == sen_dict["sensor"]["tx_power"]
             assert (

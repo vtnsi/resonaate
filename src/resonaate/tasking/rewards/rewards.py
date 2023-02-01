@@ -9,12 +9,7 @@ from numpy import sign
 from numpy import sum as np_sum
 
 # Local Imports
-from ..metrics.metric_base import (
-    INFORMATION_METRIC_LABEL,
-    SENSOR_METRIC_LABEL,
-    STABILITY_METRIC_LABEL,
-    TARGET_METRIC_LABEL,
-)
+from ...common.labels import MetricTypeLabel
 from .reward_base import Reward
 
 if TYPE_CHECKING:
@@ -60,11 +55,11 @@ class CostConstrainedReward(Reward):
             raise ValueError("Incorrect number of metrics being passed")
         stability, information, sensor = False, False, False
         for metric in metrics:
-            if metric.metric_type == STABILITY_METRIC_LABEL:
+            if metric.metric_type == MetricTypeLabel.STABILITY:
                 stability = True
-            if metric.metric_type == INFORMATION_METRIC_LABEL:
+            if metric.metric_type == MetricTypeLabel.INFORMATION:
                 information = True
-            if metric.metric_type == SENSOR_METRIC_LABEL:
+            if metric.metric_type == MetricTypeLabel.SENSOR:
                 sensor = True
 
         if not all([stability, information, sensor]):
@@ -83,11 +78,13 @@ class CostConstrainedReward(Reward):
         Returns:
             ``float``: Cost constrained reward
         """
-        stability = metric_matrix[..., self._metric_type_indices[STABILITY_METRIC_LABEL]].squeeze()
-        information = metric_matrix[
-            ..., self._metric_type_indices[INFORMATION_METRIC_LABEL]
+        stability = metric_matrix[
+            ..., self._metric_type_indices[MetricTypeLabel.STABILITY]
         ].squeeze()
-        sensor = metric_matrix[..., self._metric_type_indices[SENSOR_METRIC_LABEL]].squeeze()
+        information = metric_matrix[
+            ..., self._metric_type_indices[MetricTypeLabel.INFORMATION]
+        ].squeeze()
+        sensor = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.SENSOR]].squeeze()
 
         return self._delta * (sign(stability) + information) - (1 - self._delta) * sensor
 
@@ -146,13 +143,13 @@ class CombinedReward(Reward):
             raise ValueError("Incorrect number of metrics being passed")
         stability, information, sensor, behavior = False, False, False, False
         for metric in metrics:
-            if metric.metric_type == STABILITY_METRIC_LABEL:
+            if metric.metric_type == MetricTypeLabel.STABILITY:
                 stability = True
-            if metric.metric_type == INFORMATION_METRIC_LABEL:
+            if metric.metric_type == MetricTypeLabel.INFORMATION:
                 information = True
-            if metric.metric_type == SENSOR_METRIC_LABEL:
+            if metric.metric_type == MetricTypeLabel.SENSOR:
                 sensor = True
-            if metric.metric_type == TARGET_METRIC_LABEL:
+            if metric.metric_type == MetricTypeLabel.TARGET:
                 behavior = True
 
         if not all([stability, information, sensor, behavior]):
@@ -174,12 +171,14 @@ class CombinedReward(Reward):
         Returns:
             ``float``: Combined reward
         """
-        stability = metric_matrix[..., self._metric_type_indices[STABILITY_METRIC_LABEL]].squeeze()
-        information = metric_matrix[
-            ..., self._metric_type_indices[INFORMATION_METRIC_LABEL]
+        stability = metric_matrix[
+            ..., self._metric_type_indices[MetricTypeLabel.STABILITY]
         ].squeeze()
-        sensor = metric_matrix[..., self._metric_type_indices[SENSOR_METRIC_LABEL]].squeeze()
-        behavior = metric_matrix[..., self._metric_type_indices[TARGET_METRIC_LABEL]].squeeze()
+        information = metric_matrix[
+            ..., self._metric_type_indices[MetricTypeLabel.INFORMATION]
+        ].squeeze()
+        sensor = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.SENSOR]].squeeze()
+        behavior = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.TARGET]].squeeze()
 
         return (
             self._delta * (sign(stability) + information) - (1 - self._delta) * sensor

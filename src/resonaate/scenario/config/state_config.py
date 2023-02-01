@@ -12,7 +12,7 @@ from numpy import array, hstack
 from scipy.linalg import norm
 
 # Local Imports
-from ...common.labels import COE_LABEL, ECI_LABEL, EQE_LABEL, LLA_LABEL
+from ...common.labels import StateLabel
 from ...physics.bodies import Earth
 from ...physics.constants import DEG2RAD
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
@@ -34,10 +34,10 @@ class StateConfig(ABC, ConfigObject):
     R"""Configuration base class defining a state."""
 
     VALID_LABELS: ClassVar[list[str]] = [
-        ECI_LABEL,
-        EQE_LABEL,
-        COE_LABEL,
-        LLA_LABEL,
+        StateLabel.ECI,
+        StateLabel.EQE,
+        StateLabel.COE,
+        StateLabel.LLA,
     ]
 
     # Config label class variable - not used by "dataclass"
@@ -283,8 +283,8 @@ class EQEStateConfig(StateConfig):
 
 
 STATE_MAP: dict[str, StateConfig] = {
-    ECI_LABEL: ECIStateConfig,
-    LLA_LABEL: LLAStateConfig,
-    COE_LABEL: COEStateConfig,
-    EQE_LABEL: EQEStateConfig,
+    StateLabel.ECI: ECIStateConfig,
+    StateLabel.LLA: LLAStateConfig,
+    StateLabel.COE: COEStateConfig,
+    StateLabel.EQE: EQEStateConfig,
 }

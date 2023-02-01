@@ -10,17 +10,12 @@ from typing import TYPE_CHECKING
 import pytest
 
 # RESONAATE Imports
+from resonaate.common.labels import FoVLabel, SensorLabel
 from resonaate.data.data_interface import AgentModel
 from resonaate.data.events import SensorAdditionEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.scenario.config.base import ConfigError
 from resonaate.scenario.config.event_configs import SensorAdditionEventConfig
-from resonaate.sensors.sensor_base import (
-    CONIC_FOV_LABEL,
-    OPTICAL_LABEL,
-    RADAR_LABEL,
-    RECTANGULAR_FOV_LABEL,
-)
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -47,8 +42,8 @@ def getSensorConfigGround():
             "elevation_range": [0.0, 1.5707961522619713],
             "efficiency": 0.98,
             "aperture_area": 0.8107319665559964,
-            "type": RADAR_LABEL,
-            "field_of_view": {"fov_shape": RECTANGULAR_FOV_LABEL},
+            "type": SensorLabel.RADAR,
+            "field_of_view": {"fov_shape": FoVLabel.RECTANGULAR},
             "background_observations": False,
             "tx_power": 3e6,
             "tx_frequency": 1.5e9,
@@ -87,8 +82,8 @@ def getSensorConfigSpace():
             "elevation_range": [-1.5707961522619713, 1.5707961522619713],
             "efficiency": 0.99,
             "aperture_area": 0.031415926535897934,
-            "type": OPTICAL_LABEL,
-            "field_of_view": {"fov_shape": CONIC_FOV_LABEL},
+            "type": SensorLabel.OPTICAL,
+            "field_of_view": {"fov_shape": FoVLabel.CONIC},
             "background_observations": False,
         },
     }
@@ -220,8 +215,8 @@ class TestSensorAdditionEvent:
             aperture_area=0.8107319665559964,
             efficiency=0.98,
             slew_rate=0.2617993877991494,
-            sensor_type=OPTICAL_LABEL,
-            fov_shape=CONIC_FOV_LABEL,
+            sensor_type=SensorLabel.OPTICAL,
+            fov_shape=FoVLabel.CONIC,
             background_observations=False,
             station_keeping_json=dumps([]),
         )
@@ -257,11 +252,11 @@ class TestSensorAdditionEvent:
             aperture_area=0.8107319665559964,
             efficiency=0.98,
             slew_rate=0.2617993877991494,
-            sensor_type=RADAR_LABEL,
+            sensor_type=SensorLabel.RADAR,
             tx_power=2.5e6,
             tx_frequency=1.5e9,
             min_detectable_power=3.5699513926877067e-19,
-            fov_shape=RECTANGULAR_FOV_LABEL,
+            fov_shape=FoVLabel.RECTANGULAR,
             background_observations=False,
             station_keeping_json=dumps([]),
         )

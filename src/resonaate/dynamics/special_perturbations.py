@@ -12,6 +12,7 @@ from numpy.linalg import multi_dot
 from scipy.linalg import norm
 
 # Local Imports
+from ..common.labels import IntegratorLabel
 from ..physics import constants as const
 from ..physics.bodies import Earth, Jupiter, Moon, Saturn, Sun, Venus
 from ..physics.bodies.gravitational_potential import (
@@ -24,7 +25,6 @@ from ..physics.time.conversions import dayOfYear, greenwichApparentTime
 from ..physics.time.stardate import JulianDate, julianDateToDatetime
 from ..physics.transforms.reductions import getReductionParameters
 from .celestial import Celestial, checkEarthCollision
-from .constants import RK45_LABEL
 
 if TYPE_CHECKING:
     # Third Party Imports
@@ -49,7 +49,7 @@ class SpecialPerturbations(Celestial):
         geopotential: GeopotentialConfig,
         perturbations: PerturbationsConfig,
         sat_ratio: float,
-        method: str = RK45_LABEL,
+        method: str = IntegratorLabel.RK45,
     ):
         """Construct a SpecialPerturbations object.
 

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from scipy.linalg import norm
 
 # Local Imports
-from ..agents import SPACECRAFT_LABEL
+from ..common.labels import PlatformLabel
 from ..data.observation import Explanation
 from ..physics.bodies import Sun
 from ..physics.sensor_utils import (
@@ -164,7 +164,7 @@ class Optical(Sensor):
         if not galactic:
             return False, Explanation.GALACTIC_EXCLUSION
 
-        if self.host.agent_type == SPACECRAFT_LABEL:
+        if self.host.agent_type == PlatformLabel.SPACECRAFT:
             # Check if sensor is pointed at the Sun
             target_sun_unit_vector_eci = (tgt_eci_state[:3] - sun_eci_position) / norm(
                 tgt_eci_state[:3] - sun_eci_position

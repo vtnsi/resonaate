@@ -11,10 +11,8 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
 # Local Imports
-from ...agents import SPACECRAFT_LABEL
+from ...common.labels import FoVLabel, PlatformLabel, SensorLabel
 from ...physics.time.stardate import datetimeToJulianDate
-from ...sensors import ADV_RADAR_LABEL, OPTICAL_LABEL, RADAR_LABEL
-from ...sensors.sensor_base import CONIC_FOV_LABEL, RECTANGULAR_FOV_LABEL
 from .base import Event, EventScope
 
 # Type Checking Imports
@@ -131,25 +129,25 @@ class SensorAdditionEvent(Event):
     tx_power = Column(Float)
     """``float``: Transmit power of radar sensor.
 
-    Defaults to NULL unless :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
+    Defaults to NULL unless :attr:`.sensor_type` is `RADAR` or `ADV_RADAR`.
     """
 
     tx_frequency = Column(Float)
     """``float``: Transmit frequency of radar sensor.
 
-    Defaults to NULL unless :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
+    Defaults to NULL unless :attr:`.sensor_type` is `RADAR` or `ADV_RADAR`.
     """
 
     min_detectable_power = Column(Float)
     """``float``: The smallest received power that can be detected by the radar, W.
 
-    Defaults to NULL unless :attr:`.sensor_type` is `RADAR_LABEL` or `ADV_RADAR_LABEL`.
+    Defaults to NULL unless :attr:`.sensor_type` is `RADAR` or `ADV_RADAR`.
     """
 
     detectable_vismag = Column(Float, nullable=True)
     """``float``, optional: minimum detectable visual magnitude value, used for visibility constraints, unit-less. Defaults to :data:`.OPTICAL_DETECTABLE_VISMAG`.
 
-    Defaults to NULL unless :attr:`.sensor_type` is `OPTICAL_LABEL`.
+    Defaults to NULL unless :attr:`.sensor_type` is `OPTICAL`.
     """
 
     @declared_attr
@@ -224,10 +222,10 @@ class SensorAdditionEvent(Event):
     @property
     def field_of_view(self) -> dict:
         """``dict``: Field of view dictionary object."""
-        if self.fov_shape == CONIC_FOV_LABEL:
+        if self.fov_shape == FoVLabel.CONIC:
             return {"fov_shape": self.fov_shape, "cone_angle": self.fov_angle_1}
 
-        if self.fov_shape == RECTANGULAR_FOV_LABEL:
+        if self.fov_shape == FoVLabel.RECTANGULAR:
             return {
                 "fov_shape": self.fov_shape,
                 "azimuth_angle": self.fov_angle_1,
@@ -268,7 +266,7 @@ class SensorAdditionEvent(Event):
                 "background_observations": self.background_observations,
             },
         }
-        if self.sensor_type in (RADAR_LABEL, ADV_RADAR_LABEL):
+        if self.sensor_type in (SensorLabel.RADAR, SensorLabel.ADV_RADAR):
             sensor_spec["sensor"]["tx_power"] = self.tx_power
             sensor_spec["sensor"]["tx_frequency"] = self.tx_frequency
             sensor_spec["sensor"]["min_detectable_power"] = self.min_detectable_power
@@ -292,22 +290,22 @@ class SensorAdditionEvent(Event):
         initial_state = sensor_agent.state.toECI(config.start_time)
 
         station_keeping = ""
-        if sensor_agent.platform.type == SPACECRAFT_LABEL:
+        if sensor_agent.platform.type == PlatformLabel.SPACECRAFT:
             station_keeping = dumps(sensor_agent.platform.station_keeping.toJSON())
 
         custom_kwargs = {}
-        if sensor.type in (RADAR_LABEL, ADV_RADAR_LABEL):
+        if sensor.type in (SensorLabel.RADAR, SensorLabel.ADV_RADAR):
             custom_kwargs["tx_power"] = sensor.tx_power
             custom_kwargs["tx_frequency"] = sensor.tx_frequency
             custom_kwargs["min_detectable_power"] = sensor.min_detectable_power
 
-        if sensor.type == OPTICAL_LABEL:
+        if sensor.type == SensorLabel.OPTICAL:
             custom_kwargs["detectable_vismag"] = sensor.detectable_vismag
 
-        if sensor.field_of_view.fov_shape == CONIC_FOV_LABEL:
+        if sensor.field_of_view.fov_shape == FoVLabel.CONIC:
             fov_angle_1 = sensor.field_of_view.cone_angle
             fov_angle_2 = 0.0
-        elif sensor.field_of_view.fov_shape == RECTANGULAR_FOV_LABEL:
+        elif sensor.field_of_view.fov_shape == FoVLabel.RECTANGULAR:
             fov_angle_1 = sensor.field_of_view.azimuth_angle
             fov_angle_2 = sensor.field_of_view.elevation_angle
         else:

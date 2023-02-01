@@ -9,15 +9,12 @@ from unittest.mock import patch
 import pytest
 
 # RESONAATE Imports
-from resonaate.dynamics import SPECIAL_PERTURBATIONS_LABEL
+from resonaate.common.labels import DynamicsLabel, InitialOrbitDeterminationLabel, StackingLabel
 from resonaate.estimation import VALID_MANEUVER_DETECTION_LABELS
 from resonaate.scenario.config.base import ConfigValueError
 from resonaate.scenario.config.estimation_config import (
-    DEFAULT_IOD_INITIALIZATION_METHOD,
     DEFAULT_IOD_OBSERVATION_SPACING,
     DEFAULT_MANEUVER_DETECTION_THRESHOLD,
-    DEFAULT_MMAE_INITIALIZATION_METHOD,
-    DEFAULT_MMAE_STACKING_METHOD,
     DEFAULT_MODEL_TIME_INTERVAL,
     DEFAULT_OBSERVATION_WINDOW,
     DEFAULT_PRUNE_PERCENTAGE,
@@ -92,7 +89,7 @@ def getSequentialFilterConfig() -> dict:
     """Generate the default SequentialFilterConfig dictionary."""
     return {
         "name": "ukf",
-        "dynamics_model": SPECIAL_PERTURBATIONS_LABEL,
+        "dynamics_model": DynamicsLabel.SPECIAL_PERTURBATIONS,
         "maneuver_detection": None,
         "adaptive_estimation": False,
         "parameters": {},
@@ -104,7 +101,7 @@ def testCreateSequentialFilterConfig(sequential_filter_cfg_dict: dict):
     cfg = SequentialFilterConfig(**sequential_filter_cfg_dict)
     assert cfg.CONFIG_LABEL == "sequential_filter"
     assert cfg.name == "ukf"
-    assert cfg.dynamics_model == SPECIAL_PERTURBATIONS_LABEL
+    assert cfg.dynamics_model == DynamicsLabel.SPECIAL_PERTURBATIONS
     assert cfg.maneuver_detection is None
     assert cfg.adaptive_estimation is False
     assert cfg.initial_orbit_determination is False
@@ -211,8 +208,8 @@ def getAdaptiveEstimationConfig() -> dict:
     """Generate the default AdaptiveEstimationConfig dictionary."""
     return {
         "name": "smm",
-        "orbit_determination": DEFAULT_MMAE_INITIALIZATION_METHOD,
-        "stacking_method": DEFAULT_MMAE_STACKING_METHOD,
+        "orbit_determination": InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL,
+        "stacking_method": StackingLabel.ECI_STACKING,
         "model_interval": DEFAULT_MODEL_TIME_INTERVAL,
         "observation_window": DEFAULT_OBSERVATION_WINDOW,
         "prune_threshold": DEFAULT_PRUNE_THRESHOLD,
@@ -226,8 +223,8 @@ def testCreateAdaptiveEstimationConfig(adaptive_estimation_cfg_dict: dict):
     cfg = AdaptiveEstimationConfig(**adaptive_estimation_cfg_dict)
     assert cfg.CONFIG_LABEL == "adaptive_filter"
     assert cfg.name == "smm"
-    assert cfg.orbit_determination == DEFAULT_MMAE_INITIALIZATION_METHOD
-    assert cfg.stacking_method == DEFAULT_MMAE_STACKING_METHOD
+    assert cfg.orbit_determination == InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
+    assert cfg.stacking_method == StackingLabel.ECI_STACKING
     assert cfg.model_interval == DEFAULT_MODEL_TIME_INTERVAL
     assert cfg.observation_window == DEFAULT_OBSERVATION_WINDOW
     assert cfg.prune_threshold == DEFAULT_PRUNE_THRESHOLD
@@ -335,7 +332,7 @@ def testBadInputsAdaptiveEstimationConfig(adaptive_estimation_cfg_dict: dict):
 def getInitialOrbitDeterminationConfig() -> dict:
     """Generate the default InitialOrbitDeterminationConfig dictionary."""
     return {
-        "name": DEFAULT_IOD_INITIALIZATION_METHOD,
+        "name": InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL,
         "minimum_observation_spacing": DEFAULT_IOD_OBSERVATION_SPACING,
     }
 
@@ -344,7 +341,7 @@ def testCreateInitialOrbitDeterminationConfig(initial_orbit_determination_cfg_di
     """Test that InitialOrbitDeterminationConfig can be created from a dictionary."""
     cfg = InitialOrbitDeterminationConfig(**initial_orbit_determination_cfg_dict)
     assert cfg.CONFIG_LABEL == "initial_orbit_determination"
-    assert cfg.name == DEFAULT_IOD_INITIALIZATION_METHOD
+    assert cfg.name == InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
     assert cfg.minimum_observation_spacing == DEFAULT_IOD_OBSERVATION_SPACING
 
     for field in fields(InitialOrbitDeterminationConfig):

@@ -9,9 +9,9 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
-from resonaate.agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
+from resonaate.common.labels import PlatformLabel
 from resonaate.data.observation import Explanation
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.sensor_utils import GALACTIC_CENTER_ECI
@@ -66,7 +66,7 @@ def testIsVisible(
         mocked_primary_target (:class:`.TargetAgent`): mocked Target agent object
     """
     space_optical = Optical(**optical_sensor_args)
-    mocked_sensing_agent.agent_type = SPACECRAFT_LABEL
+    mocked_sensing_agent.agent_type = PlatformLabel.SPACECRAFT
     space_optical.host = mocked_sensing_agent
 
     utc_datetime = julianDateToDatetime(mocked_sensing_agent.julian_date_epoch)
@@ -100,7 +100,7 @@ def testIsNotVisible(
         mocked_primary_target (:class:`.TargetAgent`): mocked Target agent object
     """
     ground_optical = Optical(**optical_sensor_args)
-    mocked_sensing_agent.agent_type = GROUND_FACILITY_LABEL
+    mocked_sensing_agent.agent_type = PlatformLabel.GROUND_FACILITY
     ground_optical.host = mocked_sensing_agent
 
     utc_datetime = julianDateToDatetime(mocked_sensing_agent.julian_date_epoch)

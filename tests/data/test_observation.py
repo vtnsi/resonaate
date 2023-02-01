@@ -10,11 +10,11 @@ import pytest
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
+from resonaate.common.labels import SensorLabel
 from resonaate.data.observation import Observation
 from resonaate.physics.measurement_utils import IsAngle
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
-from resonaate.sensors import ADV_RADAR_LABEL, OPTICAL_LABEL
 from resonaate.sensors.measurement import Measurement
 
 # Type Checking Imports
@@ -52,7 +52,7 @@ class TestObservationTable:
 
     azimuth_rad = 1.010036549841
     elevation_rad = 0.33006189181
-    sensor_type = OPTICAL_LABEL
+    sensor_type = SensorLabel.OPTICAL
 
     def testInitKwargs(
         self,
@@ -224,7 +224,7 @@ class TestObservationTable:
             julian_date=epoch.julian_date,
             sensor_id=sensor_agent.unique_id,
             target_id=target_agent.unique_id,
-            sensor_type=ADV_RADAR_LABEL,
+            sensor_type=SensorLabel.ADV_RADAR,
             azimuth_rad=1.010036549841,
             elevation_rad=0.33006189181,
             range_km=1500.0,

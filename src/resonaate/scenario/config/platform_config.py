@@ -15,25 +15,16 @@ from ...agents import (
     DEFAULT_VCS,
     GEO_DEFAULT_MASS,
     GEO_DEFAULT_VCS,
-    GROUND_FACILITY_LABEL,
     LEO_DEFAULT_MASS,
     LEO_DEFAULT_VCS,
     MEO_DEFAULT_MASS,
     MEO_DEFAULT_VCS,
     SOLAR_PANEL_REFLECTIVITY,
-    SPACECRAFT_LABEL,
 )
-from ...common.labels import COE_LABEL, ECI_LABEL, EQE_LABEL, LLA_LABEL
+from ...common.labels import OrbitRegimeLabel, PlatformLabel, StateLabel
 from ...dynamics.integration_events.station_keeping import VALID_STATION_KEEPING_ROUTINES
 from ...physics.bodies.earth import Earth
-from ...physics.orbits import (
-    GEO_ALTITUDE_LIMIT,
-    GEO_ORBIT_LABEL,
-    LEO_ALTITUDE_LIMIT,
-    LEO_ORBIT_LABEL,
-    MEO_ALTITUDE_LIMIT,
-    MEO_ORBIT_LABEL,
-)
+from ...physics.orbits import GEO_ALTITUDE_LIMIT, LEO_ALTITUDE_LIMIT, MEO_ALTITUDE_LIMIT
 from .base import ConfigError, ConfigObject, ConfigValueError
 
 # Type Checking Imports
@@ -49,15 +40,15 @@ if TYPE_CHECKING:
 
 
 MASS_MAP: dict[str, float] = {
-    LEO_ORBIT_LABEL: LEO_DEFAULT_MASS,
-    MEO_ORBIT_LABEL: MEO_DEFAULT_MASS,
-    GEO_ORBIT_LABEL: GEO_DEFAULT_MASS,
+    OrbitRegimeLabel.LEO: LEO_DEFAULT_MASS,
+    OrbitRegimeLabel.MEO: MEO_DEFAULT_MASS,
+    OrbitRegimeLabel.GEO: GEO_DEFAULT_MASS,
 }
 
 VCS_MAP: dict[str, float] = {
-    LEO_ORBIT_LABEL: LEO_DEFAULT_VCS,
-    MEO_ORBIT_LABEL: MEO_DEFAULT_VCS,
-    GEO_ORBIT_LABEL: GEO_DEFAULT_VCS,
+    OrbitRegimeLabel.LEO: LEO_DEFAULT_VCS,
+    OrbitRegimeLabel.MEO: MEO_DEFAULT_VCS,
+    OrbitRegimeLabel.GEO: GEO_DEFAULT_VCS,
 }
 
 
@@ -87,8 +78,8 @@ class PlatformConfig(ABC, ConfigObject):
     R"""Configuration base class defining the platform of an agent."""
 
     VALID_LABELS: ClassVar[list[str]] = [
-        GROUND_FACILITY_LABEL,
-        SPACECRAFT_LABEL,
+        PlatformLabel.GROUND_FACILITY,
+        PlatformLabel.SPACECRAFT,
     ]
 
     # Config label class variable - not used by "dataclass"
@@ -196,7 +187,7 @@ class SpacecraftConfig(PlatformConfig):
     @property
     def valid_states(self) -> list[str]:
         R"""``list``: Returns set of valid state types that can be used to define this platform."""
-        return [ECI_LABEL, COE_LABEL, EQE_LABEL]
+        return [StateLabel.ECI, StateLabel.COE, StateLabel.EQE]
 
     @staticmethod
     def _getOrbitRegimeFromStateConfig(state_config: StateConfig) -> str:
@@ -213,11 +204,11 @@ class SpacecraftConfig(PlatformConfig):
             ``str``: orbital regime label.
         """
         # [NOTE]: Based on position - so current altitude of orbit, not median
-        if state_config.type == ECI_LABEL:
+        if state_config.type == StateLabel.ECI:
             altitude = norm(state_config.position) - Earth.radius
 
         # [NOTE]: Based on SMA - so median altitude of orbit, not current
-        if state_config.type in (EQE_LABEL, COE_LABEL):
+        if state_config.type in (StateLabel.EQE, StateLabel.COE):
             altitude = state_config.semi_major_axis - Earth.radius
 
         if altitude <= Earth.atmosphere:
@@ -225,11 +216,11 @@ class SpacecraftConfig(PlatformConfig):
             raise ConfigError(state_config.__class__.__name__, err)
 
         if altitude <= LEO_ALTITUDE_LIMIT:
-            orbital_regime = LEO_ORBIT_LABEL
+            orbital_regime = OrbitRegimeLabel.LEO
         elif altitude <= MEO_ALTITUDE_LIMIT:
-            orbital_regime = MEO_ORBIT_LABEL
+            orbital_regime = OrbitRegimeLabel.MEO
         elif altitude <= GEO_ALTITUDE_LIMIT:
-            orbital_regime = GEO_ORBIT_LABEL
+            orbital_regime = OrbitRegimeLabel.GEO
         else:
             err = f"RSO altitude above GEO: {altitude}. unable to set a default mass value"
             raise ConfigError(state_config.__class__.__name__, err)
@@ -247,10 +238,10 @@ class GroundFacilityConfig(PlatformConfig):
     @property
     def valid_states(self) -> list[str]:
         R"""``list``: Returns set of valid state types that can be used to define this platform."""
-        return [ECI_LABEL, LLA_LABEL]
+        return [StateLabel.ECI, StateLabel.LLA]
 
 
 PLATFORM_MAP: dict[str, PlatformConfig] = {
-    SPACECRAFT_LABEL: SpacecraftConfig,
-    GROUND_FACILITY_LABEL: GroundFacilityConfig,
+    PlatformLabel.SPACECRAFT: SpacecraftConfig,
+    PlatformLabel.GROUND_FACILITY: GroundFacilityConfig,
 }

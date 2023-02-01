@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from numpy import ndarray
 
 # Local Imports
+from ..common.labels import PlatformLabel
 from ..common.utilities import checkTypes
 from ..dynamics.dynamics_base import Dynamics
 from ..dynamics.integration_events.finite_thrust import (
@@ -19,7 +20,6 @@ from ..dynamics.integration_events.finite_thrust import (
 from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.maths import fpe_equals
 from ..scenario.clock import ScenarioClock
-from . import SPACECRAFT_LABEL
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -184,7 +184,7 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         if not global_station_keeping:
             return station_keepers
 
-        if platform_cfg.type != SPACECRAFT_LABEL:
+        if platform_cfg.type != PlatformLabel.SPACECRAFT:
             return station_keepers
 
         for routine in platform_cfg.station_keeping.routines:

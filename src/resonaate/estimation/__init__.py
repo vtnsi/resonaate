@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
+from ..common.labels import AdaptiveEstimationLabel, ManeuverDetectionLabel, SequentialFilterLabel
 from .adaptive.adaptive_filter import AdaptiveFilter
 from .adaptive.gpb1 import GeneralizedPseudoBayesian1
 from .adaptive.initialization import VALID_LAMBERT_IOD_LABELS
@@ -37,17 +38,17 @@ if TYPE_CHECKING:
     from .initial_orbit_determination import InitialOrbitDetermination
 
 
-VALID_ESTIMATE_SOURCE_LABELS: Tuple[str] = (
-    SequentialFilter.INTERNAL_PROPAGATION_LABEL,
-    SequentialFilter.INTERNAL_OBSERVATION_LABEL,
+VALID_ESTIMATE_SOURCES: Tuple[str] = (
+    SequentialFilter.INTERNAL_PROPAGATION_SOURCE,
+    SequentialFilter.INTERNAL_OBSERVATION_SOURCE,
 )
 """``tuple[str]``: Valid entries for :py:attr:`SequentialFilter.source` of filter measurement updates & estimates."""
 
 
 _MANEUVER_DETECTION_MAP: Dict[str, ManeuverDetection] = {
-    StandardNis.LABEL: StandardNis,
-    SlidingNis.LABEL: SlidingNis,
-    FadingMemoryNis.LABEL: FadingMemoryNis,
+    ManeuverDetectionLabel.STANDARD_NIS: StandardNis,
+    ManeuverDetectionLabel.SLIDING_NIS: SlidingNis,
+    ManeuverDetectionLabel.FADING_MEMORY_NIS: FadingMemoryNis,
 }
 
 
@@ -56,8 +57,8 @@ VALID_MANEUVER_DETECTION_LABELS: Tuple[str] = tuple(_MANEUVER_DETECTION_MAP.keys
 
 
 _ADAPTIVE_ESTIMATION_MAP: Dict[str, AdaptiveFilter] = {
-    GeneralizedPseudoBayesian1.LABELS: GeneralizedPseudoBayesian1,
-    StaticMultipleModel.LABELS: StaticMultipleModel,
+    AdaptiveEstimationLabel.GPB1: GeneralizedPseudoBayesian1,
+    AdaptiveEstimationLabel.SMM: StaticMultipleModel,
 }
 
 
@@ -66,7 +67,8 @@ VALID_ADAPTIVE_ESTIMATION_LABELS: Tuple[str] = tuple(_ADAPTIVE_ESTIMATION_MAP.ke
 
 
 _FILTER_MAP: Dict[str, SequentialFilter] = {
-    **{label: UnscentedKalmanFilter for label in UnscentedKalmanFilter.LABELS},
+    SequentialFilterLabel.UKF: UnscentedKalmanFilter,
+    SequentialFilterLabel.UNSCENTED_KALMAN_FILTER: UnscentedKalmanFilter,
 }
 
 

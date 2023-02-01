@@ -5,19 +5,13 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 
+# Local Imports
+from ...common.labels import MetricTypeLabel
+
 if TYPE_CHECKING:
     # Local Imports
     from ...agents.estimate_agent import EstimateAgent
     from ...agents.sensing_agent import SensingAgent
-
-
-# Metric type labels
-INFORMATION_METRIC_LABEL = "information"
-SENSOR_METRIC_LABEL = "sensor"
-STABILITY_METRIC_LABEL = "stability"
-STATE_METRIC_LABEL = "state"
-TARGET_METRIC_LABEL = "target"
-UNCERTAINTY_METRIC_LABEL = "uncertainty"
 
 
 class Metric(metaclass=ABCMeta):
@@ -82,7 +76,7 @@ class InformationMetric(Metric):
     These prioritize pure estimation performance. These consist of information gain equations.
     """
 
-    METRIC_TYPE: str = INFORMATION_METRIC_LABEL
+    METRIC_TYPE: str = MetricTypeLabel.INFORMATION
     """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
@@ -101,7 +95,7 @@ class UncertaintyMetric(Metric):
     These prioritize uncertainty reduction. These are operations directly on the covariance.
     """
 
-    METRIC_TYPE: str = UNCERTAINTY_METRIC_LABEL
+    METRIC_TYPE: str = MetricTypeLabel.UNCERTAINTY
 
     @abstractmethod
     def calculate(self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent) -> float:
@@ -119,7 +113,7 @@ class StabilityMetric(Metric):
     well-estimated/observed targets.
     """
 
-    METRIC_TYPE: str = STABILITY_METRIC_LABEL
+    METRIC_TYPE: str = MetricTypeLabel.STABILITY
     """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
@@ -142,7 +136,7 @@ class SensorMetric(Metric):
     limit "costly" collections.
     """
 
-    METRIC_TYPE: str = SENSOR_METRIC_LABEL
+    METRIC_TYPE: str = MetricTypeLabel.SENSOR
     """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
@@ -165,7 +159,7 @@ class TargetMetric(Metric):
     the recency of the last observation, tasking priority, and orbital regime.
     """
 
-    METRIC_TYPE: str = TARGET_METRIC_LABEL
+    METRIC_TYPE: str = MetricTypeLabel.TARGET
     """``str``: Type of metric in str format, for reward logic."""
 
     @abstractmethod
@@ -188,7 +182,7 @@ class StateMetric(Metric):
     background lighting, attitude, and range.
     """
 
-    METRIC_TYPE: str = STATE_METRIC_LABEL
+    METRIC_TYPE: str = MetricTypeLabel.STATE
 
     @abstractmethod
     def calculate(

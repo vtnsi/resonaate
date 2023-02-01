@@ -30,28 +30,6 @@ if TYPE_CHECKING:
     from .field_of_view import FieldOfView
     from .measurement import Measurement
 
-
-OPTICAL_LABEL: str = "optical"
-"""``str``: Constant string used to describe optical sensors."""
-
-RADAR_LABEL: str = "radar"
-"""``str``: Constant string used to describe radar sensors."""
-
-ADV_RADAR_LABEL: str = "adv_radar"
-"""``str``: Constant string used to describe advanced radar sensors."""
-
-CONIC_FOV_LABEL: str = "conic"
-"""``str``: Constant string used to describe conic field of view."""
-
-RECTANGULAR_FOV_LABEL: str = "rectangular"
-"""str: Constant string used to describe rectangular field of view."""
-
-VALID_SENSOR_FOV_LABELS: tuple[str] = (
-    CONIC_FOV_LABEL,
-    RECTANGULAR_FOV_LABEL,
-)
-"""``tuple``: Contains valid sensor Field of View configurations."""
-
 DEFAULT_VIEWING_ANGLE: float = 1.0
 """``float``: default angle for a sensor's FoV, degrees."""
 

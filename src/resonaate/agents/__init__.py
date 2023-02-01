@@ -1,12 +1,6 @@
 """Package that defines agent-based simulation behavior."""
 
 
-GROUND_FACILITY_LABEL = "ground_facility"
-"""``str``: Constant string used to describe ground facility sensors."""
-
-SPACECRAFT_LABEL = "spacecraft"
-"""``str``: Constant string used to describe spacecraft-based sensors."""
-
 DEFAULT_MASS = 10000.0
 """``float``: Default mass of non-spacecraft (kg)  #.  :cite:t:`LEO_RSO_2022_stats`"""
 LEO_DEFAULT_MASS = 295.0

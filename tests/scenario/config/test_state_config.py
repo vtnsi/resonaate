@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 
 # RESONAATE Imports
-from resonaate.common.labels import COE_LABEL, ECI_LABEL, EQE_LABEL, LLA_LABEL
+from resonaate.common.labels import StateLabel
 from resonaate.scenario.config.base import ConfigError, ConfigValueError
 from resonaate.scenario.config.state_config import (
     COEStateConfig,
@@ -51,7 +51,7 @@ def testCOE():
     """Test COE state config."""
     utc = datetime(year=2019, month=5, day=22, hour=14)
     coe_cfg_dict = {
-        "type": COE_LABEL,
+        "type": StateLabel.COE,
         "semi_major_axis": 6500.0,
         "eccentricity": 0.001,
         "inclination": 10.1,
@@ -67,13 +67,13 @@ def testCOE():
     cfg = COEStateConfig(**coe_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == COE_LABEL
+    assert cfg.type == StateLabel.COE
     assert eci_state.shape == (6,)
 
     cfg = COEStateConfig.fromDict(coe_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == COE_LABEL
+    assert cfg.type == StateLabel.COE
     assert eci_state.shape == (6,)
 
     new_cfg_dict = deepcopy(coe_cfg_dict)
@@ -84,13 +84,13 @@ def testCOE():
     cfg = COEStateConfig(**new_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == COE_LABEL
+    assert cfg.type == StateLabel.COE
     assert eci_state.shape == (6,)
 
     cfg = COEStateConfig.fromDict(new_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == COE_LABEL
+    assert cfg.type == StateLabel.COE
     assert eci_state.shape == (6,)
 
     new_cfg_dict = deepcopy(coe_cfg_dict)
@@ -101,13 +101,13 @@ def testCOE():
     cfg = COEStateConfig(**new_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == COE_LABEL
+    assert cfg.type == StateLabel.COE
     assert eci_state.shape == (6,)
 
     cfg = COEStateConfig.fromDict(new_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == COE_LABEL
+    assert cfg.type == StateLabel.COE
     assert eci_state.shape == (6,)
 
     new_cfg_dict = deepcopy(coe_cfg_dict)
@@ -119,13 +119,13 @@ def testCOE():
     cfg = COEStateConfig(**new_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == COE_LABEL
+    assert cfg.type == StateLabel.COE
     assert eci_state.shape == (6,)
 
     cfg = COEStateConfig.fromDict(new_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == COE_LABEL
+    assert cfg.type == StateLabel.COE
     assert eci_state.shape == (6,)
 
     # Check bad combo
@@ -150,7 +150,7 @@ def testECI():
     """Test ECI state config."""
     utc = datetime(year=2019, month=5, day=22, hour=14)
     eci_cfg_dict = {
-        "type": ECI_LABEL,
+        "type": StateLabel.ECI,
         "position": [3500.0, -6000.0, 200.0],
         "velocity": [-2.0, 4.3, 0.1],
     }
@@ -158,13 +158,13 @@ def testECI():
     cfg = ECIStateConfig(**eci_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == ECI_LABEL
+    assert cfg.type == StateLabel.ECI
     assert eci_state.shape == (6,)
 
     cfg = ECIStateConfig.fromDict(eci_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == ECI_LABEL
+    assert cfg.type == StateLabel.ECI
     assert eci_state.shape == (6,)
 
     new_cfg_dict = deepcopy(eci_cfg_dict)
@@ -179,7 +179,7 @@ def testLLA():
     """Test LLA state config."""
     utc = datetime(year=2019, month=5, day=22, hour=14)
     lla_cfg_dict = {
-        "type": LLA_LABEL,
+        "type": StateLabel.LLA,
         "latitude": 53.1,
         "longitude": -60.0,
         "altitude": 101.0,
@@ -188,13 +188,13 @@ def testLLA():
     cfg = LLAStateConfig(**lla_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == LLA_LABEL
+    assert cfg.type == StateLabel.LLA
     assert eci_state.shape == (6,)
 
     cfg = LLAStateConfig.fromDict(lla_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == LLA_LABEL
+    assert cfg.type == StateLabel.LLA
     assert eci_state.shape == (6,)
 
 
@@ -203,7 +203,7 @@ def testEQE(retro: bool):
     """Test EQE state config."""
     utc = datetime(year=2019, month=5, day=22, hour=14)
     eqe_cfg_dict = {
-        "type": EQE_LABEL,
+        "type": StateLabel.EQE,
         "semi_major_axis": 6500.0,
         "h": 0.1,
         "k": 0.5,
@@ -216,13 +216,13 @@ def testEQE(retro: bool):
     cfg = EQEStateConfig(**eqe_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == EQE_LABEL
+    assert cfg.type == StateLabel.EQE
     assert eci_state.shape == (6,)
 
     cfg = EQEStateConfig.fromDict(eqe_cfg_dict)
     eci_state = cfg.toECI(utc)
     assert cfg
-    assert cfg.type == EQE_LABEL
+    assert cfg.type == StateLabel.EQE
     assert eci_state.shape == (6,)
 
     new_cfg_dict = deepcopy(eqe_cfg_dict)

@@ -11,7 +11,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
 # Local Imports
-from ...agents import SPACECRAFT_LABEL
+from ...common.labels import PlatformLabel
 from ...physics.time.stardate import datetimeToJulianDate
 from .base import Event, EventScope
 
@@ -146,7 +146,7 @@ class TargetAdditionEvent(Event):
         initial_state = config.target.state.toECI(config.start_time)
 
         station_keeping = ""
-        if config.target.platform.type == SPACECRAFT_LABEL:
+        if config.target.platform.type == PlatformLabel.SPACECRAFT:
             station_keeping = dumps(config.target.platform.station_keeping.toJSON())
 
         return cls(

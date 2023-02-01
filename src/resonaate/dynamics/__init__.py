@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
+from ..common.labels import DynamicsLabel
 from ..physics.transforms.methods import eci2ecef
-from .constants import SPECIAL_PERTURBATIONS_LABEL, TWO_BODY_LABEL
 from .dynamics_base import Dynamics
 from .special_perturbations import SpecialPerturbations, calcSatRatio
 from .terrestrial import Terrestrial
@@ -54,9 +54,9 @@ def dynamicsFactory(
             agent_cfg.platform.mass,
             agent_cfg.platform.reflectivity,
         )
-        if prop_cfg.propagation_model.lower() == TWO_BODY_LABEL:
+        if prop_cfg.propagation_model.lower() == DynamicsLabel.TWO_BODY:
             dynamics = TwoBody(method=prop_cfg.integration_method)
-        elif prop_cfg.propagation_model.lower() == SPECIAL_PERTURBATIONS_LABEL:
+        elif prop_cfg.propagation_model.lower() == DynamicsLabel.SPECIAL_PERTURBATIONS:
             dynamics = SpecialPerturbations(
                 clock.julian_date_start,
                 geo_cfg,

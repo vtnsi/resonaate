@@ -9,19 +9,13 @@ from typing import TYPE_CHECKING
 from numpy import array, sqrt
 
 # Local Imports
+from ..common.labels import FoVLabel, SensorLabel
 from ..physics import constants as const
 from .advanced_radar import AdvRadar
 from .field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from .optical import Optical
 from .radar import Radar
-from .sensor_base import (
-    ADV_RADAR_LABEL,
-    CONIC_FOV_LABEL,
-    OPTICAL_LABEL,
-    RADAR_LABEL,
-    RECTANGULAR_FOV_LABEL,
-    Sensor,
-)
+from .sensor_base import Sensor
 
 if TYPE_CHECKING:
     # Local Imports
@@ -55,15 +49,15 @@ def sensorFactory(sensor_config: SensorConfig) -> Sensor:
     }
 
     # Instantiate sensor object. Add extra params if needed
-    if sensor_config.type == OPTICAL_LABEL:
+    if sensor_config.type == SensorLabel.OPTICAL:
         sensor_args["detectable_vismag"] = sensor_config.detectable_vismag
         sensor = Optical(**sensor_args)
-    elif sensor_config.type == RADAR_LABEL:
+    elif sensor_config.type == SensorLabel.RADAR:
         sensor_args["tx_power"] = sensor_config.tx_power
         sensor_args["tx_frequency"] = sensor_config.tx_frequency
         sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
         sensor = Radar(**sensor_args)
-    elif sensor_config.type == ADV_RADAR_LABEL:
+    elif sensor_config.type == SensorLabel.ADV_RADAR:
         sensor_args["tx_power"] = sensor_config.tx_power
         sensor_args["tx_frequency"] = sensor_config.tx_frequency
         sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
@@ -83,10 +77,10 @@ def fieldOfViewFactory(configuration: FieldOfViewConfig) -> FieldOfView:
     Returns:
         :class:`.FieldOfView`
     """
-    if configuration.fov_shape == CONIC_FOV_LABEL:
+    if configuration.fov_shape == FoVLabel.CONIC:
         return ConicFoV(configuration.cone_angle * const.DEG2RAD)
 
-    if configuration.fov_shape == RECTANGULAR_FOV_LABEL:
+    if configuration.fov_shape == FoVLabel.RECTANGULAR:
         return RectangularFoV(
             azimuth_angle=configuration.azimuth_angle * const.DEG2RAD,
             elevation_angle=configuration.elevation_angle * const.DEG2RAD,

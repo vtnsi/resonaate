@@ -17,8 +17,6 @@ TestType = Callable[[float, float, float, Optional[float]], bool]
 class ManeuverDetection(metaclass=ABCMeta):
     r"""Abstract class that encapsulates methods of detecting maneuvers."""
 
-    LABEL = None
-
     def __init__(self, threshold: float):
         r"""Initialize maneuver detection class.
 
@@ -67,8 +65,6 @@ class StandardNis(ManeuverDetection):
         :cite:t:`bar-shalom_2001_estimation`, Section 11.2.2, Eqn 11.2.2-1 & 11.2.2-2
     """
 
-    LABEL = "standard_nis"
-
     def __call__(
         self,
         residual: ndarray,
@@ -114,8 +110,6 @@ class SlidingNis(StandardNis):
     References:
         :cite:t:`bar-shalom_2001_estimation`, Section 11.2.2, Eqn 11.2.2-3 & 11.2.2-4
     """
-
-    LABEL = "sliding_nis"
 
     def __init__(self, threshold: float, window_size: int = 4):
         r"""Initialize a sliding NIS maneuver detection class.
@@ -184,8 +178,6 @@ class FadingMemoryNis(StandardNis):
     References:
         :cite:t:`bar-shalom_2001_estimation`, Section 11.2.2, Eqn 11.2.2-5, 11.2.2-9, & 11.2.2-10
     """
-
-    LABEL = "fading_memory_nis"
 
     def __init__(self, threshold: float, delta: float = 0.8):
         r"""Initialize a fading memory NIS maneuver detection class.

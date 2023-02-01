@@ -25,6 +25,9 @@ from typing import Any, Tuple
 # Third Party Imports
 from numpy import array, diagflat, ndarray
 
+# Local Imports
+from ..common.labels import NoiseLabel
+
 
 def discreteWhiteNoise(dt: float, sigma: float) -> ndarray:
     r"""Return a first-order discrete process noise matrix.
@@ -139,16 +142,6 @@ def initialEstimateNoise(
     return init_x, init_p
 
 
-CONTINUOUS_WHITE_NOISE_LABEL = "continuous_white_noise"
-"""``str``: Constant string used to describe continuous white noise."""
-
-DISCRETE_WHITE_NOISE_LABEL = "discrete_white_noise"
-"""``str``: Constant string used to describe discrete white noise."""
-
-SIMPLE_NOISE_LABEL = "simple_noise"
-"""``str``: Constant string used to describe simple noise."""
-
-
 def noiseCovarianceFactory(method: str, time_step: int, magnitude: float) -> ndarray:
     r"""Build a dynamics propagation noise covariance matrix.
 
@@ -170,11 +163,11 @@ def noiseCovarianceFactory(method: str, time_step: int, magnitude: float) -> nda
     Returns:
         ``ndarray``: 6x6 noise covariance matrix
     """
-    if method.lower() == CONTINUOUS_WHITE_NOISE_LABEL:
+    if method.lower() == NoiseLabel.CONTINUOUS_WHITE_NOISE:
         noise = continuousWhiteNoise(time_step, magnitude)
-    elif method.lower() == DISCRETE_WHITE_NOISE_LABEL:
+    elif method.lower() == NoiseLabel.DISCRETE_WHITE_NOISE:
         noise = discreteWhiteNoise(time_step, magnitude)
-    elif method.lower() == SIMPLE_NOISE_LABEL:
+    elif method.lower() == NoiseLabel.SIMPLE_NOISE:
         noise = simpleNoise(time_step, magnitude)
     else:
         raise ValueError(method)
