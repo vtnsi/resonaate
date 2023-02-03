@@ -13,7 +13,7 @@ from ..data.ephemeris import TruthEphemeris
 from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..dynamics.terrestrial import Terrestrial
 from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
-from ..physics.time.stardate import JulianDate, julianDateToDatetime
+from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2eci, ecef2lla, eci2ecef, lla2ecef
 from ..sensors import sensorFactory
 from ..sensors.sensor_base import Sensor
@@ -102,9 +102,7 @@ class SensingAgent(Agent):
 
         # Properly initialize the SensingAgent's state types
         self._truth_state = array(initial_state, copy=True)
-        self._ecef_state = eci2ecef(
-            self._truth_state, julianDateToDatetime(self.julian_date_epoch)
-        )
+        self._ecef_state = eci2ecef(self._truth_state, self.datetime_epoch)
         self._lla_state = ecef2lla(self._ecef_state)
 
         self.sensor_time_bias_event_queue = []
@@ -246,7 +244,7 @@ class SensingAgent(Agent):
             new_state (``ndarray``): 6x1 ECI state vector
         """
         self._truth_state = new_state
-        self._ecef_state = eci2ecef(new_state, julianDateToDatetime(self.julian_date_epoch))
+        self._ecef_state = eci2ecef(new_state, self.datetime_epoch)
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property
