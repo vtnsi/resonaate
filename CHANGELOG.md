@@ -133,6 +133,7 @@ ______________________________________________________________________
 - attempt to fix `pylint` false positives of `invalid-name` in tests (see #129)
 - fix `flake8` ignores for A001/A003, update `pre-commit` hook versions (see !151)
 - move `coverage` configs to `pyproject.toml` (see !150)
+- add top-level Makefile for easily making docs and cleaning files up
 
 ### CI
 
