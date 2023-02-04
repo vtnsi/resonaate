@@ -25,5 +25,5 @@ prune .vscode
 exclude .python-version
 exclude .flake8
 exclude .pylintrc
-exclude .coveragerc
 exclude .git-blame-ignore-revs
+include Makefile
