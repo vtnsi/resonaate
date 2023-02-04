@@ -122,22 +122,10 @@ The following VS Code extensions are highly recommended; they can be easily inst
 
 - Follow [Developer Tools](#developer-tools) for how to install the required tools to build the documentation.
 
-- Navigate into the `docs/` directory
+- Make the documentation
 
   ```bash
-  cd docs
-  ```
-
-- Build the documentation
-
-  ```bash
-  make clean; make html
-  ```
-
-- Serve the documentation
-
-  ```bash
-  make serve
+  make docs
   ```
 
 - Open [http://localhost:8000/](http://localhost:8000/) in a browser
@@ -201,6 +189,12 @@ Also, you can generate coverage statistics for a specific module (or package) by
 
 ```bash
 pytest --cov=src/resonaate/sensors tests/sensors
+```
+
+A lot of files may be created, you can quickly remove them with:
+
+```bash
+make clean
 ```
 
 ## Communications
