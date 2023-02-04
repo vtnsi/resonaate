@@ -112,6 +112,7 @@ ______________________________________________________________________
 - `apparentVisualMagnitude` calculation was wrong due to VCS units
 - `checkSpaceSensorLightingConditions` had wrong sun unit vector (see #161)
 - unit test failures due to ZMQ errors in `mjolnir`, see (#159)
+- SqlAlchemy 2.0 failures due to old API, implemented interim fix
 
 ### Security
 
@@ -124,6 +125,7 @@ ______________________________________________________________________
 - add back cobertura coverage report for MR coverage gutters (see !85)
 - `MissedObservation` condition tests in `test_sensor_base` and `test_missed_observation.py` in `tests/data/`
 - Skip flaky event integration tests because it's not reproducible (see #115)
+- add default coverage options for easier use of `pytest --cov`
 
 ### Development
 
