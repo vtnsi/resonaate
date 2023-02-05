@@ -311,14 +311,14 @@ class TargetAdditionEventConfig(EventConfig):
     tasking_engine_id: int
     """``int``: Unique ID for the :class:`.TaskingEngine` that this target should be added to."""
 
-    target: TargetAgentConfig | dict
+    target_agent: TargetAgentConfig | dict
     """``dict``: Configuration object for the target that is being added."""
 
     def __post_init__(self) -> None:
         """Runs after the constructor has finished."""
         super().__post_init__()
-        if isinstance(self.target, dict):
-            self.target = TargetAgentConfig(**self.target)
+        if isinstance(self.target_agent, dict):
+            self.target_agent = TargetAgentConfig(**self.target_agent)
 
     def getDataDependencies(self) -> list[DataDependency]:
         """Return a list of database objects that :class:`.TargetAdditionEvent` relates to.
@@ -330,8 +330,8 @@ class TargetAdditionEventConfig(EventConfig):
         dependency_list.append(
             DataDependency(
                 AgentModel,
-                Query(AgentModel).filter(AgentModel.unique_id == self.target.id),
-                {"unique_id": self.target.id, "name": self.target.name},
+                Query(AgentModel).filter(AgentModel.unique_id == self.target_agent.id),
+                {"unique_id": self.target_agent.id, "name": self.target_agent.name},
             )
         )
         return dependency_list
@@ -347,14 +347,14 @@ class SensorAdditionEventConfig(EventConfig):
     tasking_engine_id: int
     """``int``: Unique ID for the :class:`.TaskingEngine` that this sensor should be added to."""
 
-    sensor: SensingAgentConfig | dict
+    sensor_agent: SensingAgentConfig | dict
     """``dict``: Configuration object for the sensor that is being added."""
 
     def __post_init__(self) -> None:
         """Runs after the constructor has finished."""
         super().__post_init__()
-        if isinstance(self.sensor, dict):
-            self.sensor = SensingAgentConfig(**self.sensor)
+        if isinstance(self.sensor_agent, dict):
+            self.sensor_agent = SensingAgentConfig(**self.sensor_agent)
 
     def getDataDependencies(self) -> list[DataDependency]:
         """Return a list of database objects that :class:`.SensorAdditionEvent` relates to.
@@ -366,8 +366,8 @@ class SensorAdditionEventConfig(EventConfig):
         dependency_list.append(
             DataDependency(
                 AgentModel,
-                Query(AgentModel).filter(AgentModel.unique_id == self.sensor.id),
-                {"unique_id": self.sensor.id, "name": self.sensor.name},
+                Query(AgentModel).filter(AgentModel.unique_id == self.sensor_agent.id),
+                {"unique_id": self.sensor_agent.id, "name": self.sensor_agent.name},
             )
         )
         return dependency_list

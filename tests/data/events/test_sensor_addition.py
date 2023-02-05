@@ -112,7 +112,7 @@ class TestSensorAdditionEventConfig:
             radar_ground_config (``dict``): ground sensor fixture
             event_config_dict (``dict``): sensor addition configuration
         """
-        event_config_dict["sensor"] = radar_ground_config
+        event_config_dict["sensor_agent"] = radar_ground_config
         assert SensorAdditionEventConfig(**event_config_dict)
 
     def testInitOtherGoodArgs(self, optical_space_config: dict, event_config_dict: dict):
@@ -122,7 +122,7 @@ class TestSensorAdditionEventConfig:
             optical_space_config (``dict``): space sensor fixture
             event_config_dict (``dict``): sensor addition configuration
         """
-        event_config_dict["sensor"] = optical_space_config
+        event_config_dict["sensor_agent"] = optical_space_config
         assert SensorAdditionEventConfig(**event_config_dict)
 
     def testInitBadECIState(self, optical_space_config: dict, event_config_dict: dict):
@@ -136,7 +136,7 @@ class TestSensorAdditionEventConfig:
         sen_config = deepcopy(optical_space_config)
         sen_config["state"]["position"] = bad_eci
 
-        event_config_dict["sensor"] = sen_config
+        event_config_dict["sensor_agent"] = sen_config
         with pytest.raises(ConfigError):
             _ = SensorAdditionEventConfig(**event_config_dict)
 
@@ -147,7 +147,7 @@ class TestSensorAdditionEventConfig:
             optical_space_config (``dict``): space sensor fixture
             event_config_dict (``dict``): sensor addition configuration
         """
-        event_config_dict["sensor"] = optical_space_config
+        event_config_dict["sensor_agent"] = optical_space_config
         addition_config = SensorAdditionEventConfig(**event_config_dict)
         addition_dependencies = addition_config.getDataDependencies()
         assert len(addition_dependencies) == 1
@@ -155,8 +155,8 @@ class TestSensorAdditionEventConfig:
         agent_dependency = addition_dependencies[0]
         assert agent_dependency.data_type == AgentModel
         assert agent_dependency.attributes == {
-            "unique_id": addition_config.sensor.id,
-            "name": addition_config.sensor.name,
+            "unique_id": addition_config.sensor_agent.id,
+            "name": addition_config.sensor_agent.name,
         }
 
 
@@ -170,7 +170,7 @@ class TestSensorAdditionEvent:
             optical_space_config (``dict``): space sensor fixture
             event_config_dict (``dict``): sensor addition configuration
         """
-        event_config_dict["sensor"] = optical_space_config
+        event_config_dict["sensor_agent"] = optical_space_config
         addition_config = SensorAdditionEventConfig(**event_config_dict)
         assert SensorAdditionEvent.fromConfig(addition_config)
 
@@ -181,7 +181,7 @@ class TestSensorAdditionEvent:
             radar_ground_config (``dict``): ground sensor fixture
             event_config_dict (``dict``): sensor addition configuration
         """
-        event_config_dict["sensor"] = radar_ground_config
+        event_config_dict["sensor_agent"] = radar_ground_config
         addition_config = SensorAdditionEventConfig(**event_config_dict)
         assert SensorAdditionEvent.fromConfig(addition_config)
 
@@ -200,7 +200,7 @@ class TestSensorAdditionEvent:
             event_type=SensorAdditionEvent.EVENT_TYPE,
             tasking_engine_id=123,
             agent=agent_obj,
-            host_type="GroundFacility",
+            platform="GroundFacility",
             pos_x_km=0,
             pos_y_km=1,
             pos_z_km=2,
@@ -237,7 +237,7 @@ class TestSensorAdditionEvent:
             event_type=SensorAdditionEvent.EVENT_TYPE,
             tasking_engine_id=123,
             agent=agent_obj,
-            host_type="GroundFacility",
+            platform="GroundFacility",
             pos_x_km=0,
             pos_y_km=1,
             pos_z_km=2,

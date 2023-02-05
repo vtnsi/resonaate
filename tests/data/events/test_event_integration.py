@@ -335,7 +335,7 @@ class TestEventIntegration:
         tasking_engine = minimal_config.engines[0]
         addition_id = 11116
 
-        target = {
+        target_agent = {
             "id": addition_id,
             "name": "test_target_addition",
             "state": {
@@ -366,7 +366,7 @@ class TestEventIntegration:
                     "start_time": time,
                     "end_time": time,
                     "event_type": "target_addition",
-                    "target": target,
+                    "target_agent": target_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
                 }
             ],
@@ -415,7 +415,7 @@ class TestEventIntegration:
         tasking_engine = minimal_config.engines[0]
         addition_id = 60002
 
-        sensor = {
+        sensor_agent = {
             "name": "Geo Space Sensor 1",
             "id": addition_id,
             "state": {
@@ -461,7 +461,7 @@ class TestEventIntegration:
                     "start_time": time,
                     "end_time": time,
                     "event_type": "sensor_addition",
-                    "sensor": sensor,
+                    "sensor_agent": sensor_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
                 }
             ],
@@ -630,7 +630,7 @@ class TestEventIntegration:
         tasking_engine = minimal_config.engines[0]
         addition_id = 11116
 
-        target = {
+        target_agent = {
             "id": addition_id,
             "name": "Target6",
             "state": {
@@ -663,7 +663,7 @@ class TestEventIntegration:
                     "start_time": time_1,
                     "end_time": time_1,
                     "event_type": "target_addition",
-                    "target": target,
+                    "target_agent": target_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
                 },
                 {

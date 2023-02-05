@@ -90,6 +90,8 @@ ______________________________________________________________________
 - refactored `AgentConfig` fields into contained classes `PlatformConfig`, `StateConfig`, & `SensorConfig` to divide domain specific configuration items (see #37 and !163)
 - all JSON config files with `AgentConfig` objects were converted to support the refactor for #37 and !163
 - `RectangularFoV` default for sensors (see !163)
+- `SensorAdditionEvent` attribute `host_type` to `platform` (see !163)
+- `SensorAdditionEvent` & `TargetAdditionEvent` attributes `sensor` & `target` to `sensor_agent` & `target_agent` (see !163)
 
 ### Deprecated
 

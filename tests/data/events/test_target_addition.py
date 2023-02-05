@@ -64,12 +64,12 @@ class TestTargetAdditionEventConfig:
 
     def testInitGoodArgs(self, tgt_config_eci, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with good arguments."""
-        event_config_dict["target"] = tgt_config_eci
+        event_config_dict["target_agent"] = tgt_config_eci
         assert TargetAdditionEventConfig(**event_config_dict)
 
     def testInitOtherGoodArgs(self, tgt_config_coe, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with other good arguments."""
-        event_config_dict["target"] = tgt_config_coe
+        event_config_dict["target_agent"] = tgt_config_coe
         assert TargetAdditionEventConfig(**event_config_dict)
 
     def testInitBadECIState(self, tgt_config_eci, event_config_dict):
@@ -78,13 +78,13 @@ class TestTargetAdditionEventConfig:
         tgt_config = deepcopy(tgt_config_eci)
         tgt_config["state"]["position"] = bad_eci
 
-        event_config_dict["target"] = tgt_config
+        event_config_dict["target_agent"] = tgt_config
         with pytest.raises(ConfigError):
             _ = TargetAdditionEventConfig(**event_config_dict)
 
     def testDataDependency(self, tgt_config_eci, event_config_dict):
         """Test that :class:`.TargetAdditionEventConfig`'s data dependencies are correct."""
-        event_config_dict["target"] = tgt_config_eci
+        event_config_dict["target_agent"] = tgt_config_eci
         addition_config = TargetAdditionEventConfig(**event_config_dict)
         addition_dependencies = addition_config.getDataDependencies()
         assert len(addition_dependencies) == 1
@@ -92,8 +92,8 @@ class TestTargetAdditionEventConfig:
         agent_dependency = addition_dependencies[0]
         assert agent_dependency.data_type == AgentModel
         assert agent_dependency.attributes == {
-            "unique_id": addition_config.target.id,
-            "name": addition_config.target.name,
+            "unique_id": addition_config.target_agent.id,
+            "name": addition_config.target_agent.name,
         }
 
 
@@ -102,14 +102,14 @@ class TestTargetAdditionEvent:
 
     def testFromConfig(self, tgt_config_eci, event_config_dict):
         """Test :meth:`.TargetAdditionEvent.fromConfig()`."""
-        event_config_dict["target"] = tgt_config_eci
+        event_config_dict["target_agent"] = tgt_config_eci
         addition_config = TargetAdditionEventConfig(**event_config_dict)
         addition_event = TargetAdditionEvent.fromConfig(addition_config)
-        assert addition_event.eci[:3] == addition_config.target.state.position
-        assert addition_event.eci[3:] == addition_config.target.state.velocity
+        assert addition_event.eci[:3] == addition_config.target_agent.state.position
+        assert addition_event.eci[3:] == addition_config.target_agent.state.velocity
         assert (
             addition_event.station_keeping["routines"]
-            == addition_config.target.platform.station_keeping.routines
+            == addition_config.target_agent.platform.station_keeping.routines
         )
 
     def testHandleEvent(self, mocked_scenario):

@@ -48,8 +48,8 @@ class SensorAdditionEvent(Event):
         """``int``: Unique ID for the :class:`.TaskingEngine` that this sensor should be added to."""
         return Event.__table__.c.get("tasking_engine_id", Column(Integer))
 
-    host_type = Column(String(64))
-    """``str``: Label for type of sensing agent this sensor is."""
+    platform = Column(String(64))
+    """``str``: Label for type of platform that this sensing agent is."""
 
     @declared_attr
     def pos_x_km(self):
@@ -158,7 +158,7 @@ class SensorAdditionEvent(Event):
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
         "agent_id",
         "tasking_engine_id",
-        "host_type",
+        "platform",
         "pos_x_km",
         "pos_y_km",
         "pos_z_km",
@@ -244,7 +244,7 @@ class SensorAdditionEvent(Event):
             "id": self.agent_id,
             "name": self.agent.name,
             "platform": {
-                "type": self.host_type,
+                "type": self.platform,
                 "station_keeping": self.station_keeping,
             },
             "state": {
@@ -285,7 +285,7 @@ class SensorAdditionEvent(Event):
         Returns:
             :class:`.SensorAdditionEvent`: object based on the specified `config`.
         """
-        sensor_agent = config.sensor
+        sensor_agent = config.sensor_agent
         sensor = sensor_agent.sensor
         initial_state = sensor_agent.state.toECI(config.start_time)
 
@@ -319,7 +319,7 @@ class SensorAdditionEvent(Event):
             event_type=config.event_type,
             tasking_engine_id=config.tasking_engine_id,
             agent_id=sensor_agent.id,
-            host_type=sensor_agent.platform.type,
+            platform=sensor_agent.platform.type,
             pos_x_km=initial_state[0],
             pos_y_km=initial_state[1],
             pos_z_km=initial_state[2],

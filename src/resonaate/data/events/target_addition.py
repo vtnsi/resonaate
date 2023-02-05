@@ -143,11 +143,11 @@ class TargetAdditionEvent(Event):
         Returns:
             :class:`.TargetAdditionEvent`: object based on the specified `config`.
         """
-        initial_state = config.target.state.toECI(config.start_time)
+        initial_state = config.target_agent.state.toECI(config.start_time)
 
         station_keeping = ""
-        if config.target.platform.type == PlatformLabel.SPACECRAFT:
-            station_keeping = dumps(config.target.platform.station_keeping.toJSON())
+        if config.target_agent.platform.type == PlatformLabel.SPACECRAFT:
+            station_keeping = dumps(config.target_agent.platform.station_keeping.toJSON())
 
         return cls(
             scope=config.scope,
@@ -156,7 +156,7 @@ class TargetAdditionEvent(Event):
             end_time_jd=datetimeToJulianDate(config.end_time),
             event_type=config.event_type,
             tasking_engine_id=config.tasking_engine_id,
-            agent_id=config.target.id,
+            agent_id=config.target_agent.id,
             pos_x_km=initial_state[0],
             pos_y_km=initial_state[1],
             pos_z_km=initial_state[2],
