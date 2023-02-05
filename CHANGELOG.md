@@ -89,6 +89,7 @@ ______________________________________________________________________
 - config objects now accept degrees across the board (see #34 and !163)
 - refactored `AgentConfig` fields into contained classes `PlatformConfig`, `StateConfig`, & `SensorConfig` to divide domain specific configuration items (see #37 and !163)
 - all JSON config files with `AgentConfig` objects were converted to support the refactor for #37 and !163
+- `RectangularFoV` default for sensors (see !163)
 
 ### Deprecated
 

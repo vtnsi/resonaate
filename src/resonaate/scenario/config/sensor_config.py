@@ -104,7 +104,7 @@ class SensorConfig(ConfigObject):
             self.field_of_view = FieldOfViewConfig(**self.field_of_view)
 
         if self.field_of_view is None:
-            self.field_of_view = FieldOfViewConfig(FoVLabel.CONIC)
+            self.field_of_view = FieldOfViewConfig(FoVLabel.RECTANGULAR)
 
     @classmethod
     def fromDict(cls, sensor_cfg: dict) -> Self:
