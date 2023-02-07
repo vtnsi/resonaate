@@ -11,8 +11,7 @@ import pytest
 # RESONAATE Imports
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
-from resonaate.common.labels import PlatformLabel
-from resonaate.data.observation import Explanation
+from resonaate.common.labels import Explanation, PlatformLabel
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.sensor_utils import GALACTIC_CENTER_ECI
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime

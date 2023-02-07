@@ -10,9 +10,10 @@ from scipy.linalg import norm
 
 # Local Imports
 from ..common.exceptions import ShapeError
+from ..common.labels import Explanation
 from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
-from ..data.observation import Explanation, MissedObservation, Observation
+from ..data.observation import MissedObservation, Observation
 from ..physics import constants as const
 from ..physics.maths import subtendedAngle
 from ..physics.measurement_utils import getAzimuth, getElevation, getRange

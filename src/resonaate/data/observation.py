@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from enum import Enum, unique
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -11,8 +10,9 @@ from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 # Local Imports
+from ..common.labels import Explanation
 from ..physics.time.stardate import JulianDate, julianDateToDatetime
-from ..sensors.measurement import MEASUREMENT_TYPE_MAP, Measurement
+from ..sensors import MEASUREMENT_TYPE_MAP, Measurement
 from . import Base, _DataMixin
 
 # Type Checking Imports
@@ -26,27 +26,6 @@ if TYPE_CHECKING:
 
 
 VALID_MEASUREMENTS = tuple(MEASUREMENT_TYPE_MAP.keys())
-
-
-@unique
-class Explanation(Enum):
-    """Enumeration for explanations of why an observation was missed."""
-
-    VISIBLE = "Visible"
-    MINIMUM_RANGE = "Minimum Range"
-    MAXIMUM_RANGE = "Maximum Range"
-    LINE_OF_SIGHT = "Line of Sight"
-    AZIMUTH_MASK = "Azimuth Mask"
-    ELEVATION_MASK = "Elevation Mask"
-    VIZ_MAG = "Visual Magnitude"
-    SOLAR_FLUX = "Solar Flux"
-    LIMB_OF_EARTH = "Limb of the Earth"
-    SPACE_ILLUMINATION = "Space Sensor Illumination"
-    GROUND_ILLUMINATION = "Ground Sensor Illumination"
-    RADAR_SENSITIVITY = "Radar Sensitivity - Max Range"
-    FIELD_OF_VIEW = "Field of View"
-    SLEW_DISTANCE = "Slew Rate/Distance to Target"
-    GALACTIC_EXCLUSION = "Galactic Exclusion Zone"
 
 
 class _ObservationMixin(_DataMixin):

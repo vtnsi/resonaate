@@ -1,6 +1,30 @@
 """Hold common label types for easier importing."""
 from __future__ import annotations
 
+# Standard Library Imports
+from enum import Enum, unique
+
+
+@unique
+class Explanation(Enum):
+    """Enumeration for explanations of why an observation was missed."""
+
+    VISIBLE = "Visible"
+    MINIMUM_RANGE = "Minimum Range"
+    MAXIMUM_RANGE = "Maximum Range"
+    LINE_OF_SIGHT = "Line of Sight"
+    AZIMUTH_MASK = "Azimuth Mask"
+    ELEVATION_MASK = "Elevation Mask"
+    VIZ_MAG = "Visual Magnitude"
+    SOLAR_FLUX = "Solar Flux"
+    LIMB_OF_EARTH = "Limb of the Earth"
+    SPACE_ILLUMINATION = "Space Sensor Illumination"
+    GROUND_ILLUMINATION = "Ground Sensor Illumination"
+    RADAR_SENSITIVITY = "Radar Sensitivity - Max Range"
+    FIELD_OF_VIEW = "Field of View"
+    SLEW_DISTANCE = "Slew Rate/Distance to Target"
+    GALACTIC_EXCLUSION = "Galactic Exclusion Zone"
+
 
 class StateLabel:
     """Defines valid labels for state types."""

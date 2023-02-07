@@ -11,15 +11,13 @@ from numpy import array, sqrt
 # Local Imports
 from ..common.labels import FoVLabel, SensorLabel
 from ..physics import constants as const
-from .advanced_radar import AdvRadar
 from .field_of_view import ConicFoV, FieldOfView, RectangularFoV
-from .optical import Optical
-from .radar import Radar
-from .sensor_base import Sensor
+from .measurement import MEASUREMENT_TYPE_MAP, Measurement
 
 if TYPE_CHECKING:
     # Local Imports
     from ..scenario.config.sensor_config import FieldOfViewConfig, SensorConfig
+    from .sensor_base import Sensor
 
 
 def sensorFactory(sensor_config: SensorConfig) -> Sensor:
@@ -34,6 +32,14 @@ def sensorFactory(sensor_config: SensorConfig) -> Sensor:
     Returns:
         :class:`.Sensor`: properly constructed `Sensor` object
     """
+    # pylint: disable=import-outside-toplevel
+    # [FIXME]: This shouldn't be necessary. Either move Measurement to diff package or
+    #   move this factory method into the base class or a fromConfig?
+    # Local Imports
+    from .advanced_radar import AdvRadar
+    from .optical import Optical
+    from .radar import Radar
+
     # Build generic sensor kwargs
     sensor_args = {
         "az_mask": array(sensor_config.azimuth_range),  # Assumes degrees

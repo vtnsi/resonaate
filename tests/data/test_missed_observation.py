@@ -10,8 +10,8 @@ import pytest
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.common.labels import SensorLabel
-from resonaate.data.observation import Explanation, MissedObservation
+from resonaate.common.labels import Explanation, SensorLabel
+from resonaate.data.observation import MissedObservation
 
 # Type Checking Imports
 if TYPE_CHECKING:

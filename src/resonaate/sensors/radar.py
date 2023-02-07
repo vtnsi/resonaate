@@ -5,8 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ..common.labels import FoVLabel
-from ..data.observation import Explanation
+from ..common.labels import Explanation, FoVLabel
 from ..physics.constants import M2KM, PI, SPEED_OF_LIGHT
 from ..physics.measurement_utils import getRange
 from ..physics.sensor_utils import calculateRadarCrossSection

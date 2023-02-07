@@ -13,7 +13,10 @@ from resonaate.scenario.config.agent_config import SensingAgentConfig
 from resonaate.scenario.config.platform_config import PlatformConfig
 from resonaate.scenario.config.sensor_config import FieldOfViewConfig
 from resonaate.scenario.config.state_config import StateConfig
-from resonaate.sensors import AdvRadar, Optical, Radar, fieldOfViewFactory, sensorFactory
+from resonaate.sensors import fieldOfViewFactory, sensorFactory
+from resonaate.sensors.advanced_radar import AdvRadar
+from resonaate.sensors.optical import Optical
+from resonaate.sensors.radar import Radar
 
 
 @pytest.fixture(name="fov_conic")

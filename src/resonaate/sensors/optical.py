@@ -8,8 +8,7 @@ from typing import TYPE_CHECKING
 from scipy.linalg import norm
 
 # Local Imports
-from ..common.labels import PlatformLabel
-from ..data.observation import Explanation
+from ..common.labels import Explanation, PlatformLabel
 from ..physics.bodies import Sun
 from ..physics.sensor_utils import (
     apparentVisualMagnitude,
