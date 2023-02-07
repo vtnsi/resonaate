@@ -8,100 +8,122 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
-from resonaate.agents import GROUND_FACILITY_LABEL
-from resonaate.physics.constants import PI
-from resonaate.scenario.config.agent_configs import FieldOfViewConfig, SensingAgentConfig
-from resonaate.sensors import (
-    ADV_RADAR_LABEL,
-    CONIC_FOV_LABEL,
-    OPTICAL_LABEL,
-    RADAR_LABEL,
-    RECTANGULAR_FOV_LABEL,
-    AdvRadar,
-    Optical,
-    Radar,
-    fieldOfViewFactory,
-    sensorFactory,
-)
+from resonaate.common.labels import FoVLabel, PlatformLabel, SensorLabel, StateLabel
+from resonaate.scenario.config.agent_config import SensingAgentConfig
+from resonaate.scenario.config.platform_config import PlatformConfig
+from resonaate.scenario.config.sensor_config import FieldOfViewConfig
+from resonaate.scenario.config.state_config import StateConfig
+from resonaate.sensors import fieldOfViewFactory, sensorFactory
+from resonaate.sensors.advanced_radar import AdvRadar
+from resonaate.sensors.optical import Optical
+from resonaate.sensors.radar import Radar
 
 
 @pytest.fixture(name="fov_conic")
 def getConicFoV() -> FieldOfViewConfig:
     """Create a conic FOV config object."""
-    return FieldOfViewConfig(fov_shape=CONIC_FOV_LABEL, cone_angle=15.0)
+    return FieldOfViewConfig(fov_shape=FoVLabel.CONIC, cone_angle=15.0)
 
 
 @pytest.fixture(name="fov_rect")
 def getRectangularFoV() -> FieldOfViewConfig:
     """Create a rectangular FOV config object."""
     return FieldOfViewConfig(
-        fov_shape=RECTANGULAR_FOV_LABEL, azimuth_angle=5.0, elevation_angle=5.0
+        fov_shape=FoVLabel.RECTANGULAR, azimuth_angle=5.0, elevation_angle=5.0
+    )
+
+
+@pytest.fixture(name="platform_cfg")
+def getPlatformConfig(state_cfg: StateConfig) -> PlatformConfig:
+    """Create platform config."""
+    return PlatformConfig.fromDict({"type": PlatformLabel.GROUND_FACILITY}, state=state_cfg)
+
+
+@pytest.fixture(name="state_cfg")
+def getStateConfig() -> StateConfig:
+    """Create state config."""
+    return StateConfig.fromDict(
+        {
+            "type": StateLabel.LLA,
+            "latitude": 20.0,
+            "longitude": -40.0,
+            "altitude": 0.5,
+        }
     )
 
 
 @pytest.fixture(name="radar_agent_cfg")
-def getRadarAgentConfig() -> SensingAgentConfig:
+def getRadarAgentConfig(
+    platform_cfg: PlatformConfig, state_cfg: StateConfig
+) -> SensingAgentConfig:
     """Create valid Radar Sensing Agent config object."""
+    sensor_dict = {
+        "type": SensorLabel.RADAR,
+        "azimuth_range": [0, 360],
+        "elevation_range": (0, 90),
+        "covariance": np.eye(4),
+        "aperture_area": 10.0,
+        "efficiency": 0.95,
+        "slew_rate": 180,
+        "tx_power": 1.0,
+        "tx_frequency": 1.0,
+        "min_detectable_power": 1.0,
+    }
     return SensingAgentConfig(
         id=20000,
         name="Radar Test Agent",
-        host_type=GROUND_FACILITY_LABEL,
-        sensor_type=RADAR_LABEL,
-        azimuth_range=[0, 2 * PI],
-        elevation_range=(0, PI * 0.5),
-        covariance=np.eye(4),
-        aperture_area=10.0,
-        efficiency=0.95,
-        slew_rate=PI / 180,
-        lat=20.0,
-        lon=-40.0,
-        alt=0.5,
-        tx_power=1.0,
-        tx_frequency=1.0,
-        min_detectable_power=1.0,
+        platform=platform_cfg,
+        state=state_cfg,
+        sensor=sensor_dict,
     )
 
 
 @pytest.fixture(name="adv_radar_agent_cfg")
-def getAdvRadarAgentConfig() -> SensingAgentConfig:
+def getAdvRadarAgentConfig(
+    platform_cfg: PlatformConfig, state_cfg: StateConfig
+) -> SensingAgentConfig:
     """Create valid Advanced Radar Sensing Agent config object."""
+    sensor_dict = {
+        "type": SensorLabel.ADV_RADAR,
+        "azimuth_range": [0, 360],
+        "elevation_range": (0, 90),
+        "covariance": np.eye(4),
+        "aperture_area": 10.0,
+        "efficiency": 0.95,
+        "slew_rate": 10,
+        "tx_power": 1.0,
+        "tx_frequency": 1.0,
+        "min_detectable_power": 1.0,
+    }
     return SensingAgentConfig(
         id=20000,
         name="Radar Test Agent",
-        host_type=GROUND_FACILITY_LABEL,
-        sensor_type=ADV_RADAR_LABEL,
-        azimuth_range=[0, 2 * PI],
-        elevation_range=(0, PI * 0.5),
-        covariance=np.eye(4),
-        aperture_area=10.0,
-        efficiency=0.95,
-        slew_rate=PI / 180,
-        lat=20.0,
-        lon=-40.0,
-        alt=0.5,
-        tx_power=1.0,
-        tx_frequency=1.0,
-        min_detectable_power=1.0,
+        platform=platform_cfg,
+        state=state_cfg,
+        sensor=sensor_dict,
     )
 
 
 @pytest.fixture(name="optical_agent_cfg")
-def getOpticalAgentConfig() -> SensingAgentConfig:
+def getOpticalAgentConfig(
+    platform_cfg: PlatformConfig, state_cfg: StateConfig
+) -> SensingAgentConfig:
     """Create valid Optical Sensing Agent config object."""
+    sensor_dict = {
+        "type": SensorLabel.OPTICAL,
+        "azimuth_range": [0, 360],
+        "elevation_range": (0, 90),
+        "covariance": np.eye(2),
+        "aperture_area": 10.0,
+        "efficiency": 0.95,
+        "slew_rate": 5,
+    }
     return SensingAgentConfig(
         id=20000,
         name="Radar Test Agent",
-        host_type=GROUND_FACILITY_LABEL,
-        sensor_type=OPTICAL_LABEL,
-        azimuth_range=[0, 2 * PI],
-        elevation_range=(0, PI * 0.5),
-        covariance=np.eye(2),
-        aperture_area=10.0,
-        efficiency=0.95,
-        slew_rate=PI / 180,
-        lat=20.0,
-        lon=-40.0,
-        alt=0.5,
+        platform=platform_cfg,
+        state=state_cfg,
+        sensor=sensor_dict,
     )
 
 
@@ -123,13 +145,13 @@ def testSensorFactory(
     optical_agent_cfg: SensingAgentConfig,
 ) -> None:
     """Test the Sensor factory function."""
-    radar_sensor = sensorFactory(radar_agent_cfg)
+    radar_sensor = sensorFactory(radar_agent_cfg.sensor)
     assert isinstance(radar_sensor, Radar)
-    adv_radar_sensor = sensorFactory(adv_radar_agent_cfg)
+    adv_radar_sensor = sensorFactory(adv_radar_agent_cfg.sensor)
     assert isinstance(adv_radar_sensor, AdvRadar)
-    optical_sensor = sensorFactory(optical_agent_cfg)
+    optical_sensor = sensorFactory(optical_agent_cfg.sensor)
     assert isinstance(optical_sensor, Optical)
 
-    radar_agent_cfg.sensor_type = "Invalid"
+    radar_agent_cfg.sensor.type = "Invalid"
     with pytest.raises(ValueError, match=r"Invalid sensor type provided to config: \w+"):
-        _ = sensorFactory(radar_agent_cfg)
+        _ = sensorFactory(radar_agent_cfg.sensor)

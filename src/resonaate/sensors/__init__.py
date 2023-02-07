@@ -9,30 +9,22 @@ from typing import TYPE_CHECKING
 from numpy import array, sqrt
 
 # Local Imports
+from ..common.labels import FoVLabel, SensorLabel
 from ..physics import constants as const
-from .advanced_radar import AdvRadar
 from .field_of_view import ConicFoV, FieldOfView, RectangularFoV
-from .optical import Optical
-from .radar import Radar
-from .sensor_base import (
-    ADV_RADAR_LABEL,
-    CONIC_FOV_LABEL,
-    OPTICAL_LABEL,
-    RADAR_LABEL,
-    RECTANGULAR_FOV_LABEL,
-    Sensor,
-)
+from .measurement import MEASUREMENT_TYPE_MAP, Measurement
 
 if TYPE_CHECKING:
     # Local Imports
-    from ..scenario.config.agent_configs import FieldOfViewConfig, SensingAgentConfig
+    from ..scenario.config.sensor_config import FieldOfViewConfig, SensorConfig
+    from .sensor_base import Sensor
 
 
-def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
+def sensorFactory(sensor_config: SensorConfig) -> Sensor:
     """Build a :class:`.Sensor` object for attaching to a :class:`.SensingAgent`.
 
     Args:
-        sensor_config (:class:`.SensingAgentConfig`): describes the sensor and its capabilities
+        sensor_config (:class:`.SensorConfig`): describes the sensor and its capabilities
 
     Raises:
         ValueError: raised if invalid option is designate for `"sensor_type"`
@@ -40,14 +32,22 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
     Returns:
         :class:`.Sensor`: properly constructed `Sensor` object
     """
+    # pylint: disable=import-outside-toplevel
+    # [FIXME]: This shouldn't be necessary. Either move Measurement to diff package or
+    #   move this factory method into the base class or a fromConfig?
+    # Local Imports
+    from .advanced_radar import AdvRadar
+    from .optical import Optical
+    from .radar import Radar
+
     # Build generic sensor kwargs
     sensor_args = {
-        "az_mask": array(sensor_config.azimuth_range) * const.RAD2DEG,  # Assumes radians
-        "el_mask": array(sensor_config.elevation_range) * const.RAD2DEG,  # Assumes radians
+        "az_mask": array(sensor_config.azimuth_range),  # Assumes degrees
+        "el_mask": array(sensor_config.elevation_range),  # Assumes degrees
         "r_matrix": array(sensor_config.covariance),
         "diameter": sqrt(sensor_config.aperture_area / const.PI) * 2.0,  # Assumes meters^2
         "efficiency": sensor_config.efficiency,
-        "slew_rate": sensor_config.slew_rate * const.RAD2DEG,  # Assumes radians/sec
+        "slew_rate": sensor_config.slew_rate,  # Assumes deg/sec
         "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),
         "background_observations": sensor_config.background_observations,
         "minimum_range": sensor_config.minimum_range,
@@ -55,21 +55,21 @@ def sensorFactory(sensor_config: SensingAgentConfig) -> Sensor:
     }
 
     # Instantiate sensor object. Add extra params if needed
-    if sensor_config.sensor_type == OPTICAL_LABEL:
+    if sensor_config.type == SensorLabel.OPTICAL:
         sensor_args["detectable_vismag"] = sensor_config.detectable_vismag
         sensor = Optical(**sensor_args)
-    elif sensor_config.sensor_type == RADAR_LABEL:
+    elif sensor_config.type == SensorLabel.RADAR:
         sensor_args["tx_power"] = sensor_config.tx_power
         sensor_args["tx_frequency"] = sensor_config.tx_frequency
         sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
         sensor = Radar(**sensor_args)
-    elif sensor_config.sensor_type == ADV_RADAR_LABEL:
+    elif sensor_config.type == SensorLabel.ADV_RADAR:
         sensor_args["tx_power"] = sensor_config.tx_power
         sensor_args["tx_frequency"] = sensor_config.tx_frequency
         sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
         sensor = AdvRadar(**sensor_args)
     else:
-        raise ValueError(f"Invalid sensor type provided to config: {sensor_config.sensor_type}")
+        raise ValueError(f"Invalid sensor type provided to config: {sensor_config.type}")
 
     return sensor
 
@@ -83,10 +83,10 @@ def fieldOfViewFactory(configuration: FieldOfViewConfig) -> FieldOfView:
     Returns:
         :class:`.FieldOfView`
     """
-    if configuration.fov_shape == CONIC_FOV_LABEL:
+    if configuration.fov_shape == FoVLabel.CONIC:
         return ConicFoV(configuration.cone_angle * const.DEG2RAD)
 
-    if configuration.fov_shape == RECTANGULAR_FOV_LABEL:
+    if configuration.fov_shape == FoVLabel.RECTANGULAR:
         return RectangularFoV(
             azimuth_angle=configuration.azimuth_angle * const.DEG2RAD,
             elevation_angle=configuration.elevation_angle * const.DEG2RAD,

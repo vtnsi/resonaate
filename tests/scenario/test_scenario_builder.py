@@ -55,13 +55,13 @@ def testECICOEDuplicateTargets(datafiles: str, reset_shared_db: None):
     for engine in scenario_cfg_dict["engines"]:
         if not first_target_network:
             first_target_network = deepcopy(engine["targets"])
-            first_target_network[0]["init_coe"] = {
-                "sma": 0,
-                "ecc": 0,
-                "inc": 0,
-                "true_long": 0,
+            first_target_network[0]["state"] = {
+                "type": "coe",
+                "semi_major_axis": 7000.0,
+                "eccentricity": 0,
+                "inclination": 0,
+                "true_longitude": 0,
             }
-            del first_target_network[0]["init_eci"]
         else:
             engine["targets"] = first_target_network
 
@@ -79,7 +79,7 @@ def testDiffStateDuplicateTargets(datafiles: str, reset_shared_db: None):
     for engine in scenario_cfg_dict["engines"]:
         if not first_target_network:
             first_target_network = deepcopy(engine["targets"])
-            first_target_network[0]["init_eci"][0] += 0.1
+            first_target_network[0]["state"]["position"][0] += 0.1
         else:
             engine["targets"] = first_target_network
 

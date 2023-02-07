@@ -267,7 +267,8 @@ class KeepGeoNorthSouth(StationKeeper):
         See Also:
             :meth:`.StationKeeper.fromInitECI()`
         """
-        initial_lat = ecef2lla(eci2ecef(initial_eci, julianDateToDatetime(julian_date_start)))[0]  # radians
+        # radians
+        initial_lat = ecef2lla(eci2ecef(initial_eci, julianDateToDatetime(julian_date_start)))[0]
         initial_coe = ClassicalElements.fromECI(initial_eci)
         return cls(rso_id, initial_eci, initial_lat, initial_coe, julian_date_start)
 

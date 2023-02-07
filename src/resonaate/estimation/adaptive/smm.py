@@ -28,8 +28,6 @@ class StaticMultipleModel(AdaptiveFilter):
         :cite:t:`nastasi_2018_diss`, Pg 66, Pg 68
     """
 
-    LABELS = "smm"
-
     def initialize(self, observations: list[Observation], julian_date_start: JulianDate) -> bool:
         """Initialize SMM models.
 

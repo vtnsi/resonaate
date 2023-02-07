@@ -19,6 +19,7 @@ import resonaate.data.resonaate_database
 import resonaate.estimation.adaptive.adaptive_filter
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
+from resonaate.common.labels import SensorLabel
 from resonaate.data.ephemeris import EstimateEphemeris
 from resonaate.data.observation import Observation
 from resonaate.dynamics.two_body import TwoBody
@@ -35,7 +36,6 @@ from resonaate.scenario import buildScenarioFromConfigDict
 from resonaate.scenario.config import ScenarioConfig
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
-from resonaate.sensors.sensor_base import ADV_RADAR_LABEL, OPTICAL_LABEL
 
 # Local Imports
 from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
@@ -296,7 +296,7 @@ def getTestRadarObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) 
         julian_date=julian_date,
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
-        sensor_type=ADV_RADAR_LABEL,
+        sensor_type=SensorLabel.ADV_RADAR,
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
         range_km=1224.6425779127965,
@@ -315,7 +315,7 @@ def getTestOpticalObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent
         julian_date=julian_date,
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
-        sensor_type=OPTICAL_LABEL,
+        sensor_type=SensorLabel.OPTICAL,
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
         sensor_eci=sensor_agent.eci_state,

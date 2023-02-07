@@ -12,9 +12,9 @@ from numpy import ones_like, spacing, zeros
 from scipy.integrate import solve_ivp
 
 # Local Imports
+from ..common.labels import IntegratorLabel
 from ..common.logger import resonaateLogError, resonaateLogWarning
 from ..physics.bodies import Earth
-from .constants import RK45_LABEL
 from .dynamics_base import Dynamics
 from .integration_events.finite_thrust import ScheduledFiniteThrust
 
@@ -58,7 +58,7 @@ def checkEarthCollision(r_norm: float):
 class Celestial(Dynamics, metaclass=ABCMeta):
     r"""The :class:`.Celestial` dynamics class defines the behavior of space-based :class:`agent_base.Agent` objects."""
 
-    def __init__(self, method: str = RK45_LABEL):
+    def __init__(self, method: str = IntegratorLabel.RK45):
         r"""Instantiate a :class:`.Celestial` object.
 
         Args:

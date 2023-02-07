@@ -9,10 +9,9 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
-from resonaate.agents import GROUND_FACILITY_LABEL, SPACECRAFT_LABEL
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
-from resonaate.data.observation import Explanation
+from resonaate.common.labels import Explanation, PlatformLabel
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from resonaate.physics.transforms.methods import eci2ecef, getSlantRangeVector
@@ -65,7 +64,7 @@ def testIsVisible(
         mocked_primary_target (:class:`.TargetAgent`): mocked Target agent object
     """
     radar_sensor = Radar(**radar_sensor_args)
-    mocked_sensing_agent.agent_type = SPACECRAFT_LABEL
+    mocked_sensing_agent.agent_type = PlatformLabel.SPACECRAFT
     radar_sensor.host = mocked_sensing_agent
 
     utc_datetime = julianDateToDatetime(mocked_sensing_agent.julian_date_epoch)
@@ -99,7 +98,7 @@ def testIsNotVisible(
         mocked_primary_target (:class:`.TargetAgent`): mocked Target agent object
     """
     radar_sensor = Radar(**radar_sensor_args)
-    mocked_sensing_agent.agent_type = GROUND_FACILITY_LABEL
+    mocked_sensing_agent.agent_type = PlatformLabel.GROUND_FACILITY
     radar_sensor.host = mocked_sensing_agent
 
     utc_datetime = julianDateToDatetime(mocked_sensing_agent.julian_date_epoch)

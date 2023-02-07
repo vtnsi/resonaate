@@ -8,13 +8,8 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
-from resonaate.tasking.metrics.metric_base import (
-    INFORMATION_METRIC_LABEL,
-    SENSOR_METRIC_LABEL,
-    STABILITY_METRIC_LABEL,
-    TARGET_METRIC_LABEL,
-    Metric,
-)
+from resonaate.common.labels import MetricTypeLabel
+from resonaate.tasking.metrics.metric_base import Metric
 from resonaate.tasking.rewards.reward_base import Reward
 from resonaate.tasking.rewards.rewards import (
     CombinedReward,
@@ -125,11 +120,11 @@ class TestCostConstrainedReward:
             list: :class:`.Metric` objects
         """
         info_metric = stub_metric_class()
-        info_metric.METRIC_TYPE = INFORMATION_METRIC_LABEL
+        info_metric.METRIC_TYPE = MetricTypeLabel.INFORMATION
         stability_metric = stub_metric_class()
-        stability_metric.METRIC_TYPE = STABILITY_METRIC_LABEL
+        stability_metric.METRIC_TYPE = MetricTypeLabel.STABILITY
         sensor_metric = stub_metric_class()
-        sensor_metric.METRIC_TYPE = SENSOR_METRIC_LABEL
+        sensor_metric.METRIC_TYPE = MetricTypeLabel.SENSOR
         return [info_metric, stability_metric, sensor_metric]
 
     def testBadMetricType(self, metric_list: list[Metric], stub_metric_class: Metric):
@@ -140,7 +135,7 @@ class TestCostConstrainedReward:
             stub_metric_class (:class:`.Metric`): Mock Metric
         """
         behavior_metric = stub_metric_class()
-        behavior_metric.METRIC_TYPE = TARGET_METRIC_LABEL
+        behavior_metric.METRIC_TYPE = MetricTypeLabel.TARGET
         metric_list.append(behavior_metric)
         with pytest.raises(ValueError, match="Incorrect number of metrics being passed"):
             CostConstrainedReward(metric_list)
@@ -178,7 +173,7 @@ class TestSimpleSummationReward:
             list: :class:`.Metric` objects
         """
         info_metric = stub_metric_class()
-        info_metric.METRIC_TYPE = INFORMATION_METRIC_LABEL
+        info_metric.METRIC_TYPE = MetricTypeLabel.INFORMATION
         return [info_metric]
 
     def testRegistry(self, metric_list: list[Metric]):
@@ -203,13 +198,13 @@ class TestCombinedReward:
     def getMetricList(self, stub_metric_class: Metric):
         """Create list of metrics to assign proper metric length of Reward Function calls."""
         info_metric = stub_metric_class()
-        info_metric.METRIC_TYPE = INFORMATION_METRIC_LABEL
+        info_metric.METRIC_TYPE = MetricTypeLabel.INFORMATION
         stability_metric = stub_metric_class()
-        stability_metric.METRIC_TYPE = STABILITY_METRIC_LABEL
+        stability_metric.METRIC_TYPE = MetricTypeLabel.STABILITY
         sensor_metric = stub_metric_class()
-        sensor_metric.METRIC_TYPE = SENSOR_METRIC_LABEL
+        sensor_metric.METRIC_TYPE = MetricTypeLabel.SENSOR
         behavior_metric = stub_metric_class()
-        behavior_metric.METRIC_TYPE = TARGET_METRIC_LABEL
+        behavior_metric.METRIC_TYPE = MetricTypeLabel.TARGET
         return [info_metric, stability_metric, sensor_metric, behavior_metric]
 
     def testRegistry(self, metric_list: list[Metric]):
@@ -225,7 +220,7 @@ class TestCombinedReward:
             stub_metric_class (:class:`.Metric`): Mock Metric
         """
         behavior_metric = stub_metric_class()
-        behavior_metric.METRIC_TYPE = TARGET_METRIC_LABEL
+        behavior_metric.METRIC_TYPE = MetricTypeLabel.TARGET
         metric_list.append(behavior_metric)
         with pytest.raises(ValueError, match="Incorrect number of metrics being passed"):
             _ = CombinedReward(metric_list)

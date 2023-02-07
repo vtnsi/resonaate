@@ -4,6 +4,9 @@ from __future__ import annotations
 # Standard Library Imports
 from typing import TYPE_CHECKING
 
+# Local Imports
+from ...common.labels import StackingLabel
+
 if TYPE_CHECKING:
     # Standard Library Imports
     from typing import Callable
@@ -34,10 +37,7 @@ def eciStack(models: list[SequentialFilter], model_weights: ndarray) -> tuple[nd
     return pred_x, est_x
 
 
-ECI_STACKING_LABEL = "eci_stack"
-"""``str``: Constant string used to describe ECI stack method."""
-
-VALID_STACKING_LABELS = (ECI_STACKING_LABEL,)
+VALID_STACKING_LABELS = (StackingLabel.ECI_STACKING,)
 """``tuple``: Collection of valid entries for "stacking_method" key in adaptive estimation configuration dictionary."""
 
 
@@ -52,9 +52,7 @@ def stackingFactory(
     Returns:
         ``callable``: Coordinate system specific stacking function for `.AdaptiveEstimation` init
     """
-    if method == ECI_STACKING_LABEL:
-        function = eciStack
-    else:
-        raise ValueError(method)
+    if method == StackingLabel.ECI_STACKING:
+        return eciStack
 
-    return function
+    raise ValueError(method)

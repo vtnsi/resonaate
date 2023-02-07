@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 # Local Imports
 from ...common.utilities import loadJSONFile
+from .agent_config import SensingAgentConfig, TargetAgentConfig
 from .base import ConfigObject, ConfigObjectList
 from .engine_config import EngineConfig
 from .estimation_config import EstimationConfig

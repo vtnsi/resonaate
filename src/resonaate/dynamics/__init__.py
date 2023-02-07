@@ -5,55 +5,75 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from .constants import RK45_LABEL, SPECIAL_PERTURBATIONS_LABEL, TWO_BODY_LABEL
+from ..common.labels import DynamicsLabel
+from ..physics.transforms.methods import eci2ecef
 from .dynamics_base import Dynamics
-from .special_perturbations import SpecialPerturbations
+from .special_perturbations import SpecialPerturbations, calcSatRatio
+from .terrestrial import Terrestrial
 from .two_body import TwoBody
 
 if TYPE_CHECKING:
     # Local Imports
     from ..scenario.clock import ScenarioClock
+    from ..scenario.config.agent_config import AgentConfigType
     from ..scenario.config.geopotential_config import GeopotentialConfig
     from ..scenario.config.perturbations_config import PerturbationsConfig
+    from ..scenario.config.propagation_config import PropagationConfig
 
 
-def spacecraftDynamicsFactory(
-    model: str,
+def dynamicsFactory(
+    agent_cfg: AgentConfigType,
+    prop_cfg: PropagationConfig,
+    geo_cfg: GeopotentialConfig,
+    pert_cfg: PerturbationsConfig,
     clock: ScenarioClock,
-    geopotential: GeopotentialConfig,
-    perturbations: PerturbationsConfig,
-    sat_ratio: float = None,
-    method: str = RK45_LABEL,
 ) -> Dynamics:
-    """Build a :class:`.Dynamics` object for RSO propagation.
+    """Build a :class:`.Dynamics` object for propagation.
 
     Args:
-        model (``str``): the dynamics propagation method/class
+        agent_cfg (:class:`.AgentConfig`): describes config options for an agent
+        prop_cfg (:class:`.PropagationConfig`): describes the propagation config options
+        geo_cfg (:class:`.GeopotentialConfig`): describes the Earth's geopotential model
+        pert_cfg (:class:`.PerturbationsConfig`): describes the dynamics' perturbational accelerations
         clock (:class:`.ScenarioClock`): clock for tracking time
-        geopotential (GeopotentialConfig): describes the Earth's geopotential model
-        perturbations (PerturbationsConfig): describes the dynamics' perturbational accelerations
-        sat_ratio (``float``): RSO specific parameter needed for SRP calculations
-        method (``str``, optional): Defaults to ``'RK45'``. Which ODE integration method to use
-
-    Note:
-        Valid options for "model" argument:
-            - "two_body": :class:`.TwoBody`
-            - "special_perturbations": :class:`.SpecialPerturbations`
 
     Raises:
         ValueError: raised if given an invalid "model" argument
+        TypeError: raised if given an invalid platform type
 
     Returns:
         :class:`.Dynamics`: constructed dynamics object
     """
-    # Determine appropriate Dynamics
-    if model.lower() == TWO_BODY_LABEL:
-        dynamics = TwoBody(method=method)
-    elif model.lower() == SPECIAL_PERTURBATIONS_LABEL:
-        dynamics = SpecialPerturbations(
-            clock.julian_date_start, geopotential, perturbations, sat_ratio, method=method
+    # pylint: disable=import-outside-toplevel
+    # Local Imports
+    from ..scenario.config.platform_config import GroundFacilityConfig, SpacecraftConfig
+
+    if isinstance(agent_cfg.platform, SpacecraftConfig):
+        sat_ratio = calcSatRatio(
+            agent_cfg.platform.visual_cross_section,
+            agent_cfg.platform.mass,
+            agent_cfg.platform.reflectivity,
         )
+        if prop_cfg.propagation_model.lower() == DynamicsLabel.TWO_BODY:
+            dynamics = TwoBody(method=prop_cfg.integration_method)
+        elif prop_cfg.propagation_model.lower() == DynamicsLabel.SPECIAL_PERTURBATIONS:
+            dynamics = SpecialPerturbations(
+                clock.julian_date_start,
+                geo_cfg,
+                pert_cfg,
+                sat_ratio,
+                method=prop_cfg.integration_method,
+            )
+        else:
+            raise ValueError(prop_cfg.propagation_model)
+
+    elif isinstance(agent_cfg.platform, GroundFacilityConfig):
+        dynamics = Terrestrial(
+            clock.julian_date_start,
+            eci2ecef(agent_cfg.state.toECI(clock.datetime_start), clock.datetime_start),
+        )
+
     else:
-        raise ValueError(model)
+        raise TypeError(f"Invalid PlatformConfig type: {agent_cfg.platform.type}")
 
     return dynamics

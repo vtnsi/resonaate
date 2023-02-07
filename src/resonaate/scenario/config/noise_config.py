@@ -6,20 +6,16 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 # Local Imports
-from ...physics.noise import (
-    CONTINUOUS_WHITE_NOISE_LABEL,
-    DISCRETE_WHITE_NOISE_LABEL,
-    SIMPLE_NOISE_LABEL,
-)
+from ...common.labels import NoiseLabel
 from .base import ConfigObject, ConfigTypeError, ConfigValueError
 
 DEFAULT_RANDOM_SEED_VALUE: str = "os"
 """``str``: Value to set :attr:`~.NoiseConfig.random_seed` to that indicates seeding the PRNG with the OS's entropy."""
 
 VALID_NOISE_TYPES: tuple[str] = (
-    CONTINUOUS_WHITE_NOISE_LABEL,
-    DISCRETE_WHITE_NOISE_LABEL,
-    SIMPLE_NOISE_LABEL,
+    NoiseLabel.CONTINUOUS_WHITE_NOISE,
+    NoiseLabel.DISCRETE_WHITE_NOISE,
+    NoiseLabel.SIMPLE_NOISE,
 )
 """``tuple``: Valid noise types."""
 
@@ -47,7 +43,7 @@ class NoiseConfig(ConfigObject):
     init_velocity_std_km_p_sec: float = DEFAULT_VELOCITY_STD
     """``float``: Standard deviation of initial RSO velocity estimate (km/sec)."""
 
-    filter_noise_type: str = CONTINUOUS_WHITE_NOISE_LABEL
+    filter_noise_type: str = NoiseLabel.CONTINUOUS_WHITE_NOISE
     """``str``: String describing noise used in filter propagation."""
 
     filter_noise_magnitude: float = DEFAULT_FILTER_NOISE_MAGNITUDE

@@ -36,8 +36,6 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         #. :cite:t:`bar-shalom_2001_estimation`, Section 11.6., Pg 447
     """
 
-    LABELS = "gpb1"
-
     def __init__(
         self,
         nominal_filter: SequentialFilter,

@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # Local Imports
-from ...sensors import ADV_RADAR_LABEL
-from .agent_configs import SensingAgentConfig, TargetAgentConfig
+from ...common.labels import SensorLabel
+from .agent_config import SensingAgentConfig, TargetAgentConfig
 from .base import ConfigError, ConfigObject, ConfigObjectList
 from .decision_config import DecisionConfig
 from .reward_config import RewardConfig
@@ -45,7 +45,7 @@ class EngineConfig(ConfigObject):
         # [NOTE]: Only Advanced Radar can used with an AllVisibleDecision type.
         if self.decision.name == "AllVisibleDecision":
             for sensor in self.sensors:
-                if sensor.sensor_type != ADV_RADAR_LABEL:
+                if sensor.sensor_type != SensorLabel.ADV_RADAR:
                     err = "Only AdvRadar sensors can use the AllVisibleDecision"
                     err += f": sensor {sensor.id} is {sensor.sensor_type}"
                     raise ConfigError(self.__class__.__name__, err)

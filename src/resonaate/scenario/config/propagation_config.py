@@ -6,23 +6,18 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 # Local Imports
-from ...dynamics.constants import (
-    DOP853_LABEL,
-    RK45_LABEL,
-    SPECIAL_PERTURBATIONS_LABEL,
-    TWO_BODY_LABEL,
-)
+from ...common.labels import DynamicsLabel, IntegratorLabel
 from .base import ConfigObject, ConfigValueError
 
 VALID_PROPAGATION_METHODS: tuple[str] = (
-    SPECIAL_PERTURBATIONS_LABEL,
-    TWO_BODY_LABEL,
+    DynamicsLabel.SPECIAL_PERTURBATIONS,
+    DynamicsLabel.TWO_BODY,
 )
 """``tuple``: Valid propagation methods."""
 
 VALID_INTEGRATION_METHODS: tuple[str] = (
-    RK45_LABEL,
-    DOP853_LABEL,
+    IntegratorLabel.RK45,
+    IntegratorLabel.DOP853,
 )
 """``tuple``: Valid integration methods."""
 
@@ -34,10 +29,10 @@ class PropagationConfig(ConfigObject):
     CONFIG_LABEL: ClassVar[str] = "propagation"
     """``str``: Key where settings are stored in the configuration dictionary."""
 
-    propagation_model: str = SPECIAL_PERTURBATIONS_LABEL
+    propagation_model: str = DynamicsLabel.SPECIAL_PERTURBATIONS
     """``str``: model with which to propagate RSOs."""
 
-    integration_method: str = RK45_LABEL
+    integration_method: str = IntegratorLabel.RK45
     """``str``: method with which to numerically integrate RSOs."""
 
     station_keeping: bool = False

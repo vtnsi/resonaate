@@ -12,9 +12,10 @@ import pytest
 # RESONAATE Imports
 import resonaate.estimation.sequential.unscented_kalman_filter
 import resonaate.job_handlers.task_prediction
+from resonaate.common.labels import MetricTypeLabel
 from resonaate.data.observation import Observation
 from resonaate.job_handlers.task_prediction import asyncCalculateReward
-from resonaate.tasking.metrics.metric_base import INFORMATION_METRIC_LABEL, Metric
+from resonaate.tasking.metrics.metric_base import Metric
 from resonaate.tasking.rewards import SimpleSummationReward
 
 # Type Checking Imports
@@ -44,7 +45,7 @@ def stubMetricClass() -> Metric:
 def getMetricList(stub_metric_class: Metric):
     """Create list of metrics to assign proper metric length of Reward Function calls."""
     info_metric = stub_metric_class()
-    info_metric.METRIC_TYPE = INFORMATION_METRIC_LABEL
+    info_metric.METRIC_TYPE = MetricTypeLabel.INFORMATION
     return [info_metric]
 
 

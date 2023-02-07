@@ -119,7 +119,7 @@ class TestEventIntegration:
             [
                 {
                     "scope": "agent_propagation",
-                    "scope_instance_id": maneuvering_target.sat_num,
+                    "scope_instance_id": maneuvering_target.id,
                     "start_time": time,
                     "end_time": time,
                     "event_type": "impulse",
@@ -174,7 +174,7 @@ class TestEventIntegration:
             [
                 {
                     "scope": "agent_propagation",
-                    "scope_instance_id": maneuvering_target.sat_num,
+                    "scope_instance_id": maneuvering_target.id,
                     "start_time": time,
                     "end_time": time,
                     "event_type": "impulse",
@@ -202,7 +202,7 @@ class TestEventIntegration:
         )
         app.propagateTo(target_time)
 
-        looking_for = f"maneuver detections of targets {{{maneuvering_target.sat_num}}}"
+        looking_for = f"maneuver detections of targets {{{maneuvering_target.id}}}"
         found = False
         for log_message in caplog.get_records("call"):
             if looking_for in log_message.message:
@@ -232,7 +232,7 @@ class TestEventIntegration:
             [
                 {
                     "scope": "agent_propagation",
-                    "scope_instance_id": maneuvering_target.sat_num,
+                    "scope_instance_id": maneuvering_target.id,
                     "start_time": time_1,
                     "end_time": time_2,
                     "event_type": "finite_burn",
@@ -260,7 +260,7 @@ class TestEventIntegration:
         )
         app.propagateTo(target_time)
 
-        looking_for = f"maneuver detections of targets {{{maneuvering_target.sat_num}}}"
+        looking_for = f"maneuver detections of targets {{{maneuvering_target.id}}}"
         found = False
         for log_message in caplog.get_records("call"):
             if looking_for in log_message.message:
@@ -291,8 +291,8 @@ class TestEventIntegration:
                     "start_time": time_1,
                     "end_time": time_2,
                     "event_type": "task_priority",
-                    "target_id": priority_target.sat_num,
-                    "target_name": priority_target.sat_name,
+                    "target_id": priority_target.id,
+                    "target_name": priority_target.name,
                     "priority": 2.0,
                     "is_dynamic": False,
                 }
@@ -335,18 +335,23 @@ class TestEventIntegration:
         tasking_engine = minimal_config.engines[0]
         addition_id = 11116
 
-        target = {
-            "sat_num": addition_id,
-            "sat_name": "test_target_addition",
-            "init_eci": [
-                34532.51759487585,
-                -23974.32804541272,
-                -3273.2937902514736,
-                1.7635318397028281,
-                2.5020107992826763,
-                0.28890951790512437,
-            ],
-            "station_keeping": {},
+        target_agent = {
+            "id": addition_id,
+            "name": "test_target_addition",
+            "state": {
+                "type": "eci",
+                "position": [
+                    34532.51759487585,
+                    -23974.32804541272,
+                    -3273.2937902514736,
+                ],
+                "velocity": [
+                    1.7635318397028281,
+                    2.5020107992826763,
+                    0.28890951790512437,
+                ],
+            },
+            "platform": {"type": "spacecraft"},
         }
 
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
@@ -361,7 +366,7 @@ class TestEventIntegration:
                     "start_time": time,
                     "end_time": time,
                     "event_type": "target_addition",
-                    "target": target,
+                    "target_agent": target_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
                 }
             ],
@@ -410,32 +415,39 @@ class TestEventIntegration:
         tasking_engine = minimal_config.engines[0]
         addition_id = 60002
 
-        sensor = {
+        sensor_agent = {
             "name": "Geo Space Sensor 1",
             "id": addition_id,
-            "covariance": [[9.869604401089358e-14, 0.0], [0.0, 9.869604401089358e-14]],
-            "slew_rate": 0.03490658503988659,
-            "azimuth_range": [0.0, 6.283185132646661],
-            "elevation_range": [-1.5707961522619713, 1.5707961522619713],
-            "efficiency": 0.99,
-            "aperture_area": 0.19634954084936207,
-            "sensor_type": "Optical",
-            "init_eci": [
-                42499.60206485572,
-                184.76309877864716,
-                4.838191959393135,
-                -0.013241150121066223,
-                3.0793657899539326,
-                0.08063602923669937,
-            ],
-            "field_of_view": {
-                "fov_shape": "conic",
+            "state": {
+                "type": "eci",
+                "position": [
+                    42499.60206485572,
+                    184.76309877864716,
+                    4.838191959393135,
+                ],
+                "velocity": [
+                    -0.013241150121066223,
+                    3.0793657899539326,
+                    0.08063602923669937,
+                ],
             },
-            "background_observations": False,
-            "detectable_vismag": 25.0,
-            "minimum_range": 0.0,
-            "maximum_range": 99000,
-            "host_type": "Spacecraft",
+            "platform": {"type": "spacecraft"},
+            "sensor": {
+                "type": "optical",
+                "covariance": [[9.869604401089358e-14, 0.0], [0.0, 9.869604401089358e-14]],
+                "slew_rate": 0.03490658503988659,
+                "azimuth_range": [0.0, 6.283185132646661],
+                "elevation_range": [-1.5707961522619713, 1.5707961522619713],
+                "efficiency": 0.99,
+                "aperture_area": 0.19634954084936207,
+                "field_of_view": {
+                    "fov_shape": "conic",
+                },
+                "background_observations": False,
+                "detectable_vismag": 25.0,
+                "minimum_range": 0.0,
+                "maximum_range": 99000,
+            },
         }
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
@@ -449,7 +461,7 @@ class TestEventIntegration:
                     "start_time": time,
                     "end_time": time,
                     "event_type": "sensor_addition",
-                    "sensor": sensor,
+                    "sensor_agent": sensor_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
                 }
             ],
@@ -509,7 +521,7 @@ class TestEventIntegration:
                     "end_time": time,
                     "event_type": "agent_removal",
                     "tasking_engine_id": tasking_engine.unique_id,
-                    "agent_id": removed_target.sat_num,
+                    "agent_id": removed_target.id,
                     "agent_type": "target",
                 }
             ],
@@ -618,18 +630,23 @@ class TestEventIntegration:
         tasking_engine = minimal_config.engines[0]
         addition_id = 11116
 
-        target = {
-            "sat_num": addition_id,
-            "sat_name": "Target6",
-            "init_eci": [
-                34532.51759487585,
-                -23974.32804541272,
-                -3273.2937902514736,
-                1.7635318397028281,
-                2.5020107992826763,
-                0.28890951790512437,
-            ],
-            "station_keeping": {},
+        target_agent = {
+            "id": addition_id,
+            "name": "Target6",
+            "state": {
+                "type": "eci",
+                "position": [
+                    34532.51759487585,
+                    -23974.32804541272,
+                    -3273.2937902514736,
+                ],
+                "velocity": [
+                    1.7635318397028281,
+                    2.5020107992826763,
+                    0.28890951790512437,
+                ],
+            },
+            "platform": {"type": "spacecraft"},
         }
 
         time_1 = minimal_config.time.start_timestamp + timedelta(minutes=2)
@@ -646,7 +663,7 @@ class TestEventIntegration:
                     "start_time": time_1,
                     "end_time": time_1,
                     "event_type": "target_addition",
-                    "target": target,
+                    "target_agent": target_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
                 },
                 {

@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ..data.observation import Explanation
+from ..common.labels import Explanation, FoVLabel
 from ..physics.constants import M2KM, PI, SPEED_OF_LIGHT
 from ..physics.measurement_utils import getRange
 from ..physics.sensor_utils import calculateRadarCrossSection
 from .measurement import Measurement
-from .sensor_base import RECTANGULAR_FOV_LABEL, Sensor
+from .sensor_base import Sensor
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 RADAR_DEFAULT_FOV: dict[str, Any] = {
-    "fov_shape": RECTANGULAR_FOV_LABEL,
+    "fov_shape": FoVLabel.RECTANGULAR,
     "cone_angle": 1.0,
 }
 """``dict``: Default Field of View (conic) of a radar sensor, degrees."""

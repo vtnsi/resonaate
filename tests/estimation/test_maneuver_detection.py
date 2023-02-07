@@ -86,7 +86,6 @@ def testManeuverDetectionClassInits():
 def testNoManeuverDetection(detection_class):
     """Test that does not result in a maneuver detection."""
     alpha = 0.05
-    assert detection_class.LABEL is not None
     detection_method = detection_class(alpha)
     for res, cvr in NOT_DETECTABLE:
         assert not detection_method(res, cvr)
@@ -96,7 +95,6 @@ def testNoManeuverDetection(detection_class):
 def testManeuverDetection(detection_class):
     """Test that does result in a maneuver detection."""
     alpha = 0.05
-    assert detection_class.LABEL is not None
     detection_method = detection_class(alpha)
     for res, cvr in DETECTABLE:
         assert detection_method(res, cvr)

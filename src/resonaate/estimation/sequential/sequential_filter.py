@@ -118,10 +118,10 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         #. :cite:t:`crassidis_2012_optest`
     """
 
-    INTERNAL_PROPAGATION_LABEL = "Propagation"
+    INTERNAL_PROPAGATION_SOURCE = "Propagation"
     """``str``: Constant string for an estimate source due to internal filter propagation."""
 
-    INTERNAL_OBSERVATION_LABEL = "Observation"
+    INTERNAL_OBSERVATION_SOURCE = "Observation"
     """``str``: Constant string for an estimate source due to internal filter measurement update."""
 
     def __init__(

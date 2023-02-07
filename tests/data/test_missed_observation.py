@@ -10,8 +10,8 @@ import pytest
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.data.observation import Explanation, MissedObservation
-from resonaate.sensors import OPTICAL_LABEL
+from resonaate.common.labels import Explanation, SensorLabel
+from resonaate.data.observation import MissedObservation
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ def getSensorECI() -> ndarray:
 class TestMissedObservationTable:
     """Test class for :class:`.MissedObservation` database table class."""
 
-    sensor_type = OPTICAL_LABEL
+    sensor_type = SensorLabel.OPTICAL
 
     eci = [7000.44393147656176574, 1.124890532, 0.6253, 3.0, 2.0, 1.0]
 

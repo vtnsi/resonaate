@@ -86,8 +86,6 @@ class UnscentedKalmanFilter(SequentialFilter):
         #. :cite:t:`wan_2001_ukf`
     """
 
-    LABELS = ("ukf", "unscented_kalman_filter")
-
     def __init__(
         self,
         tgt_id: int,
@@ -244,7 +242,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             observations (``list``): :class:`.Observation` objects associated with the UKF step
         """
         if not observations:
-            self.source = self.INTERNAL_PROPAGATION_LABEL
+            self.source = self.INTERNAL_PROPAGATION_SOURCE
             # Save the 0th sigma point because it is the non-sampled propagated state. This means that
             #   we don't inject any noise into the state estimate when no measurements occur.
             self.est_x = self.sigma_points[:, 0]
@@ -252,7 +250,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             #   covariance is stored as the updated error covariance
             self.est_p = self.pred_p
         else:
-            self.source = self.INTERNAL_OBSERVATION_LABEL
+            self.source = self.INTERNAL_OBSERVATION_SOURCE
 
             # If there are observations, the predicted state estimate and covariance are updated
             self.forecast(observations)

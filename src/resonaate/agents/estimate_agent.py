@@ -19,7 +19,7 @@ from ..estimation import (
     sequentialFilterFactory,
 )
 from ..estimation.sequential.sequential_filter import FilterFlag, SequentialFilter
-from ..physics.noise import initialEstimateNoise
+from ..physics.noise import initialEstimateNoise, noiseCovarianceFactory
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from .agent_base import Agent
 
@@ -34,12 +34,15 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
+    from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config.agent_configs import TargetAgentConfig
+    from ..scenario.config import NoiseConfig, PropagationConfig, TimeConfig
+    from ..scenario.config.agent_config import TargetAgentConfig
     from ..scenario.config.estimation_config import (
         AdaptiveEstimationConfig,
+        EstimationConfig,
         InitialOrbitDeterminationConfig,
     )
     from ..sensors.sensor_base import Observation
@@ -151,52 +154,71 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
 
     @classmethod
-    def fromConfig(cls, config: dict[str, Any]) -> Self:
-        """Factory to initialize :class:`.EstimateAgent` objects based on given configuration.
+    def fromConfig(
+        cls,
+        tgt_cfg: TargetAgentConfig,
+        clock: ScenarioClock,
+        dynamics: Dynamics,
+        prop_cfg: PropagationConfig,
+        time_cfg: TimeConfig,
+        noise_cfg: NoiseConfig,
+        estimation_cfg: EstimationConfig,
+    ) -> Self:
+        """Factory to initialize `EstimateAgent` objects based on given configuration.
 
         Args:
-            config (``dict``): formatted configuration parameters
+            tgt_cfg (:class:`.TargetAgentConfig`): config from which to generate an estimate agent.
+            clock (:class:`.ScenarioClock`): common clock object for the simulation.
+            dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
+            prop_cfg (:class:`.PropagationConfig`): various propagation simulation settings.
+            time_cfg (:class:`.TimeConfig`): defines time configuration settings.
+            noise_cfg (:class:`.NoiseConfig`): defines noise configuration settings.
+            estimation_cfg (:class:`.EstimationConfig`): defines estimation configuration settings.
 
         Returns:
-            :class:`.EstimateAgent`: properly constructed `EstimateAgent` object
+            :class:`.EstimateAgent`: properly constructed agent object.
         """
-        # Grab multiple objects required for creating estimate agents
-        tgt_config: TargetAgentConfig = config["target"]
-        clock: ScenarioClock = config["clock"]
+        # pylint: disable=unused-argument
         # Create the initial state & covariance
+        initial_state = tgt_cfg.state.toECI(clock.datetime_epoch)
         init_x, init_p = initialEstimateNoise(
-            tgt_config.init_eci, config["position_std"], config["velocity_std"], config["rng"]
+            initial_state,
+            noise_cfg.init_position_std_km,
+            noise_cfg.init_velocity_std_km_p_sec,
+            default_rng(noise_cfg.random_seed),
+        )
+
+        filter_noise = noiseCovarianceFactory(
+            noise_cfg.filter_noise_type,
+            time_cfg.physics_step_sec,
+            noise_cfg.filter_noise_magnitude,
         )
 
         nominal_filter = sequentialFilterFactory(
-            config["sequential_filter"],
-            tgt_config.sat_num,
+            estimation_cfg.sequential_filter,
+            tgt_cfg.id,
             clock.time,
             init_x,
             init_p,
-            config["dynamics"],
-            config["q_matrix"],
+            dynamics,
+            filter_noise,
         )
 
-        # Create the `EstimateAgent` and initialize its filter object
-        est = cls(
-            tgt_config.sat_num,
-            tgt_config.sat_name,
-            config["agent_type"],
+        return cls(
+            tgt_cfg.id,
+            tgt_cfg.name,
+            tgt_cfg.platform.type,
             clock,
             init_x,
             init_p,
             nominal_filter,
-            config["adaptive_filter"],
-            config["initial_orbit_determination"],
-            tgt_config.visual_cross_section,
-            tgt_config.mass,
-            tgt_config.reflectivity,
-            config["seed"],
+            estimation_cfg.adaptive_filter,
+            estimation_cfg.initial_orbit_determination,
+            tgt_cfg.platform.visual_cross_section,
+            tgt_cfg.platform.mass,
+            tgt_cfg.platform.reflectivity,
+            seed=noise_cfg.random_seed,
         )
-
-        # Return properly initialized `EstimateAgent`
-        return est
 
     def updateEstimate(self, observations: list[Observation]) -> None:
         """Update the :attr:`nominal_filter`, state estimate, & covariance.

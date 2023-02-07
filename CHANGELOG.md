@@ -47,6 +47,10 @@ ______________________________________________________________________
 - `Decision.calculate()` now ANDs the decision and visibility matrices (see #154 and !147)
 - sensor ECI state vector columns in `Observation` data class and `sensor_eci` property (see #46 and !127).
 - `lambertGauss()` orbit determination method (see !157)
+- `labels.py` module for storing common labels for simulation options (see !163)
+- `SensorConfig` and derived classes (`RadarConfig`, `AdvRadarConfig`, & `OpticalConfig`) for handling sensor-specific configuration options (see #36 and !163)
+- `PlatformConfig` and derived classes (`SpacecraftConfig` & `GroundFacilityConfig`) for handling agent 'vehicle' configuration options (see #37 and !163)
+- `StateConfig` and derived classes (`ECIStateConfig`, `LLAStateConfig`, `COEStateConfig`, `EQEStateConfig`) for handling agent's initial state information (see #35 and !163)
 
 ### Changed
 
@@ -82,6 +86,12 @@ ______________________________________________________________________
 - `determineTransferDirection` is now based off of RSO period instead of comparing true anomalies (see #170 and !153)
 - Refactored (and validated) `getEarthLimbConeAngle()` into a generic `getBodyLimbConeAngle()` function and `checkSpaceSensorEarthLimbObscuration()` logic check (see #155)
 - moved `MissedObservation` & `MissedObservation.Explanation` into `data/observation` module (see !127)
+- config objects now accept degrees across the board (see #34 and !163)
+- refactored `AgentConfig` fields into contained classes `PlatformConfig`, `StateConfig`, & `SensorConfig` to divide domain specific configuration items (see #37 and !163)
+- all JSON config files with `AgentConfig` objects were converted to support the refactor for #37 and !163
+- `RectangularFoV` default for sensors (see !163)
+- `SensorAdditionEvent` attribute `host_type` to `platform` (see !163)
+- `SensorAdditionEvent` & `TargetAdditionEvent` attributes `sensor` & `target` to `sensor_agent` & `target_agent` (see !163)
 
 ### Deprecated
 

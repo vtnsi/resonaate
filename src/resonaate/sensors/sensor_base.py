@@ -10,9 +10,10 @@ from scipy.linalg import norm
 
 # Local Imports
 from ..common.exceptions import ShapeError
+from ..common.labels import Explanation
 from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
-from ..data.observation import Explanation, MissedObservation, Observation
+from ..data.observation import MissedObservation, Observation
 from ..physics import constants as const
 from ..physics.maths import subtendedAngle
 from ..physics.measurement_utils import getAzimuth, getElevation, getRange
@@ -29,31 +30,6 @@ if TYPE_CHECKING:
     from ..agents.target_agent import TargetAgent
     from .field_of_view import FieldOfView
     from .measurement import Measurement
-
-
-OPTICAL_LABEL: str = "Optical"
-"""``str``: Constant string used to describe optical sensors."""
-
-RADAR_LABEL: str = "Radar"
-"""``str``: Constant string used to describe radar sensors."""
-
-ADV_RADAR_LABEL: str = "AdvRadar"
-"""``str``: Constant string used to describe advanced radar sensors."""
-
-CONIC_FOV_LABEL: str = "conic"
-"""``str``: Constant string used to describe conic field of view."""
-
-RECTANGULAR_FOV_LABEL: str = "rectangular"
-"""str: Constant string used to describe rectangular field of view."""
-
-VALID_SENSOR_FOV_LABELS: tuple[str] = (
-    CONIC_FOV_LABEL,
-    RECTANGULAR_FOV_LABEL,
-)
-"""``tuple``: Contains valid sensor Field of View configurations."""
-
-SOLAR_PANEL_REFLECTIVITY: float = 0.21
-"""``float``: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`, unit-less."""
 
 DEFAULT_VIEWING_ANGLE: float = 1.0
 """``float``: default angle for a sensor's FoV, degrees."""

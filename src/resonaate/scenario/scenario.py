@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from collections import defaultdict
+from copy import deepcopy
 from functools import singledispatch, update_wrapper
 from multiprocessing import cpu_count
 from pickle import dumps
@@ -11,7 +12,6 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 from mjolnir import KeyValueStore, WorkerManager
 from numpy import around, seterr
-from numpy.random import default_rng
 from sqlalchemy.orm import Query
 
 # Local Imports
@@ -23,16 +23,15 @@ from ..common.logger import Logger
 from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..data.resonaate_database import ResonaateDatabase
-from ..dynamics import spacecraftDynamicsFactory
+from ..dynamics import dynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
 from ..job_handlers.agent_propagation import AgentPropagationJobHandler
 from ..job_handlers.base import ParallelMixin
 from ..job_handlers.estimate_prediction import EstimatePredictionJobHandler
 from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
-from ..physics.noise import noiseCovarianceFactory
 from ..physics.time.stardate import JulianDate
-from .config.agent_configs import SensingAgentConfig, TargetAgentConfig
+from .config.agent_config import SensingAgentConfig, TargetAgentConfig
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -40,8 +39,7 @@ if TYPE_CHECKING:
     from typing import Callable
 
     # Local Imports
-    from ..data.missed_observation import MissedObservation
-    from ..data.observation import Observation
+    from ..data.observation import MissedObservation, Observation
     from ..physics.time.stardate import ScenarioTime
     from ..tasking.engine.engine_base import TaskingEngine
     from .clock import ScenarioClock
@@ -443,58 +441,48 @@ class Scenario(ParallelMixin):
             target_spec (:class:`.TargetAgentConfig`): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
-        if target_spec.sat_num in self.target_agents:
-            err = f"Target '{target_spec.sat_num} already exists in this scenario."
+        if target_spec.id in self.target_agents:
+            err = f"Target '{target_spec.id} already exists in this scenario."
             raise Exception(err)
 
-        target_dynamics = spacecraftDynamicsFactory(
-            self.scenario_config.propagation.propagation_model,
-            self.clock,
+        target_dynamics = dynamicsFactory(
+            target_spec,
+            self.scenario_config.propagation,
             self.scenario_config.geopotential,
             self.scenario_config.perturbations,
-            method=self.scenario_config.propagation.integration_method,
+            self.clock,
         )
 
-        filter_dynamics = spacecraftDynamicsFactory(
-            self.scenario_config.propagation.propagation_model,
-            self.clock,
+        est_prop_cfg = deepcopy(self.scenario_config.propagation)
+        est_prop_cfg.propagation_model = (
+            self.scenario_config.estimation.sequential_filter.dynamics_model
+        )
+        filter_dynamics = dynamicsFactory(
+            target_spec,
+            est_prop_cfg,
             self.scenario_config.geopotential,
             self.scenario_config.perturbations,
-            method=self.scenario_config.propagation.integration_method,
+            self.clock,
         )
 
-        filter_noise = noiseCovarianceFactory(
-            self.scenario_config.noise.filter_noise_type,
-            self.scenario_config.time.physics_step_sec,
-            self.scenario_config.noise.filter_noise_magnitude,
+        target_agent = TargetAgent.fromConfig(
+            tgt_cfg=target_spec,
+            clock=self.clock,
+            dynamics=target_dynamics,
+            prop_cfg=self.scenario_config.propagation,
         )
+        self.target_agents[target_spec.id] = target_agent
 
-        target_factory_config = {
-            "target": target_spec,
-            "clock": self.clock,
-            "dynamics": target_dynamics,
-            "realtime": self.scenario_config.propagation.target_realtime_propagation,
-            "station_keeping": target_spec.station_keeping,
-        }
-        target_agent = TargetAgent.fromConfig(target_factory_config)
-        self.target_agents[target_spec.sat_num] = target_agent
-
-        estimate_factory_config = {
-            "target": target_spec,
-            "agent_type": target_agent.agent_type,
-            "position_std": self.scenario_config.noise.init_position_std_km,
-            "velocity_std": self.scenario_config.noise.init_velocity_std_km_p_sec,
-            "rng": default_rng(self.scenario_config.noise.random_seed),
-            "clock": self.clock,
-            "sequential_filter": self.scenario_config.estimation.sequential_filter,
-            "adaptive_filter": self.scenario_config.estimation.adaptive_filter,
-            "initial_orbit_determination": self.scenario_config.estimation.sequential_filter.initial_orbit_determination,
-            "seed": self.scenario_config.noise.random_seed,
-            "dynamics": filter_dynamics,
-            "q_matrix": filter_noise,
-        }
-        estimate_agent = EstimateAgent.fromConfig(estimate_factory_config)
-        self._estimate_agents[target_spec.sat_num] = estimate_agent
+        estimate_agent = EstimateAgent.fromConfig(
+            tgt_cfg=target_spec,
+            clock=self.clock,
+            dynamics=filter_dynamics,
+            prop_cfg=self.scenario_config.propagation,
+            time_cfg=self.scenario_config.time,
+            noise_cfg=self.scenario_config.noise,
+            estimation_cfg=self.scenario_config.estimation,
+        )
+        self._estimate_agents[target_spec.id] = estimate_agent
 
         self._tasking_engines[tasking_engine_id].addTarget(target_agent.simulation_id)
         self._agent_propagation_handler.registerCallback(target_agent)
@@ -552,22 +540,20 @@ class Scenario(ParallelMixin):
             err = f"Sensor '{sensor_spec.id} already exists in this scenario."
             raise Exception(err)
 
-        dynamics_method = spacecraftDynamicsFactory(
-            self.scenario_config.propagation.propagation_model,
-            self.clock,
+        dynamics = dynamicsFactory(
+            sensor_spec,
+            self.scenario_config.propagation,
             self.scenario_config.geopotential,
             self.scenario_config.perturbations,
-            method=self.scenario_config.propagation.integration_method,
+            self.clock,
         )
 
-        config = {
-            "agent": sensor_spec,
-            "clock": self.clock,
-            "satellite_dynamics": dynamics_method,
-            "realtime": self.scenario_config.propagation.sensor_realtime_propagation,
-        }
-
-        sensing_agent = SensingAgent.fromConfig(config)
+        sensing_agent = SensingAgent.fromConfig(
+            sen_cfg=sensor_spec,
+            clock=self.clock,
+            dynamics=dynamics,
+            prop_cfg=self.scenario_config.propagation,
+        )
         self._sensor_agents[sensing_agent.simulation_id] = sensing_agent
 
         self._tasking_engines[tasking_engine_id].addSensor(sensing_agent.simulation_id)
