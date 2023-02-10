@@ -33,6 +33,8 @@ to.
     methodUsingScenarioTime(sTime) # works
 
 """
+from __future__ import annotations
+
 # Standard Library Imports
 from datetime import datetime, timedelta
 

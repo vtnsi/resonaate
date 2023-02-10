@@ -1,4 +1,6 @@
 """Defines the :class:`.Epoch` data table class."""
+from __future__ import annotations
+
 # Third Party Imports
 from sqlalchemy import Column, Float, Integer, String
 

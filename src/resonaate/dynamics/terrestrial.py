@@ -1,4 +1,6 @@
 """Defines the :class:`.Terrestrial` class for agents that are stationary on the Earth."""
+from __future__ import annotations
+
 # Standard Library Imports
 from datetime import timedelta
 

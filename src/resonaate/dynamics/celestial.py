@@ -21,7 +21,7 @@ from .integration_events.finite_thrust import ScheduledFiniteThrust
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Callable, Optional, Union
+    from typing import Callable
 
     # Third Party Imports
     from numpy import ndarray
@@ -69,9 +69,9 @@ class Celestial(Dynamics, metaclass=ABCMeta):
 
     def _prepEvents(
         self,
-        initial_time: Union[ScenarioTime, float],
-        station_keeping: Optional[list[StationKeeper]],
-        scheduled_events: Optional[list[ScheduledEventType]],
+        initial_time: ScenarioTime | float,
+        station_keeping: list[StationKeeper] | None = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ) -> list[Callable[[float, ndarray], float]]:
         r"""Prep events before propagation starts, to add to `solve_ivp` events parameter.
 
@@ -133,11 +133,11 @@ class Celestial(Dynamics, metaclass=ABCMeta):
 
     def propagate(
         self,
-        initial_time: Union[ScenarioTime, float],
-        final_time: Union[ScenarioTime, float],
+        initial_time: ScenarioTime | float,
+        final_time: ScenarioTime | float,
         initial_state: ndarray,
-        station_keeping: Optional[list[StationKeeper]] = None,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        station_keeping: list[StationKeeper] | None = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ) -> ndarray:
         r"""Numerically integrate the state vector forward to the final time.
 
@@ -201,10 +201,10 @@ class Celestial(Dynamics, metaclass=ABCMeta):
 
     def propagateBulk(
         self,
-        times: list[Union[ScenarioTime, float]],
+        times: list[ScenarioTime | float],
         current_state: ndarray,
-        station_keeping: Optional[list[StationKeeper]] = None,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        station_keeping: list[StationKeeper] | None = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ) -> ndarray:
         r"""Numerically integrate the state vector forward to the final time.
 
@@ -316,7 +316,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         return final_states[::, 1:]
 
     @abstractmethod
-    def _differentialEquation(self, time: Union[ScenarioTime, float], state: ndarray) -> ndarray:
+    def _differentialEquation(self, time: ScenarioTime | float, state: ndarray) -> ndarray:
         """Calculate the first time derivative of the state for numerical integration.
 
         Note: this function must take and receive 1-dimensional state vectors! Also, `K` below

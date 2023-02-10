@@ -1,4 +1,6 @@
 """Defines the :class:`.DiscreteStateChangeEvent` abstract base class."""
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 

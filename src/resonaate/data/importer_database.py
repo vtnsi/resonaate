@@ -1,4 +1,6 @@
 """Defines the :class:`.ImporterDatabase` data interface class for pre-canned data."""
+from __future__ import annotations
+
 # Standard Library Imports
 import os
 

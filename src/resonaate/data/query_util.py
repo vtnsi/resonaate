@@ -1,4 +1,6 @@
 """Defines functions for common queries as well as functions that augment queries."""
+from __future__ import annotations
+
 # Third Party Imports
 from numpy import around
 

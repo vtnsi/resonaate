@@ -20,7 +20,6 @@ from .. import constants as const
 if TYPE_CHECKING:
     # Standard Library Imports
     from pathlib import Path
-    from typing import Dict, Optional, Union
 
 
 EOP_MODULE: str = "resonaate.physics.data.eop"
@@ -62,7 +61,7 @@ class EarthOrientationParameter:
 
 @lru_cache(maxsize=5)
 def getEarthOrientationParameters(
-    eop_date: datetime.date, filename: Optional[Union[str, Path]] = None
+    eop_date: datetime.date, filename: str | Path | None = None
 ) -> EarthOrientationParameter:
     """Return the :class:`.EarthOrientationParameter` based on the current calendar date.
 
@@ -89,8 +88,8 @@ def getEarthOrientationParameters(
 
 @lru_cache(maxsize=5)
 def _readEOPFile(
-    filename: Optional[Union[str, Path]] = None
-) -> Dict[datetime.date, EarthOrientationParameter]:
+    filename: str | Path | None = None,
+) -> dict[datetime.date, EarthOrientationParameter]:
     """Read EOPs from a file and return them as a formatted ``dict``.
 
     Args:

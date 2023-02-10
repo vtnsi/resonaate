@@ -4,7 +4,6 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import fields
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
@@ -12,12 +11,6 @@ import pytest
 # RESONAATE Imports
 from resonaate.scenario.config.base import ConfigValueError
 from resonaate.scenario.config.time_config import DEFAULT_TIME_STEP, TIME_STAMP_FORMAT, TimeConfig
-
-# Type Checking Imports
-if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Any
-
 
 TEST_START_TIMESTAMP = "2020-01-01T00:00:00.000Z"
 TEST_STOP_TIMESTAMP = "2020-01-02T00:00:00.000Z"

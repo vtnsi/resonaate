@@ -1,4 +1,5 @@
 """Contains all the custom-defined exceptions used in RESONAATE."""
+from __future__ import annotations
 
 
 class JobProcessingError(Exception):

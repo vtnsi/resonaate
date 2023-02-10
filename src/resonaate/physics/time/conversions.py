@@ -1,4 +1,6 @@
 """Helper functions that convert between different forms of time."""
+from __future__ import annotations
+
 # Standard Library Imports
 import datetime
 

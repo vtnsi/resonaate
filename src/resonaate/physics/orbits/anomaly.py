@@ -1,4 +1,6 @@
 """Defines common orbital anomaly conversions."""
+from __future__ import annotations
+
 # Third Party Imports
 from numpy import arctan2, cos, sin, sqrt
 

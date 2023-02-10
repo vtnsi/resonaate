@@ -1,4 +1,6 @@
 """Defines scheduled impulsive burn events to control spacecraft."""
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABCMeta
 

@@ -20,7 +20,7 @@ from .sequential_filter import FilterFlag, SequentialFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable
 
     # Third Party Imports
     from numpy import ndarray
@@ -94,12 +94,12 @@ class UnscentedKalmanFilter(SequentialFilter):
         est_p: ndarray,
         dynamics: Dynamics,
         q_matrix: ndarray,
-        maneuver_detection: Optional[ManeuverDetection],
+        maneuver_detection: ManeuverDetection | None = None,
         initial_orbit_determination: bool = False,
         adaptive_estimation: bool = False,
         alpha: float = 0.001,
         beta: float = 2.0,
-        kappa: Optional[float] = None,
+        kappa: float | None = None,
     ):
         r"""Initialize a UKF instance.
 
@@ -200,7 +200,7 @@ class UnscentedKalmanFilter(SequentialFilter):
     def predict(
         self,
         final_time: ScenarioTime,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ):
         """Propagate the state estimate and error covariance with uncertainty.
 
@@ -268,7 +268,7 @@ class UnscentedKalmanFilter(SequentialFilter):
     def predictStateEstimate(
         self,
         final_time: ScenarioTime,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ):
         """Propagate the previous state estimate from :math:`k` to :math:`k+1`.
 

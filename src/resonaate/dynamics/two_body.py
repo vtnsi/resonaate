@@ -1,4 +1,6 @@
 """Defines the :class:`.TwoBody` class defining Keplerian motion."""
+from __future__ import annotations
+
 # Third Party Imports
 from numpy import empty_like
 from scipy.linalg import norm

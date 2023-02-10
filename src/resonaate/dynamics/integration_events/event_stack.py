@@ -1,4 +1,6 @@
 """Encapsulation of event tracking using ``mjolnir`` with a :class:`.EventRecord` and :class:`.EventStack`."""
+from __future__ import annotations
+
 # Standard Library Imports
 import logging
 from collections import defaultdict

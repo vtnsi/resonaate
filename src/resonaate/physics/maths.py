@@ -3,8 +3,7 @@
 * `scipy docs <https://docs.scipy.org/doc/scipy/index.html>`_
 * `numpy docs <https://numpy.org/doc/stable/>`_
 """
-# Standard Library Imports
-from typing import Optional
+from __future__ import annotations
 
 # Third Party Imports
 from numpy import (
@@ -344,9 +343,9 @@ def isPD(matrix: ndarray) -> bool:
 
 def angularMean(
     angles: ndarray,
-    weights: Optional[ndarray] = None,
-    high: Optional[float] = const.TWOPI,
-    low: Optional[float] = 0.0,
+    weights: ndarray | None = None,
+    high: float = const.TWOPI,
+    low: float = 0.0,
 ) -> float:
     r"""Calculate the (possibly weighted) mean of `angles` within a given range.
 

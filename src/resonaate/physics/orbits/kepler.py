@@ -1,6 +1,5 @@
 """Defines methods of solving Kepler's Equation & Kepler's Problem."""
-# Standard Library Imports
-from typing import Optional
+from __future__ import annotations
 
 # Third Party Imports
 from numpy import (
@@ -124,8 +123,8 @@ def keplerSolveCOE(
     E_0: float,
     M: float,
     ecc: float,
-    tol: Optional[float] = _ATOL,
-    maxiter: Optional[int] = _MAX_ITER,
+    tol: float = _ATOL,
+    maxiter: int = _MAX_ITER,
     raise_err: bool = True,
 ) -> float:
     r"""Solve Kepler's equation via Newton-Raphson.
@@ -165,8 +164,8 @@ def keplerSolveEQE(
     h: float,
     k: float,
     lam: float,
-    tol: Optional[float] = _ATOL,
-    maxiter: Optional[int] = _MAX_ITER,
+    tol: float = _ATOL,
+    maxiter: int = _MAX_ITER,
     raise_err: bool = True,
 ) -> float:
     r"""Solve the equinoctial form of Kepler's equation via Newton-Raphson.
@@ -207,9 +206,9 @@ def keplerSolveEQE(
 def solveKeplerProblemUniversal(
     init_state: ndarray,
     tof: float,
-    mu: Optional[float] = Earth.mu,
-    tol: Optional[float] = _ATOL,
-    maxiter: Optional[int] = _MAX_ITER,
+    mu: float = Earth.mu,
+    tol: float = _ATOL,
+    maxiter: int = _MAX_ITER,
 ) -> ndarray:
     r"""Solver Kepler's problem using the universal variables formulation.
 
