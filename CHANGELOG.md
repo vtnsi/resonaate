@@ -92,6 +92,7 @@ ______________________________________________________________________
 - `RectangularFoV` default for sensors (see !163)
 - `SensorAdditionEvent` attribute `host_type` to `platform` (see !163)
 - `SensorAdditionEvent` & `TargetAdditionEvent` attributes `sensor` & `target` to `sensor_agent` & `target_agent` (see !163)
+- Removed usages of `Optional` and `Union` in type hints to support Python 3.9 (see #172 and !168)
 
 ### Deprecated
 

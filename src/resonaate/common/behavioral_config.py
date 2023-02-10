@@ -12,10 +12,7 @@ from typing import TYPE_CHECKING
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Callable, Dict, List, Optional, Tuple
-
-    # Third Party Imports
-    from typing_extensions import Self
+    from typing import Any, Callable
 
 
 class SubConfig:
@@ -54,7 +51,7 @@ class SubConfig:
 class CustomConfigParser(ConfigParser):
     """Perform custom parsing operations on our custom config convention."""
 
-    LOGGING_LEVELS: Dict[str, int] = {
+    LOGGING_LEVELS: dict[str, int] = {
         "CRITICAL": CRITICAL,
         "ERROR": ERROR,
         "WARNING": WARNING,
@@ -69,13 +66,13 @@ class CustomConfigParser(ConfigParser):
 
         return self.LOGGING_LEVELS.get(got, NOTSET)
 
-    def getlist(self, section: str, option: str) -> List:
+    def getlist(self, section: str, option: str) -> list:
         """Return list for this option."""
         got = self.get(section, option)
 
         return [ii.lstrip() for ii in got.split(",")]
 
-    def getNullInt(self, section: str, option: str) -> Optional[int]:
+    def getNullInt(self, section: str, option: str) -> int | None:
         """Return an int for this option, allowing for null values."""
         got = self.get(section, option)
         return None if got.lower() in ("null", "none") else int(got)
@@ -86,7 +83,7 @@ class BehavioralConfig:
 
     DEFAULT_CONFIG_FILE: str = "default_behavior.config"
 
-    DEFAULT_SECTIONS: Dict[str, Dict[str, Any]] = {
+    DEFAULT_SECTIONS: dict[str, dict[str, Any]] = {
         "logging": {
             "OutputLocation": "stdout",
             "Level": DEBUG,
@@ -112,9 +109,9 @@ class BehavioralConfig:
         },
     }
 
-    LOGGING_LEVEL_ITEMS: Dict[str, Tuple[str, ...]] = {"logging": ("Level",)}
+    LOGGING_LEVEL_ITEMS: dict[str, tuple[str, ...]] = {"logging": ("Level",)}
 
-    STR_ITEMS: Dict[str, Tuple[str, ...]] = {
+    STR_ITEMS: dict[str, tuple[str, ...]] = {
         "logging": ("OutputLocation",),
         "database": ("DatabasePath",),
         "debugging": (
@@ -126,16 +123,16 @@ class BehavioralConfig:
         ),
     }
 
-    INT_ITEMS: Dict[str, Tuple[str, ...]] = {
+    INT_ITEMS: dict[str, tuple[str, ...]] = {
         "logging": (
             "MaxFileSize",
             "MaxFileCount",
         ),
     }
 
-    NULL_INT_ITEMS: Dict[str, Tuple[str, ...]] = {"parallel": ("WorkerCount",)}
+    NULL_INT_ITEMS: dict[str, tuple[str, ...]] = {"parallel": ("WorkerCount",)}
 
-    BOOL_ITEMS: Dict[str, Tuple[str, ...]] = {
+    BOOL_ITEMS: dict[str, tuple[str, ...]] = {
         "logging": ("AllowMultipleHandlers",),
         "debugging": (
             "NearestPD",
@@ -146,11 +143,11 @@ class BehavioralConfig:
         ),
     }
 
-    LIST_ITEMS: Dict[str, Tuple[str, ...]] = {}
+    LIST_ITEMS: dict[str, tuple[str, ...]] = {}
 
-    __shared_inst: Optional[BehavioralConfig] = None
+    __shared_inst: BehavioralConfig | None = None
 
-    def __init__(self, config_file_path: Optional[str] = None):  # noqa: C901
+    def __init__(self, config_file_path: str | None = None):  # noqa: C901
         """Initialize the configuration object."""
         # pylint: disable=too-many-branches
         self._parser = CustomConfigParser()
@@ -208,7 +205,7 @@ class BehavioralConfig:
         BehavioralConfig.__shared_inst = self  # pylint: disable=unused-private-member
 
     @classmethod
-    def getConfig(cls, config_file_path=None) -> BehavioralConfig:
+    def getConfig(cls, config_file_path: str | None = None) -> BehavioralConfig:
         """Return a reference to the singleton shared config."""
         if cls.__shared_inst is None:
             if not config_file_path:

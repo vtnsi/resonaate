@@ -1,4 +1,6 @@
 """Defines the :class:`.ResonaateDatabase` shared data interface class."""
+from __future__ import annotations
+
 # Local Imports
 from ..common.behavioral_config import BehavioralConfig
 from . import createDatabasePath

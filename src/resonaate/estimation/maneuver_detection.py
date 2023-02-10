@@ -1,8 +1,10 @@
 """Defines statistical functions and tests for analyzing filtering algorithms."""
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from collections import deque
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Union
 
 # Third Party Imports
 from numpy import ndarray
@@ -11,7 +13,7 @@ from numpy import ndarray
 from ..common.logger import resonaateLogError
 from ..physics.statistics import chiSquareQuadraticForm, oneSidedChiSquareTest
 
-TestType = Callable[[float, float, float, Optional[float]], bool]
+TestType = Callable[[float, float, float, Union[float, None]], bool]
 
 
 class ManeuverDetection(metaclass=ABCMeta):

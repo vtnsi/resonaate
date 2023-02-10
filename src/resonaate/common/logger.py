@@ -1,4 +1,6 @@
 """Defines the :class:`.Logger` class."""
+from __future__ import annotations
+
 # Standard Library Imports
 import logging
 import sys

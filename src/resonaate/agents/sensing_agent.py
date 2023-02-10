@@ -20,7 +20,6 @@ from .agent_base import Agent
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Collection
-    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray

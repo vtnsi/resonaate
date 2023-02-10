@@ -19,8 +19,10 @@ This can be done in two primary ways:
 
 2. A direct definition of the process noise in discrete time (see :func:`.discreteWhiteNoise`)
 """
+from __future__ import annotations
+
 # Standard Library Imports
-from typing import Any, Tuple
+from typing import Any
 
 # Third Party Imports
 from numpy import array, diagflat, ndarray
@@ -121,7 +123,7 @@ def simpleNoise(dt: float, std: float) -> ndarray:
 
 def initialEstimateNoise(
     true_target_state: ndarray, pos_std: float, vel_std: float, rng: Any
-) -> Tuple[ndarray, ndarray]:
+) -> tuple[ndarray, ndarray]:
     r"""Initialize the estimate error for a target.
 
     See Also:

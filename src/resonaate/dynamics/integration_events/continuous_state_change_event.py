@@ -1,4 +1,6 @@
 """Defines the :class:`.ContinuousStateChangeEvent` class."""
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 

@@ -1,4 +1,6 @@
 """Defines the :class:`.DetectedManeuver` data table class."""
+from __future__ import annotations
+
 # Third Party Imports
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship

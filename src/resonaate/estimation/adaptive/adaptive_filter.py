@@ -27,7 +27,7 @@ from .mmae_stacking_utils import stackingFactory
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable
 
     # Third Party Imports
     from numpy import ndarray
@@ -494,7 +494,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
     def predict(
         self,
         final_time: ScenarioTime,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ):
         """Propagate the state estimate and error covariance with uncertainty.
 

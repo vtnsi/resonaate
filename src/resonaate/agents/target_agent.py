@@ -16,9 +16,6 @@ from .agent_base import Agent
 
 # Type checking
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Any
-
     # Third Party Imports
     from typing_extensions import Self
 

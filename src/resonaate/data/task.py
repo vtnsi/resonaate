@@ -1,4 +1,6 @@
 """Defines the :class:`.Task` data table class."""
+from __future__ import annotations
+
 # Third Party Imports
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer
 from sqlalchemy.orm import relationship

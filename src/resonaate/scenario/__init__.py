@@ -1,4 +1,5 @@
 """The :class:`.Scenario` object is the main "application" used in large RESONAATE simulations."""
+from __future__ import annotations
 
 
 def buildScenarioFromConfigFile(

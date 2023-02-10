@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import Column, Float, Integer, String
@@ -76,7 +76,7 @@ class Event(_DataMixin, Base):
     #   2) Move to Python >= 3.10
     #
     # See https://github.com/sqlalchemy/sqlalchemy/issues/9110
-    EVENT_REGISTRY: Optional[Dict[str, Event]] = None
+    EVENT_REGISTRY: dict[str, Event] | None = None
     """``dict``: Correlates `event_type` values to the correct :class:`.Event` child class."""
 
     EVENT_TYPE: str = "event"

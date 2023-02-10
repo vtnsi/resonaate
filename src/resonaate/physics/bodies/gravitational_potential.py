@@ -14,9 +14,6 @@ from scipy.linalg import norm
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Tuple
-
     # Third Party Imports
     from numpy import ndarray
 
@@ -26,7 +23,7 @@ GEOPOTENTIAL_MODULE: str = "resonaate.physics.data.geopotential"
 
 
 @lru_cache(maxsize=5)
-def loadGeopotentialCoefficients(model_file: str) -> Tuple[ndarray, ndarray]:
+def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
     r"""Read the gravity model file & save the geopotential coefficients.
 
     This assumes that the coefficients are normalized according to Eq 8-22 in Vallado:
@@ -87,7 +84,7 @@ def getNonSphericalHarmonics(
     cb_radius: float,
     degree: int,
     order: int,
-) -> Tuple[ndarray, ndarray]:
+) -> tuple[ndarray, ndarray]:
     r"""Compute the harmonic terms for a given position & gravity field.
 
     In general, the gravity model order must be less than or equal to the gravity model degree.

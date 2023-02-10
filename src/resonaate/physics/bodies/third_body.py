@@ -87,9 +87,6 @@ from numpy.polynomial.chebyshev import chebval
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Dict, List, Tuple
-
     # Third Party Imports
     from numpy import ndarray
 
@@ -144,7 +141,7 @@ class TBK(Enum):
         return int(self.value) < int(other.value)
 
 
-KERNEL_MAP: Dict[str, Dict[Tuple[int, int], TBK]] = {
+KERNEL_MAP: dict[str, dict[tuple[int, int], TBK]] = {
     "de432s": {
         (0, 1): TBK.SS_BC_2_MERCURY_BC,
         (0, 2): TBK.SS_BC_2_VENUS_BC,
@@ -165,7 +162,7 @@ KERNEL_MAP: Dict[str, Dict[Tuple[int, int], TBK]] = {
 """``dict``: map describing how the (center, target) pairs of a kernel map to common tuple index."""
 
 
-def readKernelSegmentFile(kernel_module: str, filename: Union[str, Path]) -> ThirdBodyTuple:
+def readKernelSegmentFile(kernel_module: str, filename: str | Path) -> ThirdBodyTuple:
     """Read kernel segment from a numpy array file.
 
     Args:
@@ -189,7 +186,7 @@ def readKernelSegmentFile(kernel_module: str, filename: Union[str, Path]) -> Thi
     return ThirdBodyTuple(center, target, init_jd, interval, coefficients)
 
 
-def readKernelSegments(kernel_module: str) -> List[ThirdBodyTuple]:
+def readKernelSegments(kernel_module: str) -> list[ThirdBodyTuple]:
     """Read kernel segments from a given directory.
 
     Args:
@@ -211,7 +208,7 @@ def readKernelSegments(kernel_module: str) -> List[ThirdBodyTuple]:
 
 
 @lru_cache(maxsize=5)
-def loadKernelData(kernel_name: str) -> Tuple[Tuple[float, float, ndarray], ...]:
+def loadKernelData(kernel_name: str) -> tuple[tuple[float, float, ndarray], ...]:
     """Load JPL Horizons kernel data from files into global tuple.
 
     Args:
@@ -224,7 +221,7 @@ def loadKernelData(kernel_name: str) -> Tuple[Tuple[float, float, ndarray], ...]
     kernel_segments = readKernelSegments(kernel_module)
 
     # Sort segments according to TBK enum
-    segment_map: Dict[Tuple[int, int], TBK] = KERNEL_MAP[kernel_name]
+    segment_map: dict[tuple[int, int], TBK] = KERNEL_MAP[kernel_name]
     sorted_segments = sorted(
         kernel_segments, key=lambda segment: segment_map[(segment.center, segment.target)]
     )
@@ -233,7 +230,7 @@ def loadKernelData(kernel_name: str) -> Tuple[Tuple[float, float, ndarray], ...]
     )
 
 
-THIRD_BODY_EPHEMS: Tuple[Tuple[float, float, ndarray], ...] = loadKernelData(THIRD_BODY_KERNEL)
+THIRD_BODY_EPHEMS: tuple[tuple[float, float, ndarray], ...] = loadKernelData(THIRD_BODY_KERNEL)
 """``tuple``: tuples containing initial epoch, interval, and coefficient information for each kernel segment."""
 
 
@@ -243,7 +240,7 @@ IterFloatType = Union[float, Iterable[float]]
 
 def _scaleChebyshevInputs(
     jd: IterFloatType, init_jd: float, int_length: float
-) -> Tuple[ndarray, ndarray]:
+) -> tuple[ndarray, ndarray]:
     """Scale the input(s) for a Chebyshev series based to a domain of :math:`[-1, 1]`.
 
     If ``jd`` is an iterable, then the function returns the properly scaled points and corresponding indices
