@@ -87,9 +87,8 @@ class Scenario(ParallelMixin):
         clock: ScenarioClock,
         target_agents: dict[int, TargetAgent],
         estimate_agents: dict[int, EstimateAgent],
-        sensor_network: list[SensingAgent],
+        sensor_agents: dict[int, SensingAgent],
         tasking_engines: dict[int, TaskingEngine],
-        estimation_config: EstimationConfig,
         internal_db_path: str | None = None,
         importer_db_path: str | None = None,
         logger: Logger | None = None,
@@ -102,9 +101,8 @@ class Scenario(ParallelMixin):
             clock (:class:`.ScenarioClock`): main clock object for tracking time
             target_agents (``dict``): target RSO objects for this :class:`.Scenario` .
             estimate_agents (``dict``): estimate RSO objects for this :class:`.Scenario` .
-            sensor_network (``list``): sensor network for this :class:`.Scenario` .
-            tasking_engines (dict): dictionary of tasking engines for this :class:`.Scenario` .
-            estimation_config (dict): Dictionary of estimation configuration information.
+            sensor_agents (``dict``): sensor network for this :class:`.Scenario` .
+            tasking_engines (``dict``): dictionary of tasking engines for this :class:`.Scenario` .
             internal_db_path (``str``, optional): path to RESONAATE internal database object.
                 Defaults to ``None``.
             importer_db_path (``str``, optional): path to external importer database for pre-canned
@@ -123,12 +121,12 @@ class Scenario(ParallelMixin):
         # Save target_agents, estimate_agents, sensor network, tasking engine and filter
         self.target_agents = target_agents
         self._estimate_agents = estimate_agents
-        self._sensor_agents = {node.simulation_id: node for node in sensor_network}
+        self._sensor_agents = sensor_agents
         self._tasking_engines = tasking_engines
         self.current_julian_date = self.julian_date_start
 
         # Save filter configuration
-        self.estimation_config = estimation_config
+        self.estimation_config = config.estimation
 
         ## Logging class used to track execution.
         self.logger = logger
