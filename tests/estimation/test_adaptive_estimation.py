@@ -42,7 +42,6 @@ from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:
-
     # RESONAATE Imports
     from resonaate.sensors.sensor_base import Sensor
 

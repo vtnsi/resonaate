@@ -349,7 +349,6 @@ class Scenario(ParallelMixin):
         KeyValueStore.setValue("target_agents", dumps(self.target_agents))
         KeyValueStore.setValue("sensor_agents", dumps(self.sensor_agents))
         if not self.scenario_config.propagation.truth_simulation_only:
-
             self._estimate_prediction_handler.executeJobs(
                 prior_julian_date=prior_jd,
                 julian_date=self.clock.julian_date_epoch,

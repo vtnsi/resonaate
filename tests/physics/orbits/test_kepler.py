@@ -45,9 +45,7 @@ ECC_CASES: tuple[float] = (0.4, 0.72, 0.72)
 ECC_ANOM_CASES: ndarray = deg2rad(
     [220.512074767522, rad2deg(0.24318719638), rad2deg(1.59249513093)]
 )
-KEPLER_EQN_TESTS: tuple[
-    float,
-] = tuple(zip(MEAN_ANOM_CASES, ECC_CASES, ECC_ANOM_CASES))
+KEPLER_EQN_TESTS: tuple[float] = tuple(zip(MEAN_ANOM_CASES, ECC_CASES, ECC_ANOM_CASES))
 
 # Testing circular orbit cases
 CIRCULAR_ANOM_CASES = (0, 90, 180, 360, -90, -270)

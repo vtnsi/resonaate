@@ -60,7 +60,6 @@ def days2mdh(year, day_of_year):
     item = 1
     int_temp = 0
     while (day_of_year_int > int_temp + days_in_month[item - 1]) & (item < 12):
-
         int_temp += days_in_month[item - 1]
         item += 1
 

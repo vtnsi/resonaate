@@ -49,7 +49,6 @@ class TestBaseEventClass:
         """Test to make sure a good child event doesn't throw any errors."""
 
         class TestChild(Event):
-
             __abstract__ = True
 
             EVENT_TYPE = "test_event"

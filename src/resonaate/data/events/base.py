@@ -13,7 +13,6 @@ from .. import Base, _DataMixin
 
 # Type Checking Import
 if TYPE_CHECKING:
-
     # Local Imports
     from ...scenario.config.event_configs import EventConfig
 
