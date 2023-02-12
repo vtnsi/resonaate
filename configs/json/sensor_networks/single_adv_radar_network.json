@@ -7,8 +7,8 @@
     },
     "state": {
       "type": "lla",
-      "latitude": 1.2281347875532986,
-      "longitude": 0.5432822498364406,
+      "latitude": 70.36694,
+      "longitude": 31.1277,
       "altitude": 0.063
     },
     "sensor": {
@@ -18,9 +18,9 @@
         [0.0, 0.0, 9.000000000000001e-8, 0.0],
         [0.0, 0.0, 0.0, 3.6100000000000005e-10]
       ],
-      "slew_rate": 0.05235987755982989,
-      "azimuth_range": [0.0, 6.283185132646661],
-      "elevation_range": [0.017453292519943295, 1.5533430342749532],
+      "slew_rate": 3.0,
+      "azimuth_range": [0.0, 359.9999],
+      "elevation_range": [1.0, 89.999],
       "efficiency": 0.9,
       "aperture_area": 572.5552611167398,
       "type": "adv_radar",
