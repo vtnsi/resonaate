@@ -125,6 +125,7 @@ ______________________________________________________________________
 - `checkSpaceSensorLightingConditions` had wrong sun unit vector (see #161)
 - unit test failures due to ZMQ errors in `mjolnir`, see (#159)
 - SqlAlchemy 2.0 failures due to old API, implemented interim fix
+- `MissedObservations` were instantiated with `reason` attributes as `Enum` objects rather than strings
 
 ### Security
 

@@ -14,7 +14,8 @@ import pytest
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.common.exceptions import ShapeError
-from resonaate.common.labels import FoVLabel
+from resonaate.common.labels import Explanation, FoVLabel
+from resonaate.data.observation import MissedObservation, Observation
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
@@ -373,10 +374,13 @@ def testIsVisible(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
 
 
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
-def testCollectObservationsInFoVNoBackground(
-    radar_sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+def testCollectObservations(
+    radar_sensor_args: dict,
+    mocked_sensing_agent: SensingAgent,
+    mocked_primary_target: TargetAgent,
+    monkeypatch: pytest.MonkeyPatch,
 ):
-    """Test that an RSO is in the FoV."""
+    """Test `Sensor.collectObservations`."""
     sensor = Radar(**radar_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.calculate_background = False
@@ -396,39 +400,35 @@ def testCollectObservationsInFoVNoBackground(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
+
+    # Test when target can be collected on
     good_obs, _ = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
     )
     assert len(good_obs) == 1
 
-
-@patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
-def testCollectObservationsNotInFoVNoBackground(
-    radar_sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
-):
-    """Test that an RSO is Not in the FoV."""
-    sensor = Radar(**radar_sensor_args)
-    sensor.host = mocked_sensing_agent
-    sensor.calculate_background = False
-    sensor.field_of_view = create_autospec(spec=FieldOfView, instance=True)
-    sensor.field_of_view.fov_shape = "conic"
-    sensor.field_of_view.cone_angle = np.pi
-    sensor.maximum_range = 100000
-
-    mocked_sensing_agent.sensors = sensor
-    mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
+    # Test when target is not in line of sight (Earth is blocking)
     mocked_sensing_agent.eci_state = np.array((0.0, -Earth.radius, 0.0, 0.0, 0.0, 0.0))
-    mocked_sensing_agent.time = ScenarioTime(300)
-    mocked_sensing_agent.sensor_time_bias_event_queue = []
-    mocked_sensing_agent.lla_state = np.array((0.0, 0.0, Earth.radius))
-    mocked_sensing_agent.julian_date_epoch = JulianDate(2459304.1701388885)
 
-    mocked_primary_target.eci_state = mocked_primary_target.initial_state
-    mocked_primary_target.visual_cross_section = 25.0
-    good_obs, _ = mocked_sensing_agent.sensors.collectObservations(
+    good_obs, missed_obs = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
     )
     assert not good_obs
+    for missed_ob in missed_obs:
+        assert missed_ob.reason == Explanation.LINE_OF_SIGHT.value
+
+    # Test when target is out of slew distance
+    def mock_can_slew(slant_range_sez):
+        # pylint: disable=unused-argument
+        return False
+
+    monkeypatch.setattr(sensor, "canSlew", mock_can_slew)
+    good_obs, missed_obs = mocked_sensing_agent.sensors.collectObservations(
+        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+    )
+    assert not good_obs
+    for missed_ob in missed_obs:
+        assert missed_ob.reason == Explanation.SLEW_DISTANCE.value
 
 
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
@@ -530,8 +530,44 @@ def testBuildSigmaObs():
     """To be implemented."""
 
 
-def testAttemptObservation():
-    """To be implemented."""
+def testAttemptObservation(
+    base_sensor_args: dict, mocked_sensing_agent: SensingAgent, monkeypatch: pytest.MonkeyPatch
+):
+    """Test that observations and missed observations are encoded correctly."""
+    # pylint: disable=too-many-statements
+    sensor = Sensor(**base_sensor_args)
+    # Requires self.host.eci_state to be set
+    sensor.host = mocked_sensing_agent
+    sensor.host.eci_state = np.array((6378.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    sensor.host.julian_date_epoch = JulianDate(2459569.75)
+    tgt_eci_state = np.array((7800.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+
+    def mock_slant_range(sensor_eci, target_eci, utc_date):
+        # pylint: disable=unused-argument
+        return np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 0 elevation
+
+    monkeypatch.setattr("resonaate.sensors.sensor_base.getSlantRangeVector", mock_slant_range)
+
+    # Test when target is outside elevation mask
+    sensor.el_mask = np.deg2rad(np.array((1.0, 89.0)))
+    missed_ob = sensor.attemptObservation(
+        tgt_id=123456,
+        tgt_eci_state=tgt_eci_state,
+        viz_cross_section=10.0,
+        reflectivity=10.0,
+    )
+    assert isinstance(missed_ob, MissedObservation)
+    assert missed_ob.reason == Explanation.ELEVATION_MASK.value
+
+    # Test when target is inside elevation mask
+    sensor.el_mask = np.deg2rad(np.array((0.0, 89.0)))
+    ob = sensor.attemptObservation(
+        tgt_id=123456,
+        tgt_eci_state=tgt_eci_state,
+        viz_cross_section=10.0,
+        reflectivity=10.0,
+    )
+    assert isinstance(ob, Observation)
 
 
 def testAttemptNoisyObservation():
