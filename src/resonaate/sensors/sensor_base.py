@@ -18,7 +18,7 @@ from ..physics import constants as const
 from ..physics.maths import subtendedAngle
 from ..physics.measurement_utils import getAzimuth, getElevation, getRange
 from ..physics.sensor_utils import lineOfSight
-from ..physics.time.stardate import ScenarioTime, julianDateToDatetime
+from ..physics.time.stardate import ScenarioTime
 from ..physics.transforms.methods import getSlantRangeVector
 
 if TYPE_CHECKING:
@@ -136,7 +136,7 @@ class Sensor:
         obs_list = []
         missed_observation_list = []
         # Check if sensor will slew to point in time
-        datetime_epoch = julianDateToDatetime(self.host.julian_date_epoch)
+        datetime_epoch = self.host.datetime_epoch
         slant_range_sez = getSlantRangeVector(self.host.eci_state, estimate_eci, datetime_epoch)
         if self.canSlew(slant_range_sez):
             # Check if primary RSO is FoV
@@ -155,7 +155,7 @@ class Sensor:
                         sensor_id=self.host.simulation_id,
                         target_id=target_agent.simulation_id,
                         sensor_eci=self.host.eci_state,
-                        reason=Explanation.FIELD_OF_VIEW,
+                        reason=Explanation.FIELD_OF_VIEW.value,
                     )
                 )
 
@@ -182,7 +182,7 @@ class Sensor:
                     sensor_id=self.host.simulation_id,
                     target_id=target_agent.simulation_id,
                     sensor_eci=self.host.eci_state,
-                    reason=Explanation.SLEW_DISTANCE,
+                    reason=Explanation.SLEW_DISTANCE.value,
                 )
             )
 
@@ -200,7 +200,7 @@ class Sensor:
         Returns:
             ``list``: list of all visible background `.TargetAgents` for this observation
         """
-        datetime_epoch = julianDateToDatetime(self.host.julian_date_epoch)
+        datetime_epoch = self.host.datetime_epoch
         # filter out targets outside of FOV
         agents_in_fov = list(
             filter(  # pylint:disable=bad-builtin
@@ -236,7 +236,7 @@ class Sensor:
         """
         # Calculate common values
         julian_date = self.host.julian_date_epoch
-        datetime_epoch = julianDateToDatetime(julian_date)
+        datetime_epoch = self.host.datetime_epoch
         slant_range_sez = getSlantRangeVector(self.host.eci_state, tgt_eci_state, datetime_epoch)
 
         # Construct observations
@@ -270,7 +270,7 @@ class Sensor:
             sensor_id=self.host.simulation_id,
             target_id=tgt_id,
             sensor_eci=self.host.eci_state,
-            reason=reason,
+            reason=reason.value,
         )
 
     def attemptNoisyObservation(
