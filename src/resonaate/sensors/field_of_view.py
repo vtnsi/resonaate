@@ -6,12 +6,18 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 # Local Imports
+from ..common.labels import FoVLabel
+from ..physics.constants import DEG2RAD
 from ..physics.maths import subtendedAngle
 from ..physics.measurements import getAzimuth, getElevation
 
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
+    from typing_extensions import Self
+
+    # Local Imports
+    from ..scenario.config.sensor_config import FieldOfViewConfig
 
 
 class FieldOfView(ABC):
@@ -33,6 +39,27 @@ class FieldOfView(ABC):
             ``bool``: True if `background_sez` state is within field of view of current pointing state
         """
         raise NotImplementedError
+
+    @classmethod
+    def fromConfig(cls, configuration: FieldOfViewConfig) -> Self:
+        """Field of View factory method.
+
+        Args:
+            configuration (:class:`.FieldOfViewConfig`): field of view config
+
+        Returns:
+            :class:`.FieldOfView`
+        """
+        if configuration.fov_shape == FoVLabel.CONIC:
+            return ConicFoV(configuration.cone_angle * DEG2RAD)
+
+        if configuration.fov_shape == FoVLabel.RECTANGULAR:
+            return RectangularFoV(
+                azimuth_angle=configuration.azimuth_angle * DEG2RAD,
+                elevation_angle=configuration.elevation_angle * DEG2RAD,
+            )
+
+        raise ValueError(f"wrong FoV shape: {configuration.fov_shape}")
 
 
 class ConicFoV(FieldOfView):

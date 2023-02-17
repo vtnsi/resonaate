@@ -2,20 +2,18 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from copy import copy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array
 
 # Local Imports
-from ..common.labels import FoVLabel, SensorLabel
-from ..physics import constants as const
-from .field_of_view import ConicFoV, FieldOfView, RectangularFoV
+from ..common.labels import SensorLabel
+from .field_of_view import FieldOfView
 
 if TYPE_CHECKING:
     # Local Imports
-    from ..scenario.config.sensor_config import FieldOfViewConfig, SensorConfig
+    from ..scenario.config.sensor_config import SensorConfig
     from .sensor_base import Sensor
 
 
@@ -47,7 +45,7 @@ def sensorFactory(sensor_config: SensorConfig) -> Sensor:
         "diameter": sensor_config.aperture_diameter,  # Assumes meters
         "efficiency": sensor_config.efficiency,
         "slew_rate": sensor_config.slew_rate,  # Assumes deg/sec
-        "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),
+        "field_of_view": FieldOfView.fromConfig(sensor_config.field_of_view),
         "background_observations": sensor_config.background_observations,
         "minimum_range": sensor_config.minimum_range,
         "maximum_range": sensor_config.maximum_range,
@@ -71,24 +69,3 @@ def sensorFactory(sensor_config: SensorConfig) -> Sensor:
         raise ValueError(f"Invalid sensor type provided to config: {sensor_config.type}")
 
     return sensor
-
-
-def fieldOfViewFactory(configuration: FieldOfViewConfig) -> FieldOfView:
-    """Field of View factory method.
-
-    Args:
-        configuration (:class:`.FieldOfViewConfig`): field of view config
-
-    Returns:
-        :class:`.FieldOfView`
-    """
-    if configuration.fov_shape == FoVLabel.CONIC:
-        return ConicFoV(configuration.cone_angle * const.DEG2RAD)
-
-    if configuration.fov_shape == FoVLabel.RECTANGULAR:
-        return RectangularFoV(
-            azimuth_angle=configuration.azimuth_angle * const.DEG2RAD,
-            elevation_angle=configuration.elevation_angle * const.DEG2RAD,
-        )
-
-    raise ValueError(f"wrong FoV shape: {configuration.fov_shape}")

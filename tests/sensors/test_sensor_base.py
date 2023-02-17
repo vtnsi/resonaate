@@ -20,7 +20,6 @@ from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
 from resonaate.scenario.config.sensor_config import FieldOfViewConfig
-from resonaate.sensors import fieldOfViewFactory
 from resonaate.sensors.field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from resonaate.sensors.radar import Radar
 from resonaate.sensors.sensor_base import Sensor
@@ -211,7 +210,7 @@ def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: Sensing
     # pylint: disable=abstract-class-instantiated
     sensor = Sensor(**base_sensor_args)
     conic_fov_config = FieldOfViewConfig(fov_shape=FoVLabel.CONIC, cone_angle=np.pi * RAD2DEG - 1)
-    sensor.field_of_view = fieldOfViewFactory(conic_fov_config)
+    sensor.field_of_view = FieldOfView.fromConfig(conic_fov_config)
     # Requires self.host.ecef_state to be set
     sensor.host = mocked_sensing_agent
     sensor.host.ecef_state = np.zeros(6)
