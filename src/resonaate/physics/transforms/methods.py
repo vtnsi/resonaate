@@ -269,7 +269,7 @@ def ecef2lla(x_ecef: ndarray) -> ndarray:
 
 
 def eci2lla(x_eci: ndarray, utc_date: datetime) -> ndarray:
-    """Convert an ECEF state vector to latitude, longitude, and altitude.
+    """Convert an ECI state vector to latitude, longitude, and altitude.
 
     Altitude is height above ellipsoid, and latitude is geodetic latitude.
 
@@ -281,6 +281,21 @@ def eci2lla(x_eci: ndarray, utc_date: datetime) -> ndarray:
         (``np.ndarray``): 3x1 of latitude, longitude, and altitude, (radians, radians, km)
     """
     return ecef2lla(eci2ecef(x_eci, utc_date))
+
+
+def lla2eci(x_lla: ndarray, utc_date: datetime) -> ndarray:
+    """Convert an LLA state vector to ECI.
+
+    Altitude is height above ellipsoid, and latitude is geodetic latitude.
+
+    Args:
+        x_lla (``np.ndarray``): 3x1 of latitude, longitude, and altitude, (radians, radians, km)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
+
+    Returns:
+        (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
+    """
+    return ecef2eci(lla2ecef(x_lla), utc_date)
 
 
 def rsw2eci(
