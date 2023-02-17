@@ -30,8 +30,8 @@ from resonaate.data.queries import (
 )
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.physics.constants import PI
+from resonaate.physics.measurements import Measurement
 from resonaate.physics.time.stardate import JulianDate
-from resonaate.sensors.measurement import Measurement
 
 # SET UP RSO AGENTS
 RSO_UNIQUE_IDS = [24601, 41914, 27839]

@@ -10,6 +10,7 @@ from scipy.linalg import norm
 # Local Imports
 from ..common.labels import Explanation, PlatformLabel
 from ..physics.bodies import Sun
+from ..physics.measurements import Measurement
 from ..physics.sensor_utils import (
     apparentVisualMagnitude,
     calculateIncidentSolarFlux,
@@ -20,7 +21,6 @@ from ..physics.sensor_utils import (
     checkSpaceSensorLightingConditions,
     lambertianPhaseFunction,
 )
-from .measurement import Measurement
 from .sensor_base import Sensor
 
 if TYPE_CHECKING:

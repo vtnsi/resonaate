@@ -12,7 +12,6 @@ from numpy import array
 from ..common.labels import FoVLabel, SensorLabel
 from ..physics import constants as const
 from .field_of_view import ConicFoV, FieldOfView, RectangularFoV
-from .measurement import MEASUREMENT_TYPE_MAP, Measurement
 
 if TYPE_CHECKING:
     # Local Imports

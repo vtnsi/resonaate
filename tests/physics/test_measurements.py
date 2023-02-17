@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from datetime import datetime
+import datetime
 from itertools import permutations
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -11,23 +11,84 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
+import resonaate.physics.constants as const
 from resonaate.common.exceptions import ShapeError
 from resonaate.data.observation import Observation
-from resonaate.physics.measurement_utils import IsAngle
-from resonaate.physics.transforms.methods import ecef2eci, lla2ecef, sez2eci
-from resonaate.sensors.measurement import (
+from resonaate.physics.measurements import (
     MEASUREMENT_TYPE_MAP,
     Azimuth,
     Elevation,
+    IsAngle,
     Measurement,
     MeasurementType,
     Range,
     RangeRate,
+    getAzimuth,
+    getAzimuthRate,
+    getElevation,
+    getElevationRate,
+    getRange,
+    getRangeRate,
 )
+from resonaate.physics.transforms.eops import EarthOrientationParameter
+from resonaate.physics.transforms.methods import ecef2eci, getSlantRangeVector, lla2ecef, sez2eci
+from resonaate.physics.transforms.reductions import updateReductionParameters
 
 if TYPE_CHECKING:
     # Standard Library Imports
     from unittest.mock import MagicMock
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+# Vallado example 4-1 (pg. 273), second part
+ECI: ndarray = np.array(
+    [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093]
+)
+TRUE_RNG: float = 11710.812
+TRUE_AZ: float = np.radians(210.8777747)
+TRUE_EL: float = np.radians(-5.9409535)
+TRUE_RNG_RT: float = 6.0842826
+TRUE_AZ_RT: float = np.radians(0.00384011466)
+TRUE_EL_RT: float = np.radians(0.01495847759)
+
+# Vallado example 4-1
+LLA: ndarray = np.array([np.radians(39.007), np.radians(-104.883), 2.19456])
+CALENDAR_DATE: datetime.datetime = datetime.datetime(1994, 5, 14, 13, 11, 20, 598560)
+
+# From celestrak.com for May 14, 1994
+# 1994 05 14 49486  0.189443  0.306064 -0.1279402  0.0021743 -0.016163 -0.008660  0.000187  0.000039  28
+EOP: EarthOrientationParameter = EarthOrientationParameter(
+    datetime.date(1994, 5, 14),
+    0,
+    0,
+    -0.016163 * const.ARCSEC2RAD,
+    -0.008660 * const.ARCSEC2RAD,
+    0,
+    0.0021743,
+    28,
+)
+
+
+@pytest.fixture(name="sez_state")
+def convertToSEZ() -> ndarray:
+    """Fixture to get properly converted SEZ observation vector."""
+    # pylint: disable=unused-argument
+    updateReductionParameters(CALENDAR_DATE, eops=EOP)
+    return getSlantRangeVector(ecef2eci(lla2ecef(LLA), CALENDAR_DATE), ECI, CALENDAR_DATE)
+
+
+def testMeasurements(sez_state: ndarray):
+    """Test measurements for az, el, range & their rates."""
+    assert np.isclose(TRUE_AZ, getAzimuth(sez_state))
+    assert np.isclose(TRUE_EL, getElevation(sez_state))
+    assert np.isclose(TRUE_RNG, getRange(sez_state))
+    assert np.isclose(TRUE_AZ_RT, getAzimuthRate(sez_state))
+    assert np.isclose(TRUE_EL_RT, getElevationRate(sez_state))
+    assert np.isclose(TRUE_RNG_RT, getRangeRate(sez_state))
+
 
 TEST_SEZ_STATE = np.array(
     [
@@ -40,14 +101,14 @@ TEST_SEZ_STATE = np.array(
     ]
 )
 TEST_SEN_LLA = np.array((0.4, -1.2, 0.4))
-TEST_DATETIME = datetime(2021, 6, 14, 5, 8, 22)
+TEST_DATETIME = datetime.datetime(2021, 6, 14, 5, 8, 22)
 TEST_SEN_ECI = ecef2eci(lla2ecef(TEST_SEN_LLA), TEST_DATETIME)
 TEST_TGT_ECI = (
     sez2eci(TEST_SEZ_STATE, TEST_SEN_LLA[0], TEST_SEN_LLA[1], TEST_DATETIME) + TEST_SEN_ECI
 )
 
 
-@patch("resonaate.sensors.measurement.getRange")
+@patch("resonaate.physics.measurements.getRange")
 def testRange(mocked_range_func: MagicMock) -> None:
     """Test range measurement type."""
     range_meas = Range()
@@ -57,7 +118,7 @@ def testRange(mocked_range_func: MagicMock) -> None:
     mocked_range_func.assert_called_once()
 
 
-@patch("resonaate.sensors.measurement.getRangeRate")
+@patch("resonaate.physics.measurements.getRangeRate")
 def testRangeRate(mocked_range_rate_func: MagicMock):
     """Test range rate measurement type."""
     range_rate_meas = RangeRate()
@@ -67,7 +128,7 @@ def testRangeRate(mocked_range_rate_func: MagicMock):
     mocked_range_rate_func.assert_called_once()
 
 
-@patch("resonaate.sensors.measurement.getAzimuth")
+@patch("resonaate.physics.measurements.getAzimuth")
 def testAzimuth(mocked_azimuth_func: MagicMock):
     """Test azimuth measurement type."""
     azimuth_meas = Azimuth()
@@ -77,7 +138,7 @@ def testAzimuth(mocked_azimuth_func: MagicMock):
     mocked_azimuth_func.assert_called_once()
 
 
-@patch("resonaate.sensors.measurement.getElevation")
+@patch("resonaate.physics.measurements.getElevation")
 def testElevation(mocked_elevation_func: MagicMock):
     """Test elevation measurement type."""
     elevation_meas = Elevation()

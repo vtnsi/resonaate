@@ -7,9 +7,8 @@ from typing import TYPE_CHECKING
 # Local Imports
 from ..common.labels import Explanation, FoVLabel
 from ..physics.constants import M2KM, PI, SPEED_OF_LIGHT
-from ..physics.measurement_utils import getRange
+from ..physics.measurements import Measurement, getRange
 from ..physics.sensor_utils import calculateRadarCrossSection
-from .measurement import Measurement
 from .sensor_base import Sensor
 
 if TYPE_CHECKING:

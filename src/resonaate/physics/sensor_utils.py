@@ -13,7 +13,7 @@ from .bodies import Earth
 from .bodies.third_body import Sun
 from .constants import DEG2RAD, M2KM, PI, SOLAR_FLUX, SPEED_OF_LIGHT
 from .maths import subtendedAngle
-from .measurement_utils import getElevation
+from .measurements import getElevation
 from .transforms.methods import spherical2cartesian
 
 if TYPE_CHECKING:

@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
-from resonaate.sensors.measurement import Measurement
+from resonaate.physics.measurements import Measurement
 
 
 @pytest.fixture(name="base_sensor_args")

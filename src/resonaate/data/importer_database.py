@@ -11,8 +11,8 @@ from sqlalchemy.orm import Query
 # Local Imports
 from ..common.logger import resonaateLogError
 from ..common.utilities import loadJSONFile
+from ..physics.measurements import Measurement
 from ..physics.time.stardate import JulianDate
-from ..sensors.measurement import Measurement
 from .agent import AgentModel
 from .data_interface import DataInterface
 from .ephemeris import TruthEphemeris

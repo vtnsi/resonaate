@@ -12,10 +12,9 @@ from sqlalchemy.orm import Query
 # RESONAATE Imports
 from resonaate.common.labels import SensorLabel
 from resonaate.data.observation import Observation
-from resonaate.physics.measurement_utils import IsAngle
+from resonaate.physics.measurements import IsAngle, Measurement
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
-from resonaate.sensors.measurement import Measurement
 
 # Type Checking Imports
 if TYPE_CHECKING:

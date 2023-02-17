@@ -16,7 +16,7 @@ from ..common.utilities import getTypeString
 from ..data.observation import MissedObservation, Observation
 from ..physics import constants as const
 from ..physics.maths import subtendedAngle
-from ..physics.measurement_utils import getAzimuth, getElevation, getRange
+from ..physics.measurements import getAzimuth, getElevation, getRange
 from ..physics.sensor_utils import lineOfSight
 from ..physics.time.stardate import ScenarioTime
 from ..physics.transforms.methods import getSlantRangeVector
@@ -28,8 +28,8 @@ if TYPE_CHECKING:
     # Local Imports
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
+    from ..physics.measurements import Measurement
     from .field_of_view import FieldOfView
-    from .measurement import Measurement
 
 DEFAULT_VIEWING_ANGLE: float = 1.0
 """``float``: default angle for a sensor's FoV, degrees."""

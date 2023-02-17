@@ -14,11 +14,11 @@ from resonaate.data.observation import Observation
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.estimation import initialOrbitDeterminationFactory
 from resonaate.estimation.initial_orbit_determination import LambertIOD
+from resonaate.physics.measurements import Measurement
 from resonaate.physics.orbit_determination.lambert import lambertUniversal
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.methods import ecef2eci, lla2ecef
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
-from resonaate.sensors.measurement import Measurement
 
 
 @pytest.fixture(name="observation")
@@ -181,7 +181,7 @@ class TestLambertInitialOrbitDetermination:
     def testDetermineNewEstimateState(
         self,
         observation: Observation,
-        caplog: pytest.CaptureFixture,
+        caplog: pytest.LogCaptureFixture,
         monkeypatch: pytest.MonkeyPatch,
         iod: LambertIOD,
     ):
