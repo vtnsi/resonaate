@@ -34,7 +34,7 @@ setuptools.setup(
             "flake8-builtins==2.1.0",
             "flake8-docstrings==1.6.0",
             "flake8-plugin-utils==1.3.2",
-            "flake8-pytest-style==1.6.0",
+            "flake8-pytest-style==1.7.2",
             "flake8-rst-docstrings==0.3.0",
             "pylint==2.15.10",
             # Type Checking
