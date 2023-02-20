@@ -62,7 +62,7 @@ setuptools.setup(
         ],
         "doc": [
             "sphinx==5.3.0",
-            "sphinx_rtd_theme==1.1.1",
+            "sphinx_rtd_theme==1.2.0",
             "myst-parser==0.18.1",
             "sphinx-copybutton==0.5.1",
             "sphinxcontrib-bibtex==2.5.0",
