@@ -39,7 +39,7 @@ setuptools.setup(
             "pylint==2.15.10",
             # Type Checking
             "mypy==0.991",
-            "types-sqlalchemy==1.4.53.24",
+            "types-sqlalchemy==1.4.53.29",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
             "black==22.12.0",
