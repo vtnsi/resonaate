@@ -21,6 +21,7 @@ from resonaate.physics.transforms.methods import (
     ecef2lla,
     eci2ecef,
     eci2razel,
+    eci2rsw,
     eci2sez,
     geocentric2geodetic,
     geodetic2geocentric,
@@ -156,6 +157,31 @@ class TestSatelliteFrames:
 
         assert np.allclose(
             rel_eci, np.concatenate([correct_pos, correct_vel], axis=0), atol=1e-9, rtol=1e-6
+        )
+
+    @pytest.mark.parametrize("elements", ORBITAL_ELEMENTS)
+    def testEci2Rsw(self, elements):
+        """Test rotation of ECI chaser state to RSW."""
+        orbit = ClassicalElements(*elements)
+        x_eci = orbit.toECI()
+        # Known transform using angles
+        eci2rsw_rot = np.linalg.multi_dot(
+            [
+                rot3(-1.0 * (orbit.argp + orbit.true_anomaly)).T,
+                rot1(-1.0 * orbit.inc).T,
+                rot3(-1.0 * orbit.raan).T,
+            ]
+        )
+        chaser_relative_eci_state = np.asarray([0.1, 0.2, -0.05, 0.00001, -0.00004, 0.000003])
+        chaser_rsw = eci2rsw(
+            target_eci=x_eci,
+            chaser_eci=x_eci + chaser_relative_eci_state,
+        )
+        correct_pos = eci2rsw_rot.dot(chaser_relative_eci_state[:3])
+        correct_vel = eci2rsw_rot.dot(chaser_relative_eci_state[3:])
+
+        assert np.allclose(
+            chaser_rsw, np.concatenate([correct_pos, correct_vel], axis=0), atol=1e-9, rtol=1e-6
         )
 
 

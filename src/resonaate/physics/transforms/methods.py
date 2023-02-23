@@ -366,19 +366,16 @@ def eci2rsw(
         cross(target_eci[:3], target_eci[3:])
     )
     s_hat: ndarray[float, float, float] = cross(w_hat, r_hat)
-    # Create the transformation matrix from ECI to RSW
+
     eci_2_rsw_rotation = array([r_hat, s_hat, w_hat])
-    delta_eci = array(target_eci - chaser_eci)
-    # Return the position and velocity vectors in the RSW reference frame
-    rsw_vector = concatenate(
+    delta_eci = array(chaser_eci - target_eci)
+    return concatenate(
         (
             matmul(eci_2_rsw_rotation, delta_eci[:3]),  # Convert position
             matmul(eci_2_rsw_rotation, delta_eci[3:]),  # Convert velocity
         ),
         axis=0,
     )
-    rsw_vector[0] = rsw_vector[0] * -1
-    return rsw_vector
 
 
 def ntw2eci(
