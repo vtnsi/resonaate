@@ -1099,7 +1099,7 @@ All `SensorConfig` types share several common fields.
         "azimuth_range": [float, float],          # Required
         "elevation_range": [float, float],        # Required
         "covariance": [[float, ...], ...],        # Required
-        "aperture_area": float,                   # Required
+        "aperture_diameter": float,               # Required
         "efficiency": float,                      # Required
         "slew_rate": float,                       # Required
         "background_observations": bool,          # Optional

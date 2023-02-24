@@ -19,7 +19,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964,
+      "aperture_diameter": 1.016,
       "field_of_view": { "fov_shape": "rectangular" }
     }
   }

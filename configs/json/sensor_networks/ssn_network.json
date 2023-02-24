@@ -16,7 +16,7 @@
       "azimuth_range": [119.99999999999999, 239.99999999999997],
       "elevation_range": [1.0, 89.99999],
       "efficiency": 0.95,
-      "aperture_area": 1963.4954084936207,
+      "aperture_diameter": 50.0,
       "tx_power": 35000000.0,
       "tx_frequency": 442000000.0,
       "min_detectable_power": 1.8879589456640846e-18
@@ -39,7 +39,7 @@
       "azimuth_range": [119.99999999999999, 239.99999999999997],
       "elevation_range": [1.0, 89.99999],
       "efficiency": 0.95,
-      "aperture_area": 1963.4954084936207,
+      "aperture_diameter": 50.0,
       "tx_power": 35000000.0,
       "tx_frequency": 442000000.0,
       "min_detectable_power": 5.0311404977095e-19
@@ -67,7 +67,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [1.0, 89.0],
       "efficiency": 0.9,
-      "aperture_area": 572.5552611167398,
+      "aperture_diameter": 27.0,
       "tx_power": 120000.0,
       "tx_frequency": 10000000000.0,
       "min_detectable_power": 1.4314085925969573e-14
@@ -88,7 +88,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -106,7 +106,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -124,7 +124,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -142,7 +142,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -160,7 +160,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -178,7 +178,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -196,7 +196,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -214,7 +214,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -232,7 +232,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
-      "aperture_area": 0.8107319665559964
+      "aperture_diameter": 1.016
     }
   },
   {
@@ -252,7 +252,7 @@
       "azimuth_range": [310.0, 69.99999],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 514.7185403641517,
+      "aperture_diameter": 25.6,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 6.115665268298432e-14
@@ -275,7 +275,7 @@
       "azimuth_range": [70.0, 189.99999],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 514.7185403641517,
+      "aperture_diameter": 25.6,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 6.115665268298432e-14
@@ -298,7 +298,7 @@
       "azimuth_range": [190.0, 309.99999],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 514.7185403641517,
+      "aperture_diameter": 25.6,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 6.115665268298432e-14
@@ -326,7 +326,7 @@
       "azimuth_range": [304.0, 64.0],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 706.8583470577034,
+      "aperture_diameter": 30.0,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 2.7510901402369937e-13
@@ -354,7 +354,7 @@
       "azimuth_range": [184.0, 304.0],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 706.8583470577034,
+      "aperture_diameter": 30.0,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 2.7510901402369937e-13
@@ -377,7 +377,7 @@
       "azimuth_range": [57.00000000000001, 177.0],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 514.7185403641517,
+      "aperture_diameter": 25.6,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 2.7510901402369937e-13
@@ -400,7 +400,7 @@
       "azimuth_range": [297.0, 57.00000000000001],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 514.7185403641517,
+      "aperture_diameter": 25.6,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 2.7510901402369937e-13
@@ -428,7 +428,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 56.74501730546564,
+      "aperture_diameter": 8.5,
       "tx_power": 3000000.0,
       "tx_frequency": 6000000000.0,
       "min_detectable_power": 1.7268757935476968e-11
@@ -451,7 +451,7 @@
       "azimuth_range": [347.0, 107.0],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 514.7185403641517,
+      "aperture_diameter": 25.6,
       "tx_power": 10000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 5.401420544223818e-15
@@ -474,7 +474,7 @@
       "azimuth_range": [107.0, 227.0],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 514.7185403641517,
+      "aperture_diameter": 25.6,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 5.401420544223818e-15
@@ -502,7 +502,7 @@
       "azimuth_range": [126.0, 246.00000000000003],
       "elevation_range": [1.0, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 380.132711084365,
+      "aperture_diameter": 22.0,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 5.401420544223818e-15
@@ -530,7 +530,7 @@
       "azimuth_range": [246.00000000000003, 6.000000000000001],
       "elevation_range": [1.0, 85.0],
       "efficiency": 0.95,
-      "aperture_area": 380.132711084365,
+      "aperture_diameter": 22.0,
       "tx_power": 15000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 5.401420544223818e-15
@@ -553,7 +553,7 @@
       "azimuth_range": [298.0, 78.0],
       "elevation_range": [1.9, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 706.8583470577034,
+      "aperture_diameter": 30.0,
       "tx_power": 715000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 1.4476803739585788e-16
@@ -576,7 +576,7 @@
       "azimuth_range": [251.0, 27.0],
       "elevation_range": [3.0000000000000004, 85.0],
       "efficiency": 0.9,
-      "aperture_area": 660.519855417254,
+      "aperture_diameter": 29.0,
       "tx_power": 14000000.0,
       "tx_frequency": 1500000000.0,
       "min_detectable_power": 1.1954373300571727e-14
@@ -599,7 +599,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [1.0, 89.99999],
       "efficiency": 0.95,
-      "aperture_area": 530.929158456675,
+      "aperture_diameter": 26.0,
       "tx_power": 2500000.0,
       "tx_frequency": 1500000000.0,
       "min_detectable_power": 3.5699513926877067e-19
@@ -627,7 +627,7 @@
       "azimuth_range": [0.0, 359.99999],
       "elevation_range": [1.0, 89.99999],
       "efficiency": 0.95,
-      "aperture_area": 1661.9025137490005,
+      "aperture_diameter": 46.0,
       "tx_power": 2500000.0,
       "tx_frequency": 440000000.0,
       "min_detectable_power": 2.5896788356879898e-20
@@ -650,7 +650,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 1052.0879637606859,
+      "aperture_diameter": 36.6,
       "tx_power": 250000.0,
       "tx_frequency": 10000000000.0,
       "min_detectable_power": 2.2112612410604566e-11
@@ -673,7 +673,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 116.89866264007618,
+      "aperture_diameter": 12.2,
       "tx_power": 50000.0,
       "tx_frequency": 16700000000.0,
       "min_detectable_power": 8.666721381036611e-13
@@ -696,7 +696,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 116.89866264007618,
+      "aperture_diameter": 12.2,
       "tx_power": 4000000.0,
       "tx_frequency": 5600000000.0,
       "min_detectable_power": 1.6386537777117765e-10
@@ -719,7 +719,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 1640.296210273937,
+      "aperture_diameter": 45.7,
       "tx_power": 6000000.0,
       "tx_frequency": 422000000.0,
       "min_detectable_power": 2.126130527585626e-17
@@ -742,7 +742,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 1640.296210273937,
+      "aperture_diameter": 45.7,
       "tx_power": 6000000.0,
       "tx_frequency": 160000000.0,
       "min_detectable_power": 2.126130527585626e-17
@@ -765,7 +765,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 615.7521601035994,
+      "aperture_diameter": 28.0,
       "tx_power": 60000.0,
       "tx_frequency": 35000000000.0,
       "min_detectable_power": 2.2268715552507622e-11
@@ -788,7 +788,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 572.5552611167398,
+      "aperture_diameter": 27.0,
       "tx_power": 145000.0,
       "tx_frequency": 1500000000.0,
       "min_detectable_power": 8.546361922142329e-14
@@ -809,7 +809,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.98,
-      "aperture_area": 10.17876019763093
+      "aperture_diameter": 3.6
     }
   },
   {
@@ -827,7 +827,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.98,
-      "aperture_area": 0.5026548245743669
+      "aperture_diameter": 0.8
     }
   },
   {
@@ -845,7 +845,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.98,
-      "aperture_area": 0.12566370614359174
+      "aperture_diameter": 0.4
     }
   },
   {
@@ -870,7 +870,7 @@
       "azimuth_range": [0.0, 359.9999],
       "elevation_range": [1.0, 89.9999],
       "efficiency": 0.95,
-      "aperture_area": 1963.4954084936207,
+      "aperture_diameter": 50.0,
       "tx_power": 32000000.0,
       "tx_frequency": 650000000.0,
       "min_detectable_power": 4.720897636212837e-18
