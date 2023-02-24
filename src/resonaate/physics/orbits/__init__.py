@@ -78,6 +78,7 @@ def check_ecc(func: Callable[..., float]) -> Callable[..., float]:
     Returns:
         Callable[..., float]: wrapped `anomaly` function that properly accounts for circular orbits.
     """
+
     # pylint: disable=invalid-name
     @wraps(func)
     def wrapper_check_ecc(anom, ecc, *args, **kwargs):
@@ -102,6 +103,7 @@ def wrap_anomaly(func: Callable[..., float]) -> Callable[..., float]:
     Returns:
         Callable[..., float]: wrapped `anomaly` function that properly converts its output.
     """
+
     # pylint: disable=invalid-name
     @wraps(func)
     def wrapper_wrap_angle_2pi(*args, **kwargs):

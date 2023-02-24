@@ -18,6 +18,7 @@ from ..conftest import FIXTURE_DATA_DIR
 
 def testGetTypeString():
     """Ensure proper type string is returned for parent & child classes."""
+
     # Dummy classes for testing type string
     class DummyClass1:
         pass
