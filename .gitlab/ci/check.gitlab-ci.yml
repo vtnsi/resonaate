@@ -36,7 +36,7 @@ pylint:
   before_script:
     # [NOTE]: pylint requires the package be installed
     - !reference [.pip-dev, before_script]
-    - !reference [.pip-test, before_script]
+    - python3 -m pip install .[test]
   script:
     - echo "Linting with pylint"
     - pylint *.py src docs | tee pylint.log
