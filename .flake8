@@ -8,13 +8,22 @@ extend-select = C,D,E,F,W,W504,B,B950,PT,RST
 # The rest are opinionated.
 
 extend-ignore =
-    E203,  # E203: whitespace before ':' - black
-    E266,  # E266: too many leading '#' for block comment
-    E501,  # E501: line too long - black
-    F401,  # F401: imported but unused - pylint
-    F841,  # F841: local variable is assigned to but never used - pylint
-    W503,  # W503: line break before binary operator - black
-    A003,  # A003: this is a false-positive case, and shouldn't be on by default
+    # E203: whitespace before ':' - black
+    E203,
+    # E266: too many leading '#' for block comment
+    E266,
+    # E501: line too long - black
+    E501,
+    # F401: imported but unused - pylint
+    F401,
+    # F841: local variable is assigned to but never used - pylint
+    F841,
+    # W503: line break before binary operator - black
+    W503,
+    # A003: this is a false-positive case, and shouldn't be on by default
+    A003,
+    # D202: no blank lines allowed after function docstring - black
+    D202
     # Google Python style is not RST until after processed by Napoleon
     # See https://github.com/peterjc/flake8-rst-docstrings/issues/17
     RST201,RST203,RST301,

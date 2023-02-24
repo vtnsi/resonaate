@@ -145,6 +145,7 @@ class TestResonaateDatabase:
 
     def testSessionScopeError(self, database: ResonaateDatabase):
         """Catches SQLAlchemy error during session scope usage."""
+
         # Define a new db object class
         class NewEpoch(declarative_base()):
             __tablename__ = "new_epochs"
@@ -190,6 +191,7 @@ class TestResonaateDatabase:
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testGetDataError(self, datafiles: str, ephem: TruthEphemeris, reset_shared_db: None):
         """Test getting a data object from the DB."""
+
         # Define a new db object class
         class NewEpoch(declarative_base()):
             __tablename__ = "new_epochs"
