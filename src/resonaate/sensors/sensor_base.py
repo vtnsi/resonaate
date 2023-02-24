@@ -73,7 +73,8 @@ class Sensor:
         self._el_mask = zeros_like(el_mask)
         self.az_mask = const.DEG2RAD * az_mask
         self.el_mask = const.DEG2RAD * el_mask
-        self.aperture_area = const.PI * ((diameter / 2.0) ** 2)
+        self.aperture_diameter = diameter
+        self.effective_aperture_area = const.PI * ((diameter / 2.0) ** 2)
         self.efficiency = efficiency
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view

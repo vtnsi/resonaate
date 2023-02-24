@@ -60,7 +60,8 @@ def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert base_sensor
     assert np.allclose(base_sensor.az_mask, np.deg2rad(base_sensor_args["az_mask"]))
     assert np.allclose(base_sensor.el_mask, np.deg2rad(base_sensor_args["el_mask"]))
-    assert np.isclose(base_sensor.aperture_area, np.pi * (base_sensor_args["diameter"] * 0.5) ** 2)
+    assert np.isclose(base_sensor.effective_aperture_area, np.pi * (base_sensor_args["diameter"] * 0.5) ** 2)
+    assert np.isclose(base_sensor.aperture_diameter, base_sensor_args["diameter"])
     assert np.isclose(base_sensor.slew_rate, np.deg2rad(base_sensor_args["slew_rate"]))
     assert base_sensor.field_of_view is not None
     assert base_sensor.time_last_ob >= 0.0
