@@ -240,9 +240,10 @@ def createFilterDebugDict(filter_obj, observations, truth_state, sensor_agents):
         dict: complete dictionary with relevant filter step information
     """
     # Save truth ECI state & filter constants
-    description = {}
-    description["truth_eci"] = truth_state.tolist()
-    description["q_matrix"] = filter_obj.q_matrix.tolist()
+    description = {
+        "truth_eci": truth_state.tolist(),
+        "q_matrix": filter_obj.q_matrix.tolist(),
+    }
     if getTypeString(filter_obj) == "UnscentedKalmanFilter":
         # pylint: disable=protected-access
         description.update(filter_obj.parameters)

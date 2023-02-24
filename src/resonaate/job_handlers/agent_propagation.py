@@ -159,8 +159,7 @@ class PropagationJobHandler(JobHandler):
         Returns:
             ``dict``: information about problem agent, for debugging purposes.
         """
-        data = {}
-        data["error"] = job.error
+        data = {"error": job.error}
         if getTypeString(registrant) in ("EstimateAgent", "TargetAgent"):
             data.update(
                 {
