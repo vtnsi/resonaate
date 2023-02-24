@@ -188,7 +188,7 @@ class BehavioralConfig:
                     getter = self._parser.getlist
 
                 else:
-                    raise Exception(
+                    raise KeyError(
                         f"Configuration item '{section}::{key}' lacks a type classification."
                     )
 

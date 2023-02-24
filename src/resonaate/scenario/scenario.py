@@ -44,7 +44,14 @@ if TYPE_CHECKING:
     from ..tasking.engine.engine_base import TaskingEngine
     from .clock import ScenarioClock
     from .config import ScenarioConfig
-    from .config.estimation_config import EstimationConfig
+
+
+class AgentAdditionError(Exception):
+    """Agent with the same ID already exists in the simulation."""
+
+
+class AgentRemovalError(Exception):
+    """Agent with the ID doesn't exist in the simulation."""
 
 
 def methdispatch(func: Callable) -> Callable:
@@ -440,7 +447,7 @@ class Scenario(ParallelMixin):
         """
         if target_spec.id in self.target_agents:
             err = f"Target '{target_spec.id} already exists in this scenario."
-            raise Exception(err)
+            raise AgentAdditionError(err)
 
         target_dynamics = dynamicsFactory(
             target_spec,
@@ -494,7 +501,7 @@ class Scenario(ParallelMixin):
         """
         if agent_id not in self.target_agents:
             err = f"Target '{agent_id} doesn't exist in this scenario."
-            raise Exception(err)
+            raise AgentRemovalError(err)
 
         self._agent_propagation_handler.deregisterCallback(agent_id)
         del self.target_agents[agent_id]
@@ -535,7 +542,7 @@ class Scenario(ParallelMixin):
         """
         if sensor_spec.id in self._sensor_agents:
             err = f"Sensor '{sensor_spec.id} already exists in this scenario."
-            raise Exception(err)
+            raise AgentAdditionError(err)
 
         dynamics = dynamicsFactory(
             sensor_spec,
@@ -565,7 +572,7 @@ class Scenario(ParallelMixin):
         """
         if agent_id not in self._sensor_agents:
             err = f"Sensor '{agent_id} doesn't exist in this scenario."
-            raise Exception(err)
+            raise AgentRemovalError(err)
 
         del self.sensor_agents[agent_id]
         self._tasking_engines[tasking_engine_id].removeSensor(agent_id)
