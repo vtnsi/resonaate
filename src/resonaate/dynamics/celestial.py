@@ -21,7 +21,7 @@ from .integration_events.finite_thrust import ScheduledFiniteThrust
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Callable
+    from collections.abc import Callable
 
     # Third Party Imports
     from numpy import ndarray

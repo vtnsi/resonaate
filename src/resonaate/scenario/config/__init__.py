@@ -23,7 +23,8 @@ from .time_config import TimeConfig
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Callable
+    from collections.abc import Callable
+    from typing import Any
 
 
 @dataclass

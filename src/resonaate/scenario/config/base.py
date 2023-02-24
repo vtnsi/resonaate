@@ -3,13 +3,14 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import MISSING, InitVar, dataclass, field, fields
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Type
+    from typing import Any
 
 
 class BaseConfigError(Exception, ABC):
@@ -144,7 +145,7 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
     config_label: str
     """``str``: Label that this configuration item falls under in the raw configuration dictionary."""
 
-    config_type: InitVar[Type[ConfigObject]]
+    config_type: InitVar[type[ConfigObject]]
     """``type``: type of the objects in this list.
 
     :meta private:
@@ -156,7 +157,7 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
     default_empty: bool = False
     """``bool``: whether this list is empty by default. If ``False``, this list is required to be populated."""
 
-    def __post_init__(self, config_type: Type[ConfigObject]) -> None:
+    def __post_init__(self, config_type: type[ConfigObject]) -> None:
         """Runs after the constructor has finished.
 
         Args:
@@ -173,7 +174,7 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
         self._config_objects = config_objects
 
     def _validateRawConfig(
-        self, raw_config: list[dict[str, Any]], config_type: Type[ConfigObject]
+        self, raw_config: list[dict[str, Any]], config_type: type[ConfigObject]
     ) -> None:
         """Raise exceptions if types of `raw_config` are wrong.
 

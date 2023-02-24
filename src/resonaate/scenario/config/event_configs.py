@@ -29,9 +29,6 @@ from .time_config import TIME_STAMP_FORMAT
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Type
-
     # Third Party Imports
     from numpy import ndarray
 
@@ -49,7 +46,7 @@ VALID_AGENT_TYPES: tuple[str] = tuple(_type.value for _type in AgentRemovalEvent
 class EventConfigList(ConfigObjectList):
     """Allows different types of :class:`.EventConfig` to be stored."""
 
-    def __post_init__(self, config_type: Type[ConfigObject]) -> None:
+    def __post_init__(self, config_type: type[ConfigObject]) -> None:
         """Runs after the object is initialized."""
         # [NOTE]: This can't call the super class `__post_init__()` because it has DIFFERENT class types
         #   which themselves have different constructors.

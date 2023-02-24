@@ -20,7 +20,8 @@ from .sequential_filter import FilterFlag, SequentialFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Callable
+    from collections.abc import Callable
+    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray

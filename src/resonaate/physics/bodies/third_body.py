@@ -74,12 +74,13 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from importlib import resources
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, NamedTuple, Union
+from typing import TYPE_CHECKING, NamedTuple, Union
 
 # Third Party Imports
 from numpy import array, load

@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import ndarray

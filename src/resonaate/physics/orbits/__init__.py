@@ -11,11 +11,16 @@ from __future__ import annotations
 
 # Standard Library Imports
 from functools import wraps
-from typing import Callable
+from typing import TYPE_CHECKING
 
 # Local Imports
 from .. import constants as const
 from ..maths import wrapAngle2Pi
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from collections.abc import Callable
 
 # Limits taken from Vallado AAS paper & verified to provide "constant" COEs across multiple orbits
 ECCENTRICITY_LIMIT = 1e-7
