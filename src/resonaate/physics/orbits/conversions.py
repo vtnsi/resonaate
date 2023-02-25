@@ -1,9 +1,6 @@
 """Defines conversion functions between various orbital element models."""
 from __future__ import annotations
 
-# Standard Library Imports
-from typing import Tuple
-
 # Third Party Imports
 from numpy import arccos, arctan2, array, concatenate, cos, ndarray, sin, sqrt, tan, vdot
 from scipy.linalg import norm
@@ -31,7 +28,7 @@ from .utils import (
     singularityCheck,
 )
 
-OrbitalElementTuple = Tuple[float, float, float, float, float, float]
+OrbitalElementTuple = tuple[float, float, float, float, float, float]
 
 
 def coe2eci(

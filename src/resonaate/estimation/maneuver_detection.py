@@ -4,7 +4,8 @@ from __future__ import annotations
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from collections import deque
-from typing import Any, Callable, Union
+from collections.abc import Callable
+from typing import Any, Union
 
 # Third Party Imports
 from numpy import ndarray

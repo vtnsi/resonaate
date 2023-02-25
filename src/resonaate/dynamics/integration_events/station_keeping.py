@@ -25,6 +25,10 @@ VALID_STATION_KEEPING_ROUTINES: tuple[str] = (
 )
 
 
+class StationKeepingError(Exception):
+    """Error with station-keeping algorithm."""
+
+
 class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
     """Abstract base class defining shared functionality for station keeping objects."""
 
@@ -218,7 +222,7 @@ class KeepGeoEastWest(StationKeeper):
             numpy.ndarray: (6, ) ECI burn vector of the satellite, (km, km/s)
         """
         if self.ntw_delta_v == 0.0:
-            raise Exception("No state change to apply.")
+            raise StationKeepingError("No state change to apply.")
 
         if self.ntw_delta_v > 0:
             direction = "West"
@@ -319,7 +323,7 @@ class KeepGeoNorthSouth(StationKeeper):
             numpy.ndarray: (6, ) ECI burn vector of the satellite, (km, km/s)
         """
         if self.ntw_delta_v == 0.0:
-            raise Exception("No state change to apply.")
+            raise StationKeepingError("No state change to apply.")
 
         if self.ntw_delta_v > 0:
             direction = "North"
@@ -408,7 +412,7 @@ class KeepLeoUp(StationKeeper):
             numpy.ndarray: (6, ) ECI burn vector of the satellite, (km, km/s)
         """
         if self.ntw_delta_v == 0.0:
-            raise Exception("No state change to apply.")
+            raise StationKeepingError("No state change to apply.")
 
         EventStack.pushEvent(EventRecord("Station Keep LEO Alt Incr", self._rso_id))
 

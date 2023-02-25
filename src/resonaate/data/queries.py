@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import Sequence
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import asc, distinct
@@ -15,6 +15,11 @@ from .agent import AgentModel
 from .data_interface import DataInterface
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .observation import Observation
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from collections.abc import Sequence
 
 
 def fetchAgentIDs(database: DataInterface) -> list[int]:

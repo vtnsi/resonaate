@@ -43,6 +43,7 @@ class ScheduledFiniteManeuverEvent(Event):
     # [NOTE]: Old-style type hints required until we either:
     #   1) Move to SQLAlchemy >= 2.0
     #   2) Move to Python >= 3.10
+    # pylint: disable=deprecated-typing-alias
     VALID_MANEUVER_TYPES: Tuple[str] = (MANEUVER_TYPE_SPIRAL, MANEUVER_TYPE_PLANE_CHANGE)
     """``tuple``: Valid values for :attr:`.maneuver_type`."""
 

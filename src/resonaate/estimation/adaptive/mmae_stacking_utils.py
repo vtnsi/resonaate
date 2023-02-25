@@ -9,7 +9,7 @@ from ...common.labels import StackingLabel
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Callable
+    from collections.abc import Callable
 
     # Third Party Imports
     from numpy import ndarray

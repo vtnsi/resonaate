@@ -59,6 +59,10 @@ load-plugins=
     pylint.extensions.confusing_elif,
     pylint.extensions.bad_builtin,
     pylint.extensions.check_elif,
+    pylint.extensions.dict_init_mutate,
+    pylint.extensions.typing,
+    pylint.extensions.dunder,
+    # pylint.extensions.magic_value,  # [TODO]: Turn this on later, there's a lot of hits
 
 # Set the output format. Available formats are text, parseable, colorized, json
 # and msvs (visual studio). You can also give a reporter class, e.g.
@@ -175,8 +179,8 @@ min-public-methods=2
 
 # Exceptions that will emit a warning when caught
 overgeneral-exceptions=
-    BaseException,
-    Exception,
+    builtins.BaseException,
+    builtins.Exception,
 
 
 [FORMAT]

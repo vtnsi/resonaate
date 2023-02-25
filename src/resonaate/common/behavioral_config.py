@@ -12,7 +12,8 @@ from typing import TYPE_CHECKING
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Callable
+    from collections.abc import Callable
+    from typing import Any
 
 
 class SubConfig:
@@ -187,7 +188,7 @@ class BehavioralConfig:
                     getter = self._parser.getlist
 
                 else:
-                    raise Exception(
+                    raise KeyError(
                         f"Configuration item '{section}::{key}' lacks a type classification."
                     )
 
