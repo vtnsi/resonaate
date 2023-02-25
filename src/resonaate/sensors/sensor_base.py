@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -24,18 +25,20 @@ from ..physics.transforms.methods import getSlantRangeVector
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
+    from typing_extensions import Self
 
     # Local Imports
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from ..physics.measurements import Measurement
+    from ..scenario.config.sensor_config import SensorConfig
     from .field_of_view import FieldOfView
 
 DEFAULT_VIEWING_ANGLE: float = 1.0
 """``float``: default angle for a sensor's FoV, degrees."""
 
 
-class Sensor:
+class Sensor(ABC):
     """Abstract base class for a generic Sensor object."""
 
     def __init__(
@@ -88,6 +91,19 @@ class Sensor:
         self.boresight = self._setInitialBoresight()
         self._host = None
         self._sensor_args = sensor_args
+
+    @classmethod
+    @abstractmethod
+    def fromConfig(cls, sensor_config: SensorConfig, field_of_view: FieldOfView) -> Self:
+        """Alternative constructor for sensors by using config object.
+
+        Args:
+            sensor_config (SensorConfig): sensor configuration object.
+
+        Returns:
+            Self: constructed concrete sensor object.
+        """
+        raise NotImplementedError
 
     @property
     def angle_measurements(self) -> ndarray:

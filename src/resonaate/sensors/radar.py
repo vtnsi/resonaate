@@ -4,6 +4,9 @@ from __future__ import annotations
 # Standard Library Imports
 from typing import TYPE_CHECKING
 
+# Third Party Imports
+from numpy import array
+
 # Local Imports
 from ..common.labels import Explanation, FoVLabel
 from ..physics.constants import M2KM, PI, SPEED_OF_LIGHT
@@ -17,9 +20,11 @@ if TYPE_CHECKING:
 
     # Third Party Imports
     from numpy import ndarray
+    from typing_extensions import Self
 
     # Local Imports
-    from . import FieldOfView
+    from ..scenario.config.sensor_config import RadarConfig
+    from .field_of_view import FieldOfView
 
 
 RADAR_DEFAULT_FOV: dict[str, Any] = {
@@ -106,6 +111,32 @@ class Radar(Sensor):
 
         # Calculate maximum auxiliary range
         self.max_range_aux = self._maximumDetectableRange(diameter, min_detectable_power)
+
+    @classmethod
+    def fromConfig(cls, sensor_config: RadarConfig, field_of_view: FieldOfView) -> Self:
+        """Alternative constructor for radar sensors by using config object.
+
+        Args:
+            sensor_config (RadarConfig): radar sensor configuration object.
+
+        Returns:
+            Self: constructed radar sensor object.
+        """
+        return cls(
+            az_mask=array(sensor_config.azimuth_range),
+            el_mask=array(sensor_config.elevation_range),
+            r_matrix=array(sensor_config.covariance),
+            diameter=sensor_config.aperture_diameter,
+            efficiency=sensor_config.efficiency,
+            slew_rate=sensor_config.slew_rate,
+            field_of_view=field_of_view,
+            background_observations=sensor_config.background_observations,
+            minimum_range=sensor_config.minimum_range,
+            maximum_range=sensor_config.maximum_range,
+            tx_power=sensor_config.tx_power,
+            tx_frequency=sensor_config.tx_frequency,
+            min_detectable_power=sensor_config.min_detectable_power,
+        )
 
     def _maximumDetectableRange(self, diameter: float, min_detect_power: float) -> float:
         """Calculate the auxiliary maximum range for a detection.

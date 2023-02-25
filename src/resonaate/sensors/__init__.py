@@ -4,12 +4,12 @@ from __future__ import annotations
 # Standard Library Imports
 from typing import TYPE_CHECKING
 
-# Third Party Imports
-from numpy import array
-
 # Local Imports
 from ..common.labels import SensorLabel
+from .advanced_radar import AdvRadar
 from .field_of_view import FieldOfView
+from .optical import Optical
+from .radar import Radar
 
 if TYPE_CHECKING:
     # Local Imports
@@ -29,42 +29,13 @@ def sensorFactory(sensor_config: SensorConfig) -> Sensor:
     Returns:
         :class:`.Sensor`: properly constructed `Sensor` object
     """
-    # pylint: disable=import-outside-toplevel
-    # [FIXME]: This shouldn't be necessary. Either move Measurement to diff package or
-    #   move this factory method into the base class or a fromConfig?
-    # Local Imports
-    from .advanced_radar import AdvRadar
-    from .optical import Optical
-    from .radar import Radar
-
-    # Build generic sensor kwargs
-    sensor_args = {
-        "az_mask": array(sensor_config.azimuth_range),  # Assumes degrees
-        "el_mask": array(sensor_config.elevation_range),  # Assumes degrees
-        "r_matrix": array(sensor_config.covariance),
-        "diameter": sensor_config.aperture_diameter,  # Assumes meters
-        "efficiency": sensor_config.efficiency,
-        "slew_rate": sensor_config.slew_rate,  # Assumes deg/sec
-        "field_of_view": FieldOfView.fromConfig(sensor_config.field_of_view),
-        "background_observations": sensor_config.background_observations,
-        "minimum_range": sensor_config.minimum_range,
-        "maximum_range": sensor_config.maximum_range,
-    }
-
-    # Instantiate sensor object. Add extra params if needed
+    fov = FieldOfView.fromConfig(sensor_config.field_of_view)
     if sensor_config.type == SensorLabel.OPTICAL:
-        sensor_args["detectable_vismag"] = sensor_config.detectable_vismag
-        sensor = Optical(**sensor_args)
+        sensor = Optical.fromConfig(sensor_config, fov)
     elif sensor_config.type == SensorLabel.RADAR:
-        sensor_args["tx_power"] = sensor_config.tx_power
-        sensor_args["tx_frequency"] = sensor_config.tx_frequency
-        sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
-        sensor = Radar(**sensor_args)
+        sensor = Radar.fromConfig(sensor_config, fov)
     elif sensor_config.type == SensorLabel.ADV_RADAR:
-        sensor_args["tx_power"] = sensor_config.tx_power
-        sensor_args["tx_frequency"] = sensor_config.tx_frequency
-        sensor_args["min_detectable_power"] = sensor_config.min_detectable_power
-        sensor = AdvRadar(**sensor_args)
+        sensor = AdvRadar.fromConfig(sensor_config, fov)
     else:
         raise ValueError(f"Invalid sensor type provided to config: {sensor_config.type}")
 

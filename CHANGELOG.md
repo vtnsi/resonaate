@@ -96,6 +96,8 @@ ______________________________________________________________________
 - refactored `ScenarioBuilder` construction into several smaller methods (see #38 and !169)
 - changed sensor config `aperture_area` parameter to `aperture_diameter` (see !185)
 - renamed sensor attribute `aperture_area` to `effective_aperture_area`
+- moved `sensors.measurement` to `physics.measurements` and combined with `physics.measurement_utls` (see #176 and !186)
+- moved `FieldOfView` & `Sensor` factories into respective `fromConfig()` methods (see #176 and !186)
 
 ### Deprecated
 
