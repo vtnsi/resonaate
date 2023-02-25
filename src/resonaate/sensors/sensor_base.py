@@ -89,7 +89,7 @@ class Sensor(ABC):
         self.time_last_ob = ScenarioTime(0.0)
         self.delta_boresight = 0.0
         self.boresight = self._setInitialBoresight()
-        self._host = None
+        self._host: SensingAgent | None = None
         self._sensor_args = sensor_args
 
     @classmethod
@@ -117,7 +117,7 @@ class Sensor(ABC):
         Returns:
             ``ndarray``: integer array defining angular measurements
         """
-        return self._measurement.angular_values
+        return array(self._measurement.angular_values)
 
     def _setInitialBoresight(self) -> ndarray:
         """Determine the initial boresight vector as the center of the field of regard."""
@@ -206,7 +206,7 @@ class Sensor(ABC):
         return obs_list, missed_observation_list
 
     def checkTargetsInView(
-        self, slant_range_sez: float, background_agents: list[TargetAgent]
+        self, slant_range_sez: ndarray, background_agents: list[TargetAgent]
     ) -> list[TargetAgent]:
         """Perform bulk FOV check on all RSOs.
 
@@ -454,6 +454,9 @@ class Sensor(ABC):
     @property
     def host(self) -> SensingAgent:
         r""":class:`.SensingAgent`: Returns reference to agent that contains this sensor."""
+
+        if self._host is None:
+            raise ValueError("SensingAgent.host was not (or was incorrectly) initialized")
         return self._host
 
     @host.setter

@@ -68,7 +68,12 @@ def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert base_sensor.field_of_view is not None
     assert base_sensor.time_last_ob >= 0.0
     assert base_sensor.delta_boresight == 0.0
-    assert base_sensor.host is None
+
+    # Should raise an error b/c not set
+    match = r"SensingAgent.host was not \(or was incorrectly\) initialized"
+    with pytest.raises(ValueError, match=match):
+        _ = base_sensor.host
+
     init_boresight = np.array(
         [
             np.cos(np.deg2rad(45)) * np.cos(np.deg2rad(180)),
