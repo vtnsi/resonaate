@@ -96,8 +96,8 @@ class SensorAdditionEvent(Event):
     covariance_json = Column(String(128))
     """``str``: JSON serialized covariance array."""
 
-    aperture_area = Column(Float)
-    """``float``: Size (meters^2) of the sensor."""
+    aperture_diameter = Column(Float)
+    """``float``: Effective diameter (meters) of the sensor."""
 
     efficiency = Column(Float)
     """``float``: Efficiency percentage of the sensor."""
@@ -170,7 +170,7 @@ class SensorAdditionEvent(Event):
         "elevation_min",
         "elevation_max",
         "covariance_json",
-        "aperture_area",
+        "aperture_diameter",
         "efficiency",
         "slew_rate",
         "sensor_type",
@@ -256,7 +256,7 @@ class SensorAdditionEvent(Event):
                 "azimuth_range": self.azimuth_range,
                 "elevation_range": self.elevation_range,
                 "covariance": self.covariance,
-                "aperture_area": self.aperture_area,
+                "aperture_diameter": self.aperture_diameter,
                 "efficiency": self.efficiency,
                 "slew_rate": self.slew_rate,
                 "field_of_view": self.field_of_view,
@@ -331,7 +331,7 @@ class SensorAdditionEvent(Event):
             elevation_min=sensor.elevation_range[0],
             elevation_max=sensor.elevation_range[1],
             covariance_json=dumps(sensor.covariance),
-            aperture_area=sensor.aperture_area,
+            aperture_diameter=sensor.aperture_diameter,
             efficiency=sensor.efficiency,
             slew_rate=sensor.slew_rate,
             sensor_type=sensor.type,

@@ -93,7 +93,7 @@ def getSensorDict() -> dict:
         "azimuth_range": (0.0, 360.0),
         "elevation_range": (0.0, 90.0),
         "covariance": [[2.0, 0.0], [0.0, 3.0]],
-        "aperture_area": 21.0,
+        "aperture_diameter": 5.170882945826411,
         "efficiency": 0.98,
         "slew_rate": 10.0,
     }

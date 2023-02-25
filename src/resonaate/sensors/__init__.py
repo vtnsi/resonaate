@@ -6,7 +6,7 @@ from copy import copy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, sqrt
+from numpy import array
 
 # Local Imports
 from ..common.labels import FoVLabel, SensorLabel
@@ -45,7 +45,7 @@ def sensorFactory(sensor_config: SensorConfig) -> Sensor:
         "az_mask": array(sensor_config.azimuth_range),  # Assumes degrees
         "el_mask": array(sensor_config.elevation_range),  # Assumes degrees
         "r_matrix": array(sensor_config.covariance),
-        "diameter": sqrt(sensor_config.aperture_area / const.PI) * 2.0,  # Assumes meters^2
+        "diameter": sensor_config.aperture_diameter,  # Assumes meters
         "efficiency": sensor_config.efficiency,
         "slew_rate": sensor_config.slew_rate,  # Assumes deg/sec
         "field_of_view": fieldOfViewFactory(sensor_config.field_of_view),

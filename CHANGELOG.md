@@ -94,6 +94,8 @@ ______________________________________________________________________
 - `SensorAdditionEvent` & `TargetAdditionEvent` attributes `sensor` & `target` to `sensor_agent` & `target_agent` (see !163)
 - Removed usages of `Optional` and `Union` in type hints to support Python 3.9 (see #172 and !168)
 - refactored `ScenarioBuilder` construction into several smaller methods (see #38 and !169)
+- changed sensor config `aperture_area` parameter to `aperture_diameter` (see !185)
+- renamed sensor attribute `aperture_area` to `effective_aperture_area`
 
 ### Deprecated
 

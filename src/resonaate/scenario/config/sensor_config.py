@@ -68,8 +68,8 @@ class SensorConfig(ConfigObject):
     where :math:`R \succ 0`.
     """
 
-    aperture_area: float
-    R"""``float``: effective aperture area of the sensor, :math:`\textrm{m}^2`."""
+    aperture_diameter: float
+    R"""``float``: effective aperture diameter of the sensor, :math:`\textrm{m}`."""
 
     efficiency: float
     R"""``float``: sensor measurement efficiency, unit-less."""

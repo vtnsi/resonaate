@@ -43,7 +43,7 @@ SENSOR_CONFIG = {
         "azimuth_range": [0.0, 360.0],
         "elevation_range": [5.0, 89.9999],
         "efficiency": 0.95,
-        "aperture_area": 530.929158456675,
+        "aperture_diameter": 26.0,
         "type": "radar",
         "background_observations": True,
         "tx_power": 2.5e6,

@@ -434,7 +434,7 @@ class TestEventIntegration:
                 "azimuth_range": [0.0, 6.283185132646661],
                 "elevation_range": [-1.5707961522619713, 1.5707961522619713],
                 "efficiency": 0.99,
-                "aperture_area": 0.19634954084936207,
+                "aperture_diameter": 0.5,
                 "field_of_view": {
                     "fov_shape": "conic",
                 },
