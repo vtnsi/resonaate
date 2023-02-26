@@ -54,7 +54,7 @@ setuptools.setup(
         ],
         "test": [
             "pytest==7.2.1",
-            "pytest-datafiles==2.0.1",
+            "pytest-datafiles==3.0.0",
             "pytest-randomly==3.12.0",
             "coverage[toml]==7.0.4; python_version < '3.11'",
             "coverage==7.1.0; python_version >= '3.11'",
