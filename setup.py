@@ -66,7 +66,7 @@ setuptools.setup(
             "myst-parser==0.18.1",
             "sphinx-copybutton==0.5.1",
             "sphinxcontrib-bibtex==2.5.0",
-            "sphinxcontrib-mermaid==0.8",
+            "sphinxcontrib-mermaid==0.8.1",
             "sphinx-gallery==0.11.1",
             "importlib-metadata==4.11.3; python_version < '3.10'",
         ],
