@@ -29,7 +29,7 @@ The minimum OS versions officially supported:
 
 RESONAATE requires the following items to be present on a system:
 
-- Python >= 3.7
+- Python >= 3.8
 
 ### RESONAATE Dependencies
 
