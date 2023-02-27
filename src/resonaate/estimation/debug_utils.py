@@ -21,7 +21,7 @@ from ..data.ephemeris import TruthEphemeris
 from ..data.query_util import addAlmostEqualFilter
 from ..data.resonaate_database import ResonaateDatabase
 from ..physics.maths import nearestPD
-from ..physics.measurement_utils import getAzimuth, getElevation, getRange, getRangeRate
+from ..physics.measurements import getAzimuth, getElevation, getRange, getRangeRate
 from ..physics.time.stardate import julianDateToDatetime
 from ..physics.transforms.methods import ecef2sez, eci2ecef
 

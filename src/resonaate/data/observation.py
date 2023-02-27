@@ -11,8 +11,8 @@ from sqlalchemy.orm import relationship
 
 # Local Imports
 from ..common.labels import Explanation
+from ..physics.measurements import MEASUREMENT_TYPE_MAP, Measurement
 from ..physics.time.stardate import JulianDate, julianDateToDatetime
-from ..sensors import MEASUREMENT_TYPE_MAP, Measurement
 from . import Base, _DataMixin
 
 # Type Checking Imports
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     # Local Imports
-    from ..physics.measurement_utils import IsAngle
+    from ..physics.measurements import IsAngle
 
 
 VALID_MEASUREMENTS = tuple(MEASUREMENT_TYPE_MAP.keys())

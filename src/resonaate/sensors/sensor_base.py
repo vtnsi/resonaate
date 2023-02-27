@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -16,7 +17,7 @@ from ..common.utilities import getTypeString
 from ..data.observation import MissedObservation, Observation
 from ..physics import constants as const
 from ..physics.maths import subtendedAngle
-from ..physics.measurement_utils import getAzimuth, getElevation, getRange
+from ..physics.measurements import getAzimuth, getElevation, getRange
 from ..physics.sensor_utils import lineOfSight
 from ..physics.time.stardate import ScenarioTime
 from ..physics.transforms.methods import getSlantRangeVector
@@ -24,18 +25,20 @@ from ..physics.transforms.methods import getSlantRangeVector
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
+    from typing_extensions import Self
 
     # Local Imports
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
+    from ..physics.measurements import Measurement
+    from ..scenario.config.sensor_config import SensorConfig
     from .field_of_view import FieldOfView
-    from .measurement import Measurement
 
 DEFAULT_VIEWING_ANGLE: float = 1.0
 """``float``: default angle for a sensor's FoV, degrees."""
 
 
-class Sensor:
+class Sensor(ABC):
     """Abstract base class for a generic Sensor object."""
 
     def __init__(
@@ -86,8 +89,21 @@ class Sensor:
         self.time_last_ob = ScenarioTime(0.0)
         self.delta_boresight = 0.0
         self.boresight = self._setInitialBoresight()
-        self._host = None
+        self._host: SensingAgent | None = None
         self._sensor_args = sensor_args
+
+    @classmethod
+    @abstractmethod
+    def fromConfig(cls, sensor_config: SensorConfig, field_of_view: FieldOfView) -> Self:
+        """Alternative constructor for sensors by using config object.
+
+        Args:
+            sensor_config (SensorConfig): sensor configuration object.
+
+        Returns:
+            Self: constructed concrete sensor object.
+        """
+        raise NotImplementedError
 
     @property
     def angle_measurements(self) -> ndarray:
@@ -101,7 +117,7 @@ class Sensor:
         Returns:
             ``ndarray``: integer array defining angular measurements
         """
-        return self._measurement.angular_values
+        return array(self._measurement.angular_values)
 
     def _setInitialBoresight(self) -> ndarray:
         """Determine the initial boresight vector as the center of the field of regard."""
@@ -190,7 +206,7 @@ class Sensor:
         return obs_list, missed_observation_list
 
     def checkTargetsInView(
-        self, slant_range_sez: float, background_agents: list[TargetAgent]
+        self, slant_range_sez: ndarray, background_agents: list[TargetAgent]
     ) -> list[TargetAgent]:
         """Perform bulk FOV check on all RSOs.
 
@@ -438,6 +454,9 @@ class Sensor:
     @property
     def host(self) -> SensingAgent:
         r""":class:`.SensingAgent`: Returns reference to agent that contains this sensor."""
+
+        if self._host is None:
+            raise ValueError("SensingAgent.host was not (or was incorrectly) initialized")
         return self._host
 
     @host.setter

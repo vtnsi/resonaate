@@ -13,7 +13,7 @@ from resonaate.scenario.config.agent_config import SensingAgentConfig
 from resonaate.scenario.config.platform_config import PlatformConfig
 from resonaate.scenario.config.sensor_config import FieldOfViewConfig
 from resonaate.scenario.config.state_config import StateConfig
-from resonaate.sensors import fieldOfViewFactory, sensorFactory
+from resonaate.sensors import FieldOfView, sensorFactory
 from resonaate.sensors.advanced_radar import AdvRadar
 from resonaate.sensors.optical import Optical
 from resonaate.sensors.radar import Radar
@@ -129,14 +129,14 @@ def getOpticalAgentConfig(
 
 def testFOVFactory(fov_conic: FieldOfViewConfig, fov_rect: FieldOfViewConfig) -> None:
     """Test the FOV factory function."""
-    assert fieldOfViewFactory(fov_conic)
-    assert fieldOfViewFactory(fov_rect)
+    assert FieldOfView.fromConfig(fov_conic)
+    assert FieldOfView.fromConfig(fov_rect)
 
     bad_fov_config = deepcopy(fov_conic)
     bad_fov_config.fov_shape = "Bad FOV Type"
     err_match = f"wrong FoV shape: {bad_fov_config.fov_shape}"
     with pytest.raises(ValueError, match=err_match):
-        fieldOfViewFactory(bad_fov_config)
+        FieldOfView.fromConfig(bad_fov_config)
 
 
 def testSensorFactory(

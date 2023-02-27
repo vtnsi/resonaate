@@ -12,7 +12,7 @@ from scipy.linalg import block_diag
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
 from ...physics.maths import angularMean, wrapAngleNegPiPi
-from ...physics.measurement_utils import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
+from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ...physics.statistics import chiSquareQuadraticForm
 from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ..debug_utils import findNearestPositiveDefiniteMatrix

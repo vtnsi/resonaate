@@ -5,11 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+from numpy import array
 from scipy.linalg import norm
 
 # Local Imports
 from ..common.labels import Explanation, PlatformLabel
 from ..physics.bodies import Sun
+from ..physics.measurements import Measurement
 from ..physics.sensor_utils import (
     apparentVisualMagnitude,
     calculateIncidentSolarFlux,
@@ -20,7 +22,6 @@ from ..physics.sensor_utils import (
     checkSpaceSensorLightingConditions,
     lambertianPhaseFunction,
 )
-from .measurement import Measurement
 from .sensor_base import Sensor
 
 if TYPE_CHECKING:
@@ -29,9 +30,11 @@ if TYPE_CHECKING:
 
     # Third Party Imports
     from numpy import ndarray
+    from typing_extensions import Self
 
     # Local Imports
-    from . import FieldOfView
+    from ..scenario.config.sensor_config import OpticalConfig
+    from .field_of_view import FieldOfView
 
 
 OPTICAL_DETECTABLE_VISMAG: float = 25.0
@@ -42,7 +45,7 @@ OPTICAL_DEFAULT_FOV: dict[str, Any] = {
     "azimuth_angle": 1.0,
     "elevation_angle": 1.0,
 }
-"""``dict``: Default Field of View (rectangular)of an optical sensor, degrees."""
+"""``dict``: Default Field of View (rectangular) of an optical sensor, degrees."""
 
 
 class Optical(Sensor):
@@ -106,6 +109,30 @@ class Optical(Sensor):
         )
 
         self.detectable_vismag = detectable_vismag
+
+    @classmethod
+    def fromConfig(cls, sensor_config: OpticalConfig, field_of_view: FieldOfView) -> Self:
+        """Alternative constructor for optical sensors by using config object.
+
+        Args:
+            sensor_config (OpticalConfig): optical sensor configuration object.
+
+        Returns:
+            Self: constructed optical sensor object.
+        """
+        return cls(
+            az_mask=array(sensor_config.azimuth_range),
+            el_mask=array(sensor_config.elevation_range),
+            r_matrix=array(sensor_config.covariance),
+            diameter=sensor_config.aperture_diameter,
+            efficiency=sensor_config.efficiency,
+            slew_rate=sensor_config.slew_rate,
+            field_of_view=field_of_view,
+            background_observations=sensor_config.background_observations,
+            minimum_range=sensor_config.minimum_range,
+            maximum_range=sensor_config.maximum_range,
+            detectable_vismag=sensor_config.detectable_vismag,
+        )
 
     def isVisible(
         self,

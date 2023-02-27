@@ -20,7 +20,6 @@ from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
 from resonaate.scenario.config.sensor_config import FieldOfViewConfig
-from resonaate.sensors import fieldOfViewFactory
 from resonaate.sensors.field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from resonaate.sensors.radar import Radar
 from resonaate.sensors.sensor_base import Sensor
@@ -54,19 +53,27 @@ def getBackgroundTargetAgent() -> TargetAgent:
     return background_target
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test initializing Sensor base class."""
     base_sensor = Sensor(**base_sensor_args)
     assert base_sensor
     assert np.allclose(base_sensor.az_mask, np.deg2rad(base_sensor_args["az_mask"]))
     assert np.allclose(base_sensor.el_mask, np.deg2rad(base_sensor_args["el_mask"]))
-    assert np.isclose(base_sensor.effective_aperture_area, np.pi * (base_sensor_args["diameter"] * 0.5) ** 2)
+    assert np.isclose(
+        base_sensor.effective_aperture_area, np.pi * (base_sensor_args["diameter"] * 0.5) ** 2
+    )
     assert np.isclose(base_sensor.aperture_diameter, base_sensor_args["diameter"])
     assert np.isclose(base_sensor.slew_rate, np.deg2rad(base_sensor_args["slew_rate"]))
     assert base_sensor.field_of_view is not None
     assert base_sensor.time_last_ob >= 0.0
     assert base_sensor.delta_boresight == 0.0
-    assert base_sensor.host is None
+
+    # Should raise an error b/c not set
+    match = r"SensingAgent.host was not \(or was incorrectly\) initialized"
+    with pytest.raises(ValueError, match=match):
+        _ = base_sensor.host
+
     init_boresight = np.array(
         [
             np.cos(np.deg2rad(45)) * np.cos(np.deg2rad(180)),
@@ -81,6 +88,7 @@ def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert base_sensor.time_last_ob > 0.0
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testSensorInitAzElMask(base_sensor_args: dict):
     """Test edge case values for the az/el mask."""
     sen_args = deepcopy(base_sensor_args)
@@ -102,6 +110,7 @@ def testSensorInitAzElMask(base_sensor_args: dict):
     _ = Sensor(**sen_args)
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testSensorInitAzElMaskBadValues(base_sensor_args: dict):
     """Test bad values for the az/el mask."""
     value_err_msg = r"\w*Invalid value \[0, 2π] for az_mask\w*"
@@ -127,6 +136,7 @@ def testSensorInitAzElMaskBadValues(base_sensor_args: dict):
         _ = Sensor(**sen_args)
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testSensorInitAzElMaskTypes(base_sensor_args: dict):
     """Test bad types for the az/el mask."""
     sen_args = deepcopy(base_sensor_args)
@@ -140,6 +150,7 @@ def testSensorInitAzElMaskTypes(base_sensor_args: dict):
         _ = Sensor(**sen_args)
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testCanSlew(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test whether the sensor can slew to a target or not."""
     sensor = Sensor(**base_sensor_args)
@@ -155,6 +166,7 @@ def testCanSlew(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert sensor.canSlew(np.array((-0.2, 0.0, 0.7)))
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testInFOVConic(base_sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
     # pylint:disable=protected-access
@@ -176,6 +188,7 @@ def testInFOVConic(base_sensor_args: dict):
     assert not sensor.field_of_view.inFieldOfView(tgt_sez, bkg_sez)
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testInFOVRegular(base_sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
     # pylint:disable=protected-access
@@ -205,13 +218,14 @@ def _dummySlantRange(
     return eci_tgt
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Checks whether list of targets is in the FOV of the sensor."""
     # pylint: disable=abstract-class-instantiated
     sensor = Sensor(**base_sensor_args)
     conic_fov_config = FieldOfViewConfig(fov_shape=FoVLabel.CONIC, cone_angle=np.pi * RAD2DEG - 1)
-    sensor.field_of_view = fieldOfViewFactory(conic_fov_config)
+    sensor.field_of_view = FieldOfView.fromConfig(conic_fov_config)
     # Requires self.host.ecef_state to be set
     sensor.host = mocked_sensing_agent
     sensor.host.ecef_state = np.zeros(6)
@@ -240,6 +254,7 @@ def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: Sensing
     assert not targets_in_fov
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testIsVisible(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test that and RSO `isVisible`."""
     # pylint: disable=too-many-statements
@@ -531,6 +546,7 @@ def testBuildSigmaObs():
     """To be implemented."""
 
 
+@patch.multiple(Sensor, __abstractmethods__=set())
 def testAttemptObservation(
     base_sensor_args: dict, mocked_sensing_agent: SensingAgent, monkeypatch: pytest.MonkeyPatch
 ):
