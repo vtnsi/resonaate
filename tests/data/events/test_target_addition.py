@@ -4,6 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime
 from json import dumps
+from unittest.mock import MagicMock
 
 # Third Party Imports
 import pytest
@@ -114,6 +115,7 @@ class TestTargetAdditionEvent:
 
     def testHandleEvent(self, mocked_scenario):
         """Test :meth:`.TargetAdditionEvent.handleEvent()`."""
+        mocked_scenario.addTarget = MagicMock()
         agent_obj = AgentModel(unique_id=12345, name="additional sat")
         impulse_event = TargetAdditionEvent(
             scope=TargetAdditionEvent.INTENDED_SCOPE.value,
@@ -132,3 +134,4 @@ class TestTargetAdditionEvent:
             station_keeping_json=dumps([]),
         )
         impulse_event.handleEvent(mocked_scenario)
+        mocked_scenario.addTarget.assert_called_once()

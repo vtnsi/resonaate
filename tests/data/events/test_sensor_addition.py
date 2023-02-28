@@ -4,7 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime
 from json import dumps
-from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
 # Third Party Imports
 import pytest
@@ -16,10 +16,6 @@ from resonaate.data.events import SensorAdditionEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.scenario.config.base import ConfigError
 from resonaate.scenario.config.event_configs import SensorAdditionEventConfig
-
-if TYPE_CHECKING:
-    # Standard Library Imports
-    from unittest.mock import MagicMock
 
 
 @pytest.fixture(name="radar_ground_config")
@@ -191,6 +187,7 @@ class TestSensorAdditionEvent:
         Args:
             mocked_scenario (:class:`.MagicMock`): Mocked scenario object
         """
+        mocked_scenario.addSensor = MagicMock()
         agent_obj = AgentModel(unique_id=12345, name="additional sensor")
         impulse_event = SensorAdditionEvent(
             scope=SensorAdditionEvent.INTENDED_SCOPE,
@@ -221,6 +218,7 @@ class TestSensorAdditionEvent:
             station_keeping_json=dumps([]),
         )
         impulse_event.handleEvent(mocked_scenario)
+        mocked_scenario.addSensor.assert_called_once()
 
     def testHandleEventRadar(self, mocked_scenario: MagicMock):
         """Test :meth:`.SensorAdditionEvent.handleEvent()`.
@@ -228,6 +226,7 @@ class TestSensorAdditionEvent:
         Args:
             mocked_scenario (:class:`.MagicMock`): Mocked scenario object
         """
+        mocked_scenario.addSensor = MagicMock()
         agent_obj = AgentModel(unique_id=12345, name="additional sensor")
         impulse_event = SensorAdditionEvent(
             scope=SensorAdditionEvent.INTENDED_SCOPE,
@@ -261,3 +260,4 @@ class TestSensorAdditionEvent:
             station_keeping_json=dumps([]),
         )
         impulse_event.handleEvent(mocked_scenario)
+        mocked_scenario.addSensor.assert_called_once()
