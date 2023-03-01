@@ -192,7 +192,7 @@ class Optical(Sensor):
 
         if self.host.agent_type == PlatformLabel.SPACECRAFT:
             # Check if sensor is pointed at the Sun
-            target_sun_unit_vector_eci = (tgt_eci_state[:3] - sun_eci_position) / norm(
+            target_sun_unit_vector_eci = (sun_eci_position - tgt_eci_state[:3]) / norm(
                 tgt_eci_state[:3] - sun_eci_position
             )
             space_lighting = checkSpaceSensorLightingConditions(
