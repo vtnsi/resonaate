@@ -50,7 +50,6 @@ class ScheduledECIImpulse(ScheduledImpulse):
         See Also:
             :meth:`.DiscreteStateChangeEvent.getStateChange()`
         """
-        # [FIXME] Pass RSO ID in to `ScheduledImpulse` so event can be recorded properly
         EventStack.pushEvent(EventRecord("ECI Impulse", self.scope_instance_id))
         return self.thrust
 
@@ -64,6 +63,5 @@ class ScheduledNTWImpulse(ScheduledImpulse):
         See Also:
             :meth:`.DiscreteStateChangeEvent.getStateChange()`
         """
-        # [FIXME] Pass RSO ID in to `ScheduledImpulse` so event can be recorded properly
         EventStack.pushEvent(EventRecord("NTW Impulse", self.scope_instance_id))
         return ntw2eci(state, self.thrust)

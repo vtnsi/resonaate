@@ -31,8 +31,6 @@ from .. import FIXTURE_DATA_DIR, JSON_INIT_PATH
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
 def testSafeDuplicateTargets(datafiles: str, reset_shared_db: None):
     """Verify no errors are thrown if two engines are looking at the same target network."""
-    # [FIXME]: This only checks a single state type, but this shouldn't matter when we make
-    #   a proper StateConfig class.
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
     first_target_network = None

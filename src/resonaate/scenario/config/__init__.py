@@ -24,6 +24,7 @@ from .time_config import TimeConfig
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Callable
+    from pathlib import Path
     from typing import Any
 
 
@@ -73,7 +74,6 @@ class ScenarioConfig(ConfigObject):
 
     def __post_init__(self) -> None:
         """Runs after the object is initialized."""
-        # [FIXME]: This could be handled more generically
         # Required sections
         if isinstance(self.time, dict):
             self.time = TimeConfig(**self.time)
@@ -108,7 +108,7 @@ class ScenarioConfig(ConfigObject):
             self.observation = ObservationConfig(**self.observation)
 
     @classmethod
-    def fromConfigFile(cls, config_file_path: str) -> ScenarioConfig:
+    def fromConfigFile(cls, config_file_path: str | Path) -> ScenarioConfig:
         """Parse a configuration file and generate a :class:`.ScenarioConfig` from it.
 
         Args:
@@ -121,7 +121,10 @@ class ScenarioConfig(ConfigObject):
         return cls(**config_dict)
 
     @staticmethod
-    def parseConfigFile(path: str, file_loader: Callable = loadJSONFile) -> dict[str, Any]:
+    def parseConfigFile(
+        path: str | Path,
+        file_loader: Callable[[str | Path], Any] = loadJSONFile,
+    ) -> dict[str, Any]:
         """Parse out configuration from a given filepath.
 
         Args:

@@ -105,14 +105,14 @@ class Celestial(Dynamics, metaclass=ABCMeta):
     def _applyEvents(
         self,
         t_events: ndarray,
-        events: list[Callable[[float, ndarray], float]],
+        events: list[ScheduledEventType],
         current_state: ndarray,
     ) -> ndarray:
         r"""Apply any events that stopped integration.
 
         Args:
             t_events (``ndarray``): times of events that occurred during integration.
-            events (``list``): event functions that are ``Callable`` objects of the form :math:`g(t, y) = 0`.
+            events (``list``): event functions that are ``Callable`` of the form :math:`g(t, y) = 0`.
             current_state (``ndarray``): current state after integration has stopped.
 
         Returns:
