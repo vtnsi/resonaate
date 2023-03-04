@@ -5,6 +5,7 @@ from __future__ import annotations
 import os.path
 from datetime import timedelta
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 # Third Party Imports
 import pytest
@@ -18,8 +19,7 @@ from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.observation import Observation
 from resonaate.physics.time.conversions import getTargetJulianDate
 from resonaate.physics.time.stardate import JulianDate
-from resonaate.scenario import buildScenarioFromConfigDict, buildScenarioFromConfigFile
-from resonaate.scenario.config import ScenarioConfig
+from resonaate.scenario import buildScenarioFromConfigFile
 
 # Local Imports
 from ..conftest import (
@@ -51,14 +51,11 @@ def propagateScenario(
         elapsed_time (`timedelta`): amount of time to simulate
         importer_db_path (``str``): path to external importer database for pre-canned data.
     """
+    shared_db_path = os.path.join(data_directory, SHARED_DB_PATH)
     init_file = os.path.join(data_directory, JSON_INIT_PATH, init_filepath)
-    shared_db_path = "sqlite:///" + os.path.join(data_directory, SHARED_DB_PATH)
 
-    # Create scenario from JSON init message
-    config_dict = ScenarioConfig.parseConfigFile(init_file)
-
-    app = buildScenarioFromConfigDict(
-        config_dict,
+    app = buildScenarioFromConfigFile(
+        init_file,
         internal_db_path=shared_db_path,
         importer_db_path=importer_db_path,
     )
@@ -93,8 +90,15 @@ def loadSensorTruthData(directory: str, importer_database: ImporterDatabase) -> 
     )
 
 
+def _overrideCreateDB(path: str, importer: bool) -> str:
+    """Quick and dirty patch of createDatabasePath() so test can overwrite DB files."""
+    # pylint: disable=unused-argument
+    return "sqlite:///" + path
+
+
 @pytest.mark.scenario()
 @pytest.mark.usefixtures("reset_shared_db")
+@patch("resonaate.data.createDatabasePath", _overrideCreateDB)
 class TestScenarioApp:
     """Test class for scenario class."""
 

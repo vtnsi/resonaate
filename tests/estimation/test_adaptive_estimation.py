@@ -5,13 +5,11 @@ from __future__ import annotations
 import os.path
 from datetime import timedelta
 from math import isclose
-from pickle import dumps
 from typing import TYPE_CHECKING
-from unittest.mock import create_autospec
+from unittest.mock import create_autospec, patch
 
 # Third Party Imports
 import pytest
-from mjolnir import KeyValueStore
 from numpy import array, diagflat, ones, zeros
 
 # RESONAATE Imports
@@ -32,8 +30,7 @@ from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.time.conversions import getTargetJulianDate
 from resonaate.physics.time.stardate import JulianDate
-from resonaate.scenario import buildScenarioFromConfigDict
-from resonaate.scenario.config import ScenarioConfig
+from resonaate.scenario import buildScenarioFromConfigFile
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
 
@@ -58,19 +55,14 @@ def propagateScenario(
         init_filepath (str): file path for Resonaate initialization file
         elapsed_time (`timedelta`): amount of time to simulate
     """
+    shared_db_path = os.path.join(datafiles, SHARED_DB_PATH)
     init_file = os.path.join(datafiles, JSON_INIT_PATH, init_filepath)
-    shared_db_path = "sqlite:///" + os.path.join(datafiles, SHARED_DB_PATH)
 
-    # Create scenario from JSON init message
-    config_dict = ScenarioConfig.parseConfigFile(init_file)
-
-    app = buildScenarioFromConfigDict(
-        config_dict,
+    app = buildScenarioFromConfigFile(
+        init_file,
         internal_db_path=shared_db_path,
         importer_db_path=None,
     )
-
-    KeyValueStore.setValue("db_path", dumps(shared_db_path))
 
     # Determine target Julian date based on elapsed time
     init_julian_date = JulianDate(app.clock.julian_date_start)
@@ -83,8 +75,15 @@ def propagateScenario(
     app.shutdown()
 
 
+def _overrideCreateDB(path: str, importer: bool) -> str:
+    """Quick and dirty patch of createDatabasePath() so test can overwrite DB files."""
+    # pylint: disable=unused-argument
+    return "sqlite:///" + path
+
+
 @pytest.mark.scenario()
 @pytest.mark.usefixtures("reset_shared_db")
+@patch("resonaate.data.createDatabasePath", _overrideCreateDB)
 class TestAdaptiveEstimationIntegration:
     """Integration test :class:`.AdaptiveFilter` classes."""
 
