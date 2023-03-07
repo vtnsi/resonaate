@@ -19,7 +19,7 @@ from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
 
 # Local Imports
-from . import TEST_START_JD
+from . import TEST_START_JD, PropagateFunc, patchCreateDatabasePath, propagateScenario
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -81,14 +81,17 @@ def _teardownKeyValueStore():
 
 
 @pytest.fixture(name="reset_shared_db")
-def _resetDatabase() -> None:
+def _resetDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reset the database tables to avoid data integrity errors.
 
     Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated so that the "epochs"
-        table is reset.
+        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated
+        so that the "epochs" table is reset.
     """
-    yield
+    with monkeypatch.context() as m:
+        m.setattr("resonaate.data.createDatabasePath", patchCreateDatabasePath)
+        yield
+
     ResonaateDatabase.getSharedInterface().resetData(tables=ResonaateDatabase.VALID_DATA_TYPES)
 
 
@@ -97,8 +100,8 @@ def _resetImporterDatabase() -> None:
     """Reset the database tables to avoid data integrity errors.
 
     Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated so that the "epochs"
-        table is reset.
+        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated
+        so that the "epochs" table is reset.
     """
     yield
     ImporterDatabase.getSharedInterface().resetData(tables=ImporterDatabase.VALID_DATA_TYPES)
@@ -115,6 +118,13 @@ def getDataInterface() -> ResonaateDatabase:
     shared_interface = ResonaateDatabase.getSharedInterface()
     yield shared_interface
     shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
+
+
+@pytest.fixture(name="propagate_scenario")
+def propagateFixture(reset_shared_db: None) -> PropagateFunc:
+    """Returns function that propagates a scenario."""
+    # pylint: disable=unused-argument
+    return propagateScenario
 
 
 @pytest.fixture(name="geopotential_config")

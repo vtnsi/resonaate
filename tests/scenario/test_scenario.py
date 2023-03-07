@@ -4,12 +4,9 @@ from __future__ import annotations
 # Standard Library Imports
 import os.path
 from datetime import timedelta
-from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 # Third Party Imports
 import pytest
-from numpy import isclose
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
@@ -17,8 +14,6 @@ from resonaate.data.detected_maneuver import DetectedManeuver
 from resonaate.data.epoch import Epoch
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.observation import Observation
-from resonaate.physics.time.conversions import getTargetJulianDate
-from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario import buildScenarioFromConfigFile
 
 # Local Imports
@@ -28,50 +23,8 @@ from .. import (
     JSON_INIT_PATH,
     JSON_RSO_TRUTH,
     JSON_SENSOR_TRUTH,
-    SHARED_DB_PATH,
+    PropagateFunc,
 )
-
-# Type Checking Imports
-if TYPE_CHECKING:
-    # RESONAATE Imports
-    from resonaate.scenario.scenario import Scenario
-
-
-def propagateScenario(
-    data_directory: str,
-    init_filepath: str,
-    elapsed_time: timedelta,
-    importer_db_path: str | None = None,
-) -> Scenario:
-    """Performs the basic operations required to step a simulation forward in time.
-
-    Args:
-        data_directory (str): file path for datafiles directory
-        init_filepath (str): file path for Resonaate initialization file
-        elapsed_time (`timedelta`): amount of time to simulate
-        importer_db_path (``str``): path to external importer database for pre-canned data.
-    """
-    shared_db_path = os.path.join(data_directory, SHARED_DB_PATH)
-    init_file = os.path.join(data_directory, JSON_INIT_PATH, init_filepath)
-
-    app = buildScenarioFromConfigFile(
-        init_file,
-        internal_db_path=shared_db_path,
-        importer_db_path=importer_db_path,
-    )
-
-    # Determine target Julian date based on elapsed time
-    init_julian_date = JulianDate(app.clock.julian_date_start)
-    target_julian_date = getTargetJulianDate(init_julian_date, elapsed_time)
-
-    # Propagate scenario forward in time
-    app.propagateTo(target_julian_date)
-
-    assert isclose(app.clock.julian_date_epoch, target_julian_date)
-
-    app.shutdown()
-
-    return app
 
 
 def loadTargetTruthData(directory: str, importer_database: ImporterDatabase) -> None:
@@ -90,15 +43,7 @@ def loadSensorTruthData(directory: str, importer_database: ImporterDatabase) -> 
     )
 
 
-def _overrideCreateDB(path: str, importer: bool) -> str:
-    """Quick and dirty patch of createDatabasePath() so test can overwrite DB files."""
-    # pylint: disable=unused-argument
-    return "sqlite:///" + path
-
-
 @pytest.mark.scenario()
-@pytest.mark.usefixtures("reset_shared_db")
-@patch("resonaate.data.createDatabasePath", _overrideCreateDB)
 class TestScenarioApp:
     """Test class for scenario class."""
 
@@ -109,6 +54,7 @@ class TestScenarioApp:
     )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+    @pytest.mark.usefixtures("reset_shared_db")
     def testBuildFromConfig(self, datafiles: str):
         """Test building a scenario from config files."""
         init_filepath = os.path.join(
@@ -120,46 +66,50 @@ class TestScenarioApp:
 
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testRealtimePropagation(self, datafiles: str):
+    def testRealtimePropagation(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Test a small simulation using real time propagation. 5 minute long test."""
         init_filepath = "default_realtime_est_realtime_obs.json"
         elapsed_time = timedelta(minutes=5)
-        propagateScenario(datafiles, init_filepath, elapsed_time)
+        propagate_scenario(datafiles, init_filepath, elapsed_time)
 
     @pytest.mark.slow()
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testRealtimePropagationLong(self, datafiles: str):
+    def testRealtimePropagationLong(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Test a small simulation using real time propagation. 5 hour long test."""
         init_filepath = "long_full_ssn_realtime_est_realtime_obs.json"
         elapsed_time = timedelta(hours=5)
-        propagateScenario(datafiles, init_filepath, elapsed_time)
+        propagate_scenario(datafiles, init_filepath, elapsed_time)
 
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testTruthSimulationOnly(self, datafiles: str, caplog: pytest.LogCaptureFixture):
+    def testTruthSimulationOnly(
+        self, datafiles: str, propagate_scenario: PropagateFunc, caplog: pytest.LogCaptureFixture
+    ):
         """Test a small simulation with Tasking and Estimation turned off."""
         init_filepath = "truth_simulation_only_init.json"
         elapsed_time = timedelta(minutes=10)
-        propagateScenario(datafiles, init_filepath, elapsed_time)
+        propagate_scenario(datafiles, init_filepath, elapsed_time)
 
         for record_tuple in caplog.record_tuples:
             assert record_tuple[2] != "Assess"
 
     @pytest.mark.importer()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testImporterModel(self, datafiles: str, reset_importer_db: None):
+    @pytest.mark.usefixtures("reset_importer_db")
+    def testImporterModel(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Test a small simulation using imported data. 5 minute long test."""
         init_filepath = "default_imported_est_imported_obs.json"
         elapsed_time = timedelta(minutes=5)
         db_path = "sqlite:///" + os.path.join(datafiles, IMPORTER_DB_PATH)
         importer_db = ImporterDatabase.getSharedInterface(db_path)
         loadTargetTruthData(datafiles, importer_db)
-        propagateScenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
+        propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
 
     @pytest.mark.importer()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testImporterModelForSensors(self, datafiles: str, reset_importer_db: None):
+    @pytest.mark.usefixtures("reset_importer_db")
+    def testImporterModelForSensors(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Include sensors that will utilize the importer model in a 5 minute test."""
         init_filepath = "long_sat_sen_imported_est_imported_obs.json"
         elapsed_time = timedelta(minutes=5)
@@ -167,70 +117,73 @@ class TestScenarioApp:
         importer_db = ImporterDatabase.getSharedInterface(db_path)
         loadTargetTruthData(datafiles, importer_db)
         loadSensorTruthData(datafiles, importer_db)
-        propagateScenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
+        propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
 
     @pytest.mark.slow()
     @pytest.mark.importer()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testImporterModelLong(self, datafiles: str, reset_importer_db: None):
+    @pytest.mark.usefixtures("reset_importer_db")
+    def testImporterModelLong(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Test a small simulation using imported data. 5 day hour test."""
         init_filepath = "long_full_ssn_imported_est_imported_obs.json"
         elapsed_time = timedelta(hours=5)
         db_path = "sqlite:///" + os.path.join(datafiles, IMPORTER_DB_PATH)
         importer_db = ImporterDatabase.getSharedInterface(db_path)
         loadTargetTruthData(datafiles, importer_db)
-        propagateScenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
+        propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
 
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     @pytest.mark.parametrize("init_filepath", MANEUVER_DETECTION_INIT)
-    def testDetectedManeuver(self, datafiles: str, init_filepath: str):
+    def testDetectedManeuver(
+        self, datafiles: str, propagate_scenario: PropagateFunc, init_filepath: str
+    ):
         """Test a maneuver detection simulation using real time propagation. 20 minute long test."""
         elapsed_time = timedelta(minutes=20)
-        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        app = propagate_scenario(datafiles, init_filepath, elapsed_time)
         maneuver_query = Query(DetectedManeuver)
         assert app.database.getData(maneuver_query, multi=False) is not None
 
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testNoDetectedManeuver(self, datafiles: str):
+    def testNoDetectedManeuver(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Test no maneuver detection simulation using real time propagation. 20 minute long test."""
         init_filepath = "no_maneuver_detection_init.json"
         elapsed_time = timedelta(minutes=20)
-        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        app = propagate_scenario(datafiles, init_filepath, elapsed_time)
         maneuver_query = Query(DetectedManeuver)
         assert app.database.getData(maneuver_query, multi=False) is None
 
     @pytest.mark.regression()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testObservationNumber(self, datafiles: str):
+    def testObservationNumber(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Test that the main_init produces 30 observations on the first timestep."""
         init_filepath = "main_init.json"
         elapsed_time = timedelta(minutes=5)
-        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        app = propagate_scenario(datafiles, init_filepath, elapsed_time)
         observation_query = Query(Observation)
         assert len(app.database.getData(observation_query, multi=True)) == 30
 
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSaveObservation(self, datafiles: str):
+    def testSaveObservation(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Test `_saveObservation` function."""
         # pylint: disable=protected-access
         init_filepath = "main_init.json"
         elapsed_time = timedelta(minutes=5)
-        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        app = propagate_scenario(datafiles, init_filepath, elapsed_time)
         app.saveDatabaseOutput()
         app._logObservations(app.tasking_engines[2].observations)
         app._logMissedObservations(app.tasking_engines[2].missed_observations)
 
     @pytest.mark.realtime()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSaveObservationInsertsEpochs(self, datafiles: str):
+    def testSaveObservationInsertsEpochs(self, datafiles: str, propagate_scenario: PropagateFunc):
         """Test `saveDatabaseOutput` function will insert `Epoch` rows to the DB if they do not already exist."""
         # pylint: disable=protected-access
         init_filepath = "quick_init.json"
         elapsed_time = timedelta(minutes=6)
-        app = propagateScenario(datafiles, init_filepath, elapsed_time)
+        app = propagate_scenario(datafiles, init_filepath, elapsed_time)
         epoch_query = Query(Epoch).filter(Epoch.timestampISO == "2021-03-30T16:06:00.000000")
         assert app.database.getData(epoch_query, multi=False) is None
         app.saveDatabaseOutput()
