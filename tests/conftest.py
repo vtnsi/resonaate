@@ -4,8 +4,6 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 import sys
-from datetime import datetime
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -17,22 +15,16 @@ from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
-from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
+
+# Local Imports
+from . import TEST_START_JD
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # RESONAATE Imports
     from resonaate.common.logger import Logger
-    from resonaate.physics.time.stardate import JulianDate
-
-FIXTURE_DATA_DIR = Path(__file__).parent / "datafiles"
-IMPORTER_DB_PATH = Path("db/importer.sqlite3")
-SHARED_DB_PATH = Path("db/shared.sqlite3")
-JSON_INIT_PATH = Path("json/config/init_messages")
-JSON_RSO_TRUTH = Path("json/rso_truth")
-JSON_SENSOR_TRUTH = Path("json/sat_sensor_truth")
 
 
 @pytest.fixture(autouse=True)
@@ -123,10 +115,6 @@ def getDataInterface() -> ResonaateDatabase:
     shared_interface = ResonaateDatabase.getSharedInterface()
     yield shared_interface
     shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-
-TEST_START_DATETIME = datetime(2018, 12, 1, 12)
-TEST_START_JD: JulianDate = datetimeToJulianDate(TEST_START_DATETIME)
 
 
 @pytest.fixture(name="geopotential_config")

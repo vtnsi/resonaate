@@ -14,7 +14,7 @@ import pytest
 from resonaate.scenario.config import ScenarioConfig
 
 # Local Imports
-from ...conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
+from ... import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:

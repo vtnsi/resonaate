@@ -22,7 +22,7 @@ from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario import buildScenarioFromConfigFile
 
 # Local Imports
-from ..conftest import (
+from .. import (
     FIXTURE_DATA_DIR,
     IMPORTER_DB_PATH,
     JSON_INIT_PATH,

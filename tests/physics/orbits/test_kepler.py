@@ -19,7 +19,7 @@ from resonaate.physics.orbits.kepler import (
 )
 
 # Local Imports
-from .conftest import POS_TEST_CASES, VEL_TEST_CASES
+from . import POS_TEST_CASES, VEL_TEST_CASES
 
 # Type Checking Imports
 if TYPE_CHECKING:

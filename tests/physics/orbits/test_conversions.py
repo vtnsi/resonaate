@@ -19,7 +19,7 @@ from resonaate.physics.orbits.conversions import (
 )
 
 # Local Imports
-from .conftest import (
+from . import (
     ANOM,
     ARGP,
     ECC,

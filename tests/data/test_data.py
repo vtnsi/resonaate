@@ -12,7 +12,7 @@ import pytest
 from resonaate.data import createDatabasePath
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, SHARED_DB_PATH
+from .. import FIXTURE_DATA_DIR, SHARED_DB_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:

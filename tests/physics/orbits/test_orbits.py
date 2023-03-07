@@ -21,7 +21,7 @@ from resonaate.physics.orbits import (
 )
 
 # Local Imports
-from .conftest import ECCENTRIC, ECCENTRICITIES, INCLINATIONS, INCLINED
+from . import ECCENTRIC, ECCENTRICITIES, INCLINATIONS, INCLINED
 
 # Type Checking Imports
 if TYPE_CHECKING:

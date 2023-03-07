@@ -18,7 +18,7 @@ from resonaate.scenario.scenario import Scenario
 from resonaate.scenario.scenario_builder import ScenarioBuilder
 
 # Local Imports
-from ...conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
+from ... import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
 
 def _getMainConfig(datafiles_dir: str) -> ScenarioConfig:

@@ -25,7 +25,7 @@ from resonaate.job_handlers.base import CallbackRegistration, JobHandler
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
+from .. import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:

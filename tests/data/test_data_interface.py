@@ -22,7 +22,7 @@ from resonaate.data.queries import fetchTruthByJDInterval
 from resonaate.data.resonaate_database import ResonaateDatabase
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_RSO_TRUTH, SHARED_DB_PATH
+from .. import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_RSO_TRUTH, SHARED_DB_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:

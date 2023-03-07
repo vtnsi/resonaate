@@ -35,7 +35,7 @@ from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
+from .. import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:

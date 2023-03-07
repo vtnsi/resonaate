@@ -13,7 +13,7 @@ import resonaate.common.utilities as utils
 from resonaate.common.behavioral_config import BehavioralConfig
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR
+from .. import FIXTURE_DATA_DIR
 
 
 def testGetTypeString():
