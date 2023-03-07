@@ -193,17 +193,7 @@ Using these development tools requires a standalone version of RESONAATE to be i
 To install compatible, up-to-date versions please install RESONAATE with the following commands:
 
 ```bash
-pip install -e .[dev,test,doc]
-pre-commit install
-```
-
-**Note:**
-
-If you use `zsh`, you may need to use the following command instead:
-
-```zsh
-pip install -e ".[dev,test,doc]"
-pre-commit install
+make install
 ```
 
 ### Linting

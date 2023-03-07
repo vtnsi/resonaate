@@ -22,6 +22,16 @@ clean:
 purge: clean
 	rm -rf db/
 
+# Developer install
+.PHONY: install
+install:
+	@echo "================="
+	@echo "Developer Install"
+	@echo "================="
+	pip install -e ".[dev,test,doc]"
+	pre-commit install
+	@echo ""
+
 # Runs formatters
 .PHONY: format
 format:
