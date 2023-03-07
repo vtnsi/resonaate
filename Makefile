@@ -21,6 +21,7 @@ clean:
 .PHONY: purge
 purge: clean
 	rm -rf db/
+	rm -rf coverage/ .coverage coverage.xml
 
 # Developer install
 .PHONY: install
