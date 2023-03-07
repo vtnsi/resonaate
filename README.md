@@ -13,7 +13,7 @@ ______________________________________________________________________
 
 **Table of Contents**
 
-- [REsponsive Space ObservatioN Analysis \& Autonomous Tasking Engine (RESONAATE)](#responsive-space-observation-analysis--autonomous-tasking-engine-resonaate)
+- [REsponsive Space ObservatioN Analysis & Autonomous Tasking Engine (RESONAATE)](#responsive-space-observation-analysis--autonomous-tasking-engine-resonaate)
   - [Setup](#setup)
     - [Dependencies](#dependencies)
     - [Installation](#installation)
@@ -208,16 +208,10 @@ pre-commit install
 
 ### Linting
 
-- Running `flake8` linter:
+- Running linter target:
 
   ```bash
-  flake8 .
-  ```
-
-- Running `pylint` linter:
-
-  ```bash
-  pylint *.py tests src/resonaate docs
+  make lint
   ```
 
 ### Testing

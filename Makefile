@@ -22,6 +22,26 @@ clean:
 purge: clean
 	rm -rf db/
 
+# Runs formatters
+.PHONY: format
+format:
+	@echo "=========="
+	@echo "Formatting"
+	@echo "=========="
+	isort .
+	black .
+	@echo ""
+
+# Runs linters
+.PHONY: lint
+lint:
+	@echo "======="
+	@echo "Linting"
+	@echo "======="
+	flake8 .
+	pylint *.py tests src/resonaate docs
+	@echo ""
+
 # Runs unit tests
 .PHONY: test
 test:
