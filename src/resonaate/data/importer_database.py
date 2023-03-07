@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 import os
+from datetime import datetime
 
 # Third Party Imports
 from numpy import array, concatenate
@@ -48,6 +49,10 @@ class ImporterDatabase(DataInterface):
         # Instantiate the data interface object
         super().__init__(db_path, drop_tables, logger, verbose_echo)
 
+        # [NOTE]: Log the location here so it is obvious if the intended DB path
+        #    is not being used.
+        self.logger.debug(f"Database path: {db_path}")
+
     def insertData(self, *args):
         """Override :class:`.DataInterface` implementation.
 
@@ -79,39 +84,12 @@ class ImporterDatabase(DataInterface):
 
     @classmethod
     def getSharedInterface(cls, db_path=None, drop_tables=(), logger=None, verbose_echo=False):
-        """Return a reference to the singleton shared interface.
+        """Override :class:`.DataInterface` implementation.
 
-        Args:
-            db_path (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
-                to use and where the database is located. Defaults to default configuration value.
-            drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of construction. This
-                parameter makes sense in the context of utilizing a pre-existing database that a user may not want to
-                keep data from. Defaults to an empty tuple, resulting in no tables being dropped.
-            logger (:class:`.Logger`, optional): Previously instantiated logging object to use. Defaults to ``None``,
-                resulting in a new :class:`.Logger` instance being instantiated.
-            verbose_echo (``bool``, optional): Flag that if set ``True``, will tell the SQLAlchemy
-                engine to output the raw SQL statements it runs. Defaults to ``False``.
-
-        Returns:
-            :class:`.DataInterface`: reference to singleton shared data interface
+        Raises:
+            NotImplementedError: shared interface is not provided.
         """
-        # [NOTE][shared-data-resetting] Instantiating the singleton shared interface will no
-        #   longer result in any of the database's tables being reset. While it makes sense to
-        #   clean the table(s) holding temporary data (e.g. historical data or user-created
-        #   manual sensor tasks) before or after each unrelated Resonaate run, it should no
-        #   longer be done implicitly with shared interface instantiation. The reason for
-        #   this is the multi-processing context in which Resonaate now performs. Should a
-        #   separate process utilize the shared interface, the allocation of the singleton
-        #   shared interface isn't guaranteed depending on when the separate process was
-        #   forked versus when the shared interface was first utilized.
-        if cls.__shared_inst is None:
-            # Force users to define db location
-            if not db_path:
-                resonaateLogError("Importer database requires a valid url path")
-                raise ValueError(db_path)
-            cls.__shared_inst = cls(db_path, drop_tables, logger, verbose_echo)
-
-        return cls.__shared_inst
+        raise NotImplementedError("ImporterDatabase does not provide a shared interface")
 
     def initDatabaseFromJSON(self, *args, start=None, stop=None):
         """Initialize a database by populating it with data from the JSON files listed in args.
@@ -225,10 +203,14 @@ class ImporterDatabase(DataInterface):
                 # Get epoch. Insert into DB if it doesn't exist yet
                 epoch = self.getData(julian_date_query, multi=False)
                 if not epoch:
+                    # [NOTE]: quick-fix for slightly malformed timestamps
+                    epoch_dt = datetime.strptime(
+                        ephemeris.pop("timestampISO"), "%Y-%m-%dT%H:%M:%S.%fZ"
+                    )
                     self._insertData(
                         Epoch(
                             julian_date=ephemeris.pop("julian_date"),
-                            timestampISO=ephemeris.pop("timestampISO"),
+                            timestampISO=epoch_dt.isoformat(timespec="microseconds"),
                         )
                     )
                     epoch = self.getData(julian_date_query, multi=False)

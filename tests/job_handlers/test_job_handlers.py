@@ -239,15 +239,13 @@ class TestAgentPropagateHandler:
             handler.registerCallback(target_agent)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testNoImporterData(
-        self, datafiles: str, target_agent: TargetAgent, reset_importer_db: None
-    ):
+    def testNoImporterData(self, datafiles: str, target_agent: TargetAgent):
         """Test registering importer model without data for RSO in DB."""
         jd_start = JulianDate(2458454.0)
         epoch_time = ScenarioTime(60)
         # Create and load importer DB
         db_path = "sqlite:///" + os.path.join(datafiles, IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase.getSharedInterface(db_path)
+        importer_db = ImporterDatabase(db_path)
         importer_db.initDatabaseFromJSON(
             os.path.join(FIXTURE_DATA_DIR, JSON_INIT_PATH, "11111-truth.json"),
             start=jd_start,

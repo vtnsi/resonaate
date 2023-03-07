@@ -525,12 +525,12 @@ def testLoadImportedObservation(
 
 
 @patch.multiple(TaskingEngine, __abstractmethods__=set())
-@patch("resonaate.tasking.engine.engine_base.ImporterDatabase.getSharedInterface")
-def testCreateTaskingEngine(get_shared_mock: MagicMock, reward: Reward, decision: Decision):
+@patch("resonaate.tasking.engine.engine_base.ImporterDatabase")
+def testCreateTaskingEngine(mocked_importer_db: MagicMock, reward: Reward, decision: Decision):
     """Test creating the base class & basic functionality.
 
     Args:
-        get_shared_mock (``MagicMock``): Fake shared mock
+        mocked_importer_db (``MagicMock``): Fake shared mock
         reward (:class:`.Reward`): Loaded reward object
         decision (:class:`.Decision`): Loaded decision object
     """
@@ -552,7 +552,7 @@ def testCreateTaskingEngine(get_shared_mock: MagicMock, reward: Reward, decision
     assert engine._importer_db is None
 
     # Valid creation with importer db
-    get_shared_mock.return_value = create_autospec(ImporterDatabase, instance=True)
+    mocked_importer_db.return_value = create_autospec(ImporterDatabase, instance=True)
     engine = TaskingEngine(
         engine_id=0,
         sensor_ids=SENSOR_NUMS,
@@ -561,7 +561,7 @@ def testCreateTaskingEngine(get_shared_mock: MagicMock, reward: Reward, decision
         decision=decision,
         importer_db_path="test.db",
     )
-    get_shared_mock.assert_called_once_with(db_path="test.db")
+    mocked_importer_db.assert_called_once_with(db_path="test.db")
     assert isinstance(engine._importer_db, ImporterDatabase)
 
     # Test invalid reward/decision

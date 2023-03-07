@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-import os.path
+import re
 from datetime import timedelta
 from pathlib import Path
 
@@ -78,56 +78,91 @@ class TestScenarioRealtime:
 def loadTargetTruthData(directory: Path, importer_database: ImporterDatabase) -> None:
     """Load truth data for RSO targets into DB for Importer model."""
     importer_database.initDatabaseFromJSON(
-        os.path.join(directory, JSON_RSO_TRUTH, "11111-truth.json"),
-        os.path.join(directory, JSON_RSO_TRUTH, "11112-truth.json"),
+        directory.joinpath(JSON_RSO_TRUTH, "11111-truth.json"),
+        directory.joinpath(JSON_RSO_TRUTH, "11112-truth.json"),
     )
 
 
 def loadSensorTruthData(directory: Path, importer_database: ImporterDatabase) -> None:
     """Load truth data for satellite sensors into DB for Importer model."""
     importer_database.initDatabaseFromJSON(
-        os.path.join(directory, JSON_SENSOR_TRUTH, "60007-truth.json"),
-        os.path.join(directory, JSON_SENSOR_TRUTH, "60008-truth.json"),
+        Path(directory).joinpath(JSON_SENSOR_TRUTH, "60001-truth.json"),
+        Path(directory).joinpath(JSON_SENSOR_TRUTH, "60002-truth.json"),
+        Path(directory).joinpath(JSON_SENSOR_TRUTH, "60003-truth.json"),
+        Path(directory).joinpath(JSON_SENSOR_TRUTH, "60004-truth.json"),
+        Path(directory).joinpath(JSON_SENSOR_TRUTH, "60005-truth.json"),
+        Path(directory).joinpath(JSON_SENSOR_TRUTH, "60006-truth.json"),
+        Path(directory).joinpath(JSON_SENSOR_TRUTH, "60007-truth.json"),
+        Path(directory).joinpath(JSON_SENSOR_TRUTH, "60008-truth.json"),
     )
+
+
+def assertImporterDBLogWarnings(
+    caplog: pytest.LogCaptureFixture, sub_string: re.Pattern[str], expected: int
+) -> None:
+    """Uses regular expressions to check for proper ImporterDB warning logs."""
+    base_pattern = re.compile(
+        r"Could not find importer truth for \d*\. Defaulting to realtime propagation!"
+    )
+    matches = []
+    for record in caplog.records:
+        # Only grab importer DB warnings
+        if match := base_pattern.match(record.message):
+            # ensure imported sensors/targets aren't listed
+            assert not re.search(sub_string, match.string)
+            matches.append(match)
+
+    # Number of sensors
+    assert len(matches) == expected
 
 
 @pytest.mark.scenario()
 @pytest.mark.integration()
-@pytest.mark.usefixtures("reset_importer_db")
 class TestScenarioImporter:
     """Test class for scenario class using imported states."""
 
     # [TODO]: Imported observations
-    # [FIXME]: Loading data seems to not work...?
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testImporterModel(self, datafiles: str, propagate_scenario: PropagateFunc):
+    def testImporterModel(
+        self, datafiles: str, propagate_scenario: PropagateFunc, caplog: pytest.LogCaptureFixture
+    ):
         """Test a small simulation using imported data. 5 minute long test."""
         init_filepath = "default_imported_est_imported_obs.json"
         elapsed_time = timedelta(minutes=5)
-        db_path = "sqlite:///" + os.path.join(datafiles, IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase.getSharedInterface(db_path)
-        loadTargetTruthData(datafiles, importer_db)
-        propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
+        db_path = Path(datafiles).joinpath(IMPORTER_DB_PATH)
+        importer_db = ImporterDatabase("sqlite:///" + str(db_path))
+        loadTargetTruthData(Path(datafiles), importer_db)
+        _ = propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
+
+        assertImporterDBLogWarnings(caplog, sub_string=r"1111[12]", expected=8)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testImporterModelForSensors(self, datafiles: Path, propagate_scenario: PropagateFunc):
+    def testImporterModelForSensors(
+        self, datafiles: Path, propagate_scenario: PropagateFunc, caplog: pytest.LogCaptureFixture
+    ):
         """Include sensors that will utilize the importer model in a 5 minute test."""
         init_filepath = "long_sat_sen_imported_est_imported_obs.json"
         elapsed_time = timedelta(minutes=5)
-        db_path = "sqlite:///" + os.path.join(datafiles, IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase.getSharedInterface(db_path)
-        loadTargetTruthData(datafiles, importer_db)
-        loadSensorTruthData(datafiles, importer_db)
+        db_path = Path(datafiles).joinpath(IMPORTER_DB_PATH)
+        importer_db = ImporterDatabase("sqlite:///" + str(db_path))
+        loadSensorTruthData(Path(datafiles), importer_db)
         propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
+
+        assertImporterDBLogWarnings(caplog, sub_string=r"6000[1-8]", expected=2)
 
     @pytest.mark.slow()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testImporterModelLong(self, datafiles: Path, propagate_scenario: PropagateFunc):
+    def testImporterModelLong(
+        self, datafiles: Path, propagate_scenario: PropagateFunc, caplog: pytest.LogCaptureFixture
+    ):
         """Test a small simulation using imported data. 5 day hour test."""
         init_filepath = "long_full_ssn_imported_est_imported_obs.json"
         elapsed_time = timedelta(hours=5)
-        db_path = "sqlite:///" + os.path.join(datafiles, IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase.getSharedInterface(db_path)
-        loadTargetTruthData(datafiles, importer_db)
+        db_path = Path(datafiles).joinpath(IMPORTER_DB_PATH)
+        importer_db = ImporterDatabase("sqlite:///" + str(db_path))
+        loadTargetTruthData(Path(datafiles), importer_db)
+        loadSensorTruthData(Path(datafiles), importer_db)
         propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
+
+        assertImporterDBLogWarnings(caplog, sub_string=r"1111[12]|6000[1-8]", expected=0)

@@ -376,7 +376,6 @@ class TestImporterDatabase:
             Query(TruthEphemeris).join(AgentModel).filter(AgentModel.unique_id == 11111)
         )
         assert len(ephems) == 61
-        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testReadOnly(self, datafiles: str, ephems: list[TruthEphemeris]):
@@ -400,37 +399,6 @@ class TestImporterDatabase:
         # `bulkSave()`
         with pytest.raises(NotImplementedError):
             importer_db.insertData(ephems)
-
-        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
-
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSharedDataInterface(
-        self, datafiles: str, ephems: list[TruthEphemeris], reset_importer_db: None
-    ):
-        """Test the :meth:`.getSharedInterface()` class method."""
-        # Create DB using API
-        importer_db_url = "sqlite:///" + join(datafiles, IMPORTER_DB_PATH)
-        database = ImporterDatabase.getSharedInterface(importer_db_url)
-        database._insertData(*ephems)  # pylint: disable=protected-access
-
-        # Query on ID and Julian date
-        combined_query = (
-            Query(TruthEphemeris)
-            .join(Epoch)
-            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
-            .join(AgentModel)
-            .filter(AgentModel.unique_id == EXAMPLE_RSO[1]["unique_id"])
-        )
-        result = database.getData(combined_query, multi=False)
-
-        # Make sure returned result is correct
-        eci = EXAMPLE_RSO[1]["eci"]
-        assert result.epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
-        assert result.epoch.timestampISO == EXAMPLE_EPOCH["timestampISO"]
-        assert result.agent_id == EXAMPLE_RSO[1]["unique_id"]
-        assert result.agent_id == result.agent.unique_id
-        assert result.agent.name == EXAMPLE_RSO[1]["name"]
-        assert allclose(result.eci, eci)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testInit(self, datafiles: str, ephems: list[TruthEphemeris]):
@@ -458,7 +426,6 @@ class TestImporterDatabase:
         assert result.agent_id == result.agent.unique_id
         assert result.agent.name == EXAMPLE_RSO[1]["name"]
         assert allclose(result.eci, eci)
-        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
 
 
 # SET UP EPOCH ENTRIES

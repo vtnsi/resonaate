@@ -12,7 +12,6 @@ from mjolnir import KeyValueStore
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
-from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
@@ -101,18 +100,6 @@ def _resetDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
         yield
 
     ResonaateDatabase.getSharedInterface().resetData(tables=ResonaateDatabase.VALID_DATA_TYPES)
-
-
-@pytest.fixture(name="reset_importer_db")
-def _resetImporterDatabase() -> None:
-    """Reset the database tables to avoid data integrity errors.
-
-    Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated
-        so that the "epochs" table is reset.
-    """
-    yield
-    ImporterDatabase.getSharedInterface().resetData(tables=ImporterDatabase.VALID_DATA_TYPES)
 
 
 @pytest.fixture(name="database")
