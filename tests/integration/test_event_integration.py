@@ -18,7 +18,7 @@ from resonaate.scenario.scenario import Scenario
 from resonaate.scenario.scenario_builder import ScenarioBuilder
 
 # Local Imports
-from ... import FIXTURE_DATA_DIR, JSON_INIT_PATH
+from .. import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
 
 def _getMainConfig(datafiles_dir: str) -> ScenarioConfig:
@@ -40,6 +40,7 @@ def _getManeuverDetectionConfig(datafiles_dir: str) -> ScenarioConfig:
 
 
 @pytest.mark.event()
+@pytest.mark.integration()
 @pytest.mark.usefixtures("reset_shared_db")
 class TestEventIntegration:
     """Test class encapsulating tests that exercise event integration."""

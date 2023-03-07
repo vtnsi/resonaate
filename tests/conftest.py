@@ -166,13 +166,11 @@ def pytest_configure(config: pytest.Config) -> None:
     """Configure pytest options without an .ini file."""
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line("markers", "regression: mark test as a regression test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "scenario: mark test as a scenario test")
+    config.addinivalue_line("markers", "event: mark test as an event test")
+    config.addinivalue_line("markers", "estimation: mark test as an integration test")
     config.addinivalue_line("markers", "no_debug: turn off parallel debug mode for test")
-    config.addinivalue_line("markers", "scenario: mark test as a scenario integration test")
-    config.addinivalue_line("markers", "event: mark test as an event integration test")
-    config.addinivalue_line("markers", "realtime: mark test as using real time propagation")
-    config.addinivalue_line(
-        "markers", "importer: mark test as using imported data rather than propagation"
-    )
 
 
 def pytest_collection_modifyitems(

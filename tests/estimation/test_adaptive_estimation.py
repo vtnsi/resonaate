@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from datetime import timedelta
 from typing import TYPE_CHECKING
 from unittest.mock import create_autospec
 
@@ -30,38 +29,10 @@ from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
 
-# Local Imports
-from .. import FIXTURE_DATA_DIR, PropagateFunc
-
 # Type Checking Imports
 if TYPE_CHECKING:
     # RESONAATE Imports
     from resonaate.sensors.sensor_base import Sensor
-
-
-@pytest.mark.scenario()
-class TestAdaptiveEstimationIntegration:
-    """Integration test :class:`.AdaptiveFilter` classes."""
-
-    @pytest.mark.slow()
-    @pytest.mark.realtime()
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testStaticMultipleModel(self, datafiles: str, propagate_scenario: PropagateFunc):
-        """Test the static multiple model and mmae running over multiple timesteps."""
-        init_filepath = "smm_init.json"
-        elapsed_time = timedelta(hours=5)
-        propagate_scenario(datafiles, init_filepath, elapsed_time)
-
-    @pytest.mark.slow()
-    @pytest.mark.realtime()
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testGeneralizedPseudoBayesianFirstOrderModel(
-        self, datafiles: str, propagate_scenario: PropagateFunc
-    ):
-        """Test the gpb1 and mmae converging on a single timestep."""
-        init_filepath = "gpb1_init.json"
-        elapsed_time = timedelta(hours=3)
-        propagate_scenario(datafiles, init_filepath, elapsed_time)
 
 
 EST_X = array([6378.0, 2.0, 10.0, 0.0, 7.0, 0.0])
