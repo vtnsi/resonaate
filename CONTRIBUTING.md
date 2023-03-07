@@ -80,15 +80,7 @@ Then you can create an [Issue][new issue] following instructions in the provided
 To install all development dependencies:
 
 ```bash
-pip install -e .[dev,test,doc]
-pre-commit install
-```
-
-**NOTE**:
-If you use `zsh`, you may need to use the following command instead:
-
-```zsh
-pip install -e ".[dev,test,doc]"
+make install
 ```
 
 If you want more explanation, please follow the instructions under [Documentation](#documentation) to build and serve the documentation.
@@ -125,7 +117,7 @@ The following VS Code extensions are highly recommended; they can be easily inst
 - Make the documentation
 
   ```bash
-  make docs
+  make doc
   ```
 
 - Open [http://localhost:8000/](http://localhost:8000/) in a browser
@@ -137,7 +129,7 @@ Please lint your features before merging into develop, so the codebase can remai
 To execute linting checks please run both of the following commands:
 
 ```bash
-pylint *.py tests src/resonaate docs
+make lint
 ```
 
 `pylint` is pretty slow for checking every file, so this only checks dirty **.py** files:
@@ -168,13 +160,13 @@ There is also a helpful tutorial on `pytest` located [here][pytest-realpython].
 Running the full test suite is easy:
 
 ```bash
-pytest
+make test_all
 ```
 
 This does take a decent amount of time because it includes integration tests. To run a quicker, but still large percentage of tests run the following command:
 
 ```bash
-pytest -m "not (event or scenario)"
+make test
 ```
 
 This runs only the unit tests which are much faster to run.
@@ -182,7 +174,7 @@ This runs only the unit tests which are much faster to run.
 To include coverage information against the entire codebase, simply add `--cov`:
 
 ```bash
-pytest --cov -m "not (event or scenario)"
+make coverage
 ```
 
 Also, you can generate coverage statistics for a specific module (or package) by pointing at specific tests/files:
