@@ -5,8 +5,8 @@
     "platform": { "type": "spacecraft", "station_keeping": {} },
     "state": {
       "type": "eci",
-      "position": [15166.4, -39243.4, 0],
-      "velocity": [2.87262, 1.11018, 0]
+      "position": [15166.4, -39243.4, 0.01],
+      "velocity": [2.87262, 1.11018, 0.01]
     }
   }
 ]
