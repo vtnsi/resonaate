@@ -36,26 +36,18 @@ scheduled-pytest-3.7:
   extends:
     - .scheduled-pytest
   image: python:3.7-bullseye
-  needs:
-    - coverage
 
 scheduled-pytest-3.8:
   extends:
     - .scheduled-pytest
   image: python:3.8-bullseye
-  needs:
-    - scheduled-pytest-3.7
 
 scheduled-pytest-3.9:
   extends:
     - .scheduled-pytest
   image: python:3.9-bullseye
-  needs:
-    - scheduled-pytest-3.8
 
 scheduled-pytest-3.10:
   extends:
     - .scheduled-pytest
   image: python:3.10-bullseye
-  needs:
-    - scheduled-pytest-3.9
