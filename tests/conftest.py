@@ -73,6 +73,14 @@ def getTestLoggerObject() -> Logger:
     return logger
 
 
+@pytest.fixture(name="create_kvs", autouse=True, scope="session")
+def _createKeyValueStore():  # pylint: disable=useless-return
+    """Make sure that :class:`.KeyValueStore.Server` is created only once per test session."""
+    _ = KeyValueStore.getClient()
+
+    return
+
+
 @pytest.fixture(name="teardown_kvs", autouse=True)
 def _teardownKeyValueStore():
     """Make sure that :class:`.KeyValueStore.Server` is flushed after each test, but not shutdown."""
