@@ -13,7 +13,7 @@ ______________________________________________________________________
 
 **Table of Contents**
 
-- [REsponsive Space ObservatioN Analysis & Autonomous Tasking Engine (RESONAATE)](#responsive-space-observation-analysis--autonomous-tasking-engine-resonaate)
+- [REsponsive Space ObservatioN Analysis \& Autonomous Tasking Engine (RESONAATE)](#responsive-space-observation-analysis--autonomous-tasking-engine-resonaate)
   - [Setup](#setup)
     - [Dependencies](#dependencies)
     - [Installation](#installation)
@@ -225,19 +225,19 @@ pre-commit install
 - Run unit tests only (~30 s)
 
   ```bash
-  pytest -m "not (event or scenario)"
+  make test
   ```
 
 - Run entire test suite (~4 m)
 
   ```bash
-  pytest
+  make test_all
   ```
 
 - Include coverage results
 
   ```bash
-  pytest --cov -m "not (event or scenario)"
+  make coverage
   ```
 
 ### Generating Documentation
@@ -245,19 +245,8 @@ pre-commit install
 - Navigate into the `docs/` directory
 
   ```bash
-  cd docs
-  ```
-
-- Run entire test suite (~4 m)
-
-  ```bash
-  make clean; make html
-  ```
-
-- Serve the documentation
-
-  ```bash
-  make serve
+  make clean
+  make docs
   ```
 
 - Open [http://localhost:8000/](http://localhost:8000/) in a browser
