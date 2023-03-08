@@ -263,7 +263,7 @@ class Sensor(ABC):
         if visibility:
             # Make a real observation once tasked -> add noise to the measurement
             # Forecasting an observation for reward matrix purposes
-            observation = Observation.fromMeasurement(
+            return Observation.fromMeasurement(
                 epoch_jd=julian_date,
                 target_id=tgt_id,
                 tgt_eci_state=tgt_eci_state,
@@ -273,12 +273,6 @@ class Sensor(ABC):
                 measurement=self._measurement,
                 noisy=real_obs,
             )
-
-            # Also move boresight if making a real observation
-            if real_obs:
-                self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
-
-            return observation
 
         # else
         return MissedObservation(
