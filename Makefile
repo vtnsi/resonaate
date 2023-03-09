@@ -41,6 +41,7 @@ format:
 	@echo "=========="
 	isort .
 	black .
+	mdformat .
 	@echo ""
 
 # Runs linters

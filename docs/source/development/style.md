@@ -105,31 +105,14 @@ These tools are further described below, so read on to learn what they are and w
 If you just want to get up and running, the tools are easily installed:
 
 ```bash
-pip install -e .[dev,test,doc]
-```
-
-or if you use `zsh`:
-
-```bash
-pip install -e ".[dev,test,doc]"
+make install
 ```
 
 This command will install all the dependencies to format/lint code, run tests, and build the documentation.
 If you only want the format/lint dependencies:
 
 ```bash
-pip install -e .[dev]
-```
-
-or if you use `zsh`:
-
-```bash
 pip install -e ".[dev]"
-```
-
-After installing, you should install `pre-commit` locally via:
-
-```bash
 pre-commit install
 ```
 
@@ -223,13 +206,7 @@ Please refer to the project's [pyproject.toml] for details on the configuration.
 These formatters run with `pre-commit`, but if you want to run them yourself, you can use:
 
 ```bash
-black .
-```
-
-and
-
-```bash
-isort .
+make format
 ```
 
 In addition to `isort` and `black`, we also use a formatter in `pre-commit` for Markdown file formats.
@@ -259,16 +236,10 @@ Although they both do many similar linting operations, they also cover some diff
 
 Also, `pylint` is a good bit slower, so it is not run by `pre-commit` while `flake8` is run by `pre-commit`.
 Both these tools are run during every single CI pipeline as well.
-To run the linters, execute the following commands:
+To run the linters, execute the following command:
 
 ```bash
-flake8 .
-```
-
-and
-
-```bash
-pylint *.py docs tests src/resonaate
+make lint
 ```
 
 ````{tip}
