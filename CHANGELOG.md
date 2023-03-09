@@ -116,6 +116,7 @@ ______________________________________________________________________
 - `ObservationTuple` and `Sensor.buildSigmaObs()` (see #156 and !141)
 - `requirements.txt` file
 - positive reward requirement (see #154 and !147)
+- `ImporterDatabase.getSharedInterface()` because the shared singleton is not needed (see !192)
 
 ### Fixed
 
@@ -144,6 +145,10 @@ ______________________________________________________________________
 - `MissedObservation` condition tests in `test_sensor_base` and `test_missed_observation.py` in `tests/data/`
 - Skip flaky event integration tests because it's not reproducible (see #115)
 - add default coverage options for easier use of `pytest --cov`
+- stop importing from `conftest.py`, move things into `__init__.py` modules (see !192)
+- fix testing bug where DB creation order was off, refactor into easier-to-use fixtures (see #178 and !192)
+- move integration and regression tests into their own test pkgs (see !192)
+- importer DB tests now actually run and check themselves (see !192)
 
 ### Development
 
