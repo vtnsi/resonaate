@@ -229,9 +229,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             ``ndarray``: (6, K, T) final state vector after numerical integration has stopped, km; km/sec.
                 Each (6, K) state vector refers to a time in the ``times`` list.
         """
-        current_time = times[0]
-        final_time = times[-1]
-        if final_time <= current_time:
+        if (current_time := times[0]) > (final_time := times[-1]):
             raise ValueError("final_time must be > initial_time")
 
         # Save original shape of the input state

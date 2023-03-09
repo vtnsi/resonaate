@@ -58,9 +58,7 @@ def getReductionParameters(utc_date: datetime) -> dict:
     Returns:
         dict: Dictionary of reduction parameters.
     """
-    serial_obj = KeyValueStore.getValue(REDUCTION_KEY)
-
-    if serial_obj is None:
+    if (serial_obj := KeyValueStore.getValue(REDUCTION_KEY)) is None:
         # parameters haven't been set
         param_dict = dict(zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date)))
         KeyValueStore.setValue(REDUCTION_KEY, dumps(param_dict))

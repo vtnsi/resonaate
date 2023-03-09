@@ -89,8 +89,7 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         Returns:
             ``bool``: Whether or not enough observations and estimates were in the database to start MMAE
         """
-        mmae_started = super().initialize(observations, julian_date_start)
-        if not mmae_started:
+        if not super().initialize(observations, julian_date_start):
             return False
 
         # Adaptive filter predict and update for each model from time t(k) -> t(k+1)

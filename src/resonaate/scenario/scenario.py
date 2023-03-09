@@ -124,9 +124,9 @@ class Scenario(ParallelMixin):
         self.worker_mgr = None
         if start_workers:
             ## Worker manager class instance.
-            proc_count = BehavioralConfig.getConfig().parallel.WorkerCount
-            if proc_count is None:
+            if (proc_count := BehavioralConfig.getConfig().parallel.WorkerCount) is None:
                 proc_count = cpu_count()
+
             watchdog_terminate_after = WorkerManager.DEFAULT_WATCHDOG_TERMINATE_AFTER
             if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
                 watchdog_terminate_after = None
@@ -283,18 +283,14 @@ class Scenario(ParallelMixin):
             # Grab `Observations` from current time step
             for tasking_engine in self._tasking_engines.values():
                 # Save Successful Observations
-                observations = tasking_engine.getCurrentObservations()
-                if observations:
+                if observations := tasking_engine.getCurrentObservations():
                     self._logObservations(observations)
                 output_data.extend(observations)
 
                 # Save Missed Observations
-                missed_observations = tasking_engine.getCurrentMissedObservations()
-                if missed_observations:
+                if missed_observations := tasking_engine.getCurrentMissedObservations():
                     self._logMissedObservations(missed_observations)
-                output_data.extend(
-                    missed_observation for missed_observation in missed_observations
-                )
+                output_data.extend(missed_observations)
                 # Grab tasking data
                 output_data.extend(
                     tasking

@@ -39,8 +39,7 @@ class StaticMultipleModel(AdaptiveFilter):
         Returns:
             ``bool``: Whether or not enough observations and estimates were in the database to start MMAE
         """
-        mmae_started = super().initialize(observations, julian_date_start)
-        if not mmae_started:
+        if not super().initialize(observations, julian_date_start):
             return False
 
         # Adaptive filter predict and update for each model from time t(k) -> t(k+1)
@@ -156,24 +155,25 @@ class StaticMultipleModel(AdaptiveFilter):
             observations (``list``): :class:`.Observation` objects associated with the filter step
         """
         for observation in observations:
-            measured_range_rate = getattr(observation, "range_rate_km_p_sec", None)
             # Attempt to predict radar observations
-            if measured_range_rate:
-                model_errs = []
-                for model in self.models:
-                    predicted_observation = Observation.fromMeasurement(
-                        epoch_jd=observation.julian_date,
-                        target_id=self.target_id,
-                        tgt_eci_state=model.pred_x,
-                        sensor_id=observation.sensor_id,
-                        sensor_eci=observation.sensor_eci,
-                        sensor_type=observation.sensor_type,
-                        measurement=observation.measurement,
-                        noisy=False,
-                    )
-                    model_range_rate = predicted_observation.range_rate_km_p_sec
-                    # [TODO]: Mahalanobis distance instead of direct differencing
-                    model_errs.append(abs(measured_range_rate - model_range_rate))
+            if not (measured_range_rate := getattr(observation, "range_rate_km_p_sec", None)):
+                continue
 
-                ## [TODO]: This overwrites model weights -> only the last obs is included
-                self.model_weights = abs(1 - model_errs / sum(model_errs))
+            model_errs = []
+            for model in self.models:
+                predicted_observation = Observation.fromMeasurement(
+                    epoch_jd=observation.julian_date,
+                    target_id=self.target_id,
+                    tgt_eci_state=model.pred_x,
+                    sensor_id=observation.sensor_id,
+                    sensor_eci=observation.sensor_eci,
+                    sensor_type=observation.sensor_type,
+                    measurement=observation.measurement,
+                    noisy=False,
+                )
+                model_range_rate = predicted_observation.range_rate_km_p_sec
+                # [TODO]: Mahalanobis distance instead of direct differencing
+                model_errs.append(abs(measured_range_rate - model_range_rate))
+
+            ## [TODO]: This overwrites model weights -> only the last obs is included
+            self.model_weights = abs(1 - model_errs / sum(model_errs))

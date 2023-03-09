@@ -160,8 +160,7 @@ def getEccentricityFromEQE(h: float, k: float) -> float:
         ``float``: orbit eccentricity, :math:`e\in[0,1)`, in radians.
     """
     # pylint: disable=invalid-name
-    ecc = sqrt(h**2 + k**2)
-    if ecc >= 1.0:
+    if (ecc := sqrt(h**2 + k**2)) >= 1.0:
         msg = f"Parabolic or hyperbolic orbit. ecc={ecc}"
         raise EccentricityError(msg)
     return ecc

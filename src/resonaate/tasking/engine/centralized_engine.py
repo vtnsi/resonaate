@@ -130,8 +130,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             self.logger.info(msg)
 
         # Log idle sensors
-        idle_sensors = set(self.sensor_list) - tasked_sensors
-        if idle_sensors:
+        if idle_sensors := set(self.sensor_list) - tasked_sensors:
             msg = f"{len(idle_sensors)} sensors {idle_sensors} not tasked"
             self.logger.info(msg)
 

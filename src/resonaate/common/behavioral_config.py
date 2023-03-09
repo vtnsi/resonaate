@@ -41,8 +41,7 @@ class SubConfig:
             name (``str``): name of field to set
             value (``any``): value to set the field to
         """
-        already_set = getattr(self, name, None)
-        if already_set is not None:
+        if already_set := getattr(self, name, None):
             raise AttributeError(
                 f"SubConfig {self.section!r} already has a value set for {name!r}:{already_set!r}"
             )

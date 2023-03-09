@@ -426,8 +426,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         # [TODO]: only observed by optical sensors -- future work is range hypothesis
         tgt_eci_position = self.est_x[:3]
         for observation in observations:
-            measured_range = getattr(observation, "range_km", None)
-            if measured_range is not None:
+            if getattr(observation, "range_km", None):
                 # [TODO]: Only applies the last radar observation
                 tgt_eci_position = radarObs2eciPosition(observation)
 
