@@ -107,7 +107,8 @@ def _readEOPFile(
     """
     # Load raw data from file
     if filename is None:
-        with resources.path(EOP_MODULE, DEFAULT_EOP_DATA) as file_resource:
+        res = resources.files(EOP_MODULE).joinpath(DEFAULT_EOP_DATA)
+        with resources.as_file(res) as file_resource:
             raw_data = loadDatFile(file_resource)
     else:
         raw_data = loadDatFile(filename)

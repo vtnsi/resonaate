@@ -42,7 +42,8 @@ def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
     Returns:
         ``tuple``: ``ndarray`` defining the un-normalized cosine & sine geopotential coefficients.
     """
-    with resources.path(GEOPOTENTIAL_MODULE, model_file) as grv_filepath:
+    res = resources.files(GEOPOTENTIAL_MODULE).joinpath(model_file)
+    with resources.as_file(res) as grv_filepath:
         with open(grv_filepath, "r", encoding="utf-8") as csv_file:
             cos_terms = zeros((181, 181))
             sin_terms = zeros((181, 181))
