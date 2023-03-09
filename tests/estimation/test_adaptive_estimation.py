@@ -2,16 +2,11 @@
 from __future__ import annotations
 
 # Standard Library Imports
-import os.path
-from datetime import timedelta
-from math import isclose
-from pickle import dumps
 from typing import TYPE_CHECKING
 from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
-from mjolnir import KeyValueStore
 from numpy import array, diagflat, ones, zeros
 
 # RESONAATE Imports
@@ -30,81 +25,14 @@ from resonaate.estimation.adaptive.mmae_stacking_utils import stackingFactory
 from resonaate.estimation.adaptive.smm import StaticMultipleModel
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-from resonaate.physics.time.conversions import getTargetJulianDate
 from resonaate.physics.time.stardate import JulianDate
-from resonaate.scenario import buildScenarioFromConfigDict
-from resonaate.scenario.config import ScenarioConfig
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
-
-# Local Imports
-from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # RESONAATE Imports
     from resonaate.sensors.sensor_base import Sensor
-
-
-def propagateScenario(
-    datafiles: str,
-    init_filepath: str,
-    elapsed_time: timedelta,
-) -> None:
-    """Performs the basic operations required to step a simulation forward in time.
-
-    Args:
-        datafiles (str): file path for datafiles directory
-        init_filepath (str): file path for Resonaate initialization file
-        elapsed_time (`timedelta`): amount of time to simulate
-    """
-    init_file = os.path.join(datafiles, JSON_INIT_PATH, init_filepath)
-    shared_db_path = "sqlite:///" + os.path.join(datafiles, SHARED_DB_PATH)
-
-    # Create scenario from JSON init message
-    config_dict = ScenarioConfig.parseConfigFile(init_file)
-
-    app = buildScenarioFromConfigDict(
-        config_dict,
-        internal_db_path=shared_db_path,
-        importer_db_path=None,
-    )
-
-    KeyValueStore.setValue("db_path", dumps(shared_db_path))
-
-    # Determine target Julian date based on elapsed time
-    init_julian_date = JulianDate(app.clock.julian_date_start)
-    target_julian_date = getTargetJulianDate(init_julian_date, elapsed_time)
-
-    # Propagate scenario forward in time
-    app.propagateTo(target_julian_date)
-
-    assert isclose(app.clock.julian_date_epoch, target_julian_date)
-    app.shutdown()
-
-
-@pytest.mark.scenario()
-@pytest.mark.usefixtures("reset_shared_db")
-class TestAdaptiveEstimationIntegration:
-    """Integration test :class:`.AdaptiveFilter` classes."""
-
-    @pytest.mark.slow()
-    @pytest.mark.realtime()
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testStaticMultipleModel(self, datafiles: str):
-        """Test the static multiple model and mmae running over multiple timesteps."""
-        init_filepath = "smm_init.json"
-        elapsed_time = timedelta(hours=5)
-        propagateScenario(datafiles, init_filepath, elapsed_time)
-
-    @pytest.mark.slow()
-    @pytest.mark.realtime()
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testGeneralizedPseudoBayesianFirstOrderModel(self, datafiles: str):
-        """Test the gpb1 and mmae converging on a single timestep."""
-        init_filepath = "gpb1_init.json"
-        elapsed_time = timedelta(hours=3)
-        propagateScenario(datafiles, init_filepath, elapsed_time)
 
 
 EST_X = array([6378.0, 2.0, 10.0, 0.0, 7.0, 0.0])

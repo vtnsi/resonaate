@@ -24,7 +24,7 @@ from resonaate.physics.orbits.anomaly import (
 )
 
 # Local Imports
-from .conftest import VALLADO_AAS_COE, VALLADO_AAS_EQE, H, K
+from . import VALLADO_AAS_COE, VALLADO_AAS_EQE, H, K
 
 # Type Checking Imports
 if TYPE_CHECKING:

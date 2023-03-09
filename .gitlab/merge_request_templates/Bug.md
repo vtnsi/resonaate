@@ -67,7 +67,7 @@ Please ensure these steps are completed before being approved:
 - [ ] Unit tests updated to directly address this bug
 - [ ] Passes unit test suite
 - [ ] Passes linting checks
-- [ ] Passes integration test (run via CLI)
+- [ ] Passes integration and regression tests
 - [ ] Passes CI/CD pipeline
 - [ ] Update docstrings of changed classes, methods, functions
 - [ ] Configuration changes are updated in `docs/source/reference/config_format.md`

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR
+from .. import FIXTURE_DATA_DIR
 
 # Type Checking Imports
 if TYPE_CHECKING:

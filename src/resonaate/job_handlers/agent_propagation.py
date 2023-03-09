@@ -307,7 +307,7 @@ class AgentPropagationJobHandler(PropagationJobHandler):
         self._importer_db = None
         """:class:`.ImporterDatabase`: Input database object for loading :class:`.TruthEphemeris` objects."""
         if importer_db_path:
-            self._importer_db = ImporterDatabase.getSharedInterface(db_path=importer_db_path)
+            self._importer_db = ImporterDatabase(db_path=importer_db_path)
 
     def registerCallback(self, registrant):
         """Register callback object that is used in parallel job creation and post-processing.

@@ -17,7 +17,7 @@ include:
     - .python-latest
     - .rules:default
   variables:
-    PYTEST_OPTIONS: "-ra -v --durations=5 --no-cov"
+    PYTEST_OPTIONS: "-ra -v --durations=5"
   before_script:
     - !reference [.pip-test, before_script]
   artifacts:
@@ -34,43 +34,9 @@ pytest-unit:
   extends: .test-base
   script:
     - echo "Running unit tests with pytest"
-    - pytest -m "not (scenario or event)" $PYTEST_OPTIONS
-
-# ==========================================
-# Scenario Test Job
-# ==========================================
-
-pytest-scenario:
-  extends: .test-base
-  script:
-    - echo "Running scenario tests with pytest"
     # [FIXME]: This is a temporary fix for
     - export MJOLNIR_SOCKET_PROTOCOL=ipc
-    - pytest -m scenario $PYTEST_OPTIONS
-
-# ==========================================
-# Event Test Job
-# ==========================================
-
-pytest-event:
-  extends: .test-base
-  script:
-    - echo "Running event tests with pytest"
-    # [FIXME]: This is a temporary fix for
-    - export MJOLNIR_SOCKET_PROTOCOL=ipc
-    - pytest -m event $PYTEST_OPTIONS
-
-# ==========================================
-# Coverage Job
-# ==========================================
-
-coverage:
-  extends: .test-base
-  before_script:
-    - !reference [.pip-test, before_script]
-  script:
-    - echo "Calculating unit test coverage"
-    - pytest --cov -m "not (event or scenario)"
+    - pytest --cov -m "not (integration or regression)" $PYTEST_OPTIONS
   artifacts:
     name: coverage
     paths:
@@ -87,3 +53,27 @@ coverage:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: $CI_COMMIT_TAG
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+
+# ==========================================
+# Integration Test Job
+# ==========================================
+
+pytest-integration:
+  extends: .test-base
+  script:
+    - echo "Running integration tests with pytest"
+    # [FIXME]: This is a temporary fix for
+    - export MJOLNIR_SOCKET_PROTOCOL=ipc
+    - pytest --cov -m integration $PYTEST_OPTIONS
+
+# ==========================================
+# Regression Test Job
+# ==========================================
+
+pytest-regression:
+  extends: .test-base
+  script:
+    - echo "Running regression tests with pytest"
+    # [FIXME]: This is a temporary fix for
+    - export MJOLNIR_SOCKET_PROTOCOL=ipc
+    - pytest --cov -m regression $PYTEST_OPTIONS

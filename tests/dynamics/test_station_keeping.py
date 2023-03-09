@@ -21,7 +21,7 @@ from resonaate.physics.transforms import methods as transforms
 from resonaate.physics.transforms.reductions import getReductionParameters
 
 # Local Imports
-from ..conftest import TEST_START_DATETIME, TEST_START_JD
+from .. import TEST_START_DATETIME, TEST_START_JD
 
 # Type Checking Imports
 if TYPE_CHECKING:

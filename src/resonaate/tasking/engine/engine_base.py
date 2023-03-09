@@ -109,7 +109,7 @@ class TaskingEngine(metaclass=ABCMeta):
         self._importer_db: ImporterDatabase | None = None
         """:class:`.ImporterDatabase`: Input database object for loading :class:`.Observation` objects."""
         if importer_db_path:
-            self._importer_db = ImporterDatabase.getSharedInterface(db_path=importer_db_path)
+            self._importer_db = ImporterDatabase(db_path=importer_db_path)
 
     def addTarget(self, target_id: int) -> None:
         """Add a target to this :class:`.TaskingEngine`.

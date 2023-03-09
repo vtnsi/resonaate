@@ -25,7 +25,7 @@ from resonaate.scenario.config.event_configs import (
 from resonaate.scenario.scenario_builder import ScenarioBuilder
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
+from .. import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)

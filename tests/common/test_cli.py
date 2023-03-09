@@ -10,7 +10,7 @@ import pytest
 from resonaate.common import cli
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH, SHARED_DB_PATH
+from .. import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH, SHARED_DB_PATH
 
 
 def validateArgs(args):

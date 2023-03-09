@@ -15,7 +15,7 @@ from resonaate.physics.transforms.eops import (
 )
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR
+from .. import FIXTURE_DATA_DIR
 
 
 @pytest.fixture(name="eop_data")

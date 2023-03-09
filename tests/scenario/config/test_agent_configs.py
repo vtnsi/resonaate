@@ -16,7 +16,7 @@ from resonaate.scenario.config.sensor_config import SensorConfig
 from resonaate.scenario.config.state_config import StateConfig
 
 # Local Imports
-from .conftest import EARTH_SENSORS, GEO_TARGETS, LEO_TARGETS, SPACE_SENSORS
+from . import EARTH_SENSORS, GEO_TARGETS, LEO_TARGETS, SPACE_SENSORS
 
 
 class TestTargetConfig:

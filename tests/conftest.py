@@ -4,8 +4,6 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 import sys
-from datetime import datetime
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -14,25 +12,18 @@ from mjolnir import KeyValueStore
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
-from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
-from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
+
+# Local Imports
+from . import TEST_START_JD, PropagateFunc, patchCreateDatabasePath, propagateScenario
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # RESONAATE Imports
     from resonaate.common.logger import Logger
-    from resonaate.physics.time.stardate import JulianDate
-
-FIXTURE_DATA_DIR = Path(__file__).parent / "datafiles"
-IMPORTER_DB_PATH = Path("db/importer.sqlite3")
-SHARED_DB_PATH = Path("db/shared.sqlite3")
-JSON_INIT_PATH = Path("json/config/init_messages")
-JSON_RSO_TRUTH = Path("json/rso_truth")
-JSON_SENSOR_TRUTH = Path("json/sat_sensor_truth")
 
 
 @pytest.fixture(autouse=True)
@@ -81,6 +72,14 @@ def getTestLoggerObject() -> Logger:
     return logger
 
 
+@pytest.fixture(name="create_kvs", autouse=True, scope="session")
+def _createKeyValueStore():  # pylint: disable=useless-return
+    """Make sure that :class:`.KeyValueStore.Server` is created only once per test session."""
+    _ = KeyValueStore.getClient()
+
+    return
+
+
 @pytest.fixture(name="teardown_kvs", autouse=True)
 def _teardownKeyValueStore():
     """Make sure that :class:`.KeyValueStore.Server` is flushed after each test, but not shutdown."""
@@ -89,27 +88,18 @@ def _teardownKeyValueStore():
 
 
 @pytest.fixture(name="reset_shared_db")
-def _resetDatabase() -> None:
+def _resetDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reset the database tables to avoid data integrity errors.
 
     Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated so that the "epochs"
-        table is reset.
+        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated
+        so that the "epochs" table is reset.
     """
-    yield
+    with monkeypatch.context() as m:
+        m.setattr("resonaate.data.createDatabasePath", patchCreateDatabasePath)
+        yield
+
     ResonaateDatabase.getSharedInterface().resetData(tables=ResonaateDatabase.VALID_DATA_TYPES)
-
-
-@pytest.fixture(name="reset_importer_db")
-def _resetImporterDatabase() -> None:
-    """Reset the database tables to avoid data integrity errors.
-
-    Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated so that the "epochs"
-        table is reset.
-    """
-    yield
-    ImporterDatabase.getSharedInterface().resetData(tables=ImporterDatabase.VALID_DATA_TYPES)
 
 
 @pytest.fixture(name="database")
@@ -125,8 +115,11 @@ def getDataInterface() -> ResonaateDatabase:
     shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
 
 
-TEST_START_DATETIME = datetime(2018, 12, 1, 12)
-TEST_START_JD: JulianDate = datetimeToJulianDate(TEST_START_DATETIME)
+@pytest.fixture(name="propagate_scenario")
+def propagateFixture(reset_shared_db: None) -> PropagateFunc:
+    """Returns function that propagates a scenario."""
+    # pylint: disable=unused-argument
+    return propagateScenario
 
 
 @pytest.fixture(name="geopotential_config")
@@ -160,13 +153,11 @@ def pytest_configure(config: pytest.Config) -> None:
     """Configure pytest options without an .ini file."""
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line("markers", "regression: mark test as a regression test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "scenario: mark test as a scenario test")
+    config.addinivalue_line("markers", "event: mark test as an event test")
+    config.addinivalue_line("markers", "estimation: mark test as an integration test")
     config.addinivalue_line("markers", "no_debug: turn off parallel debug mode for test")
-    config.addinivalue_line("markers", "scenario: mark test as a scenario integration test")
-    config.addinivalue_line("markers", "event: mark test as an event integration test")
-    config.addinivalue_line("markers", "realtime: mark test as using real time propagation")
-    config.addinivalue_line(
-        "markers", "importer: mark test as using imported data rather than propagation"
-    )
 
 
 def pytest_collection_modifyitems(

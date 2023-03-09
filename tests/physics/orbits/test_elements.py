@@ -12,7 +12,7 @@ from resonaate.physics.orbits.utils import getEccentricityFromEQE, getInclinatio
 from resonaate.scenario.config.state_config import ConfigError, ECIStateConfig, EQEStateConfig
 
 # Local Imports
-from .conftest import ANOM, ARGP, ECC, INC, LEO, RAAN, SMA, H, K, P, Q
+from . import ANOM, ARGP, ECC, INC, LEO, RAAN, SMA, H, K, P, Q
 
 COE_CONFIGS: list[dict[str, float]] = [
     {

@@ -1,0 +1,361 @@
+from __future__ import annotations
+
+GEO_TARGETS: list[dict] = [
+    {
+        "name": "RSO 1 ECI",
+        "id": 40000,
+        "state": {
+            "type": "eci",
+            "position": [41574.6, 6681.53, 0],
+            "velocity": [-0.485045, 3.03858, 0],
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
+        },
+    },
+    {
+        "name": "RSO 1 COE",
+        "id": 40001,
+        "state": {
+            "type": "coe",
+            "semi_major_axis": 42117.4628063911,
+            "eccentricity": 0.0010791565916289888,
+            "inclination": 0.0,
+            "right_ascension": 0.0,
+            "argument_periapsis": 290.9860783770488,
+            "true_anomaly": 78.14396088197543,
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
+        },
+    },
+    {
+        "name": "RSO 1 EQE",
+        "id": 40002,
+        "state": {
+            "type": "eqe",
+            "semi_major_axis": 42117.4628063911,
+            "h": -0.0010075734095199758,
+            "k": 0.00038649032806085476,
+            "p": 0.0,
+            "q": 0.0,
+            "mean_longitude": 9.009035264696305,
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
+        },
+    },
+    {
+        "name": "RSO 2 ECI",
+        "id": 40010,
+        "state": {
+            "type": "eci",
+            "position": [42166.7, 2e-08, 0],
+            "velocity": [1e-17, 3.07457, 0],
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
+        },
+    },
+    {
+        "name": "RSO 2 COE",
+        "id": 40011,
+        "state": {
+            "type": "coe",
+            "semi_major_axis": 42166.759150394995,
+            "eccentricity": 1.4027730893947686e-06,
+            "inclination": 0.0,
+            "right_ascension": 0.0,
+            "argument_periapsis": 360.0,
+            "true_anomaly": 0.0,
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
+        },
+    },
+    {
+        "name": "RSO 2 EQE",
+        "id": 40012,
+        "state": {
+            "type": "eqe",
+            "semi_major_axis": 42166.759150394995,
+            "h": -4.743111779401826e-13,
+            "k": 1.4027730893946884e-06,
+            "p": 0.0,
+            "q": 0.0,
+            "mean_longitude": 360.0,
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["GEO EW", "GEO NS"]},
+        },
+    },
+]
+
+
+LEO_TARGETS: list[dict] = [
+    {
+        "name": "RSO 1 ECI",
+        "id": 10000,
+        "state": {
+            "type": "eci",
+            "position": [6388.234341, 1504.29079, 816.763258],
+            "velocity": [-1.999674, 6.626409, 3.597847],
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["LEO"]},
+        },
+    },
+    {
+        "name": "RSO 1 COE",
+        "id": 10001,
+        "state": {
+            "type": "coe",
+            "semi_major_axis": 6678.136876752927,
+            "eccentricity": 0.009999976546428674,
+            "inclination": 28.50000290050255,
+            "right_ascension": 0.0,
+            "argument_periapsis": 0.0,
+            "true_anomaly": 14.999917601783988,
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["LEO"]},
+        },
+    },
+    {
+        "name": "RSO 1 EQE",
+        "id": 10002,
+        "state": {
+            "type": "eqe",
+            "semi_major_axis": 6678.136876752927,
+            "h": 1.4415084545288929e-08,
+            "k": 0.009999976546418285,
+            "p": 7.244885985651323e-09,
+            "q": 0.2539676734191944,
+            "mean_longitude": 14.705552881677345,
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["LEO"]},
+        },
+    },
+    {
+        "name": "RSO 2 ECI",
+        "id": 10010,
+        "state": {
+            "type": "eci",
+            "position": [6611.355635, 0, 0],
+            "velocity": [0, 6.857768, 3.723464],
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["LEO"]},
+        },
+    },
+    {
+        "name": "RSO 2 COE",
+        "id": 10011,
+        "state": {
+            "type": "coe",
+            "semi_major_axis": 6678.136876752927,
+            "eccentricity": 0.009999976546428674,
+            "inclination": 28.499998564947134,
+            "right_ascension": 0.0,
+            "argument_periapsis": 0.0,
+            "true_anomaly": 0.0,
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["LEO"]},
+        },
+    },
+    {
+        "name": "RSO 2 EQE",
+        "id": 10012,
+        "state": {
+            "type": "eqe",
+            "semi_major_axis": 6678.136876752927,
+            "h": 0.0,
+            "k": 0.009999976546418285,
+            "p": 0.0,
+            "q": 0.2539676734191944,
+            "mean_longitude": 0.0,
+        },
+        "platform": {
+            "type": "spacecraft",
+            "station_keeping": {"routines": ["LEO"]},
+        },
+    },
+]
+
+
+EARTH_SENSORS: list[dict] = [
+    {
+        "name": "GROUND SENSOR 1",
+        "id": 120001,
+        "platform": {"type": "ground_facility"},
+        "state": {
+            "type": "lla",
+            "latitude": 45.0,
+            "longitude": -60,
+            "altitude": 0.36,
+        },
+        "sensor": {
+            "type": "adv_radar",
+            "covariance": [
+                [7.0e-12, 0.0, 0.0, 0.0],
+                [0.0, 6.5e-12, 0.0, 0.0],
+                [0.0, 0.0, 9.0e-10, 0.0],
+                [0.0, 0.0, 0.0, 1.0e-14],
+            ],
+            "slew_rate": 3.141592653589793,
+            "azimuth_range": [0, 6.283185132646661],
+            "elevation_range": [0.0, 1.5707961522619713],
+            "efficiency": 0.95,
+            "aperture_diameter": 15.957691216057308,
+            "field_of_view": {"fov_shape": "conic"},
+            "background_observations": False,
+            "minimum_range": 0.0,
+            "maximum_range": 99000,
+            "tx_power": 32e6,
+            "tx_frequency": 410e6,
+            "min_detectable_power": 1.8879589456640846e-18,
+        },
+    },
+    {
+        "name": "GROUND SENSOR 2",
+        "id": 120002,
+        "platform": {"type": "ground_facility"},
+        "state": {
+            "type": "lla",
+            "latitude": 35.0,
+            "longitude": -150,
+            "altitude": 2.0,
+        },
+        "sensor": {
+            "type": "optical",
+            "covariance": [[2.30e-11, 0.0], [0.0, 2.30e-11]],
+            "slew_rate": 0.25,
+            "azimuth_range": [0.0, 6.283185132646661],
+            "elevation_range": [0.0, 1.5707961522619713],
+            "efficiency": 0.98,
+            "aperture_diameter": 1.1283791670955126,
+            "field_of_view": {"fov_shape": "conic"},
+            "background_observations": False,
+            "detectable_vismag": 25.0,
+            "minimum_range": 0.0,
+            "maximum_range": 99000,
+        },
+    },
+    {
+        "name": "GROUND SENSOR 3",
+        "id": 120003,
+        "platform": {"type": "ground_facility"},
+        "state": {
+            "type": "lla",
+            "latitude": -35.0,
+            "longitude": 100,
+            "altitude": 2.0,
+        },
+        "sensor": {
+            "type": "radar",
+            "covariance": [
+                [7.0e-12, 0.0, 0.0, 0.0],
+                [0.0, 6.5e-12, 0.0, 0.0],
+                [0.0, 0.0, 9.0e-10, 0.0],
+                [0.0, 0.0, 0.0, 1.0e-14],
+            ],
+            "slew_rate": 0.30,
+            "azimuth_range": [0, 6.283185132646661],
+            "elevation_range": [0.0, 1.5707961522619713],
+            "efficiency": 0.95,
+            "aperture_diameter": 7.978845608028654,
+            "field_of_view": {"fov_shape": "conic"},
+            "background_observations": False,
+            "minimum_range": 0.0,
+            "maximum_range": 99000,
+            "tx_power": 3e6,
+            "tx_frequency": 40e6,
+            "min_detectable_power": 1.8879589456640846e-15,
+        },
+    },
+]
+
+SPACE_SENSORS: list[dict] = [
+    {
+        "name": "Space Sensor 1",
+        "id": 50001,
+        "platform": {"type": "spacecraft", "station_keeping": {"routines": []}},
+        "state": {
+            "type": "eci",
+            "position": [-26997.811593501495, 63.69359356853797, -447.53287804600023],
+            "velocity": [0.48666918798751624, 1.0600865385159703, -7.448488839044817],
+        },
+        "sensor": {
+            "type": "optical",
+            "covariance": [[9.80e-14, 0.0], [0.0, 9.80e-14]],
+            "slew_rate": 0.04363323129985824,
+            "azimuth_range": [0.0, 6.283185132646661],
+            "elevation_range": [-1.5707961522619713, 1.5707961522619713],
+            "efficiency": 0.99,
+            "aperture_diameter": 0.19544100476116796,
+            "field_of_view": {"fov_shape": "conic"},
+            "background_observations": False,
+        },
+    },
+    {
+        "name": "Space Sensor 2",
+        "id": 50002,
+        "platform": {"type": "spacecraft", "station_keeping": {"routines": ["LEO"]}},
+        "state": {
+            "type": "coe",
+            "semi_major_axis": 6678.135836007083,
+            "eccentricity": 0.00999982669520115,
+            "inclination": 28.499998564947134,
+            "true_longitude": 0.0,
+        },
+        "sensor": {
+            "type": "optical",
+            "covariance": [[9.80e-14, 0.0], [0.0, 9.80e-14]],
+            "slew_rate": 0.04363323129985824,
+            "azimuth_range": [0.0, 6.283185132646661],
+            "elevation_range": [-1.5707961522619713, 1.5707961522619713],
+            "efficiency": 0.99,
+            "aperture_diameter": 0.19544100476116796,
+            "field_of_view": {"fov_shape": "conic"},
+            "background_observations": False,
+        },
+    },
+    {
+        "name": "Space Sensor 3",
+        "id": 50003,
+        "platform": {"type": "spacecraft", "station_keeping": {"routines": ["GEO EW"]}},
+        "state": {
+            "type": "eqe",
+            "semi_major_axis": 42166.759150394995,
+            "h": -4.743111779401826e-13,
+            "k": 1.4027730893946884e-06,
+            "p": 0.0,
+            "q": -0.0,
+            "mean_longitude": 360.0,
+        },
+        "sensor": {
+            "covariance": [[9.80e-14, 0.0], [0.0, 9.80e-14]],
+            "slew_rate": 0.04363323129985824,
+            "azimuth_range": [0.0, 6.283185132646661],
+            "elevation_range": [-1.5707961522619713, 1.5707961522619713],
+            "efficiency": 0.99,
+            "aperture_diameter": 0.19544100476116796,
+            "type": "optical",
+            "field_of_view": {"fov_shape": "conic"},
+            "background_observations": False,
+        },
+    },
+]
