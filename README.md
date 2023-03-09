@@ -193,31 +193,15 @@ Using these development tools requires a standalone version of RESONAATE to be i
 To install compatible, up-to-date versions please install RESONAATE with the following commands:
 
 ```bash
-pip install -e .[dev,test,doc]
-pre-commit install
-```
-
-**Note:**
-
-If you use `zsh`, you may need to use the following command instead:
-
-```zsh
-pip install -e ".[dev,test,doc]"
-pre-commit install
+make install
 ```
 
 ### Linting
 
-- Running `flake8` linter:
+- Running linter target:
 
   ```bash
-  flake8 .
-  ```
-
-- Running `pylint` linter:
-
-  ```bash
-  pylint *.py tests src/resonaate docs
+  make lint
   ```
 
 ### Testing
@@ -225,19 +209,19 @@ pre-commit install
 - Run unit tests only (~30 s)
 
   ```bash
-  pytest -m "not (event or scenario)"
+  make test
   ```
 
 - Run entire test suite (~4 m)
 
   ```bash
-  pytest
+  make test_all
   ```
 
 - Include coverage results
 
   ```bash
-  pytest --cov -m "not (event or scenario)"
+  make coverage
   ```
 
 ### Generating Documentation
@@ -245,19 +229,8 @@ pre-commit install
 - Navigate into the `docs/` directory
 
   ```bash
-  cd docs
-  ```
-
-- Run entire test suite (~4 m)
-
-  ```bash
-  make clean; make html
-  ```
-
-- Serve the documentation
-
-  ```bash
-  make serve
+  make clean
+  make docs
   ```
 
 - Open [http://localhost:8000/](http://localhost:8000/) in a browser

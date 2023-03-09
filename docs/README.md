@@ -47,38 +47,24 @@ Here are a few other highlights of the documentation that should make writing it
 
 ## Building The Documentation
 
-To install all documentation dependencies:
+To install documentation dependencies:
 
 ```bash
 pip install -e .[doc]
 pre-commit install
 ```
 
-````{note}
-If you use `zsh`, you may need to use the following command instead:
-```zsh
-pip install -e ".[doc]"
-````
+Or to install all development dependencies:
 
-Once the dependencies are installed, follow these instructions to build the docs:
+```bash
+make install
+```
 
-- Navigate into the `docs/` directory
+Once the dependencies are installed, you can execute this from the repo root to build the documentation:
 
-  ```bash
-  cd docs
-  ```
-
-- Build the documentation
-
-  ```bash
-  make clean; make html
-  ```
-
-- Serve the documentation
-
-  ```bash
-  make serve
-  ```
+```bash
+make doc
+```
 
 - Open [http://localhost:8000/](http://localhost:8000/) in a browser
 
