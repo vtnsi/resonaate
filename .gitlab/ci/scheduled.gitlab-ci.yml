@@ -32,11 +32,6 @@ include:
     - python --version
     - pytest ${PYTEST_OPTIONS}
 
-scheduled-pytest-3.8:
-  extends:
-    - .scheduled-pytest
-  image: python:3.8-bullseye
-
 scheduled-pytest-3.9:
   extends:
     - .scheduled-pytest

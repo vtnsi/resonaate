@@ -48,7 +48,7 @@ Please see software documentation for best installation practices.
   - [matplotlib](https://matplotlib.org/index.html)
   - [mjolnir](https://code.vt.edu/space-research/resonaate/mjolnir)
 - Software
-  - [Python >= 3.8](https://www.python.org)
+  - [Python >= 3.9](https://www.python.org)
 
 ### Installation
 
