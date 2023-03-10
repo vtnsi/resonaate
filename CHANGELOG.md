@@ -26,6 +26,14 @@ ______________________________________________________________________
 
 ## [Unreleased][unreleased-diff]
 
+### Breaking Changes
+
+- Upgrade minimum supported Python to 3.9 (see #148 and !191)
+  - switch our custom `methdispatch()` to `singledispatchmethod()`
+  - `MagicMock.call_args` now includes `kwargs` attribute
+  - Use walrus operator (`:=`) in several places
+  - Replaced deprecated `importlib.resources` funcs with newly added ones
+
 ### Added
 
 - infinite loop catch in `lambertUniversal()` (see fe802bd2dd)
@@ -99,6 +107,7 @@ ______________________________________________________________________
 - moved `sensors.measurement` to `physics.measurements` and combined with `physics.measurement_utls` (see #176 and !186)
 - moved `FieldOfView` & `Sensor` factories into respective `fromConfig()` methods (see #176 and !186)
 - refactored `Sensor.collectObservations()` to slew to target before attempting observations (see !198)
+- finite burn and maneuvers now take `agent_id` so they can properly log to the `EventStack` (see !191)
 
 ### Deprecated
 
