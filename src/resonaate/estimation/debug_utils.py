@@ -17,9 +17,9 @@ from sqlalchemy.orm import Query
 # Local Imports
 from ..common.behavioral_config import BehavioralConfig
 from ..common.utilities import getTypeString
+from ..data import getDBConnection
 from ..data.ephemeris import TruthEphemeris
 from ..data.query_util import addAlmostEqualFilter
-from ..data.resonaate_database import ResonaateDatabase
 from ..physics.maths import nearestPD
 from ..physics.measurements import getAzimuth, getElevation, getRange, getRangeRate
 from ..physics.time.stardate import julianDateToDatetime
@@ -56,7 +56,7 @@ def checkThreeSigmaObs(current_obs, sigma=3):
     """Check if an :class:`.Observation`'s absolute error is greater than 3 std."""
     target_agents = pickle.loads(KeyValueStore.getValue("target_agents"))
     sensor_agents = pickle.loads(KeyValueStore.getValue("sensor_agents"))
-    shared_interface = ResonaateDatabase.getSharedInterface()
+    shared_interface = getDBConnection()
     filenames = []
     for observation in current_obs:
         # Grab ephemeris directly from the Database to avoid any noise potentially associated

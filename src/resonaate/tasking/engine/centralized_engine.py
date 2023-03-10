@@ -14,7 +14,6 @@ from sqlalchemy.orm import Query
 from ...data.epoch import Epoch
 from ...data.events import EventScope, handleRelevantEvents
 from ...data.observation import Observation
-from ...data.resonaate_database import ResonaateDatabase
 from ...data.task import Task
 from ...job_handlers.base import ParallelMixin
 from ...job_handlers.task_execution import TaskExecutionJobHandler
@@ -101,7 +100,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             self._predict_handler.executeJobs()
             handleRelevantEvents(
                 self,
-                ResonaateDatabase.getSharedInterface(),
+                self._database,
                 EventScope.TASK_REWARD_GENERATION,
                 datetimeToJulianDate(prior_datetime_epoch),
                 datetimeToJulianDate(datetime_epoch),

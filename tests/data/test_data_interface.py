@@ -14,6 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Query, declarative_base
 
 # RESONAATE Imports
+from resonaate.data import clearDBPath, getDBConnection, setDBPath
 from resonaate.data.agent import AgentModel
 from resonaate.data.ephemeris import TruthEphemeris
 from resonaate.data.epoch import Epoch
@@ -189,7 +190,7 @@ class TestResonaateDatabase:
         assert allclose(result.eci, eci)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testGetDataError(self, datafiles: str, ephem: TruthEphemeris, reset_shared_db: None):
+    def testGetDataError(self, datafiles: str, ephem: TruthEphemeris):
         """Test getting a data object from the DB."""
 
         # Define a new db object class
@@ -243,13 +244,12 @@ class TestResonaateDatabase:
         assert del_count == 3
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSharedDataInterface(
-        self, datafiles: str, ephems: list[TruthEphemeris], reset_shared_db: None
-    ):
-        """Test the :meth:`.getSharedInterface()` class method."""
+    def testSharedDataInterface(self, datafiles: str, ephems: list[TruthEphemeris]):
+        """Test the shared interface version method."""
         # Create DB using API
         shared_db_url = "sqlite:///" + join(datafiles, SHARED_DB_PATH)
-        database = ResonaateDatabase.getSharedInterface(shared_db_url)
+        setDBPath(shared_db_url)
+        database = getDBConnection()
         database.insertData(*ephems)
 
         # Query on ID and Julian date
@@ -291,8 +291,9 @@ class TestResonaateDatabase:
 
         # Delete DB after finished
         database.resetData(tables=database.VALID_DATA_TYPES)
+        clearDBPath()
 
-    def testInit(self, ephems: list[TruthEphemeris], reset_shared_db: None):
+    def testInit(self, ephems: list[TruthEphemeris]):
         """Test the constructor."""
         # Create DB using API
         database = ResonaateDatabase(None, logger=None, verbose_echo=True)

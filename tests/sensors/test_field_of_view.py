@@ -54,7 +54,7 @@ SENSOR_CONFIG = {
 
 
 @pytest.fixture(name="clock")
-def getScenarioClock(reset_shared_db: None) -> ScenarioClock:
+def getScenarioClock(database: None) -> ScenarioClock:
     """Get a ScenarioClock."""
     start_date = datetime(2020, 6, 6, 0, 0)
     return ScenarioClock(start_date, 60.0, 30.0)

@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 # Local Imports
+from ..data import getDBConnection
 from ..data.epoch import Epoch
-from ..data.resonaate_database import ResonaateDatabase
 from ..physics.time.stardate import ScenarioTime, datetimeToJulianDate
 from ..physics.transforms.reductions import updateReductionParameters
 
@@ -76,8 +76,7 @@ class ScenarioClock:
 
             sim_time_iter += self.dt_step
 
-        database = ResonaateDatabase.getSharedInterface()
-        database.insertData(*epochs)
+        getDBConnection().insertData(*epochs)
 
     def ticToc(self, dt: ScenarioTime | float | None = None) -> None:  # noqa: C901
         r"""Increment the time property by one step.

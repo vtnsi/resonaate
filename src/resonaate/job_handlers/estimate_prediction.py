@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 from mjolnir import Job
 
 # Local Imports
+from ..data import getDBConnection
 from ..data.events import EventScope, getRelevantEvents
-from ..data.resonaate_database import ResonaateDatabase
 from .agent_propagation import PropagationJobHandler
 from .base import CallbackRegistration
 
@@ -103,7 +103,7 @@ class EstimatePredictionJobHandler(PropagationJobHandler):
         # [NOTE][parallel-maneuver-event-handling] Step one: query for events and "handle" them.
         agent_propagation_events = defaultdict(list)
         relevant_events = getRelevantEvents(
-            ResonaateDatabase.getSharedInterface(),
+            getDBConnection(),
             EventScope.AGENT_PROPAGATION,
             kwargs["prior_julian_date"],
             kwargs["julian_date"],

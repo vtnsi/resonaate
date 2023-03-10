@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array
@@ -9,7 +10,10 @@ from sqlalchemy.orm import Query
 
 # RESONAATE Imports
 from resonaate.data.filter_step import FilterStep
-from resonaate.data.resonaate_database import ResonaateDatabase
+
+if TYPE_CHECKING:
+    # RESONAATE Imports
+    from resonaate.data.resonaate_database import ResonaateDatabase
 
 
 class TestFilterStep:
@@ -137,14 +141,14 @@ class TestFilterStep:
         assert isinstance(filt.innovation, list)
         assert len(filt.innovation) == 2
 
-    def testInsertWithRelationship(self, epoch, target_agent):
+    def testInsertWithRelationship(self, epoch, target_agent, database: ResonaateDatabase):
         """Test inserting filter values with related objects.
 
         Args:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+            database (:class:`.ResonaateDatabase`): shared instance of database
         """
-        database = ResonaateDatabase.getSharedInterface()
         filt = FilterStep.recordFilterStep(
             epoch=epoch,
             julian_date=epoch.julian_date,
@@ -156,17 +160,14 @@ class TestFilterStep:
         # Test insert of object
         database.insertData(filt)
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testInsertWithForeignKeys(self, epoch, target_agent):
+    def testInsertWithForeignKeys(self, epoch, target_agent, database: ResonaateDatabase):
         """Test inserting observation with only foreign keys.
 
         Args:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+            database (:class:`.ResonaateDatabase`): shared instance of database
         """
-        database = ResonaateDatabase.getSharedInterface()
         filt = FilterStep.recordFilterStep(
             julian_date=epoch.julian_date,
             target_id=target_agent.unique_id,
@@ -180,19 +181,16 @@ class TestFilterStep:
         # Test insert of object via FK
         database.insertData(filt)
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testManyToOneLazyLoading(self, epoch, target_agent):
+    def testManyToOneLazyLoading(self, epoch, target_agent, database: ResonaateDatabase):
         """Test many to one lazy-loading attributes.
 
         Args:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+            database (:class:`.ResonaateDatabase`): shared instance of database
         """
         julian_date = epoch.julian_date
         target_id = target_agent.unique_id
-        database = ResonaateDatabase.getSharedInterface()
         filt = FilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
@@ -206,20 +204,17 @@ class TestFilterStep:
         assert new_filt.epoch.julian_date == julian_date
         assert new_filt.target.unique_id == target_id
 
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)
-
-    def testManyToOneQuery(self, epoch, target_agent):
+    def testManyToOneQuery(self, epoch, target_agent, database: ResonaateDatabase):
         """Test many to one relationship queries.
 
         Args:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+            database (:class:`.ResonaateDatabase`): shared instance of database
         """
         epoch_copy = deepcopy(epoch)
         target_copy = deepcopy(target_agent)
 
-        database = ResonaateDatabase.getSharedInterface()
         filt = FilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
@@ -235,5 +230,3 @@ class TestFilterStep:
 
         # Test querying by epoch
         query = Query(FilterStep).filter(FilterStep.epoch == epoch_copy)
-        # Reset DB
-        database.resetData(ResonaateDatabase.VALID_DATA_TYPES)

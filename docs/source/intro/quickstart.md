@@ -177,11 +177,11 @@ Once the simulation completes, you can directly query the database from Python.
 ```python
 from sqlalchemy.orm.query import Query
 from resonaate.data.ephemeris import TruthEphemeris
-from resonaate.data.resonaate_database import ResonaateDatabase
+from resonaate.data import getDBConnection
 
 # To show that the simulation completed, we will query the DB and count how many
 # :class:`.Ephemeris` objects were created.
-db = ResonaateDatabase.getSharedInterface()
+db = getDBConnection()
 print(len(db.getData(Query(TruthEphemeris))))
 ```
 

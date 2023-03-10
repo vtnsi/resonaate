@@ -42,7 +42,7 @@ def clockInstance(
     scenario_start: datetime,
     scenario_time_span: float,
     scenario_timestep: float,
-    reset_shared_db: None,
+    database: None,
 ):
     """Instance of `ScenarioClock`."""
     return ScenarioClock(scenario_start, scenario_time_span, scenario_timestep)
@@ -69,7 +69,7 @@ def testClockAttributes(
 
 
 @pytest.fixture(name="clock_from_config")
-def clockFromConfig(scenario_start: datetime, scenario_end: datetime, reset_shared_db: None):
+def clockFromConfig(scenario_start: datetime, scenario_end: datetime, database: None):
     """Instance of `ScenarioClock` configured from `TimeConfig`."""
     time_config = TimeConfig(
         start_timestamp=scenario_start,

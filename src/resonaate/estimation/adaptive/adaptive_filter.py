@@ -3,11 +3,9 @@ from __future__ import annotations
 
 # Standard Library Imports
 from copy import deepcopy
-from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import KeyValueStore
 from numpy import argwhere, array, ceil, concatenate, delete, dot, hstack, linspace, ones, outer
 from numpy import round as np_round
 from numpy import sum as np_sum
@@ -15,8 +13,8 @@ from numpy import union1d, vstack, zeros
 from scipy.linalg import norm
 
 # Local Imports
+from ...data import getDBConnection
 from ...data.queries import fetchEstimatesByJDInterval, fetchObservationsByJDInterval
-from ...data.resonaate_database import ResonaateDatabase
 from ...dynamics.celestial import EarthCollision
 from ...physics.orbit_determination.lambert import determineTransferDirection
 from ...physics.time.stardate import JulianDate, ScenarioTime
@@ -35,6 +33,7 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ...data.observation import Observation
+    from ...data.resonaate_database import ResonaateDatabase
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.orbit_determination import OrbitDeterminationFunction
     from ...scenario.config.estimation_config import AdaptiveEstimationConfig
@@ -193,8 +192,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             ``bool``: Whether or not enough observations and estimates were in the database to start MMAE
         """
         # load path to on-disk database for the current scenario run
-        db_path = loads(KeyValueStore.getValue("db_path"))
-        database = ResonaateDatabase.getSharedInterface(db_path=db_path)
+        database = getDBConnection()
 
         current_jdate = ScenarioTime(self.time).convertToJulianDate(julian_date_start)
 

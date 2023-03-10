@@ -50,7 +50,7 @@ def getMockedSensingAgentObject(mocked_sensor: Sensor) -> SensingAgent:
 
 
 @pytest.fixture(name="scenario_clock")
-def createScenarioClock(reset_shared_db: None) -> ScenarioClock:
+def createScenarioClock(database: None) -> ScenarioClock:
     """Create a :class:`.ScenarioClock` object for use in testing."""
     return ScenarioClock(datetime(2018, 12, 1, 12, 0), 300, 60)
 

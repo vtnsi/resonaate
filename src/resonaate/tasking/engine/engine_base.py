@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from numpy import zeros
 
 # Local Imports
+from ...data import getDBConnection
 from ...data.importer_database import ImporterDatabase
 from ..decisions.decision_base import Decision
 from ..rewards.reward_base import Reward
@@ -105,6 +106,9 @@ class TaskingEngine(metaclass=ABCMeta):
         """``list``: transient :class:`.MissedObservation` tasked & saved by this engine during the current timestep."""
         self._saved_missed_observations: list[MissedObservation] = []
         """``list``: transient :class:`.MissedObservation` tasked & saved by this engine not loaded to the DB."""
+
+        self._database = getDBConnection()
+        """:class:`.ResonaateDatabase`: shared instance of simulation database."""
 
         self._importer_db: ImporterDatabase | None = None
         """:class:`.ImporterDatabase`: Input database object for loading :class:`.Observation` objects."""

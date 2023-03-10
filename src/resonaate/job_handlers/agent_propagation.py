@@ -18,11 +18,11 @@ from sqlalchemy.orm import Query
 from ..common.behavioral_config import BehavioralConfig
 from ..common.exceptions import AgentProcessingError, MissingEphemerisError
 from ..common.utilities import getTypeString
+from ..data import getDBConnection
 from ..data.ephemeris import TruthEphemeris
 from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents
 from ..data.importer_database import ImporterDatabase
-from ..data.resonaate_database import ResonaateDatabase
 from ..estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from ..physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
 from ..physics.transforms.reductions import getReductionParameters
@@ -383,7 +383,7 @@ class AgentPropagationJobHandler(PropagationJobHandler):
         prior_julian_date = kwargs["prior_julian_date"]
         agent_propagation_events = defaultdict(list)
         relevant_events = getRelevantEvents(
-            ResonaateDatabase.getSharedInterface(),
+            getDBConnection(),
             EventScope.AGENT_PROPAGATION,
             prior_julian_date,
             julian_date,
@@ -423,11 +423,11 @@ class AgentPropagationJobHandler(PropagationJobHandler):
             datetime_epoch (datetime): current simulation epoch.
         """
         if self._importer_db:
-            self._importEphmerides(kwargs["datetime_epoch"])
+            self._importEphemerides(kwargs["datetime_epoch"])
 
         super().executeJobs(**kwargs)
 
-    def _importEphmerides(self, datetime_epoch: datetime):
+    def _importEphemerides(self, datetime_epoch: datetime):
         """Import :class:`.TruthEphemeris` data from :class:`.ImporterDatabase`.
 
         Args:

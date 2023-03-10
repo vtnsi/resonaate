@@ -14,7 +14,7 @@ from resonaate.scenario import buildScenarioFromConfigFile
 from .. import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 
 
-@pytest.mark.usefixtures("reset_shared_db")
+@pytest.mark.usefixtures("custom_database")
 class TestScenarioFactory:
     """Tests for :func:`.scenarioFactory`."""
 

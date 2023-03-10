@@ -12,9 +12,9 @@ from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
 from ..common.exceptions import DuplicateEngineError, DuplicateSensorError, DuplicateTargetError
 from ..common.logger import Logger
-from ..data.data_interface import AgentModel
+from ..data import getDBConnection
+from ..data.agent import AgentModel
 from ..data.events import Event
-from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import dynamicsFactory
 from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     # Local Imports
+    from ..data.resonaate_database import ResonaateDatabase
     from ..tasking.engine.engine_base import TaskingEngine
     from .config import EngineConfig, ScenarioConfig, SensingAgentConfig, TargetAgentConfig
 
@@ -69,7 +70,7 @@ class ScenarioBuilder:
         self.sensor_agents = self._initSensors()
 
         # Store agent data in the database FIRST for events that rely on them
-        shared_database = ResonaateDatabase.getSharedInterface()
+        shared_database = getDBConnection()
         self._loadAgentsIntoDatabase(shared_database)
         self._loadEventsIntoDatabase(shared_database)
 

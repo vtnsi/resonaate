@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 import logging
+import shutil
 import sys
 from typing import TYPE_CHECKING
 
@@ -12,18 +13,29 @@ from mjolnir import KeyValueStore
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
-from resonaate.data.resonaate_database import ResonaateDatabase
+from resonaate.data import clearDBPath, getDBConnection, setDBPath
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
 
 # Local Imports
-from . import TEST_START_JD, PropagateFunc, patchCreateDatabasePath, propagateScenario
+from . import (
+    FIXTURE_DATA_DIR,
+    SHARED_DB_PATH,
+    TEST_START_JD,
+    PropagateFunc,
+    patchCreateDatabasePath,
+    propagateScenario,
+)
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from pathlib import Path
+
     # RESONAATE Imports
     from resonaate.common.logger import Logger
+    from resonaate.data.resonaate_database import ResonaateDatabase
 
 
 @pytest.fixture(autouse=True)
@@ -87,36 +99,42 @@ def _teardownKeyValueStore():
     KeyValueStore.flush()
 
 
-@pytest.fixture(name="reset_shared_db")
-def _resetDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Reset the database tables to avoid data integrity errors.
+@pytest.fixture(name="custom_database")
+def _customDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Allows setting up a custom DB path, avoiding data integrity issues.
 
     Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated
-        so that the "epochs" table is reset.
+        This fixture should typically only be used when `buildScenarioFromConfigFile()` is
+        used inside test functions.
     """
     with monkeypatch.context() as m:
         m.setattr("resonaate.data.createDatabasePath", patchCreateDatabasePath)
         yield
 
-    ResonaateDatabase.getSharedInterface().resetData(tables=ResonaateDatabase.VALID_DATA_TYPES)
+    database = getDBConnection()
+    database.resetData(database.VALID_DATA_TYPES)
+    clearDBPath()
 
 
 @pytest.fixture(name="database")
-def getDataInterface() -> ResonaateDatabase:
+def getDataInterface(tmp_path: Path) -> ResonaateDatabase:
     """Create common, non-shared DB object for all tests.
 
     Yields:
         :class:`.ResonaateDatabase`: properly constructed DB object
     """
-    # Create & yield instance.
-    shared_interface = ResonaateDatabase.getSharedInterface()
-    yield shared_interface
-    shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
+    # [NOTE]: copy blank test DBs to pytest tmp dir
+    orig_db_dir = FIXTURE_DATA_DIR / SHARED_DB_PATH.parent
+    tmp_db_dir = tmp_path / SHARED_DB_PATH.parent
+    shutil.copytree(orig_db_dir, tmp_db_dir, dirs_exist_ok=True)
+    # [NOTE]: properly set DB connection string using tmp dir
+    setDBPath(f"sqlite:///{tmp_path / SHARED_DB_PATH}")
+    yield getDBConnection()
+    clearDBPath()
 
 
 @pytest.fixture(name="propagate_scenario")
-def propagateFixture(reset_shared_db: None) -> PropagateFunc:
+def propagateFixture(custom_database: None) -> PropagateFunc:
     """Returns function that propagates a scenario."""
     # pylint: disable=unused-argument
     return propagateScenario
