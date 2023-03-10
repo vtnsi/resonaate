@@ -95,7 +95,9 @@ class ScheduledFiniteBurnEvent(Event):
         else:
             err = f"{self.thrust_frame} is not a valid coordinate frame."
             raise ValueError(err)
-        finite_burn = ScheduledFiniteBurn(start_sim_time, end_sim_time, thrust_func)
+        finite_burn = ScheduledFiniteBurn(
+            start_sim_time, end_sim_time, thrust_func, scope_instance.simulation_id
+        )
 
         scope_instance.appendPropagateEvent(finite_burn)
 

@@ -96,19 +96,27 @@ def eciBurn(state: ndarray, acc_vector: ndarray):  # pylint: disable=unused-argu
 class ScheduledFiniteThrust(ContinuousStateChangeEvent, metaclass=ABCMeta):
     """Describes a continuous maneuver that takes place over a specific period."""
 
-    def __init__(self, start_time: ScenarioTime, end_time: ScenarioTime, thrust_func: partial):
+    def __init__(
+        self,
+        start_time: ScenarioTime,
+        end_time: ScenarioTime,
+        thrust_func: partial,
+        agent_id: int,
+    ):
         """Instantiate a :class:`.ScheduledFiniteThrust` object.
 
         Args:
             start_time (``ScenarioTime``): scenario time when thrust begins
             end_time (``ScenarioTime``): scenario time when thrust ends
             thrust_func (functools.partial): a partial function describing the desired thrust
+            agent_id (``int``): agent ID who executes this state change event
         """
         if thrust_func.func not in self.valid_thrust_funcs:
             raise ValueError("Thrust function must be a valid member of finite thrust functions")
         self.thrust_func = thrust_func
         self.start_time = start_time
         self.end_time = end_time
+        self.agent_id = agent_id
 
     def __call__(self, time: ScenarioTime, state: ndarray):
         """When this function returns zero during integration, it interrupts the integration process.
@@ -135,6 +143,7 @@ class ScheduledFiniteThrust(ContinuousStateChangeEvent, metaclass=ABCMeta):
                 self.start_time == other.start_time,
                 self.end_time == other.end_time,
                 self.thrust_func.func == other.thrust_func.func,
+                self.agent_id == other.agent_id,
             ]
         )
 
@@ -150,11 +159,10 @@ class ScheduledFiniteThrust(ContinuousStateChangeEvent, metaclass=ABCMeta):
         See Also:
             :meth:`.ContinuousStateChangeEvent.getStateChangeCallback()`
         """
-        # [FIXME] Pass RSO ID in to `ScheduledImpulse` so event can be recorded properly
         if fpe_equals(self.end_time - time, 0.0):
-            EventStack.pushEvent(EventRecord(f"Finite thrust ended at {time}", 0))
+            EventStack.pushEvent(EventRecord(f"Finite thrust ended at {time}", self.agent_id))
             return None
-        EventStack.pushEvent(EventRecord(f"Finite thrust at {time}", 0))
+        EventStack.pushEvent(EventRecord(f"Finite thrust at {time}", self.agent_id))
         return self.thrust_func
 
 

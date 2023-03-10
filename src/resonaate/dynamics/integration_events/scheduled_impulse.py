@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import concatenate, zeros
@@ -13,21 +14,28 @@ from ...physics.transforms.methods import ntw2eci
 from .discrete_state_change_event import DiscreteStateChangeEvent
 from .event_stack import EventRecord, EventStack
 
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from ...physics.time.stardate import ScenarioTime
+
 
 class ScheduledImpulse(DiscreteStateChangeEvent, metaclass=ABCMeta):  # noqa: B024
     """Describes an impulsive maneuver that takes place at a specific time."""
 
-    def __init__(self, time, delta_v, scope_instance_id):
+    def __init__(self, time: ScenarioTime, delta_v: ndarray, agent_id: int):
         """Instantiate a :class:`.ScheduledImpulse` object.
 
         Args:
-            time (``float``): time of impulsive event in epoch seconds
+            time (:class:`.ScenarioTime`): time of impulsive event in epoch seconds
             delta_v (``ndarray``): 3x1 array of thrust vectors (km/sec)
-            scope_instance_id (``int``): ID of the agent to perform the impulsive burn
+            agent_id (``int``): ID of the agent to perform the impulsive burn
         """
         self.time = time
         self.thrust = concatenate((zeros(3), delta_v))
-        self.scope_instance_id = scope_instance_id
+        self.agent_id = agent_id
 
     def __call__(self, time, state):
         """When this function returns zero during integration, it interrupts the integration process.
@@ -50,7 +58,7 @@ class ScheduledECIImpulse(ScheduledImpulse):
         See Also:
             :meth:`.DiscreteStateChangeEvent.getStateChange()`
         """
-        EventStack.pushEvent(EventRecord("ECI Impulse", self.scope_instance_id))
+        EventStack.pushEvent(EventRecord("ECI Impulse", self.agent_id))
         return self.thrust
 
 
@@ -63,5 +71,5 @@ class ScheduledNTWImpulse(ScheduledImpulse):
         See Also:
             :meth:`.DiscreteStateChangeEvent.getStateChange()`
         """
-        EventStack.pushEvent(EventRecord("NTW Impulse", self.scope_instance_id))
+        EventStack.pushEvent(EventRecord("NTW Impulse", self.agent_id))
         return ntw2eci(state, self.thrust)
