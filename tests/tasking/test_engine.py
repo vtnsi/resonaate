@@ -228,9 +228,10 @@ def testAssessWithObservations(
     # Assert handlers are called
     centralized_tasking_engine._predict_handler.executeJobs.assert_called_once_with()
     centralized_tasking_engine._execute_handler.executeJobs.assert_called_once()
-    # [FIXME]: change `[1]`` to `kwargs` when Python >= 3.8
     assert np.array_equal(
-        centralized_tasking_engine._execute_handler.executeJobs.call_args[1]["decision_matrix"],
+        centralized_tasking_engine._execute_handler.executeJobs.call_args.kwargs[
+            "decision_matrix"
+        ],
         np.zeros((3, 1), dtype=bool),
     )
     event_handler_mock.assert_called_once()
