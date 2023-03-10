@@ -114,6 +114,13 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
         See Also:
             :meth:`.DiscreteStateChangeEvent.__call__()`
         """
+        # [FIXME]: I think this should return a 'continuous' float of the `trigger` value
+        #   This could be related to Issue 41:
+        #       https://code.vt.edu/space-research/resonaate/resonaate/-/issues/41
+        #
+        #   Basically, scipy event handling may _look_ for the crossing using the value returned,
+        #   and a discontinuous jump may not provide enough information for the root
+        #   finding algorithm.
         if self.interruptRequired(time, state):
             self.recordActivation(time, state)
             return 0
