@@ -4,7 +4,7 @@ from __future__ import annotations
 # Standard Library Imports
 from copy import deepcopy
 from datetime import datetime
-from unittest.mock import Mock, create_autospec, patch
+from unittest.mock import MagicMock, Mock, create_autospec, patch
 
 # Third Party Imports
 import numpy as np
@@ -34,6 +34,7 @@ def getSensorAgent() -> SensingAgent:
     sensor_agent.simulation_id = 11111
     sensor_agent.agent_type = "Spacecraft"
     sensor_agent.truth_state = np.array((0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    sensor_agent.sensor_time_bias_event_queue = []
     return sensor_agent
 
 
@@ -42,6 +43,9 @@ def getTargetAgent() -> TargetAgent:
     """Crate a mocked Target agent object."""
     target_agent = create_autospec(spec=TargetAgent, instance=True)
     target_agent.initial_state = np.array((0.0, Earth.radius * 2, 0.0, 0.0, 0.0, 0.0))
+    target_agent.simulation_id = 123456
+    target_agent.visual_cross_section = 10.0
+    target_agent.reflectivity = 10.0
     return target_agent
 
 
@@ -66,7 +70,7 @@ def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert np.isclose(base_sensor.aperture_diameter, base_sensor_args["diameter"])
     assert np.isclose(base_sensor.slew_rate, np.deg2rad(base_sensor_args["slew_rate"]))
     assert base_sensor.field_of_view is not None
-    assert base_sensor.time_last_ob >= 0.0
+    assert base_sensor.time_last_tasked >= 0.0
 
     # Should raise an error b/c not set
     match = r"SensingAgent.host was not \(or was incorrectly\) initialized"
@@ -84,7 +88,7 @@ def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
 
     base_sensor.host = mocked_sensing_agent
     assert base_sensor.host is not None
-    assert base_sensor.time_last_ob > 0.0
+    assert base_sensor.time_last_tasked > 0.0
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
@@ -154,7 +158,7 @@ def testCanSlew(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test whether the sensor can slew to a target or not."""
     sensor = Sensor(**base_sensor_args)
     sensor.host = mocked_sensing_agent
-    sensor.time_last_ob = 0.0
+    sensor.time_last_tasked = 0.0
 
     # Assumes 1 deg/sec slew rate & 60 sec dt
     assert not sensor.canSlew(np.array((1.0, 0.0, 0.0)))
@@ -231,26 +235,32 @@ def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: Sensing
     sensor.host.julian_date_epoch = JulianDate(2459569.75)
 
     # Target SEZ position
-    tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    pointing_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
-    # Create mocks for TargetAgent objects with `eci_state`
-    agent_1 = Mock()
-    agent_2 = Mock()
-    agent_3 = Mock()
-    agent_4 = Mock()
-    agent_1.eci_state = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
-    agent_2.eci_state = np.array((-1.0, 0.0, -1.0, 0.0, 0.0, 0.0))  # outside FOV
-    agent_3.eci_state = np.array((1.0, 1.0, 0.0, 0.0, 0.0, 0.0))
-    agent_4.eci_state = np.array((1.0, 0.0, 1.0, 0.0, 0.0, 0.0))
+    # Test target outside FOV
+    agent = Mock()
+    agent.eci_state = np.array((-1.0, 0.0, -1.0, 0.0, 0.0, 0.0))  # outside FOV
 
-    targets_in_fov = sensor.checkTargetsInView(tgt_sez, [agent_1, agent_2, agent_3, agent_4])
-    assert targets_in_fov == [agent_1, agent_3, agent_4]
-    targets_in_fov = sensor.checkTargetsInView(tgt_sez, [agent_1, agent_2])
-    assert targets_in_fov == [agent_1]
-    targets_in_fov = sensor.checkTargetsInView(tgt_sez, [agent_3])
-    assert targets_in_fov == [agent_3]
-    targets_in_fov = sensor.checkTargetsInView(tgt_sez, [agent_2])
-    assert not targets_in_fov
+    observation = sensor.attemptObservation(agent, pointing_sez)
+    assert isinstance(observation, MissedObservation)
+
+    # Test target inside FOV
+    agent.eci_state = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))  # inside FOV
+
+    with patch.object(
+        sensor,
+        "isVisible",
+        return_value=(True, Explanation.VISIBLE),
+    ) as mock_visible_check:
+        with patch.object(
+            Observation,
+            "fromMeasurement",
+            return_value=create_autospec(Observation, instance=True),
+        ) as mock_observation_from_measurement:
+            observation = sensor.attemptObservation(agent, pointing_sez)
+            assert isinstance(observation, Observation)
+            mock_visible_check.assert_called_once()
+            mock_observation_from_measurement.assert_called_once()
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
@@ -393,7 +403,6 @@ def testCollectObservations(
     radar_sensor_args: dict,
     mocked_sensing_agent: SensingAgent,
     mocked_primary_target: TargetAgent,
-    monkeypatch: pytest.MonkeyPatch,
 ):
     """Test `Sensor.collectObservations`."""
     sensor = Radar(**radar_sensor_args)
@@ -422,26 +431,61 @@ def testCollectObservations(
     )
     assert len(good_obs) == 1
 
+    # Check that boresight was updated
+    slant_range_sez = _dummySlantRange(
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        mocked_sensing_agent.datetime_epoch,
+    )
+    assert np.allclose(
+        mocked_sensing_agent.sensors.boresight,
+        slant_range_sez[:3] / np.linalg.norm(slant_range_sez[:3]),
+    )
+
     # Test when target is not in line of sight (Earth is blocking)
     mocked_sensing_agent.eci_state = np.array((0.0, -Earth.radius, 0.0, 0.0, 0.0, 0.0))
 
-    good_obs, missed_obs = mocked_sensing_agent.sensors.collectObservations(
-        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+    # pylint: disable=protected-access
+    mocked_sensing_agent.sensors.boresight = mocked_sensing_agent.sensors._setInitialBoresight()
+    with patch.object(mocked_sensing_agent.sensors, "canSlew", return_value=True):
+        good_obs, missed_obs = mocked_sensing_agent.sensors.collectObservations(
+            mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+        )
+        assert not good_obs
+
+    # If target was in slew distance, then the boresight should have updated
+    slant_range_sez = _dummySlantRange(
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        mocked_sensing_agent.datetime_epoch,
     )
-    assert not good_obs
+    assert np.allclose(
+        mocked_sensing_agent.sensors.boresight,
+        slant_range_sez[:3] / np.linalg.norm(slant_range_sez[:3]),
+    )
+
     for missed_ob in missed_obs:
         assert missed_ob.reason == Explanation.LINE_OF_SIGHT.value
 
-    # Test when target is out of slew distance
-    def mock_can_slew(slant_range_sez):
-        # pylint: disable=unused-argument
-        return False
+    # pylint: disable=protected-access
+    mocked_sensing_agent.sensors.boresight = mocked_sensing_agent.sensors._setInitialBoresight()
+    with patch.object(mocked_sensing_agent.sensors, "canSlew", return_value=False):
+        good_obs, missed_obs = mocked_sensing_agent.sensors.collectObservations(
+            mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+        )
+        assert not good_obs
 
-    monkeypatch.setattr(sensor, "canSlew", mock_can_slew)
-    good_obs, missed_obs = mocked_sensing_agent.sensors.collectObservations(
-        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+    # If the sensor rejected the task because it could not slew to the target, then boresight should not have changed
+    slant_range_sez = _dummySlantRange(
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        mocked_sensing_agent.datetime_epoch,
     )
-    assert not good_obs
+    # pylint: disable=protected-access
+    assert np.allclose(
+        mocked_sensing_agent.sensors.boresight,
+        mocked_sensing_agent.sensors._setInitialBoresight(),
+    )
     for missed_ob in missed_obs:
         assert missed_ob.reason == Explanation.SLEW_DISTANCE.value
 
@@ -545,9 +589,13 @@ def testBuildSigmaObs():
     """To be implemented."""
 
 
+@patch("resonaate.sensors.sensor_base.getSlantRangeVector")
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testAttemptObservation(
-    base_sensor_args: dict, mocked_sensing_agent: SensingAgent, monkeypatch: pytest.MonkeyPatch
+    slant_range_patch: Mock,
+    base_sensor_args: dict,
+    mocked_sensing_agent: SensingAgent,
+    mocked_primary_target: TargetAgent,
 ):
     """Test that observations and missed observations are encoded correctly."""
     # pylint: disable=too-many-statements
@@ -556,34 +604,47 @@ def testAttemptObservation(
     sensor.host = mocked_sensing_agent
     sensor.host.eci_state = np.array((6378.0, 0.0, 0.0, 0.0, 0.0, 0.0))
     sensor.host.julian_date_epoch = JulianDate(2459569.75)
-    tgt_eci_state = np.array((7800.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    sensor.field_of_view = ConicFoV(cone_angle=np.deg2rad(45.0))
 
-    def mock_slant_range(sensor_eci, target_eci, utc_date):
-        # pylint: disable=unused-argument
-        return np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))  # 0 elevation
-
-    monkeypatch.setattr("resonaate.sensors.sensor_base.getSlantRangeVector", mock_slant_range)
+    slant_range_patch.return_value = np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0))
+    mocked_primary_target.eci_state = np.array((7800.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
     # Test when target is outside elevation mask
-    sensor.el_mask = np.deg2rad(np.array((1.0, 89.0)))
+    sensor.el_mask = np.deg2rad(np.array((1.0, 1.1)))
     missed_ob = sensor.attemptObservation(
-        tgt_id=123456,
-        tgt_eci_state=tgt_eci_state,
-        viz_cross_section=10.0,
-        reflectivity=10.0,
+        mocked_primary_target,
+        pointing_sez=np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0)),
     )
     assert isinstance(missed_ob, MissedObservation)
     assert missed_ob.reason == Explanation.ELEVATION_MASK.value
 
     # Test when target is inside elevation mask
-    sensor.el_mask = np.deg2rad(np.array((0.0, 89.0)))
+    sensor.el_mask = np.deg2rad(np.array((-90.0, 89.0)))
     ob = sensor.attemptObservation(
-        tgt_id=123456,
-        tgt_eci_state=tgt_eci_state,
-        viz_cross_section=10.0,
-        reflectivity=10.0,
+        mocked_primary_target,
+        pointing_sez=np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0)),
     )
     assert isinstance(ob, Observation)
+
+    # Test when target is outside the field of view
+    with patch.object(sensor.field_of_view, "inFieldOfView", return_value=False):
+        missed_ob = sensor.attemptObservation(
+            mocked_primary_target,
+            pointing_sez=np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0)),
+        )
+        assert isinstance(missed_ob, MissedObservation)
+        assert missed_ob.reason == Explanation.FIELD_OF_VIEW.value
+
+    # Test when target is not visible
+    mock_explanation = MagicMock()
+    mock_explanation.value = "mock_explanation"
+    with patch.object(sensor, "isVisible", return_value=(False, mock_explanation)):
+        missed_ob = sensor.attemptObservation(
+            mocked_primary_target,
+            pointing_sez=np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0)),
+        )
+        assert isinstance(missed_ob, MissedObservation)
+        assert missed_ob.reason == mock_explanation.value
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())

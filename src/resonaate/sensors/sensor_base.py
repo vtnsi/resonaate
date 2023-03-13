@@ -86,7 +86,7 @@ class Sensor(ABC):
         self.maximum_range = maximum_range
 
         # Derived properties initialization
-        self.time_last_ob = ScenarioTime(0.0)
+        self.time_last_tasked = ScenarioTime(0.0)
         self.boresight = self._setInitialBoresight()
         self._host: SensingAgent | None = None
         self._sensor_args = sensor_args
@@ -152,43 +152,20 @@ class Sensor(ABC):
         obs_list = []
         missed_observation_list = []
         # Check if sensor will slew to point in time
-        datetime_epoch = self.host.datetime_epoch
-        slant_range_sez = getSlantRangeVector(self.host.eci_state, estimate_eci, datetime_epoch)
-        if self.canSlew(slant_range_sez):
-            # Check if primary RSO is FoV
-            if len(self.checkTargetsInView(slant_range_sez, [target_agent])) == 1:
-                observation = self.attemptNoisyObservation(target_agent)
-                if observation.reason == Explanation.VISIBLE:
-                    obs_list.append(observation)
-                else:
-                    missed_observation_list.append(observation)
+        pointing_sez = getSlantRangeVector(
+            self.host.eci_state, estimate_eci, self.host.datetime_epoch
+        )
+        if self.canSlew(pointing_sez):
+            # If the sensor can slew to the target, then it does before attempting observations
+            self.boresight = pointing_sez[:3] / norm(pointing_sez[:3])
+            self.time_last_tasked = self.host.time
 
+            # Attempt to observe primary RSO
+            observation = self.attemptObservation(target_agent, pointing_sez)
+            if observation.reason == Explanation.VISIBLE:
+                obs_list.append(observation)
             else:
-                missed_observation_list.append(
-                    MissedObservation(
-                        julian_date=self.host.julian_date_epoch,
-                        sensor_type=getTypeString(self),
-                        sensor_id=self.host.simulation_id,
-                        target_id=target_agent.simulation_id,
-                        sensor_eci=self.host.eci_state,
-                        reason=Explanation.FIELD_OF_VIEW.value,
-                    )
-                )
-
-            # If doing Serendipitous Observations
-            if self.calculate_background:
-                background_targets_in_fov = self.checkTargetsInView(
-                    slant_range_sez, background_agents
-                )
-                visible_observations = filter(  # pylint:disable=bad-builtin
-                    lambda observation: isinstance(observation, Observation),
-                    (self.attemptNoisyObservation(tgt) for tgt in background_targets_in_fov),
-                )
-                obs_list.extend(tuple(visible_observations))
-
-            self.boresight = slant_range_sez[:3] / norm(slant_range_sez[:3])
-            if obs_list:
-                self.time_last_ob = self.host.time
+                missed_observation_list.append(observation)
 
         else:
             missed_observation_list.append(
@@ -202,122 +179,100 @@ class Sensor(ABC):
                 )
             )
 
-        return obs_list, missed_observation_list
-
-    def checkTargetsInView(
-        self, slant_range_sez: ndarray, background_agents: list[TargetAgent]
-    ) -> list[TargetAgent]:
-        """Perform bulk FOV check on all RSOs.
-
-        Args:
-            slant_range_sez (``ndarray``): 3x1 slant range vector that sensor is pointing towards
-            background_agents (``list``): list of all background `.TargetAgents` for this observation
-
-        Returns:
-            ``list``: list of all visible background `.TargetAgents` for this observation
-        """
-        datetime_epoch = self.host.datetime_epoch
-        # filter out targets outside of FOV
-        agents_in_fov = list(
-            filter(  # pylint:disable=bad-builtin
-                lambda agent: self.field_of_view.inFieldOfView(
-                    slant_range_sez,
-                    getSlantRangeVector(self.host.eci_state, agent.eci_state, datetime_epoch),
-                ),
-                background_agents,
+        # If doing Serendipitous Observations
+        if self.calculate_background:
+            visible_observations = filter(  # pylint:disable=bad-builtin
+                lambda observation: isinstance(observation, Observation),
+                (self.attemptObservation(tgt, pointing_sez) for tgt in background_agents),
             )
-        )  # pylint:disable=bad-builtin
-        return agents_in_fov
+            obs_list.extend(tuple(visible_observations))
+
+        return obs_list, missed_observation_list
 
     def attemptObservation(
         self,
-        tgt_id: int,
-        tgt_eci_state: ndarray,
-        viz_cross_section: float,
-        reflectivity: float,
-        real_obs: bool = False,
+        target_agent: TargetAgent,
+        pointing_sez: ndarray,
     ) -> Observation | MissedObservation:
         """Calculate the measurement data for a single observation.
 
         Args:
-            tgt_id (``int``): simulation ID associated with current target
-            tgt_eci_state (``ndarray``): 6x1 ECI state vector of the target (km; km/sec)
-            viz_cross_section (``float``): visible cross-sectional area of the target (m^2)
-            reflectivity (``float``): Reflectivity of RSO (unitless)
-            real_obs (``bool``, optional): whether observation should include noisy measurements. Defaults to ``False``.
+            target_agent (:class:`.TargetAgent`): agent that the sensor is attempting to observe
+            pointing_sez (``ndarray``): 6x1 slant range vector that sensor is pointing towards
 
         Returns:
             :class:`.Observation` | :class:`.MissedObservation`: constructed observation or a _missed_ observation and
                 reason it isn't visible.
         """
-        # Calculate common values
-        julian_date = self.host.julian_date_epoch
-        datetime_epoch = self.host.datetime_epoch
-        slant_range_sez = getSlantRangeVector(self.host.eci_state, tgt_eci_state, datetime_epoch)
+        if self.host.sensor_time_bias_event_queue:
+            tgt_eci_state = self._applyTimeBias(target_agent)
+        else:
+            tgt_eci_state = target_agent.eci_state
 
-        # Construct observations
-        visibility, reason = self.isVisible(
-            tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
+        slant_range_sez = getSlantRangeVector(
+            self.host.eci_state, tgt_eci_state, self.host.datetime_epoch
         )
-        if visibility:
-            # Make a real observation once tasked -> add noise to the measurement
-            # Forecasting an observation for reward matrix purposes
-            return Observation.fromMeasurement(
-                epoch_jd=julian_date,
-                target_id=tgt_id,
-                tgt_eci_state=tgt_eci_state,
-                sensor_id=self.host.simulation_id,
-                sensor_eci=self.host.eci_state,
+        if not self.field_of_view.inFieldOfView(pointing_sez, slant_range_sez):
+            return MissedObservation(
+                julian_date=self.host.julian_date_epoch,
                 sensor_type=getTypeString(self),
-                measurement=self._measurement,
-                noisy=real_obs,
+                sensor_id=self.host.simulation_id,
+                target_id=target_agent.simulation_id,
+                sensor_eci=self.host.eci_state,
+                reason=Explanation.FIELD_OF_VIEW.value,
             )
 
-        # else
-        return MissedObservation(
-            julian_date=julian_date,
-            sensor_type=getTypeString(self),
-            sensor_id=self.host.simulation_id,
-            target_id=tgt_id,
-            sensor_eci=self.host.eci_state,
-            reason=reason.value,
-        )
-
-    def attemptNoisyObservation(
-        self, target_agent: TargetAgent
-    ) -> Observation | MissedObservation:
-        """Calculate the measurement data for a single observation with noisy measurements.
-
-        Args:
-            target_agent (`:class:.TargetAgent`): Target Agent being observed
-
-        Returns:
-            :class:`.Observation` | :class:`.MissedObservation`: constructed observation or a _missed_ observation and
-                reason it isn't visible.
-        """
-        # [NOTE][parallel-time-bias-event-handling] Step three: Check if a sensor has bias events
-        tgt_eci_state = target_agent.eci_state
-        if len(self.host.sensor_time_bias_event_queue):
-            if abs(self.host.sensor_time_bias_event_queue[0].applied_bias) > abs(
-                target_agent.dt_step
-            ):
-                raise ValueError("Time bias cannot be larger than the dt_step")
-            tgt_eci_state = target_agent.dynamics.propagate(
-                target_agent.time - target_agent.dt_step,
-                target_agent.time + self.host.sensor_time_bias_event_queue[0].applied_bias,
-                target_agent.previous_state,
-            )
-            msg = f"Sensor time bias of {self.host.sensor_time_bias_event_queue[0].applied_bias} "
-            msg += f"seconds applied to sensor {self.host.simulation_id}"
-            resonaateLogInfo(msg)
-
-        return self.attemptObservation(
-            target_agent.simulation_id,
+        visibility, reason = self.isVisible(
             tgt_eci_state,
             target_agent.visual_cross_section,
             target_agent.reflectivity,
-            real_obs=True,
+            slant_range_sez,
         )
+        if not visibility:
+            return MissedObservation(
+                julian_date=self.host.julian_date_epoch,
+                sensor_type=getTypeString(self),
+                sensor_id=self.host.simulation_id,
+                target_id=target_agent.simulation_id,
+                sensor_eci=self.host.eci_state,
+                reason=reason.value,
+            )
+
+        return Observation.fromMeasurement(
+            epoch_jd=self.host.julian_date_epoch,
+            target_id=target_agent.simulation_id,
+            tgt_eci_state=tgt_eci_state,
+            sensor_id=self.host.simulation_id,
+            sensor_eci=self.host.eci_state,
+            sensor_type=getTypeString(self),
+            measurement=self._measurement,
+            noisy=True,
+        )
+
+    def _applyTimeBias(self, target_agent: TargetAgent) -> ndarray:
+        """Apply time bias to a target and return its ECI state.
+
+        Args:
+            target_agent (TargetAgent): agent which to apply to bias
+
+        Raises:
+            ValueError: raised if requested time bias is greater than the timestep
+
+        Returns:
+            ndarray: ECI state of the target with time bias applied to sensor clock
+        """
+        # [NOTE][parallel-time-bias-event-handling] Step three: Check if a sensor has bias events
+        if abs(self.host.sensor_time_bias_event_queue[0].applied_bias) > abs(target_agent.dt_step):
+            raise ValueError("Time bias cannot be larger than the dt_step")
+        tgt_eci_state = target_agent.dynamics.propagate(
+            target_agent.time - target_agent.dt_step,
+            target_agent.time + self.host.sensor_time_bias_event_queue[0].applied_bias,
+            target_agent.previous_state,
+        )
+        msg = f"Sensor time bias of {self.host.sensor_time_bias_event_queue[0].applied_bias} "
+        msg += f"seconds applied to sensor {self.host.simulation_id}"
+        resonaateLogInfo(msg)
+        return tgt_eci_state
 
     def isVisible(
         self,
@@ -392,13 +347,13 @@ class Sensor(ABC):
         delta_boresight = self.deltaBoresight(slant_range_sez[:3])
         # Boolean if you are able to slew to the new target
         # [TODO]: We are artificially increasing a sensor's slewing ability if it is not tasked at every timestep.
-        return self.slew_rate * (self.host.time - self.time_last_ob) >= delta_boresight
+        return self.slew_rate * (self.host.time - self.time_last_tasked) >= delta_boresight
 
     def deltaBoresight(self, sez_position: ndarray):
         """Return the angular separation between a position vector and the sensor's current boresight.
 
         Args:
-            sez_position (ndarray): position vector defined in SEZ coordinates
+            sez_position (ndarray): 3x1, position vector defined in SEZ coordinates
 
         Returns:
             float: angular separation between `sez_position` and sensor boresight
@@ -471,4 +426,4 @@ class Sensor(ABC):
             host (:class:`.SensingAgent`): containing `SensingAgent` object
         """
         self._host = host
-        self.time_last_ob = host.time
+        self.time_last_tasked = host.time
