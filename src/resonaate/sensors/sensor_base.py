@@ -87,7 +87,6 @@ class Sensor(ABC):
 
         # Derived properties initialization
         self.time_last_ob = ScenarioTime(0.0)
-        self.delta_boresight = 0.0
         self.boresight = self._setInitialBoresight()
         self._host: SensingAgent | None = None
         self._sensor_args = sensor_args
@@ -385,15 +384,26 @@ class Sensor(ABC):
         """Check if sensor can slew to target in the allotted time.
 
         Args:
-            slant_range_sez (``ndarray``): 3x1, slant range vector, (km; km/sec)
+            slant_range_sez (``ndarray``): 6x1, slant range vector, (km; km/sec)
 
         Returns:
             ``bool``: whether target can be slewed to in time
         """
-        self.delta_boresight = subtendedAngle(slant_range_sez[:3], self.boresight)
+        delta_boresight = self.deltaBoresight(slant_range_sez[:3])
         # Boolean if you are able to slew to the new target
         # [TODO]: We are artificially increasing a sensor's slewing ability if it is not tasked at every timestep.
-        return self.slew_rate * (self.host.time - self.time_last_ob) >= self.delta_boresight
+        return self.slew_rate * (self.host.time - self.time_last_ob) >= delta_boresight
+
+    def deltaBoresight(self, sez_position: ndarray):
+        """Return the angular separation between a position vector and the sensor's current boresight.
+
+        Args:
+            sez_position (ndarray): position vector defined in SEZ coordinates
+
+        Returns:
+            float: angular separation between `sez_position` and sensor boresight
+        """
+        return subtendedAngle(sez_position, self.boresight)
 
     @property
     def az_mask(self) -> ndarray:

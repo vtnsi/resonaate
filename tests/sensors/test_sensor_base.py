@@ -67,7 +67,6 @@ def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert np.isclose(base_sensor.slew_rate, np.deg2rad(base_sensor_args["slew_rate"]))
     assert base_sensor.field_of_view is not None
     assert base_sensor.time_last_ob >= 0.0
-    assert base_sensor.delta_boresight == 0.0
 
     # Should raise an error b/c not set
     match = r"SensingAgent.host was not \(or was incorrectly\) initialized"
@@ -585,6 +584,25 @@ def testAttemptObservation(
         reflectivity=10.0,
     )
     assert isinstance(ob, Observation)
+
+
+@patch.multiple(Sensor, __abstractmethods__=set())
+def testDeltaBoresight(base_sensor_args: dict):
+    """Test that angular separation from boresight is calculated correctly."""
+    sensor = Sensor(**base_sensor_args)
+    sensor.boresight = np.array((1.0, 0.0, 0.0))
+
+    sez_position = np.array((0.0, 1.0, 0.0))
+    assert sensor.deltaBoresight(sez_position) == np.pi / 2
+
+    sez_position = np.array((0.0, 0.0, -1.0))
+    assert sensor.deltaBoresight(sez_position) == np.pi / 2
+
+    sez_position = np.array((-1.0, 0.0, 0.0))
+    assert sensor.deltaBoresight(sez_position) == np.pi
+
+    sez_position = np.array((1.0, 0.0, 0.0))
+    assert sensor.deltaBoresight(sez_position) == 0.0
 
 
 def testAttemptNoisyObservation():
