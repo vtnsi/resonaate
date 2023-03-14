@@ -38,7 +38,7 @@ setuptools.setup(
             "flake8-rst-docstrings==0.3.0",
             "pylint==2.17.0",
             # Type Checking
-            "mypy==1.0.1",
+            "mypy==1.1.1",
             "types-sqlalchemy==1.4.53.33",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
