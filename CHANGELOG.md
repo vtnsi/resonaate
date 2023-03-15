@@ -98,6 +98,7 @@ ______________________________________________________________________
 - renamed sensor attribute `aperture_area` to `effective_aperture_area`
 - moved `sensors.measurement` to `physics.measurements` and combined with `physics.measurement_utls` (see #176 and !186)
 - moved `FieldOfView` & `Sensor` factories into respective `fromConfig()` methods (see #176 and !186)
+- refactored `Sensor.collectObservations()` to slew to target before attempting observations (see !198)
 
 ### Deprecated
 
@@ -132,6 +133,7 @@ ______________________________________________________________________
 - SqlAlchemy 2.0 failures due to old API, implemented interim fix
 - `MissedObservations` were instantiated with `reason` attributes as `Enum` objects rather than strings
 - Correct `eci2rsw` transformation
+- `delta_boresight` is now calculated separately in the relevant `sensor.py` reward metrics
 
 ### Security
 

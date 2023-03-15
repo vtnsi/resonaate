@@ -10,7 +10,7 @@ from mjolnir import Job, KeyValueStore
 from numpy import zeros
 
 # Local Imports
-from ..data.observation import Observation
+from ..tasking.predictions import predictObservation
 from .base import CallbackRegistration, JobHandler
 
 if TYPE_CHECKING:
@@ -52,16 +52,10 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
         sensor_agent = sensor_agents[sensor_id]
 
         # Attempt predicted observations, in order to perform sensor tasking
-        predicted_observation = sensor_agent.sensors.attemptObservation(
-            estimate_id,
-            estimate.state_estimate,
-            estimate.visual_cross_section,
-            estimate.reflectivity,
-            real_obs=False,  # Don't add noise for prospective observations
-        )
+        predicted_observation = predictObservation(sensor_agent, estimate)
 
         # Only calculate metrics if the estimate is observable
-        if isinstance(predicted_observation, Observation):
+        if predicted_observation:
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
             visibility[sensor_index] = True

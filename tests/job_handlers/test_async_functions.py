@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, create_autospec
+from unittest.mock import MagicMock, create_autospec, patch
 
 # Third Party Imports
 import numpy as np
@@ -79,31 +79,37 @@ def testAsyncCalculateReward(
     # Predicted Observation
     reward_class.calculateMetrics = MagicMock(return_value=base_reward)
     estimate_agent.nominal_filter.forecast = MagicMock()
-    sensor_agent.sensors.attemptObservation = MagicMock(
-        return_value=create_autospec(Observation, instance=True)
-    )
 
-    reward_dict = asyncCalculateReward(
-        estimate_agent.simulation_id, reward_class, [sensor_agent.simulation_id]
-    )
-    sensor_agent.sensors.attemptObservation.assert_called_once()
-    estimate_agent.nominal_filter.forecast.assert_called_once()
-    reward_class.calculateMetrics.assert_called_once()
-    assert reward_dict["estimate_id"] == estimate_agent.simulation_id
-    assert reward_dict["visibility"][0]
-    assert reward_dict["metric_matrix"] == np.ones_like(reward_dict["metric_matrix"]) * base_reward
+    with patch(
+        "resonaate.job_handlers.task_prediction.predictObservation",
+        return_value=create_autospec(Observation, instance=True),
+    ) as mock_predict_obs:
+        reward_dict = asyncCalculateReward(
+            estimate_agent.simulation_id, reward_class, [sensor_agent.simulation_id]
+        )
+        mock_predict_obs.assert_called_once()
+        estimate_agent.nominal_filter.forecast.assert_called_once()
+        reward_class.calculateMetrics.assert_called_once()
+        assert reward_dict["estimate_id"] == estimate_agent.simulation_id
+        assert reward_dict["visibility"][0]
+        assert (
+            reward_dict["metric_matrix"]
+            == np.ones_like(reward_dict["metric_matrix"]) * base_reward
+        )
 
     # No Predicted Observation
     reward_class.calculateMetrics.reset_mock()
     estimate_agent.nominal_filter.forecast.reset_mock()
-    sensor_agent.sensors.attemptObservation = MagicMock()
 
-    reward_dict = asyncCalculateReward(
-        estimate_agent.simulation_id, reward_class, [sensor_agent.simulation_id]
-    )
-    sensor_agent.sensors.attemptObservation.assert_called_once()
-    estimate_agent.nominal_filter.forecast.assert_not_called()
-    reward_class.calculateMetrics.assert_not_called()
-    assert reward_dict["estimate_id"] == estimate_agent.simulation_id
-    assert not reward_dict["visibility"][0]
-    assert reward_dict["metric_matrix"] == np.zeros_like(reward_dict["metric_matrix"])
+    with patch(
+        "resonaate.job_handlers.task_prediction.predictObservation", return_value=None
+    ) as mock_predict_obs:
+        reward_dict = asyncCalculateReward(
+            estimate_agent.simulation_id, reward_class, [sensor_agent.simulation_id]
+        )
+        mock_predict_obs.assert_called_once()
+        estimate_agent.nominal_filter.forecast.assert_not_called()
+        reward_class.calculateMetrics.assert_not_called()
+        assert reward_dict["estimate_id"] == estimate_agent.simulation_id
+        assert not reward_dict["visibility"][0]
+        assert reward_dict["metric_matrix"] == np.zeros_like(reward_dict["metric_matrix"])

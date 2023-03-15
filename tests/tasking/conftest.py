@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from unittest.mock import create_autospec
+from datetime import datetime
+from unittest.mock import MagicMock, create_autospec
 
 # Third Party Imports
 import numpy as np
@@ -80,7 +81,7 @@ def getMockedEstimateObject() -> EstimateAgent:
 @pytest.fixture(scope="class", name="mocked_sensor")
 def getMockedSensorObject() -> Sensor:
     """Create a mocked :class:`.Sensor` object."""
-    sensor = create_autospec(spec=SensingAgent, instance=True)
+    sensor = create_autospec(spec=Sensor, instance=True)
     sensor.r_matrix = np.array(
         [
             [7.22430673e-12, 0.00000000e00, 0.00000000e00, 0.00000000e00],
@@ -89,7 +90,7 @@ def getMockedSensorObject() -> Sensor:
             [0.00000000e00, 0.00000000e00, 0.00000000e00, 1.00000000e-14],
         ]
     )
-    sensor.delta_boresight = 4.0
+    sensor.deltaBoresight = MagicMock(return_value=4.0)
     sensor.slew_rate = 2.0
     return sensor
 
@@ -100,4 +101,5 @@ def getMockedSensingAgentObject(mocked_sensor: Sensor) -> SensingAgent:
     sensing_agent = create_autospec(spec=SensingAgent, instance=True)
     sensing_agent.sensors = mocked_sensor
     sensing_agent.eci_state = np.ones(6)
+    sensing_agent.datetime_epoch = datetime(2018, 12, 1, 12)
     return sensing_agent

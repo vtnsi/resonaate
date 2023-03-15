@@ -36,7 +36,6 @@ def getMockedSensorObject() -> Sensor:
     """Create a mocked :class:`.Sensor` object."""
     sensor = create_autospec(Sensor, instance=True)
     sensor.r_matrix = np.array([[7.0e-4, 0.0, 0.0], [0.0, 6.5e-4, 0.0], [0.0, 0.0, 8.0e-4]])
-    sensor.delta_boresight = 4.0
     sensor.slew_rate = 2.0
     return sensor
 
