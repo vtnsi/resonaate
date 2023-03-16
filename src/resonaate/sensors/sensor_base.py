@@ -181,11 +181,14 @@ class Sensor(ABC):
 
         # If doing Serendipitous Observations
         if self.calculate_background:
-            visible_observations = filter(  # pylint:disable=bad-builtin
-                lambda observation: isinstance(observation, Observation),
-                (self.attemptObservation(tgt, pointing_sez) for tgt in background_agents),
-            )
-            obs_list.extend(tuple(visible_observations))
+            visible_observations = [
+                observation
+                for tgt in background_agents
+                if isinstance(
+                    observation := self.attemptObservation(tgt, pointing_sez), Observation
+                )
+            ]
+            obs_list.extend(visible_observations)
 
         return obs_list, missed_observation_list
 
