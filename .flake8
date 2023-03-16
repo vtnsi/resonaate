@@ -1,7 +1,7 @@
 [flake8]
 
 # Select flake8 error types
-extend-select = C,D,E,F,W,W504,B,B950,PT,RST
+extend-select = C,D,E,F,W,W504,B,PT,RST
 
 # Ignores due to clobbering with pylint are designated.
 # Ignores due to cloberring with black are designated.

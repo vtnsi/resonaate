@@ -250,8 +250,7 @@ class LambertIOD(InitialOrbitDetermination):
         initial_position = radarObs2eciPosition(previous_observation[-1])
 
         # Get position from Radar observation from current timestep
-        final_position = self._determineFinalState(observations)
-        if final_position is None:
+        if (final_position := self._determineFinalState(observations)) is None:
             msg = "No Radar observations to perform Lambert IOD"
             self._logger.warning(msg)
             return None, False

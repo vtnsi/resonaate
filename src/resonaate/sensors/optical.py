@@ -186,8 +186,7 @@ class Optical(Sensor):
             return False, Explanation.VIZ_MAG
 
         # Check if sensor is pointed at the galactic center
-        galactic = checkGalacticExclusionZone(boresight_eci[:3])
-        if not galactic:
+        if not checkGalacticExclusionZone(boresight_eci[:3]):
             return False, Explanation.GALACTIC_EXCLUSION
 
         if self.host.agent_type == PlatformLabel.SPACECRAFT:

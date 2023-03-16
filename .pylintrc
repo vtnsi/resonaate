@@ -16,7 +16,7 @@ disable=
     too-many-arguments,
     singleton-comparison,
     consider-using-namedtuple-or-dataclass,
-    consider-using-assignment-expr, # Remove when Python >= 3.8 required
+    consider-using-assignment-expr,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

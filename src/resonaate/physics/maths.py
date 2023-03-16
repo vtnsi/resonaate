@@ -275,8 +275,7 @@ def wrapAngleNegPiPi(angle: float) -> float:
 def wrapAngle2Pi(angle: float) -> float:
     r"""Force angle into range of :math:`[0, 2\pi)`."""
     # Fmod takes sign of dividend (first arg)
-    angle = fmod(angle, const.TWOPI)
-    if angle < 0:
+    if (angle := fmod(angle, const.TWOPI)) < 0:
         angle += const.TWOPI
     return angle
 

@@ -44,7 +44,8 @@ def get1980NutationSeries() -> tuple[ndarray, ndarray]:
         ``tuple``: (real coefficients, integer coefficients)
     """
     # Load nutation into numpy array
-    with resources.path(NUTATION_MODULE, NUTATION_1980) as file_resource:
+    res = resources.files(NUTATION_MODULE).joinpath(NUTATION_1980)
+    with resources.as_file(res) as file_resource:
         nut_data = array(loadDatFile(file_resource))
 
     # Parse integer and real coefficients out.

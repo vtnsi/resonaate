@@ -29,7 +29,7 @@ setuptools.setup(
     extras_require={
         "dev": [
             # Linting
-            "flake8<4.0",  # Keep flake8 below 4.0 b/c of dep conflict
+            "flake8",
             "flake8-bugbear==23.2.13",
             "flake8-builtins==2.1.0",
             "flake8-docstrings==1.7.0",
@@ -68,7 +68,7 @@ setuptools.setup(
             "sphinxcontrib-bibtex==2.5.0",
             "sphinxcontrib-mermaid==0.8.1",
             "sphinx-gallery==0.12.2",
-            "importlib-metadata==4.11.3; python_version < '3.10'",
+            "importlib-metadata==6.0.0; python_version < '3.10'",
         ],
     },
     entry_points={

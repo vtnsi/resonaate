@@ -85,7 +85,9 @@ class ScheduledFiniteManeuverEvent(Event):
         else:
             err = f"{self.maneuver_type} is not a valid thrust type."
             raise ValueError(err)
-        finite_maneuver = ScheduledFiniteManeuver(start_sim_time, end_sim_time, thrust_func)
+        finite_maneuver = ScheduledFiniteManeuver(
+            start_sim_time, end_sim_time, thrust_func, scope_instance.simulation_id
+        )
 
         # if finite_burn not in scope_instance.propagate_event_queue:
         scope_instance.appendPropagateEvent(finite_maneuver)

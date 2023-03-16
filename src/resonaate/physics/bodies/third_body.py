@@ -180,7 +180,8 @@ def readKernelSegmentFile(kernel_module: str, filename: str | Path) -> ThirdBody
     init_jd, interval = float(metadata[2]), float(metadata[3])
 
     # Get coefficient array
-    with resources.path(kernel_module, filename) as kernel_file:
+    res = resources.files(kernel_module).joinpath(filename)
+    with resources.as_file(res) as kernel_file:
         with open(kernel_file, "rb") as segment_file:
             coefficients = load(segment_file)
 
@@ -197,7 +198,8 @@ def readKernelSegments(kernel_module: str) -> list[ThirdBodyTuple]:
         ``list``: :class:`.ThirdBodyTuple` objects describing each kernel segment.
     """
     kernel_segments = []
-    for filename in resources.contents(kernel_module):
+    kernel_files = [res.name for res in resources.files(kernel_module).iterdir() if res.is_file()]
+    for filename in kernel_files:
         filepath = Path(filename)
         # Only parse .npy files
         ext = filepath.suffix

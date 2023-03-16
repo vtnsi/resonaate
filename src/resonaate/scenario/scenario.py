@@ -4,7 +4,7 @@ from __future__ import annotations
 # Standard Library Imports
 from collections import defaultdict
 from copy import deepcopy
-from functools import singledispatch, update_wrapper
+from functools import singledispatchmethod
 from multiprocessing import cpu_count
 from pickle import dumps
 from typing import TYPE_CHECKING
@@ -52,32 +52,6 @@ class AgentAdditionError(Exception):
 
 class AgentRemovalError(Exception):
     """Agent with the ID doesn't exist in the simulation."""
-
-
-def methdispatch(func: Callable) -> Callable:
-    """Wrap an instance method in the ``singledispatch`` wrapper.
-
-    Args:
-        func (``callable``): Method to be wrapped.
-
-    Returns:
-        ``callable``: wrapped method
-
-    See Also:
-        https://stackoverflow.com/questions/24601722/how-can-i-use-functools-singledispatch-with-instance-methods
-
-    Note:
-        This workaround won't be necessary should we upgrade to Python 3.8+.
-    """
-    dispatcher = singledispatch(func)
-
-    def wrapper(*args, **kw):
-        """Wrap method so dispatcher takes second argument, rather than ``self``."""
-        return dispatcher.dispatch(args[1].__class__)(*args, **kw)
-
-    wrapper.register = dispatcher.register
-    update_wrapper(wrapper, func)
-    return wrapper
 
 
 class Scenario(ParallelMixin):
@@ -150,9 +124,9 @@ class Scenario(ParallelMixin):
         self.worker_mgr = None
         if start_workers:
             ## Worker manager class instance.
-            proc_count = BehavioralConfig.getConfig().parallel.WorkerCount
-            if proc_count is None:
+            if (proc_count := BehavioralConfig.getConfig().parallel.WorkerCount) is None:
                 proc_count = cpu_count()
+
             watchdog_terminate_after = WorkerManager.DEFAULT_WATCHDOG_TERMINATE_AFTER
             if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
                 watchdog_terminate_after = None
@@ -309,18 +283,14 @@ class Scenario(ParallelMixin):
             # Grab `Observations` from current time step
             for tasking_engine in self._tasking_engines.values():
                 # Save Successful Observations
-                observations = tasking_engine.getCurrentObservations()
-                if observations:
+                if observations := tasking_engine.getCurrentObservations():
                     self._logObservations(observations)
                 output_data.extend(observations)
 
                 # Save Missed Observations
-                missed_observations = tasking_engine.getCurrentMissedObservations()
-                if missed_observations:
+                if missed_observations := tasking_engine.getCurrentMissedObservations():
                     self._logMissedObservations(missed_observations)
-                output_data.extend(
-                    missed_observation for missed_observation in missed_observations
-                )
+                output_data.extend(missed_observations)
                 # Grab tasking data
                 output_data.extend(
                     tasking
@@ -414,7 +384,7 @@ class Scenario(ParallelMixin):
         msg += f"{missed_targets}"
         self.logger.debug(msg)
 
-    @methdispatch
+    @singledispatchmethod
     def addTarget(self, target_spec: TargetAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
@@ -426,8 +396,8 @@ class Scenario(ParallelMixin):
         err = f"Can't handle target specification of type {type(target_spec)}"
         raise TypeError(err)
 
-    @addTarget.register(dict)
-    def _addTargetDict(self, target_spec: int, tasking_engine_id: int) -> None:
+    @addTarget.register
+    def _addTargetDict(self, target_spec: dict, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
@@ -437,7 +407,7 @@ class Scenario(ParallelMixin):
         target_conf = TargetAgentConfig(**target_spec)
         self._addTargetConf(target_conf, tasking_engine_id)
 
-    @addTarget.register(TargetAgentConfig)
+    @addTarget.register
     def _addTargetConf(self, target_spec: TargetAgentConfig, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
@@ -509,7 +479,7 @@ class Scenario(ParallelMixin):
         del self._estimate_agents[agent_id]
         self._tasking_engines[tasking_engine_id].removeTarget(agent_id)
 
-    @methdispatch
+    @singledispatchmethod
     def addSensor(self, sensor_spec: SensingAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
@@ -521,7 +491,7 @@ class Scenario(ParallelMixin):
         err = f"Can't handle sensor specification of type {type(sensor_spec)}"
         raise TypeError(err)
 
-    @addSensor.register(dict)
+    @addSensor.register
     def _addSensorDict(self, sensor_spec: dict, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
@@ -532,7 +502,7 @@ class Scenario(ParallelMixin):
         sensor_conf = SensingAgentConfig(**sensor_spec)
         self._addSensorConf(sensor_conf, tasking_engine_id)
 
-    @addSensor.register(SensingAgentConfig)
+    @addSensor.register
     def _addSensorConf(self, sensor_spec: SensingAgentConfig, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 

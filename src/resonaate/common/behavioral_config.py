@@ -41,8 +41,7 @@ class SubConfig:
             name (``str``): name of field to set
             value (``any``): value to set the field to
         """
-        already_set = getattr(self, name, None)
-        if already_set is not None:
+        if already_set := getattr(self, name, None):
             raise AttributeError(
                 f"SubConfig {self.section!r} already has a value set for {name!r}:{already_set!r}"
             )
@@ -154,7 +153,8 @@ class BehavioralConfig:
         self._parser = CustomConfigParser()
 
         if config_file_path is None:
-            with resources.path("resonaate.common", self.DEFAULT_CONFIG_FILE) as res_filepath:
+            res = resources.files("resonaate.common").joinpath(self.DEFAULT_CONFIG_FILE)
+            with resources.as_file(res) as res_filepath:
                 # Read in the config file if it exists, otherwise use the defaults
                 with open(res_filepath, "r", encoding="utf-8") as config_file:
                     self._parser.read_file(config_file)

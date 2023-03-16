@@ -157,9 +157,7 @@ class ImporterDatabase(DataInterface):
             stop (:class:`.JulianDate`, optional): epoch of the latest data object to load.
                 Defaults to ``None`` which indicates use the latest in the file.
         """
-        ephemerides = loadJSONFile(filename)
-
-        if ephemerides:
+        if ephemerides := loadJSONFile(filename):
             valid_ephemerides = []
             for ephemeris in ephemerides:
                 # Check to make sure ephemerides are in the correct time frame, if specified
@@ -187,8 +185,7 @@ class ImporterDatabase(DataInterface):
                 )
 
                 # Get agent. Insert into DB if it doesn't exist yet
-                agent = self.getData(agent_query, multi=False)
-                if not agent:
+                if not (agent := self.getData(agent_query, multi=False)):
                     self._insertData(
                         AgentModel(
                             unique_id=ephemeris.pop("sat_num"),
@@ -201,8 +198,7 @@ class ImporterDatabase(DataInterface):
                     del ephemeris["sat_name"]
 
                 # Get epoch. Insert into DB if it doesn't exist yet
-                epoch = self.getData(julian_date_query, multi=False)
-                if not epoch:
+                if not (epoch := self.getData(julian_date_query, multi=False)):
                     # [NOTE]: quick-fix for slightly malformed timestamps
                     epoch_dt = datetime.strptime(
                         ephemeris.pop("timestampISO"), "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -245,9 +241,7 @@ class ImporterDatabase(DataInterface):
             stop (:class:`.JulianDate`, optional): epoch of the latest data object to load.
                 Defaults to ``None`` which indicates use the latest in the file.
         """
-        observations = loadJSONFile(filename)
-
-        if observations:
+        if observations := loadJSONFile(filename):
             valid_observations = []
             for observation in observations:
                 # Check to make sure observations are in the correct time frame, if specified

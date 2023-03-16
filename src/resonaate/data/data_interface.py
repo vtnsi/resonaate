@@ -134,8 +134,7 @@ class DataInterface(metaclass=ABCMeta):
                 Defaults to an empty tuple.
         """
         for table_name in tables:
-            data_type = self.VALID_DATA_TYPES.get(table_name)
-            if data_type is None:
+            if (data_type := self.VALID_DATA_TYPES.get(table_name)) is None:
                 err = f"No such table: {table_name!r}"
                 raise ValueError(err)
 
