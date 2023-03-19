@@ -30,7 +30,7 @@ setuptools.setup(
         "dev": [
             # Linting
             "flake8",
-            "flake8-bugbear==23.2.13",
+            "flake8-bugbear==23.3.12",
             "flake8-builtins==2.1.0",
             "flake8-docstrings==1.7.0",
             "flake8-plugin-utils==1.3.2",
