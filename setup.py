@@ -43,7 +43,7 @@ setuptools.setup(
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
             "black==23.1.0",
-            "isort[colors]==5.11.5",
+            "isort[colors]==5.12.0",
             "mdformat==0.7.16",
             "mdformat-myst==0.1.5",
             "mdformat-gfm==0.3.5",
