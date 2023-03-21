@@ -154,6 +154,11 @@ target_date = getTargetJulianDate(
 )
 ```
 
+```{tip}
+If you are not using {func}`.buildScenarioFromConfigFile()`, you must call {func}`.setDBPath()`
+before any database queries are required.
+```
+
 Using the built {class}`.Scenario` object, propagate the simulation to the target scenario epoch.
 
 ```python

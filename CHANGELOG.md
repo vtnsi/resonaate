@@ -59,6 +59,7 @@ ______________________________________________________________________
 - `SensorConfig` and derived classes (`RadarConfig`, `AdvRadarConfig`, & `OpticalConfig`) for handling sensor-specific configuration options (see #36 and !163)
 - `PlatformConfig` and derived classes (`SpacecraftConfig` & `GroundFacilityConfig`) for handling agent 'vehicle' configuration options (see #37 and !163)
 - `StateConfig` and derived classes (`ECIStateConfig`, `LLAStateConfig`, `COEStateConfig`, `EQEStateConfig`) for handling agent's initial state information (see #35 and !163)
+- `db_connection` module for handling singleton the database interface with `setDBPath()`, `getDBConnection()`, and `clearDBPath()` (see #179 and !199)
 
 ### Changed
 
@@ -126,8 +127,9 @@ ______________________________________________________________________
 - `ObservationTuple` and `Sensor.buildSigmaObs()` (see #156 and !141)
 - `requirements.txt` file
 - positive reward requirement (see #154 and !147)
-- `ImporterDatabase.getSharedInterface()` because the shared singleton is not needed (see !192)
+- `ImporterDatabase.getSharedInterface()` is no longer needed (see !192)
 - `norm_factor` from `TimeToTransit` Sensor metric because all metric are normalized now (see !210)
+- `DataInterface.getSharedInterface()` the shared connection is now managed in `db_connection` module (see #179, !192, & !199)
 
 ### Fixed
 
