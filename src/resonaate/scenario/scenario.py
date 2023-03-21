@@ -70,7 +70,6 @@ class Scenario(ParallelMixin):
         estimate_agents: dict[int, EstimateAgent],
         sensor_agents: dict[int, SensingAgent],
         tasking_engines: dict[int, TaskingEngine],
-        internal_db_path: str | None = None,
         importer_db_path: str | None = None,
         logger: Logger | None = None,
         start_workers: bool = True,
@@ -84,8 +83,6 @@ class Scenario(ParallelMixin):
             estimate_agents (``dict``): estimate RSO objects for this :class:`.Scenario` .
             sensor_agents (``dict``): sensor network for this :class:`.Scenario` .
             tasking_engines (``dict``): dictionary of tasking engines for this :class:`.Scenario` .
-            internal_db_path (``str``, optional): path to RESONAATE internal database object.
-                Defaults to ``None``.
             importer_db_path (``str``, optional): path to external importer database for pre-canned
                 data. Defaults to ``None``.
             logger (:class:`.Logger`, optional):pPreviously instantiated :class:`.Logger` instance to be used.

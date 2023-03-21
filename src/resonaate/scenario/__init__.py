@@ -39,15 +39,12 @@ def buildScenarioFromConfigFile(
 
     return buildScenarioFromConfigDict(
         ScenarioConfig.parseConfigFile(config_file_path),
-        internal_db_path=database_path,
         importer_db_path=importer_database_path,
         start_workers=start_workers,
     )
 
 
-def buildScenarioFromConfigDict(
-    config_dict, internal_db_path=None, importer_db_path=None, start_workers=True
-):
+def buildScenarioFromConfigDict(config_dict, importer_db_path=None, start_workers=True):
     """Instantiate a :class:`.Scenario` based on the specified `config_dict`.
 
     Note:
@@ -57,8 +54,6 @@ def buildScenarioFromConfigDict(
 
     Args:
         config_dict (dict): Configuration dictionary defining a scenario.
-        internal_db_path (``str``, optional): path to RESONAATE internal database object. Defaults
-            to ``None``.
         importer_db_path (``str``, optional): path to external importer database for pre-canned
             data. Defaults to ``None``.
         start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
@@ -79,7 +74,6 @@ def buildScenarioFromConfigDict(
         builder.estimate_agents,
         builder.sensor_agents,
         builder.tasking_engines,
-        internal_db_path=internal_db_path,
         importer_db_path=importer_db_path,
         logger=builder.logger,
         start_workers=start_workers,
