@@ -232,7 +232,7 @@ class TestSensorMetric:
         slew_value = slew_cycle.calculate(target_agents[target_id], sensor_agents[sensor_id])
         assert slew_value > 0.0
 
-        time_to_transit = TimeToTransit(norm_factor=10)
+        time_to_transit = TimeToTransit()
         transit_value = time_to_transit.calculate(
             target_agents[target_id], sensor_agents[sensor_id]
         )

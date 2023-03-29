@@ -127,6 +127,7 @@ ______________________________________________________________________
 - `requirements.txt` file
 - positive reward requirement (see #154 and !147)
 - `ImporterDatabase.getSharedInterface()` because the shared singleton is not needed (see !192)
+- `norm_factor` from `TimeToTransit` Sensor metric because all metric are normalized now (see !210)
 
 ### Fixed
 

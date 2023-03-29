@@ -84,13 +84,8 @@ class TimeToTransit(SensorMetric):
         :cite:t:`nastasi_2018_diss`, Eqn 5.11 - 5.12
     """
 
-    def __init__(self, norm_factor: float):
-        """Create a :class`.TimeToTransit` metric with a normalization factor.
-
-        Args:
-            norm_factor (``float``): normalization factor.
-        """
-        self._norm_factor = norm_factor
+    def __init__(self):
+        """Create a :class`.TimeToTransit` metric with a normalization factor."""
 
     def calculate(
         self,
@@ -107,4 +102,4 @@ class TimeToTransit(SensorMetric):
             ``float``: Time to transit metric
         """
         delta_boresight = _getDeltaBoresight(estimate_agent, sensor_agent)
-        return (delta_boresight / sensor_agent.sensors.slew_rate) / self._norm_factor
+        return delta_boresight / sensor_agent.sensors.slew_rate
