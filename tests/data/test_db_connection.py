@@ -83,7 +83,7 @@ def testClearPath(datafiles: Path):
 
 def testExclusiveSetTransact():
     """Test exclusive set transaction."""
-    kvs = dict()
+    kvs = {}
     value = "a_path_to_db"
     transaction = ExclusiveSet(DB_PATH_KEY, value)
     transaction.transact(kvs)
@@ -106,7 +106,7 @@ def testExclusiveSetTransact():
 
 def testDBConnectionTransact():
     """Test DB connection transaction."""
-    kvs = dict()
+    kvs = {}
     transaction = _GetDBConnection(DB_PATH_KEY)
 
     # Test fail when key hasn't been set

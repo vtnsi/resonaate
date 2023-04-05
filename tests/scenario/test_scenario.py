@@ -14,7 +14,6 @@ from resonaate.scenario import buildScenarioFromConfigFile
 from .. import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 
 
-@pytest.mark.usefixtures("custom_database")
 class TestScenarioFactory:
     """Tests for :func:`.scenarioFactory`."""
 
@@ -34,6 +33,7 @@ class TestScenarioFactory:
         "no_targets_init.json",
     ]
 
+    @pytest.mark.usefixtures("custom_database")
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testBuildFromConfig(self, datafiles: str):
         """Test building a scenario from config files."""
@@ -44,6 +44,7 @@ class TestScenarioFactory:
             init_filepath, internal_db_path=None, importer_db_path=None
         )
 
+    @pytest.mark.usefixtures("custom_database")
     @pytest.mark.parametrize("init_file", VALID_JSON_CONFIGS)
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testValidInitMessages(self, datafiles: str, init_file: str):
