@@ -24,13 +24,8 @@ def buildScenarioFromConfigFile(
             spin up its own :class:`.WorkerManager` instance or not.
     """
     # Local Imports
-    from ..data import createDatabasePath, setDBPath
+    from ..data import createDatabasePath
     from .config import ScenarioConfig
-
-    # [NOTE][force-db-path]: Only call to `setDBPath()`. Subsequent calls will cause an error to
-    #   be thrown!
-    database_path = createDatabasePath(internal_db_path, importer=False)
-    setDBPath(path=database_path)
 
     # Load input/external DB
     importer_database_path = None
@@ -39,30 +34,40 @@ def buildScenarioFromConfigFile(
 
     return buildScenarioFromConfigDict(
         ScenarioConfig.parseConfigFile(config_file_path),
+        internal_db_path=internal_db_path,
         importer_db_path=importer_database_path,
         start_workers=start_workers,
     )
 
 
-def buildScenarioFromConfigDict(config_dict, importer_db_path=None, start_workers=True):
+def buildScenarioFromConfigDict(
+    config_dict, internal_db_path=None, importer_db_path=None, start_workers=True
+):
     """Instantiate a :class:`.Scenario` based on the specified `config_dict`.
 
     Note:
-        This function __does__ guarantee that `setDBPath()` is properly called, so the
-        database path can be improperly setup. Use caution when calling this function
-        directly.
+        This function __does__ guarantee that `setDBPath()` is properly called, so
+        subsequent calls don't need to rely on database path variable. This should not
+        be bypassed as it will cause this to fail.
 
     Args:
         config_dict (dict): Configuration dictionary defining a scenario.
+        internal_db_path (``str``, optional): path to RESONAATE internal database object. Defaults
         importer_db_path (``str``, optional): path to external importer database for pre-canned
             data. Defaults to ``None``.
         start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
             spin up its own :class:`.WorkerManager` instance or not.
     """
     # Local Imports
+    from ..data import createDatabasePath, setDBPath
     from .config import ScenarioConfig
     from .scenario import Scenario
     from .scenario_builder import ScenarioBuilder
+
+    # [NOTE][force-db-path]: Only call to `setDBPath()`. Subsequent calls will cause an error to
+    #   be thrown!
+    database_path = createDatabasePath(internal_db_path, importer=False)
+    setDBPath(path=database_path)
 
     config = ScenarioConfig(**config_dict)
     builder = ScenarioBuilder(config, importer_db_path=importer_db_path)
