@@ -34,9 +34,7 @@ class ExclusiveSet(Transaction):
             key_value_store (``dict``): Key value store to execute the encapsulated transaction on.
         """
         if key_value_store.get(self.key):
-            self.error = DBConnectionError(
-                "setDBPath() should only be called once per script/simulation"
-            )
+            self.error = KeyError(self.key)
         else:
             key_value_store[self.key] = self.request_payload
             self.response_payload = self.request_payload
@@ -55,7 +53,9 @@ class _GetDBConnection(Transaction):
         """
         self.response_payload = key_value_store.get(DB_PATH_KEY)
         if self.response_payload is None:
-            self.error = DBConnectionError("setDBPath() must be called once before getDBPath()")
+            self.error = DBConnectionError(
+                "setDBPath() must be called once before getDBConnection()"
+            )
 
     def getResponse(self) -> Any:
         """Returns the response payload of this executed transaction.
@@ -84,7 +84,12 @@ def setDBPath(path: str) -> None:
     Args:
         path (``str``): qualified SQL database path.
     """
-    KeyValueStore.submitTransaction(ExclusiveSet(DB_PATH_KEY, path))
+    try:
+        KeyValueStore.submitTransaction(ExclusiveSet(DB_PATH_KEY, path))
+    except KeyError as err:
+        raise DBConnectionError(
+            "setDBPath() should only be called once per script/simulation"
+        ) from err
 
 
 def clearDBPath() -> None:

@@ -96,7 +96,7 @@ def testExclusiveSetTransact():
     # Ensure that once the key is set, it fails via setting error
     new_transaction = ExclusiveSet(DB_PATH_KEY, "new_value")
     new_transaction.transact(kvs)
-    assert isinstance(new_transaction.error, DBConnectionError)
+    assert isinstance(new_transaction.error, KeyError)
 
     # Different key should work though
     new_transaction = ExclusiveSet("other_key", "new_value")
