@@ -11,10 +11,13 @@ from mjolnir import KeyValueStore
 from resonaate.data.db_connection import (
     DB_PATH_KEY,
     DBConnectionError,
+    ExclusiveSet,
+    _GetDBConnection,
     clearDBPath,
     getDBConnection,
     setDBPath,
 )
+from resonaate.data.resonaate_database import ResonaateDatabase
 
 # Local Imports
 from .. import FIXTURE_DATA_DIR, SHARED_DB_PATH
@@ -76,3 +79,61 @@ def testClearPath(datafiles: Path):
     # key should be empty
     assert KeyValueStore.getValue(DB_PATH_KEY) is None
     KeyValueStore.flush()
+
+
+def testExclusiveSetTransact():
+    """Test exclusive set transaction."""
+    kvs = dict()
+    value = "a_path_to_db"
+    transaction = ExclusiveSet(DB_PATH_KEY, value)
+    transaction.transact(kvs)
+
+    assert kvs[DB_PATH_KEY] == value
+    assert transaction.request_payload == value
+    assert transaction.response_payload == value
+    assert transaction.error is None
+
+    # Ensure that once the key is set, it fails via setting error
+    new_transaction = ExclusiveSet(DB_PATH_KEY, "new_value")
+    new_transaction.transact(kvs)
+    assert isinstance(new_transaction.error, DBConnectionError)
+
+    # Different key should work though
+    new_transaction = ExclusiveSet("other_key", "new_value")
+    new_transaction.transact(kvs)
+    assert new_transaction.error is None
+
+
+def testDBConnectionTransact():
+    """Test DB connection transaction."""
+    kvs = dict()
+    transaction = _GetDBConnection(DB_PATH_KEY)
+
+    # Test fail when key hasn't been set
+    transaction.transact(kvs)
+    assert isinstance(transaction.error, DBConnectionError)
+
+    # Now make sure it works with a set key
+    transaction = _GetDBConnection(DB_PATH_KEY)
+    value = object()
+    kvs[DB_PATH_KEY] = value
+    transaction.transact(kvs)
+    assert transaction.response_payload == value
+    assert transaction.error is None
+
+
+def testDBConnectionGetResponse():
+    """Test DB connection get response."""
+    transaction = _GetDBConnection(DB_PATH_KEY)
+    transaction.response_payload = "sqlite://"
+
+    response = transaction.getResponse()
+    assert isinstance(response, ResonaateDatabase)
+
+    new_response = transaction.getResponse()
+    assert new_response is response
+
+    transaction.response_payload = None
+    new_response = transaction.getResponse()
+    assert isinstance(new_response, ResonaateDatabase)
+    assert new_response is not response
