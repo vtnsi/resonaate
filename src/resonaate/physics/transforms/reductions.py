@@ -37,7 +37,7 @@ REDUCTION_KEY = "reduction_params"
 """str: Key used to identify the reduction parameters in the key value store."""
 
 
-def updateReductionParameters(utc_date, eops=None):
+def updateReductionParameters(utc_date: datetime, eops=None):
     """Update the current set of FK5 data.
 
     Args:
