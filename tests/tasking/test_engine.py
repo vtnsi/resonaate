@@ -36,6 +36,9 @@ SENSOR_NUMS: list[int] = [100000]
 TARGET_NUMS: list[int] = [10001, 10002, 10003]
 
 
+pytestmark = pytest.mark.usefixtures("database")
+
+
 @pytest.fixture(name="decision")
 def getDecision() -> Decision:
     """Returns a valid Decision object."""

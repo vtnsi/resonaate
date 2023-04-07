@@ -5,18 +5,16 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from enum import Flag, auto
-from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import KeyValueStore
 from numpy import array, fabs
 from scipy.linalg import norm
 
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
+from ...data import getDBConnection
 from ...data.queries import fetchTruthByJDEpoch
-from ...data.resonaate_database import ResonaateDatabase
 from ..debug_utils import checkThreeSigmaObs, logFilterStep
 
 if TYPE_CHECKING:
@@ -330,8 +328,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         """Debugging checks if flags are set to do so."""
         # Check if error inflation is too large
         if BehavioralConfig.getConfig().debugging.EstimateErrorInflation:
-            db_path = loads(KeyValueStore.getValue("db_path"))
-            database = ResonaateDatabase.getSharedInterface(db_path=db_path)
+            database = getDBConnection()
             truth = fetchTruthByJDEpoch(database, self.target_id, observations[0].julian_date)
             tol_km = 5  # Estimate inflation error tolerance (km)
             pred_error = fabs(norm(truth[:3] - self.pred_x[:3]))

@@ -4,11 +4,9 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod
-from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import KeyValueStore
 from numpy import concatenate
 from scipy.linalg import norm
 from sqlalchemy import asc
@@ -16,8 +14,8 @@ from sqlalchemy.orm import Query
 
 # Local Imports
 from ..common.labels import SensorLabel
+from ..data import getDBConnection
 from ..data.observation import Observation
-from ..data.resonaate_database import ResonaateDatabase
 from ..physics.constants import DAYS2SEC
 from ..physics.orbit_determination import OrbitDeterminationFunction
 from ..physics.orbit_determination.lambert import determineTransferDirection
@@ -32,6 +30,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     # Local Imports
+    from ..data.resonaate_database import ResonaateDatabase
     from ..scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
 
@@ -229,8 +228,7 @@ class LambertIOD(InitialOrbitDetermination):
             return None, False
 
         # load path to on-disk database for the current scenario run
-        db_path = loads(KeyValueStore.getValue("db_path"))
-        database = ResonaateDatabase.getSharedInterface(db_path=db_path)
+        database = getDBConnection()
 
         # Ensure observations are from the same pass
         current_julian_date = ScenarioTime(current_time).convertToJulianDate(

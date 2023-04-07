@@ -82,15 +82,6 @@ class ImporterDatabase(DataInterface):
         with self._getSessionScope() as session:
             session.add_all(args)
 
-    @classmethod
-    def getSharedInterface(cls, db_path=None, drop_tables=(), logger=None, verbose_echo=False):
-        """Override :class:`.DataInterface` implementation.
-
-        Raises:
-            NotImplementedError: shared interface is not provided.
-        """
-        raise NotImplementedError("ImporterDatabase does not provide a shared interface")
-
     def initDatabaseFromJSON(self, *args, start=None, stop=None):
         """Initialize a database by populating it with data from the JSON files listed in args.
 

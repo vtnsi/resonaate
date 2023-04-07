@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from contextlib import contextmanager
 from traceback import format_exc
 
@@ -81,27 +81,6 @@ class DataInterface(metaclass=ABCMeta):
 
         self.resetData(tables=drop_tables)
         self.session_factory = sessionmaker(bind=self.engine)
-
-    @classmethod
-    @abstractmethod
-    def getSharedInterface(cls, db_path=None, drop_tables=(), logger=None, verbose_echo=False):
-        """Return a reference to the singleton shared interface.
-
-        Args:
-            db_path (``str``, optional): SQLAlchemy-accepted string denoting what database implementation
-                to use and where the database is located. Defaults to default configuration value.
-            drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of construction. This
-                parameter makes sense in the context of utilizing a pre-existing database that a user may not want to
-                keep data from. Defaults to an empty tuple, resulting in no tables being dropped.
-            logger (:class:`.Logger`, optional): Previously instantiated logging object to use. Defaults to ``None``,
-                resulting in a new :class:`.Logger` instance being instantiated.
-            verbose_echo (``bool``, optional): Flag that if set ``True``, will tell the SQLAlchemy
-                engine to output the raw SQL statements it runs. Defaults to ``False``.
-
-        Returns:
-            :class:`.DataInterface`: reference to singleton shared data interface
-        """
-        raise NotImplementedError
 
     @contextmanager
     def _getSessionScope(self, **kwargs):

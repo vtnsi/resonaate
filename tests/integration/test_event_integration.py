@@ -1,8 +1,10 @@
+# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
 import os.path
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
@@ -10,7 +12,6 @@ from sqlalchemy.orm import Query
 
 # RESONAATE Imports
 from resonaate.data.agent import AgentModel
-from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.scenario.config import ScenarioConfig
 from resonaate.scenario.config.event_configs import EventConfig, EventConfigList
@@ -19,6 +20,10 @@ from resonaate.scenario.scenario_builder import ScenarioBuilder
 
 # Local Imports
 from .. import FIXTURE_DATA_DIR, JSON_INIT_PATH
+
+if TYPE_CHECKING:
+    # RESONAATE Imports
+    from resonaate.data.resonaate_database import ResonaateDatabase
 
 
 def _getMainConfig(datafiles_dir: str) -> ScenarioConfig:
@@ -41,12 +46,11 @@ def _getManeuverDetectionConfig(datafiles_dir: str) -> ScenarioConfig:
 
 @pytest.mark.event()
 @pytest.mark.integration()
-@pytest.mark.usefixtures("reset_shared_db")
 class TestEventIntegration:
     """Test class encapsulating tests that exercise event integration."""
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testBuildScheduledImpulse(self, datafiles: str):
+    def testBuildScheduledImpulse(self, datafiles: str, database: ResonaateDatabase):
         """Validate that no errors are thrown when building a :class:`.ScheduledImpulseEvent`."""
         minimal_config = _getMinimalConfig(datafiles)
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
@@ -69,7 +73,9 @@ class TestEventIntegration:
         assert ScenarioBuilder(minimal_config)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testBuildTargetTaskingPriorityDependency(self, datafiles: str):
+    def testBuildTargetTaskingPriorityDependency(
+        self, datafiles: str, database: ResonaateDatabase
+    ):
         """Validate that a TargetTaskingPriority's data dependency is built."""
         minimal_config = _getMinimalConfig(datafiles)
         priority_agent = {"unique_id": 12345, "name": "important sat"}
@@ -93,8 +99,7 @@ class TestEventIntegration:
             ],
         )
         _ = ScenarioBuilder(minimal_config)
-        shared_db = ResonaateDatabase.getSharedInterface()
-        assert shared_db.getData(
+        assert database.getData(
             Query([AgentModel]).filter(
                 AgentModel.unique_id == priority_agent["unique_id"],
                 AgentModel.name == priority_agent["name"],
@@ -105,7 +110,11 @@ class TestEventIntegration:
     @pytest.mark.parametrize("seconds", [0, 2])
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteScheduledImpulse(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, seconds: int
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        seconds: int,
+        database: ResonaateDatabase,
     ):
         """Validate that a ScheduledImpulse is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -159,7 +168,11 @@ class TestEventIntegration:
     @pytest.mark.parametrize("planned", [True, False])
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testDetectScheduledImpulse(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, planned: bool
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        planned: bool,
+        database: ResonaateDatabase,
     ):
         """Validate that a ScheduledImpulse is handled correctly."""
         minimal_config = _getManeuverDetectionConfig(datafiles)
@@ -215,7 +228,11 @@ class TestEventIntegration:
     @pytest.mark.parametrize("planned", [True, False])
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testDetectScheduledFiniteBurn(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, planned: bool
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        planned: bool,
+        database: ResonaateDatabase,
     ):
         """Validate that a ScheduledImpulse is handled correctly."""
         minimal_config = _getManeuverDetectionConfig(datafiles)
@@ -270,7 +287,9 @@ class TestEventIntegration:
             assert found, "logs indicate that an unplanned maneuver was not detected"
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteTargetTaskPriority(self, datafiles: str, caplog: pytest.LogCaptureFixture):
+    def testExecuteTargetTaskPriority(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+    ):
         """Validate that a TargetTaskPriority is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
 
@@ -325,7 +344,9 @@ class TestEventIntegration:
         ), "logs indicate that tasking priority took place less than 3 times"
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteTargetAddition(self, datafiles: str, caplog: pytest.LogCaptureFixture):
+    def testExecuteTargetAddition(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+    ):
         """Validate that a TargetAddition is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
 
@@ -404,7 +425,9 @@ class TestEventIntegration:
         )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteSensorAddition(self, datafiles: str, caplog: pytest.LogCaptureFixture):
+    def testExecuteSensorAddition(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+    ):
         """Validate that a SensorAddition is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
 
@@ -497,7 +520,9 @@ class TestEventIntegration:
         )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteAgentRemovalTarget(self, datafiles: str, caplog: pytest.LogCaptureFixture):
+    def testExecuteAgentRemovalTarget(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+    ):
         """Validate that a AgentRemoval of a target is handled correctly."""
         minimal_config = _getMainConfig(datafiles)
 
@@ -557,7 +582,9 @@ class TestEventIntegration:
         )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testExecuteAgentRemovalSensor(self, datafiles: str, caplog: pytest.LogCaptureFixture):
+    def testExecuteAgentRemovalSensor(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+    ):
         """Validate that a AgentRemoval of a target is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
 
@@ -616,7 +643,9 @@ class TestEventIntegration:
         )
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testMultiEvent(self, datafiles: str, caplog: pytest.LogCaptureFixture):
+    def testMultiEvent(
+        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+    ):
         """Validate that multiple consecutive events are handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
 

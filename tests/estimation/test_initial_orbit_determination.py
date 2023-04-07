@@ -1,6 +1,10 @@
 """Test initial_orbit_determination."""
+# pylint: disable=unused-argument
+from __future__ import annotations
+
 # Standard Library Imports
 from copy import deepcopy
+from unittest.mock import MagicMock
 
 # Third Party Imports
 import pytest
@@ -136,7 +140,7 @@ class TestLambertInitialOrbitDetermination:
             iod (:class:`.LambertIOD`): LambertIOD fixture
         """
 
-        def getData(self, query, multi):  # pylint:disable=unused-argument
+        def getData(self, query, multi):
             return observation
 
         monkeypatch.setattr(
@@ -199,11 +203,14 @@ class TestLambertInitialOrbitDetermination:
         result = iod.determineNewEstimateState([], prior_scenario_time, current_scenario_time)
         assert caplog.record_tuples[-1][-1] == "No Observations for IOD"
 
-        # Monkey Patch json loads
-        def mockLoads(*args, **kwargs):  # pylint:disable=unused-argument
-            return None
+        def mockDb(*args, **kwargs):
+            mocked_db = MagicMock(spec=ResonaateDatabase)
+            mocked_db.getData = lambda query: []
+            return mocked_db
 
-        monkeypatch.setattr(resonaate.estimation.initial_orbit_determination, "loads", mockLoads)
+        monkeypatch.setattr(
+            resonaate.estimation.initial_orbit_determination, "getDBConnection", mockDb
+        )
 
         result = iod.determineNewEstimateState(
             observation, prior_scenario_time, current_scenario_time
@@ -212,7 +219,7 @@ class TestLambertInitialOrbitDetermination:
         assert caplog.record_tuples[-1][-1] == "Not enough observations to perform IOD 0"
 
         # Monkey Patch get previous observation
-        def mockGetPreviousObservations(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGetPreviousObservations(*args, **kwargs):
             return [observation]
 
         monkeypatch.setattr(
@@ -230,7 +237,7 @@ class TestLambertInitialOrbitDetermination:
         assert caplog.record_tuples[-1][-1] == "No Radar observations to perform Lambert IOD"
 
         # Monkey Patch get single pass
-        def mockCheckSinglePass(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockCheckSinglePass(*args, **kwargs):
             return None
 
         with monkeypatch.context() as m_patch:

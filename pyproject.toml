@@ -30,7 +30,6 @@ profile = "black"
 src_paths = [
     "src",
     "tests",
-    "docs",
     "setup.py",
 ]
 # Add to skip list
@@ -56,8 +55,7 @@ extend_skip = [
     "plots/",
     "build/",
     "dist/",
-    "docs/build/",
-    "docs/source/gen/",
+    "docs/",
 ]
 # Use .gitingore to skip files
 skip_gitignore = true

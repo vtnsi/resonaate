@@ -154,6 +154,11 @@ target_date = getTargetJulianDate(
 )
 ```
 
+```{tip}
+If you are not using {func}`.buildScenarioFromConfigFile()`, you must call {func}`.setDBPath()`
+before any database queries are required.
+```
+
 Using the built {class}`.Scenario` object, propagate the simulation to the target scenario epoch.
 
 ```python
@@ -177,11 +182,11 @@ Once the simulation completes, you can directly query the database from Python.
 ```python
 from sqlalchemy.orm.query import Query
 from resonaate.data.ephemeris import TruthEphemeris
-from resonaate.data.resonaate_database import ResonaateDatabase
+from resonaate.data import getDBConnection
 
 # To show that the simulation completed, we will query the DB and count how many
 # :class:`.Ephemeris` objects were created.
-db = ResonaateDatabase.getSharedInterface()
+db = getDBConnection()
 print(len(db.getData(Query(TruthEphemeris))))
 ```
 

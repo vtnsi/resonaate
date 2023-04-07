@@ -13,11 +13,8 @@ This shows how to directly create and use the following classes:
 """
 
 # pylint: disable=invalid-name, wrong-import-position
+# isort: skip
 
-# Standard Library Imports
-from datetime import datetime
-
-# Third Party Imports
 # %%
 # Initial Setup
 # -------------
@@ -25,9 +22,14 @@ from datetime import datetime
 # General Imports
 # ###############
 #
+from datetime import datetime
 import numpy as np
+from resonaate.data import setDBPath
 
-# RESONAATE Imports
+# In-memory database.
+# [NOTE]: This must be called before any calls to getDBConnection() are made!
+setDBPath("sqlite://")
+
 # %%
 # Setup problem time variables
 # ----------------------------
@@ -46,7 +48,6 @@ clock = ScenarioClock(datetime_start, tspan, dt)
 # For convenience, time is initialized to zero
 t0 = clock.time
 
-# RESONAATE Imports
 # %%
 #
 # Build a satellite as a :class:`.TargetAgent`
@@ -83,7 +84,6 @@ sat1_agent = TargetAgent(
     0.21,
 )
 
-# RESONAATE Imports
 # %%
 #
 # Build a corresponding :class:`.EstimateAgent`
@@ -126,7 +126,6 @@ sat1_estimate_agent = EstimateAgent(
     0.21,
 )
 
-# RESONAATE Imports
 # %%
 #
 # Build a :class:`.SensingAgent`
@@ -239,7 +238,6 @@ sat1_estimate_agent.updateEstimate(obs)
 prior_error = np.linalg.norm(truth_state[:3] - sat1_estimate_agent.eci_state[:3])
 print(prior_error)
 
-# RESONAATE Imports
 # %%
 #
 # Make an :class:`.Observation`

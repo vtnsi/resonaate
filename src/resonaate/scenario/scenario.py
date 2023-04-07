@@ -20,9 +20,9 @@ from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
+from ..data import getDBConnection
 from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
-from ..data.resonaate_database import ResonaateDatabase
 from ..dynamics import dynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
 from ..job_handlers.agent_propagation import AgentPropagationJobHandler
@@ -70,7 +70,6 @@ class Scenario(ParallelMixin):
         estimate_agents: dict[int, EstimateAgent],
         sensor_agents: dict[int, SensingAgent],
         tasking_engines: dict[int, TaskingEngine],
-        internal_db_path: str | None = None,
         importer_db_path: str | None = None,
         logger: Logger | None = None,
         start_workers: bool = True,
@@ -84,8 +83,6 @@ class Scenario(ParallelMixin):
             estimate_agents (``dict``): estimate RSO objects for this :class:`.Scenario` .
             sensor_agents (``dict``): sensor network for this :class:`.Scenario` .
             tasking_engines (``dict``): dictionary of tasking engines for this :class:`.Scenario` .
-            internal_db_path (``str``, optional): path to RESONAATE internal database object.
-                Defaults to ``None``.
             importer_db_path (``str``, optional): path to external importer database for pre-canned
                 data. Defaults to ``None``.
             logger (:class:`.Logger`, optional):pPreviously instantiated :class:`.Logger` instance to be used.
@@ -180,9 +177,7 @@ class Scenario(ParallelMixin):
 
         # Init database info
         self._importer_db_path = importer_db_path
-        self.database = ResonaateDatabase.getSharedInterface(
-            db_path=internal_db_path, logger=self.logger
-        )
+        self.database = getDBConnection()
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents
         self._agent_propagation_handler = AgentPropagationJobHandler(
@@ -337,7 +332,7 @@ class Scenario(ParallelMixin):
             # [NOTE][parallel-time-bias-event-handling] Step one: query for events and "handle" them.
             sensor_tasking_events = defaultdict(list)
             relevant_events = getRelevantEvents(
-                ResonaateDatabase.getSharedInterface(),
+                self.database,
                 EventScope.OBSERVATION_GENERATION,
                 prior_jd,
                 self.clock.julian_date_epoch,

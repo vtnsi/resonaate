@@ -10,6 +10,7 @@ from numpy import array, eye, linspace
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
+from resonaate.data import getDBConnection, setDBPath
 from resonaate.data.agent import AgentModel
 from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
 from resonaate.data.epoch import Epoch
@@ -195,14 +196,15 @@ def getMultipleObservations():
 
 
 @pytest.fixture(scope="module", name="database")
-def getDataInterface(agents, epochs, ephems, estimates, observations):
+def getDataInterface(agents, epochs, ephems, estimates, observations) -> ResonaateDatabase:
     """Create common, non-shared DB object for all tests.
 
     Yields:
         :class:`.ResonaateDatabase`: properly constructed DB object
     """
     # Create & yield instance.
-    shared_interface = ResonaateDatabase.getSharedInterface(db_path=None)
+    setDBPath("sqlite://")
+    shared_interface = getDBConnection()
     shared_interface.bulkSave(deepcopy(agents + epochs + ephems + estimates + observations))
     yield shared_interface
     shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)

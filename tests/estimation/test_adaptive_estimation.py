@@ -1,4 +1,4 @@
-# pylint: disable=protected-access
+# pylint: disable=protected-access,unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -286,31 +286,22 @@ class TestAdaptiveEstimation:
         radar_observation.julian_date = CURRENT_JULIAN_DATE
         obs_ephem = [radar_observation]
 
-        # Monkey Patch json loads
-        def mockLoads(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockDb(*args, **kwargs):
             return None
 
-        monkeypatch.setattr(resonaate.estimation.adaptive.adaptive_filter, "loads", mockLoads)
-
-        class MockResponse:
-            @staticmethod
-            def getSharedInterface():
-                return None
-
-        def mockDb(*args, **kwargs):  # pylint:disable=unused-argument
-            return MockResponse()
-
-        monkeypatch.setattr(resonaate.data.resonaate_database, "ResonaateDatabase", mockDb)
+        monkeypatch.setattr(
+            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+        )
 
         # Creating Monkey Patch of database calls
-        def mockGetEst(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGetEst(*args, **kwargs):
             return estimate_ephem
 
         monkeypatch.setattr(
             resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
         )
 
-        def mockObsBad(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockObsBad(*args, **kwargs):
             return []
 
         monkeypatch.setattr(
@@ -322,7 +313,7 @@ class TestAdaptiveEstimation:
         bad_init_obs = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert bad_init_obs is False
 
-        def mockObsGood(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockObsGood(*args, **kwargs):
             return obs_ephem
 
         monkeypatch.setattr(
@@ -350,7 +341,7 @@ class TestAdaptiveEstimation:
         estimate_ephem = [EST1, EST2, EST3]
 
         # Creating Monkey Patch of database call
-        def mockGet(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGet(*args, **kwargs):
             return estimate_ephem
 
         monkeypatch.setattr(
@@ -616,31 +607,22 @@ class TestSMM:
         radar_observation.julian_date = CURRENT_JULIAN_DATE
         obs_ephem = [radar_observation]
 
-        # Monkey Patch json loads
-        def mockLoads(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockDb(*args, **kwargs):
             return None
 
-        monkeypatch.setattr(resonaate.estimation.adaptive.adaptive_filter, "loads", mockLoads)
-
-        class MockResponse:
-            @staticmethod
-            def getSharedInterface():
-                return None
-
-        def mockDb(*args, **kwargs):  # pylint:disable=unused-argument
-            return MockResponse()
-
-        monkeypatch.setattr(resonaate.data.resonaate_database, "ResonaateDatabase", mockDb)
+        monkeypatch.setattr(
+            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+        )
 
         # Creating Monkey Patch of database calls
-        def mockGetEst(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGetEst(*args, **kwargs):
             return estimate_ephem
 
         monkeypatch.setattr(
             resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
         )
 
-        def mockObsGood(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockObsGood(*args, **kwargs):
             return obs_ephem
 
         monkeypatch.setattr(
@@ -741,31 +723,22 @@ class TestGPB1:
         radar_observation.julian_date = CURRENT_JULIAN_DATE
         obs_ephem = [radar_observation]
 
-        # Monkey Patch json loads
-        def mockLoads(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockDb(*args, **kwargs):
             return None
 
-        monkeypatch.setattr(resonaate.estimation.adaptive.adaptive_filter, "loads", mockLoads)
-
-        class MockResponse:
-            @staticmethod
-            def getSharedInterface():
-                return None
-
-        def mockDb(*args, **kwargs):  # pylint:disable=unused-argument
-            return MockResponse()
-
-        monkeypatch.setattr(resonaate.data.resonaate_database, "ResonaateDatabase", mockDb)
+        monkeypatch.setattr(
+            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+        )
 
         # Creating Monkey Patch of database calls
-        def mockGetEst(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGetEst(*args, **kwargs):
             return estimate_ephem
 
         monkeypatch.setattr(
             resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
         )
 
-        def mockObsGood(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockObsGood(*args, **kwargs):
             return obs_ephem
 
         monkeypatch.setattr(
