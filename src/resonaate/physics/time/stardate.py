@@ -33,6 +33,8 @@ to.
     methodUsingScenarioTime(sTime) # works
 
 """
+from __future__ import annotations
+
 # Standard Library Imports
 from datetime import datetime, timedelta
 
@@ -58,7 +60,6 @@ def days2mdh(year, day_of_year):
     item = 1
     int_temp = 0
     while (day_of_year_int > int_temp + days_in_month[item - 1]) & (item < 12):
-
         int_temp += days_in_month[item - 1]
         item += 1
 
@@ -237,7 +238,7 @@ class JulianDate(float):
         """Return a string representation of this :class:`.JulianDate`."""
         date_time = julianDateToDatetime(self)
 
-        return f"JulianDate({float(self)}, ISO={date_time.isoformat()})"
+        return f"JulianDate({float(self)}, ISO={date_time.isoformat(timespec='microseconds')})"
 
     def __str__(self):
         """Return a string representation of this :class:`.JulianDate`."""
@@ -259,7 +260,7 @@ def datetimeToJulianDate(date_time):
         date_time.day,
         date_time.hour,
         date_time.minute,
-        date_time.second,
+        date_time.second + date_time.microsecond / 1e6,
     )
 
 
@@ -362,6 +363,10 @@ class ScenarioTime(float):
         """."""
         # Return valid JulianDate instance for this scenario time
         return JulianDate(julian_date_start + float(self * (1 / (24 * 3600))))
+
+    def convertToDatetime(self, datetime_start: datetime) -> datetime:
+        """Return datetime instance for this scenario time."""
+        return datetime_start + timedelta(seconds=float(self))
 
     def __repr__(self):
         """Return a string representation of a :class:`.ScenarioTime` object."""

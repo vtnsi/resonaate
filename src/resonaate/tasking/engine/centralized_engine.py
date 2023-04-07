@@ -2,27 +2,34 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+from mjolnir import KeyValueStore
 from numpy import zeros
 from sqlalchemy.orm import Query
 
 # Local Imports
-from ...data.data_interface import Observation
+from ...data.epoch import Epoch
 from ...data.events import EventScope, handleRelevantEvents
-from ...data.query_util import addAlmostEqualFilter
-from ...data.resonaate_database import ResonaateDatabase
+from ...data.observation import Observation
 from ...data.task import Task
 from ...job_handlers.base import ParallelMixin
 from ...job_handlers.task_execution import TaskExecutionJobHandler
 from ...job_handlers.task_prediction import TaskPredictionJobHandler
+from ...physics.time.stardate import datetimeToJulianDate
 from .engine_base import TaskingEngine
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from datetime import datetime
+
     # Local Imports
+    from ...agents.sensing_agent import SensingAgent
     from ...physics.time.stardate import JulianDate
+    from ...sensors.sensor_base import Sensor
     from ..decisions import Decision
     from ..rewards import Reward
 
@@ -44,7 +51,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         decision: Decision,
         importer_db_path: str | None,
         realtime_obs: bool,
-    ):
+    ) -> None:
         """Initialize a centralized tasking engine.
 
         Args:
@@ -68,7 +75,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self._execute_handler = TaskExecutionJobHandler()
         self._execute_handler.registerCallback(self)
 
-    def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
+    def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
 
         #. The rewards for all possible tasks are computed
@@ -76,67 +83,91 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         #. The optimized tasking strategy is applied and observations are collected
 
         Args:
-            prior_julian_date (:class:`.JulianDate`): previous epoch
-            julian_date (:class:`.JulianDate`): epoch at which to perform analysis
+            prior_datetime_epoch (datetime): previous epoch
+            datetime_epoch (datetime): epoch at which to perform analysis
         """
         # Pre-conditions: reset values to ensure clean tasking state at start of every timestep
         self._observations = []
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         self.decision_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         self.reward_matrix = zeros((self.num_targets, self.num_sensors), dtype=float)
+        self.metric_matrix = zeros(
+            (self.num_targets, self.num_sensors, self.num_metrics), dtype=float
+        )
 
         # Only task if we say so.... :P
         if self._realtime_obs:
             self._predict_handler.executeJobs()
             handleRelevantEvents(
                 self,
-                ResonaateDatabase.getSharedInterface(),
+                self._database,
                 EventScope.TASK_REWARD_GENERATION,
-                prior_julian_date,
-                julian_date,
+                datetimeToJulianDate(prior_datetime_epoch),
+                datetimeToJulianDate(datetime_epoch),
                 self.logger,
                 scope_instance_id=self.unique_id,
             )
+            self.calculateRewards()
             self.generateTasking()
             self._execute_handler.executeJobs(decision_matrix=self.decision_matrix)
 
         # Load imported observations
         if self._importer_db:
-            self.saveObservations(self.loadImportedObservations(julian_date))
+            self.saveObservations(self.loadImportedObservations(datetime_epoch))
 
         tasked_sensors = set()
         observed_targets = set()
-        for cur_obs_tuple in self._observations:
-            tasked_sensors.add(cur_obs_tuple.observation.sensor_id)
-            observed_targets.add(cur_obs_tuple.observation.target_id)
+        for cur_obs in self._observations:
+            tasked_sensors.add(cur_obs.sensor_id)
+            observed_targets.add(cur_obs.target_id)
 
-        msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
-        msg += f"{len(tasked_sensors)} sensors {tasked_sensors}"
-        msg += f" on {len(observed_targets)} targets {observed_targets}"
-        self.logger.info(msg)
+        # Log tasked sensors
+        if tasked_sensors:
+            msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
+            msg += f"{len(tasked_sensors)} sensors {tasked_sensors}"
+            msg += f" on {len(observed_targets)} targets {observed_targets}"
+            self.logger.info(msg)
+
+        # Log idle sensors
+        if idle_sensors := set(self.sensor_list) - tasked_sensors:
+            msg = f"{len(idle_sensors)} sensors {idle_sensors} not tasked"
+            self.logger.info(msg)
+
+    def calculateRewards(self) -> None:
+        """Normalized metrics and calculate reward."""
+        metrics = self.reward.normalizeMetrics(self.metric_matrix)
+        rewards = self.reward.calculate(metrics)
+        self.reward_matrix = rewards.reshape(self.num_targets, self.num_sensors)
 
     def generateTasking(self) -> None:
         """Create tasking solution based on the current simulation state."""
-        self.decision_matrix = self._decision(self.reward_matrix)
+        self.decision_matrix = self.decision.calculate(self.reward_matrix, self.visibility_matrix)
 
-    def loadImportedObservations(self, epoch: JulianDate) -> list[Observation]:
+    def loadImportedObservations(self, datetime_epoch: datetime) -> list[Observation]:
         """Load imported :class:`.Observation` objects from :class:`.ImporterDatabase`.
 
         Args:
-            epoch (:class:`.JulianDate`): epoch at which to query the DB for observations
+            datetime_epoch (datetime): epoch at which to query the DB for observations
 
         Returns:
-            ``list``: :class:`.Observation` objects imported from database
+            ``list``: :class:`.Observation` objects constructed from imported database
         """
-        query = addAlmostEqualFilter(Query(Observation), Observation, "julian_date", epoch)
+        query = (
+            Query(Observation)
+            .join(Epoch)
+            .filter(Epoch.timestampISO == datetime_epoch.isoformat(timespec="microseconds"))
+        )
         imported_observation_data = self._importer_db.getData(query)
 
-        imported_observations = []
+        imported_observations: list[Observation] = []
         sensor_position_set = set()
+
+        # Make sure there are no duplicate observations
         for observation in imported_observation_data:
             position_key = (
-                int(observation.position_lat_rad * 1000000),
-                int(observation.position_long_rad * 1000000),
+                int(observation.pos_x_km * 1000000),
+                int(observation.pos_y_km * 1000000),
+                int(observation.pos_z_km * 1000000),
                 observation.target_id,
             )
             if position_key not in sensor_position_set:
@@ -151,7 +182,20 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             msg = f"Imported {len(imported_observations)} observations"
             self.logger.debug(msg)
 
-        return imported_observations
+        # [NOTE]: Measurement metadata isn't saved to the DB. This attaches the correct Measurement metadata to
+        #   imported Observations so they can be processed
+        sensor_agents = self._fetchSensorAgents()
+        return [
+            self._createLoadedObs(observation, sensor_agents[observation.sensor_id].sensors)
+            for observation in imported_observations
+        ]
+
+    def _fetchSensorAgents(self) -> dict[int, SensingAgent]:
+        return loads(KeyValueStore.getValue("sensor_agents"))
+
+    def _createLoadedObs(self, observation: Observation, sensor: Sensor) -> Observation:
+        observation.measurement = sensor.measurement
+        return observation
 
     def getCurrentTasking(self, julian_date: JulianDate) -> Task:
         """Return current tasking solution.

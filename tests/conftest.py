@@ -3,9 +3,8 @@ from __future__ import annotations
 
 # Standard Library Imports
 import logging
+import shutil
 import sys
-from datetime import datetime
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -14,25 +13,29 @@ from mjolnir import KeyValueStore
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
-from resonaate.data.importer_database import ImporterDatabase
-from resonaate.data.resonaate_database import ResonaateDatabase
+from resonaate.data import clearDBPath, getDBConnection, setDBPath
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
-from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
 
+# Local Imports
+from . import (
+    FIXTURE_DATA_DIR,
+    SHARED_DB_PATH,
+    TEST_START_JD,
+    PropagateFunc,
+    patchCreateDatabasePath,
+    propagateScenario,
+)
+
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from pathlib import Path
+
     # RESONAATE Imports
     from resonaate.common.logger import Logger
-    from resonaate.physics.time.stardate import JulianDate
-
-FIXTURE_DATA_DIR = Path(__file__).parent / "datafiles"
-IMPORTER_DB_PATH = Path("db/importer.sqlite3")
-SHARED_DB_PATH = Path("db/importer.sqlite3")
-JSON_INIT_PATH = Path("json/config/init_messages")
-JSON_RSO_TRUTH = Path("json/rso_truth")
-JSON_SENSOR_TRUTH = Path("json/sat_sensor_truth")
+    from resonaate.data.resonaate_database import ResonaateDatabase
 
 
 @pytest.fixture(autouse=True)
@@ -40,7 +43,7 @@ def _patchMissingEnvVariables(monkeypatch: pytest.MonkeyPatch) -> None:
     """Automatically delete each environment variable, if set.
 
     Args:
-        monkeypatch (:class:`pytest.monkeypatch.MonkeyPatch`): monkeypatch obj to track changes
+        monkeypatch (:class:`pytest.MonkeyPatch`): monkeypatch obj to track changes
 
     Note:
         This is used so tests can assume a "blank" configuration, and it won't
@@ -51,6 +54,23 @@ def _patchMissingEnvVariables(monkeypatch: pytest.MonkeyPatch) -> None:
         yield
         # Make sure we reset the config after each test function
         BehavioralConfig.getConfig()
+
+
+@pytest.fixture(autouse=True)
+def _debugMode(request: pytest.FixtureRequest) -> None:
+    """Automatically delete each environment variable, if set.
+
+    Args:
+        request (:class:`pytest.FixtureRequest`): request obj to test for marks to bypass this
+
+    Note:
+        This is used so tests can be debugged without the parallel watchdog terminating workers.
+    """
+    if "no_debug" in request.keywords:
+        BehavioralConfig.getConfig().debugging.ParallelDebugMode = False
+        return
+
+    BehavioralConfig.getConfig().debugging.ParallelDebugMode = True
 
 
 @pytest.fixture(scope="session", name="test_logger")
@@ -64,51 +84,60 @@ def getTestLoggerObject() -> Logger:
     return logger
 
 
-@pytest.fixture(name="teardown_kvs")
+@pytest.fixture(name="create_kvs", autouse=True, scope="session")
+def _createKeyValueStore():  # pylint: disable=useless-return
+    """Make sure that :class:`.KeyValueStore.Server` is created only once per test session."""
+    _ = KeyValueStore.getClient()
+
+    return
+
+
+@pytest.fixture(name="teardown_kvs", autouse=True)
 def _teardownKeyValueStore():
-    """Make sure that :class:`.KeyValueStore.Server` is shut down after each test that uses it."""
+    """Make sure that :class:`.KeyValueStore.Server` is flushed after each test, but not shutdown."""
     yield
-    KeyValueStore.stopServerProcess()
+    KeyValueStore.flush()
 
 
-@pytest.fixture(name="reset_shared_db")
-def _resetDatabase() -> None:
-    """Reset the database tables to avoid data integrity errors.
+@pytest.fixture(name="custom_database")
+def _customDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Allows setting up a custom DB path, avoiding data integrity issues.
 
     Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated so that the "epochs"
-        table is reset.
+        This fixture should typically only be used when `buildScenarioFromConfigFile()` is
+        used inside test functions.
     """
-    yield
-    ResonaateDatabase.getSharedInterface().resetData(tables=ResonaateDatabase.VALID_DATA_TYPES)
+    with monkeypatch.context() as m:
+        m.setattr("resonaate.data.createDatabasePath", patchCreateDatabasePath)
+        yield
 
-
-@pytest.fixture(name="reset_importer_db")
-def _resetImporterDatabase() -> None:
-    """Reset the database tables to avoid data integrity errors.
-
-    Note:
-        This fixture should be utilized any time a :class:`.ScenarioClock` object is instantiated so that the "epochs"
-        table is reset.
-    """
-    yield
-    ImporterDatabase.getSharedInterface().resetData(tables=ImporterDatabase.VALID_DATA_TYPES)
+    database = getDBConnection()
+    database.resetData(database.VALID_DATA_TYPES)
+    clearDBPath()
 
 
 @pytest.fixture(name="database")
-def getDataInterface() -> ResonaateDatabase:
+def getDataInterface(tmp_path: Path) -> ResonaateDatabase:
     """Create common, non-shared DB object for all tests.
 
     Yields:
         :class:`.ResonaateDatabase`: properly constructed DB object
     """
-    # Create & yield instance.
-    shared_interface = ResonaateDatabase.getSharedInterface()
-    yield shared_interface
-    shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)
+    # [NOTE]: copy blank test DBs to pytest tmp dir
+    orig_db_dir = FIXTURE_DATA_DIR / SHARED_DB_PATH.parent
+    tmp_db_dir = tmp_path / SHARED_DB_PATH.parent
+    shutil.copytree(orig_db_dir, tmp_db_dir, dirs_exist_ok=True)
+    # [NOTE]: properly set DB connection string using tmp dir
+    setDBPath(f"sqlite:///{tmp_path / SHARED_DB_PATH}")
+    yield getDBConnection()
+    clearDBPath()
 
 
-TEST_START_JD: JulianDate = datetimeToJulianDate(datetime(2018, 12, 1, 12))
+@pytest.fixture(name="propagate_scenario")
+def propagateFixture(custom_database: None) -> PropagateFunc:
+    """Returns function that propagates a scenario."""
+    # pylint: disable=unused-argument
+    return propagateScenario
 
 
 @pytest.fixture(name="geopotential_config")
@@ -141,12 +170,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Configure pytest options without an .ini file."""
     config.addinivalue_line("markers", "slow: mark test as slow to run")
-    config.addinivalue_line("markers", "scenario: mark test as a scenario integration test")
-    config.addinivalue_line("markers", "event: mark test as an event integration test")
-    config.addinivalue_line("markers", "realtime: mark test as using real time propagation")
-    config.addinivalue_line(
-        "markers", "importer: mark test as using imported data rather than propagation"
-    )
+    config.addinivalue_line("markers", "regression: mark test as a regression test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "scenario: mark test as a scenario test")
+    config.addinivalue_line("markers", "event: mark test as an event test")
+    config.addinivalue_line("markers", "estimation: mark test as an integration test")
+    config.addinivalue_line("markers", "no_debug: turn off parallel debug mode for test")
 
 
 def pytest_collection_modifyitems(

@@ -45,7 +45,7 @@ Please ensure these steps are completed before being approved:
 - [ ] Unit tests updated or added to improve coverage
 - [ ] Passes unit test suite
 - [ ] Passes linting checks
-- [ ] Passes integration test (run via CLI)
+- [ ] Passes integration and regression tests
 - [ ] Passes CI/CD pipeline
 - [ ] Update docstrings of changed classes, methods, functions
 - [ ] Configuration changes are updated in `docs/source/reference/config_format.md`
@@ -72,9 +72,9 @@ The HTML documentation for more details on this procedure, see [Contributing](ht
     - `M.m.p` is the major/minor/patch release version
     - `YYYY-MM-DD` is the zero-padded release date
 - [ ] Increment the version number in the following files:
-  - [ ] **setup.py**
-  - [ ] **docs/source/conf.py**
-  - [ ] **src/resonaate/__init__.py**
+  - **setup.py**
+  - **docs/source/conf.py**
+  - **src/resonaate/__init__.py**
   - Example version: `1.3.2` is release Major Version 1, Minor Version 3, Patch 2
 - [ ] Request a review from a [Core Developer][core devs]
 - [ ] Complete the MR (only on GitLab)

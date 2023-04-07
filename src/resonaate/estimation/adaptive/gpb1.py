@@ -10,20 +10,20 @@ from scipy.linalg import det
 
 # Local Imports
 from ...physics import constants as const
-from ...physics.math import fpe_equals
+from ...physics.maths import fpe_equals
 from ...physics.statistics import oneSidedChiSquareTest
 from .adaptive_filter import AdaptiveFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Callable
+    from collections.abc import Callable
 
     # Third Party Imports
     from numpy import ndarray
 
     # Local Imports
+    from ...data.observation import Observation
     from ...physics.time.stardate import JulianDate, ScenarioTime
-    from ...sensors.sensor_base import ObservationTuple
     from ..sequential.sequential_filter import SequentialFilter
     from .initialization import Lambert
 
@@ -35,8 +35,6 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         #. :cite:t:`nastasi_2018_diss`, Section 4.7, Pg 70, Figure 4.5, Pg 72
         #. :cite:t:`bar-shalom_2001_estimation`, Section 11.6., Pg 447
     """
-
-    LABELS = "gpb1"
 
     def __init__(
         self,
@@ -81,32 +79,29 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         # ratio of diagonal to off-diagonals in transition probability matrix
         self.mix_ratio = mix_ratio
 
-    def initialize(
-        self, obs_tuples: list[ObservationTuple], julian_date_start: JulianDate
-    ) -> bool:
+    def initialize(self, observations: list[Observation], julian_date_start: JulianDate) -> bool:
         """Initialize GPB1 models.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
             julian_date_start (:class:`.JulianDate`): julian date at the start of the scenario
 
         Returns:
             ``bool``: Whether or not enough observations and estimates were in the database to start MMAE
         """
-        mmae_started = super().initialize(obs_tuples, julian_date_start)
-        if not mmae_started:
+        if not super().initialize(observations, julian_date_start):
             return False
 
         # Adaptive filter predict and update for each model from time t(k) -> t(k+1)
         self.predict(self.time)
-        self.update(obs_tuples)
+        self.update(observations)
         return True
 
-    def update(self, obs_tuples: list[ObservationTuple]):
+    def update(self, observations: list[Observation]):
         """Update the state estimate with observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the filter step
+            observations (``list``): :class:`.Observation` objects associated with the filter step
 
         References:
             #. :cite:t:`nastasi_2018_diss`, Section 2.4.4, Algorithm 2.5, Eq 2.97-2.99, Pg 35
@@ -114,9 +109,9 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
             #. :cite:t:`nastasi_2018_diss`, Section 4.5, Algorithm 4.4, Pg 65
             #. :cite:t:`bar-shalom_2001_estimation`, Section 11.6.4, Pg 447
         """
-        super().update(obs_tuples)
+        super().update(observations)
 
-        if obs_tuples:
+        if observations:
             for num, model in enumerate(self.models):
                 # Nastasi, K.N. Dissertation: Section 4.5 Algorithm 4.3 eq 4.9 pg 64
                 self.model_likelihoods[num] = exp(-0.5 * model.nis) / sqrt(
@@ -134,9 +129,9 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
             mix_matrix = self._constructMixMatrix()
             self.mode_probabilities = matmul(mix_matrix, self.model_weights)
 
-        self._compileUpdateStep(obs_tuples)
+        self._compileUpdateStep(observations)
         # No need to recheck maneuver detection if no obs
-        if not obs_tuples:
+        if not observations:
             msg = f"Continuing GPB1 for {self.target_id} at {self.time} with {len(self.model_weights)} models"
             self.logger.debug(msg)
             return

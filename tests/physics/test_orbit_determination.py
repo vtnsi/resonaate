@@ -5,10 +5,10 @@ import pytest
 from numpy import allclose, array
 
 # RESONAATE Imports
-from resonaate.physics.constants import PI
 from resonaate.physics.orbit_determination.lambert import (
     determineTransferDirection,
     lambertBattin,
+    lambertGauss,
     lambertUniversal,
 )
 
@@ -64,8 +64,10 @@ def testLambertBattinHyperbolic(vallado_inputs):
     assert final_velocity is not None
 
 
+@pytest.mark.filterwarnings("ignore: invalid value encountered in double_scalars")
 def testLambertBattinParabolic(vallado_inputs):
     """Test Lambert Battin but sma == 0.0."""
+    # [NOTE]: warning filtered b/c shortcut of SMA=0.0 to get parabolic case.
     with pytest.raises(NotImplementedError, match="Parabolic case is not implemented"):
         _, _ = lambertBattin(
             vallado_inputs[0],
@@ -138,9 +140,21 @@ def testLambertUniversalBadAValue(vallado_inputs):
 
 def testDetermineTransferDirection():
     """Test determineTransferDirection()."""
-    dn1 = determineTransferDirection(PI / 2, 0)
+    position_vector = array([7000, 0, 0])
+    dn1 = determineTransferDirection(position_vector, 10 * 60)
     assert dn1 == 1
-    dn2 = determineTransferDirection(PI, 0)
+    dn2 = determineTransferDirection(position_vector, 5825.036202818729 / 2)
     assert dn2 == 0
-    dn3 = determineTransferDirection(3 * PI / 2, 0)
+    dn3 = determineTransferDirection(position_vector, 180 * 60)
     assert dn3 == -1
+
+
+def testLambertGauss(vallado_inputs):
+    """Test Lambert Gauss IOD example."""
+    gauss_v0 = array([2.058913, 2.915965, 0.0])
+    gauss_v = array([-3.451565, 0.910315, 0.0])
+    initial_velocity, final_velocity = lambertGauss(
+        vallado_inputs[0], vallado_inputs[1], vallado_inputs[2], vallado_inputs[3]
+    )
+    assert allclose(initial_velocity, gauss_v0)
+    assert allclose(final_velocity, gauss_v)

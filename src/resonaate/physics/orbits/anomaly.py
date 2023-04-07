@@ -1,10 +1,12 @@
 """Defines common orbital anomaly conversions."""
+from __future__ import annotations
+
 # Third Party Imports
 from numpy import arctan2, cos, sin, sqrt
 
 # Local Imports
 from ..constants import PI
-from ..math import wrapAngle2Pi
+from ..maths import wrapAngle2Pi
 from . import check_ecc, isEccentric, wrap_anomaly
 from .kepler import keplerSolveCOE, keplerSolveEQE
 from .utils import getEccentricityFromEQE

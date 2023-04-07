@@ -7,13 +7,20 @@ elements.
 References:
     :cite:t:`vallado_2003_aiaa_covariance`, Pg 11
 """
+from __future__ import annotations
+
 # Standard Library Imports
 from functools import wraps
-from typing import Callable, Tuple
+from typing import TYPE_CHECKING
 
 # Local Imports
 from .. import constants as const
-from ..math import wrapAngle2Pi
+from ..maths import wrapAngle2Pi
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from collections.abc import Callable
 
 # Limits taken from Vallado AAS paper & verified to provide "constant" COEs across multiple orbits
 ECCENTRICITY_LIMIT = 1e-7
@@ -76,6 +83,7 @@ def check_ecc(func: Callable[..., float]) -> Callable[..., float]:
     Returns:
         Callable[..., float]: wrapped `anomaly` function that properly accounts for circular orbits.
     """
+
     # pylint: disable=invalid-name
     @wraps(func)
     def wrapper_check_ecc(anom, ecc, *args, **kwargs):
@@ -100,6 +108,7 @@ def wrap_anomaly(func: Callable[..., float]) -> Callable[..., float]:
     Returns:
         Callable[..., float]: wrapped `anomaly` function that properly converts its output.
     """
+
     # pylint: disable=invalid-name
     @wraps(func)
     def wrapper_wrap_angle_2pi(*args, **kwargs):

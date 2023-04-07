@@ -10,7 +10,7 @@ import pytest
 
 # RESONAATE Imports
 import resonaate.physics.constants as const
-from resonaate.physics.math import rot1, rot3
+from resonaate.physics.maths import rot1, rot3
 from resonaate.physics.orbits.elements import ClassicalElements
 from resonaate.physics.orbits.utils import getFlightPathAngle
 from resonaate.physics.time.stardate import JulianDate
@@ -21,6 +21,7 @@ from resonaate.physics.transforms.methods import (
     ecef2lla,
     eci2ecef,
     eci2razel,
+    eci2rsw,
     eci2sez,
     geocentric2geodetic,
     geodetic2geocentric,
@@ -42,7 +43,7 @@ class TestECI:
     """Test cases for validating the ECI transforms."""
 
     @pytest.fixture(autouse=True)
-    def _setUpECITransforms(self, teardown_kvs):  # pylint: disable=unused-argument
+    def _setUpECITransforms(self):
         """Prepare the test fixture."""
         # Correct values, taken from Vallado examples
         self.r_itrf = np.asarray([-1033.4793830, 7901.2952754, 6380.3565958])  # km
@@ -52,9 +53,9 @@ class TestECI:
         self.v_gcrf = np.asarray([-4.743220157, 0.790536497, 5.533755727])  # km/sec
 
         # Given UTC
-        year, month, day, hour, minute, second = 2004, 4, 6, 7, 51, 28.386009
+        year, month, day, hour, minute, second, microsecond = 2004, 4, 6, 7, 51, 28, 386009
         # Julian date & Julian date at 0 hrs
-        self.julian_date = JulianDate.getJulianDate(year, month, day, hour, minute, second)
+        self.calendar_date = datetime.datetime(year, month, day, hour, minute, second, microsecond)
         # Given polar motion (arcsec -> rad)
         x_p = -0.140682 * const.ARCSEC2RAD
         y_p = 0.333309 * const.ARCSEC2RAD
@@ -74,11 +75,13 @@ class TestECI:
             datetime.date(year, month, day), x_p, y_p, ddp80, dde80, dut1, lod, dat
         )
         # Actually update with our test values
-        updateReductionParameters(self.julian_date, eops=self.eops)
+        updateReductionParameters(self.calendar_date, eops=self.eops)
 
     def testEci2Ecef(self):
         """Test conversion from ECI (inertial) to ECEF (fixed)."""
-        ecef_state = eci2ecef(np.concatenate((self.r_gcrf, self.v_gcrf), axis=0))
+        ecef_state = eci2ecef(
+            np.concatenate((self.r_gcrf, self.v_gcrf), axis=0), self.calendar_date
+        )
         assert isinstance(ecef_state, np.ndarray)
         assert ecef_state.shape == (6,)
         assert np.allclose(ecef_state[:3], self.r_itrf, atol=1e-11, rtol=1e-8)
@@ -86,7 +89,9 @@ class TestECI:
 
     def testEcef2Eci(self):
         """Test conversion from ECEF (fixed) to ECI (inertial)."""
-        eci_state = ecef2eci(np.concatenate((self.r_itrf, self.v_itrf), axis=0))
+        eci_state = ecef2eci(
+            np.concatenate((self.r_itrf, self.v_itrf), axis=0), self.calendar_date
+        )
         assert isinstance(eci_state, np.ndarray)
         assert eci_state.shape == (6,)
         assert np.allclose(eci_state[:3], self.r_gcrf, atol=1e-11, rtol=1e-8)
@@ -154,6 +159,31 @@ class TestSatelliteFrames:
             rel_eci, np.concatenate([correct_pos, correct_vel], axis=0), atol=1e-9, rtol=1e-6
         )
 
+    @pytest.mark.parametrize("elements", ORBITAL_ELEMENTS)
+    def testEci2Rsw(self, elements):
+        """Test rotation of ECI chaser state to RSW."""
+        orbit = ClassicalElements(*elements)
+        x_eci = orbit.toECI()
+        # Known transform using angles
+        eci2rsw_rot = np.linalg.multi_dot(
+            [
+                rot3(-1.0 * (orbit.argp + orbit.true_anomaly)).T,
+                rot1(-1.0 * orbit.inc).T,
+                rot3(-1.0 * orbit.raan).T,
+            ]
+        )
+        chaser_relative_eci_state = np.asarray([0.1, 0.2, -0.05, 0.00001, -0.00004, 0.000003])
+        chaser_rsw = eci2rsw(
+            target_eci=x_eci,
+            chaser_eci=x_eci + chaser_relative_eci_state,
+        )
+        correct_pos = eci2rsw_rot.dot(chaser_relative_eci_state[:3])
+        correct_vel = eci2rsw_rot.dot(chaser_relative_eci_state[3:])
+
+        assert np.allclose(
+            chaser_rsw, np.concatenate([correct_pos, correct_vel], axis=0), atol=1e-9, rtol=1e-6
+        )
+
 
 class TestLLA:
     """Test cases for validating the LLA transforms."""
@@ -166,7 +196,7 @@ class TestLLA:
     )
 
     @pytest.fixture(autouse=True)
-    def _setUpLLA(self, teardown_kvs):  # pylint: disable=unused-argument
+    def _setUpLLA(self):
         """Fixture to setup LLA conversion tests."""
         # Vallado example 4-1 (pg. 273), second part
         self.eci = np.asarray(
@@ -197,12 +227,12 @@ class TestLLA:
 
     def testConvertToGeocentricLatitude(self):
         """Test converting geodetic latitude to geocentric latitude."""
-        # Vallad example 3-1
+        # Vallado example 3-1
         assert np.isclose(geodetic2geocentric(np.radians(34.352496)), np.radians(34.173429))
 
     def testConvertToGeodeticLatitude(self):
         """Test converting geocentric latitude to geodetic latitude."""
-        # Vallad example 3-1
+        # Vallado example 3-1
         assert np.isclose(geocentric2geodetic(np.radians(34.173429)), np.radians(34.352496))
 
     def testLLA(self):
@@ -264,7 +294,7 @@ class TestRaDecRazelSEZ:
             ]
         )
         self.lla = np.asarray([np.radians(39.007), np.radians(-104.883), 2.19456])
-        self.jdate = JulianDate.getJulianDate(1994, 5, 14, 13, 11, 20.59856)
+        self.calendar_date = datetime.datetime(1994, 5, 14, 13, 11, 20, 598560)
         self.eci = np.asarray(
             [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093]
         )
@@ -280,7 +310,7 @@ class TestRaDecRazelSEZ:
             0.0021743,
             28,
         )
-        updateReductionParameters(self.jdate, eops=self.eops)
+        updateReductionParameters(self.calendar_date, eops=self.eops)
 
     def testAzEl2RaDec(
         self,
@@ -294,11 +324,19 @@ class TestRaDecRazelSEZ:
             self.true_azel[3],
             self.true_azel[4],
             self.true_azel[5],
-            ecef2eci(observer_ecef),
+            ecef2eci(observer_ecef, self.calendar_date),
+            self.calendar_date,
         )
 
         azel = radec2razel(
-            radec[0], radec[1], radec[2], radec[3], radec[4], radec[5], ecef2eci(observer_ecef)
+            radec[0],
+            radec[1],
+            radec[2],
+            radec[3],
+            radec[4],
+            radec[5],
+            ecef2eci(observer_ecef, self.calendar_date),
+            self.calendar_date,
         )
 
         assert np.allclose(
@@ -321,11 +359,19 @@ class TestRaDecRazelSEZ:
             self.true_radec_topo[3],
             self.true_radec_topo[4],
             self.true_radec_topo[5],
-            ecef2eci(observer_ecef),
+            ecef2eci(observer_ecef, self.calendar_date),
+            self.calendar_date,
         )
 
         radec = razel2radec(
-            azel[0], azel[1], azel[2], azel[3], azel[4], azel[5], ecef2eci(observer_ecef)
+            azel[0],
+            azel[1],
+            azel[2],
+            azel[3],
+            azel[4],
+            azel[5],
+            ecef2eci(observer_ecef, self.calendar_date),
+            self.calendar_date,
         )
 
         assert np.allclose(
@@ -340,7 +386,12 @@ class TestRaDecRazelSEZ:
 
     def testRazel(self):
         """Test converting ECI to AzEl."""
-        assert np.allclose(eci2razel(self.eci, ecef2eci(lla2ecef(self.lla))), self.true_azel)
+        assert np.allclose(
+            eci2razel(
+                self.eci, ecef2eci(lla2ecef(self.lla), self.calendar_date), self.calendar_date
+            ),
+            self.true_azel,
+        )
 
     def testAzEl2SEZ(self):
         """Test converting AzEl to SEZ state."""
@@ -357,28 +408,31 @@ class TestRaDecRazelSEZ:
             self.lla[0],
             self.lla[1],
         )
-        assert np.allclose(tgt_ecef, eci2ecef(self.eci))
+        assert np.allclose(tgt_ecef, eci2ecef(self.eci, self.calendar_date))
 
     def testSEZ2ECI(self):
         """Test converting to ECI from SEZ."""
         observer_ecef = lla2ecef(self.lla)
-        tgt_sez = getSlantRangeVector(observer_ecef, self.eci)
-        observer_eci = ecef2eci(observer_ecef)
-        tgt_eci = observer_eci + sez2eci(tgt_sez, self.lla[0], self.lla[1])
+        observer_eci = ecef2eci(observer_ecef, self.calendar_date)
+        tgt_sez = getSlantRangeVector(observer_eci, self.eci, self.calendar_date)
+        tgt_eci = observer_eci + sez2eci(tgt_sez, self.lla[0], self.lla[1], self.calendar_date)
         assert np.allclose(tgt_eci, self.eci)
 
     def testECI2SEZ(self):
         """Test converting to SEZ from ECI."""
         observer_ecef = lla2ecef(self.lla)
-        observer_eci = ecef2eci(observer_ecef)
+        observer_eci = ecef2eci(observer_ecef, self.calendar_date)
         slant_range_eci = self.eci - observer_eci
-        tgt_sez = eci2sez(slant_range_eci, self.lla[0], self.lla[1])
-        assert np.allclose(getSlantRangeVector(observer_ecef, self.eci), tgt_sez)
+        tgt_sez = eci2sez(slant_range_eci, self.lla[0], self.lla[1], self.calendar_date)
+        assert np.allclose(
+            getSlantRangeVector(observer_eci, self.eci, self.calendar_date), tgt_sez
+        )
 
     def testTopocentricRaDec(self):
         """Test converting ECI to topocentric RaDec."""
         assert np.allclose(
-            cartesian2spherical(self.eci - ecef2eci(lla2ecef(self.lla))), self.true_radec_topo
+            cartesian2spherical(self.eci - ecef2eci(lla2ecef(self.lla), self.calendar_date)),
+            self.true_radec_topo,
         )
 
     def testGeocentricRaDec(self):

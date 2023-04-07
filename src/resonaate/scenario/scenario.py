@@ -3,7 +3,8 @@ from __future__ import annotations
 
 # Standard Library Imports
 from collections import defaultdict
-from functools import singledispatch, update_wrapper
+from copy import deepcopy
+from functools import singledispatchmethod
 from multiprocessing import cpu_count
 from pickle import dumps
 from typing import TYPE_CHECKING
@@ -11,8 +12,7 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 from mjolnir import KeyValueStore, WorkerManager
 from numpy import around, seterr
-from numpy.random import default_rng
-from scipy.linalg import norm
+from sqlalchemy.orm import Query
 
 # Local Imports
 from ..agents.estimate_agent import EstimateAgent
@@ -20,56 +20,38 @@ from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
+from ..data import getDBConnection
+from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
-from ..data.resonaate_database import ResonaateDatabase
-from ..dynamics import spacecraftDynamicsFactory
+from ..dynamics import dynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
 from ..job_handlers.agent_propagation import AgentPropagationJobHandler
 from ..job_handlers.base import ParallelMixin
 from ..job_handlers.estimate_prediction import EstimatePredictionJobHandler
 from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
-from ..physics.noise import noiseCovarianceFactory
 from ..physics.time.stardate import JulianDate
-from .config.agent_configs import SensingAgentConfig, TargetAgentConfig
+from .config.agent_config import SensingAgentConfig, TargetAgentConfig
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Callable
+    from collections.abc import Callable
 
     # Local Imports
+    from ..data.observation import MissedObservation, Observation
     from ..physics.time.stardate import ScenarioTime
     from ..tasking.engine.engine_base import TaskingEngine
     from .clock import ScenarioClock
     from .config import ScenarioConfig
-    from .config.estimation_config import EstimationConfig
 
 
-def methdispatch(func: Callable) -> Callable:
-    """Wrap an instance method in the ``singledispatch`` wrapper.
+class AgentAdditionError(Exception):
+    """Agent with the same ID already exists in the simulation."""
 
-    Args:
-        func (``callable``): Method to be wrapped.
 
-    Returns:
-        ``callable``: wrapped method
-
-    See Also:
-        https://stackoverflow.com/questions/24601722/how-can-i-use-functools-singledispatch-with-instance-methods
-
-    Note:
-        This workaround won't be necessary should we upgrade to Python 3.8+.
-    """
-    dispatcher = singledispatch(func)
-
-    def wrapper(*args, **kw):
-        """Wrap method so dispatcher takes second argument, rather than ``self``."""
-        return dispatcher.dispatch(args[1].__class__)(*args, **kw)
-
-    wrapper.register = dispatcher.register
-    update_wrapper(wrapper, func)
-    return wrapper
+class AgentRemovalError(Exception):
+    """Agent with the ID doesn't exist in the simulation."""
 
 
 class Scenario(ParallelMixin):
@@ -86,10 +68,8 @@ class Scenario(ParallelMixin):
         clock: ScenarioClock,
         target_agents: dict[int, TargetAgent],
         estimate_agents: dict[int, EstimateAgent],
-        sensor_network: list[SensingAgent],
+        sensor_agents: dict[int, SensingAgent],
         tasking_engines: dict[int, TaskingEngine],
-        estimation_config: EstimationConfig,
-        internal_db_path: str | None = None,
         importer_db_path: str | None = None,
         logger: Logger | None = None,
         start_workers: bool = True,
@@ -101,11 +81,8 @@ class Scenario(ParallelMixin):
             clock (:class:`.ScenarioClock`): main clock object for tracking time
             target_agents (``dict``): target RSO objects for this :class:`.Scenario` .
             estimate_agents (``dict``): estimate RSO objects for this :class:`.Scenario` .
-            sensor_network (``list``): sensor network for this :class:`.Scenario` .
-            tasking_engines (dict): dictionary of tasking engines for this :class:`.Scenario` .
-            estimation_config (dict): Dictionary of estimation configuration information.
-            internal_db_path (``str``, optional): path to RESONAATE internal database object.
-                Defaults to ``None``.
+            sensor_agents (``dict``): sensor network for this :class:`.Scenario` .
+            tasking_engines (``dict``): dictionary of tasking engines for this :class:`.Scenario` .
             importer_db_path (``str``, optional): path to external importer database for pre-canned
                 data. Defaults to ``None``.
             logger (:class:`.Logger`, optional):pPreviously instantiated :class:`.Logger` instance to be used.
@@ -122,12 +99,12 @@ class Scenario(ParallelMixin):
         # Save target_agents, estimate_agents, sensor network, tasking engine and filter
         self.target_agents = target_agents
         self._estimate_agents = estimate_agents
-        self._sensor_agents = {node.simulation_id: node for node in sensor_network}
+        self._sensor_agents = sensor_agents
         self._tasking_engines = tasking_engines
         self.current_julian_date = self.julian_date_start
 
         # Save filter configuration
-        self.estimation_config = estimation_config
+        self.estimation_config = config.estimation
 
         ## Logging class used to track execution.
         self.logger = logger
@@ -144,24 +121,22 @@ class Scenario(ParallelMixin):
         self.worker_mgr = None
         if start_workers:
             ## Worker manager class instance.
-            proc_count = BehavioralConfig.getConfig().parallel.WorkerCount
-            if proc_count is None:
+            if (proc_count := BehavioralConfig.getConfig().parallel.WorkerCount) is None:
                 proc_count = cpu_count()
-            self.worker_mgr = WorkerManager(proc_count=proc_count)
+
+            watchdog_terminate_after = WorkerManager.DEFAULT_WATCHDOG_TERMINATE_AFTER
+            if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
+                watchdog_terminate_after = None
+
+            self.worker_mgr = WorkerManager(
+                proc_count=proc_count, watchdog_terminate_after=watchdog_terminate_after
+            )
             self.worker_mgr.startWorkers()
 
         # Log some basic information about propagation for this simulation
         pos_std = self.scenario_config.noise.init_position_std_km
         vel_std = self.scenario_config.noise.init_velocity_std_km_p_sec
         self.logger.info(f"Initial estimate error std: {pos_std} km; {vel_std} km/sec")
-        dynamics_noise = norm(
-            noiseCovarianceFactory(
-                self.scenario_config.noise.dynamics_noise_type,
-                self.scenario_config.time.physics_step_sec,
-                self.scenario_config.noise.dynamics_noise_magnitude,
-            )
-        )
-        self.logger.info(f"Dynamics process noise magnitude: {dynamics_noise}")
         self.logger.info(f"Random seed: {config.noise.random_seed}")
         self.logger.info(
             f"Using real-time propagation for RSO truth data: {config.propagation.target_realtime_propagation}"
@@ -170,7 +145,7 @@ class Scenario(ParallelMixin):
             f"Using real-time propagation for sensor truth data: {config.propagation.sensor_realtime_propagation}"
         )
         self.logger.info(
-            f"Using real-time observation for tasking: {config.propagation.realtime_observation}"
+            f"Using real-time observation for tasking: {config.observation.realtime_observation}"
         )
         self.logger.info(
             f"Spacecraft truth dynamics model: {config.propagation.propagation_model}"
@@ -202,9 +177,7 @@ class Scenario(ParallelMixin):
 
         # Init database info
         self._importer_db_path = importer_db_path
-        self.database = ResonaateDatabase.getSharedInterface(
-            db_path=internal_db_path, logger=self.logger
-        )
+        self.database = getDBConnection()
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents
         self._agent_propagation_handler = AgentPropagationJobHandler(
@@ -271,6 +244,19 @@ class Scenario(ParallelMixin):
     def saveDatabaseOutput(self) -> None:
         """Save Truth, Estimate, and Observation data to the output database."""
         # Grab `TruthEphemeris` for targets & sensors
+        if not self.database.getData(
+            Query(Epoch).filter(
+                Epoch.timestampISO == self.clock.datetime_epoch.isoformat(timespec="microseconds")
+            ),
+            multi=False,
+        ):
+            self.database.insertData(
+                Epoch(
+                    julian_date=self.clock.julian_date_epoch,
+                    timestampISO=self.clock.datetime_epoch.isoformat(timespec="microseconds"),
+                )
+            )
+
         output_data = [tgt.getCurrentEphemeris() for tgt in self.target_agents.values()]
         output_data.extend(sensor.getCurrentEphemeris() for sensor in self.sensor_agents.values())
 
@@ -291,15 +277,15 @@ class Scenario(ParallelMixin):
 
             # Grab `Observations` from current time step
             for tasking_engine in self._tasking_engines.values():
-                obs_tuples = tasking_engine.getCurrentObservations()
-                if obs_tuples:
-                    msg = f"Committing {len(obs_tuples)} observations of targets "
-                    observed_targets = set()
-                    for obs_tuple in obs_tuples:
-                        observed_targets.add(obs_tuple.observation.target_id)
-                    msg += f"{observed_targets} to the database."
-                    self.logger.debug(msg)
-                output_data.extend(obs_tuple.observation for obs_tuple in obs_tuples)
+                # Save Successful Observations
+                if observations := tasking_engine.getCurrentObservations():
+                    self._logObservations(observations)
+                output_data.extend(observations)
+
+                # Save Missed Observations
+                if missed_observations := tasking_engine.getCurrentMissedObservations():
+                    self._logMissedObservations(missed_observations)
+                output_data.extend(missed_observations)
                 # Grab tasking data
                 output_data.extend(
                     tasking
@@ -312,6 +298,7 @@ class Scenario(ParallelMixin):
     def stepForward(self) -> None:
         """Propagate the simulation forward by a single timestep."""
         prior_jd = self.current_julian_date
+        prior_datetime = self.clock.datetime_epoch
         next_jd = JulianDate(float(prior_jd) + self.clock.dt_step * SEC2DAYS)
         handleRelevantEvents(
             self, self.database, EventScope.SCENARIO_STEP, prior_jd, next_jd, self.logger
@@ -328,12 +315,12 @@ class Scenario(ParallelMixin):
             prior_julian_date=prior_jd,
             julian_date=self.clock.julian_date_epoch,
             epoch_time=self.clock.time,
+            datetime_epoch=self.clock.datetime_epoch,
         )
 
         KeyValueStore.setValue("target_agents", dumps(self.target_agents))
         KeyValueStore.setValue("sensor_agents", dumps(self.sensor_agents))
         if not self.scenario_config.propagation.truth_simulation_only:
-
             self._estimate_prediction_handler.executeJobs(
                 prior_julian_date=prior_jd,
                 julian_date=self.clock.julian_date_epoch,
@@ -345,7 +332,7 @@ class Scenario(ParallelMixin):
             # [NOTE][parallel-time-bias-event-handling] Step one: query for events and "handle" them.
             sensor_tasking_events = defaultdict(list)
             relevant_events = getRelevantEvents(
-                ResonaateDatabase.getSharedInterface(),
+                self.database,
                 EventScope.OBSERVATION_GENERATION,
                 prior_jd,
                 self.clock.julian_date_epoch,
@@ -363,9 +350,9 @@ class Scenario(ParallelMixin):
             self.logger.debug("Assess")
             obs_dict = defaultdict(list)
             for tasking_engine in self._tasking_engines.values():
-                tasking_engine.assess(prior_jd, self.clock.julian_date_epoch)
-                for obs_tuple in tasking_engine.observations:
-                    obs_dict[obs_tuple.observation.target_id].append(obs_tuple)
+                tasking_engine.assess(prior_datetime, self.clock.datetime_epoch)
+                for observation in tasking_engine.observations:
+                    obs_dict[observation.target_id].append(observation)
 
             # Estimate and covariance are stored as the updated state estimate and covariance
             # If there are no observations, there is no update information and the predicted state
@@ -374,7 +361,25 @@ class Scenario(ParallelMixin):
         # Flush events from event stack
         EventStack.logAndFlushEvents()
 
-    @methdispatch
+    def _logObservations(self, observations: list[Observation]):
+        """Log :class:`.Observation` objects."""
+        msg = f"Committing {len(observations)} observations of targets "
+        observed_targets = set()
+        for observation in observations:
+            observed_targets.add(observation.target_id)
+        msg += f"{observed_targets} to the database."
+        self.logger.debug(msg)
+
+    def _logMissedObservations(self, missed_observations: list[MissedObservation]):
+        """Log :class:`.MissedObservation` objects."""
+        msg = "Missed Observations of targets "
+        missed_targets = set()
+        for miss in missed_observations:
+            missed_targets.add(miss.target_id)
+        msg += f"{missed_targets}"
+        self.logger.debug(msg)
+
+    @singledispatchmethod
     def addTarget(self, target_spec: TargetAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
@@ -386,8 +391,8 @@ class Scenario(ParallelMixin):
         err = f"Can't handle target specification of type {type(target_spec)}"
         raise TypeError(err)
 
-    @addTarget.register(dict)
-    def _addTargetDict(self, target_spec: int, tasking_engine_id: int) -> None:
+    @addTarget.register
+    def _addTargetDict(self, target_spec: dict, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
@@ -397,7 +402,7 @@ class Scenario(ParallelMixin):
         target_conf = TargetAgentConfig(**target_spec)
         self._addTargetConf(target_conf, tasking_engine_id)
 
-    @addTarget.register(TargetAgentConfig)
+    @addTarget.register
     def _addTargetConf(self, target_spec: TargetAgentConfig, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
@@ -405,66 +410,48 @@ class Scenario(ParallelMixin):
             target_spec (:class:`.TargetAgentConfig`): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
-        if target_spec.sat_num in self.target_agents:
-            err = f"Target '{target_spec.sat_num} already exists in this scenario."
-            raise Exception(err)
+        if target_spec.id in self.target_agents:
+            err = f"Target '{target_spec.id} already exists in this scenario."
+            raise AgentAdditionError(err)
 
-        target_dynamics = spacecraftDynamicsFactory(
-            self.scenario_config.propagation.propagation_model,
-            self.clock,
+        target_dynamics = dynamicsFactory(
+            target_spec,
+            self.scenario_config.propagation,
             self.scenario_config.geopotential,
             self.scenario_config.perturbations,
-            method=self.scenario_config.propagation.integration_method,
-        )
-
-        dynamics_noise = noiseCovarianceFactory(
-            self.scenario_config.noise.dynamics_noise_type,
-            self.scenario_config.time.physics_step_sec,
-            self.scenario_config.noise.dynamics_noise_magnitude,
-        )
-
-        filter_dynamics = spacecraftDynamicsFactory(
-            self.scenario_config.propagation.propagation_model,
             self.clock,
+        )
+
+        est_prop_cfg = deepcopy(self.scenario_config.propagation)
+        est_prop_cfg.propagation_model = (
+            self.scenario_config.estimation.sequential_filter.dynamics_model
+        )
+        filter_dynamics = dynamicsFactory(
+            target_spec,
+            est_prop_cfg,
             self.scenario_config.geopotential,
             self.scenario_config.perturbations,
-            method=self.scenario_config.propagation.integration_method,
+            self.clock,
         )
 
-        filter_noise = noiseCovarianceFactory(
-            self.scenario_config.noise.filter_noise_type,
-            self.scenario_config.time.physics_step_sec,
-            self.scenario_config.noise.filter_noise_magnitude,
+        target_agent = TargetAgent.fromConfig(
+            tgt_cfg=target_spec,
+            clock=self.clock,
+            dynamics=target_dynamics,
+            prop_cfg=self.scenario_config.propagation,
         )
+        self.target_agents[target_spec.id] = target_agent
 
-        target_factory_config = {
-            "target": target_spec,
-            "clock": self.clock,
-            "dynamics": target_dynamics,
-            "realtime": self.scenario_config.propagation.target_realtime_propagation,
-            "station_keeping": target_spec.station_keeping,
-            "noise": dynamics_noise,
-            "random_seed": self.scenario_config.noise.random_seed,
-        }
-        target_agent = TargetAgent.fromConfig(target_factory_config)
-        self.target_agents[target_spec.sat_num] = target_agent
-
-        estimate_factory_config = {
-            "target": target_spec,
-            "agent_type": target_agent.agent_type,
-            "position_std": self.scenario_config.noise.init_position_std_km,
-            "velocity_std": self.scenario_config.noise.init_velocity_std_km_p_sec,
-            "rng": default_rng(self.scenario_config.noise.random_seed),
-            "clock": self.clock,
-            "sequential_filter": self.scenario_config.estimation.sequential_filter,
-            "adaptive_filter": self.scenario_config.estimation.adaptive_filter,
-            "initial_orbit_determination": self.scenario_config.estimation.sequential_filter.initial_orbit_determination,
-            "seed": self.scenario_config.noise.random_seed,
-            "dynamics": filter_dynamics,
-            "q_matrix": filter_noise,
-        }
-        estimate_agent = EstimateAgent.fromConfig(estimate_factory_config)
-        self._estimate_agents[target_spec.sat_num] = estimate_agent
+        estimate_agent = EstimateAgent.fromConfig(
+            tgt_cfg=target_spec,
+            clock=self.clock,
+            dynamics=filter_dynamics,
+            prop_cfg=self.scenario_config.propagation,
+            time_cfg=self.scenario_config.time,
+            noise_cfg=self.scenario_config.noise,
+            estimation_cfg=self.scenario_config.estimation,
+        )
+        self._estimate_agents[target_spec.id] = estimate_agent
 
         self._tasking_engines[tasking_engine_id].addTarget(target_agent.simulation_id)
         self._agent_propagation_handler.registerCallback(target_agent)
@@ -479,7 +466,7 @@ class Scenario(ParallelMixin):
         """
         if agent_id not in self.target_agents:
             err = f"Target '{agent_id} doesn't exist in this scenario."
-            raise Exception(err)
+            raise AgentRemovalError(err)
 
         self._agent_propagation_handler.deregisterCallback(agent_id)
         del self.target_agents[agent_id]
@@ -487,7 +474,7 @@ class Scenario(ParallelMixin):
         del self._estimate_agents[agent_id]
         self._tasking_engines[tasking_engine_id].removeTarget(agent_id)
 
-    @methdispatch
+    @singledispatchmethod
     def addSensor(self, sensor_spec: SensingAgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
@@ -499,7 +486,7 @@ class Scenario(ParallelMixin):
         err = f"Can't handle sensor specification of type {type(sensor_spec)}"
         raise TypeError(err)
 
-    @addSensor.register(dict)
+    @addSensor.register
     def _addSensorDict(self, sensor_spec: dict, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
@@ -510,7 +497,7 @@ class Scenario(ParallelMixin):
         sensor_conf = SensingAgentConfig(**sensor_spec)
         self._addSensorConf(sensor_conf, tasking_engine_id)
 
-    @addSensor.register(SensingAgentConfig)
+    @addSensor.register
     def _addSensorConf(self, sensor_spec: SensingAgentConfig, tasking_engine_id: int) -> None:
         """Add a sensor to this :class:`.Scenario`.
 
@@ -520,24 +507,22 @@ class Scenario(ParallelMixin):
         """
         if sensor_spec.id in self._sensor_agents:
             err = f"Sensor '{sensor_spec.id} already exists in this scenario."
-            raise Exception(err)
+            raise AgentAdditionError(err)
 
-        dynamics_method = spacecraftDynamicsFactory(
-            self.scenario_config.propagation.propagation_model,
-            self.clock,
+        dynamics = dynamicsFactory(
+            sensor_spec,
+            self.scenario_config.propagation,
             self.scenario_config.geopotential,
             self.scenario_config.perturbations,
-            method=self.scenario_config.propagation.integration_method,
+            self.clock,
         )
 
-        config = {
-            "agent": sensor_spec,
-            "clock": self.clock,
-            "satellite_dynamics": dynamics_method,
-            "realtime": self.scenario_config.propagation.sensor_realtime_propagation,
-        }
-
-        sensing_agent = SensingAgent.fromConfig(config)
+        sensing_agent = SensingAgent.fromConfig(
+            sen_cfg=sensor_spec,
+            clock=self.clock,
+            dynamics=dynamics,
+            prop_cfg=self.scenario_config.propagation,
+        )
         self._sensor_agents[sensing_agent.simulation_id] = sensing_agent
 
         self._tasking_engines[tasking_engine_id].addSensor(sensing_agent.simulation_id)
@@ -552,7 +537,7 @@ class Scenario(ParallelMixin):
         """
         if agent_id not in self._sensor_agents:
             err = f"Sensor '{agent_id} doesn't exist in this scenario."
-            raise Exception(err)
+            raise AgentRemovalError(err)
 
         del self.sensor_agents[agent_id]
         self._tasking_engines[tasking_engine_id].removeSensor(agent_id)

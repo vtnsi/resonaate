@@ -1,0 +1,19 @@
+{
+  "unique_id": 1,
+  "reward": {
+    "name": "SimpleSummationReward",
+    "metrics": [
+      {
+        "name": "ShannonInformation",
+        "parameters": {}
+      }
+    ],
+    "parameters": {}
+  },
+  "decision": {
+    "name": "MunkresDecision",
+    "parameters": {}
+  },
+  "targets_file": "../target_sets/small_target_set.json",
+  "sensors_file": "../sensor_sets/sat_sensors.json"
+}

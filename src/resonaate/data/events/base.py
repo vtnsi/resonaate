@@ -70,16 +70,18 @@ class Event(_DataMixin, Base):
 
     __tablename__ = "events"
 
+    # [NOTE]: Old-style type hints required until we either:
+    #   1) Move to SQLAlchemy >= 2.0
+    #   2) Move to Python >= 3.10
+    #
+    # See https://github.com/sqlalchemy/sqlalchemy/issues/9110
     EVENT_REGISTRY: dict[str, Event] | None = None
     """``dict``: Correlates `event_type` values to the correct :class:`.Event` child class."""
 
     EVENT_TYPE: str = "event"
     """``str``: Name of this type of event."""
 
-    id = Column(  # noqa: A003
-        Integer,
-        primary_key=True,
-    )
+    id = Column(Integer, primary_key=True)
     """``int``: Primary key for the 'events' table."""
 
     scope = Column(String(128), nullable=False)

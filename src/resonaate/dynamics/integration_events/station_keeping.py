@@ -10,9 +10,9 @@ from scipy.linalg import norm
 
 # Local Imports
 from ...physics.constants import DEG2RAD
-from ...physics.math import safeArccos
+from ...physics.maths import safeArccos
 from ...physics.orbits.elements import ClassicalElements
-from ...physics.time.stardate import JulianDate
+from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ...physics.transforms.methods import ecef2lla, eci2ecef, ntw2eci
 from ..special_perturbations import _getRotationMatrix
 from .discrete_state_change_event import DiscreteStateChangeEvent
@@ -23,6 +23,10 @@ VALID_STATION_KEEPING_ROUTINES: tuple[str] = (
     "GEO EW",
     "LEO",
 )
+
+
+class StationKeepingError(Exception):
+    """Error with station-keeping algorithm."""
 
 
 class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
@@ -110,6 +114,13 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
         See Also:
             :meth:`.DiscreteStateChangeEvent.__call__()`
         """
+        # [FIXME]: I think this should return a 'continuous' float of the `trigger` value
+        #   This could be related to Issue 41:
+        #       https://code.vt.edu/space-research/resonaate/resonaate/-/issues/41
+        #
+        #   Basically, scipy event handling may _look_ for the crossing using the value returned,
+        #   and a discontinuous jump may not provide enough information for the root
+        #   finding algorithm.
         if self.interruptRequired(time, state):
             self.recordActivation(time, state)
             return 0
@@ -169,7 +180,9 @@ class KeepGeoEastWest(StationKeeper):
         See Also:
             :meth:`.StationKeeper.fromInitECI()`
         """
-        initial_lon = ecef2lla(eci2ecef(initial_eci))[1]  # radians
+        initial_lon = ecef2lla(eci2ecef(initial_eci, julianDateToDatetime(julian_date_start)))[
+            1
+        ]  # radians
         initial_coe = ClassicalElements.fromECI(initial_eci)
         return cls(rso_id, initial_eci, initial_lon, initial_coe, julian_date_start)
 
@@ -216,7 +229,7 @@ class KeepGeoEastWest(StationKeeper):
             numpy.ndarray: (6, ) ECI burn vector of the satellite, (km, km/s)
         """
         if self.ntw_delta_v == 0.0:
-            raise Exception("No state change to apply.")
+            raise StationKeepingError("No state change to apply.")
 
         if self.ntw_delta_v > 0:
             direction = "West"
@@ -265,7 +278,8 @@ class KeepGeoNorthSouth(StationKeeper):
         See Also:
             :meth:`.StationKeeper.fromInitECI()`
         """
-        initial_lat = ecef2lla(eci2ecef(initial_eci))[0]  # radians
+        # radians
+        initial_lat = ecef2lla(eci2ecef(initial_eci, julianDateToDatetime(julian_date_start)))[0]
         initial_coe = ClassicalElements.fromECI(initial_eci)
         return cls(rso_id, initial_eci, initial_lat, initial_coe, julian_date_start)
 
@@ -316,7 +330,7 @@ class KeepGeoNorthSouth(StationKeeper):
             numpy.ndarray: (6, ) ECI burn vector of the satellite, (km, km/s)
         """
         if self.ntw_delta_v == 0.0:
-            raise Exception("No state change to apply.")
+            raise StationKeepingError("No state change to apply.")
 
         if self.ntw_delta_v > 0:
             direction = "North"
@@ -405,7 +419,7 @@ class KeepLeoUp(StationKeeper):
             numpy.ndarray: (6, ) ECI burn vector of the satellite, (km, km/s)
         """
         if self.ntw_delta_v == 0.0:
-            raise Exception("No state change to apply.")
+            raise StationKeepingError("No state change to apply.")
 
         EventStack.pushEvent(EventRecord("Station Keep LEO Alt Incr", self._rso_id))
 

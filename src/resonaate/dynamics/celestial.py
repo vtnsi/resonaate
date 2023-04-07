@@ -12,16 +12,16 @@ from numpy import ones_like, spacing, zeros
 from scipy.integrate import solve_ivp
 
 # Local Imports
+from ..common.labels import IntegratorLabel
 from ..common.logger import resonaateLogError, resonaateLogWarning
 from ..physics.bodies import Earth
-from .constants import RK45_LABEL
 from .dynamics_base import Dynamics
 from .integration_events.finite_thrust import ScheduledFiniteThrust
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Callable, Optional, Union
+    from collections.abc import Callable
 
     # Third Party Imports
     from numpy import ndarray
@@ -58,7 +58,7 @@ def checkEarthCollision(r_norm: float):
 class Celestial(Dynamics, metaclass=ABCMeta):
     r"""The :class:`.Celestial` dynamics class defines the behavior of space-based :class:`agent_base.Agent` objects."""
 
-    def __init__(self, method: str = RK45_LABEL):
+    def __init__(self, method: str = IntegratorLabel.RK45):
         r"""Instantiate a :class:`.Celestial` object.
 
         Args:
@@ -69,9 +69,9 @@ class Celestial(Dynamics, metaclass=ABCMeta):
 
     def _prepEvents(
         self,
-        initial_time: Union[ScenarioTime, float],
-        station_keeping: Optional[list[StationKeeper]],
-        scheduled_events: Optional[list[ScheduledEventType]],
+        initial_time: ScenarioTime | float,
+        station_keeping: list[StationKeeper] | None = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ) -> list[Callable[[float, ndarray], float]]:
         r"""Prep events before propagation starts, to add to `solve_ivp` events parameter.
 
@@ -105,14 +105,14 @@ class Celestial(Dynamics, metaclass=ABCMeta):
     def _applyEvents(
         self,
         t_events: ndarray,
-        events: list[Callable[[float, ndarray], float]],
+        events: list[ScheduledEventType],
         current_state: ndarray,
     ) -> ndarray:
         r"""Apply any events that stopped integration.
 
         Args:
             t_events (``ndarray``): times of events that occurred during integration.
-            events (``list``): event functions that are ``Callable`` objects of the form :math:`g(t, y) = 0`.
+            events (``list``): event functions that are ``Callable`` of the form :math:`g(t, y) = 0`.
             current_state (``ndarray``): current state after integration has stopped.
 
         Returns:
@@ -133,11 +133,11 @@ class Celestial(Dynamics, metaclass=ABCMeta):
 
     def propagate(
         self,
-        initial_time: Union[ScenarioTime, float],
-        final_time: Union[ScenarioTime, float],
+        initial_time: ScenarioTime | float,
+        final_time: ScenarioTime | float,
         initial_state: ndarray,
-        station_keeping: Optional[list[StationKeeper]] = None,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        station_keeping: list[StationKeeper] | None = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ) -> ndarray:
         r"""Numerically integrate the state vector forward to the final time.
 
@@ -201,10 +201,10 @@ class Celestial(Dynamics, metaclass=ABCMeta):
 
     def propagateBulk(
         self,
-        times: list[Union[ScenarioTime, float]],
+        times: list[ScenarioTime | float],
         current_state: ndarray,
-        station_keeping: Optional[list[StationKeeper]] = None,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        station_keeping: list[StationKeeper] | None = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ) -> ndarray:
         r"""Numerically integrate the state vector forward to the final time.
 
@@ -229,9 +229,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             ``ndarray``: (6, K, T) final state vector after numerical integration has stopped, km; km/sec.
                 Each (6, K) state vector refers to a time in the ``times`` list.
         """
-        current_time = times[0]
-        final_time = times[-1]
-        if final_time <= current_time:
+        if (current_time := times[0]) > (final_time := times[-1]):
             raise ValueError("final_time must be > initial_time")
 
         # Save original shape of the input state
@@ -316,7 +314,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         return final_states[::, 1:]
 
     @abstractmethod
-    def _differentialEquation(self, time: Union[ScenarioTime, float], state: ndarray) -> ndarray:
+    def _differentialEquation(self, time: ScenarioTime | float, state: ndarray) -> ndarray:
         """Calculate the first time derivative of the state for numerical integration.
 
         Note: this function must take and receive 1-dimensional state vectors! Also, `K` below

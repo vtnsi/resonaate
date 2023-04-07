@@ -2,127 +2,129 @@
   {
     "name": "RTS MMW",
     "id": 123360,
-    "covariance": [
-      [1.2184696791468344e-13, 0.0, 0.0, 0.0],
-      [0.0, 1.2184696791468344e-13, 0.0, 0.0],
-      [0.0, 0.0, 6.250000000000001e-12, 0.0],
-      [0.0, 0.0, 0.0, 1.49769e-11]
-    ],
-    "slew_rate": 0.06981317007977318,
-    "azimuth_range": [0.0, 6.283183561850334],
-    "elevation_range": [0.017453292519943295, 1.5707945814656445],
-    "efficiency": 0.95,
-    "aperture_area": 615.7521601035994,
-    "sensor_type": "AdvRadar",
-    "exemplar": [0.002416282600425403, 1000.0],
-    "lat": 0.16401242953426154,
-    "lon": 2.9230968043948002,
-    "alt": 0.095,
-    "host_type": "GroundFacility",
-    "tx_power": 60e3,
-    "tx_frequency": 35e9
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 9.39722, "longitude": 167.48111, "altitude": 0.095 },
+    "sensor": {
+      "type": "adv_radar",
+      "covariance": [
+        [1.2184696791468344e-13, 0.0, 0.0, 0.0],
+        [0.0, 1.2184696791468344e-13, 0.0, 0.0],
+        [0.0, 0.0, 6.250000000000001e-12, 0.0],
+        [0.0, 0.0, 0.0, 1.49769e-11]
+      ],
+      "slew_rate": 4.0,
+      "azimuth_range": [0.0, 359.9999],
+      "elevation_range": [1.0, 89.9999],
+      "efficiency": 0.95,
+      "aperture_diameter": 28.0,
+      "tx_power": 60000.0,
+      "tx_frequency": 35000000000.0,
+      "min_detectable_power": 2.2268715552507622e-11
+    }
   },
   {
     "name": "RTS TRADEX",
     "id": 123350,
-    "covariance": [
-      [2.46740110027234e-10, 0.0, 0.0, 0.0],
-      [0.0, 2.46740110027234e-10, 0.0, 0.0],
-      [0.0, 0.0, 1e-8, 0.0],
-      [0.0, 0.0, 0.0, 4.0000000000000015e-12]
-    ],
-    "slew_rate": 0.06981317007977318,
-    "azimuth_range": [0.0, 6.283183561850334],
-    "elevation_range": [0.017453292519943295, 1.5707945814656445],
-    "efficiency": 0.95,
-    "aperture_area": 572.5552611167398,
-    "sensor_type": "Radar",
-    "exemplar": [0.05637992734325941, 1000.0],
-    "lat": 0.16403668961086426,
-    "lon": 2.9231161775494976,
-    "alt": 0.095,
-    "host_type": "GroundFacility",
-    "tx_power": 145e3,
-    "tx_frequency": 1.5e9
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 9.39861, "longitude": 167.48222, "altitude": 0.095 },
+    "sensor": {
+      "type": "radar",
+      "covariance": [
+        [2.46740110027234e-10, 0.0, 0.0, 0.0],
+        [0.0, 2.46740110027234e-10, 0.0, 0.0],
+        [0.0, 0.0, 1e-8, 0.0],
+        [0.0, 0.0, 0.0, 4.0000000000000015e-12]
+      ],
+      "slew_rate": 4.0,
+      "azimuth_range": [0.0, 359.9999],
+      "elevation_range": [1.0, 89.9999],
+      "efficiency": 0.95,
+      "aperture_diameter": 27.0,
+      "tx_power": 145000.0,
+      "tx_frequency": 1500000000.0,
+      "min_detectable_power": 8.546361922142329e-14
+    }
   },
   {
     "name": "MSSS AEOS",
     "id": 129650,
-    "covariance": [
-      [2.741556778080378e-13, 0.0],
-      [0.0, 2.741556778080378e-13]
-    ],
-    "slew_rate": 0.20943951023931956,
-    "azimuth_range": [0.0, 6.283183561850334],
-    "elevation_range": [0.017453292519943295, 1.5707945814656445],
-    "efficiency": 0.98,
-    "aperture_area": 10.17876019763093,
-    "sensor_type": "Optical",
-    "exemplar": [0.04908738521234052, 32500.0],
-    "lat": 0.36142382870053696,
-    "lon": -2.727193369702248,
-    "alt": 3.0756,
-    "host_type": "GroundFacility"
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 20.70806, "longitude": -156.25667, "altitude": 3.0756 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.741556778080378e-13, 0.0],
+        [0.0, 2.741556778080378e-13]
+      ],
+      "slew_rate": 12.000000000000002,
+      "azimuth_range": [0.0, 359.9999],
+      "elevation_range": [1.0, 89.9999],
+      "efficiency": 0.98,
+      "aperture_diameter": 3.6
+    }
   },
   {
     "name": "MSSS BDT",
     "id": 129610,
-    "covariance": [
-      [6.16850275068085e-13, 0.0],
-      [0.0, 6.16850275068085e-13]
-    ],
-    "slew_rate": 0.3490658503988659,
-    "azimuth_range": [0.0, 6.283183561850334],
-    "elevation_range": [0.017453292519943295, 1.5707945814656445],
-    "efficiency": 0.98,
-    "aperture_area": 0.5026548245743669,
-    "sensor_type": "Optical",
-    "exemplar": [9.869604401089358, 32500.0],
-    "lat": 0.36142854108951733,
-    "lon": -2.7272078559350392,
-    "alt": 3.0587,
-    "host_type": "GroundFacility"
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 20.70833, "longitude": -156.2575, "altitude": 3.0587 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [6.16850275068085e-13, 0.0],
+        [0.0, 6.16850275068085e-13]
+      ],
+      "slew_rate": 20.0,
+      "azimuth_range": [0.0, 359.9999],
+      "elevation_range": [1.0, 89.9999],
+      "efficiency": 0.98,
+      "aperture_diameter": 0.8
+    }
   },
   {
     "name": "MSSS Raven",
     "id": 129700,
-    "covariance": [
-      [7.615435494667716e-13, 0.0],
-      [0.0, 7.615435494667716e-13]
-    ],
-    "slew_rate": 0.3490658503988659,
-    "azimuth_range": [0.0, 6.283183561850334],
-    "elevation_range": [0.017453292519943295, 1.5707945814656445],
-    "efficiency": 0.98,
-    "aperture_area": 0.12566370614359174,
-    "sensor_type": "Optical",
-    "exemplar": [9.869604401089358, 32500.0],
-    "lat": 0.36142854108951733,
-    "lon": -2.727202969013134,
-    "alt": 3.0585,
-    "host_type": "GroundFacility"
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 20.70833, "longitude": -156.25722, "altitude": 3.0585 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [7.615435494667716e-13, 0.0],
+        [0.0, 7.615435494667716e-13]
+      ],
+      "slew_rate": 20.0,
+      "azimuth_range": [0.0, 359.9999],
+      "elevation_range": [1.0, 89.9999],
+      "efficiency": 0.98,
+      "aperture_diameter": 0.4
+    }
   },
   {
     "name": "GUAM A SGLS-60",
     "id": 123970,
-    "covariance": [
-      [1.2184696791468345e-11, 0.0, 0.0, 0.0],
-      [0.0, 1.2184696791468345e-11, 0.0, 0.0],
-      [0.0, 0.0, 8.7025e-10, 0.0],
-      [0.0, 0.0, 0.0, 4.0000000000000015e-12]
-    ],
-    "slew_rate": 3.141592653589793,
-    "azimuth_range": [0.0, 6.283183561850334],
-    "elevation_range": [0.017453292519943295, 1.5707945814656445],
-    "efficiency": 0.95,
-    "aperture_area": 1963.4954084936207,
-    "sensor_type": "AdvRadar",
-    "exemplar": [0.0043802459820395006, 10000.0],
-    "lat": 0.23762992869119182,
-    "lon": 2.52821499648024,
-    "alt": 0.216,
-    "host_type": "GroundFacility",
-    "tx_power": 32e6,
-    "tx_frequency": 650e6
+    "platform": { "type": "ground_facility" },
+    "state": {
+      "type": "lla",
+      "latitude": 13.615192000000002,
+      "longitude": 144.856049,
+      "altitude": 0.216
+    },
+    "sensor": {
+      "type": "adv_radar",
+      "covariance": [
+        [1.2184696791468345e-11, 0.0, 0.0, 0.0],
+        [0.0, 1.2184696791468345e-11, 0.0, 0.0],
+        [0.0, 0.0, 8.7025e-10, 0.0],
+        [0.0, 0.0, 0.0, 4.0000000000000015e-12]
+      ],
+      "slew_rate": 180.0,
+      "azimuth_range": [0.0, 359.9999],
+      "elevation_range": [1.0, 89.9999],
+      "efficiency": 0.95,
+      "aperture_diameter": 50.0,
+      "tx_power": 32000000.0,
+      "tx_frequency": 650000000.0,
+      "min_detectable_power": 4.720897636212837e-18
+    }
   }
 ]

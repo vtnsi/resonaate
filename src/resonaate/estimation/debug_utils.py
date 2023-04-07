@@ -1,4 +1,6 @@
 """Defines supporting functions that help users debug numerical issues with filtering."""
+from __future__ import annotations
+
 # Standard Library Imports
 import json
 import os
@@ -15,12 +17,13 @@ from sqlalchemy.orm import Query
 # Local Imports
 from ..common.behavioral_config import BehavioralConfig
 from ..common.utilities import getTypeString
+from ..data import getDBConnection
 from ..data.ephemeris import TruthEphemeris
 from ..data.query_util import addAlmostEqualFilter
-from ..data.resonaate_database import ResonaateDatabase
-from ..physics.math import nearestPD
+from ..physics.maths import nearestPD
+from ..physics.measurements import getAzimuth, getElevation, getRange, getRangeRate
+from ..physics.time.stardate import julianDateToDatetime
 from ..physics.transforms.methods import ecef2sez, eci2ecef
-from ..sensors.measurements import getAzimuth, getElevation, getRange, getRangeRate
 
 
 def debugToJSONFile(base_filename, debug_dir, json_dict):
@@ -53,7 +56,7 @@ def checkThreeSigmaObs(current_obs, sigma=3):
     """Check if an :class:`.Observation`'s absolute error is greater than 3 std."""
     target_agents = pickle.loads(KeyValueStore.getValue("target_agents"))
     sensor_agents = pickle.loads(KeyValueStore.getValue("sensor_agents"))
-    shared_interface = ResonaateDatabase.getSharedInterface()
+    shared_interface = getDBConnection()
     filenames = []
     for observation in current_obs:
         # Grab ephemeris directly from the Database to avoid any noise potentially associated
@@ -64,7 +67,8 @@ def checkThreeSigmaObs(current_obs, sigma=3):
 
         # Calculate SEZ vector from ephemeris state
         sensor_agent = sensor_agents[observation.unique_id]
-        ephem_minus_sensor_ecef = eci2ecef(np.asarray(ephem.eci)) - sensor_agent.ecef_state
+        ob_ephem = eci2ecef(np.asarray(ephem.eci), julianDateToDatetime(observation.julian_date))
+        ephem_minus_sensor_ecef = ob_ephem - sensor_agent.ecef_state
         ephem_sez = ecef2sez(
             ephem_minus_sensor_ecef, sensor_agent.lla_state[0], sensor_agent.lla_state[1]
         )
@@ -79,16 +83,16 @@ def checkThreeSigmaObs(current_obs, sigma=3):
             ]
         )
 
-        if len(observation.measurements) > 2:
+        if observation.dim > 2:
             obs_sez_from_azel = observation.range_km * obs_sez_from_azel_hat
 
         else:
             obs_sez_from_azel = norm(ephem_sez[0:3]) * obs_sez_from_azel_hat
 
         true_measurements = [getAzimuth(ephem_sez), getElevation(ephem_sez)]
-        if len(observation.measurements) == 3:
+        if observation.dim == 3:
             true_measurements.append(getRange(ephem_sez))
-        elif len(observation.measurements) == 4:
+        elif observation.dim == 4:
             true_measurements.append(getRange(ephem_sez))
             true_measurements.append(getRangeRate(ephem_sez))
 
@@ -98,10 +102,10 @@ def checkThreeSigmaObs(current_obs, sigma=3):
         sez_diff = np.absolute(norm(ephem_sez[0:3] - observation.sez[0:3]))
 
         dist = mahalanobis(
-            true_measurements, observation.measurements, inv(sensor_agent.sensors.r_matrix)
+            true_measurements, observation.measurement_states, inv(sensor_agent.sensors.r_matrix)
         )
 
-        meas_diff = norm(true_measurements - np.asarray(observation.measurements))
+        meas_diff = norm(true_measurements - np.asarray(observation.measurement_states))
 
         # Difference between SEZ vector calculated from ephemeris and SEZ vector calculated
         # from observation measurements. These values are expected to be different due to
@@ -126,7 +130,6 @@ def checkThreeSigmaObs(current_obs, sigma=3):
                 "measurement_difference": meas_diff,
                 "noise_limit_mag": noise_limit,
                 "observation": observation.makeDictionary(),
-                "sensor": sensor_agent.sensors.getSensorData(),
                 "sensing_agent": sensor_agent.getCurrentEphemeris().makeDictionary(),
                 "target_agent": target.getCurrentEphemeris().makeDictionary(),
             }
@@ -237,9 +240,10 @@ def createFilterDebugDict(filter_obj, observations, truth_state, sensor_agents):
         dict: complete dictionary with relevant filter step information
     """
     # Save truth ECI state & filter constants
-    description = {}
-    description["truth_eci"] = truth_state.tolist()
-    description["q_matrix"] = filter_obj.q_matrix.tolist()
+    description = {
+        "truth_eci": truth_state.tolist(),
+        "q_matrix": filter_obj.q_matrix.tolist(),
+    }
     if getTypeString(filter_obj) == "UnscentedKalmanFilter":
         # pylint: disable=protected-access
         description.update(filter_obj.parameters)
@@ -249,7 +253,6 @@ def createFilterDebugDict(filter_obj, observations, truth_state, sensor_agents):
     for item, observation in enumerate(observations):
         sensor_agent = sensor_agents[observation.unique_id]
         description[f"observation_{item}"] = observation.makeDictionary()
-        description[f"sensor_{item}"] = sensor_agent.sensors.getSensorData()
         description[f"facility_{item}"] = sensor_agent.getCurrentEphemeris().makeDictionary()
         description[f"facility_{item}"].update(
             {

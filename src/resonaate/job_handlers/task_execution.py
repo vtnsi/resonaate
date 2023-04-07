@@ -1,18 +1,18 @@
 """:class:`.Job` handler class that manage task execution logic."""
+from __future__ import annotations
+
 # Standard Library Imports
 from pickle import loads
-from typing import List
 
 # Third Party Imports
 from mjolnir import Job, KeyValueStore
-from numpy import where
+from numpy import array, where
 
 # Local Imports
-from ..agents.sensing_agent import SensingAgent
 from .base import CallbackRegistration, JobHandler
 
 
-def asyncExecuteTasking(tasked_sensors: List[SensingAgent], target_id: int) -> dict:
+def asyncExecuteTasking(tasked_sensor_ids: list[int], target_id: int) -> dict:
     """Execute tasked observations on a :class:`.TargetAgent`.
 
     Hint:
@@ -20,29 +20,42 @@ def asyncExecuteTasking(tasked_sensors: List[SensingAgent], target_id: int) -> d
         implemented
 
     Args:
-        tasked_sensors (``list``): indices corresponding to sensors tasked to observe the target.
+        tasked_sensor_ids (``list``): indices corresponding to sensors tasked to observe the target.
         target_id (``int``): ID of `.TargetAgent` being tasked on.
 
     Returns:
         ``dict``: execute result dictionary contains:
-
         :``"observations"``: (``list``): successful :class:`.Observation` objects of target(s).
         :``"target_id"``: (``int``): ID of the :class:`.TargetAgent` observations were made of.
+        :``"missed_observations"``: (``list``): list of :class:`.MissedObservation` objects of :class:`.Target_agent`
     """
-    successful_obs = []
     sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
     target_agents = loads(KeyValueStore.getValue("target_agents"))
     estimate_agent = loads(KeyValueStore.getValue("estimate_agents"))[target_id]
-    sensor_list = list(sensor_agents.values())
-    target_list = list(target_agents.values())
 
-    if len(tasked_sensors) > 0:
-        for sensor in tasked_sensors:
-            successful_obs.extend(
-                sensor_list[sensor].sensors.collectObservations(estimate_agent, target_list)
+    # Remove Primary Target from Target list
+    primary_tgt = target_agents[target_id]
+    del target_agents[target_id]
+    background_targets = list(target_agents.values())
+
+    successful_obs = []
+    unsuccessful_obs = []
+    if len(tasked_sensor_ids) > 0:
+        for sensor_id in tasked_sensor_ids:
+            sensing_agent = sensor_agents[sensor_id]
+            made_obs, missed_obs = sensing_agent.sensors.collectObservations(
+                estimate_agent.eci_state,
+                primary_tgt,
+                background_targets,
             )
+            successful_obs.extend(made_obs)
+            unsuccessful_obs.extend(missed_obs)
 
-    return {"target_id": target_id, "observations": successful_obs}
+    return {
+        "target_id": target_id,
+        "observations": successful_obs,
+        "missed_observations": unsuccessful_obs,
+    }
 
 
 class TaskExecutionRegistration(CallbackRegistration):
@@ -51,25 +64,26 @@ class TaskExecutionRegistration(CallbackRegistration):
     def jobCreateCallback(self, **kwargs):
         """Create a :func:`.asyncExecuteTasking` job.
 
-        This relies on a common interface for for :meth:`.Sensor.makeNoisyObservation`.
+        This relies on a common interface for for :meth:`.Sensor.collectObservations`.
 
         KeywordArgs:
             target_id (``int``): ID associated with the :class:`.TargetAgent`.
-            tasked_sensors (``list``): indices of sensors tasked to this target corresponding to their columns in the
+            tasked_sensor_ids (``list``): ID numbers of sensors tasked to this target corresponding to their columns in the
             decision matrix.
 
         Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
-        return Job(asyncExecuteTasking, args=[kwargs["tasked_sensors"], kwargs["target_id"]])
+        return Job(asyncExecuteTasking, args=[kwargs["tasked_sensor_ids"], kwargs["target_id"]])
 
     def jobCompleteCallback(self, job):
-        """Save successful :class:`.Observation` objects of this target to be applied to it's estimate.
+        """Save :class:`.Observation` and :class:`.MissedObservation` objects of this target to be applied to it's estimate.
 
         Args:
             job (:class:`.Job`): job object that's returned when a job completes.
         """
         self.registrant.saveObservations(job.retval["observations"])
+        self.registrant.saveMissedObservations(job.retval["missed_observations"])
 
 
 class TaskExecutionJobHandler(JobHandler):
@@ -82,7 +96,7 @@ class TaskExecutionJobHandler(JobHandler):
         """Generate list of :class:`.Task` execution jobs to submit to the :class:`.QueueManager`.
 
         KeywordArgs:
-            decision_matrix (``numpy.ndarray``): optimized decision matrix, from which tasks are generated.
+            decision_matrix (``ndarray``): optimized decision matrix, from which tasks are generated.
 
         Returns:
             ``list``: :class:`.Job` objects that will be submitted
@@ -92,11 +106,13 @@ class TaskExecutionJobHandler(JobHandler):
         for registration in self.callback_registry:
             for index, target_id in enumerate(registration.registrant.target_list):
                 # Retrieve all the sensors tasked to this target as a tuple, so [0] is required.
-                tasked_sensors = where(decision_matrix[index, :])[0]
+                tasked_sensor_indices = where(decision_matrix[index, :])[0]
 
-                if len(tasked_sensors) > 0:
+                if len(tasked_sensor_indices) > 0:
+                    sensor_num_array = array(registration.registrant.sensor_list)
                     job = registration.jobCreateCallback(
-                        tasked_sensors=tasked_sensors, target_id=target_id
+                        tasked_sensor_ids=sensor_num_array[tasked_sensor_indices].tolist(),
+                        target_id=target_id,
                     )
                     self.job_id_registration_dict[job.id] = registration
                     jobs.append(job)

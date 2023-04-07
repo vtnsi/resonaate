@@ -1,22 +1,20 @@
-# pylint: disable=protected-access
+# pylint: disable=protected-access,unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
-import os.path
-from datetime import timedelta
-from math import isclose
-from pickle import dumps
 from typing import TYPE_CHECKING
+from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
-from mjolnir import KeyValueStore
 from numpy import array, diagflat, ones, zeros
 
 # RESONAATE Imports
 import resonaate.data.resonaate_database
 import resonaate.estimation.adaptive.adaptive_filter
-from resonaate.data.agent import AgentModel
+from resonaate.agents.sensing_agent import SensingAgent
+from resonaate.agents.target_agent import TargetAgent
+from resonaate.common.labels import SensorLabel
 from resonaate.data.ephemeris import EstimateEphemeris
 from resonaate.data.observation import Observation
 from resonaate.dynamics.two_body import TwoBody
@@ -27,89 +25,14 @@ from resonaate.estimation.adaptive.mmae_stacking_utils import stackingFactory
 from resonaate.estimation.adaptive.smm import StaticMultipleModel
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-from resonaate.physics.time.conversions import getTargetJulianDate
 from resonaate.physics.time.stardate import JulianDate
-from resonaate.physics.transforms.reductions import updateReductionParameters
-from resonaate.scenario import buildScenarioFromConfigDict
-from resonaate.scenario.config import ScenarioConfig
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
-from resonaate.sensors.sensor_base import ObservationTuple
-
-# Local Imports
-from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH, SHARED_DB_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:
-
     # RESONAATE Imports
     from resonaate.sensors.sensor_base import Sensor
-
-
-@pytest.fixture()
-def _fixtureSetup(teardown_kvs, reset_shared_db: None):  # pylint: disable=unused-argument
-    """Reset key value store and DB properly."""
-
-
-def propagateScenario(
-    datafiles: str,
-    init_filepath: str,
-    elapsed_time: timedelta,
-) -> None:
-    """Performs the basic operations required to step a simulation forward in time.
-
-    Args:
-        datafiles (str): file path for datafiles directory
-        init_filepath (str): file path for Resonaate initialization file
-        elapsed_time (`timedelta`): amount of time to simulate
-    """
-    init_file = os.path.join(datafiles, JSON_INIT_PATH, init_filepath)
-    shared_db_path = "sqlite:///" + os.path.join(datafiles, SHARED_DB_PATH)
-
-    # Create scenario from JSON init message
-    config_dict = ScenarioConfig.parseConfigFile(init_file)
-
-    app = buildScenarioFromConfigDict(
-        config_dict,
-        internal_db_path=shared_db_path,
-        importer_db_path=None,
-    )
-
-    KeyValueStore.setValue("db_path", dumps(shared_db_path))
-
-    # Determine target Julian date based on elapsed time
-    init_julian_date = JulianDate(app.clock.julian_date_start)
-    target_julian_date = getTargetJulianDate(init_julian_date, elapsed_time)
-
-    # Propagate scenario forward in time
-    app.propagateTo(target_julian_date)
-
-    assert isclose(app.clock.julian_date_epoch, target_julian_date)
-    app.shutdown()
-
-
-@pytest.mark.scenario()
-@pytest.mark.usefixtures("_fixtureSetup")
-class TestAdaptiveEstimationIntegration:
-    """Integration test :class:`.AdaptiveFilter` classes."""
-
-    @pytest.mark.slow()
-    @pytest.mark.realtime()
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testStaticMultipleModel(self, datafiles: str):
-        """Test the static multiple model and mmae running over multiple timesteps."""
-        init_filepath = "smm_init.json"
-        elapsed_time = timedelta(hours=5)
-        propagateScenario(datafiles, init_filepath, elapsed_time)
-
-    @pytest.mark.slow()
-    @pytest.mark.realtime()
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testGeneralizedPseudoBayesianFirstOrderModel(self, datafiles: str):
-        """Test the gpb1 and mmae converging on a single timestep."""
-        init_filepath = "gpb1_init.json"
-        elapsed_time = timedelta(hours=3)
-        propagateScenario(datafiles, init_filepath, elapsed_time)
 
 
 EST_X = array([6378.0, 2.0, 10.0, 0.0, 7.0, 0.0])
@@ -223,9 +146,9 @@ def getTestAdaptiveFilter() -> AdaptiveFilter:
 
 
 @pytest.fixture(name="rso_agent")
-def getTestRSOAgent() -> AgentModel:
-    """Create a custom :class:`AgentModel` object for an RSO."""
-    rso_agent = AgentModel()
+def getTestRSOAgent() -> TargetAgent:
+    """Create a custom :class:`TargetAgent` object for an RSO."""
+    rso_agent = create_autospec(TargetAgent, instance=True)
     rso_agent.unique_id = 10001
     rso_agent.name = "Test_sat"
     rso_agent.eci_state = array(
@@ -235,9 +158,9 @@ def getTestRSOAgent() -> AgentModel:
 
 
 @pytest.fixture(name="sensor_agent")
-def getTestSensorAgent(earth_sensor: Sensor) -> AgentModel:
-    """Create a custom :class:`AgentModel` object for a sensor."""
-    sensor_agent = AgentModel()
+def getTestSensorAgent(earth_sensor: Sensor) -> SensingAgent:
+    """Create a custom :class:`SensingAgent` object for a sensor."""
+    sensor_agent = create_autospec(SensingAgent, instance=True)
     sensor_agent.unique_id = 100001
     sensor_agent.name = "Test_sensor"
     sensor_agent.eci_state = array(
@@ -272,18 +195,18 @@ def getTestSensorAgent(earth_sensor: Sensor) -> AgentModel:
 
 @pytest.fixture(name="earth_sensor")
 def getTestEarthSensor() -> AdvRadar:
-    """Create a custom :class:`AgentModel` object for a sensor."""
+    """Create a custom :class:`Sensor` object for a sensor."""
     earth_sensor = AdvRadar(
         az_mask=array([0.0, 359.99999]),
         el_mask=array([1.0, 89.0]),
         r_matrix=diagflat([2.38820057e-11, 3.73156339e-11, 9.00000000e-08, 3.61000000e-10]),
         diameter=27.0,
         efficiency=0.9,
-        exemplar=array([1, 40744]),
         field_of_view={"fov_shape": "conic"},
-        calculate_fov=False,
-        power_tx=120000.0,
-        frequency=10000000000.0,
+        background_observations=False,
+        tx_power=120000.0,
+        tx_frequency=10000000000.0,
+        min_detectable_power=1.4314085925969573e-14,
         slew_rate=3.0000000000000004,
         detectable_vismag=25.0,
         minimum_range=0.0,
@@ -293,60 +216,39 @@ def getTestEarthSensor() -> AdvRadar:
 
 
 @pytest.fixture(name="radar_observation")
-def getTestRadarObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> Observation:
+def getTestRadarObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
-    radar_observation = Observation.fromSEZVector(
-        julian_date=JulianDate(2459304.270833333),
+    julian_date = JulianDate(2459304.270833333)
+    radar_observation = Observation(
+        julian_date=julian_date,
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
-        sensor_type="AdvRadar",
+        sensor_type=SensorLabel.ADV_RADAR,
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
         range_km=1224.6425779127965,
         range_rate_km_p_sec=3.5594024876519974,
-        sez=[-1144.153499652772, 110.21257527177865, 422.5099064611074],
-        sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
+        sensor_eci=sensor_agent.eci_state,
+        measurement=sensor_agent.sensors.measurement,
     )
     return radar_observation
 
 
-@pytest.fixture(name="radar_observation_tuple")
-def getTestRadarObservationTuple(
-    radar_observation: Observation, sensor_agent: AgentModel
-) -> ObservationTuple:
-    """Create a custom :class:`ObservationTuple` object for a sensor."""
-    return ObservationTuple(radar_observation, sensor_agent, array([2, 3, 1, 1]))
-
-
 @pytest.fixture(name="optical_observation")
-def getTestOpticalObservation(sensor_agent: AgentModel, rso_agent: AgentModel) -> Observation:
+def getTestOpticalObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
-    optical_observation = Observation.fromSEZVector(
-        julian_date=JulianDate(2459304.270833333),
+    julian_date = JulianDate(2459304.270833333)
+    optical_observation = Observation(
+        julian_date=julian_date,
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
-        sensor_type="Optical",
+        sensor_type=SensorLabel.OPTICAL,
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
-        sez=[-1144.153499652772, 110.21257527177865, 422.5099064611074],
-        sensor_position=[1.228134787553298, 0.5432822498364407, 0.06300000000101136],
+        sensor_eci=sensor_agent.eci_state,
+        measurement=sensor_agent.sensors.measurement,
     )
     return optical_observation
-
-
-@pytest.fixture(name="optical_observation_tuple")
-def getTestOpticalObservationTuple(
-    optical_observation: Observation, sensor_agent: AgentModel
-) -> ObservationTuple:
-    """Create a custom :class:`ObservationTuple` object for a sensor."""
-    return ObservationTuple(optical_observation, sensor_agent, array([2, 3, 1, 1]))
-
-
-@pytest.fixture(name="update_reduction_parameters", autouse=True)
-def _getUpdateReductionParameters(teardown_kvs) -> None:
-    """Run updateReductionParameters."""
-    # pylint:disable=unused-argument
-    updateReductionParameters(julian_date=CURRENT_JULIAN_DATE)
 
 
 class TestAdaptiveEstimation:
@@ -378,38 +280,28 @@ class TestAdaptiveEstimation:
         monkeypatch: pytest.MonkeyPatch,
         adaptive_filter: AdaptiveFilter,
         radar_observation: Observation,
-        radar_observation_tuple: ObservationTuple,
     ):
         """Test initialization of adaptive estimation & various conditions."""
         estimate_ephem = [EST1, EST2, EST3]
         radar_observation.julian_date = CURRENT_JULIAN_DATE
         obs_ephem = [radar_observation]
 
-        # Monkey Patch json loads
-        def mockLoads(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockDb(*args, **kwargs):
             return None
 
-        monkeypatch.setattr(resonaate.estimation.adaptive.adaptive_filter, "loads", mockLoads)
-
-        class MockResponse:
-            @staticmethod
-            def getSharedInterface():
-                return None
-
-        def mockDb(*args, **kwargs):  # pylint:disable=unused-argument
-            return MockResponse()
-
-        monkeypatch.setattr(resonaate.data.resonaate_database, "ResonaateDatabase", mockDb)
+        monkeypatch.setattr(
+            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+        )
 
         # Creating Monkey Patch of database calls
-        def mockGetEst(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGetEst(*args, **kwargs):
             return estimate_ephem
 
         monkeypatch.setattr(
             resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
         )
 
-        def mockObsBad(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockObsBad(*args, **kwargs):
             return []
 
         monkeypatch.setattr(
@@ -418,10 +310,10 @@ class TestAdaptiveEstimation:
             mockObsBad,
         )
 
-        bad_init_obs = adaptive_filter.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        bad_init_obs = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert bad_init_obs is False
 
-        def mockObsGood(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockObsGood(*args, **kwargs):
             return obs_ephem
 
         monkeypatch.setattr(
@@ -429,18 +321,16 @@ class TestAdaptiveEstimation:
             "fetchObservationsByJDInterval",
             mockObsGood,
         )
-        bad_init_models = adaptive_filter.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        bad_init_models = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert bad_init_models is False
 
         adaptive_filter.previous_obs_window = 3
-        bad_init_obs_window = adaptive_filter.initialize(
-            [radar_observation_tuple], JULIAN_DATE_START
-        )
+        bad_init_obs_window = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert bad_init_obs_window is False
 
         adaptive_filter.previous_obs_window = 1
         adaptive_filter.time = 9300
-        good_init = adaptive_filter.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        good_init = adaptive_filter.initialize([radar_observation], JULIAN_DATE_START)
         assert good_init is True
 
     def testCalcNominalStates(
@@ -451,7 +341,7 @@ class TestAdaptiveEstimation:
         estimate_ephem = [EST1, EST2, EST3]
 
         # Creating Monkey Patch of database call
-        def mockGet(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGet(*args, **kwargs):
             return estimate_ephem
 
         monkeypatch.setattr(
@@ -502,8 +392,8 @@ class TestAdaptiveEstimation:
     def testGenerateHypothesisManeuvers(
         self,
         adaptive_filter: AdaptiveFilter,
-        radar_observation_tuple: ObservationTuple,
-        optical_observation_tuple: ObservationTuple,
+        radar_observation: Observation,
+        optical_observation: Observation,
     ):
         """Test generating maneuver hypotheses."""
         adaptive_filter.num_models = 3
@@ -512,12 +402,12 @@ class TestAdaptiveEstimation:
         )
         adaptive_filter.time = 9000
         delta_v = adaptive_filter._generateHypothesisManeuvers(
-            [radar_observation_tuple], HYPOTHESIS_STATES, MANEUVER_TIMES
+            [radar_observation], HYPOTHESIS_STATES, MANEUVER_TIMES
         )
         assert delta_v.shape == (3, 3)
         # Test Optical option
         optical_v = adaptive_filter._generateHypothesisManeuvers(
-            [optical_observation_tuple], HYPOTHESIS_STATES, MANEUVER_TIMES
+            [optical_observation], HYPOTHESIS_STATES, MANEUVER_TIMES
         )
         assert optical_v.shape == (3, 3)
 
@@ -556,27 +446,23 @@ class TestAdaptiveEstimation:
 
         assert adaptive_filter.time == new_time
 
-    def testForecast(
-        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
-    ):
+    def testForecast(self, adaptive_filter: AdaptiveFilter, radar_observation: Observation):
         """Test Adaptive Filter Predict Test."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         new_time = 600
         adaptive_filter.model_weights = [1 / 3, 1 / 3, 1 / 3]
         adaptive_filter.predict(new_time)
-        adaptive_filter.forecast([radar_observation_tuple])
-        adaptive_filter._compileForecastStep([radar_observation_tuple])
+        adaptive_filter.forecast([radar_observation])
+        adaptive_filter._compileForecastStep([radar_observation])
 
-    def testUpdate(
-        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
-    ):
+    def testUpdate(self, adaptive_filter: AdaptiveFilter, radar_observation: Observation):
         """Test Adaptive Filter Predict Test."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         new_time = 600
         adaptive_filter.model_weights = [1 / 3, 1 / 3, 1 / 3]
         adaptive_filter.predict(new_time)
         # Test Measurement Update
-        adaptive_filter.update([radar_observation_tuple])
+        adaptive_filter.update([radar_observation])
         # Test Propagation Update
         adaptive_filter.update([])
 
@@ -589,9 +475,7 @@ class TestAdaptiveEstimation:
         adaptive_filter.model_weights = [1, 2, 3]
         adaptive_filter._compilePredictStep()
 
-    def testCompileUpdate(
-        self, adaptive_filter: AdaptiveFilter, radar_observation_tuple: ObservationTuple
-    ):
+    def testCompileUpdate(self, adaptive_filter: AdaptiveFilter, radar_observation: Observation):
         """Test compiling update step attributes."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         for model in adaptive_filter.models:
@@ -612,7 +496,7 @@ class TestAdaptiveEstimation:
             model.kalman_gain = ones((adaptive_filter.x_dim, Y_DIM))
 
         adaptive_filter.model_weights = ones(3) / 1
-        adaptive_filter._compileUpdateStep([radar_observation_tuple])
+        adaptive_filter._compileUpdateStep([radar_observation])
 
     def testPruning(self, adaptive_filter: AdaptiveFilter):
         """Test pruning hypotheses."""
@@ -674,7 +558,7 @@ class TestAdaptiveEstimation:
         assert len(result["true_y"]) == 2
 
     def testResumeSequentialFiltering(self, adaptive_filter: AdaptiveFilter):
-        """Test reinitializing nominal filter after MMAE ends."""
+        """Test re-initializing nominal filter after MMAE ends."""
         adaptive_filter._resumeSequentialFiltering()
         assert adaptive_filter.converged_filter is not None
 
@@ -716,7 +600,6 @@ class TestSMM:
         self,
         monkeypatch: pytest.MonkeyPatch,
         radar_observation: Observation,
-        radar_observation_tuple: ObservationTuple,
         smm: StaticMultipleModel,
     ):
         """Test custom initialization process."""
@@ -724,31 +607,22 @@ class TestSMM:
         radar_observation.julian_date = CURRENT_JULIAN_DATE
         obs_ephem = [radar_observation]
 
-        # Monkey Patch json loads
-        def mockLoads(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockDb(*args, **kwargs):
             return None
 
-        monkeypatch.setattr(resonaate.estimation.adaptive.adaptive_filter, "loads", mockLoads)
-
-        class MockResponse:
-            @staticmethod
-            def getSharedInterface():
-                return None
-
-        def mockDb(*args, **kwargs):  # pylint:disable=unused-argument
-            return MockResponse()
-
-        monkeypatch.setattr(resonaate.data.resonaate_database, "ResonaateDatabase", mockDb)
+        monkeypatch.setattr(
+            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+        )
 
         # Creating Monkey Patch of database calls
-        def mockGetEst(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGetEst(*args, **kwargs):
             return estimate_ephem
 
         monkeypatch.setattr(
             resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
         )
 
-        def mockObsGood(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockObsGood(*args, **kwargs):
             return obs_ephem
 
         monkeypatch.setattr(
@@ -759,10 +633,10 @@ class TestSMM:
 
         smm.previous_obs_window = 1
         smm.time = 9300
-        good_init = smm.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        good_init = smm.initialize([radar_observation], JULIAN_DATE_START)
         assert good_init is True
 
-    def testUpdate(self, radar_observation_tuple: ObservationTuple, smm: StaticMultipleModel):
+    def testUpdate(self, radar_observation: Observation, smm: StaticMultipleModel):
         """Test custom update process."""
         smm.models = smm._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -770,7 +644,7 @@ class TestSMM:
         smm.model_likelihoods = array([1, 2, 3])
         smm.predict(new_time)
         # Test Measurement Update
-        smm.update([radar_observation_tuple])
+        smm.update([radar_observation])
 
     def testPruneToSingleModel(self, smm: StaticMultipleModel):
         """Test pruning to single model."""
@@ -797,12 +671,12 @@ class TestSMM:
         converge = smm._convergedToSingleModel([])
         assert converge is True
 
-    def testPreWeight(self, smm: StaticMultipleModel, radar_observation_tuple: ObservationTuple):
+    def testPreWeight(self, smm: StaticMultipleModel, radar_observation: Observation):
         """Test pre weighting of SMM."""
         smm.models = smm._createModels(HYPOTHESIS_STATES)
         for model in smm.models:
             model.pred_x = EST_X
-        smm._preWeight([radar_observation_tuple])
+        smm._preWeight([radar_observation])
 
 
 @pytest.fixture(name="gpb1")
@@ -840,9 +714,8 @@ class TestGPB1:
 
     def testInitialize(
         self,
-        radar_observation: ObservationTuple,
         monkeypatch: pytest.MonkeyPatch,
-        radar_observation_tuple: Observation,
+        radar_observation: Observation,
         gpb1: GeneralizedPseudoBayesian1,
     ):
         """Test custom initialization process."""
@@ -850,31 +723,22 @@ class TestGPB1:
         radar_observation.julian_date = CURRENT_JULIAN_DATE
         obs_ephem = [radar_observation]
 
-        # Monkey Patch json loads
-        def mockLoads(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockDb(*args, **kwargs):
             return None
 
-        monkeypatch.setattr(resonaate.estimation.adaptive.adaptive_filter, "loads", mockLoads)
-
-        class MockResponse:
-            @staticmethod
-            def getSharedInterface():
-                return None
-
-        def mockDb(*args, **kwargs):  # pylint:disable=unused-argument
-            return MockResponse()
-
-        monkeypatch.setattr(resonaate.data.resonaate_database, "ResonaateDatabase", mockDb)
+        monkeypatch.setattr(
+            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+        )
 
         # Creating Monkey Patch of database calls
-        def mockGetEst(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockGetEst(*args, **kwargs):
             return estimate_ephem
 
         monkeypatch.setattr(
             resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
         )
 
-        def mockObsGood(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockObsGood(*args, **kwargs):
             return obs_ephem
 
         monkeypatch.setattr(
@@ -885,12 +749,10 @@ class TestGPB1:
 
         gpb1.previous_obs_window = 1
         gpb1.time = 9300
-        good_init = gpb1.initialize([radar_observation_tuple], JULIAN_DATE_START)
+        good_init = gpb1.initialize([radar_observation], JULIAN_DATE_START)
         assert good_init is True
 
-    def testUpdate(
-        self, gpb1: GeneralizedPseudoBayesian1, radar_observation_tuple: ObservationTuple
-    ):
+    def testUpdate(self, gpb1: GeneralizedPseudoBayesian1, radar_observation: Observation):
         """Test custom update process."""
         gpb1.models = gpb1._createModels(HYPOTHESIS_STATES)
         new_time = 600
@@ -898,7 +760,7 @@ class TestGPB1:
         gpb1.model_likelihoods = array([1, 2, 3])
         gpb1.predict(new_time)
         # Test Measurement Update
-        gpb1.update([radar_observation_tuple])
+        gpb1.update([radar_observation])
 
     def testConstructMixMatrix(self, gpb1: GeneralizedPseudoBayesian1):
         """Test custom update process."""

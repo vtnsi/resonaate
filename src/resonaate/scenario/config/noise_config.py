@@ -6,20 +6,16 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 # Local Imports
-from ...physics.noise import (
-    CONTINUOUS_WHITE_NOISE_LABEL,
-    DISCRETE_WHITE_NOISE_LABEL,
-    SIMPLE_NOISE_LABEL,
-)
+from ...common.labels import NoiseLabel
 from .base import ConfigObject, ConfigTypeError, ConfigValueError
 
 DEFAULT_RANDOM_SEED_VALUE: str = "os"
 """``str``: Value to set :attr:`~.NoiseConfig.random_seed` to that indicates seeding the PRNG with the OS's entropy."""
 
 VALID_NOISE_TYPES: tuple[str] = (
-    CONTINUOUS_WHITE_NOISE_LABEL,
-    DISCRETE_WHITE_NOISE_LABEL,
-    SIMPLE_NOISE_LABEL,
+    NoiseLabel.CONTINUOUS_WHITE_NOISE,
+    NoiseLabel.DISCRETE_WHITE_NOISE,
+    NoiseLabel.SIMPLE_NOISE,
 )
 """``tuple``: Valid noise types."""
 
@@ -47,13 +43,7 @@ class NoiseConfig(ConfigObject):
     init_velocity_std_km_p_sec: float = DEFAULT_VELOCITY_STD
     """``float``: Standard deviation of initial RSO velocity estimate (km/sec)."""
 
-    dynamics_noise_type: str = SIMPLE_NOISE_LABEL
-    """``str``: String describing noise used in dynamics propagation."""
-
-    dynamics_noise_magnitude: float = 1e-20
-    """float: 'Variance' of noise added in dynamics propagation."""
-
-    filter_noise_type: str = CONTINUOUS_WHITE_NOISE_LABEL
+    filter_noise_type: str = NoiseLabel.CONTINUOUS_WHITE_NOISE
     """``str``: String describing noise used in filter propagation."""
 
     filter_noise_magnitude: float = DEFAULT_FILTER_NOISE_MAGNITUDE
@@ -90,18 +80,8 @@ class NoiseConfig(ConfigObject):
                 (DEFAULT_RANDOM_SEED_VALUE, None, "or any positive int"),
             )
 
-        if self.dynamics_noise_type not in VALID_NOISE_TYPES:
-            raise ConfigValueError(
-                "dynamics_noise_type", self.dynamics_noise_type, VALID_NOISE_TYPES
-            )
-
         if self.filter_noise_type not in VALID_NOISE_TYPES:
             raise ConfigValueError("filter_noise_type", self.filter_noise_type, VALID_NOISE_TYPES)
-
-        if self.dynamics_noise_magnitude <= 0.0:
-            raise ConfigValueError(
-                "dynamics_noise_magnitude", self.dynamics_noise_magnitude, "> 0.0"
-            )
 
         if self.filter_noise_magnitude <= 0.0:
             raise ConfigValueError("filter_noise_magnitude", self.filter_noise_magnitude, "> 0.0")

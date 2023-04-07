@@ -11,25 +11,26 @@ from scipy.linalg import block_diag
 
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
-from ...physics.math import angularMean, wrapAngleNegPiPi
+from ...physics.maths import angularMean, wrapAngleNegPiPi
+from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ...physics.statistics import chiSquareQuadraticForm
-from ...sensors.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
+from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ..debug_utils import findNearestPositiveDefiniteMatrix
 from .sequential_filter import FilterFlag, SequentialFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any, Callable, Optional
+    from collections.abc import Callable
+    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
 
     # Local Imports
+    from ...data.observation import Observation
     from ...dynamics.dynamics_base import Dynamics
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.time.stardate import ScenarioTime
-    from ...sensors.sensor_base import ObservationTuple
-    from ..initial_orbit_determination import InitialOrbitDetermination
     from ..maneuver_detection import ManeuverDetection
 
 
@@ -86,8 +87,6 @@ class UnscentedKalmanFilter(SequentialFilter):
         #. :cite:t:`wan_2001_ukf`
     """
 
-    LABELS = ("ukf", "unscented_kalman_filter")
-
     def __init__(
         self,
         tgt_id: int,
@@ -96,12 +95,12 @@ class UnscentedKalmanFilter(SequentialFilter):
         est_p: ndarray,
         dynamics: Dynamics,
         q_matrix: ndarray,
-        maneuver_detection: Optional[ManeuverDetection],
+        maneuver_detection: ManeuverDetection | None = None,
         initial_orbit_determination: bool = False,
         adaptive_estimation: bool = False,
         alpha: float = 0.001,
         beta: float = 2.0,
-        kappa: Optional[float] = None,
+        kappa: float | None = None,
     ):
         r"""Initialize a UKF instance.
 
@@ -202,7 +201,7 @@ class UnscentedKalmanFilter(SequentialFilter):
     def predict(
         self,
         final_time: ScenarioTime,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ):
         """Propagate the state estimate and error covariance with uncertainty.
 
@@ -220,31 +219,31 @@ class UnscentedKalmanFilter(SequentialFilter):
         # STEP 3: Update the time step
         self.time = final_time
 
-    def forecast(self, obs_tuples: list[ObservationTuple]):
+    def forecast(self, observations: list[Observation]):
         """Update the error covariance with observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the UKF step
+            observations (``list``): :class:`.Observation` objects associated with the UKF step
         """
         self._flags = FilterFlag.NONE
         # STEP 1: Re-sample the sigma points around predicted (sampled) state estimate
         self.sigma_points = self.generateSigmaPoints(self.pred_x, self.pred_p)
         # STEP 2: Calculate the Measurement Matrix (H)
-        self.calculateMeasurementMatrix(obs_tuples)
+        self.calculateMeasurementMatrix(observations)
         # STEP 3: Compile the Observation Noise Covariance (R)
         # STEP 4: Calculate the Cross Covariance (C), the Innovations Covariance (S), & the Kalman Gain (K)
-        self.calculateKalmanGain(obs_tuples)
+        self.calculateKalmanGain(observations)
         # STEP 5: Update the Covariance for the state (P(k + 1|k + 1))
         self.updateCovariance()
 
-    def update(self, obs_tuples: list[ObservationTuple]):
+    def update(self, observations: list[Observation]):
         """Update the state estimate with observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the UKF step
+            observations (``list``): :class:`.Observation` objects associated with the UKF step
         """
-        if not obs_tuples:
-            self.source = self.INTERNAL_PROPAGATION_LABEL
+        if not observations:
+            self.source = self.INTERNAL_PROPAGATION_SOURCE
             # Save the 0th sigma point because it is the non-sampled propagated state. This means that
             #   we don't inject any noise into the state estimate when no measurements occur.
             self.est_x = self.sigma_points[:, 0]
@@ -252,25 +251,25 @@ class UnscentedKalmanFilter(SequentialFilter):
             #   covariance is stored as the updated error covariance
             self.est_p = self.pred_p
         else:
-            self.source = self.INTERNAL_OBSERVATION_LABEL
+            self.source = self.INTERNAL_OBSERVATION_SOURCE
 
             # If there are observations, the predicted state estimate and covariance are updated
-            self.forecast(obs_tuples)
+            self.forecast(observations)
             # STEP 1: Compile the true measurement state vector (Yt)
             # STEP 2: Calculate the Innovations vector (nu)
-            self.calculateInnovations(obs_tuples)
+            self.calculateInnovations(observations)
             # STEP 3: Update the State EstimateAgent (X(k + 1|k + 1))
             self.updateStateEstimate()
             # STEP 4: Maneuver detection
             self.checkManeuverDetection()
 
             # Check and write debugging info if needed
-            self._debugChecks(obs_tuples)
+            self._debugChecks(observations)
 
     def predictStateEstimate(
         self,
         final_time: ScenarioTime,
-        scheduled_events: Optional[list[ScheduledEventType]] = None,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ):
         """Propagate the previous state estimate from :math:`k` to :math:`k+1`.
 
@@ -305,7 +304,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         )
         self.pred_p = self.sigma_x_res.dot(self.cvr_weight.dot(self.sigma_x_res.T)) + self.q_matrix
 
-    def calculateMeasurementMatrix(self, obs_tuples: list[ObservationTuple]):
+    def calculateMeasurementMatrix(self, observations: list[Observation]):
         """Calculate the stacked observation/measurement matrix for a set of observations.
 
         The UKF doesn't use an :math:`H` Matrix. Instead, the differences between the predicted state or
@@ -313,20 +312,22 @@ class UnscentedKalmanFilter(SequentialFilter):
         determine the cross and innovations covariances.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the UKF step
+            observations (``list``): :class:`.Observation` objects associated with the UKF step
         """
         obs_vector_list = []
         for sigma_idx in range(self.num_sigmas):
             obs_states = []
             is_angular = []
-            for obs_tuple in obs_tuples:
-                sensor = obs_tuple.agent.sensors
-                sigma_obs = sensor.buildSigmaObs(
-                    obs_tuple.observation.target_id,
+            for observation in observations:
+                utc_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
+                sigma_measurement = observation.measurement.calculateMeasurement(
+                    observation.sensor_eci,
                     self.sigma_points[:, sigma_idx],
+                    utc_datetime,
+                    noisy=False,
                 )
-                obs_states.append(sigma_obs.measurements)
-                is_angular.append(sensor.angle_measurements)
+                obs_states.append(list(sigma_measurement.values()))
+                is_angular.append(observation.measurement.angular_values)
 
             # Add stacked observations to the list
             stacked_obs_state = concatenate(obs_states, axis=0)
@@ -349,31 +350,29 @@ class UnscentedKalmanFilter(SequentialFilter):
                 sigma_obs[:, item], self.mean_pred_y
             )
 
-    def calculateKalmanGain(self, obs_tuples: list[ObservationTuple]):
+    def calculateKalmanGain(self, observations: list[Observation]):
         """Calculate the Kalman gain matrix.
 
         Compiles the stacked measurement noise covariance matrix, calculates the innovations
         covariance matrix, and calculates the cross covariance matrix.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the UKF step
+            observations (``list``): :class:`.Observation` objects associated with the UKF step
         """
-        self.r_matrix = block_diag(*[obs_tuple.agent.sensors.r_matrix for obs_tuple in obs_tuples])
+        self.r_matrix = block_diag(*[ob.r_matrix for ob in observations])
         self.innov_cvr = (
             self.sigma_y_res.dot(self.cvr_weight.dot(self.sigma_y_res.T)) + self.r_matrix
         )
         self.cross_cvr = self.sigma_x_res.dot(self.cvr_weight.dot(self.sigma_y_res.T))
         self.kalman_gain = self.cross_cvr.dot(inv(self.innov_cvr))
 
-    def calculateInnovations(self, obs_tuples: list[ObservationTuple]):
+    def calculateInnovations(self, observations: list[Observation]):
         """Calculate the innovations (residuals) vector and normalized innovations squared.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with the UKF step
+            observations (``list``): :class:`.Observation` objects associated with the UKF step
         """
-        self.true_y = concatenate(
-            [obs_tuple.observation.measurements for obs_tuple in obs_tuples], axis=0
-        )
+        self.true_y = concatenate([ob.measurement_states for ob in observations], axis=0)
         self.innovation = self.calcMeasurementResiduals(self.true_y, self.mean_pred_y)
         self.nis = chiSquareQuadraticForm(self.innovation, self.innov_cvr)
 

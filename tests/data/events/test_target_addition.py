@@ -4,6 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime
 from json import dumps
+from unittest.mock import MagicMock
 
 # Third Party Imports
 import pytest
@@ -20,10 +21,10 @@ from resonaate.scenario.config.event_configs import TargetAdditionEventConfig
 def getTargetConfigECI():
     """``dict``: target agent config with ECI state."""
     return {
-        "sat_num": 12345,
-        "sat_name": "new satellite",
-        "init_eci": [0, 1, 2, 3, 4, 5],
-        "station_keeping": {},
+        "id": 12345,
+        "name": "new satellite",
+        "state": {"type": "eci", "position": [0, 10000, 2], "velocity": [3, 4, 5]},
+        "platform": {"type": "spacecraft"},
     }
 
 
@@ -31,17 +32,18 @@ def getTargetConfigECI():
 def getTargetConfigCOE():
     """``dict``: target agent config with COE state."""
     return {
-        "sat_num": 12345,
-        "sat_name": "new satellite",
-        "init_coe": {
-            "sma": 10000,
-            "ecc": 0.00,
-            "inc": 10.0,
-            "raan": 100.0,
-            "arg_p": 1.0,
-            "true_anom": 1.0,
+        "id": 12345,
+        "name": "new satellite",
+        "state": {
+            "type": "coe",
+            "semi_major_axis": 10000,
+            "eccentricity": 0.00,
+            "inclination": 10.0,
+            "right_ascension": 100.0,
+            "argument_periapsis": 1.0,
+            "true_anomaly": 1.0,
         },
-        "station_keeping": {},
+        "platform": {"type": "spacecraft"},
     }
 
 
@@ -63,53 +65,27 @@ class TestTargetAdditionEventConfig:
 
     def testInitGoodArgs(self, tgt_config_eci, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with good arguments."""
-        event_config_dict["target"] = tgt_config_eci
+        event_config_dict["target_agent"] = tgt_config_eci
         assert TargetAdditionEventConfig(**event_config_dict)
 
     def testInitOtherGoodArgs(self, tgt_config_coe, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with other good arguments."""
-        event_config_dict["target"] = tgt_config_coe
+        event_config_dict["target_agent"] = tgt_config_coe
         assert TargetAdditionEventConfig(**event_config_dict)
-
-    def testInitNoState(self, tgt_config_eci, event_config_dict):
-        """Test :class:`.TargetAdditionEventConfig` constructor with no state configuration."""
-        tgt_config = deepcopy(tgt_config_eci)
-        del tgt_config["init_eci"]
-
-        event_config_dict["target"] = tgt_config
-        with pytest.raises(ConfigError):
-            _ = TargetAdditionEventConfig(**event_config_dict)
-
-    def testInitDuplicateState(self, tgt_config_eci, event_config_dict):
-        """Test :class:`.TargetAdditionEventConfig` constructor with duplicate state configurations."""
-        tgt_config = deepcopy(tgt_config_eci)
-        tgt_config["init_coe"] = {
-            "sma": 10000,
-            "ecc": 0.01,
-            "inc": 10.0,
-            "raan": 100.0,
-            "arg_p": 1.0,
-            "true_anomaly": 1.0,
-        }
-
-        event_config_dict["target"] = tgt_config
-        with pytest.raises(ConfigError):
-            _ = TargetAdditionEventConfig(**event_config_dict)
 
     def testInitBadECIState(self, tgt_config_eci, event_config_dict):
         """Test :class:`.TargetAdditionEventConfig` constructor with a bad initial ECI state."""
         bad_eci = [0, 1, 2]
-        expected_err = f"ECI vector should have 6 elements, not {len(bad_eci)}"
         tgt_config = deepcopy(tgt_config_eci)
-        tgt_config["init_eci"] = bad_eci
+        tgt_config["state"]["position"] = bad_eci
 
-        event_config_dict["target"] = tgt_config
-        with pytest.raises(ConfigError, match=expected_err):
+        event_config_dict["target_agent"] = tgt_config
+        with pytest.raises(ConfigError):
             _ = TargetAdditionEventConfig(**event_config_dict)
 
     def testDataDependency(self, tgt_config_eci, event_config_dict):
         """Test that :class:`.TargetAdditionEventConfig`'s data dependencies are correct."""
-        event_config_dict["target"] = tgt_config_eci
+        event_config_dict["target_agent"] = tgt_config_eci
         addition_config = TargetAdditionEventConfig(**event_config_dict)
         addition_dependencies = addition_config.getDataDependencies()
         assert len(addition_dependencies) == 1
@@ -117,8 +93,8 @@ class TestTargetAdditionEventConfig:
         agent_dependency = addition_dependencies[0]
         assert agent_dependency.data_type == AgentModel
         assert agent_dependency.attributes == {
-            "unique_id": addition_config.target.sat_num,
-            "name": addition_config.target.sat_name,
+            "unique_id": addition_config.target_agent.id,
+            "name": addition_config.target_agent.name,
         }
 
 
@@ -127,17 +103,19 @@ class TestTargetAdditionEvent:
 
     def testFromConfig(self, tgt_config_eci, event_config_dict):
         """Test :meth:`.TargetAdditionEvent.fromConfig()`."""
-        event_config_dict["target"] = tgt_config_eci
+        event_config_dict["target_agent"] = tgt_config_eci
         addition_config = TargetAdditionEventConfig(**event_config_dict)
         addition_event = TargetAdditionEvent.fromConfig(addition_config)
-        assert addition_event.eci == addition_config.target.init_eci
+        assert addition_event.eci[:3] == addition_config.target_agent.state.position
+        assert addition_event.eci[3:] == addition_config.target_agent.state.velocity
         assert (
             addition_event.station_keeping["routines"]
-            == addition_config.target.station_keeping.routines
+            == addition_config.target_agent.platform.station_keeping.routines
         )
 
     def testHandleEvent(self, mocked_scenario):
         """Test :meth:`.TargetAdditionEvent.handleEvent()`."""
+        mocked_scenario.addTarget = MagicMock()
         agent_obj = AgentModel(unique_id=12345, name="additional sat")
         impulse_event = TargetAdditionEvent(
             scope=TargetAdditionEvent.INTENDED_SCOPE.value,
@@ -156,3 +134,4 @@ class TestTargetAdditionEvent:
             station_keeping_json=dumps([]),
         )
         impulse_event.handleEvent(mocked_scenario)
+        mocked_scenario.addTarget.assert_called_once()

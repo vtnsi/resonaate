@@ -4,9 +4,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+import numpy as np
 import pytest
 
 # RESONAATE Imports
+from resonaate.common.labels import MetricTypeLabel
 from resonaate.tasking.metrics.metric_base import Metric
 from resonaate.tasking.rewards.reward_base import Reward
 from resonaate.tasking.rewards.rewards import (
@@ -17,6 +19,9 @@ from resonaate.tasking.rewards.rewards import (
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
     # RESONAATE Imports
     from resonaate.agents.estimate_agent import EstimateAgent
     from resonaate.agents.sensing_agent import SensingAgent
@@ -27,7 +32,7 @@ def stubRewardClass() -> Reward:
     """Return reference to a minimal :class:`.Reward` class."""
 
     class StubReward(Reward):
-        def _calculateReward(self, estimate_agent, sensor_agent, **kwargs):
+        def calculate(self, metric_matrix: ndarray):
             return 3
 
     return StubReward
@@ -38,7 +43,7 @@ def stubMetricClass() -> Metric:
     """Return reference to a minimal :class:`.Metric` class."""
 
     class StubMetric(Metric):
-        def _calculateMetric(self, estimate_agent, sensor_agent, **kwargs):
+        def calculate(self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent):
             return 3
 
     return StubMetric
@@ -48,7 +53,12 @@ class TestRewardBase:
     """Test the base class of the reward module."""
 
     def testRegistry(self, stub_reward_class: Reward, stub_metric_class: Metric):
-        """Test to make sure the reward object is registered."""
+        """Test to make sure the reward object is registered.
+
+        Args:
+            stub_reward_class (:class:`.Reward`): Mock Reward
+            stub_metric_class (:class:`.Metric`): Mock Metric
+        """
         test_reward = stub_reward_class(stub_metric_class())
         assert test_reward.is_registered is False
 
@@ -65,24 +75,35 @@ class TestRewardBase:
             Reward.register(stub_metric_class)
 
     def testCreation(self, stub_metric_class: Metric):
-        """Test creating a Decision Object."""
+        """Test creating a Decision Object.
+
+        Args:
+            stub_metric_class (:class:`.Metric`): Mock Metric
+        """
         with pytest.raises(TypeError):
             Reward(stub_metric_class())  # pylint: disable=abstract-class-instantiated
 
-    def testCalculateReward(
-        self,
-        stub_reward_class: Reward,
-        stub_metric_class: Metric,
-        mocked_estimate: EstimateAgent,
-        mocked_sensor: SensingAgent,
-    ):
-        """Test the call function of the Reward base class."""
-        target_agents = {11111: mocked_estimate}
-        target_id = 11111
-        sensor_agents = {"sensor": mocked_sensor}
-        sensor_id = "sensor"
-        reward = stub_reward_class(stub_metric_class())
-        reward(target_agents[target_id], sensor_agents[sensor_id])
+    def testBadMetricType(self):
+        """Test when a non-metric is passed into the `Reward` Init."""
+        non_iterable = "string"
+        with pytest.raises(TypeError):
+            Reward(non_iterable)  # pylint: disable=abstract-class-instantiated
+
+        bad_list = [non_iterable]
+        with pytest.raises(TypeError):
+            Reward(bad_list)  # pylint: disable=abstract-class-instantiated
+
+    def testNormalizeMetrics(self, stub_reward_class: Reward, stub_metric_class: Metric):
+        """Test normalizeMetrics().
+
+        Args:
+            stub_reward_class (:class:`.Reward`): Mock Reward
+            stub_metric_class (:class:`.Metric`): Mock Metric
+        """
+        test_reward = stub_reward_class(stub_metric_class())
+        metric_matrix = np.array([[[0.1]], [[2.0]], [[3.0]]])
+        metrics = test_reward.normalizeMetrics(metric_matrix)
+        assert metrics.max() <= 1.0
 
 
 class TestCostConstrainedReward:
@@ -90,33 +111,52 @@ class TestCostConstrainedReward:
 
     @pytest.fixture(name="metric_list")
     def getMetricList(self, stub_metric_class: Metric):
-        """Create list of metrics to assign proper metric length of Reward Function calls."""
+        """Create list of metrics to assign proper metric length of Reward Function calls.
+
+        Args:
+            stub_metric_class (:class:`.Metric`): Mock Metric
+
+        Returns:
+            list: :class:`.Metric` objects
+        """
         info_metric = stub_metric_class()
-        info_metric.METRIC_TYPE = "information"
+        info_metric.METRIC_TYPE = MetricTypeLabel.INFORMATION
         stability_metric = stub_metric_class()
-        stability_metric.METRIC_TYPE = "stability"
+        stability_metric.METRIC_TYPE = MetricTypeLabel.STABILITY
         sensor_metric = stub_metric_class()
-        sensor_metric.METRIC_TYPE = "sensor"
+        sensor_metric.METRIC_TYPE = MetricTypeLabel.SENSOR
         return [info_metric, stability_metric, sensor_metric]
+
+    def testBadMetricType(self, metric_list: list[Metric], stub_metric_class: Metric):
+        """Test bad entries into `CostConstrainedReward`.
+
+        Args:
+            metric_list (``list``): :class:`.Metric` objects
+            stub_metric_class (:class:`.Metric`): Mock Metric
+        """
+        behavior_metric = stub_metric_class()
+        behavior_metric.METRIC_TYPE = MetricTypeLabel.TARGET
+        metric_list.append(behavior_metric)
+        with pytest.raises(ValueError, match="Incorrect number of metrics being passed"):
+            CostConstrainedReward(metric_list)
+
+        metric_list.pop(0)
+        with pytest.raises(TypeError):
+            _ = CostConstrainedReward(metric_list)
 
     def testRegistry(self, metric_list: list[Metric]):
         """Test to make sure the reward object is registered."""
         reward = CostConstrainedReward(metric_list)
         assert reward.is_registered is True
 
-    def testRewardCall(
+    def testCalculateReward(
         self,
         metric_list: list[Metric],
-        mocked_estimate: EstimateAgent,
-        mocked_sensor: SensingAgent,
     ):
-        """Test the call function of the CostConstrainedReward class."""
-        target_agents = {11111: mocked_estimate}
-        target_id = 11111
-        sensor_agents = {"sensor": mocked_sensor}
-        sensor_id = "sensor"
+        """Test _calculateReward() function of the CostConstrainedReward class."""
         reward = CostConstrainedReward(metric_list)
-        reward(target_agents[target_id], sensor_agents[sensor_id])
+        metrics = np.ones(len(metric_list))
+        reward.calculate(metrics)
 
 
 class TestSimpleSummationReward:
@@ -124,35 +164,31 @@ class TestSimpleSummationReward:
 
     @pytest.fixture(name="metric_list")
     def getMetricList(self, stub_metric_class: Metric):
-        """Create list of metrics to assign proper metric length of Reward Function calls."""
+        """Create list of metrics to assign proper metric length of Reward Function calls.
+
+        Args:
+            stub_metric_class (:class:`.Metric`): Mock Metric
+
+        Returns:
+            list: :class:`.Metric` objects
+        """
         info_metric = stub_metric_class()
-        info_metric.METRIC_TYPE = "information"
-        stability_metric = stub_metric_class()
-        stability_metric.METRIC_TYPE = "stability"
-        sensor_metric = stub_metric_class()
-        sensor_metric.METRIC_TYPE = "sensor"
-        behavior_metric = stub_metric_class()
-        behavior_metric.METRIC_TYPE = "behavior"
-        return [info_metric, stability_metric, sensor_metric, behavior_metric]
+        info_metric.METRIC_TYPE = MetricTypeLabel.INFORMATION
+        return [info_metric]
 
     def testRegistry(self, metric_list: list[Metric]):
         """Test to make sure the reward object is registered."""
         reward = SimpleSummationReward(metric_list)
         assert reward.is_registered is True
 
-    def testRewardCall(
+    def testCalculateReward(
         self,
         metric_list: list[Metric],
-        mocked_estimate: EstimateAgent,
-        mocked_sensor: SensingAgent,
     ):
-        """Test the call function of the SimpleSummationReward class."""
-        target_agents = {11111: mocked_estimate}
-        target_id = 11111
-        sensor_agents = {"sensor": mocked_sensor}
-        sensor_id = "sensor"
+        """Test _calculateReward() function of the SimpleSummationReward class."""
         reward = SimpleSummationReward(metric_list)
-        reward(target_agents[target_id], sensor_agents[sensor_id])
+        metrics = np.array([[[1.0]], [[2.0]]])
+        reward.calculate(metrics)  # pylint:disable=protected-access
 
 
 class TestCombinedReward:
@@ -162,13 +198,13 @@ class TestCombinedReward:
     def getMetricList(self, stub_metric_class: Metric):
         """Create list of metrics to assign proper metric length of Reward Function calls."""
         info_metric = stub_metric_class()
-        info_metric.METRIC_TYPE = "information"
+        info_metric.METRIC_TYPE = MetricTypeLabel.INFORMATION
         stability_metric = stub_metric_class()
-        stability_metric.METRIC_TYPE = "stability"
+        stability_metric.METRIC_TYPE = MetricTypeLabel.STABILITY
         sensor_metric = stub_metric_class()
-        sensor_metric.METRIC_TYPE = "sensor"
+        sensor_metric.METRIC_TYPE = MetricTypeLabel.SENSOR
         behavior_metric = stub_metric_class()
-        behavior_metric.METRIC_TYPE = "behavior"
+        behavior_metric.METRIC_TYPE = MetricTypeLabel.TARGET
         return [info_metric, stability_metric, sensor_metric, behavior_metric]
 
     def testRegistry(self, metric_list: list[Metric]):
@@ -176,16 +212,28 @@ class TestCombinedReward:
         reward = CombinedReward(metric_list)
         assert reward.is_registered is True
 
-    def testRewardCall(
+    def testBadMetricType(self, metric_list: list[Metric], stub_metric_class: Metric):
+        """Test bad entries into `CostConstrainedReward`.
+
+        Args:
+            metric_list (``list``): :class:`.Metric` objects
+            stub_metric_class (:class:`.Metric`): Mock Metric
+        """
+        behavior_metric = stub_metric_class()
+        behavior_metric.METRIC_TYPE = MetricTypeLabel.TARGET
+        metric_list.append(behavior_metric)
+        with pytest.raises(ValueError, match="Incorrect number of metrics being passed"):
+            _ = CombinedReward(metric_list)
+
+        metric_list.pop(0)
+        with pytest.raises(TypeError):
+            _ = CombinedReward(metric_list)
+
+    def testCalculateReward(
         self,
         metric_list: list[Metric],
-        mocked_estimate: EstimateAgent,
-        mocked_sensor: SensingAgent,
     ):
-        """Test the call function of the CombinedReward class."""
-        target_agents = {11111: mocked_estimate}
-        target_id = 11111
-        sensor_agents = {"sensor": mocked_sensor}
-        sensor_id = "sensor"
+        """Test _calculateReward() function of the CombinedReward class."""
         reward = CombinedReward(metric_list)
-        reward(target_agents[target_id], sensor_agents[sensor_id])
+        metrics = np.ones(len(metric_list))
+        reward.calculate(metrics)

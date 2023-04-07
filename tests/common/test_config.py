@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR
+from .. import FIXTURE_DATA_DIR
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -41,6 +41,7 @@ CORRECT_DEFAULTS = OrderedDict(
         },
         "parallel": {"WorkerCount": None},
         "debugging": {
+            "ParallelDebugMode": False,
             "OutputDirectory": "debugging",
             "NearestPD": False,
             "NearestPDDirectory": "cholesky_failure",
@@ -55,6 +56,7 @@ CORRECT_DEFAULTS = OrderedDict(
 )
 
 
+@pytest.mark.no_debug()
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
 @pytest.fixture(name="file_config")
 def mockCustomSettingsFile(monkeypatch: pytest.MonkeyPatch, datafiles: str) -> BehavioralConfig:
@@ -85,6 +87,7 @@ def mockCustomSettingsFile(monkeypatch: pytest.MonkeyPatch, datafiles: str) -> B
         yield BehavioralConfig(os.environ.get("RESONAATE_BEHAVIOR_CONFIG"))
 
 
+@pytest.mark.no_debug()
 def testImported():
     """Test that importing :class:`._BehavioralConfig` results in the default values."""
     # RESONAATE Imports
@@ -98,6 +101,7 @@ def testImported():
             assert value == conf_option
 
 
+@pytest.mark.no_debug()
 def testSinglePattern():
     """Test that :class:.`_BehavioralConfig` is a proper Singleton class."""
     # RESONAATE Imports
@@ -110,6 +114,7 @@ def testSinglePattern():
     assert config is second_config.getConfig()
 
 
+@pytest.mark.no_debug()
 def testOverwrite():
     """Test overwriting the default :class:`._BehavioralConfig` directly with custom settings."""
     # Import and overwrite default settings
@@ -139,6 +144,7 @@ def testOverwrite():
     assert custom_config is second_config
 
 
+@pytest.mark.no_debug()
 def testNonDefaultFile(test_logger: Logger, file_config: BehavioralConfig):
     """Test overwriting the default :class:`._BehavioralConfig` with custom config file.
 

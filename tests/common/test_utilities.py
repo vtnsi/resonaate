@@ -13,11 +13,12 @@ import resonaate.common.utilities as utils
 from resonaate.common.behavioral_config import BehavioralConfig
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR
+from .. import FIXTURE_DATA_DIR
 
 
 def testGetTypeString():
     """Ensure proper type string is returned for parent & child classes."""
+
     # Dummy classes for testing type string
     class DummyClass1:
         pass
@@ -98,6 +99,7 @@ def testMatrixSaving(datafiles: str):
         utils.saveMatrix("invalid", ((0, 1), (2, 3)), path=datafiles)
 
 
+@pytest.mark.no_debug()
 def testGetTimeout():
     """Ensure proper timeout values are calculated."""
     # Test debuggin mode

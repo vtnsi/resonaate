@@ -1,13 +1,13 @@
 """Defines the :class:`.Logger` class."""
+from __future__ import annotations
+
 # Standard Library Imports
 import logging
 import sys
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 from os import makedirs
 from os.path import exists, join
-
-# Third Party Imports
-from concurrent_log_handler import ConcurrentRotatingFileHandler as FileHandler
 
 # Local Imports
 from .behavioral_config import BehavioralConfig
@@ -16,7 +16,6 @@ from .behavioral_config import BehavioralConfig
 class Logger:
     """Extended logger wraps the standard Python logging package.
 
-    It utilizes the `concurrent_log_handler` package to avoid dropping log files.
     It also creates a standard file name and log format for any log files that are saved.
     """
 
@@ -47,7 +46,7 @@ class Logger:
             else:
                 # Create the path if it doesn't exist.
                 if not exists(path):
-                    print(f"Path did not exist: '{path}'. Creating path...")
+                    print(f"Path did not exist: {path!r}. Creating path...")
                     makedirs(path)
 
                 # Set the timestamp for the file name, and construct the entire filename
@@ -58,7 +57,7 @@ class Logger:
                 self.filename = join(path, log_name)
 
                 # Create the file handler based on the file name
-                handler = FileHandler(
+                handler = RotatingFileHandler(
                     self.filename,
                     maxBytes=BehavioralConfig.getConfig().logging.MaxFileSize,
                     backupCount=BehavioralConfig.getConfig().logging.MaxFileCount,

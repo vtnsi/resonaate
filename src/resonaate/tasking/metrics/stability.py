@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 class LyapunovStability(StabilityMetric):
     """Lyapunov stability metric."""
 
-    def _calculateMetric(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent, **kwargs
-    ) -> float:
+    def calculate(self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent) -> float:
         """Calculate the scalar maximal Lyapunov exponent approximation.
 
         References:

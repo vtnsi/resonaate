@@ -1,0 +1,48 @@
+# ==========================================
+# Includes
+# ==========================================
+
+include:
+  - local: .gitlab/ci/base.gitlab-ci.yml
+  - local: .gitlab/ci/rules.gitlab-ci.yml
+  - local: .gitlab/ci/scripts.gitlab-ci.yml
+
+# ==========================================
+# Base Test Job
+# ==========================================
+
+.scheduled-base:
+  stage: test
+  extends:
+    - .rules:scheduled
+  when: always
+
+.scheduled-pytest:
+  extends:
+    - .scheduled-base
+    - .python-base
+  variables:
+    PYTEST_OPTIONS: "-ra -v"
+  before_script:
+    - !reference [.pip-test, before_script]
+  script:
+    # [FIXME]: This is a temporary fix for
+    - export MJOLNIR_SOCKET_PROTOCOL=ipc
+    - echo "Running unit tests with pytest"
+    - python --version
+    - pytest ${PYTEST_OPTIONS}
+
+scheduled-pytest-3.9:
+  extends:
+    - .scheduled-pytest
+  image: python:3.9-bullseye
+
+scheduled-pytest-3.10:
+  extends:
+    - .scheduled-pytest
+  image: python:3.10-bullseye
+
+scheduled-pytest-3.11:
+  extends:
+    - .scheduled-pytest
+  image: python:3.11-bullseye

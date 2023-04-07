@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from copy import deepcopy
 from os.path import abspath, exists, join
 from typing import TYPE_CHECKING
 
@@ -10,18 +11,19 @@ import pytest
 from numpy import allclose
 from sqlalchemy import Column, Float, Integer
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, declarative_base
 
 # RESONAATE Imports
+from resonaate.data import clearDBPath, getDBConnection, setDBPath
 from resonaate.data.agent import AgentModel
 from resonaate.data.ephemeris import TruthEphemeris
 from resonaate.data.epoch import Epoch
 from resonaate.data.importer_database import ImporterDatabase
+from resonaate.data.queries import fetchTruthByJDInterval
 from resonaate.data.resonaate_database import ResonaateDatabase
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_RSO_TRUTH, SHARED_DB_PATH
+from .. import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_RSO_TRUTH, SHARED_DB_PATH
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -144,11 +146,12 @@ class TestResonaateDatabase:
 
     def testSessionScopeError(self, database: ResonaateDatabase):
         """Catches SQLAlchemy error during session scope usage."""
+
         # Define a new db object class
         class NewEpoch(declarative_base()):
             __tablename__ = "new_epochs"
 
-            id = Column(Integer, primary_key=True)  # noqa: A003
+            id = Column(Integer, primary_key=True)
 
             julian_date = Column(Float, index=True, unique=True, nullable=False)
 
@@ -187,13 +190,14 @@ class TestResonaateDatabase:
         assert allclose(result.eci, eci)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testGetDataError(self, datafiles: str, ephem: TruthEphemeris, reset_shared_db: None):
+    def testGetDataError(self, datafiles: str, ephem: TruthEphemeris):
         """Test getting a data object from the DB."""
+
         # Define a new db object class
         class NewEpoch(declarative_base()):
             __tablename__ = "new_epochs"
 
-            id = Column(Integer, primary_key=True)  # noqa: A003
+            id = Column(Integer, primary_key=True)
 
             julian_date = Column(Float, index=True, unique=True, nullable=False)
 
@@ -240,13 +244,12 @@ class TestResonaateDatabase:
         assert del_count == 3
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSharedDataInterface(
-        self, datafiles: str, ephems: list[TruthEphemeris], reset_shared_db: None
-    ):
-        """Test the :meth:`.getSharedInterface()` class method."""
+    def testSharedDataInterface(self, datafiles: str, ephems: list[TruthEphemeris]):
+        """Test the shared interface version method."""
         # Create DB using API
         shared_db_url = "sqlite:///" + join(datafiles, SHARED_DB_PATH)
-        database = ResonaateDatabase.getSharedInterface(shared_db_url)
+        setDBPath(shared_db_url)
+        database = getDBConnection()
         database.insertData(*ephems)
 
         # Query on ID and Julian date
@@ -288,8 +291,9 @@ class TestResonaateDatabase:
 
         # Delete DB after finished
         database.resetData(tables=database.VALID_DATA_TYPES)
+        clearDBPath()
 
-    def testInit(self, ephems: list[TruthEphemeris], reset_shared_db: None):
+    def testInit(self, ephems: list[TruthEphemeris]):
         """Test the constructor."""
         # Create DB using API
         database = ResonaateDatabase(None, logger=None, verbose_echo=True)
@@ -373,7 +377,6 @@ class TestImporterDatabase:
             Query(TruthEphemeris).join(AgentModel).filter(AgentModel.unique_id == 11111)
         )
         assert len(ephems) == 61
-        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testReadOnly(self, datafiles: str, ephems: list[TruthEphemeris]):
@@ -397,37 +400,6 @@ class TestImporterDatabase:
         # `bulkSave()`
         with pytest.raises(NotImplementedError):
             importer_db.insertData(ephems)
-
-        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
-
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSharedDataInterface(
-        self, datafiles: str, ephems: list[TruthEphemeris], reset_importer_db: None
-    ):
-        """Test the :meth:`.getSharedInterface()` class method."""
-        # Create DB using API
-        importer_db_url = "sqlite:///" + join(datafiles, IMPORTER_DB_PATH)
-        database = ImporterDatabase.getSharedInterface(importer_db_url)
-        database._insertData(*ephems)  # pylint: disable=protected-access
-
-        # Query on ID and Julian date
-        combined_query = (
-            Query(TruthEphemeris)
-            .join(Epoch)
-            .filter(Epoch.julian_date == EXAMPLE_EPOCH["julian_date"])
-            .join(AgentModel)
-            .filter(AgentModel.unique_id == EXAMPLE_RSO[1]["unique_id"])
-        )
-        result = database.getData(combined_query, multi=False)
-
-        # Make sure returned result is correct
-        eci = EXAMPLE_RSO[1]["eci"]
-        assert result.epoch.julian_date == EXAMPLE_EPOCH["julian_date"]
-        assert result.epoch.timestampISO == EXAMPLE_EPOCH["timestampISO"]
-        assert result.agent_id == EXAMPLE_RSO[1]["unique_id"]
-        assert result.agent_id == result.agent.unique_id
-        assert result.agent.name == EXAMPLE_RSO[1]["name"]
-        assert allclose(result.eci, eci)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testInit(self, datafiles: str, ephems: list[TruthEphemeris]):
@@ -455,4 +427,125 @@ class TestImporterDatabase:
         assert result.agent_id == result.agent.unique_id
         assert result.agent.name == EXAMPLE_RSO[1]["name"]
         assert allclose(result.eci, eci)
-        importer_db.resetData(ImporterDatabase.VALID_DATA_TYPES)
+
+
+# SET UP EPOCH ENTRIES
+EXAMPLE_JD = [
+    2458207.010416667,
+    2459304.21527778,
+    2459304.21875,
+]
+EXAMPLE_JD_WITH_PRECISION_ERROR = [
+    2458207.010416666,
+    2459304.215277778,
+    2459304.218750001,
+]
+EXAMPLE_TIMESTAMPS = [
+    "2019-01-01T00:01:00.000",
+    "2021-03-30T17:10:00.000",
+    "2021-03-30T17:15:00.000",
+]
+EXAMPLE_EPOCHS = [
+    {"julian_date": jd, "timestampISO": ts} for jd, ts in zip(EXAMPLE_JD, EXAMPLE_TIMESTAMPS)
+]
+
+# SET UP AGENT ENTRIES
+RSO_UNIQUE_ID = 24601
+EXAMPLE_RSO_AGENT = {"name": "Sat1", "unique_id": RSO_UNIQUE_ID}
+
+# SET UP TRUTH ENTRIES
+EXAMPLE_ECI_STATES = [
+    [32832.44359, -26125.770428, -4175.978356, 1.920657, 2.399111, 0.090893],
+    [2586.058936, 6348.302803, 3801.942400, -3.304773, -2.193913, 5.915754],
+    [1296.645611, -2457.821083, 5721.873513, 0.179231, 0.093705, -0.000365],
+]
+EXAMPLE_TRUTH = [
+    {"julian_date": jd, "agent_id": RSO_UNIQUE_ID, "eci": eci}
+    for jd, eci in zip(EXAMPLE_JD, EXAMPLE_ECI_STATES)
+]
+EXAMPLE_TRUTH_WITH_JD_PRECISION_ERROR = [
+    {"julian_date": jd, "agent_id": RSO_UNIQUE_ID, "eci": eci}
+    for jd, eci in zip(EXAMPLE_JD_WITH_PRECISION_ERROR, EXAMPLE_ECI_STATES)
+]
+
+
+class TestDatabaseIssues:
+    """Write tests that demonstrate tricky issues that can result in lost data in queries."""
+
+    @pytest.fixture(name="epochs")
+    def getMultipleEpochs(self) -> list[Epoch]:
+        """Create several valid :class:`.Epoch` objects."""
+        epochs: list[Epoch] = []
+        for epoch in EXAMPLE_EPOCHS:
+            epochs.append(Epoch(**epoch))
+        return epochs
+
+    @pytest.fixture(name="agent")
+    def getAgent(self):
+        """Create a valid :class:`.AgentModel` object."""
+        return AgentModel(**EXAMPLE_RSO_AGENT)
+
+    @pytest.fixture(name="matched_ephems")
+    def getMultipleEphemerisData(self) -> list[TruthEphemeris]:
+        """Create several valid :class:`.TruthEphemeris` objects."""
+        ephems: list[TruthEphemeris] = []
+        for ex_ephem in EXAMPLE_TRUTH:
+            ephems.append(TruthEphemeris.fromECIVector(**ex_ephem))
+        return ephems
+
+    @pytest.fixture(name="unmatched_ephems")
+    def getMultipleRoundedEphemerisData(self) -> list[TruthEphemeris]:
+        """Create several valid :class:`.TruthEphemeris` objects."""
+        ephems: list[TruthEphemeris] = []
+        for ex_ephem in EXAMPLE_TRUTH_WITH_JD_PRECISION_ERROR:
+            ephems.append(TruthEphemeris.fromECIVector(**ex_ephem))
+        return ephems
+
+    @pytest.fixture(name="matched_epoch_db")
+    def createMatchedDB(
+        self, epochs: list[Epoch], agent: AgentModel, matched_ephems: list[TruthEphemeris]
+    ):
+        """Create a DB object where the `TruthEphemeris` table entries have matching julian dates in the `Epoch` table.
+
+        Yields:
+            :class:`.ResonaateDatabase`: properly constructed DB object
+        """
+        # Create & yield instance.
+        matched_db = ResonaateDatabase(db_path=None)
+        matched_db.insertData(deepcopy(agent))
+        matched_db.bulkSave(deepcopy(epochs + matched_ephems))
+        yield matched_db
+        matched_db.resetData(ResonaateDatabase.VALID_DATA_TYPES)
+
+    @pytest.fixture(name="unmatched_epoch_db")
+    def createUnmatchedDB(
+        self, epochs: list[Epoch], agent: AgentModel, unmatched_ephems: list[TruthEphemeris]
+    ):
+        """Create a DB object where the `TruthEphemeris` table entries where julian dates have truncated precision from the `Epoch` table.
+
+        Yields:
+            :class:`.ResonaateDatabase`: properly constructed DB object
+        """
+        # Create & yield instance.
+        unmatched_db = ResonaateDatabase(db_path=None)
+        unmatched_db.insertData(deepcopy(agent))
+        unmatched_db.bulkSave(deepcopy(epochs + unmatched_ephems))
+        yield unmatched_db
+        unmatched_db.resetData(ResonaateDatabase.VALID_DATA_TYPES)
+
+    def testBadJDJoin(
+        self, matched_epoch_db: ResonaateDatabase, unmatched_epoch_db: ResonaateDatabase
+    ):
+        """Test that ephemeris queries only return the correct number of ephemeris when there is a matching epoch entry in the `Epoch` table.
+
+        This test demonstrates that precision loss in julian date entries can result in lost queries.
+
+        Args:
+            matched_epoch_db (ResonaateDatabase): database where julian date entries in `TruthEphemeris` table have matching values in `Epoch` table.
+            unmatched_epoch_db (ResonaateDatabase): database where julian date entries in `TruthEphemeris` table do not have matching values in `Epoch` table.
+        """
+        matched_epoch_truth = fetchTruthByJDInterval(matched_epoch_db, [RSO_UNIQUE_ID])
+        unmatched_epoch_truth = fetchTruthByJDInterval(unmatched_epoch_db, [RSO_UNIQUE_ID])
+        assert len(matched_epoch_truth) != len(unmatched_epoch_truth)
+        assert len(unmatched_epoch_truth) == 0
+        assert len(matched_epoch_truth) == len(EXAMPLE_ECI_STATES)

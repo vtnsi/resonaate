@@ -6,22 +6,16 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array, ndarray
-from numpy.random import default_rng
 
 # Local Imports
-from ..common.exceptions import ShapeError
 from ..data.ephemeris import TruthEphemeris
 from ..dynamics.integration_events.station_keeping import StationKeeper
-from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from .agent_base import Agent
 
 # Type checking
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Any
-
     # Third Party Imports
     from typing_extensions import Self
 
@@ -29,21 +23,7 @@ if TYPE_CHECKING:
     from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.dynamics_base import Dynamics
     from ..scenario.clock import ScenarioClock
-
-
-LEO_DEFAULT_MASS = 295.0
-"""``float``: Default mass of LEO RSO (km)  #.  :cite:t:`LEO_RSO_2022_stats`"""
-MEO_DEFAULT_MASS = 2861.0
-"""``float``: Default mass of MEO RSO (km)  #.  :cite:t:`steigenberger_MEO_RSO_2022_stats`"""
-GEO_DEFAULT_MASS = 6200.0
-"""``float``: Default mass of GEO RSO (km)  #.  :cite:t:`GEO_RSO_2022_stats`"""
-
-LEO_DEFAULT_VCS = 10.0
-"""``float``: Default visual cross section of LEO RSO (m^2)  #.  :cite:t:`LEO_RSO_2022_stats`"""
-MEO_DEFAULT_VCS = 37.5
-"""``float``: Default visual cross section of MEO RSO (m^2)  #.  :cite:t:`steigenberger_MEO_RSO_2022_stats`"""
-GEO_DEFAULT_VCS = 90.0
-"""``float``: Default visual cross section of GEO RSO (m^2)  #.  :cite:t:`GEO_RSO_2022_stats`"""
+    from ..scenario.config import PropagationConfig, TargetAgentConfig
 
 
 class TargetAgent(Agent):
@@ -65,11 +45,9 @@ class TargetAgent(Agent):
         clock: ScenarioClock,
         dynamics: Dynamics,
         realtime: bool,
-        process_noise: ndarray,
         visual_cross_section: float | int,
         mass: float | int,
         reflectivity: float,
-        seed: int | None = None,
         station_keeping: list[StationKeeper] | None = None,
     ):
         """Construct a TargetAgent object.
@@ -82,11 +60,9 @@ class TargetAgent(Agent):
             clock (:class:`.ScenarioClock`): clock instance for retrieving proper times
             dynamics (:class:`.Dynamics`): TargetAgent's simulation dynamics
             realtime (``bool``): whether to use :attr:`dynamics` or import data for propagation
-            process_noise (``ndarray``): 6x6 process noise covariance
             visual_cross_section (``float, int``): constant visual cross-section of the agent
             mass (``float, int``): constant mass of the agent
             reflectivity (``float``): constant reflectivity of the agent
-            seed (int, optional): number to seed random number generator. Defaults to ``None``.
             station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station keeping to
                 be performed
 
@@ -107,81 +83,52 @@ class TargetAgent(Agent):
             reflectivity=reflectivity,
             station_keeping=station_keeping,
         )
-        if not isinstance(process_noise, ndarray):
-            self._logger.error("Incorrect type for process_noise param")
-            raise TypeError(type(process_noise))
-
-        if process_noise.shape != (6, 6):
-            self._logger.error("Incorrect shape for process_noise param")
-            raise ShapeError(process_noise.shape)
-
-        # Process noise covariance used for generating noise
-        self._process_noise_covar = process_noise
-
-        if not isinstance(seed, int) and seed is not None:
-            self._logger.error("Incorrect type for seed param")
-            raise TypeError(type(seed))
-        # Save the random number generator for generating noise
-        self._rng = default_rng(seed)
-
         # Properly initialize the TargetAgent's state types
         self._truth_state = array(initial_state, copy=True)
-        self._ecef_state = eci2ecef(self._truth_state)
+        self._ecef_state = eci2ecef(self._truth_state, self.datetime_epoch)
         self._lla_state = ecef2lla(self._ecef_state)
         self._previous_state = array(initial_state, copy=True)
 
     @classmethod
-    def fromConfig(cls, config: dict) -> Self:
+    def fromConfig(
+        cls,
+        tgt_cfg: TargetAgentConfig,
+        clock: ScenarioClock,
+        dynamics: Dynamics,
+        prop_cfg: PropagationConfig,
+    ) -> Self:
         """Factory to initialize `TargetAgent` objects based on given configuration.
 
         Args:
-            config (``dict``): formatted configuration parameters
+            tgt_cfg (:class:`.TargetAgentConfig`): config from which to generate a target agent.
+            clock (:class:`.ScenarioClock`): common clock object for the simulation.
+            dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
+            prop_cfg (:class:`.PropagationConfig`): various propagation simulation settings.
 
         Returns:
-            :class:`.TargetAgent`: properly constructed `TargetAgent` object
+            :class:`.TargetAgent`: properly constructed agent object.
         """
-        ## [TODO]: Make this not coupled to only `Satellite` targets
-        tgt = config["target"]
+        initial_state = tgt_cfg.state.toECI(clock.datetime_epoch)
 
-        # Determine the target's initial ECI state
-        if tgt.eci_set:
-            initial_state = array(tgt.init_eci)
-        elif tgt.coe_set:
-            orbit = ClassicalElements.fromConfig(tgt.init_coe)
-            initial_state = orbit.toECI()
-        elif tgt.eqe_set:
-            orbit = EquinoctialElements.fromConfig(tgt.init_eqe)
-            initial_state = orbit.toECI()
-        else:
-            raise ValueError(
-                f"TargetAgent config doesn't contain initial state information: {tgt}"
-            )
-
-        station_keeping = []
-        if config["station_keeping"]:
-            for config_str in tgt.station_keeping.routines:
-                station_keeping.append(
-                    StationKeeper.factory(
-                        conf_str=config_str,
-                        rso_id=tgt.sat_num,
-                        initial_eci=initial_state,
-                        julian_date_start=config["clock"].julian_date_start,
-                    )
-                )
+        station_keeping = cls._createStationKeepers(
+            prop_cfg.station_keeping,
+            tgt_cfg.id,
+            tgt_cfg.platform,
+            initial_state,
+            clock.julian_date_start,
+        )
 
         return cls(
-            tgt.sat_num,
-            tgt.sat_name,
-            "Spacecraft",
+            tgt_cfg.id,
+            tgt_cfg.name,
+            tgt_cfg.platform.type,
             initial_state,
-            config["clock"],
-            config["dynamics"],
-            config["realtime"],
-            config["noise"],
-            tgt.visual_cross_section,
-            tgt.mass,
-            tgt.reflectivity,
-            seed=config["random_seed"],
+            clock,
+            dynamics,
+            prop_cfg.target_realtime_propagation,
+            tgt_cfg.platform.visual_cross_section,
+            tgt_cfg.platform.mass,
+            tgt_cfg.platform.reflectivity,
             station_keeping=station_keeping,
         )
 
@@ -224,7 +171,7 @@ class TargetAgent(Agent):
         """
         self._previous_state = self._truth_state
         self._truth_state = new_state
-        self._ecef_state = eci2ecef(new_state)
+        self._ecef_state = eci2ecef(new_state, self.datetime_epoch)
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property
@@ -241,13 +188,3 @@ class TargetAgent(Agent):
     def lla_state(self) -> ndarray:
         """``ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
         return self._lla_state
-
-    @property
-    def process_noise(self) -> ndarray:
-        """``ndarray``: Returns the 6x1 scaled process noise vector."""
-        return self._rng.multivariate_normal(self.eci_state, self.process_noise_covariance)
-
-    @property
-    def process_noise_covariance(self) -> ndarray:
-        """``ndarray``: Returns the 6x6 process noise matrix."""
-        return self._process_noise_covar

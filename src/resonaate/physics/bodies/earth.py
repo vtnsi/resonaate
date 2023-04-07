@@ -1,4 +1,5 @@
 """Defines the :class:`.Earth` class."""
+from __future__ import annotations
 
 
 class Earth:
@@ -8,6 +9,7 @@ class Earth:
         mu (``float``): gravitational parameter, (km^3/sec^2).
         radius (``float``): mean equatorial radius (km).
         mass (``float``): planet's mass, (km).
+        gravity (``float``): average gravitational acceleration (m/sec^2)
         spin_rate (``float``): rotation rate about the *K*-axis (ECEF), (rad/sec).
         eccentricity (``float``): equatorial bulge, (unit-less).
         atmosphere (``float``): assumed height of the atmosphere, (km).
@@ -29,6 +31,7 @@ class Earth:
     mu = 398600.4415
     radius = 6378.1363
     mass = 5.9742e24
+    gravity = 9.81
     spin_rate = 7.292115146706979e-5
     eccentricity = 0.081819221456
     atmosphere = 100.0

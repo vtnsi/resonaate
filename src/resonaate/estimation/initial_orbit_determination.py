@@ -4,27 +4,24 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod
-from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import KeyValueStore
-from numpy import array
+from numpy import concatenate
 from scipy.linalg import norm
 from sqlalchemy import asc
 from sqlalchemy.orm import Query
 
 # Local Imports
+from ..common.labels import SensorLabel
+from ..data import getDBConnection
 from ..data.observation import Observation
-from ..data.resonaate_database import ResonaateDatabase
 from ..physics.constants import DAYS2SEC
 from ..physics.orbit_determination import OrbitDeterminationFunction
 from ..physics.orbit_determination.lambert import determineTransferDirection
-from ..physics.orbits.utils import getPeriod, getSemiMajorAxis, getTrueAnomalyFromRV
+from ..physics.orbits.utils import getPeriod, getSemiMajorAxis
 from ..physics.time.stardate import JulianDate, ScenarioTime
-from ..physics.transforms.methods import ecef2eci, lla2ecef, razel2sez, sez2ecef
-from ..physics.transforms.reductions import updateReductionParameters
-from ..sensors.sensor_base import ObservationTuple
+from ..physics.transforms.methods import radarObs2eciPosition
 from .adaptive.initialization import lambertInitializationFactory
 
 if TYPE_CHECKING:
@@ -33,6 +30,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     # Local Imports
+    from ..data.resonaate_database import ResonaateDatabase
     from ..scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
 
@@ -88,18 +86,6 @@ class InitialOrbitDetermination(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def convertObservationToECI(self, observation: Observation) -> ndarray:
-        """Convert Observation to ECI position relative to sensor.
-
-        Args:
-            Observation (:class:`.Observation`): observation object.
-
-        Returns:
-            ``ndarray``: ECI state of observation
-        """
-        raise NotImplementedError
-
     def getPreviousObservations(
         self, database: ResonaateDatabase, start_time: ScenarioTime, end_time: ScenarioTime
     ) -> list[Observation]:
@@ -144,14 +130,14 @@ class InitialOrbitDetermination(ABC):
     @abstractmethod
     def determineNewEstimateState(
         self,
-        obs_tuples: list[ObservationTuple],
+        observations: list[Observation],
         detection_time: ScenarioTime,
         current_time: ScenarioTime,
     ) -> ndarray:
         r"""Determine the state vector of an RSO estimate via IOD.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
             detection_time (:class:`.ScenarioTime`): Lower Bound for query.
             current_time (:class:`.ScenarioTime`): Upper Bound for query.
 
@@ -210,51 +196,23 @@ class LambertIOD(InitialOrbitDetermination):
             .filter(Observation.julian_date <= current_jdate)
             .filter(Observation.julian_date >= start_jdate)
             .filter(
-                Observation.sensor_type != "Optical"  # Only Radar/AdvRadar Obs for Lambert IOD
-            )
+                Observation.sensor_type != SensorLabel.OPTICAL
+            )  # Only Radar/AdvRadar Obs for Lambert IOD
             .order_by(asc(Observation.julian_date))
         )
 
         return database.getData(observation_query)
 
-    def convertObservationToECI(self, observation: Observation) -> ndarray:
-        """Convert Observation to ECI position relative to sensor.
-
-        Args:
-            Observation (:class:`.Observation`): observation object.
-
-        Returns:
-            ``ndarray``: ECI state of observation
-        """
-        updateReductionParameters(JulianDate(observation.julian_date))
-        observation_sez = razel2sez(
-            observation.range_km, observation.elevation_rad, observation.azimuth_rad, 0, 0, 0
-        )
-        sensor_ecef = lla2ecef(
-            array(
-                [
-                    observation.position_lat_rad,
-                    observation.position_long_rad,
-                    observation.position_altitude_km,
-                ]
-            )
-        )
-        observation_ecef = (
-            sez2ecef(observation_sez, observation.position_lat_rad, observation.position_long_rad)
-            + sensor_ecef
-        )
-        return ecef2eci(observation_ecef)
-
     def determineNewEstimateState(
         self,
-        obs_tuples: list[ObservationTuple],
+        observations: list[Observation],
         detection_time: ScenarioTime,
         current_time: ScenarioTime,
     ) -> tuple[ndarray | None, bool]:
         r"""Determine the state vector of an RSO estimate via IOD.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
             detection_time (:class:`.ScenarioTime`): time that IOD is flagged
             current_time (:class:`.ScenarioTime`): current scenario time
 
@@ -264,14 +222,13 @@ class LambertIOD(InitialOrbitDetermination):
             :``ndarray| None``: Estimate state determined from IOD
             :``bool``: whether or not IOD was successful
         """
-        if not obs_tuples:
-            msg = "No ObservationTuples for IOD"
+        if not observations:
+            msg = "No Observations for IOD"
             self._logger.warning(msg)
             return None, False
 
         # load path to on-disk database for the current scenario run
-        db_path = loads(KeyValueStore.getValue("db_path"))
-        database = ResonaateDatabase.getSharedInterface(db_path=db_path)
+        database = getDBConnection()
 
         # Ensure observations are from the same pass
         current_julian_date = ScenarioTime(current_time).convertToJulianDate(
@@ -288,51 +245,47 @@ class LambertIOD(InitialOrbitDetermination):
             return None, False
 
         # Get position from Radar observation between maneuver detection time and now
-        initial_state = self.convertObservationToECI(previous_observation[-1])
+        initial_position = radarObs2eciPosition(previous_observation[-1])
 
         # Get position from Radar observation from current timestep
-        final_state = self._determineFinalState(obs_tuples)
-        if final_state is None:
+        if (final_position := self._determineFinalState(observations)) is None:
             msg = "No Radar observations to perform Lambert IOD"
             self._logger.warning(msg)
             return None, False
 
         transit_time = self.checkSinglePass(
-            final_state[:3], previous_observation[-1].julian_date, current_julian_date
+            final_position, previous_observation[-1].julian_date, current_julian_date
         )
         if not transit_time:
             msg = "Observations not from a single pass"
             self._logger.warning(msg)
             return None, False
 
-        transfer_method = determineTransferDirection(
-            initial_true_anomaly=getTrueAnomalyFromRV(initial_state),
-            final_true_anomaly=getTrueAnomalyFromRV(final_state),
-        )
+        # [NOTE]: Circular orbit assumed as first approx.
+        transfer_method = determineTransferDirection(initial_position, transit_time)
 
         # [NOTE] We don't need initial_velocity because we only are improving the current state estimate.
         _, final_velocity = self.orbit_determination_method(
-            initial_state[:3],
-            final_state[:3],
+            initial_position,
+            final_position,
             transit_time,
             transfer_method,
         )
 
-        final_state[3:] = final_velocity
-        return final_state, True
+        return concatenate((final_position, final_velocity)), True
 
-    def _determineFinalState(self, obs_tuples: list[ObservationTuple]) -> ndarray | None:
+    def _determineFinalState(self, observations: list[Observation]) -> ndarray | None:
         """Calculate Position vector at the current time given observations.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects at the current time
+            observations (``list``): :class:`.Observation` objects at the current time
 
         Returns:
             ``ndarray`` | ``None``: [6x1] ECI state vector at the current time, but only the position is valid
         """
-        # [TODO]: put a method that checks for the obs_tuple with the smallest residual?
-        for obs_tuple in obs_tuples:
-            if obs_tuple.observation.range_km:
-                return self.convertObservationToECI(obs_tuple.observation)
+        # [TODO]: put a method that checks for the obs with the smallest residual?
+        for observation in observations:
+            if observation.range_km:
+                return radarObs2eciPosition(observation)
 
         return None

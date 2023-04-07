@@ -19,7 +19,7 @@ from ..estimation import (
     sequentialFilterFactory,
 )
 from ..estimation.sequential.sequential_filter import FilterFlag, SequentialFilter
-from ..physics.noise import initialEstimateNoise
+from ..physics.noise import initialEstimateNoise, noiseCovarianceFactory
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from .agent_base import Agent
 
@@ -34,15 +34,18 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
+    from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config.agent_configs import TargetAgentConfig
+    from ..scenario.config import NoiseConfig, PropagationConfig, TimeConfig
+    from ..scenario.config.agent_config import TargetAgentConfig
     from ..scenario.config.estimation_config import (
         AdaptiveEstimationConfig,
+        EstimationConfig,
         InitialOrbitDeterminationConfig,
     )
-    from ..sensors.sensor_base import ObservationTuple
+    from ..sensors.sensor_base import Observation
 
 
 class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
@@ -117,7 +120,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         # Properly initialize the EstimateAgent's state types
         self._state_estimate = initial_state.copy()
-        self._ecef_state = eci2ecef(initial_state)
+        self._ecef_state = eci2ecef(initial_state, self.datetime_epoch)
         self._lla_state = ecef2lla(self._ecef_state)
 
         # Set the EstimateAgent's filter & set itself to the filter's host
@@ -151,54 +154,73 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
 
     @classmethod
-    def fromConfig(cls, config: dict[str, Any]) -> Self:
-        """Factory to initialize :class:`.EstimateAgent` objects based on given configuration.
+    def fromConfig(
+        cls,
+        tgt_cfg: TargetAgentConfig,
+        clock: ScenarioClock,
+        dynamics: Dynamics,
+        prop_cfg: PropagationConfig,
+        time_cfg: TimeConfig,
+        noise_cfg: NoiseConfig,
+        estimation_cfg: EstimationConfig,
+    ) -> Self:
+        """Factory to initialize `EstimateAgent` objects based on given configuration.
 
         Args:
-            config (``dict``): formatted configuration parameters
+            tgt_cfg (:class:`.TargetAgentConfig`): config from which to generate an estimate agent.
+            clock (:class:`.ScenarioClock`): common clock object for the simulation.
+            dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
+            prop_cfg (:class:`.PropagationConfig`): various propagation simulation settings.
+            time_cfg (:class:`.TimeConfig`): defines time configuration settings.
+            noise_cfg (:class:`.NoiseConfig`): defines noise configuration settings.
+            estimation_cfg (:class:`.EstimationConfig`): defines estimation configuration settings.
 
         Returns:
-            :class:`.EstimateAgent`: properly constructed `EstimateAgent` object
+            :class:`.EstimateAgent`: properly constructed agent object.
         """
-        # Grab multiple objects required for creating estimate agents
-        tgt_config: TargetAgentConfig = config["target"]
-        clock: ScenarioClock = config["clock"]
+        # pylint: disable=unused-argument
         # Create the initial state & covariance
+        initial_state = tgt_cfg.state.toECI(clock.datetime_epoch)
         init_x, init_p = initialEstimateNoise(
-            tgt_config.init_eci, config["position_std"], config["velocity_std"], config["rng"]
+            initial_state,
+            noise_cfg.init_position_std_km,
+            noise_cfg.init_velocity_std_km_p_sec,
+            default_rng(noise_cfg.random_seed),
+        )
+
+        filter_noise = noiseCovarianceFactory(
+            noise_cfg.filter_noise_type,
+            time_cfg.physics_step_sec,
+            noise_cfg.filter_noise_magnitude,
         )
 
         nominal_filter = sequentialFilterFactory(
-            config["sequential_filter"],
-            tgt_config.sat_num,
+            estimation_cfg.sequential_filter,
+            tgt_cfg.id,
             clock.time,
             init_x,
             init_p,
-            config["dynamics"],
-            config["q_matrix"],
+            dynamics,
+            filter_noise,
         )
 
-        # Create the `EstimateAgent` and initialize its filter object
-        est = cls(
-            tgt_config.sat_num,
-            tgt_config.sat_name,
-            config["agent_type"],
+        return cls(
+            tgt_cfg.id,
+            tgt_cfg.name,
+            tgt_cfg.platform.type,
             clock,
             init_x,
             init_p,
             nominal_filter,
-            config["adaptive_filter"],
-            config["initial_orbit_determination"],
-            tgt_config.visual_cross_section,
-            tgt_config.mass,
-            tgt_config.reflectivity,
-            config["seed"],
+            estimation_cfg.adaptive_filter,
+            estimation_cfg.initial_orbit_determination,
+            tgt_cfg.platform.visual_cross_section,
+            tgt_cfg.platform.mass,
+            tgt_cfg.platform.reflectivity,
+            seed=noise_cfg.random_seed,
         )
 
-        # Return properly initialized `EstimateAgent`
-        return est
-
-    def updateEstimate(self, obs_tuples: list[ObservationTuple]) -> None:
+    def updateEstimate(self, observations: list[Observation]) -> None:
         """Update the :attr:`nominal_filter`, state estimate, & covariance.
 
         This is the local update function. See :meth:`.updateFromAsyncUpdateEstimate` for details
@@ -208,10 +230,10 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             :func:`.asyncExecuteTasking` to see how the result is computed
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects associated with this timestep
+            observations (``list``): :class:`.Observation` objects associated with this timestep
         """
-        self.nominal_filter.update(obs_tuples)
-        self._update(obs_tuples)
+        self.nominal_filter.update(observations)
+        self._update(observations)
 
     def updateFromAsyncPredict(self, async_result: dict[str, Any]) -> None:
         """Perform predict using EstimateAgent's :attr:`nominal_filter`'s async result.
@@ -262,13 +284,13 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             covariance=self.error_covariance.tolist(),
         )
 
-    def _saveDetectedManeuver(self, obs_tuples: list[ObservationTuple]) -> None:
+    def _saveDetectedManeuver(self, observations: list[Observation]) -> None:
         """Save :class:`.DetectedManeuver` events to insert into the DB later.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` objects corresponding to the detected maneuver.
+            observations (``list``): :class:`.Observation` objects corresponding to the detected maneuver.
         """
-        sensor_nums = {obs_tuple.agent.simulation_id for obs_tuple in obs_tuples}
+        sensor_nums = {ob.sensor_id for ob in observations}
         # [FIXME]: Lazy way to implement multiple sensor IDs before moving to postgres
         self._detected_maneuvers.append(
             DetectedManeuver(
@@ -312,41 +334,41 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         """``bool``: Returns whether detected maneuvers are stored for this estimate agent."""
         return bool(self._detected_maneuvers)
 
-    def _logFilterEvents(self, obs_tuples: list[ObservationTuple]) -> None:
+    def _logFilterEvents(self, observations: list[Observation]) -> None:
         """Log filter events and perform debugging steps.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` made of the agent during the timestep.
+            observations (``list``): :class:`.Observation` made of the agent during the timestep.
         """
         # Check if a maneuver was detected
         if FilterFlag.MANEUVER_DETECTION in self.nominal_filter.flags:
-            sensor_nums = {ob.agent.simulation_id for ob in obs_tuples}
+            sensor_nums = {ob.sensor_id for ob in observations}
             tgt = self.simulation_id
             jd = self.julian_date_epoch
             msg = f"Maneuver Detected for RSO {tgt} by sensors {sensor_nums} at time {jd}"
             self._logger.info(msg)
 
-    def _update(self, obs_tuples: list[ObservationTuple]) -> None:
+    def _update(self, observations: list[Observation]) -> None:
         """Perform update of :attr:`nominal_filter`, state estimate, & covariance.
 
         Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. Also, log
         filter events if the truth is passed in, typically done locally.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
         """
-        self._logFilterEvents(obs_tuples)
+        self._logFilterEvents(observations)
 
-        if obs_tuples:
+        if observations:
             self.last_observed_at = self.julian_date_epoch
             self._saveFilterStep()
-            self._attemptInitialOrbitDetermination(obs_tuples)
+            self._attemptInitialOrbitDetermination(observations)
             if self.nominal_filter.maneuver_detected:
-                self._saveDetectedManeuver(obs_tuples)
+                self._saveDetectedManeuver(observations)
                 if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
                     self.resetFilter(self.nominal_filter.converged_filter)
-                self._attemptAdaptiveEstimation(obs_tuples)
-                self._attemptInitialOrbitDetermination(obs_tuples)
+                self._attemptAdaptiveEstimation(observations)
+                self._attemptInitialOrbitDetermination(observations)
 
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
@@ -362,11 +384,11 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         """
         raise NotImplementedError("Cannot load state estimates directly into simulation")
 
-    def _attemptAdaptiveEstimation(self, obs_tuples: list[ObservationTuple]) -> None:
+    def _attemptAdaptiveEstimation(self, observations: list[Observation]) -> None:
         """Try to start adaptive estimation on this RSO.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
         """
         # MMAE initialization checks
         if FilterFlag.ADAPTIVE_ESTIMATION_START in self.nominal_filter.flags:
@@ -377,18 +399,18 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
             # Create a multiple_model_filter
             mmae_started = adaptive_filter.initialize(
-                obs_tuples=obs_tuples,
+                observations=observations,
                 julian_date_start=self.julian_date_start,
             )
 
             if mmae_started:
                 self.resetFilter(adaptive_filter)
 
-    def _attemptInitialOrbitDetermination(self, obs_tuples: list[ObservationTuple]):
+    def _attemptInitialOrbitDetermination(self, observations: list[Observation]):
         """Try to start initial orbit determination on this RSO.
 
         Args:
-            obs_tuples (``list``): :class:`.ObservationTuple` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep
         """
         if not self.initial_orbit_determination:
             return
@@ -403,7 +425,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
             self._logger.info(msg)
             iod_est_x, success = self.initial_orbit_determination.determineNewEstimateState(
-                obs_tuples, self.iod_start_time, self.time
+                observations, self.iod_start_time, self.time
             )
             if success:
                 self.iod_start_time = None
@@ -487,7 +509,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             new_state (``ndarray``): 6x1 ECI state vector
         """
         self._state_estimate = new_state
-        self._ecef_state = eci2ecef(new_state)
+        self._ecef_state = eci2ecef(new_state, self.datetime_epoch)
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property

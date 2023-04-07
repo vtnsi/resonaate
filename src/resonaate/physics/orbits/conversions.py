@@ -1,6 +1,5 @@
 """Defines conversion functions between various orbital element models."""
-# Standard Library Imports
-from typing import Optional, Tuple
+from __future__ import annotations
 
 # Third Party Imports
 from numpy import arccos, arctan2, array, concatenate, cos, ndarray, sin, sqrt, tan, vdot
@@ -8,7 +7,7 @@ from scipy.linalg import norm
 
 # Local Imports
 from ..bodies import Earth
-from ..math import fpe_equals, rot1, rot3
+from ..maths import fpe_equals, rot1, rot3
 from . import isEccentric, isInclined
 from .anomaly import eccLong2MeanLong, meanLong2EccLong, meanLong2TrueAnom, trueAnom2MeanLong
 from .utils import (
@@ -29,7 +28,7 @@ from .utils import (
     singularityCheck,
 )
 
-OrbitalElementTuple = Tuple[float, float, float, float, float, float]
+OrbitalElementTuple = tuple[float, float, float, float, float, float]
 
 
 def coe2eci(
@@ -39,7 +38,7 @@ def coe2eci(
     raan: float,
     argp: float,
     true_anom: float,
-    mu: Optional[float] = Earth.mu,
+    mu: float = Earth.mu,
 ) -> ndarray:
     r"""Convert a set of COEs to an ECI (J2000) position and velocity vector.
 
@@ -73,7 +72,7 @@ def coe2eci(
     return concatenate([rot_pqw2eci.dot(r_pqw), rot_pqw2eci.dot(v_pqw)], axis=0)
 
 
-def eci2coe(eci_state: ndarray, mu: Optional[float] = Earth.mu) -> OrbitalElementTuple:
+def eci2coe(eci_state: ndarray, mu: float = Earth.mu) -> OrbitalElementTuple:
     r"""Define a set of COEs from a ECI (J2000) position and velocity vector.
 
     See Also:
@@ -224,9 +223,7 @@ def eqe2coe(
     return sma, ecc, inc, raan, argp, true_anom
 
 
-def eci2eqe(
-    eci_state: ndarray, mu: Optional[float] = Earth.mu, retro: bool = False
-) -> OrbitalElementTuple:
+def eci2eqe(eci_state: ndarray, mu: float = Earth.mu, retro: bool = False) -> OrbitalElementTuple:
     r"""Define a set of COEs from a ECI (J2000) position and velocity vector.
 
     References:
@@ -297,7 +294,7 @@ def eqe2eci(
     p: float,
     q: float,
     mean_long: float,
-    mu: Optional[float] = Earth.mu,
+    mu: float = Earth.mu,
     retro: bool = False,
 ) -> ndarray:
     r"""Convert a set of EQEs to an ECI (J2000) position and velocity vector.

@@ -2,12 +2,8 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from math import isclose
+from copy import deepcopy
 from typing import TYPE_CHECKING
-
-# Third Party Imports
-from numpy import allclose, array
-from numpy.random import default_rng
 
 # Local Imports
 from ..agents.estimate_agent import EstimateAgent
@@ -16,12 +12,10 @@ from ..agents.target_agent import TargetAgent
 from ..common.behavioral_config import BehavioralConfig
 from ..common.exceptions import DuplicateEngineError, DuplicateSensorError, DuplicateTargetError
 from ..common.logger import Logger
-from ..data.data_interface import AgentModel
+from ..data import getDBConnection
+from ..data.agent import AgentModel
 from ..data.events import Event
-from ..data.resonaate_database import ResonaateDatabase
-from ..dynamics import spacecraftDynamicsFactory
-from ..dynamics.special_perturbations import calcSatRatio
-from ..physics.noise import noiseCovarianceFactory
+from ..dynamics import dynamicsFactory
 from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
 from ..tasking.rewards import rewardsFactory
@@ -30,10 +24,13 @@ from .config.event_configs import MissingDataDependency
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from pathlib import Path
+
     # Local Imports
+    from ..data.resonaate_database import ResonaateDatabase
     from ..tasking.engine.engine_base import TaskingEngine
-    from .config import ScenarioConfig
-    from .config.agent_configs import SensingAgentConfig, TargetAgentConfig
+    from .config import EngineConfig, ScenarioConfig, SensingAgentConfig, TargetAgentConfig
 
 
 class ScenarioBuilder:
@@ -43,42 +40,53 @@ class ScenarioBuilder:
     properly construct a :class:`.Scenario` object.
     """
 
-    # pylint:disable=too-many-locals, too-many-branches
-    def __init__(  # noqa: C901
-        self, scenario_configuration: ScenarioConfig, importer_db_path: str | None = None
+    def __init__(
+        self, scenario_config: ScenarioConfig, importer_db_path: str | None = None
     ) -> None:
         """Instantiate a :class:`.ScenarioBuilder` from a config dictionary.
 
         Args:
-            scenario_configuration (:class:`.ScenarioConfig`): config settings to make a valid :class:`.Scenario`
+            scenario_config (:class:`.ScenarioConfig`): config settings to make a valid :class:`.Scenario`
             importer_db_path (``str``, optional): path to external importer database for pre-canned
                 data. Defaults to ``None``.
 
         Raises:
             ValueError: raised if the "engines" field is empty
         """
-        # [FIXME]: Split this into more sub-methods
         # Create logger from configs
         self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
         # Save base config
-        self._config = scenario_configuration
+        self._config = scenario_config
 
         # Instantiate clock based on config's start time and class variables
         self.clock = ScenarioClock.fromConfig(self.config.time)
 
-        q_matrix = noiseCovarianceFactory(
-            self.config.noise.filter_noise_type,
-            self.config.time.physics_step_sec,
-            self.config.noise.filter_noise_magnitude,
-        )
+        self.validated_target_configs: dict[int, TargetAgentConfig] = {}
+        self.validated_sensor_configs: dict[int, SensingAgentConfig] = {}
 
-        # create target and sensor sets
-        target_configs: dict[int, TargetAgentConfig] = {}
-        sensor_configs: dict[int, SensingAgentConfig] = {}
-        self.tasking_engines: dict[int, TaskingEngine] = {}
+        self.tasking_engines = self._initTaskingEngines(importer_db_path=importer_db_path)
+        self.target_agents = self._initTargets()
+        self.estimate_agents = self._initEstimates()
+        self.sensor_agents = self._initSensors()
 
+        # Store agent data in the database FIRST for events that rely on them
+        shared_database = getDBConnection()
+        self._loadAgentsIntoDatabase(shared_database)
+        self._loadEventsIntoDatabase(shared_database)
+
+    def _initTaskingEngines(self, importer_db_path: str | Path) -> dict[int, TaskingEngine]:
+        """Initialize targets based on configs.
+
+        Args:
+            importer_db_path (``str | Path``): qualified path to importer database.
+
+        Returns:
+            ``dict``: constructed :class:`.TaskingEngine` objects
+        """
+        tasking_engines: dict[int, TaskingEngine] = {}
+        engine_conf: EngineConfig
         for engine_conf in self._config.engines:
-            if engine_conf.unique_id in self.tasking_engines:
+            if engine_conf.unique_id in tasking_engines:
                 err = f"Engines share a unique ID: {engine_conf.unique_id}"
                 raise DuplicateEngineError(err)
 
@@ -88,25 +96,9 @@ class ScenarioBuilder:
             decision = decisionFactory(engine_conf.decision)
             self.logger.info(f"Decision function: {decision.__class__.__name__}")
 
-            # Build target and estimate sets
-            engine_targets = []
-            for rso in engine_conf.targets:
-                engine_targets.append(rso.sat_num)
-
-                existing_target = target_configs.get(rso.sat_num)
-                if existing_target:
-                    self._validateTargetAddition(rso, existing_target)
-                target_configs[rso.sat_num] = rso
-
-            # Build sensor set
-            engine_sensors = []
-            for sensor in engine_conf.sensors:
-                engine_sensors.append(sensor.id)
-
-                if sensor_configs.get(sensor.id):
-                    err = f"Sensor can't be tasked by two engines: {sensor.id}"
-                    raise DuplicateSensorError(err)
-                sensor_configs[sensor.id] = sensor
+            # Build target and sensing agent sets
+            engine_targets = self._validateTargetAgents(engine_conf)
+            engine_sensors = self._validateSensingAgents(engine_conf)
 
             # Create the tasking engine object
             tasking_engine = CentralizedTaskingEngine(
@@ -116,205 +108,209 @@ class ScenarioBuilder:
                 reward,
                 decision,
                 importer_db_path,
-                self.config.propagation.realtime_observation,
+                self.config.observation.realtime_observation,
             )
 
-            self.tasking_engines[tasking_engine.unique_id] = tasking_engine
+            tasking_engines[tasking_engine.unique_id] = tasking_engine
             self.logger.info(
                 f"Successfully built tasking engine: {tasking_engine.__class__.__name__}"
             )
 
-        self.target_agents = self.initTargets(
-            list(target_configs.values()), self.config.propagation.station_keeping
-        )
+        self.logger.info(f"Successfully loaded {len(tasking_engines)} tasking engines")
+        return tasking_engines
 
-        # Build estimate set
-        self.estimate_agents: dict[int, EstimateAgent] = {}
-        for target_id, target_config in target_configs.items():
-            sat_ratio = calcSatRatio(
-                target_config.visual_cross_section,
-                target_config.mass,
-                target_config.reflectivity,
-            )
+    def _initTargets(self) -> dict[int, TargetAgent]:
+        """Initialize targets based on a given config.
 
-            # Create the base estimation filter for nominal operation
-            filter_dynamics = spacecraftDynamicsFactory(
-                self.config.estimation.sequential_filter.dynamics_model,
-                self.clock,
+        Returns:
+            ``dict``: constructed :class:`.TargetAgent` objects for each specified agent
+        """
+        target_agents: dict[int, TargetAgent] = {}
+        for target_cfg in self.validated_target_configs.values():
+            dynamics = dynamicsFactory(
+                target_cfg,
+                self.config.propagation,
                 self.config.geopotential,
                 self.config.perturbations,
-                sat_ratio,
-                method=self.config.propagation.integration_method,
+                self.clock,
             )
 
-            config = {
-                "target": target_config,
-                "agent_type": self.target_agents[target_id].agent_type,
-                "position_std": self.config.noise.init_position_std_km,
-                "velocity_std": self.config.noise.init_velocity_std_km_p_sec,
-                "rng": default_rng(self.config.noise.random_seed),
-                "clock": self.clock,
-                "sequential_filter": self.config.estimation.sequential_filter,
-                "adaptive_filter": self.config.estimation.adaptive_filter,
-                "initial_orbit_determination": self.config.estimation.initial_orbit_determination,
-                "seed": self.config.noise.random_seed,
-                "dynamics": filter_dynamics,
-                "q_matrix": q_matrix,
-            }
-            self.estimate_agents[target_id] = EstimateAgent.fromConfig(config)
+            target_agents[target_cfg.id] = TargetAgent.fromConfig(
+                tgt_cfg=target_cfg,
+                clock=self.clock,
+                dynamics=dynamics,
+                prop_cfg=self.config.propagation,
+            )
 
-        self.logger.info(f"Successfully loaded {len(self.target_agents)} target agents")
+        self.logger.info(f"Successfully loaded {len(target_agents)} target agents")
+        return target_agents
 
-        self.sensor_network: list[SensingAgent] = []
-        for sensor_config in sensor_configs.values():
+    def _initEstimates(self) -> dict[int, EstimateAgent]:
+        """Initialize estimates based on a given config.
+
+        Returns:
+            ``dict``: constructed :class:`.EstimateAgent` objects for each specified agent
+        """
+        # Copy propagation model from regular dynamics
+        est_prop_cfg = deepcopy(self.config.propagation)
+        est_prop_cfg.propagation_model = self.config.estimation.sequential_filter.dynamics_model
+
+        estimate_agents: dict[int, EstimateAgent] = {}
+        for target_config in self.validated_target_configs.values():
+            filter_dynamics = dynamicsFactory(
+                target_config,
+                est_prop_cfg,
+                self.config.geopotential,
+                self.config.perturbations,
+                self.clock,
+            )
+
+            estimate_agents[target_config.id] = EstimateAgent.fromConfig(
+                tgt_cfg=target_config,
+                clock=self.clock,
+                dynamics=filter_dynamics,
+                prop_cfg=self.config.propagation,
+                time_cfg=self.config.time,
+                noise_cfg=self.config.noise,
+                estimation_cfg=self.config.estimation,
+            )
+
+        self.logger.info(f"Successfully loaded {len(estimate_agents)} estimate agents")
+        return estimate_agents
+
+    def _initSensors(self) -> dict[int, SensingAgent]:
+        """Initialize sensor agents based on a given config.
+
+        Returns:
+            ``dict``: constructed :class:`.SensingAgent` objects for each specified agent
+        """
+        sensing_agents: dict[int, SensingAgent] = {}
+        for sensor_agent_config in self.validated_sensor_configs.values():
             # Assign Sensor FoV from init if not set
-            if self.config.observation.field_of_view:
-                sensor_config.calculate_fov = True
-            sat_ratio = calcSatRatio(
-                sensor_config.visual_cross_section,
-                sensor_config.mass,
-                sensor_config.reflectivity,
+            if self.config.observation.background:
+                sensor_agent_config.sensor.background_observations = True
+
+            dynamics = dynamicsFactory(
+                sensor_agent_config,
+                self.config.propagation,
+                self.config.geopotential,
+                self.config.perturbations,
+                self.clock,
             )
 
-            config = {
-                "agent": sensor_config,
-                "clock": self.clock,
-                "satellite_dynamics": spacecraftDynamicsFactory(
-                    self.config.propagation.propagation_model,
-                    self.clock,
-                    self.config.geopotential,
-                    self.config.perturbations,
-                    sat_ratio,
-                    method=self.config.propagation.integration_method,
-                ),
-                "realtime": self.config.propagation.sensor_realtime_propagation,
-            }
+            sensing_agents[sensor_agent_config.id] = SensingAgent.fromConfig(
+                sen_cfg=sensor_agent_config,
+                clock=self.clock,
+                dynamics=dynamics,
+                prop_cfg=self.config.propagation,
+            )
 
-            self.sensor_network.append(SensingAgent.fromConfig(config))
+        self.logger.info(f"Successfully loaded {len(sensing_agents)} sensor agents")
+        return sensing_agents
 
-        self.logger.info(f"Successfully loaded {len(self.sensor_network)} sensor agents")
+    def _loadAgentsIntoDatabase(self, database: ResonaateDatabase) -> None:
+        """Load agent objects into database.
 
-        # Store agent data in the database for events that rely on them
+        Args:
+            database (ResonaateDatabase): reference to the simulation database.
+        """
         agent_data = []
         for target_agent in self.target_agents.values():
             agent_data.append(
                 AgentModel(unique_id=target_agent.simulation_id, name=target_agent.name)
             )
-        for sensor_agent in self.sensor_network:
+        for sensor_agent in self.sensor_agents.values():
             agent_data.append(
                 AgentModel(unique_id=sensor_agent.simulation_id, name=sensor_agent.name)
             )
 
-        shared_interface = ResonaateDatabase.getSharedInterface()
-        shared_interface.bulkSave(agent_data)
+        database.bulkSave(agent_data)
 
+    def _loadEventsIntoDatabase(self, database: ResonaateDatabase) -> None:
+        """Load event objects into the database.
+
+        Args:
+            database (ResonaateDatabase): reference to the simulation database.
+
+        Raises:
+            ValueError: if an event is missing a data dependency.
+        """
         built_event_types = set()
         built_events = []
         for event_config in sorted(self._config.events, key=lambda x: x.start_time):
             for data_dependency in event_config.getDataDependencies():
-                found_dependency = shared_interface.getData(data_dependency.query, multi=False)
-                if found_dependency is None:
-                    try:
-                        new_dependency = data_dependency.createDependency()
-                    except MissingDataDependency as missing_dep:
-                        err = f"Event '{event_config.event_type}' is missing a data dependency."
-                        raise ValueError(err) from missing_dep
-                    else:
-                        self.logger.info(f"Creating event data dependency: {new_dependency}")
-                        shared_interface.insertData(new_dependency)
+                # pylint: disable=unused-variable
+                if found_dependency := database.getData(data_dependency.query, multi=False):
+                    continue
+
+                # else
+                try:
+                    new_dependency = data_dependency.createDependency()
+                except MissingDataDependency as missing_dep:
+                    err = f"Event {event_config.event_type!r} is missing a data dependency."
+                    raise ValueError(err) from missing_dep
+
+                self.logger.debug(f"Creating event data dependency: {new_dependency}")
+                database.insertData(new_dependency)
 
             built_event_types.add(event_config.event_type)
             built_events.append(Event.concreteFromConfig(event_config))
 
         if built_events:
-            shared_interface.insertData(*built_events)
+            database.insertData(*built_events)
+
         self.logger.info(f"Loaded {len(built_events)} events of types {built_event_types}")
 
-    @staticmethod
-    def _validateTargetAddition(
-        new_target: TargetAgentConfig, existing_target: TargetAgentConfig
-    ) -> None:
+    def _validateTargetAgents(self, engine_config: EngineConfig) -> None:
         """Throw an `DuplicateTargetError` if the `new_target` and `existing_target` states don't match.
 
         Args:
-            new_target (:class:`.TargetAgentConfig`): Target object being added.
-            existing_target (:class:`.TargetAgentConfig`): Existing target object.
+            engine_config (:class:`.EngineConfig`): engine config from which a target is added.
+
+        Returns:
+            ``list``: validated target agent IDs
 
         Raises:
             :exc:`.DuplicateTargetError`: If the `new_target` and `existing_target` states don't match.
         """
-        if existing_target.eci_set and new_target.eci_set:
-            if allclose(array(existing_target.init_eci), array(new_target.init_eci)):
-                return
+        engine_targets: list[int] = []
+        target_agent: TargetAgentConfig
+        for target_agent in engine_config.targets:
+            existing_target = self.validated_target_configs.get(target_agent.id)
+            if existing_target and existing_target.state != target_agent.state:
+                err = (
+                    f"Duplicate targets specified with different initial states: {target_agent.id}"
+                )
+                raise DuplicateTargetError(err)
 
-        if existing_target.eqe_set and new_target.eqe_set:
-            if allclose(array(existing_target.eqe_set), array(new_target.eqe_set)):
-                return
+            engine_targets.append(target_agent.id)
+            self.validated_target_configs[target_agent.id] = target_agent
 
-        if existing_target.coe_set and new_target.coe_set:
-            if len(existing_target.init_coe) == len(new_target.init_coe):
-                orbit_matches = True
-                for orbit_param, existing_setting in existing_target.init_coe.items():
-                    if not isclose(existing_setting, new_target.init_coe[orbit_param]):
-                        orbit_matches = False
+        return engine_targets
 
-                if orbit_matches:
-                    return
-
-        err = f"Duplicate targets specified with different initial states: {new_target.sat_num}"
-        raise DuplicateTargetError(err)
-
-    def initTargets(
-        self,
-        target_configs: list[TargetAgentConfig],
-        station_keeping: bool,
-    ) -> dict[int, TargetAgent]:
-        """Initialize target RSOs based on a given config.
+    def _validateSensingAgents(self, engine_config: EngineConfig) -> None:
+        """Throw an `DuplicateSensorError` if there are duplicate sensing agents.
 
         Args:
-            target_configs (``list``): :class:`.TargetAgentConfig` objects describing target RSO attributes.
-            station_keeping (``bool``): whether to perform station-keeping burns during the scenario.
-
-        Raises:
-            ValueError: raised if RSO state isn't specified as "init_coe" or "init_eci"
+            engine_config (:class:`.EngineConfig`): engine config from which a target is added.
 
         Returns:
-            ``dict``: constructed :class:`.Spacecraft` objects for each RSO specified
+            ``list``: validated sensor agent IDs
+
+        Raises:
+            :exc:`.DuplicateSensorError`: there is already another sensing agent with the same ID.
         """
-        targets: dict[int, TargetAgent] = {}
-        for target_conf in target_configs:
-            sat_ratio = calcSatRatio(
-                target_conf.visual_cross_section,
-                target_conf.mass,
-                target_conf.reflectivity,
-            )
+        engine_sensors: list[int] = []
+        sensor_agent: SensingAgentConfig
+        for sensor_agent in engine_config.sensors:
+            if self.validated_sensor_configs.get(sensor_agent.id):
+                err = f"Sensor can't be tasked by two engines: {sensor_agent.id}"
+                raise DuplicateSensorError(err)
 
-            dynamics_method = spacecraftDynamicsFactory(
-                self.config.propagation.propagation_model,
-                self.clock,
-                self.config.geopotential,
-                self.config.perturbations,
-                sat_ratio,
-                method=self.config.propagation.integration_method,
-            )
+            engine_sensors.append(sensor_agent.id)
+            self.validated_sensor_configs[sensor_agent.id] = sensor_agent
 
-            dynamics_noise = noiseCovarianceFactory(
-                self.config.noise.dynamics_noise_type,
-                self.config.time.physics_step_sec,
-                self.config.noise.dynamics_noise_magnitude,
-            )
-            config = {
-                "target": target_conf,
-                "clock": self.clock,
-                "dynamics": dynamics_method,
-                "realtime": self.config.propagation.target_realtime_propagation,
-                "station_keeping": station_keeping,
-                "noise": dynamics_noise,
-                "random_seed": self.config.noise.random_seed,
-            }
-            targets[target_conf.sat_num] = TargetAgent.fromConfig(config)
-
-        return targets
+        return engine_sensors
 
     @property
     def config(self) -> ScenarioConfig:

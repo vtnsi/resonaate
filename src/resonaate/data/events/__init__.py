@@ -8,8 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from sqlalchemy.orm import Query
-from sqlalchemy.orm.util import with_polymorphic
+from sqlalchemy.orm import Query, with_polymorphic
 
 # Local Imports
 from .agent_removal import AgentRemovalEvent
@@ -93,4 +92,4 @@ def handleRelevantEvents(
         event_types.add(event.event_type)
         event_count += 1
     if event_count:
-        logger.info(f"Handled {event_count} '{event_scope.value}' events of types {event_types}")
+        logger.info(f"Handled {event_count} {event_scope.value!r} events of types {event_types}")

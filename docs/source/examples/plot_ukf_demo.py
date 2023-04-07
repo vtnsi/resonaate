@@ -13,8 +13,8 @@ This shows how to directly create and use the following classes:
 """
 
 # pylint: disable=invalid-name, wrong-import-position
+# isort: skip
 
-# Third Party Imports
 # %%
 # Initial Setup
 # -------------
@@ -22,29 +22,32 @@ This shows how to directly create and use the following classes:
 # General Imports
 # ###############
 #
+from datetime import datetime
 import numpy as np
+from resonaate.data import setDBPath
 
-# RESONAATE Imports
+# In-memory database.
+# [NOTE]: This must be called before any calls to getDBConnection() are made!
+setDBPath("sqlite://")
+
 # %%
 # Setup problem time variables
 # ----------------------------
 #
 # Creating a clock object requires the Julian date of the initial epoch, a timespan (seconds), and a timestep (seconds).
-from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario.clock import ScenarioClock
 
 # Define time variables
-julian_date_start = JulianDate(2458516.0)
+datetime_start = datetime(2019, 2, 1, 12, 0)
 tspan = 300.0  # seconds
 dt = 60.0  # seconds
 
 # Create the clock object
-clock = ScenarioClock(julian_date_start, tspan, dt)
+clock = ScenarioClock(datetime_start, tspan, dt)
 
 # For convenience, time is initialized to zero
 t0 = clock.time
 
-# RESONAATE Imports
 # %%
 #
 # Build a satellite as a :class:`.TargetAgent`
@@ -54,7 +57,6 @@ t0 = clock.time
 # Also, users must define a :class:`.Dynamics` object that handles propagating the satellite forward in time.
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.dynamics.two_body import TwoBody
-from resonaate.physics.noise import simpleNoise
 
 # Initial information
 sat1_id = 10001  # Unique ID number of satellite
@@ -68,9 +70,6 @@ sat1_x0 = np.array([10000.0, 0.0, 0.0, 0.0, 6.3134776, 0.0])  # Position (km)  #
 # Create a two body dynamics object for simple Keplerian propagation
 two_body_dynamics = TwoBody()
 
-# Noise added to true state vector, for use in filtering
-two_body_noise = simpleNoise(dt, 1e-25)
-
 # Construct the satellite object
 sat1_agent = TargetAgent(
     sat1_id,
@@ -80,13 +79,11 @@ sat1_agent = TargetAgent(
     clock,
     two_body_dynamics,
     realtime,
-    two_body_noise,
     25.0,
     100,
     0.21,
 )
 
-# RESONAATE Imports
 # %%
 #
 # Build a corresponding :class:`.EstimateAgent`
@@ -129,7 +126,6 @@ sat1_estimate_agent = EstimateAgent(
     0.21,
 )
 
-# RESONAATE Imports
 # %%
 #
 # Build a :class:`.SensingAgent`
@@ -164,11 +160,9 @@ efficiency = 0.95  # Sensor efficiency (unitless)
 diameter = 14  # Effective aperture diameter (m)
 tx_power = 2500000.0  # Sensor transmit power (W)
 tx_frequency = 1.5 * 1e9  # Sensor transmit center frequency (Hz)
-
-# Exemplar is akin to sensor capability descriptions found in OV-1s (baseball at LEO, basketball at GEO)
-exemplar = [0.04908738521234052, 40500.0]  # Exemplar area (m^2)  # Exemplar range (km)
+min_detectable_power = 1.1954373300571727e-14  # Minimum detectable power by radar (W)
 field_of_view = "conic"
-calc_field_of_view = True
+calc_background = True
 
 radar_sensor = Radar(
     az_mask,
@@ -176,12 +170,12 @@ radar_sensor = Radar(
     r_matrix,
     diameter,
     efficiency,
-    exemplar,
     tx_power,
     tx_frequency,
+    min_detectable_power,
     np.radians(slew_rate),
     field_of_view,
-    calc_field_of_view,
+    calc_background,
     None,
     None,
 )
@@ -205,7 +199,7 @@ sensor_agent = SensingAgent(
     sensor_id,
     sensor_name,
     sensor_type,
-    ecef2eci(sensor_ecef),
+    ecef2eci(sensor_ecef, clock.datetime_start),
     clock,
     radar_sensor,
     sensor_dynamics,
@@ -244,47 +238,25 @@ sat1_estimate_agent.updateEstimate(obs)
 prior_error = np.linalg.norm(truth_state[:3] - sat1_estimate_agent.eci_state[:3])
 print(prior_error)
 
-# RESONAATE Imports
 # %%
 #
 # Make an :class:`.Observation`
 # -----------------------------
 #
 from resonaate.data.observation import Observation
-from resonaate.physics.transforms.methods import getSlantRangeVector
-from resonaate.sensors.measurements import getAzimuth, getElevation, getRange, getRangeRate
-from resonaate.sensors.sensor_base import ObservationTuple
 
-# Get the SEZ slant range vector from sensor to target
-slant_range_sez = getSlantRangeVector(sensor_ecef, sat1_agent.eci_state)
-
-# Determine measurements from SEZ slant range
-measurements = {
-    "azimuth_rad": getAzimuth(slant_range_sez),
-    "elevation_rad": getElevation(slant_range_sez),
-    "range_km": getRange(slant_range_sez),
-    "range_rate_km_p_sec": getRangeRate(slant_range_sez),
-}
-
-# Add noise to measurements for imperfect sensor
-measurements["azimuth_rad"] += np.sqrt(r_matrix[0, 0]) * np.random.rand()
-measurements["elevation_rad"] += np.sqrt(r_matrix[1, 1]) * np.random.rand()
-measurements["range_km"] += np.sqrt(r_matrix[2, 2]) * np.random.rand()
-measurements["range_rate_km_p_sec"] += np.sqrt(r_matrix[3, 3]) * np.random.rand()
-
-observation = Observation.fromSEZVector(
+observation = Observation.fromMeasurement(
     sensor_type="Radar",
     sensor_id=sensor_id,
     target_id=sat1_agent.simulation_id,
-    julian_date=clock.julian_date_epoch,
-    sez=slant_range_sez,
-    sensor_position=sensor_lla,
-    **measurements,
+    tgt_eci_state=sat1_agent.eci_state,
+    sensor_eci=sensor_agent.eci_state,
+    epoch_jd=clock.julian_date_epoch,
+    measurement=radar_sensor.measurement,
+    noisy=True,
 )
 
-# Need to pass observations as tuple for required information
-obs_tuple = ObservationTuple(observation, sensor_agent, sensor_agent.sensors.angle_measurements)
-print(obs_tuple.observation)
+print(observation)
 
 # %%
 #
@@ -293,7 +265,7 @@ print(obs_tuple.observation)
 #
 
 # Update estimate's filter via the measurement update step (a posteriori)
-sat1_estimate_agent.nominal_filter.update([obs_tuple])
+sat1_estimate_agent.nominal_filter.update([observation])
 
 # Apply filter measurement update step to estimate's state
 sat1_estimate_agent.state_estimate = sat1_estimate_agent.nominal_filter.est_x

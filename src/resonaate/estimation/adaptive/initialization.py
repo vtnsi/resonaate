@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ...physics.orbit_determination.lambert import lambertBattin, lambertUniversal
+from ...common.labels import InitialOrbitDeterminationLabel
+from ...physics.orbit_determination.lambert import lambertBattin, lambertGauss, lambertUniversal
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -13,15 +14,10 @@ if TYPE_CHECKING:
     from ...physics.orbit_determination import OrbitDeterminationFunction
 
 
-LAMBERT_BATTIN_LABEL = "lambert_battin"
-"""``str``: Constant string used to describe Lambert Battin function."""
-
-LAMBERT_UNIVERSAL_LABEL = "lambert_universal"
-"""``str``: Constant string used to describe Lambert universal function."""
-
 _LAMBERT_IOD_MAP: dict[str, OrbitDeterminationFunction] = {
-    LAMBERT_BATTIN_LABEL: lambertBattin,
-    LAMBERT_UNIVERSAL_LABEL: lambertUniversal,
+    InitialOrbitDeterminationLabel.LAMBERT_BATTIN: lambertBattin,
+    InitialOrbitDeterminationLabel.LAMBERT_GAUSS: lambertGauss,
+    InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL: lambertUniversal,
 }
 
 VALID_LAMBERT_IOD_LABELS: tuple[str] = tuple(_LAMBERT_IOD_MAP.keys())

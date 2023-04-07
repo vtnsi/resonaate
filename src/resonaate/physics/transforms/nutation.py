@@ -18,9 +18,6 @@ from .. import constants as const
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Tuple
-
     # Third Party Imports
     from numpy import ndarray
 
@@ -34,7 +31,7 @@ NUTATION_1980: str = "nut80.dat"
 
 
 @lru_cache(maxsize=5)
-def get1980NutationSeries() -> Tuple[ndarray, ndarray]:
+def get1980NutationSeries() -> tuple[ndarray, ndarray]:
     """Return the complete set of IAU 1980 Nutation Theory coefficients.
 
     Note:
@@ -47,7 +44,8 @@ def get1980NutationSeries() -> Tuple[ndarray, ndarray]:
         ``tuple``: (real coefficients, integer coefficients)
     """
     # Load nutation into numpy array
-    with resources.path(NUTATION_MODULE, NUTATION_1980) as file_resource:
+    res = resources.files(NUTATION_MODULE).joinpath(NUTATION_1980)
+    with resources.as_file(res) as file_resource:
         nut_data = array(loadDatFile(file_resource))
 
     # Parse integer and real coefficients out.

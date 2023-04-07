@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Target1",
+    "id": 11111,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [34532.51759487585, -23974.32804541272, -3273.2937902514736],
+      "velocity": [1.7635318397028281, 2.5020107992826763, 0.28890951790512437]
+    }
+  },
+  {
+    "name": "Target2",
+    "id": 11112,
+    "platform": { "type": "spacecraft", "station_keeping": { "routines": ["LEO"] } },
+    "state": {
+      "type": "eci",
+      "position": [-1247.043506531344, -42144.84890614599, -9.60657681832255],
+      "velocity": [3.072993863856873, -0.09091478117572568, -0.05365883311128583]
+    }
+  }
+]

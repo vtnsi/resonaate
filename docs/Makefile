@@ -1,8 +1,9 @@
 # Minimal makefile for Sphinx documentation
 #
+.PHONY: help serve clean Makefile
 
 # You can set these variables from the command line.
-SPHINXOPTS    = -W
+SPHINXOPTS    = -W -j auto
 SPHINXBUILD   = sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build
@@ -12,7 +13,6 @@ GENDIR  	  = $(SOURCEDIR)/gen
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile
 
 serve:
 	python3 -m http.server --directory $(BUILDDIR)/html
@@ -37,6 +37,8 @@ serve:
 clean:
 	rm -rf $(BUILDDIR)/*
 	rm -rf $(GENDIR)/*
+	rm -rf $(SOURCEDIR)/examples/.mjolnir*
+	rm -rf $(SOURCEDIR)/examples/kvs_dump*
 
 # Build html without running examples
 html-noplot:

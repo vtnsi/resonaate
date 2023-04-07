@@ -1,6 +1,22 @@
 """Defines the abstract base class :class:`.Dynamics`."""
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import abstractmethod
+from typing import TYPE_CHECKING
+
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from collections.abc import Iterable
+
+    # Third Party Imports
+    from numpy import ndarray
+
+    # Local Imports
+    from ..physics.time.stardate import ScenarioTime
+    from .integration_events import ScheduledEventType
+    from .integration_events.station_keeping import StationKeeper
 
 
 class Dynamics:
@@ -15,7 +31,12 @@ class Dynamics:
 
     @abstractmethod
     def propagate(
-        self, initial_time, final_time, initial_state, station_keeping=None, scheduled_events=None
-    ):
+        self,
+        initial_time: ScenarioTime | float,
+        final_time: ScenarioTime | float,
+        initial_state: ndarray,
+        station_keeping: Iterable[StationKeeper] | None = None,
+        scheduled_events: Iterable[ScheduledEventType] | None = None,
+    ) -> ndarray:
         """Abstract method for forwards propagation."""
         raise NotImplementedError

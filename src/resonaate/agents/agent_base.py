@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from numpy import ndarray
 
 # Local Imports
+from ..common.labels import PlatformLabel
 from ..common.utilities import checkTypes
 from ..dynamics.dynamics_base import Dynamics
 from ..dynamics.integration_events.finite_thrust import (
@@ -17,20 +18,18 @@ from ..dynamics.integration_events.finite_thrust import (
     ScheduledFiniteManeuver,
 )
 from ..dynamics.integration_events.station_keeping import StationKeeper
-from ..physics.math import fpe_equals
+from ..physics.maths import fpe_equals
 from ..scenario.clock import ScenarioClock
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any
-
-    # Third Party Imports
-    from typing_extensions import Self
+    from datetime import datetime
 
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
     from ..data.events import Event
     from ..physics.time.stardate import JulianDate, ScenarioTime
+    from ..scenario.config.platform_config import PlatformConfig
 
 
 class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
@@ -102,6 +101,8 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         self._dt_step = clock.dt_step
         # Julian date of start time
         self.julian_date_start = clock.julian_date_start
+        # Datetime of start time
+        self.datetime_start = clock.datetime_start
         # Dynamics class for propagating the Agent's state
         self._dynamics = dynamics
         # Flag for using real-time propagation
@@ -159,6 +160,45 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
                 relevant_events.append(itr_event)
         self.propagate_event_queue = relevant_events
 
+    @staticmethod
+    def _createStationKeepers(
+        global_station_keeping: bool,
+        agent_id: int,
+        platform_cfg: PlatformConfig,
+        initial_state: ndarray,
+        jd_start: JulianDate,
+    ) -> list[StationKeeper]:
+        """Create station keeping objects from list of routines in a config.
+
+        Args:
+            global_station_keeping (``bool``): whether station-keeping is turned on globally.
+            agent_id (``int``): simulation ID of the associated agent.
+            platform_cfg (:class:`.PlatformConfig`): platform config of the associated agent.
+            initial_state (``ndarray``): initial ECI state vector of the associated agent.
+            jd_start (:class:`.JulianDate`): corresponding initial epoch of the initial state.
+
+        Returns:
+            ``list``: constructed :class:`.StationKeeper` objects.
+        """
+        station_keepers = []
+        if not global_station_keeping:
+            return station_keepers
+
+        if platform_cfg.type != PlatformLabel.SPACECRAFT:
+            return station_keepers
+
+        for routine in platform_cfg.station_keeping.routines:
+            station_keepers.append(
+                StationKeeper.factory(
+                    conf_str=routine,
+                    rso_id=agent_id,
+                    initial_eci=initial_state,
+                    julian_date_start=jd_start,
+                )
+            )
+
+        return station_keepers
+
     ### Abstract Methods & Properties ###
 
     @abstractmethod
@@ -197,19 +237,6 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         """``ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
         raise NotImplementedError
 
-    @classmethod
-    @abstractmethod
-    def fromConfig(cls, config: dict[str, Any]) -> Self:
-        """Factory to initialize `Agent` objects based on given configuration.
-
-        Args:
-            config (``dict``): formatted configuration parameters
-
-        Returns:
-            :class:`.Agent`: properly constructed `Agent` object
-        """
-        raise NotImplementedError
-
     ### Read-Only Instance Properties ###
 
     @property
@@ -221,6 +248,15 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
     def julian_date_epoch(self) -> JulianDate:
         """:class:`.JulianDate`: Returns the current Julian date."""
         return self._time.convertToJulianDate(self.julian_date_start)
+
+    @property
+    def datetime_epoch(self) -> datetime:
+        """Returns the current epoch as a datetime object.
+
+        Returns:
+            datetime: current epoch.
+        """
+        return self._time.convertToDatetime(self.datetime_start)
 
     @property
     def name(self) -> str:

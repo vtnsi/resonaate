@@ -8,13 +8,10 @@ from typing import TYPE_CHECKING
 from numpy import array
 
 # Local Imports
-from ..common.logger import resonaateLogError
 from ..data.ephemeris import TruthEphemeris
 from ..dynamics.integration_events.station_keeping import StationKeeper
-from ..dynamics.terrestrial import Terrestrial
-from ..physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ..physics.time.stardate import JulianDate
-from ..physics.transforms.methods import ecef2eci, ecef2lla, eci2ecef, lla2ecef
+from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..sensors import sensorFactory
 from ..sensors.sensor_base import Sensor
 from .agent_base import Agent
@@ -23,7 +20,6 @@ from .agent_base import Agent
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Collection
-    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
@@ -34,14 +30,8 @@ if TYPE_CHECKING:
     from ..data.events.sensor_time_bias import SensorTimeBiasEvent
     from ..dynamics.dynamics_base import Dynamics
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config.agent_configs import SensingAgentConfig
-
-
-GROUND_FACILITY_LABEL = "GroundFacility"
-"""str: Constant string used to describe ground facility sensors."""
-
-SPACECRAFT_LABEL = "Spacecraft"
-"""str: Constant string used to describe spacecraft-based sensors."""
+    from ..scenario.config import PropagationConfig
+    from ..scenario.config.agent_config import SensingAgentConfig
 
 
 class SensingAgent(Agent):
@@ -108,79 +98,56 @@ class SensingAgent(Agent):
 
         # Properly initialize the SensingAgent's state types
         self._truth_state = array(initial_state, copy=True)
-        self._ecef_state = eci2ecef(self._truth_state)
+        self._ecef_state = eci2ecef(self._truth_state, self.datetime_epoch)
         self._lla_state = ecef2lla(self._ecef_state)
 
         self.sensor_time_bias_event_queue = []
 
     @classmethod
-    def fromConfig(cls, config: dict[str, Any]) -> Self:
+    def fromConfig(
+        cls,
+        sen_cfg: SensingAgentConfig,
+        clock: ScenarioClock,
+        dynamics: Dynamics,
+        prop_cfg: PropagationConfig,
+    ) -> Self:
         """Factory to initialize `SensingAgent` objects based on given configuration.
 
         Args:
-            config (``dict``): formatted configuration parameters
+            sen_cfg (:class:`.SensingAgentConfig`): config from which to generate a sensing agent.
+            clock (:class:`.ScenarioClock`): common clock object for the simulation.
+            dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
+            prop_cfg (:class:`.PropagationConfig`): various propagation simulation settings.
 
         Returns:
-            :class:`.SensingAgent`: properly constructed `SensingAgent` object
+            :class:`.SensingAgent`: properly constructed agent object.
         """
-        agent_config: SensingAgentConfig = config["agent"]
+        initial_state = sen_cfg.state.toECI(clock.datetime_epoch)
 
         # Build the sensor based on the agent configuration
-        sensor = sensorFactory(agent_config)
+        sensor = sensorFactory(sen_cfg.sensor)
 
-        station_keeping = []
-        use_realtime = config["realtime"]
-        if agent_config.lla_set:
-            lla_orig = array(
-                [agent_config.lat, agent_config.lon, agent_config.alt]
-            )  # radians, radians, km
-            initial_state = ecef2eci(lla2ecef(lla_orig))
-        elif agent_config.eci_set:
-            initial_state = array(agent_config.init_eci)
-        elif agent_config.coe_set:
-            orbit = ClassicalElements.fromConfig(agent_config.init_coe)
-            initial_state = orbit.toECI()
-        elif agent_config.eqe_set:
-            orbit = EquinoctialElements.fromConfig(agent_config.init_eqe)
-            initial_state = orbit.toECI()
-        else:
-            raise ValueError(
-                f"SensorAgent config doesn't contain initial state information: {agent_config}"
-            )
-
-        if agent_config.host_type == GROUND_FACILITY_LABEL:
-            dynamics = Terrestrial(config["clock"].julian_date_start, eci2ecef(initial_state))
-        elif agent_config.host_type == SPACECRAFT_LABEL:
-            # [TODO]: Find a way to pass down dynamics config?
-            dynamics = config["satellite_dynamics"]
-            if agent_config.station_keeping:
-                for config_str in agent_config.station_keeping.routines:
-                    station_keeping.append(
-                        StationKeeper.factory(
-                            conf_str=config_str,
-                            rso_id=agent_config.id,
-                            initial_eci=initial_state,
-                            julian_date_start=config["clock"].julian_date_start,
-                        )
-                    )
-        else:
-            msg = f'Invalid value for `host_type` key for sensor agent `{agent_config["name"]}`'
-            resonaateLogError(msg)
-            raise ValueError(agent_config.host_type)
+        station_keeping = cls._createStationKeepers(
+            prop_cfg.station_keeping,
+            sen_cfg.id,
+            sen_cfg.platform,
+            initial_state,
+            clock.julian_date_start,
+        )
 
         return cls(
-            agent_config.id,
-            agent_config.name,
-            agent_config.host_type,
+            sen_cfg.id,
+            sen_cfg.name,
+            sen_cfg.platform.type,
             initial_state,
-            config["clock"],
+            clock,
             sensor,
             dynamics,
-            use_realtime,
-            agent_config.visual_cross_section,
-            agent_config.mass,
-            agent_config.reflectivity,
-            station_keeping,
+            prop_cfg.sensor_realtime_propagation,
+            sen_cfg.platform.visual_cross_section,
+            sen_cfg.platform.mass,
+            sen_cfg.platform.reflectivity,
+            station_keeping=station_keeping,
         )
 
     def appendTimeBiasEvent(self, time_bias_event: SensorTimeBiasEvent) -> None:
@@ -247,7 +214,7 @@ class SensingAgent(Agent):
             new_state (``ndarray``): 6x1 ECI state vector
         """
         self._truth_state = new_state
-        self._ecef_state = eci2ecef(new_state)
+        self._ecef_state = eci2ecef(new_state, self.datetime_epoch)
         self._lla_state = ecef2lla(self._ecef_state)
 
     @property

@@ -17,23 +17,15 @@
 #
 import os
 import sys
+from importlib.metadata import version
 
 sys.path.insert(0, os.path.abspath("../../"))
 
-# Checking the import state for importlib.metadata.version method
-try:
-    # For 3.10 or later
-    # Standard Library Imports
-    from importlib.metadata import version
-except ImportError:
-    # For 3.9 and earlier
-    # Third Party Imports
-    from importlib_metadata import version
 
 # -- Project information -----------------------------------------------------
 
 project = "RESONAATE"
-copyright = "2018-2022, Virginia Tech"  # noqa: A001
+copyright = "2018-2023, Virginia Tech"
 author = "Dylan Thomas, David Kusterer, Jon Kadan, Cameron Harris"
 
 project_ver = version(project)

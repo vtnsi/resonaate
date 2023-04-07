@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar
 
 # Local Imports
-from ...dynamics.constants import SPECIAL_PERTURBATIONS_LABEL, TWO_BODY_LABEL
+from ...common.labels import DynamicsLabel, InitialOrbitDeterminationLabel, StackingLabel
 from ...estimation import (
     VALID_ADAPTIVE_ESTIMATION_LABELS,
     VALID_FILTER_LABELS,
@@ -17,17 +17,14 @@ from ...estimation.adaptive.mmae_stacking_utils import VALID_STACKING_LABELS
 from .base import ConfigObject, ConfigValueError
 
 VALID_FILTER_DYNAMICS: tuple[str] = (
-    TWO_BODY_LABEL,
-    SPECIAL_PERTURBATIONS_LABEL,
+    DynamicsLabel.TWO_BODY,
+    DynamicsLabel.SPECIAL_PERTURBATIONS,
 )
 DEFAULT_MANEUVER_DETECTION_THRESHOLD: float = 0.05
 DEFAULT_PRUNE_PERCENTAGE: float = 0.997
 DEFAULT_PRUNE_THRESHOLD: float = 1e-20
 DEFAULT_OBSERVATION_WINDOW: int = 3
 DEFAULT_MODEL_TIME_INTERVAL: int = 60
-DEFAULT_MMAE_STACKING_METHOD: str = "eci_stack"
-DEFAULT_MMAE_INITIALIZATION_METHOD: str = "lambert_universal"
-DEFAULT_IOD_INITIALIZATION_METHOD: str = "lambert_universal"
 DEFAULT_IOD_OBSERVATION_SPACING: int = 60
 
 
@@ -71,7 +68,7 @@ class SequentialFilterConfig(ConfigObject):
     name: str
     """``str``: name of the sequential filter algorithm to use."""
 
-    dynamics_model: str = SPECIAL_PERTURBATIONS_LABEL
+    dynamics_model: str = DynamicsLabel.SPECIAL_PERTURBATIONS
     """``str``: name of the dynamics to use in the filter."""
 
     maneuver_detection: ManeuverDetectionConfig | dict | None = None
@@ -133,10 +130,10 @@ class AdaptiveEstimationConfig(ConfigObject):
     name: str
     """``str``: Name of adaptive estimation method to use."""
 
-    orbit_determination: str = DEFAULT_MMAE_INITIALIZATION_METHOD
+    orbit_determination: str = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
     """``str``: orbit determination technique used to initialize the adaptive filter."""
 
-    stacking_method: str = DEFAULT_MMAE_STACKING_METHOD
+    stacking_method: str = StackingLabel.ECI_STACKING
     """``str``: state vector coordinate system stacking technique."""
 
     model_interval: int = DEFAULT_MODEL_TIME_INTERVAL
@@ -195,7 +192,7 @@ class InitialOrbitDeterminationConfig(ConfigObject):
     CONFIG_LABEL: ClassVar[str] = "initial_orbit_determination"
     """``str``: Key where settings are stored in the configuration dictionary read from file."""
 
-    name: str = DEFAULT_IOD_INITIALIZATION_METHOD
+    name: str = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
     """``str``: Name of initial orbit determination method to use."""
 
     minimum_observation_spacing: int = DEFAULT_IOD_OBSERVATION_SPACING

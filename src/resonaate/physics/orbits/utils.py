@@ -1,9 +1,6 @@
 """Define a collection of common functions used across the orbits package."""
 from __future__ import annotations
 
-# Standard Library Imports
-from typing import Optional, Tuple
-
 # Third Party Imports
 from numpy import arctan, arctan2, array, cos, cosh, cross, ndarray, sin, sinh, sqrt, vdot
 from scipy.linalg import norm
@@ -11,7 +8,7 @@ from scipy.linalg import norm
 # Local Imports
 from ..bodies import Earth
 from ..constants import PI, RAD2DEG, TWOPI
-from ..math import fpe_equals, safeArccos, wrapAngle2Pi
+from ..maths import fpe_equals, safeArccos, wrapAngle2Pi
 from . import (
     EccentricityError,
     InclinationError,
@@ -163,14 +160,13 @@ def getEccentricityFromEQE(h: float, k: float) -> float:
         ``float``: orbit eccentricity, :math:`e\in[0,1)`, in radians.
     """
     # pylint: disable=invalid-name
-    ecc = sqrt(h**2 + k**2)
-    if ecc >= 1.0:
+    if (ecc := sqrt(h**2 + k**2)) >= 1.0:
         msg = f"Parabolic or hyperbolic orbit. ecc={ecc}"
         raise EccentricityError(msg)
     return ecc
 
 
-def getEquinoctialBasisVectors(p: float, q: float, retro: bool = False) -> Tuple[ndarray, ndarray]:
+def getEquinoctialBasisVectors(p: float, q: float, retro: bool = False) -> tuple[ndarray, ndarray]:
     r"""Get the equinoctial frame basis vectors from EQE :math:`p` & :math:`q`.
 
     References:
@@ -251,9 +247,7 @@ def getLineOfNodes(ang_momentum_vec: ndarray[float, float, float]) -> ndarray:
     return cross(array([0, 0, 1], dtype=float), ang_momentum_vec)
 
 
-def getEccentricity(
-    r_vec: ndarray, v_vec: ndarray, mu: Optional[float] = Earth.mu
-) -> Tuple[float, ndarray]:
+def getEccentricity(r_vec: ndarray, v_vec: ndarray, mu: float = Earth.mu) -> tuple[float, ndarray]:
     r"""Get the eccentricity magnitude & unit vector from position & velocity vectors.
 
     References:
@@ -280,7 +274,7 @@ def getEccentricity(
     return ecc, ecc_vector
 
 
-def getOrbitalEnergy(r: float, v: float, mu: Optional[float] = Earth.mu) -> float:
+def getOrbitalEnergy(r: float, v: float, mu: float = Earth.mu) -> float:
     r"""Get the orbital specific energy from orbital radius & speed.
 
     References:
@@ -298,7 +292,7 @@ def getOrbitalEnergy(r: float, v: float, mu: Optional[float] = Earth.mu) -> floa
     return 0.5 * v**2 - mu / r
 
 
-def getSemiMajorAxis(r: float, v: float, mu: Optional[float] = Earth.mu) -> float:
+def getSemiMajorAxis(r: float, v: float, mu: float = Earth.mu) -> float:
     r"""Get the semi-major axis from orbital radius & speed.
 
     References:
@@ -317,7 +311,7 @@ def getSemiMajorAxis(r: float, v: float, mu: Optional[float] = Earth.mu) -> floa
     return -0.5 * mu / energy
 
 
-def getPeriod(sma: float, mu: Optional[float] = Earth.mu) -> float:
+def getPeriod(sma: float, mu: float = Earth.mu) -> float:
     r"""Get the orbital period from semi-major axis.
 
     References:
@@ -333,7 +327,7 @@ def getPeriod(sma: float, mu: Optional[float] = Earth.mu) -> float:
     return TWOPI / getMeanMotion(sma, mu=mu)
 
 
-def getMeanMotion(sma: float, mu: Optional[float] = Earth.mu) -> float:
+def getMeanMotion(sma: float, mu: float = Earth.mu) -> float:
     r"""Get the mean motion from semi-major axis.
 
     References:
@@ -352,7 +346,7 @@ def getMeanMotion(sma: float, mu: Optional[float] = Earth.mu) -> float:
 
 def singularityCheck(
     ecc: float, inc: float, raan: float, argp: float, anomaly: float
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     r"""Check and convert angular elements, accounting for COE singularities.
 
     Args:
@@ -411,7 +405,7 @@ def retrogradeFactor(inc: float) -> float:
     return 1 if isInclined(inc) or inc < PI else -1
 
 
-def universalC2C3(psi: float) -> Tuple[float, float]:
+def universalC2C3(psi: float) -> tuple[float, float]:
     r"""Calculate the Stumpff coefficients for universal variables formulation.
 
     The coefficients are important for solving the universal variable differential equation defined by:

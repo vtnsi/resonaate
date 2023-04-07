@@ -327,10 +327,9 @@ All other jobs can extend one of these jobs if they intend to execute `python` o
 
 - `.python-latest`: points at the latest officially supported image
 - `.python-oldest`: points at the oldest officially supported image
+- `.python311`: uses the latest `python3.11-bullseye` image from Docker Hub
 - `.python310`: uses the latest `python3.10-bullseye` image from Docker Hub
 - `.python39`: uses the latest `python3.9-bullseye` image from Docker Hub
-- `.python38`: uses the latest `python3.8-bullseye` image from Docker Hub
-- `.python37`: uses the latest `python3.7-bullseye` image from Docker Hub
 
 <details><summary>Common Python CI Jobs (Click to expand)</summary>
 

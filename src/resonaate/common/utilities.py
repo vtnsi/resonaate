@@ -1,4 +1,6 @@
 """Various helper functions that are used across multiple modules."""
+from __future__ import annotations
+
 # Standard Library Imports
 import json
 import os
@@ -147,7 +149,7 @@ def getTimeout(num_jobs, multiplier=5):
 
     Args:
         num_jobs (``int``): total number of jobs submitted to worker queue.
-        multiplier (``int``, Optional): multiplies the timeout length. Defaults to 5.
+        multiplier (``int``, optional): multiplies the timeout length. Defaults to 5.
 
     Returns:
         ``None | int``: either ``None`` for blocking behavior, or timeout length in seconds

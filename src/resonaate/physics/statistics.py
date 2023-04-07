@@ -6,20 +6,15 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import logical_and, sqrt
-from numpy.linalg import inv
+from scipy.linalg import inv
 from scipy.stats import chi2
 
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Union
-
     # Third Party Imports
     from numpy import ndarray
 
 
-def getStandardDeviation(
-    confidence: Union[float, ndarray], dim: Union[float, ndarray]
-) -> Union[float, ndarray]:
+def getStandardDeviation(confidence: float | ndarray, dim: float | ndarray) -> float | ndarray:
     r"""Determine the N-dimensional standard deviation.
 
     Examples:
@@ -39,9 +34,7 @@ def getStandardDeviation(
     return sqrt(chi2.ppf(confidence, dim))
 
 
-def getConfidenceRegion(
-    sigma: Union[float, ndarray], dim: Union[float, ndarray]
-) -> Union[float, ndarray]:
+def getConfidenceRegion(sigma: float | ndarray, dim: float | ndarray) -> float | ndarray:
     r"""Determine the N-dimensional confidence interval, or confidence region.
 
     Examples:
@@ -103,11 +96,11 @@ def chiSquareQuadraticForm(residual: ndarray, covariance: ndarray) -> float:
 
 
 def oneSidedChiSquareTest(
-    metric: Union[float, ndarray],
-    alpha: Union[float, ndarray],
-    dof: Union[float, ndarray],
+    metric: float | ndarray,
+    alpha: float | ndarray,
+    dof: float | ndarray,
     runs: int = 1,
-) -> Union[bool, ndarray]:
+) -> bool | ndarray:
     r"""Test if the given metric lies within the one-sided (upper) confidence interval of a chi-square distribution.
 
     The confidence is defined as :math:`1 - \alpha`, so a 95% confidence interval requires :math:`\alpha=0.05`.
@@ -138,11 +131,11 @@ def oneSidedChiSquareTest(
 
 
 def twoSidedChiSquareTest(
-    metric: Union[float, ndarray],
-    alpha: Union[float, ndarray],
-    dof: Union[float, ndarray],
+    metric: float | ndarray,
+    alpha: float | ndarray,
+    dof: float | ndarray,
     runs: int = 1,
-) -> Union[bool, ndarray]:
+) -> bool | ndarray:
     r"""Test if the given metric lies within the two-sided confidence interval of a chi-square distribution.
 
     The confidence is defined as :math:`1 - \alpha`, so a 95% confidence interval requires :math:`\alpha=0.05`.

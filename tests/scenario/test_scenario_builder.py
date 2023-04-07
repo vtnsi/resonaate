@@ -1,11 +1,11 @@
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, invalid-name
 from __future__ import annotations
 
 # Standard Library Imports
 import os.path
 import re
 from copy import deepcopy
-from unittest.mock import Mock, create_autospec
+from unittest.mock import Mock, create_autospec, patch
 
 # Third Party Imports
 import pytest
@@ -16,6 +16,7 @@ from resonaate.common.exceptions import (
     DuplicateSensorError,
     DuplicateTargetError,
 )
+from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.scenario.config import ScenarioConfig
 from resonaate.scenario.config.event_configs import (
     DataDependency,
@@ -25,14 +26,12 @@ from resonaate.scenario.config.event_configs import (
 from resonaate.scenario.scenario_builder import ScenarioBuilder
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR, JSON_INIT_PATH
+from .. import FIXTURE_DATA_DIR, JSON_INIT_PATH
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-def testSafeDuplicateTargets(datafiles: str, reset_shared_db: None):
+def testSafeDuplicateTargets(datafiles: str, database: ResonaateDatabase):
     """Verify no errors are thrown if two engines are looking at the same target network."""
-    # [FIXME]: This only checks a single state type, but this shouldn't matter when we make
-    #   a proper StateConfig class.
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
     first_target_network = None
@@ -47,7 +46,7 @@ def testSafeDuplicateTargets(datafiles: str, reset_shared_db: None):
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-def testECICOEDuplicateTargets(datafiles: str, reset_shared_db: None):
+def testECICOEDuplicateTargets(datafiles: str, database: ResonaateDatabase):
     """Verify errors are thrown if two engines are looking at the same target with different initial states."""
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
@@ -55,13 +54,13 @@ def testECICOEDuplicateTargets(datafiles: str, reset_shared_db: None):
     for engine in scenario_cfg_dict["engines"]:
         if not first_target_network:
             first_target_network = deepcopy(engine["targets"])
-            first_target_network[0]["init_coe"] = {
-                "sma": 0,
-                "ecc": 0,
-                "inc": 0,
-                "true_long": 0,
+            first_target_network[0]["state"] = {
+                "type": "coe",
+                "semi_major_axis": 7000.0,
+                "eccentricity": 0,
+                "inclination": 0,
+                "true_longitude": 0,
             }
-            del first_target_network[0]["init_eci"]
         else:
             engine["targets"] = first_target_network
 
@@ -71,7 +70,7 @@ def testECICOEDuplicateTargets(datafiles: str, reset_shared_db: None):
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-def testDiffStateDuplicateTargets(datafiles: str, reset_shared_db: None):
+def testDiffStateDuplicateTargets(datafiles: str, database: ResonaateDatabase):
     """Verify errors are thrown if two engines are looking at the same target with different initial states."""
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
@@ -79,7 +78,7 @@ def testDiffStateDuplicateTargets(datafiles: str, reset_shared_db: None):
     for engine in scenario_cfg_dict["engines"]:
         if not first_target_network:
             first_target_network = deepcopy(engine["targets"])
-            first_target_network[0]["init_eci"][0] += 0.1
+            first_target_network[0]["state"]["position"][0] += 0.1
         else:
             engine["targets"] = first_target_network
 
@@ -89,7 +88,7 @@ def testDiffStateDuplicateTargets(datafiles: str, reset_shared_db: None):
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-def testDuplicateSensors(datafiles: str, reset_shared_db: None):
+def testDuplicateSensors(datafiles: str, database: ResonaateDatabase):
     """Verify errors are thrown if two engines are tasking the same sensors."""
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
@@ -106,7 +105,7 @@ def testDuplicateSensors(datafiles: str, reset_shared_db: None):
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-def testDuplicateEngines(datafiles: str, reset_shared_db: None):
+def testDuplicateEngines(datafiles: str, database: ResonaateDatabase):
     """Verify errors are thrown if two engines are tasking the same sensors."""
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
@@ -138,7 +137,7 @@ def getTargetTaskPriorityDict() -> dict:
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-def testFoundDataDependency(datafiles: str, tgt_task_priority: dict, reset_shared_db: None):
+def testFoundDataDependency(datafiles: str, tgt_task_priority: dict, database: ResonaateDatabase):
     """Verify no errors are thrown if two engines are looking at the same target network."""
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
@@ -149,7 +148,9 @@ def testFoundDataDependency(datafiles: str, tgt_task_priority: dict, reset_share
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-def testNotFoundDataDependency(datafiles: str, tgt_task_priority: dict, reset_shared_db: None):
+def testNotFoundDataDependency(
+    datafiles: str, tgt_task_priority: dict, database: ResonaateDatabase
+):
     """Verify no errors are thrown if two engines are looking at the same target network."""
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
@@ -163,14 +164,14 @@ def testNotFoundDataDependency(datafiles: str, tgt_task_priority: dict, reset_sh
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
+@patch.object(ResonaateDatabase, "getData", return_value=None)
 def testMissingDataDependency(
+    mocked_db: ResonaateDatabase,
     datafiles: str,
-    monkeypatch: pytest.MonkeyPatch,
     tgt_task_priority: dict,
-    reset_shared_db: None,
+    database: ResonaateDatabase,
 ):
     """Verify ValuerError is thrown if you can't find, nor create a DataDependency."""
-    # pylint: disable=invalid-name
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(init_filepath)
 
@@ -182,24 +183,17 @@ def testMissingDataDependency(
     #   `dependency.createDependency()` raises a `MissingDataDependency` exception.
     dummy_data_dependency = create_autospec(DataDependency, instance=True)
     dummy_data_dependency.query = "SQL QUERY"
-    dummy_data_dependency.createDependency = Mock(  # pylint: disable=invalid-name
-        side_effect=MissingDataDependency("DataType")  # pylint: disable=invalid-name
-    )  # pylint: disable=invalid-name
+    _udder_mock = Mock(side_effect=MissingDataDependency("DataType"))
+    dummy_data_dependency.createDependency = _udder_mock
 
     # Mock the `getDataDependencies()` method of the `EventConfig` class, so that it returns
     #   the `dummy_data_dependency` object.
     _mock = Mock(return_value=[dummy_data_dependency])
-    tgt_event.getDataDependencies = _mock  # pylint: disable=invalid-name
+    tgt_event.getDataDependencies = _mock
 
     # This dependency is not found
     scenario_cfg_dict["events"].append(tgt_event)
-    with monkeypatch.context() as m_patch:
-        # Patch DB call to return no results, so we hit the correct if statement
-        m_patch.setattr(
-            "resonaate.scenario.scenario_builder.ResonaateDatabase.getData",
-            lambda self, query, multi: None,
-        )
 
-        expected = f"Event '{tgt_event.event_type}' is missing a data dependency."
-        with pytest.raises(ValueError, match=re.escape(expected)):
-            _ = ScenarioBuilder(ScenarioConfig(**scenario_cfg_dict))
+    expected = f"Event {tgt_event.event_type!r} is missing a data dependency."
+    with pytest.raises(ValueError, match=re.escape(expected)):
+        _ = ScenarioBuilder(ScenarioConfig(**scenario_cfg_dict))

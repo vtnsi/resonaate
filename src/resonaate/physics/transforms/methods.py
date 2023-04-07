@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -10,7 +11,7 @@ from numpy import (
     arcsin,
     arctan,
     arctan2,
-    asarray,
+    array,
     concatenate,
     cos,
     cross,
@@ -29,7 +30,8 @@ from scipy.linalg import norm
 # Local Imports
 from .. import constants as const
 from ..bodies import Earth
-from ..math import rot2, rot3, wrapAngle2Pi
+from ..maths import rot2, rot3, wrapAngle2Pi
+from ..time.stardate import JulianDate, julianDateToDatetime
 from .reductions import getReductionParameters
 
 if TYPE_CHECKING:
@@ -37,27 +39,27 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     # Local Imports
-    from ...sensors.sensor_base import ObservationTuple
+    from ...data.observation import Observation
 
 
-def eci2ecef(x_eci: ndarray[float, float, float, float, float, float]) -> ndarray:
+def eci2ecef(x_eci: ndarray, utc_date: datetime) -> ndarray:
     """Convert an ECI state vector into an ECEF state vector.
 
     References:
         :cite:t:`vallado_2013_astro`, Sections 3.7 - 3.7.2
 
-    Note:
-        `updateReductionParameters()` **must** be called before this can be used.
-
     Args:
         x_eci (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
     """
-    reduction = getReductionParameters()
+    reduction = getReductionParameters(utc_date)
     r_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[:3]))
-    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)], dtype=float)
+    om_earth = array(
+        [0, 0, Earth.spin_rate * (1 - reduction["lod"] / const.DAYS2SEC)], dtype=float
+    )
     vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], r_ecef)
     v_correction = cross(om_earth, vel_pef)
     v_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[3:]) - v_correction)
@@ -65,24 +67,24 @@ def eci2ecef(x_eci: ndarray[float, float, float, float, float, float]) -> ndarra
     return concatenate((r_ecef, v_ecef), axis=0)
 
 
-def ecef2eci(x_ecef: ndarray[float, float, float, float, float, float]) -> ndarray:
+def ecef2eci(x_ecef: ndarray, utc_date: datetime) -> ndarray:
     """Convert an ECEF state vector into an ECI state vector.
 
     References:
         :cite:t:`vallado_2013_astro`, Sections 3.7 - 3.7.2
 
-    Note:
-        `updateReductionParameters()` **must** be called before this can be used.
-
     Args:
         x_eci (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
     """
-    reduction = getReductionParameters()
+    reduction = getReductionParameters(utc_date)
     r_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[:3]))
-    om_earth = asarray([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)], dtype=float)
+    om_earth = array(
+        [0, 0, Earth.spin_rate * (1 - reduction["lod"] / const.DAYS2SEC)], dtype=float
+    )
     vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], x_ecef[:3])
     v_correction = cross(om_earth, vel_pef)
     v_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[3:]) + v_correction)
@@ -90,7 +92,7 @@ def ecef2eci(x_ecef: ndarray[float, float, float, float, float, float]) -> ndarr
     return concatenate((r_eci, v_eci), axis=0)
 
 
-def sez2ecef(x_sez, lat, lon):
+def sez2ecef(x_sez: ndarray, lat: float, lon: float) -> ndarray:
     """Convert an SEZ state vector into an ECEF state vector.
 
     References:
@@ -117,7 +119,7 @@ def sez2ecef(x_sez, lat, lon):
     )
 
 
-def ecef2sez(x_ecef, lat, lon):
+def ecef2sez(x_ecef: ndarray, lat: float, lon: float) -> ndarray:
     """Convert an ECEF state vector into an SEZ state vector.
 
     References:
@@ -144,7 +146,7 @@ def ecef2sez(x_ecef, lat, lon):
     )
 
 
-def eci2sez(x_eci, lat, lon):
+def eci2sez(x_eci: ndarray, lat: float, lon: float, utc_date: datetime) -> ndarray:
     """Convert an ECI state vector into an SEZ state vector.
 
     References:
@@ -157,14 +159,15 @@ def eci2sez(x_eci, lat, lon):
         x_eci (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
         lat (``float``): scalar geodetic latitude, (radians)
         lon (``float``): scalar longitude, (radians)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         (``np.ndarray``): 6x1 SEZ state vector, (km; km/sec)
     """
-    return ecef2sez(eci2ecef(x_eci), lat, lon)
+    return ecef2sez(eci2ecef(x_eci, utc_date), lat, lon)
 
 
-def sez2eci(x_sez, lat, lon):
+def sez2eci(x_sez: ndarray, lat: float, lon: float, utc_date: datetime) -> ndarray:
     """Convert an SEZ state vector into an ECI state vector.
 
     References:
@@ -177,14 +180,15 @@ def sez2eci(x_sez, lat, lon):
         x_sez (``np.ndarray``): 6x1 SEZ state vector, (km; km/sec)
         lat (``float``): scalar geodetic latitude, (radians)
         lon (``float``): scalar longitude, (radians)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
     """
-    return ecef2eci(sez2ecef(x_sez, lat, lon))
+    return ecef2eci(sez2ecef(x_sez, lat, lon), utc_date)
 
 
-def lla2ecef(x_lla):
+def lla2ecef(x_lla: ndarray) -> ndarray:
     """Convert a latitude, longitude, and altitude to a 6x1 ECEF state vector.
 
     References:
@@ -210,10 +214,10 @@ def lla2ecef(x_lla):
     r_k = (radius_aux + alt) * sin(lat)
 
     # Final ECEF Calculation relating ECEF to Geodetic Latitude, Longitude, and Altitude
-    return asarray([r_delta * cos(lon), r_delta * sin(lon), r_k, 0, 0, 0])
+    return array([r_delta * cos(lon), r_delta * sin(lon), r_k, 0, 0, 0])
 
 
-def ecef2lla(x_ecef):
+def ecef2lla(x_ecef: ndarray) -> ndarray:
     """Convert an ECEF state vector to latitude, longitude, and altitude.
 
     References:
@@ -261,13 +265,43 @@ def ecef2lla(x_ecef):
     lon = arctan2(r_j, r_i)
     alt = (r_delta - a * t) * cos(lat) + (r_k - b) * sin(lat)
 
-    return asarray([lat, lon, alt])
+    return array([lat, lon, alt])
+
+
+def eci2lla(x_eci: ndarray, utc_date: datetime) -> ndarray:
+    """Convert an ECI state vector to latitude, longitude, and altitude.
+
+    Altitude is height above ellipsoid, and latitude is geodetic latitude.
+
+    Args:
+        x_eci (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
+
+    Returns:
+        (``np.ndarray``): 3x1 of latitude, longitude, and altitude, (radians, radians, km)
+    """
+    return ecef2lla(eci2ecef(x_eci, utc_date))
+
+
+def lla2eci(x_lla: ndarray, utc_date: datetime) -> ndarray:
+    """Convert an LLA state vector to ECI.
+
+    Altitude is height above ellipsoid, and latitude is geodetic latitude.
+
+    Args:
+        x_lla (``np.ndarray``): 3x1 of latitude, longitude, and altitude, (radians, radians, km)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
+
+    Returns:
+        (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
+    """
+    return ecef2eci(lla2ecef(x_lla), utc_date)
 
 
 def rsw2eci(
     x_eci: ndarray[float, float, float, float, float, float],
     x_rsw: ndarray[float, float, float, float, float, float],
-):
+) -> ndarray:
     """Convert a RSW relative state vector to a 6x1 ECI state vector.
 
     This converts the relative RSW state into an absolute ECI state relative to a given ECI state.
@@ -293,9 +327,9 @@ def rsw2eci(
     w_hat: ndarray[float, float, float] = cross(x_eci[:3], x_eci[3:]) / norm(
         cross(x_eci[:3], x_eci[3:])
     )
-    s_hat = cross(w_hat, r_hat)
+    s_hat: ndarray[float, float, float] = cross(w_hat, r_hat)
 
-    rsw_2_eci_rotation = asarray([r_hat, s_hat, w_hat]).T
+    rsw_2_eci_rotation = array([r_hat, s_hat, w_hat]).T
     return concatenate(
         (
             matmul(rsw_2_eci_rotation, x_rsw[:3]),  # Convert position
@@ -305,10 +339,49 @@ def rsw2eci(
     )
 
 
+def eci2rsw(
+    target_eci: ndarray[float, float, float, float, float, float],
+    chaser_eci: ndarray[float, float, float, float, float, float],
+) -> ndarray:
+    """Convert an ECI state vector to a RSW relative state vector.
+
+    This is the transpose of rsw2eci. RSW = RIC coordinates.
+    `R` is the "radial" component, `W` is the "cross-track" component, and `S` is the "along-track"
+    component. This should not be confused with NTW which is specifically aligned with the velocity
+    vector.
+
+    See Also:
+        Equation (3-20) in Vallado, "Fundamentals of Astrodynamics and Applications", 4th Edition
+        on page 164
+
+    Args:
+        target_eci (``np.ndarray``): 6x1 ECI reference state vector, (km; km/sec)
+        chaser_eci (``np.ndarray``): 6x1 ECI reference state vector, (km; km/sec)
+
+    Returns:
+        x_rsw (``np.ndarray``): 6x1 RSW state vector, relative to `target_eci`, (km; km/sec)
+    """
+    r_hat: ndarray[float, float, float] = target_eci[:3] / norm(target_eci[:3])
+    w_hat: ndarray[float, float, float] = cross(target_eci[:3], target_eci[3:]) / norm(
+        cross(target_eci[:3], target_eci[3:])
+    )
+    s_hat: ndarray[float, float, float] = cross(w_hat, r_hat)
+
+    eci_2_rsw_rotation = array([r_hat, s_hat, w_hat])
+    delta_eci = array(chaser_eci - target_eci)
+    return concatenate(
+        (
+            matmul(eci_2_rsw_rotation, delta_eci[:3]),  # Convert position
+            matmul(eci_2_rsw_rotation, delta_eci[3:]),  # Convert velocity
+        ),
+        axis=0,
+    )
+
+
 def ntw2eci(
     x_eci: ndarray[float, float, float, float, float, float],
     x_ntw: ndarray[float, float, float, float, float, float],
-):
+) -> ndarray:
     """Convert a NTW relative state vector to a 6x1 ECI state vector.
 
     This converts the relative NTW state into an absolute ECI state relative to a given ECI state.
@@ -334,9 +407,9 @@ def ntw2eci(
     w_hat: ndarray[float, float, float] = cross(x_eci[:3], x_eci[3:]) / norm(
         cross(x_eci[:3], x_eci[3:])
     )
-    n_hat = cross(t_hat, w_hat)
+    n_hat: ndarray[float, float, float] = cross(t_hat, w_hat)
 
-    ntw_2_eci_rotation = asarray([n_hat, t_hat, w_hat]).T
+    ntw_2_eci_rotation = array([n_hat, t_hat, w_hat]).T
     return concatenate(
         (
             matmul(ntw_2_eci_rotation, x_ntw[:3]),  # Convert position
@@ -346,28 +419,37 @@ def ntw2eci(
     )
 
 
-def radarObs2eciPosition(obs_tuple: ObservationTuple) -> ndarray:
+def radarObs2eciPosition(observation: Observation) -> ndarray:
     """Convert Radar observation from RAZEL to ECI position vector.
 
     Args:
-        obs_tuple (:class:`.ObservationTuple`): `ObservationTuple` associated with observation
+        observation (:class:`.Observation`): radar observation to convert to ECI
 
     Returns:
-        ``ndarray``: 3x1 ECI Position State based on radar observation
+        ``ndarray``: 3x1 ECI Position vector based on radar observation
     """
-    range_ = obs_tuple.observation.range_km
-    azimuth = obs_tuple.observation.azimuth_rad
-    elevation = obs_tuple.observation.elevation_rad
-    x_j2000_relative = sez2eci(
-        x_sez=razel2sez(range_, elevation, azimuth, 0, 0, 0),
-        lat=obs_tuple.observation.position_lat_rad,
-        lon=obs_tuple.observation.position_long_rad,
+    observation_sez = razel2sez(
+        observation.range_km, observation.elevation_rad, observation.azimuth_rad, 0, 0, 0
     )
-    # [NOTE]: Only valid for positions
-    return x_j2000_relative[:3] + obs_tuple.agent.eci_state[:3]
+
+    # calculate observer states
+    ob_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
+    sensor_ecef = eci2ecef(observation.sensor_eci, ob_datetime)
+    sensor_lla = ecef2lla(sensor_ecef)
+
+    eci_relative_pos = sez2eci(
+        x_sez=observation_sez,
+        lat=sensor_lla[0],
+        lon=sensor_lla[1],
+        utc_date=ob_datetime,
+    )
+
+    return eci_relative_pos[:3] + observation.sensor_eci[:3]
 
 
-def spherical2cartesian(rho, theta, phi, rho_dot, theta_dot, phi_dot):
+def spherical2cartesian(
+    rho: float, theta: float, phi: float, rho_dot: float, theta_dot: float, phi_dot: float
+) -> ndarray:
     """Conversion of spherical coordinates to cartesian coordinates.
 
     This will convert spherical coordinates to cartesian coordinates in the same reference frame.
@@ -394,7 +476,7 @@ def spherical2cartesian(rho, theta, phi, rho_dot, theta_dot, phi_dot):
         ``np.ndarray``: 6x1 cartesian state vector in corresponding reference frame.
     """
     c_phi, c_th, s_phi, s_th = cos(phi), cos(theta), sin(phi), sin(theta)
-    return asarray(
+    return array(
         [
             rho * c_th * c_phi,
             rho * c_th * s_phi,
@@ -406,7 +488,7 @@ def spherical2cartesian(rho, theta, phi, rho_dot, theta_dot, phi_dot):
     )
 
 
-def cartesian2spherical(state):
+def cartesian2spherical(state: ndarray) -> tuple[float, float, float, float, float, float]:
     """Conversion of cartesian coordinates to spherical coordinates.
 
     This will convert cartesian coordinates to spherical coordinates in the same reference frame.
@@ -453,7 +535,9 @@ def cartesian2spherical(state):
     return rng, theta, wrapAngle2Pi(phi), rng_dot, theta_dot, phi_dot
 
 
-def razel2sez(rng, el, az, rng_rate, el_rate, az_rate):
+def razel2sez(
+    rng: float, el: float, az: float, rng_rate: float, el_rate: float, az_rate: float
+) -> ndarray:
     """Convert az, el, rng, & rates to a topocentric horizon slant range vector.
 
     References:
@@ -476,7 +560,16 @@ def razel2sez(rng, el, az, rng_rate, el_rate, az_rate):
     )
 
 
-def razel2radec(rng, el, az, rng_rate, el_rate, az_rate, observer_eci):
+def razel2radec(
+    rng: float,
+    el: float,
+    az: float,
+    rng_rate: float,
+    el_rate: float,
+    az_rate: float,
+    observer_eci: ndarray,
+    utc_date: datetime,
+) -> tuple[float, float, float, float, float, float]:
     """Convert az, el, rng, & rates to topocentric ra, dec, rng, & rates.
 
     References:
@@ -490,6 +583,7 @@ def razel2radec(rng, el, az, rng_rate, el_rate, az_rate, observer_eci):
         el_rate (``float``): topocentric horizon elevation angular rate (radians/sec)
         az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
         observer_eci (``np.ndarray``): 6x1 ECI state vector of observer (km; km/sec)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         rng (``float``): topocentric equatorial range to target (km)
@@ -500,15 +594,24 @@ def razel2radec(rng, el, az, rng_rate, el_rate, az_rate, observer_eci):
         ra_rate (``float``): topocentric equatorial right ascension angular rate (radians/sec)
     """
     # pylint: disable=invalid-name
-    observer_ecef = eci2ecef(observer_eci)
+    observer_ecef = eci2ecef(observer_eci, utc_date)
     observer_lla = ecef2lla(observer_ecef)
     tgt_ecef = observer_ecef + sez2ecef(
         razel2sez(rng, el, az, rng_rate, el_rate, az_rate), observer_lla[0], observer_lla[1]
     )
-    return cartesian2spherical(ecef2eci(tgt_ecef) - observer_eci)
+    return cartesian2spherical(ecef2eci(tgt_ecef, utc_date) - observer_eci)
 
 
-def radec2razel(rng, dec, ra, rng_rt, dec_rt, ra_rt, observer_eci):
+def radec2razel(
+    rng: float,
+    dec: float,
+    ra: float,
+    rng_rt: float,
+    dec_rt: float,
+    ra_rt: float,
+    observer_eci: ndarray,
+    utc_date: datetime,
+) -> tuple[float, float, float, float, float, float]:
     """Convert topocentric ra, dec, rng, & rates to az, el, rng, & rates.
 
     References:
@@ -522,6 +625,7 @@ def radec2razel(rng, dec, ra, rng_rt, dec_rt, ra_rt, observer_eci):
         dec_rate (``float``): topocentric equatorial declination angular rate (radians/sec)
         ra_rate (``float``): topocentric equatorial right ascension angular rate (radians/sec)
         observer_eci (``np.ndarray``): 6x1 ECI state vector of observer (km; km/sec)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         rng (``float``): topocentric horizon range to target (km)
@@ -533,10 +637,34 @@ def radec2razel(rng, dec, ra, rng_rt, dec_rt, ra_rt, observer_eci):
     """
     # pylint: disable=invalid-name
     target_eci = spherical2cartesian(rng, dec, ra, rng_rt, dec_rt, ra_rt) + observer_eci
-    return eci2razel(target_eci, observer_eci)
+    return eci2razel(target_eci, observer_eci, utc_date)
 
 
-def eci2razel(target_eci, observer_eci):
+def eci2radec(target_eci: ndarray, observer_eci: ndarray, utc_date: datetime) -> ndarray:
+    """Convert target and observer ECI states into az, el, rng, & rates.
+
+    Args:
+        target_eci (``ndarray``): 6x1 ECI state vector of target
+        observer_eci (``ndarray``): 6x1 ECI state vector of observer
+
+    Returns:
+        rng (``float``): topocentric equatorial range to target (km)
+        dec (``float``): topocentric equatorial declination angle [-pi/2, pi/2] (radians)
+        ra (``float``): topocentric equatorial right ascension angle [0, 2pi] (radians)
+        rng_rate (``float``): topocentric equatorial range rate of target (km/sec)
+        dec_rate (``float``): topocentric equatorial declination angular rate (radians/sec)
+        ra_rate (``float``): topocentric equatorial right ascension angular rate (radians/sec)
+    """
+    return razel2radec(
+        *eci2razel(target_eci, observer_eci, utc_date),
+        observer_eci=observer_eci,
+        utc_date=utc_date,
+    )
+
+
+def eci2razel(
+    target_eci: ndarray, observer_eci: ndarray, utc_date: datetime
+) -> tuple[float, float, float, float, float, float]:
     """Convert target and observer ECI states into az, el, rng, & rates.
 
     References:
@@ -545,6 +673,7 @@ def eci2razel(target_eci, observer_eci):
     Args:
         target_eci (``ndarray``): 6x1 ECI state vector of target
         observer_eci (``ndarray``): 6x1 ECI state vector of observer
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         rng (``float``): topocentric horizon range to target (km)
@@ -554,10 +683,10 @@ def eci2razel(target_eci, observer_eci):
         el_rate (``float``): topocentric horizon elevation angular rate (radians/sec)
         az_rate (``float``): topocentric horizon azimuth angular rate (radians/sec)
     """
-    return sez2razel(getSlantRangeVector(eci2ecef(observer_eci), target_eci))
+    return sez2razel(getSlantRangeVector(observer_eci, target_eci, utc_date))
 
 
-def sez2razel(slant_range_sez):
+def sez2razel(slant_range_sez: ndarray) -> tuple[float, float, float, float, float, float]:
     """Convert topocentric horizon slant range vector into az, el, rng, & rates.
 
     References:
@@ -577,7 +706,7 @@ def sez2razel(slant_range_sez):
     return cartesian2spherical(slant_range_sez.dot(diagflat([-1, 1, 1, -1, 1, 1])))
 
 
-def geocentric2geodetic(geocentric_latitude):
+def geocentric2geodetic(geocentric_latitude: float) -> float:
     """Convert a geocentric longitude into geodetic latitude.
 
     References:
@@ -592,7 +721,7 @@ def geocentric2geodetic(geocentric_latitude):
     return arctan(tan(geocentric_latitude) / (1.0 - Earth.eccentricity**2))
 
 
-def geodetic2geocentric(geodetic_latitude):
+def geodetic2geocentric(geodetic_latitude: float) -> float:
     """Convert a geodetic longitude into geocentric latitude.
 
     References:
@@ -607,18 +736,21 @@ def geodetic2geocentric(geodetic_latitude):
     return arctan((1.0 - Earth.eccentricity**2) * tan(geodetic_latitude))
 
 
-def getSlantRangeVector(sensor_ecef, tgt_state):
+def getSlantRangeVector(sensor_eci: ndarray, target_eci: ndarray, utc_date: datetime) -> ndarray:
     """Calculate the slant range vector in the SEZ frame from the observer to the target.
 
     References:
         :cite:t:`vallado_2013_astro`, Section 4.4.3, Eqn 4-6
 
     Args:
-        sensor_ecef (``np.ndarray``): 6x1 ECEF state vector of the :class:`.SensingAgent` (km; km/sec)
-        tgt_state (``np.ndarray``): 6x1 ECI state vector of the :class:`TargetAgent` (km; km/sec)
+        sensor_eci (``np.ndarray``): 6x1 ECI vector of the sensor (km; km/sec)
+        target_eci (``np.ndarray``): 6x1 ECI vector of the target (km; km/sec)
+        utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
         ``np.ndarray``: 6x1 SEZ slant range vector (km; km/sec)
     """
+    sensor_ecef = eci2ecef(sensor_eci, utc_date)
+    target_ecef = eci2ecef(target_eci, utc_date)
     lla_state = ecef2lla(sensor_ecef)
-    return ecef2sez(eci2ecef(tgt_state) - sensor_ecef, lla_state[0], lla_state[1])
+    return ecef2sez(target_ecef - sensor_ecef, lla_state[0], lla_state[1])

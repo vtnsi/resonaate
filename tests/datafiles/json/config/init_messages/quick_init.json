@@ -1,0 +1,43 @@
+{
+  "time": {
+    "start_timestamp": "2021-03-30T16:00:00.000Z",
+    "physics_step_sec": 60,
+    "output_step_sec": 600,
+    "stop_timestamp": "2021-03-30T16:05:00.000Z"
+  },
+  "noise": {
+    "init_position_std_km": 1e-3,
+    "init_velocity_std_km_p_sec": 1e-6,
+    "filter_noise_type": "continuous_white_noise",
+    "filter_noise_magnitude": 3.0e-14,
+    "random_seed": 2134903477943987
+  },
+  "propagation": {
+    "propagation_model": "two_body",
+    "integration_method": "RK45",
+    "station_keeping": false,
+    "target_realtime_propagation": true,
+    "sensor_realtime_propagation": true,
+    "truth_simulation_only": true
+  },
+  "observation": {
+    "background": false
+  },
+  "geopotential": {
+    "model": "egm96.txt",
+    "degree": 2,
+    "order": 0
+  },
+  "perturbations": {
+    "third_bodies": ["moon"],
+    "solar_radiation_pressure": false,
+    "general_relativity": false
+  },
+  "estimation": {
+    "sequential_filter": {
+      "name": "unscented_kalman_filter",
+      "dynamics_model": "two_body"
+    }
+  },
+  "engines_files": ["../engines/test_engine.json"]
+}

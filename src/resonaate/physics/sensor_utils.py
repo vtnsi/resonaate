@@ -11,35 +11,43 @@ from scipy.linalg import norm
 # Local Imports
 from .bodies import Earth
 from .bodies.third_body import Sun
-from .constants import PI, SOLAR_FLUX, SPEED_OF_LIGHT
-from .math import subtendedAngle
+from .constants import DEG2RAD, M2KM, PI, SOLAR_FLUX, SPEED_OF_LIGHT
+from .maths import subtendedAngle
+from .measurements import getElevation
+from .transforms.methods import spherical2cartesian
 
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
+GALACTIC_CENTER_ECI = spherical2cartesian(
+    rho=2.46e17,
+    theta=-29.007805555555555556 * DEG2RAD,
+    phi=4.649850924403647,
+    rho_dot=0.0,
+    theta_dot=0.0,
+    phi_dot=0.0,
+)  # location of the galactic center
 
-def getEarthLimbConeAngle(eci_state: ndarray) -> float:
-    r"""Return the elevation angle between a sensor and the limb of the Earth.
 
-    Determine the cone angle that the satellite makes with Earth's limb, which we define as the
-    radius of the Earth plus the height of the atmosphere.
+## Optical Support Functions
 
-    The limb angle will always be in :math:`[-\frac{\pi}{2}, 0]` for satellites, because elevation is
-    measured from the local SE plane in the SEZ system to the Z axis which points radially
-    outward, along the ECI position direction. Therefore, the sensor's limb angle will always
-    be negative.
 
-    References:
-        :cite:t:`nastasi_2018_scitech_dst`, Section II.C.3
+def getBodyLimbConeAngle(body_limb: float, observer_distance: float) -> float:
+    """Return the cone half-angle of limb of a celestial body from the perspective of an observer.
 
     Args:
-        eci_state (``ndarray``): 6x1 ECI state vector of the sensor satellite (km; km/s)
+        body_limb (``float``): scalar radius of the celestial body's limb -- typically, body radius + atmosphere altitude (km)
+        observer_distance (``float``): distance of the observer relative from the center of the celestial body (km)
 
     Returns:
-        ``float``: angle target makes with the Earth's limb, :math:`[-\frac{\pi}{2}, 0]` (rad)
+        ``float``: cone half-angle of the celestial body's limb, from the observer's perspective at `relative_position`
     """
-    return arcsin((Earth.radius + Earth.atmosphere) / norm(eci_state[:3])) - PI * 0.5
+    # [NOTE]: numpy.arcsin returns `nan` if an invalid argument is entered, which could pass through downstream checks unnoticed.
+    #         Handle bad inputs here.
+    if observer_distance < body_limb:
+        raise ValueError("Observer distance cannot be less than the celestial body limb.")
+    return arcsin(body_limb / observer_distance)
 
 
 def lineOfSight(eci_position_1: ndarray, eci_position_2: ndarray) -> bool:
@@ -98,7 +106,7 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
 
     # Full occultation, see Eqn 3.89
     if c < abs(b - a):
-        return 0
+        return 0.0
 
     # Partial occultation, see Eqn 3.89
     if c < abs(a + b):
@@ -112,7 +120,7 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
         # Partial occultation
         return 1.0 - A / (PI * a**2)
 
-    return 1  # No occultation by the Earth
+    return 1.0  # No occultation by the Earth
 
 
 def calculateIncidentSolarFlux(
@@ -176,7 +184,7 @@ def checkSpaceSensorLightingConditions(
 
     Args:
         boresight_eci_vector (``ndarray``): 3x1 ECI boresight vector from the sensor to the target (km)
-        sun_eci_unit_vector (``ndarray``): 3x1 ECI unit position vector of the Sun, relative to the Earth (km)
+        sun_eci_unit_vector (``ndarray``): 3x1 ECI boresight unit vector from the sensor to the sun (unitless)
         cone_angle (``float``, optional): minimum cone angle the sensor can have with the sun
             (rad). Defaults to :math:`\frac{\pi}{12}`.
 
@@ -189,47 +197,42 @@ def checkSpaceSensorLightingConditions(
     return boresight_sun_angle >= cone_angle
 
 
-def calculateRadarCrossSection(viz_cross_section: float, wavelength: float) -> float:
-    r"""Calculate the effective area seen by a radar signal.
+def checkSpaceSensorEarthLimbObscuration(
+    sensor_eci_state: ndarray,
+    target_sez_state: ndarray,
+):
+    r"""Determine if the target is in front of the limb of the Earth from the perspective of the sensor.
 
-    This equation assumes radar is reflected perpendicularly from a flat plat and
-    returns the maximum possible cross section.
+    Note:
+        The fields of regard of EO/IR space-based sensors are dynamically limited by
+    the limb of the Earth. Therefore, they cannot observe a target if the Earth
+    or its atmosphere is in the background.
+
+    Note:
+        The Earth's limb elevation will always be in :math:`[-\frac{\pi}{2}, 0]` for satellites, because elevation
+    is measured from the local SE plane in the SEZ system to the Z axis which points radially
+    outward, along the ECI position direction. Therefore, the Earth's limb elevation angle will always
+    be negative.
 
     References:
-        :cite:t:`nastasi_2018_diss`, Pg 46, Eqn 3.5
+        :cite:t:`nastasi_2018_scitech_dst`, Section II.C.3
 
     Args:
-        viz_cross_section (``float``): area of the object facing the signal (m\ :sup:`2`)
-        wavelength (``float``): wavelength of the signal (m)
+        sensor_eci_state (``ndarray``): 6x1 ECI position vector of the sensor satellite (km; km/s)
+        target_sez (``ndarray``): 6x1 slant range vector of the target (km; km/s)
 
     Returns:
-        ``float``: effective cross-sectional area (m\ :sup:`2`)
+        ``bool``: whether the target is in front of the Earth's limb, from the sensor's perspective
     """
-    return 4 * PI * viz_cross_section**2 / wavelength**2
-
-
-def getWavelengthFromString(freq: str):
-    r"""Return the wavelength of the given frequency band.
-
-    Args:
-        freq (``str``): frequency band to get the wavelength of
-
-    Returns:
-        ``float``: wavelength of the given frequency band (m)
-    """
-    return {
-        "VHF": SPEED_OF_LIGHT / (165.0 * (1e6)),
-        "UHF": SPEED_OF_LIGHT / (650.0 * (1e6)),
-        "L": SPEED_OF_LIGHT / (1.5 * (1e9)),
-        "S": SPEED_OF_LIGHT / (3.0 * (1e9)),
-        "C": SPEED_OF_LIGHT / (6.0 * (1e9)),
-        "X": SPEED_OF_LIGHT / (10.0 * (1e9)),
-        "Ku": SPEED_OF_LIGHT / (15.0 * (1e9)),
-        "K": SPEED_OF_LIGHT / (20.0 * (1e9)),
-        "Ka": SPEED_OF_LIGHT / (30.0 * (1e9)),
-        "V": SPEED_OF_LIGHT / (60.0 * (1e9)),
-        "W": SPEED_OF_LIGHT / (15.0 * (1e9)),
-    }[freq]
+    target_elevation = getElevation(target_sez_state)
+    limb_elevation = (
+        getBodyLimbConeAngle(
+            body_limb=Earth.radius + Earth.atmosphere,
+            observer_distance=norm(sensor_eci_state[:3]),
+        )
+        - PI / 2  # see [NOTE] #2 in docstring for explanation
+    )
+    return limb_elevation > target_elevation
 
 
 def apparentVisualMagnitude(
@@ -249,8 +252,9 @@ def apparentVisualMagnitude(
     References:
         :cite:t:`cognion_2013_amos`, Eqn 3
     """
+    vcs_km2 = visual_cross_section * 1e-6
     return Sun.absolute_magnitude - 2.5 * log10(
-        (visual_cross_section * reflectivity * phase_function) / rso_range**2
+        (vcs_km2 * reflectivity * phase_function) / rso_range**2
     )
 
 
@@ -286,3 +290,75 @@ def calculatePhaseAngle(emitter: ndarray, reflector: ndarray, observer: ndarray)
     )
 
     return phase_angle
+
+
+def checkGalacticExclusionZone(boresight_eci_vector, cone_angle=PI / 30):
+    """Determine if a sensor has appropriate lighting conditions.
+
+    RA 17h 45m 40.04s (radians: 4.649850924403647),
+    Dec -29° 00` 28.1″ (degrees: -29.007805555555555556)
+    range ~26 kilolight-years
+    """
+    boresight_belt_angle = arccos(
+        dot(GALACTIC_CENTER_ECI[:3], boresight_eci_vector)
+        / (norm(GALACTIC_CENTER_ECI[:3]) * norm(boresight_eci_vector))
+    )
+    return boresight_belt_angle >= cone_angle
+
+
+## Radar Support Functions
+
+
+def calculateRadarCrossSection(viz_cross_section: float, wavelength: float) -> float:
+    r"""Calculate the effective area seen by a radar signal.
+
+    This equation assumes radar is reflected perpendicularly from a flat plat and
+    returns the maximum possible cross section.
+
+    References:
+        :cite:t:`nastasi_2018_diss`, Pg 46, Eqn 3.5
+
+    Args:
+        viz_cross_section (``float``): area of the object facing the signal (m\ :sup:`2`)
+        wavelength (``float``): wavelength of the signal (m)
+
+    Returns:
+        ``float``: effective cross-sectional area (m\ :sup:`2`)
+    """
+    return 4 * PI * viz_cross_section**2 / wavelength**2
+
+
+def calculateMinRadarRange(tx_frequency: float) -> float:
+    """Calculate the minimum range of a Radar Sensor.
+
+    Args:
+        tx_frequency (``float``|``str``): radar's operating frequency (Hz)
+
+    Returns:
+        ``float``: minimum unambiguous range (km)
+    """
+    return (SPEED_OF_LIGHT / tx_frequency / 2) * M2KM
+
+
+def getFrequencyFromString(frequency_string: str):
+    r"""Return the frequency of the given band.
+
+    Args:
+        frequency_string (``str``): frequency band string
+
+    Returns:
+        ``float``: median frequency (Hz)
+    """
+    return {
+        "VHF": 165.0 * 1e6,
+        "UHF": 650.0 * 1e6,
+        "L": 1.5 * 1e9,
+        "S": 3.0 * 1e9,
+        "C": 6.0 * 1e9,
+        "X": 10.0 * 1e9,
+        "Ku": 15.0 * 1e9,
+        "K": 20.0 * 1e9,
+        "Ka": 30.0 * 1e9,
+        "V": 60.0 * 1e9,
+        "W": 15.0 * 1e9,
+    }[frequency_string]

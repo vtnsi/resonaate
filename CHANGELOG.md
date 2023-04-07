@@ -62,6 +62,187 @@ ______________________________________________________________________
 
 *related to the continuous integration system*
 
+## [3.0.0][v3.0.0] - 2023-04-07
+
+### Breaking Changes
+
+- upgraded the minimum supported Python to 3.9, dropping support for 3.7 and 3.8 (see #148 and !191)
+  - switch our custom `methdispatch()` to `singledispatchmethod()`
+  - `MagicMock.call_args` includes `kwargs` attribute
+  - use walrus operator (`:=`) in several places
+  - replaced deprecated `importlib.resources` funcs with newly added ones
+  - removed `Optional` and `Union` type hints for new syntax
+- moved responsibility for managing the shared DB connection from `DateInterface.getSharedInterface()` to `setDBPath()` and `getDBConnection()` (see #179 and !199)
+- split `AgentConfig` into several smaller classes and adjust config specification (see #37 and !163)
+
+### Fixed
+
+- infinite loop catch in `lambertUniversal()` (see commit fe802bd2dd)
+- rounding of seconds when converting from `datetime.datetime` to `JulianDate` (see commit 58d032bd)
+- `asyncExecuteTasking()` incorrectly calling `collectObservations()` with `EstimateAgents` (see commit bdfc3834, introduced by !2)
+- duplicate `isVisible()` calls from within `collectObservations()` (see commit bdfc3834)
+- no FoV checks against the tasked `TargetAgent` when background observations aren't being collected (see !83)
+- indexing logic of `SensingAgent` objects in `TaskingEngine` causing infeasible tasks (see !90)
+- passing only background targets from `asyncExecuteTasking()` to `collectObservations()` (see !84)
+- incorrect VCS units in `apparentVisualMagnitude()` (see commit ef241f0f4)
+- sun unit vector in `checkSpaceSensorLightingConditions()` (see #161)
+- unit test failures due to ZMQ errors in `mjolnir` (see #159)
+- SqlAlchemy 2.0 failures due to old API, implemented interim fix (see commit fd63168d)
+- incorrect relative state calculation in `eci2rsw()` transformation (see commit e6851c9f7)
+- incorrect updating of `delta_boresight` (see #180 and !198)
+- overuse of `updateReductionParameters()` since `getReductionParameters()` properly handles if they aren't updated (see #142)
+
+### Added
+
+#### `resonaate.common` package
+
+- `labels.py` module for storing options (see !163)
+
+#### `resonaate.data` package
+
+- tracking missed observations via `MissedObservation` table (see #125)
+- `Observation` contains sensor ECI state vector columns and `sensor_eci` property (see #46 and !127).
+- `db_connection.py` module for handling the shared database interface with `setDBPath()`, `getDBConnection()`, and `clearDBPath()` (see #179 and !199)
+
+#### `resonaate.physics` package
+
+- `eci2lla()`, `eci2rsw()`, `eci2radec()` coordinate frame transformations
+- `checkGalacticExclusionZone()` conditional check
+- `lambertGauss()` orbit determination algorithm (see !157)
+
+#### `resonaate.scenario` package
+
+- `SensorConfig`, `RadarConfig`, `AdvRadarConfig`, and `OpticalConfig` for handling sensor-specific configuration options (see #36 and !163)
+- `PlatformConfig`, `SpacecraftConfig`, and `GroundFacilityConfig` for handling agent 'vehicle' configuration options (see #37 and !163)
+- `StateConfig`, `ECIStateConfig`, `LLAStateConfig`, `COEStateConfig`, and `EQEStateConfig` for handling agent's initial state information (see #35 and !163)
+
+#### `resonaate.sensors` package
+
+- `FieldOfView` class for generalizing field of view definitions and constraints (see !92)
+- `Measurement` and `MeasurementType` classes to decouple sensor and measurement logic (see #146 and !130)
+
+#### `resonaate.tasking` package
+
+- tasking metric normalization via `calculateRewards()` and `normalizeMetrics()` (see #15)
+- `UncertaintyMetric` and `StateMetric` base classes and implementations for covariance/state focused metrics, (see #153 and !136)
+
+### Changed
+
+#### Dependencies
+
+- bump `mjolnir` version to 1.3.1
+- removed `concurrent-log-handler` dependency
+
+#### JSON Configs
+
+- default engines use `SimpleSummationReward` and `TimeSinceObservation`
+- renamed `cost_constrained_ssn.json` to `summation_ssn.json` and `cost_constrained_space.json` to `summation_space.json`
+- all JSON configs with `AgentConfig` objects were converted to support the refactor for #37 and !163
+
+#### `resonaate.data` package
+
+- queries of imported observations and ephemerides use `Epoch.timestampISO` instead of `julian_date`
+- added `Measurement` to `Observation` (see #156 and !141)
+- renamed `Observation.position_long_rad` to `position_lon_rad`
+- renamed `SensorAdditionEvent.host_type` to `platform`
+- `SensorAdditionEvent`, `TargetAdditionEvent` attributes `sensor` and `target` renamed to `sensor_agent` and `target_agent` respectively (see !163)
+
+#### `resonaate.dynamics` package
+
+- finite burn and maneuvers take `agent_id` so they can properly log to the `EventStack` (see !191)
+
+#### `resonaate.job_handler` package
+
+- added a `missed_observation` key to the `dict` returned by `asyncExecuteTasking()`
+- `asyncCalculateReward()` calculates individual metrics instead of reward to support metric normalization (see !131)
+
+#### `resonaate.physics` package
+
+- `subtendedAngle()` accepts `safe` arg for using `safeArccos()` instead of `np.arccos()`
+- updated EOP data included within RESONAATE (see commit 1ec535b7a)
+- moved measurement functions (like `getAzimuth()`) to `physics.measurement_utils` module
+- added `utc_date` parameter to `updateReductionParameters()` (see #49 and !80)
+- added `utc_date` parameter to `getReductionParameters()`  (see #49 and !80)
+- `getReductionParameters()` caches results and re-calculate if `utc_date` doesn't exist or doesn't match the value in the KVS (see #49 and !80)
+- added `utc_date` parameter to coordinate frame transformations which use reductions directly or indirectly (see #49 and !80)
+- `determineTransferDirection()` checks orbital period instead of true anomaly, so only a position vector is needed (see #170 and !153)
+- renamed `getWavelengthFromString()` to `getFrequencyFromString()`
+
+#### `resonaate.scenario` package
+
+- `Scenario.saveDatabaseOutput()` inserts times into `Epoch` database table if it does not already exist
+- moved `PropagationConfig.realtime_observation` to `ObservationConfig` and renamed `ObservationConfig.field_of_view` to `background` (see !83)
+- `ScenarioClock` is initialized with a UTC `datetime`, instead of a `JulianDate`
+- `SensorConfig.minimum_range` defaults to `None`. The default for optical sensors is `0.0` and for radar sensors is set based on `tx_frequency`
+- configs objects assume degrees across the board (see #34 and !163)
+- refactored `AgentConfig` into several classes `PlatformConfig`, `StateConfig`, and `SensorConfig` to divide responsibility (see #37 and !163)
+- split `ScenarioBuilder` construction into several smaller methods (see #38 and !169)
+- renamed `SensorConfig.aperture_area` to `aperture_diameter` (see !185)
+- `RadarConfig.min_detectable_power` is required
+- `SensorConfig.field_of_view` defaults to `RectangularFoV` (see !163)
+
+#### `resonaate.sensors` package
+
+- `collectObservations()` takes `estimate_eci` state vector instead of `EstimateAgent` object
+- `Sensor.isVisible()` returns a `bool` for visibility and an `Explanation` for why the RSO was not visible
+- refactored `Sensor.inFOV()` into `FieldOfView` classes (see !92)
+- `MeasurementType.calculate()`, `Measurement.calculateMeasurement()`, and `getSlantRangeVector()` take sensor/target ECI states and UTC as parameters (see #158)
+- refactored (and validated) `getEarthLimbConeAngle()` into `getBodyLimbConeAngle()` and `checkSpaceSensorEarthLimbObscuration()` (see #155)
+- renamed `Sensor.aperture_area` to `effective_aperture_area`
+- moved `sensors.measurement` to `physics.measurements` and combined with `physics.measurement_utls` (see #176 and !186)
+- refactored `fieldOfViewFactory()` and most of `sensorFactory()` into respective `fromConfig()` class methods (see #176 and !186)
+- `Sensor.collectObservations()` slews sensor boresight to target before attempting observations (see !198)
+
+#### `resonaate.tasking` package
+
+- `Decision.calculate()` logically `ANDs` decision and visibility matrices (see #154 and !147)
+- `TaskingEngine.assess()` takes `datetime` bounds instead of `JulianDate` bounds
+- moved `Metric.METRIC_TYPE` strings to `MetricTypeLabel` constants
+- renamed `BehaviorMetric` to `TargetMetric`
+- `Decision.calculate()` takes the visibility matrix as a parameter (see #154 and !147)
+- rewards no longer must be positive (see #154 and !147)
+
+### Deprecated
+
+- `ImporterDatabase.loadObservationFile()` fails unless the sensor `r_matrix` is passed as an argument
+
+### Removed
+
+- `NoiseConfig.dynamics_noise_magnitude`, `NoiseConfig.dynamics_noise_type`, `TargetAgent.process_noise` because they aren't used (see commit 58f72522)
+- `Sensor.exemplar` and corresponding config field for better minimum/maximum range calculations
+- `ObservationTuple` and `Sensor.buildSigmaObs()` because logic moved into `Measurement` class (see #156 and !141)
+- `DataInterface.getSharedInterface()` the shared connection is managed in `db_connection` module (see #179, !192, and !199)
+
+### Test
+
+- added regression test of the number of obs generated by the `main_init.json` on the first timestep
+- added `pytest-cov` as a testing dependency to better manage coverage results
+- small typing fix that was incompatible with 3.7
+- added back cobertura coverage report for MR coverage gutters (see !85)
+- added `MissedObservation` conditional tests
+- tests skip flaky event integration tests because it's not reproducible (see #115)
+- added default coverage options for easier use of `pytest --cov`
+- stop importing from `conftest.py`, move things into `__init__.py` modules (see !192)
+- fixed testing bug where DB creation order was incorrect, refactor into easier-to-use fixtures (see #178 and !192)
+- moved integration and regression tests into their own test modules (see !192)
+- `ImporterDatabase` tests now actually run and check themselves (see !192)
+
+### Development
+
+- added several small documentation clarifications
+- attempted to fix `pylint` false positives of `invalid-name` in tests (see #129)
+- fixed `flake8` ignores for A001/A003, updated `pre-commit` hook versions (see !151)
+- moved `coverage` configs to `pyproject.toml` (see !150)
+- added top-level `Makefile` for easily making docs and cleaning files up
+- added more `make` targets for common developer commands (see !197)
+
+### CI
+
+- test jobs run against a *properly* installed RESONAATE package, see #32
+- only the unit tests are included in coverage statistics
+- added scheduled job config for testing against multiple Python versions, see #33
+- standard jobs skipped during scheduled jobs
+
 ## [2.0.0][v2.0.0] - 2022-09-06
 
 ### Added
@@ -73,6 +254,7 @@ ______________________________________________________________________
 - all references to Redis throughout the code have been refactored to use the `mjolnir` package, see #52
 - all references to Redis throughout the documentation have been removed, see #52
 - stop overuse of `ABC` when no abstract methods declared
+- `WorkerManager` instantiation in `Scenario` object now adheres to `debugging.ParallelDebugMode` config option
 
 ### Removed
 
@@ -539,7 +721,7 @@ Initial version ported to a new repository.
 [old - #77]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/77
 [old - #78]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/78
 [old - #79]: https://gitlab.hume.vt.edu/sda/resonaate-group/resonaate/-/issues/79
-[unreleased-diff]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v2.0.0...develop
+[unreleased-diff]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v3.0.0...develop
 [v1.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/commits/v1.0.0
 [v1.0.1]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.0.0...v1.0.1
 [v1.1.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.0.1...v1.1.0
@@ -551,6 +733,7 @@ Initial version ported to a new repository.
 [v1.5.1]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.0...v1.5.1
 [v1.5.2]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.1...v1.5.2
 [v2.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.2...v2.0.0
+[v3.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v2.0.0...v3.0.0
 [`black`]: https://black.readthedocs.io/en/stable/index.html
 [`isort`]: https://pycqa.github.io/isort/
 [`pre-commit`]: https://pre-commit.com/

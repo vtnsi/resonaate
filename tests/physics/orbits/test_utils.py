@@ -37,7 +37,7 @@ from resonaate.physics.orbits.utils import (
 )
 
 # Local Imports
-from .conftest import INCLINATIONS, VALLADO_AAS_COE, VALLADO_AAS_EQE, VALLADO_AAS_RV
+from . import INCLINATIONS, VALLADO_AAS_COE, VALLADO_AAS_EQE, VALLADO_AAS_RV
 
 # Type Checking Imports
 if TYPE_CHECKING:

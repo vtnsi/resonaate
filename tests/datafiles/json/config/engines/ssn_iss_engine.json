@@ -1,23 +1,15 @@
 {
     "unique_id": 7,
     "reward": {
-        "name": "CostConstrainedReward",
+        "name": "SimpleSummationReward",
         "metrics": [
-            {
-                "name": "ShannonInformation",
-                "parameters": {}
-            },
-            {
-                "name": "DeltaPosition",
-                "parameters": {}
-            },
-            {
-                "name": "LyapunovStability",
-                "parameters": {}
-            }
+          {
+            "name": "TimeSinceObservation",
+            "parameters": {}
+          }
         ],
         "parameters": {}
-    },
+      },
     "decision": {
         "name": "MunkresDecision",
         "parameters": {}

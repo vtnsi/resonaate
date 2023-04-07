@@ -8,16 +8,13 @@
   "noise": {
     "init_position_std_km": 1e-6,
     "init_velocity_std_km_p_sec": 1e-9,
-    "dynamics_noise_type": "simple_noise",
-    "dynamics_noise_magnitude": 1e-25,
     "filter_noise_type": "continuous_white_noise",
-    "filter_noise_magnitude": 3.0e-12,
-    "random_seed": "os"
+    "filter_noise_magnitude": 3.0e-11,
+    "random_seed": 1000
   },
   "propagation": {
     "propagation_model": "special_perturbations",
-    "integration_method": "RK45",
-    "realtime_observation": true
+    "integration_method": "RK45"
   },
   "geopotential": {
     "model": "egm96.txt",

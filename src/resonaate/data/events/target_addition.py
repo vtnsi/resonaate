@@ -11,7 +11,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
 # Local Imports
-from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
+from ...common.labels import PlatformLabel
 from ...physics.time.stardate import datetimeToJulianDate
 from .base import Event, EventScope
 
@@ -25,6 +25,8 @@ if TYPE_CHECKING:
 class TargetAdditionEvent(Event):
     """Event data object describing a target that is added after scenario start."""
 
+    # pylint: disable=invalid-name, no-member
+
     EVENT_TYPE: str = "target_addition"
     """``str``: Name of this type of event."""
 
@@ -34,58 +36,52 @@ class TargetAdditionEvent(Event):
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
-    def agent_id(self):  # pylint: disable=invalid-name
+    def agent_id(self):
         """``int``: Unique ID of the :class:`.AgentModel` being added to the scenario."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
-        )
+        return Event.__table__.c.get("agent_id", Column(Integer, ForeignKey("agents.unique_id")))
 
     @declared_attr
-    def tasking_engine_id(self):  # pylint: disable=invalid-name
+    def tasking_engine_id(self):
         """``int``: Unique ID for the :class:`.TaskingEngine` that this target should be added to."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "tasking_engine_id", Column(Integer)
-        )
+        return Event.__table__.c.get("tasking_engine_id", Column(Integer))
 
     agent = relationship("AgentModel", lazy="joined", innerjoin=True)
     """:class:`~.agent.AgentModel`: The `AgentModel` object being added to the scenario."""
 
     @declared_attr
-    def pos_x_km(self):  # pylint: disable=invalid-name
+    def pos_x_km(self):
         """``float``: Cartesian x-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get("pos_x_km", Column(Float))  # pylint: disable=no-member
+        return Event.__table__.c.get("pos_x_km", Column(Float))
 
     @declared_attr
-    def pos_y_km(self):  # pylint: disable=invalid-name
+    def pos_y_km(self):
         """``float``: Cartesian y-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get("pos_y_km", Column(Float))  # pylint: disable=no-member
+        return Event.__table__.c.get("pos_y_km", Column(Float))
 
     @declared_attr
-    def pos_z_km(self):  # pylint: disable=invalid-name
+    def pos_z_km(self):
         """``float``: Cartesian z-coordinate for inertial satellite location in ECI frame."""
-        return Event.__table__.c.get("pos_z_km", Column(Float))  # pylint: disable=no-member
+        return Event.__table__.c.get("pos_z_km", Column(Float))
 
     @declared_attr
-    def vel_x_km_p_sec(self):  # pylint: disable=invalid-name
+    def vel_x_km_p_sec(self):
         """``float``: Cartesian x-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get("vel_x_km_p_sec", Column(Float))  # pylint: disable=no-member
+        return Event.__table__.c.get("vel_x_km_p_sec", Column(Float))
 
     @declared_attr
-    def vel_y_km_p_sec(self):  # pylint: disable=invalid-name
+    def vel_y_km_p_sec(self):
         """``float``: Cartesian y-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get("vel_y_km_p_sec", Column(Float))  # pylint: disable=no-member
+        return Event.__table__.c.get("vel_y_km_p_sec", Column(Float))
 
     @declared_attr
-    def vel_z_km_p_sec(self):  # pylint: disable=invalid-name
+    def vel_z_km_p_sec(self):
         """``float``: Cartesian z-coordinate for inertial satellite velocity in ECI frame."""
-        return Event.__table__.c.get("vel_z_km_p_sec", Column(Float))  # pylint: disable=no-member
+        return Event.__table__.c.get("vel_z_km_p_sec", Column(Float))
 
     @declared_attr
-    def station_keeping_json(self):  # pylint: disable=invalid-name
+    def station_keeping_json(self):
         """``str``: JSON serialized list of station keeping key words for this target."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "station_keeping_json", Column(String(128))
-        )
+        return Event.__table__.c.get("station_keeping_json", Column(String(128)))
 
     MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
         "agent_id",
@@ -123,10 +119,17 @@ class TargetAdditionEvent(Event):
             scope_instance (:class:`.Scenario`): :class:`.Scenario` class that's currently executing.
         """
         target_spec = {
-            "sat_num": self.agent_id,
-            "sat_name": self.agent.name,
-            "init_eci": self.eci,
-            "station_keeping": self.station_keeping,
+            "id": self.agent_id,
+            "name": self.agent.name,
+            "state": {
+                "type": "eci",
+                "position": self.eci[:3],
+                "velocity": self.eci[3:],
+            },
+            "platform": {
+                "type": "spacecraft",
+                "station_keeping": self.station_keeping,
+            },
         }
         scope_instance.addTarget(target_spec, self.tasking_engine_id)
 
@@ -140,14 +143,11 @@ class TargetAdditionEvent(Event):
         Returns:
             :class:`.TargetAdditionEvent`: object based on the specified `config`.
         """
-        if config.target.eci_set:
-            initial_state = config.target.init_eci
-        elif config.target.coe_set:
-            orbit = ClassicalElements.fromConfig(config.target.init_coe)
-            initial_state = orbit.toECI()
-        elif config.target.eqe_set:
-            orbit = EquinoctialElements.fromConfig(config.target.init_eqe)
-            initial_state = orbit.toECI()
+        initial_state = config.target_agent.state.toECI(config.start_time)
+
+        station_keeping = ""
+        if config.target_agent.platform.type == PlatformLabel.SPACECRAFT:
+            station_keeping = dumps(config.target_agent.platform.station_keeping.toJSON())
 
         return cls(
             scope=config.scope,
@@ -156,12 +156,12 @@ class TargetAdditionEvent(Event):
             end_time_jd=datetimeToJulianDate(config.end_time),
             event_type=config.event_type,
             tasking_engine_id=config.tasking_engine_id,
-            agent_id=config.target.sat_num,
+            agent_id=config.target_agent.id,
             pos_x_km=initial_state[0],
             pos_y_km=initial_state[1],
             pos_z_km=initial_state[2],
             vel_x_km_p_sec=initial_state[3],
             vel_y_km_p_sec=initial_state[4],
             vel_z_km_p_sec=initial_state[5],
-            station_keeping_json=dumps(config.target.station_keeping.toJSON()),
+            station_keeping_json=station_keeping,
         )

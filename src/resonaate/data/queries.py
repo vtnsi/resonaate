@@ -1,6 +1,8 @@
 """This module contains functions that execute common database queries for post-processing RESONAATE data."""
+from __future__ import annotations
+
 # Standard Library Imports
-from typing import List, Sequence, Union
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import asc, distinct
@@ -14,8 +16,13 @@ from .data_interface import DataInterface
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .observation import Observation
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from collections.abc import Sequence
 
-def fetchAgentIDs(database: DataInterface) -> List[int]:
+
+def fetchAgentIDs(database: DataInterface) -> list[int]:
     """Fetches list of agent IDs of all agents present in scenario.
 
     Notes:
@@ -32,7 +39,7 @@ def fetchAgentIDs(database: DataInterface) -> List[int]:
     return [int(agent_id_tuple[0]) for agent_id_tuple in agent_id_tuples]
 
 
-def fetchEstimateIDs(database: DataInterface) -> List[int]:
+def fetchEstimateIDs(database: DataInterface) -> list[int]:
     """Fetches list of estimate agent IDs of all agents present in scenario.
 
     Notes:
@@ -52,9 +59,9 @@ def fetchEstimateIDs(database: DataInterface) -> List[int]:
 def fetchEstimatesByJDInterval(
     database: DataInterface,
     sat_nums: Sequence[int],
-    jd_lb: Union[JulianDate, None] = None,
-    jd_ub: Union[JulianDate, None] = None,
-) -> List[EstimateEphemeris]:
+    jd_lb: JulianDate | None = None,
+    jd_ub: JulianDate | None = None,
+) -> list[EstimateEphemeris]:
     """Get a posteriori estimate states of a specific target.
 
     Args:
@@ -73,7 +80,7 @@ def fetchEstimatesByJDInterval(
 
 def fetchEstimatesByJDEpoch(
     database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
-) -> List[EstimateEphemeris]:
+) -> list[EstimateEphemeris]:
     """Get a posteriori estimate states during a specific time.
 
     Args:
@@ -90,9 +97,9 @@ def fetchEstimatesByJDEpoch(
 def fetchTruthByJDInterval(
     database: DataInterface,
     sat_nums: Sequence[int],
-    jd_lb: Union[JulianDate, None] = None,
-    jd_ub: Union[JulianDate, None] = None,
-) -> List[TruthEphemeris]:
+    jd_lb: JulianDate | None = None,
+    jd_ub: JulianDate | None = None,
+) -> list[TruthEphemeris]:
     """Get truth states of a specific target.
 
     Args:
@@ -111,7 +118,7 @@ def fetchTruthByJDInterval(
 
 def fetchTruthByJDEpoch(
     database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
-) -> List[TruthEphemeris]:
+) -> list[TruthEphemeris]:
     """Get truth during a specific time.
 
     Args:
@@ -128,9 +135,9 @@ def fetchTruthByJDEpoch(
 def fetchObservationsByJDInterval(
     database: DataInterface,
     sat_nums: Sequence[int],
-    jd_lb: Union[JulianDate, None] = None,
-    jd_ub: Union[JulianDate, None] = None,
-) -> List[Observation]:
+    jd_lb: JulianDate | None = None,
+    jd_ub: JulianDate | None = None,
+) -> list[Observation]:
     """Get observations of a specific target.
 
     Args:
@@ -149,7 +156,7 @@ def fetchObservationsByJDInterval(
 
 def fetchObservationsByJDEpoch(
     database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
-) -> List[Observation]:
+) -> list[Observation]:
     """Get observations during a specific time.
 
     Args:
@@ -164,11 +171,11 @@ def fetchObservationsByJDEpoch(
 
 
 def jdIntervalQuery(
-    table: Union[EstimateEphemeris, TruthEphemeris, Observation],
+    table: EstimateEphemeris | TruthEphemeris | Observation,
     target_column: str,
     sat_nums: Sequence[int],
-    jd_lb: Union[JulianDate, None] = None,
-    jd_ub: Union[JulianDate, None] = None,
+    jd_lb: JulianDate | None = None,
+    jd_ub: JulianDate | None = None,
 ) -> Query:
     """Properly formats a generic database table query where bounds on Julian dates may not be defined.
 
@@ -193,7 +200,7 @@ def jdIntervalQuery(
 
 
 def jdEpochQuery(
-    table: Union[EstimateEphemeris, TruthEphemeris, Observation],
+    table: EstimateEphemeris | TruthEphemeris | Observation,
     target_column: str,
     sat_nums: Sequence[int],
     jd: JulianDate,
@@ -215,7 +222,7 @@ def jdEpochQuery(
 
 def filterByJulianDateInterval(
     query: Query,
-    table: Union[EstimateEphemeris, TruthEphemeris, Observation],
+    table: EstimateEphemeris | TruthEphemeris | Observation,
     jd_lb: JulianDate,
     jd_ub: JulianDate,
 ) -> Query:
@@ -246,7 +253,7 @@ def filterByJulianDateInterval(
 
 def filterBySingleJulianDate(
     query: Query,
-    table: Union[EstimateEphemeris, TruthEphemeris, Observation],
+    table: EstimateEphemeris | TruthEphemeris | Observation,
     jd: JulianDate,
 ) -> Query:
     """Generic framework for filtering satellite data query at a single time during a scenario.

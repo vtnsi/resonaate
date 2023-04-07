@@ -11,7 +11,7 @@ import pytest
 from resonaate.common.logger import Logger
 
 # Local Imports
-from ..conftest import FIXTURE_DATA_DIR
+from .. import FIXTURE_DATA_DIR
 
 
 def getLines(stdout_buff: str) -> str:

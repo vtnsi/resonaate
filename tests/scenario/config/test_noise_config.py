@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 # RESONAATE Imports
-from resonaate.physics.noise import DISCRETE_WHITE_NOISE_LABEL, SIMPLE_NOISE_LABEL
+from resonaate.common.labels import NoiseLabel
 from resonaate.scenario.config.base import ConfigError, ConfigTypeError, ConfigValueError
 from resonaate.scenario.config.noise_config import (
     DEFAULT_FILTER_NOISE_MAGNITUDE,
@@ -30,9 +30,7 @@ def getNoiseConfig() -> dict:
     return {
         "init_position_std_km": DEFAULT_POSITION_STD,
         "init_velocity_std_km_p_sec": DEFAULT_VELOCITY_STD,
-        "dynamics_noise_type": SIMPLE_NOISE_LABEL,
-        "dynamics_noise_magnitude": 1e-20,
-        "filter_noise_type": DISCRETE_WHITE_NOISE_LABEL,
+        "filter_noise_type": NoiseLabel.DISCRETE_WHITE_NOISE,
         "filter_noise_magnitude": DEFAULT_FILTER_NOISE_MAGNITUDE,
         "random_seed": DEFAULT_RANDOM_SEED_VALUE,
     }
@@ -44,9 +42,7 @@ def testCreateNoiseConfig(noise_cfg_dict: dict):
     assert noise_cfg.CONFIG_LABEL == "noise"
     assert noise_cfg.init_position_std_km == DEFAULT_POSITION_STD
     assert noise_cfg.init_velocity_std_km_p_sec == DEFAULT_VELOCITY_STD
-    assert noise_cfg.dynamics_noise_type == SIMPLE_NOISE_LABEL
-    assert noise_cfg.dynamics_noise_magnitude == 1e-20
-    assert noise_cfg.filter_noise_type == DISCRETE_WHITE_NOISE_LABEL
+    assert noise_cfg.filter_noise_type == NoiseLabel.DISCRETE_WHITE_NOISE
     assert noise_cfg.filter_noise_magnitude == DEFAULT_FILTER_NOISE_MAGNITUDE
     # Converted to None if set to "os"
     assert noise_cfg.random_seed is None
@@ -63,7 +59,7 @@ def testCreateNoiseConfig(noise_cfg_dict: dict):
 
     # Ensure the correct amount of req/opt keys
     assert len(NoiseConfig.getRequiredFields()) == 0
-    assert len(NoiseConfig.getOptionalFields()) == 7
+    assert len(NoiseConfig.getOptionalFields()) == 5
 
 
 BAD_RANDOM_SEEDS = (
@@ -85,20 +81,11 @@ def testBadRandomSeed(seed: Any, err: ConfigError):
 def testBadNoiseType():
     """Test bad input noise type values to NoiseConfig."""
     with pytest.raises(ConfigValueError):
-        NoiseConfig(dynamics_noise_type="bad")
-
-    with pytest.raises(ConfigValueError):
         NoiseConfig(filter_noise_type="bad")
 
 
 def testBadNoiseMagnitude():
     """Test bad input noise type values to NoiseConfig."""
-    with pytest.raises(ConfigValueError):
-        NoiseConfig(dynamics_noise_magnitude=0.0)
-
-    with pytest.raises(ConfigValueError):
-        NoiseConfig(dynamics_noise_magnitude=-10.0)
-
     with pytest.raises(ConfigValueError):
         NoiseConfig(filter_noise_magnitude=0.0)
 

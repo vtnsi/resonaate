@@ -8,6 +8,8 @@ References:
     #. :cite:t:`montenbruck_2012_orbits`, Eqn 3.67
     #. :cite:t:`vallado_2013_astro`
 """
+from __future__ import annotations
+
 # Third Party Imports
 from numpy import pi
 
@@ -25,6 +27,8 @@ RAD2SEC = RAD2DEG * DEG2SEC
 SEC2ARCSEC = 15
 ARCSEC2SEC = 1 / SEC2ARCSEC
 AU2KM = 1.49599 * 10**8  # Astronomical Unit to kilometer
+M2KM = 1.0 / 1000.0
+KM2M = 1000.0
 
 # Physics constants
 SOLAR_FLUX = 1367.0  # Solar flux at Earth's orbit, (W/m^2)

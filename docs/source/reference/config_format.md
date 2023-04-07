@@ -8,9 +8,9 @@ RESONAATE simulations are initialized and started via the {class}`.Scenario` cla
 There are two main ways to initialize RESONAATE:
 
 1. Pass a fully constructed JSON object (as a Python {class}`dict`) to {func}`.buildScenarioFromConfigDict()`.
-1. Pass a filepath to {func}`.buildScenarioFromConfigFile()` which points to a main scenario configuration JSON file.
+1. Pass a file path to {func}`.buildScenarioFromConfigFile()` which points to a main scenario configuration JSON file.
 
-The filepath method is preferred because it allows engines, targets, and sensors to be defined in separate files from the main configuration file.
+The file path method is preferred because it allows engines, targets, and sensors to be defined in separate files from the main configuration file.
 
 ______________________________________________________________________
 
@@ -18,7 +18,7 @@ ______________________________________________________________________
 
 ```{contents} Table of Contents
 ---
-depth: 2
+depth: 3
 backlinks: none
 local:
 ---
@@ -29,6 +29,8 @@ ______________________________________________________________________
 ```{rubric} Format Changelog
 ```
 
+- 2023-04-07: RESONAATE v3.0.0
+- 2023-02-02: RESONAATE v2.0.0
 - 2022-09-06: RESONAATE v2.0.0
 - 2022-08-26: RESONAATE v1.5.2
 - 2022-08-26: RESONAATE v1.5.1
@@ -46,7 +48,7 @@ ______________________________________________________________________
 
 ## Config File Formats
 
-The main way RESONAATE simulations are configured is by passing JSON configuration files to  {func}`.buildScenarioFromConfigFile()`.
+The main way RESONAATE simulations are configured is via passing JSON configuration files to {func}`.buildScenarioFromConfigFile()`.
 This class method will properly handle parsing the multiple configuration files, combining them into a single configuration dictionary, validating the configuration format and fields, and returning a valid {class}`.Scenario` object.
 If users simply wish to construct the formatted configuration dictionary, using the static method {func}`.buildScenarioFromConfigFile()` will properly handle the required logic.
 This section describes how the configuration files are expected to be structured, formatted, and organized.
@@ -143,8 +145,8 @@ Each of those files would then have the following format:
 
 Where the {class}`.RewardConfig` and {class}`.DecisionConfig` are defined in {ref}`ref-cfg-subsubsec-reward-object` and {ref}`ref-cfg-subsubsec-decision-object`, respectively.
 Also, `"target_file"` and `"sensor_file"` refer to JSON files defining the sets of {class}`.TargetAgentConfig` and {class}`.SensingAgentConfig`, respectively.
-More detail on the are provided in the {ref}`ref-cfg-subsec-target-object` and {ref}`ref-cfg-subsec-sensor-object` sections.
-These filepath definitions are defined relative to the main configuration file (parent of this file).
+More detail on {class}`AgentConfig` classes the are provided in the {ref}`ref-cfg-subsec-agent-object` section.
+These file path definitions are defined relative to the main configuration file (parent of this file).
 
 For example, if the main config file was in `/app/init.json`, and if it pointed to the tasking engine config file defined below (located at `/app/engines/taskable.json`), then the engine config would point to target and sensor files at `/app/targets/leo_only.json` and `/app/sensors/complete_ssn.json`, respectively.
 
@@ -185,7 +187,7 @@ The corresponding target set configuration file will have the following format:
 ]
 ```
 
-where {class}`.TargetAgentConfig` is a target object as defined in {ref}`ref-cfg-subsec-target-object`.
+where {class}`.TargetAgentConfig` is a target object as defined in {ref}`ref-cfg-subsubsec-target-agent-object`.
 
 (ref-cfg-subsec-sensor-file)=
 
@@ -202,7 +204,7 @@ The corresponding sensor set configuration file will have the following format:
 ]
 ```
 
-where {class}`.SensingAgentConfig` is a sensor object as defined in {ref}`ref-cfg-subsec-sensor-object`.
+where {class}`.SensingAgentConfig` is a sensor object as defined in {ref}`ref-cfg-subsubsec-sensing-agent-object`.
 
 (ref-cfg-sec-object-defs)=
 
@@ -226,9 +228,11 @@ The definition of the main configuration file is as follows:
 }
 ```
 
+### Top-Level Configuration
+
 (ref-cfg-subsec-time-object)=
 
-### TimeConfig
+#### TimeConfig
 
 This is a required field defining global scenario time properties.
 
@@ -258,7 +262,7 @@ This is a required field defining global scenario time properties.
 
 (ref-cfg-subsec-estimation-object)=
 
-### EstimationConfig
+#### EstimationConfig
 
 This is a required field defining estimation techniques used to track the targets during the simulation.
 
@@ -271,7 +275,6 @@ This is a required field defining estimation techniques used to track the target
 .. autoclass:: EstimationConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -285,7 +288,7 @@ This is a required field defining estimation techniques used to track the target
 }
 ```
 
-#### SequentialFilterConfig
+##### SequentialFilterConfig
 
 This is a required field in `"estimation"` defining the nominal sequential filter algorithm that tracks the targets during the simulation.
 
@@ -298,7 +301,6 @@ This is a required field in `"estimation"` defining the nominal sequential filte
 .. autoclass:: SequentialFilterConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -315,7 +317,7 @@ This is a required field in `"estimation"` defining the nominal sequential filte
 }
 ```
 
-##### ManeuverDetectionConfig
+###### ManeuverDetectionConfig
 
 This is an optional field in `"sequential_filter"` defining the maneuver detection technique that tests for maneuvers during the estimation algorithm.
 
@@ -328,7 +330,6 @@ This is an optional field in `"sequential_filter"` defining the maneuver detecti
 .. autoclass:: ManeuverDetectionConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -342,7 +343,7 @@ This is an optional field in `"sequential_filter"` defining the maneuver detecti
 }
 ```
 
-#### AdaptiveEstimationConfig
+##### AdaptiveEstimationConfig
 
 This is an optional field in `"estimation"` defining the adaptive estimation technique that is used if a maneuver is detected.
 
@@ -355,7 +356,6 @@ This is an optional field in `"estimation"` defining the adaptive estimation tec
 .. autoclass:: AdaptiveEstimationConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -374,9 +374,9 @@ This is an optional field in `"estimation"` defining the adaptive estimation tec
 }
 ```
 
-#### InitialOrbitDeterminationConfig
+##### InitialOrbitDeterminationConfig
 
-This is an optional field in `"estimation"` defining the initial orbi technique that is used if a maneuver is detected.
+This is an optional field in `"estimation"` defining the initial orbit determination technique that is used if a maneuver is detected.
 
 ```{rubric} Python Definition
 ```
@@ -387,7 +387,6 @@ This is an optional field in `"estimation"` defining the initial orbi technique 
 .. autoclass:: InitialOrbitDeterminationConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -400,9 +399,152 @@ This is an optional field in `"estimation"` defining the initial orbi technique 
 }
 ```
 
+(ref-cfg-subsec-noise-object)=
+
+#### NoiseConfig
+
+Optional object defining simulation noise characteristics.
+See {mod}`~.physics.noise` for details on different types of noise/uncertainty.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.noise_config
+
+.. autoclass:: NoiseConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"noise": {
+    "init_position_std_km": float,        # Optional
+    "init_velocity_std_km_p_sec": float,  # Optional
+    "filter_noise_type": str,             # Optional
+    "filter_noise_magnitude": float,      # Optional
+    "random_seed": str | int,             # Optional
+}
+```
+
+(ref-cfg-subsec-propagation-object)=
+
+#### PropagationConfig
+
+Optional object defining how RSOs are propagated.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.propagation_config
+
+.. autoclass:: PropagationConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"propagation": {
+    "propagation_model": str,             # Optional
+    "integration_method": str,            # Optional
+    "station_keeping": bool,              # Optional
+    "target_realtime_propagation": bool,  # Optional
+    "sensor_realtime_propagation": bool,  # Optional
+    "truth_simulation_only": bool,        # Optional
+}
+```
+
+(ref-cfg-subsec-geopotential-object)=
+
+#### ObservationConfig
+
+Optional object defining observation behavior preferences.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.observation_config
+
+.. autoclass:: ObservationConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"observation": {
+    "background": bool,              # Optional
+    "realtime_observation": bool,    # Optional
+}
+```
+
+#### GeopotentialConfig
+
+Optional object defining the Earth geopotential model.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.geopotential_config
+
+.. autoclass:: GeopotentialConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"geopotential": {
+    "model": str,   # Optional
+    "degree": int,  # Optional
+    "order": int,   # Optional
+}
+```
+
+(ref-cfg-subsec-perturbation-object)=
+
+#### PerturbationsConfig
+
+Optional object defining orbital perturbations to include.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.perturbations_config
+
+.. autoclass:: PerturbationsConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"perturbations": {
+    "third_bodies": [str, ...],         # Optional
+    "solar_radiation_pressure": bool,   # Optional
+    "general_relativity": bool,         # Optional
+}
+```
+
 (ref-cfg-subsec-engine-object)=
 
-### EngineConfig
+### Tasking Engine Configuration
 
 Required list of string paths pointing tasking engine configuration definitions.
 The paths in this list are defined relative to the **main** configuration file.
@@ -429,7 +571,6 @@ If using {func}`.buildScenarioFromConfigDict()` instead, the fields need to pre-
 .. autoclass:: EngineConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -464,7 +605,6 @@ Please refer to the {mod}`~.tasking.decisions` sub-package for more information.
 .. autoclass:: DecisionConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -494,7 +634,6 @@ Please refer to the {mod}`~.tasking.rewards` and {mod}`~.tasking.metrics` sub-pa
 .. autoclass:: RewardConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -523,7 +662,6 @@ Required list of objects to include in the `"metrics"` field of the {ref}`ref-cf
 .. autoclass:: MetricConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -536,172 +674,56 @@ Required list of objects to include in the `"metrics"` field of the {ref}`ref-cf
 }
 ```
 
-(ref-cfg-subsec-noise-object)=
+(ref-cfg-subsec-agent-object)=
 
-### NoiseConfig
+### Agent Configuration
 
-Optional object defining simulation noise characteristics.
-See {mod}`~.physics.noise` for details on different types of noise/uncertainty.
+Agents' initial states are assumed to be defined at the epoch defined by `"start_timestamp"` in {ref}`ref-cfg-subsec-time-object`.
+The agent's initial state is defined by a `StateConfig` object and its platform is defined by a `PlatformConfig` object, defined in {ref}`ref-cfg-subsec-state-object` and {ref}`ref-cfg-subsec-platform-object` respectively.
 
 ```{rubric} Python Definition
 ```
 
 ```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.noise_config
+.. currentmodule:: resonaate.scenario.config.agent_config
 
-.. autoclass:: NoiseConfig
+.. autoclass:: AgentConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
 ```
 
 ```python
-"noise": {
-    "init_position_std_km": float,        # Optional
-    "init_velocity_std_km_p_sec": float,  # Optional
-    "dynamics_noise_type": str,           # Optional
-    "dynamics_noise_magnitude": float,    # Optional
-    "filter_noise_type": str,             # Optional
-    "filter_noise_magnitude": float,      # Optional
-    "random_seed": str | int,             # Optional
-}
+[
+    {
+        "id": int,                  # Required
+        "name": str,                # Required
+        "state": StateConfig,       # Required
+        "platform": PlatformConfig, # Required
+    },
+    ...
+]
 ```
 
-(ref-cfg-subsec-propagation-object)=
+There are two types of `AgentConfig` objects: `TargetAgentConfig` and `SensingAgentConfig`.
 
-### PropagationConfig
+(ref-cfg-subsubsec-target-agent-object)=
 
-Optional object defining how RSOs are propagated.
+#### TargetAgentConfig
+
+The `TargetAgentConfig` class has the same attributes as the `AgentConfig` base class.
 
 ```{rubric} Python Definition
 ```
 
 ```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.propagation_config
-
-.. autoclass:: PropagationConfig
-   :members:
-   :noindex:
-   :special-members: __init__
-```
-
-```{rubric} JSON Definition
-```
-
-```python
-"propagation": {
-    "propagation_model": str,             # Optional
-    "integration_method": str,            # Optional
-    "station_keeping": bool,              # Optional
-    "target_realtime_propagation": bool,  # Optional
-    "sensor_realtime_propagation": bool,  # Optional
-    "realtime_observation": bool,         # Optional
-    "truth_simulation_only": bool,        # Optional
-}
-```
-
-(ref-cfg-subsec-geopotential-object)=
-
-### ObservationConfig
-
-Optional object defining observation behavior preferences.
-
-```{rubric} Python Definition
-```
-
-```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.observation_config
-
-.. autoclass:: ObservationConfig
-   :members:
-   :noindex:
-   :special-members: __init__
-```
-
-```{rubric} JSON Definition
-```
-
-```python
-"observation": {
-    "field_of_view": bool,  # Optional
-}
-```
-
-### GeopotentialConfig
-
-Optional object defining the Earth geopotential model.
-
-```{rubric} Python Definition
-```
-
-```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.geopotential_config
-
-.. autoclass:: GeopotentialConfig
-   :members:
-   :noindex:
-   :special-members: __init__
-```
-
-```{rubric} JSON Definition
-```
-
-```python
-"geopotential": {
-    "model": str,   # Optional
-    "degree": int,  # Optional
-    "order": int,   # Optional
-}
-```
-
-(ref-cfg-subsec-perturbation-object)=
-
-### PerturbationsConfig
-
-Optional object defining orbital perturbations to include.
-
-```{rubric} Python Definition
-```
-
-```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.perturbations_config
-
-.. autoclass:: PerturbationsConfig
-   :members:
-   :noindex:
-   :special-members: __init__
-```
-
-```{rubric} JSON Definition
-```
-
-```python
-"perturbations": {
-    "third_bodies": [str, ...],         # Optional
-    "solar_radiation_pressure": bool,   # Optional
-    "general_relativity": bool,         # Optional
-}
-```
-
-(ref-cfg-subsec-target-object)=
-
-### TargetAgentConfig
-
-Target agents' initial states are assumed to be defined at the epoch defined by `"start_timestamp"` in {ref}`ref-cfg-subsec-time-object`.
-
-```{rubric} Python Definition
-```
-
-```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.agent_configs
+.. currentmodule:: resonaate.scenario.config.agent_config
 
 .. autoclass:: TargetAgentConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -710,73 +732,30 @@ Target agents' initial states are assumed to be defined at the epoch defined by 
 ```python
 [
     {
-        "sat_num": int,                           # Required
-        "sat_name": str,                          # Required
-        "visual_cross_section": float,            # Optional
-        "mass": float,                            # Optional
-        "reflectivity": float,                    # Optional
-        "station_keeping": StationKeepingConfig,  # Optional
-        "init_eci": [float, ...],                 # Optional
-        "init_coe": dict,                         # Optional
-        "init_eqe": dict,                         # Optional
+        "id": int,                  # Required
+        "name": str,                # Required
+        "state": StateConfig,       # Required
+        "platform": PlatformConfig, # Required
     },
     ...
 ]
 ```
 
-There are multiple ways to define a target agent's initial state (all fields are required for each version):
+(ref-cfg-subsubsec-sensing-agent-object)=
 
-1. ECI state vector
-   ```python
-   <target_obj>: {
-       ...,
-       # J2000 initial state vector defined at "start_timestamp"
-       "init_eci": [
-           # ECI "x", "y", and "z" positions  (km)
-           float, float, float,
-           # ECI "x", "y", and "z" velocities (km/sec)
-           float, float, float,
-       ],
-   }
-   ```
-1. Classical orbital elements (COE), see {ref}`ref-cfg-subsec-coe-object`
-   ```python
-   <target_obj>: {
-       ...,
-       # COE object defined at "start_timestamp"
-       "init_coe": dict,
-   }
-   ```
-1. Equinoctial orbital elements (EQE), see {ref}`ref-cfg-subsec-eqe-object`
-   ```python
-   <target_obj>: {
-       ...,
-       # EQE object defined at "start_timestamp"
-       "init_eqe": dict,
-   }
-   ```
+#### SensingAgentConfig
 
-(ref-cfg-subsec-sensor-object)=
-
-### SensingAgentConfig
-
-The default sensor network is defined in "SSN Specifications OpenSource v1.8".
-Sensor agents can be defined as `"GroundFacility"` for ground-based sensors or `"Spacecraft"` for space-based sensors. Also, each sensing agents can contain a sensor of the following types: `"Optical"`, `"Radar"`, `"AdvRadar"`.
-
-#### Common Sensor Fields
-
-These are the required fields defined for all types of sensor objects.
+However, the `SensingAgentConfig` adds a `SensorConfig` field for defining the contained sensor object which is defined in {ref}`ref-cfg-subsec-sensor-object`.
 
 ```{rubric} Python Definition
 ```
 
 ```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.agent_configs
+.. currentmodule:: resonaate.scenario.config.agent_config
 
 .. autoclass:: SensingAgentConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -785,32 +764,426 @@ These are the required fields defined for all types of sensor objects.
 ```python
 [
     {
-        "id": int,                                # Required
-        "name": str,                              # Required
-        "host_type": str,                         # Required
-        "sensor_type": str,                       # Required
-        "azimuth_range": [float, float],          # Required
-        "elevation_range": [float, float],        # Required
-        "covariance": [[float, ...], ...],        # Required
-        "aperture_area": float,                   # Required
-        "efficiency": float,                      # Required
-        "slew_rate": float,                       # Required
-        "exemplar": list[float, float],           # Required
-        "calculate_fov": bool,                    # Optional
-        "detectable_vismag": float,               # Optional
-        "minimum_range": float,                   # Optional
-        "maximum_range": float,                   # Optional
-        "visual_cross_section": float,            # Optional
-        "mass": float,                            # Optional
-        "reflectivity": float,                    # Optional
-        "field_of_view": FieldOfViewConfig,       # Optional
-        "station_keeping": StationKeepingConfig,  # Optional
+        "id": int,                  # Required
+        "name": str,                # Required
+        "state": StateConfig,       # Required
+        "platform": PlatformConfig, # Required
+        "sensor": SensorConfig,     # Required
     },
     ...
 ]
 ```
 
-#### Field of View
+(ref-cfg-subsec-state-object)=
+
+#### StateConfig
+
+User's can describe an agent's initial state in a simulation via several `StateConfig` types: `"eci"`, `"lla"`, `"coe"`, and `"eqe"`.
+However, the type of `StateConfig` must be valid for the agent's corresponding `PlatformConfig` type.
+Each `StateConfig` description below mentions the platforms for which they are valid.
+
+##### ECIStateConfig
+
+The `ECIStateConfig` class defines initial states in Earth-centered inertial coordinates in position (kilometers) and velocity (kilometers per second).
+It is a valid option for `GroundFacilityConfig` and `SpacecraftConfig` platforms.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.state_config
+
+.. autoclass:: ECIStateConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"state": {
+    "type": "eci",                      # Required
+    "position": [float, float, float],  # Required
+    "velocity": [float, float, float],  # Required
+}
+```
+
+##### LLAStateConfig
+
+The `LLAStateConfig` class defines initial states in latitude (degrees), longitude (degrees), altitude (kilometers) coordinates.
+It is a valid option only for `GroundFacilityConfig` platforms.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.state_config
+
+.. autoclass:: LLAStateConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"state": {
+    "type": "lla",          # Required
+    "latitude": float,      # Required
+    "longitude": float,     # Required
+    "altitude": float,      # Required
+}
+```
+
+##### COEStateConfig
+
+The `COEStateConfig` class defines initial states in classical orbital elements.
+It is a valid option only for `SpacecraftConfig` platforms.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.state_config
+
+.. autoclass:: COEStateConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"state": {
+    "type": "coe",                      # Required
+    "semi_major_axis": float,           # Required
+    "eccentricity": float,              # Required
+    "inclination": float,               # Required
+    "true_anomaly": float,              # Optional
+    "right_ascension": float,           # Optional
+    "argument_periapsis": float,        # Optional
+    "true_longitude_periapsis": float,  # Optional
+    "argument_latitude": float,         # Optional
+    "true_longitude": float,            # Optional
+}
+```
+
+Note that there are several realizations of COE sets based on the fields defined.
+An orbit can be described by any of the sets defined below.
+
+1. Elliptical & Inclined
+   ```python
+    "state": {
+        "type": "coe",                      # Required
+        "semi_major_axis": float,           # Required
+        "eccentricity": float,              # Required
+        "inclination": float,               # Required
+        "right_ascension": float,           # Required
+        "argument_periapsis": float,        # Required
+        "true_anomaly": float,              # Required
+    }
+   ```
+1. Elliptical & Equatorial
+   ```python
+    "state": {
+        "type": "coe",                      # Required
+        "semi_major_axis": float,           # Required
+        "eccentricity": float,              # Required
+        "inclination": float,               # Required
+        "true_longitude_periapsis": float,  # Required
+        "true_anomaly": float,              # Required
+    }
+   ```
+1. Circular & Inclined
+   ```python
+    "state": {
+        "type": "coe",                      # Required
+        "semi_major_axis": float,           # Required
+        "eccentricity": float,              # Required
+        "inclination": float,               # Required
+        "right_ascension": float,           # Required
+        "argument_latitude": float,         # Required
+    }
+   ```
+1. Circular & Equatorial
+   ```python
+    "state": {
+        "type": "coe",                      # Required
+        "semi_major_axis": float,           # Required
+        "eccentricity": float,              # Required
+        "inclination": float,               # Required
+        "true_longitude": float,            # Required
+    }
+   ```
+
+##### EQEStateConfig
+
+The `EQEStateConfig` class defines initial states in equinoctial orbital elements.
+It is a valid option only for `SpacecraftConfig` platforms.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.state_config
+
+.. autoclass:: EQEStateConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"state": {
+    "type": "eqe",              # Required
+    "semi_major_axis": float,   # Required
+    "h": float,                 # Required
+    "k": float,                 # Required
+    "p": float,                 # Required
+    "q": float,                 # Required
+    "mean_longitude": float,    # Required
+    "retrograde": bool,         # Optional
+}
+```
+
+Note that the `"retrograde"` field is really only necessary for pure retrograde orbits (i.e., equatorial and retrograde).
+Therefore, this field is optional, and its default setting is `false`.
+
+(ref-cfg-subsec-platform-object)=
+
+#### PlatformConfig
+
+Users can define an agent's kinematic behavior in a simulation via different `PlatformConfig` types: `"spacecraft"` and `"ground_facility"`.
+Platforms share multiple common fields:
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.platform_config
+
+.. autoclass:: PlatformConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"platform": {
+    "type": str,                    # Required
+    "mass": float,                  # Optional
+    "visual_cross_section": float,  # Optional
+    "reflectivity": float,          # Optional
+}
+```
+
+It is important to note that each `PlatformConfig` type is only able to be defined with a subset of `StateConfig` types.
+This information is defined by each class' `valid_states` property.
+See {ref}`ref-cfg-subsec-state-object` for which platform types are valid for each state type.
+
+##### GroundFacilityConfig
+
+A ground facility platform defines an agent that is stationary on the Earth's surface.
+This platform has no extra fields on top of the common ones defined by `PlatformConfig`.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.platform_config
+
+.. autoclass:: GroundFacilityConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"platform": {
+    "type": "ground_facility",      # Required
+    "mass": float,                  # Optional
+    "visual_cross_section": float,  # Optional
+    "reflectivity": float,          # Optional
+}
+```
+
+##### SpacecraftConfig
+
+A spacecraft platform defines an agent which is an Earth orbiting artificial satellite.
+This platform has an extra field for defining station-keeping behaviors, which is defined in {ref}`ref-cfg-subsec-sk-object`.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.platform_config
+
+.. autoclass:: SpacecraftConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"platform": {
+    "type": "spacecraft",                       # Required
+    "mass": float,                              # Optional
+    "visual_cross_section": float,              # Optional
+    "reflectivity": float,                      # Optional
+    "station_keeping": StationKeepingConfig,    # Optional
+}
+```
+
+(ref-cfg-subsec-sk-object)=
+
+##### StationKeepingConfig
+
+Object defining station-keeping methods to apply during propagation.
+Valid routines are: `"LEO"`, `"GEO EW"`, `"GEO NS"`.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.platform_config
+
+.. autoclass:: StationKeepingConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"station_keeping": {
+    "routines": [str, ...],  # Optional
+}
+```
+
+(ref-cfg-subsec-sensor-object)=
+
+#### SensorConfig
+
+Sensors can be defined as `"optical"`, `"radar"`, `"adv_radar"`.
+All `SensorConfig` types share several common fields.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.sensor_config
+
+.. autoclass:: SensorConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+[
+    {
+        "type": str,                              # Required
+        "azimuth_range": [float, float],          # Required
+        "elevation_range": [float, float],        # Required
+        "covariance": [[float, ...], ...],        # Required
+        "aperture_diameter": float,               # Required
+        "efficiency": float,                      # Required
+        "slew_rate": float,                       # Required
+        "background_observations": bool,          # Optional
+        "minimum_range": float,                   # Optional
+        "maximum_range": float,                   # Optional
+        "field_of_view": FieldOfViewConfig,       # Optional
+    },
+    ...
+]
+```
+
+##### OpticalConfig
+
+Electro-optical sensors have an extra, optional field:
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.sensor_config
+
+.. autoclass:: OpticalConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+[
+    {
+        "detectable_vismag": float,               # Optional
+    },
+    ...
+]
+```
+
+##### RadarConfig
+
+Radar sensors have several extra, required fields:
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.sensor_config
+
+.. autoclass:: RadarConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+[
+    {
+        "tx_power": float,              # Required
+        "tx_frequency": float,          # Required
+        "min_detectable_power": float,  # Required
+    },
+    ...
+]
+```
+
+##### AdvRadarConfig
+
+Advanced Radar sensors have the exact same configuration spec as Radar sensors.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.sensor_config
+
+.. autoclass:: AdvRadarConfig
+   :members:
+   :noindex:
+```
+
+##### Field of View
 
 Defines type and parameters of `"field_of_view"` field.
 
@@ -823,7 +1196,6 @@ Defines type and parameters of `"field_of_view"` field.
 .. autoclass:: FieldOfViewConfig
    :members:
    :noindex:
-   :special-members: __init__
 ```
 
 ```{rubric} JSON Definition
@@ -838,177 +1210,8 @@ Defines type and parameters of `"field_of_view"` field.
 }
 ```
 
-#### Sensor Types
-
-Different types of sensors (`"sensor_type"` field) require different extra fields in the sensor object.
-
-1. `"Radar"` and `"AdvRadar"` require:
-   ```python
-   <sensor_obj>: {
-       ...,
-       "tx_power": float,      # Required
-       "tx_frequency": float,  # Required
-   }
-   ```
-
-Also, the shape/size of the `"covariance"` field depends on the `"sensor_type"` field:
-
-- `"Optical"`: 2x2 measurement uncertainty
-  ```python
-  # a: azimuth std in radians  # b: elevation std in radians
-  [[a ^ 2, ab], [ab, b ^ 2]]
-  ```
-- `"Radar"` and `"AdvRadar"`: 4x4 measurement uncertainty
-  ```python
-  [
-      [a ^ 2, ab, ac, ad],  # a: azimuth std in radians
-      [ab, b ^ 2, bc, bd],  # b: elevation std in radians
-      [ac, bc, c ^ 2, cd],  # c: range std in kilometers
-      [ad, bd, cd, d ^ 2],  # d: range rate std in kilometers/seconds
-  ]
-  ```
-
-#### Sensing Agent Types
-
-Different types of sensor agents (`"host_type"` field) require different extra fields in the sensor object.
-
-1. `"GroundFacility"` requires
-   ```python
-   <sensor_obj>: {
-       ...,
-       # Defines sensor's terrestrial location at "start_timestamp"
-       "lat": float, # Geodetic latitude, (rad)
-       "lon": float, # Geodetic longitude, (rad)
-       "alt": float, # Height above ellipsoid, (km)
-   }
-   ```
-1. `"Spacecraft"` requires one of the following options to describe its initial state:
-   - `"init_eci"` for defining the state in ECI (J2000) position and velocity
-     ```python
-     <sensor_obj>: {
-         ...,
-         # Defines satellite J2000 (ECI) state at "start_timestamp"
-         "init_eci": [
-             float, float, float, # "x", "y", & "z" positions (km)
-             float, float, float, # "x", "y", & "z" velocities (km/sec)
-         ]
-     }
-     ```
-   - `"init_coe"` for defining an orbit via COEs, see {ref}`ref-cfg-subsec-coe-object`
-     ```python
-     <sensor_obj>: {
-         ...,
-         # COE object defined at "start_timestamp"
-         "init_coe": <coe_object>,
-     }
-     ```
-   - `"init_eqe"` for defining an orbit via EQEs, see {ref}`ref-cfg-subsec-eqe-object`
-     ```python
-     <sensor_obj>: {
-         ...,
-         # EQE object defined at "start_timestamp"
-         "init_eqe": <eqe_object>,
-     }
-     ```
-
-(ref-cfg-subsec-coe-object)=
-
-### COE Config
-
-Note that there are several realizations of COE sets.
-An orbit can be described by any of the sets defined below.
-
-1. Elliptical & Inclined
-   ```python
-   <coe_object>: {
-       "sma": float,       # Semi-major axis (km)
-       "ecc": float,       # Eccentricity  (unit-less)
-       "inc": float,       # Inclination (degrees)
-       "raan": float,      # Right Ascension of the Ascending Node (degrees)
-       "arg_p": float,     # Argument of Periapsis/Perigee (degrees)
-       "true_anom": float, # True Anomaly (degrees)
-   }
-   ```
-1. Elliptical & Equatorial
-   ```python
-   <coe_object>: {
-       "sma": float,
-       "ecc": float,
-       "inc": float,
-       "long_p": float,    # True Longitude of Periapsis (degrees)
-       "true_anom": float,
-   }
-   ```
-1. Circular & Inclined
-   ```python
-   <coe_object>: {
-       "sma": float,
-       "ecc": float,
-       "inc": float,
-       "raan": float,
-       "arg_lat": float,  # Argument of Latitude (degrees)
-   }
-   ```
-1. Circular & Equatorial
-   ```python
-   <coe_object>: {
-       "sma": float,
-       "ecc": float,
-       "inc": float,
-       "true_long": float  # True Longitude (degrees)
-   }
-   ```
-
-(ref-cfg-subsec-eqe-object)=
-
-### EQE Config
-
-Any orbit can be described by the set of EQE defined below.
-
-```python
-<eqe_object>: {
-    "sma": float,   # Semi-major axis (km)
-    "h": float,     # Eccentricity vector component 1 (unit-less)
-    "k": float,     # Eccentricity vector component 2 (unit-less)
-    "p": float,     # Nodal vector component 1 (unit-less)
-    "q": float,     # Nodal vector component 2 (unit-less)
-    "lam": float,   # Mean longitude anomaly (degrees)
-    "retro": float  # Whether the orbit is defined with retrograde elements. Optional: default is false.
-}
-```
-
-Note that the `"retro"` field is really only necessary for pure retrograde orbits (i.e., equatorial and retrograde).
-Therefore, this field is optional, and it's default setting is `false`.
-
-(ref-cfg-subsec-sk-object)=
-
-### StationKeepingConfig
-
-Object defining station-keeping methods to apply during propagation.
-
-```{rubric} Python Definition
-```
-
-```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.agent_configs
-
-.. autoclass:: StationKeepingConfig
-   :members:
-   :noindex:
-   :special-members: __init__
-```
-
-```{rubric} JSON Definition
-```
-
-```python
-"station_keeping": {
-    "routines": [str, ...],  # Optional
-}
-```
-
 (ref-cfg-subsec-event-object)=
 
-### EventConfig
+### Event Configuration
 
 **NOTE: This needs to be filled out.**

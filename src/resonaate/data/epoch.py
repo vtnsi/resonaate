@@ -1,4 +1,6 @@
 """Defines the :class:`.Epoch` data table class."""
+from __future__ import annotations
+
 # Third Party Imports
 from sqlalchemy import Column, Float, Integer, String
 
@@ -11,7 +13,7 @@ class Epoch(Base, _DataMixin):
 
     __tablename__ = "epochs"
 
-    id = Column(Integer, primary_key=True)  # noqa: A003
+    id = Column(Integer, primary_key=True)
 
     ## Defines the human readable version of the `julian_date`
     timestampISO = Column(String, unique=True, nullable=False)

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 # Third Party Imports
 from numpy import array
@@ -39,10 +39,11 @@ class ScheduledImpulseEvent(Event):
     THRUST_FRAME_NTW: str = "ntw"
     """``str``: Configuration string used to delineate using the NTW frame to apply this impulse."""
 
-    VALID_THRUST_FRAMES: tuple[str] = (
-        THRUST_FRAME_ECI,
-        THRUST_FRAME_NTW,
-    )
+    # [NOTE]: Old-style type hints required until we either:
+    #   1) Move to SQLAlchemy >= 2.0
+    #   2) Move to Python >= 3.10
+    # pylint: disable=deprecated-typing-alias
+    VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)
     """``tuple``: Valid values for :attr:`~.ScheduledImpulseEvent.thrust_frame`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}

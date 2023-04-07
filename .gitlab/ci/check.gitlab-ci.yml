@@ -14,7 +14,7 @@ include:
 .check-base:
   stage: check
   extends:
-    - .python-latest
+    - .python39
     - .rules:default
   before_script:
     - !reference [.pip-dev, before_script]
@@ -36,10 +36,13 @@ pylint:
   before_script:
     # [NOTE]: pylint requires the package be installed
     - !reference [.pip-dev, before_script]
-    - !reference [.pip-test, before_script]
+    - echo -e "\e[0Ksection_start:`date +%s`:pip_test[collapsed=true]\r\e[0K Install resonaate & test dependencies via pip"
+    - python3 -m pip install .[test]
+    - echo -e "\e[0Ksection_end:`date +%s`:pip_test\r\e[0K"
   script:
     - echo "Linting with pylint"
-    - pylint $LINT_SOURCES | tee pylint.log
+    - pylint *.py src docs | tee pylint.log
+    - pylint tests --disable=invalid-name | tee -a pylint.log
   artifacts:
     name: pylint
     paths:

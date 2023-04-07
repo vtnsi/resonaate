@@ -19,11 +19,16 @@ This can be done in two primary ways:
 
 2. A direct definition of the process noise in discrete time (see :func:`.discreteWhiteNoise`)
 """
+from __future__ import annotations
+
 # Standard Library Imports
-from typing import Any, Tuple
+from typing import Any
 
 # Third Party Imports
 from numpy import array, diagflat, ndarray
+
+# Local Imports
+from ..common.labels import NoiseLabel
 
 
 def discreteWhiteNoise(dt: float, sigma: float) -> ndarray:
@@ -118,7 +123,7 @@ def simpleNoise(dt: float, std: float) -> ndarray:
 
 def initialEstimateNoise(
     true_target_state: ndarray, pos_std: float, vel_std: float, rng: Any
-) -> Tuple[ndarray, ndarray]:
+) -> tuple[ndarray, ndarray]:
     r"""Initialize the estimate error for a target.
 
     See Also:
@@ -137,16 +142,6 @@ def initialEstimateNoise(
     init_x = rng.multivariate_normal(true_target_state, init_p)
 
     return init_x, init_p
-
-
-CONTINUOUS_WHITE_NOISE_LABEL = "continuous_white_noise"
-"""``str``: Constant string used to describe continuous white noise."""
-
-DISCRETE_WHITE_NOISE_LABEL = "discrete_white_noise"
-"""``str``: Constant string used to describe discrete white noise."""
-
-SIMPLE_NOISE_LABEL = "simple_noise"
-"""``str``: Constant string used to describe simple noise."""
 
 
 def noiseCovarianceFactory(method: str, time_step: int, magnitude: float) -> ndarray:
@@ -170,11 +165,11 @@ def noiseCovarianceFactory(method: str, time_step: int, magnitude: float) -> nda
     Returns:
         ``ndarray``: 6x6 noise covariance matrix
     """
-    if method.lower() == CONTINUOUS_WHITE_NOISE_LABEL:
+    if method.lower() == NoiseLabel.CONTINUOUS_WHITE_NOISE:
         noise = continuousWhiteNoise(time_step, magnitude)
-    elif method.lower() == DISCRETE_WHITE_NOISE_LABEL:
+    elif method.lower() == NoiseLabel.DISCRETE_WHITE_NOISE:
         noise = discreteWhiteNoise(time_step, magnitude)
-    elif method.lower() == SIMPLE_NOISE_LABEL:
+    elif method.lower() == NoiseLabel.SIMPLE_NOISE:
         noise = simpleNoise(time_step, magnitude)
     else:
         raise ValueError(method)

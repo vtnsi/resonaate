@@ -44,12 +44,11 @@ Please see software documentation for best installation practices.
 - Python (PIP) Packages
   - [NumPy](https://www.numpy.org/)
   - [SciPy](https://www.scipy.org/scipylib/index.html)
-  - [concurrent-log-handler](https://github.com/Preston-Landers/concurrent-log-handler)
   - [SQLAlchemy](https://www.sqlalchemy.org/)
   - [matplotlib](https://matplotlib.org/index.html)
   - [mjolnir](https://code.vt.edu/space-research/resonaate/mjolnir)
 - Software
-  - [Python >= 3.7.9](https://www.python.org)
+  - [Python >= 3.9](https://www.python.org)
 
 ### Installation
 
@@ -186,6 +185,9 @@ finally:
     scenario.shutdown()
 ```
 
+> NOTE: If you are not using `buildScenarioFromConfigFile()`, you must call `setDBPath()` before any database
+> queries are required.
+
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for more thorough details.
@@ -194,45 +196,35 @@ Using these development tools requires a standalone version of RESONAATE to be i
 To install compatible, up-to-date versions please install RESONAATE with the following commands:
 
 ```bash
-pip install -e .[dev,test,doc]
-pre-commit install
+make install
 ```
-
-````{note}
-If you use `zsh`, you may need to use the following command instead:
-```zsh
-pip install -e ".[dev,test,doc]"
-```
-````
 
 ### Linting
 
-- Running `flake8` linter:
+- Running linter target:
 
   ```bash
-  flake8 .
-  ```
-
-- Running `pylint` linter:
-
-  ```bash
-  pylint *.py tests src/resonaate docs
+  make lint
   ```
 
 ### Testing
 
-
 - Run unit tests only (~30 s)
 
   ```bash
-  pytest -m "not (event or scenario)"
-
+  make test
   ```
 
 - Run entire test suite (~4 m)
 
   ```bash
-  pytest
+  make test_all
+  ```
+
+- Include coverage results
+
+  ```bash
+  make coverage
   ```
 
 ### Generating Documentation
@@ -240,20 +232,8 @@ pip install -e ".[dev,test,doc]"
 - Navigate into the `docs/` directory
 
   ```bash
-  pytest -m "not (event or scenario)"
-
-  ```
-
-- Run entire test suite (~4 m)
-
-  ```bash
-  make clean; make html
-  ```
-
-- Serve the documentation
-
-  ```bash
-  make serve
+  make clean
+  make docs
   ```
 
 - Open [http://localhost:8000/](http://localhost:8000/) in a browser
@@ -294,3 +274,4 @@ For additional information on the development of the RESONAATE Tool, see the fol
 - Contributors
   - Connor Segal: <csegal@vt.edu>
   - Amit Bala: <agbala@vt.edu>
+  - Dylan Penn: <dylanrpenn@vt.edu>

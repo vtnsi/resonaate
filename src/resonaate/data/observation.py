@@ -1,17 +1,78 @@
 """Defines the :class:`.Observation` data table class."""
+from __future__ import annotations
+
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
+from numpy import array
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 # Local Imports
+from ..common.labels import Explanation
+from ..physics.measurements import MEASUREMENT_TYPE_MAP, Measurement
+from ..physics.time.stardate import JulianDate, julianDateToDatetime
 from . import Base, _DataMixin
 
+# Type Checking Imports
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+    from typing_extensions import Self
 
-class Observation(Base, _DataMixin):
+    # Local Imports
+    from ..physics.measurements import IsAngle
+
+
+VALID_MEASUREMENTS = tuple(MEASUREMENT_TYPE_MAP.keys())
+
+
+class _ObservationMixin(_DataMixin):
+    """Data Columns applicable to both Observation and Missed Observation Tables."""
+
+    id = Column(Integer, primary_key=True)
+
+    # Type of the observing sensor (Optical, Radar, AdvRadar)
+    sensor_type = Column(String(128), nullable=False)
+
+    ## Cartesian x-coordinate for Sensor location in ECI frame in kilometers
+    pos_x_km = Column(Float, nullable=False)
+
+    ## Cartesian y-coordinate for Sensor location in ECI frame in kilometers
+    pos_y_km = Column(Float, nullable=False)
+
+    ## Cartesian z-coordinate for Sensor location in ECI frame in kilometers
+    pos_z_km = Column(Float, nullable=False)
+
+    ## Cartesian x-coordinate for Sensor velocity in ECI frame in kilometers per second
+    vel_x_km_p_sec = Column(Float, nullable=False)
+
+    ## Cartesian y-coordinate for Sensor velocity in ECI frame in kilometers per second
+    vel_y_km_p_sec = Column(Float, nullable=False)
+
+    ## Cartesian z-coordinate for Sensor velocity in ECI frame in kilometers per second
+    vel_z_km_p_sec = Column(Float, nullable=False)
+
+    @property
+    def sensor_eci(self) -> ndarray:
+        r"""``ndarray``: Returns the sensor's 6x1 ECI state vector at the time of observation."""
+        return array(
+            [
+                self.pos_x_km,
+                self.pos_y_km,
+                self.pos_z_km,
+                self.vel_x_km_p_sec,
+                self.vel_y_km_p_sec,
+                self.vel_z_km_p_sec,
+            ]
+        )
+
+
+class Observation(Base, _ObservationMixin):
     """Represents singular observation information in database."""
 
     __tablename__ = "observations"
-    id = Column(Integer, primary_key=True)  # noqa: A003
 
     ## Defines the epoch associated with the observation data
     # Many to one relation with :class:`.Epoch`
@@ -28,9 +89,6 @@ class Observation(Base, _DataMixin):
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
     target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
 
-    # Type of the observing sensor (Optical, Radar, AdvRadar)
-    sensor_type = Column(String(128), nullable=False)
-
     # Observed azimuth of target from observing sensor in radians
     azimuth_rad = Column(Float)
 
@@ -43,23 +101,8 @@ class Observation(Base, _DataMixin):
     # Observed range rate of target from observing sensor in kilometers per second
     range_rate_km_p_sec = Column(Float, nullable=True)
 
-    # South component of SEZ vector describing observation in kilometers
-    sez_state_s_km = Column(Float)
-
-    # East component of SEZ vector describing observation in kilometers
-    sez_state_e_km = Column(Float)
-
-    # Zenith component of SEZ vector describing observation in kilometers
-    sez_state_z_km = Column(Float)
-
-    # Latitude of observing sensor in radians
-    position_lat_rad = Column(Float)
-
-    # Longitude of observing sensor in radians
-    position_long_rad = Column(Float)
-
-    # Altitude of observing sensor in kilometers
-    position_altitude_km = Column(Float)
+    # It is visible...
+    reason = Explanation.VISIBLE
 
     MUTABLE_COLUMN_NAMES = (
         "julian_date",
@@ -70,55 +113,178 @@ class Observation(Base, _DataMixin):
         "elevation_rad",
         "range_km",
         "range_rate_km_p_sec",
-        "sez_state_s_km",
-        "sez_state_e_km",
-        "sez_state_z_km",
-        "position_lat_rad",
-        "position_long_rad",
-        "position_altitude_km",
+        "pos_x_km",
+        "pos_y_km",
+        "pos_z_km",
+        "vel_x_km_p_sec",
+        "vel_y_km_p_sec",
+        "vel_z_km_p_sec",
     )
 
+    def __init__(
+        self,
+        julian_date: JulianDate | float,
+        target_id: int,
+        sensor_id: int,
+        sensor_type: str,
+        sensor_eci: ndarray,
+        measurement: Measurement,
+        azimuth_rad: float | None = None,
+        elevation_rad: float | None = None,
+        range_km: float | None = None,
+        range_rate_km_p_sec: float | None = None,
+    ) -> None:
+        r"""Explicit constructor for creating an Observation."""
+        self.julian_date = float(julian_date)
+        self.sensor_id = sensor_id
+        self.target_id = target_id
+        self.sensor_type = sensor_type
+        self.pos_x_km = sensor_eci[0]
+        self.pos_y_km = sensor_eci[1]
+        self.pos_z_km = sensor_eci[2]
+        self.vel_x_km_p_sec = sensor_eci[3]
+        self.vel_y_km_p_sec = sensor_eci[4]
+        self.vel_z_km_p_sec = sensor_eci[5]
+        self.azimuth_rad = azimuth_rad
+        self.elevation_rad = elevation_rad
+        self.range_km = range_km
+        self.range_rate_km_p_sec = range_rate_km_p_sec
+        self._measurement: Measurement | None = None
+        self.measurement = measurement
+
     @classmethod
-    def fromSEZVector(cls, **kwargs):
-        """Construct an :class:`.EphemerisMixin` object using a different format of keyword arguments.
+    def fromMeasurement(
+        cls,
+        epoch_jd: JulianDate | float,
+        target_id: int,
+        tgt_eci_state: ndarray,
+        sensor_id: int,
+        sensor_eci: ndarray,
+        sensor_type: str,
+        measurement: Measurement,
+        noisy: bool,
+    ) -> Self:
+        r"""Alternative constructor for creating observation objects."""
+        utc_datetime = julianDateToDatetime(JulianDate(epoch_jd))
+        return cls(
+            julian_date=epoch_jd,
+            target_id=target_id,
+            sensor_id=sensor_id,
+            sensor_type=sensor_type,
+            sensor_eci=sensor_eci,
+            measurement=measurement,
+            **measurement.calculateMeasurement(
+                sensor_eci, tgt_eci_state, utc_datetime, noisy=noisy
+            ),
+        )
 
-        An `eci` keyword is provided as a 6x1 vector instead of the `pos[dimension]` and
-        `vel[dimension]` keywords.
+    @property
+    def measurement_states(self) -> ndarray:
+        r"""``ndarray``: measurement component values provided by this observation.
+
+        Note:
+            These states are not guaranteed to be in the correct order if pulled directly from the DB.
         """
-        assert (
-            kwargs.get("sez") is not None
-        ), "[Ephemeris.fromSEZVector()] Missing keyword argument 'xSEZ'."
+        if self.measurement is not None:
+            return array([self.__dict__[meas_type] for meas_type in self.measurement.labels])
 
-        # Parse SEZ position vector into separate columns
-        kwargs["sez_state_s_km"] = kwargs["sez"][0]
-        kwargs["sez_state_e_km"] = kwargs["sez"][1]
-        kwargs["sez_state_z_km"] = kwargs["sez"][2]
-
-        # Delete SEZ position vector form kwargs
-        del kwargs["sez"]
-
-        msg = "[Ephemeris.fromSEZVector()] Missing keyword argument 'sensor_position'."
-        assert kwargs.get("sensor_position") is not None, msg
-
-        # Parse SEZ position vector into separate columns
-        kwargs["position_lat_rad"] = kwargs["sensor_position"][0]
-        kwargs["position_long_rad"] = kwargs["sensor_position"][1]
-        kwargs["position_altitude_km"] = kwargs["sensor_position"][2]
-
-        # Delete SEZ position vector form kwargs
-        del kwargs["sensor_position"]
-
-        return cls(**kwargs)
+        # else
+        return array(
+            [
+                self.__dict__[meas_type]
+                for meas_type in VALID_MEASUREMENTS
+                if self.__dict__[meas_type] is not None
+            ]
+        )
 
     @property
-    def sez(self):
-        """``list``: Three element coordinate vector in the SEZ frame."""
-        return [self.sez_state_s_km, self.sez_state_e_km, self.sez_state_z_km]
+    def dim(self) -> int:
+        r"""``int``: Returns the measurement vector dimension."""
+        return self.measurement_states.shape[0]
 
     @property
-    def measurements(self):
-        """``list``: Vector containing available components of [azimuth, elevation, range, rangeRate]."""
-        if self.range_rate_km_p_sec and self.range_km:
-            return [self.azimuth_rad, self.elevation_rad, self.range_km, self.range_rate_km_p_sec]
+    def measurement(self) -> Measurement:
+        r"""Returns measurement object associated with this observation, see :class:`.Measurement`."""
+        return self._measurement
 
-        return [self.azimuth_rad, self.elevation_rad]
+    @measurement.setter
+    def measurement(self, new_measurement: Measurement) -> None:
+        r"""Save a new measurement object to this observation, for loading from a DB query.
+
+        Args:
+            new_measurement (:class:`.Measurement`): measurement object to save to instance attribute.
+        """
+        if not isinstance(new_measurement, Measurement):
+            raise TypeError(f"Incorrect type for 'measurement' attribute: {type(new_measurement)}")
+
+        self._measurement = new_measurement
+
+    @property
+    def angular_values(self) -> list[IsAngle]:
+        r"""Returns which measurements are angles as :class:`.IsAngle`, see :meth:`.Measurement.angular_values`."""
+        return self._measurement.angular_values
+
+    @property
+    def r_matrix(self) -> ndarray:
+        r"""``ndarray``: Returns the measurement noise covariance matrix, see :meth:`.Measurement.r_matrix`."""
+        return self._measurement.r_matrix
+
+
+class MissedObservation(Base, _ObservationMixin):
+    """Represents singular missed observation information in the database."""
+
+    __tablename__ = "missed_observations"
+
+    ## Defines the epoch associated with the observation data
+    # Many to one relation with :class:`.Epoch`
+    julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    epoch = relationship("Epoch", lazy="joined", innerjoin=True)
+
+    ## Defines the associated sensor agent with the observation data
+    # Many to one relation with :class:`.AgentModel`
+    sensor_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
+
+    ## Defines the associated target agent with the observation data
+    # Many to one relation with :class:`.AgentModel`
+    target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
+
+    # True reason why observation was missed, for debugging only!
+    reason = Column(String, nullable=False)
+
+    MUTABLE_COLUMN_NAMES = (
+        "julian_date",
+        "sensor_id",
+        "target_id",
+        "sensor_type",
+        "pos_x_km",
+        "pos_y_km",
+        "pos_z_km",
+        "vel_x_km_p_sec",
+        "vel_y_km_p_sec",
+        "vel_z_km_p_sec",
+        "reason",
+    )
+
+    def __init__(
+        self,
+        julian_date: JulianDate | float,
+        sensor_id: int,
+        target_id: int,
+        sensor_type: str,
+        sensor_eci: ndarray,
+        reason: str,
+    ) -> None:
+        """Explicit constructor for creating an Observation."""
+        self.julian_date = float(julian_date)
+        self.sensor_id = sensor_id
+        self.target_id = target_id
+        self.sensor_type = sensor_type
+        self.pos_x_km = sensor_eci[0]
+        self.pos_y_km = sensor_eci[1]
+        self.pos_z_km = sensor_eci[2]
+        self.vel_x_km_p_sec = sensor_eci[3]
+        self.vel_y_km_p_sec = sensor_eci[4]
+        self.vel_z_km_p_sec = sensor_eci[5]
+        self.reason = reason

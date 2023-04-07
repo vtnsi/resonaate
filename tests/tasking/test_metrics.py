@@ -4,14 +4,30 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+import numpy as np
 import pytest
 
 # RESONAATE Imports
-from resonaate.tasking.metrics.behavior import TimeSinceObservation
-from resonaate.tasking.metrics.information import FisherInformation, ShannonInformation
+from resonaate.tasking.metrics.information import (
+    FisherInformation,
+    KLDivergence,
+    ShannonInformation,
+)
 from resonaate.tasking.metrics.metric_base import Metric
 from resonaate.tasking.metrics.sensor import DeltaPosition, SlewCycle, TimeToTransit
 from resonaate.tasking.metrics.stability import LyapunovStability
+from resonaate.tasking.metrics.state import Range
+from resonaate.tasking.metrics.target import TimeSinceObservation
+from resonaate.tasking.metrics.uncertainty import (
+    PositionCovarianceDeterminant,
+    PositionCovarianceReduction,
+    PositionCovarianceTrace,
+    PositionMaxEigenValue,
+    VelocityCovarianceDeterminant,
+    VelocityCovarianceReduction,
+    VelocityCovarianceTrace,
+    VelocityMaxEigenValue,
+)
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -25,7 +41,7 @@ def mockedMetricClass() -> Metric:
     """Return reference to a minimal :class:`.Metric` class."""
 
     class MockedMetric(Metric):
-        def _calculateMetric(self, estimate_agent, sensor_agent, **kwargs):
+        def calculate(self, estimate_agent, sensor_agent):
             return 4
 
     return MockedMetric
@@ -65,7 +81,7 @@ class TestMetricsBase:
         target_id = 11111
         sensor_agents = {"sensor": mocked_sensing_agent}
         sensor_id = "sensor"
-        metric(target_agents[target_id], sensor_agents[sensor_id])
+        metric.calculate(target_agents[target_id], sensor_agents[sensor_id])
 
 
 class TestInformationMetric:
@@ -81,10 +97,79 @@ class TestInformationMetric:
         target_id = 11111
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
+
         shannon_metric = ShannonInformation()
-        shannon_metric(target_agents[target_id], sensor_agents[sensor_id])
+        shannon_value = shannon_metric.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert shannon_value > 0.0
+
         fisher_metric = FisherInformation()
-        fisher_metric(target_agents[target_id], sensor_agents[sensor_id])
+        fisher_value = fisher_metric.calculate(target_agents[target_id], sensor_agents[sensor_id])
+        assert fisher_value > 0.0
+
+        kld_metric = KLDivergence()
+        kld_value = kld_metric.calculate(target_agents[target_id], sensor_agents[sensor_id])
+        assert kld_value > 0.0
+
+
+class TestUncertaintyMetric:
+    """Test the UncertaintyMetric class of the metrics module."""
+
+    def testCalculateMetric(
+        self,
+        mocked_estimate: EstimateAgent,
+        mocked_sensing_agent: SensingAgent,
+    ):
+        """Test the calculate metric function."""
+        target_agents = {11111: mocked_estimate}
+        target_id = 11111
+        sensor_agents = {1234: mocked_sensing_agent}
+        sensor_id = 1234
+
+        position_covar_metric = PositionCovarianceReduction()
+        pos_covar_value = position_covar_metric.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert pos_covar_value > 0.0
+
+        position_det = PositionCovarianceDeterminant()
+        pos_det_value = position_det.calculate(target_agents[target_id], sensor_agents[sensor_id])
+        assert pos_det_value > 0.0
+
+        position_trace = PositionCovarianceTrace()
+        pos_trace_value = position_trace.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert pos_trace_value > 0.0
+
+        position_eigen = PositionMaxEigenValue()
+        pos_eig_value = position_eigen.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert pos_eig_value > 0.0
+
+        velocity_covar_metric = VelocityCovarianceReduction()
+        vel_covar_value = velocity_covar_metric.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert vel_covar_value > 0.0
+
+        velocity_det = VelocityCovarianceDeterminant()
+        vel_det_value = velocity_det.calculate(target_agents[target_id], sensor_agents[sensor_id])
+        assert vel_det_value > 0.0
+
+        velocity_trace = VelocityCovarianceTrace()
+        vel_trace_value = velocity_trace.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert vel_trace_value > 0.0
+
+        velocity_eigen = VelocityMaxEigenValue()
+        vel_eig_value = velocity_eigen.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert vel_eig_value > 0.0
 
 
 class TestStabilityMetric:
@@ -101,7 +186,26 @@ class TestStabilityMetric:
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
         lyapunov_metric = LyapunovStability()
-        lyapunov_metric(target_agents[target_id], sensor_agents[sensor_id])
+        lyapunov_value = lyapunov_metric.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert lyapunov_value > 0.0
+
+        # Test negative Lyapunov stability
+        mocked_estimate.nominal_filter.pred_p = np.array(
+            [
+                [2.0e-08, 0.0e00, 0.0e00, 0.0e00, 0.0e00, 0.0e00],
+                [0.0e00, 2.0e-08, 0.0e00, 0.0e00, 0.0e00, 0.0e00],
+                [0.0e00, 0.0e00, 2.0e-08, 0.0e00, 0.0e00, 0.0e00],
+                [0.0e00, 0.0e00, 0.0e00, 2.0e-13, 0.0e00, 0.0e00],
+                [0.0e00, 0.0e00, 0.0e00, 0.0e00, 2.0e-13, 0.0e00],
+                [0.0e00, 0.0e00, 0.0e00, 0.0e00, 0.0e00, 2.0e-13],
+            ]
+        )
+        negative_lyapunov = lyapunov_metric.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert negative_lyapunov < 0.0
 
 
 class TestSensorMetric:
@@ -117,16 +221,26 @@ class TestSensorMetric:
         target_id = 11111
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
+
         delta_position = DeltaPosition()
-        delta_position(target_agents[target_id], sensor_agents[sensor_id])
+        delta_pos_value = delta_position.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert delta_pos_value < 0.0
+
         slew_cycle = SlewCycle()
-        slew_cycle(target_agents[target_id], sensor_agents[sensor_id])
-        time_to_transit = TimeToTransit(norm_factor=10)
-        time_to_transit(target_agents[target_id], sensor_agents[sensor_id])
+        slew_value = slew_cycle.calculate(target_agents[target_id], sensor_agents[sensor_id])
+        assert slew_value > 0.0
+
+        time_to_transit = TimeToTransit()
+        transit_value = time_to_transit.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert transit_value > 0.0
 
 
-class TestBehaviorMetric:
-    """Test the BehaviorMetric class of the metrics module."""
+class TestStateMetric:
+    """Test the StateMetric class of the metrics module."""
 
     def testCalculateMetric(
         self,
@@ -138,5 +252,28 @@ class TestBehaviorMetric:
         target_id = 11111
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
+
+        range_metric = Range()
+        range_value = range_metric.calculate(target_agents[target_id], sensor_agents[sensor_id])
+        assert range_value > 0.0
+
+
+class TestTargetMetric:
+    """Test the TargetMetric class of the metrics module."""
+
+    def testCalculateMetric(
+        self,
+        mocked_estimate: EstimateAgent,
+        mocked_sensing_agent: SensingAgent,
+    ):
+        """Test the calculate metric function."""
+        target_agents = {11111: mocked_estimate}
+        target_id = 11111
+        sensor_agents = {1234: mocked_sensing_agent}
+        sensor_id = 1234
+
         time_since_observation = TimeSinceObservation()
-        time_since_observation(target_agents[target_id], sensor_agents[sensor_id])
+        staleness_value = time_since_observation.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert staleness_value > 0.0

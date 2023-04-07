@@ -5,23 +5,14 @@ running large, parallelized SDA scenarios.
 """
 from __future__ import annotations
 
-# Standard Library Imports
-from typing import TYPE_CHECKING
-
-# Type Checking Imports
-if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Optional
-
-
-__version__ = "2.0.0"
+__version__ = "3.0.0"
 
 
 def runResonaate(
     init_message: str,
     sim_time_hours: float = 3,
-    internal_db_path: Optional[str] = None,
-    importer_db_path: Optional[str] = None,
+    internal_db_path: str | None = None,
+    importer_db_path: str | None = None,
     debug_mode: bool = False,
 ) -> None:
     """Run a RESONAATE :class:`~.Scenario`.

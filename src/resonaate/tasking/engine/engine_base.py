@@ -10,14 +10,18 @@ from typing import TYPE_CHECKING
 from numpy import zeros
 
 # Local Imports
+from ...data import getDBConnection
 from ...data.importer_database import ImporterDatabase
 from ..decisions.decision_base import Decision
 from ..rewards.reward_base import Reward
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from datetime import datetime
+
     # Local Imports
-    from ...data.observation import Observation
+    from ...data.observation import MissedObservation, Observation
     from ...data.task import Task
     from ...physics.time.stardate import JulianDate
 
@@ -61,22 +65,22 @@ class TaskingEngine(metaclass=ABCMeta):
         if not isinstance(decision, Decision):
             raise TypeError("Engine constructor requires an instantiated `Decision` object.")
 
-        self._reward = reward
-        """:class:`.Reward`: callable that determines tasking priority based on various metric."""
-        self._decision = decision
-        """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
-
         self.sensor_list = sorted(sensor_ids)
         """``list``: sorted sensor agent ID numbers."""
 
-        self.sensor_indices = {}
+        self.sensor_indices: dict[int, int] = {}
         """``dict``: mapping of sorted sensor agent ID numbers to indices in :attr:`.sensor_list`."""
 
         self.target_list = sorted(target_ids)
         """``list``: sorted target agent ID numbers."""
 
-        self.target_indices = {}
+        self.target_indices: dict[int, int] = {}
         """``dict``: mapping of sorted target agent ID numbers to indices in :attr:`.target_list`."""
+
+        self._reward = reward
+        """:class:`.Reward`: callable that determines tasking priority based on various metric."""
+        self._decision = decision
+        """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
 
         # Sort sensors & targets - also creates index mappings
         self._sortSensors()
@@ -88,17 +92,28 @@ class TaskingEngine(metaclass=ABCMeta):
         """``ndarray``: NxM array defining the tasking decision for every target/sensor pair."""
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         """``ndarray``: NxM array defining the visibility condition for every target/sensor pair."""
+        self.metric_matrix = zeros(
+            (self.num_targets, self.num_sensors, self.num_metrics), dtype=float
+        )
+        """``ndarray``: NxMxP array defining the metrics for every target/sensor pair."""
 
         # List of transient observations (current timestep only)
-        self._observations = []
+        self._observations: list[Observation] = []
         """``list``: transient :class:`.Observation` tasked & saved by this engine during the current timestep."""
-        self._saved_observations = []
+        self._saved_observations: list[Observation] = []
         """``list``: transient :class:`.Observation` tasked & saved by this engine not loaded to the DB."""
+        self._missed_observations: list[MissedObservation] = []
+        """``list``: transient :class:`.MissedObservation` tasked & saved by this engine during the current timestep."""
+        self._saved_missed_observations: list[MissedObservation] = []
+        """``list``: transient :class:`.MissedObservation` tasked & saved by this engine not loaded to the DB."""
 
-        self._importer_db = None
+        self._database = getDBConnection()
+        """:class:`.ResonaateDatabase`: shared instance of simulation database."""
+
+        self._importer_db: ImporterDatabase | None = None
         """:class:`.ImporterDatabase`: Input database object for loading :class:`.Observation` objects."""
         if importer_db_path:
-            self._importer_db = ImporterDatabase.getSharedInterface(db_path=importer_db_path)
+            self._importer_db = ImporterDatabase(db_path=importer_db_path)
 
     def addTarget(self, target_id: int) -> None:
         """Add a target to this :class:`.TaskingEngine`.
@@ -152,15 +167,33 @@ class TaskingEngine(metaclass=ABCMeta):
 
         return observations
 
+    def saveMissedObservations(self, missed_observations: list[MissedObservation]) -> None:
+        """Save set of :class:`.MissedObservation` objects to transient lists.
+
+        Args:
+            missed_observations (``list``): :class:`.MissedObservation` to save
+        """
+        for miss in missed_observations:
+            if miss:
+                self._missed_observations.extend(missed_observations)
+                self._saved_missed_observations.extend(missed_observations)
+
+    def getCurrentMissedObservations(self) -> list[Observation]:
+        """``list``: Returns current list of :class:`.MissedObservation` saved internally & resets transient list."""
+        missed_observations = self._saved_missed_observations
+        self._saved_missed_observations = []
+
+        return missed_observations
+
     @abstractmethod
-    def assess(self, prior_julian_date: JulianDate, julian_date: JulianDate) -> None:
+    def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
 
         Must be overridden by implemented classes.
 
         Args:
-            prior_julian_date (:class:`.JulianDate`): previous epoch
-            julian_date (:class:`.JulianDate`): epoch at which to perform analysis
+            prior_datetime_epoch (datetime): previous epoch
+            datetime_epoch (datetime): epoch at which to perform analysis
         """
         raise NotImplementedError
 
@@ -202,6 +235,11 @@ class TaskingEngine(metaclass=ABCMeta):
         self.sensor_indices = {_id: idx for idx, _id in enumerate(self.sensor_list)}
 
     @property
+    def num_metrics(self):
+        """``int``: Returns the number of metrics."""
+        return len(self.reward.metrics)
+
+    @property
     def reward(self) -> Reward:
         """:class:`.Reward`: Returns the tasking engine's reward function."""
         return self._reward
@@ -230,3 +268,8 @@ class TaskingEngine(metaclass=ABCMeta):
     def observations(self) -> list[Observation]:
         """``list``: Returns the :class:`.Observation` objects for the previous timestep."""
         return self._observations
+
+    @property
+    def missed_observations(self) -> list[MissedObservation]:
+        """``list``: Returns the :class:`.MissedObservation` objects for the previous timestep."""
+        return self._missed_observations

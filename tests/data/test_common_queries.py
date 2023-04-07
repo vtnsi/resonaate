@@ -6,10 +6,11 @@ from itertools import combinations, permutations
 
 # Third Party Imports
 import pytest
-from numpy import eye, linspace
+from numpy import array, eye, linspace
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
+from resonaate.data import getDBConnection, setDBPath
 from resonaate.data.agent import AgentModel
 from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
 from resonaate.data.epoch import Epoch
@@ -30,6 +31,7 @@ from resonaate.data.queries import (
 )
 from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.physics.constants import PI
+from resonaate.physics.measurements import Measurement
 from resonaate.physics.time.stardate import JulianDate
 
 # SET UP RSO AGENTS
@@ -92,14 +94,23 @@ EXAMPLE_ESTIMATES = [dict(ephem, **estimate_kwargs) for ephem in deepcopy(EXAMPL
 # SET UP OBSERVATION ENTRIES
 azimuths = linspace(0, 2 * PI, num=len(EXAMPLE_RSO))
 elevations = linspace(0, PI, num=len(EXAMPLE_RSO))
-sez_s = linspace(0.0, 10.0, num=len(EXAMPLE_RSO))
-sez_e = linspace(0.0, 20.0, num=len(EXAMPLE_RSO))
-sez_z = linspace(390.0, 450.0, num=len(EXAMPLE_RSO))
-lat = [0.0, 1.0, 2.0] * 3
-lon = [0.5, 1.5, 2.5] * 3
-alt = [0.0, 50.0, 100.0] * 3
+pos_x = [7000.0, 1.0, 2.0] * 3
+pos_y = [0.5, 1.5, 2.5] * 3
+pos_z = [0.0, 50.0, 100.0] * 3
+vel_x = [2.0, 5.0, 7.0]
+vel_y = [2.0, 5.0, 7.0]
+vel_z = [2.0, 5.0, 7.0]
 obs_vals = zip(
-    RSO_TIMESTEPS, RSO_UNIQUE_IDS * 3, azimuths, elevations, sez_s, sez_e, sez_z, lat, lon, alt
+    RSO_TIMESTEPS,
+    RSO_UNIQUE_IDS * 3,
+    azimuths,
+    elevations,
+    pos_x,
+    pos_y,
+    pos_z,
+    vel_x,
+    vel_y,
+    vel_z,
 )
 EXAMPLE_OBSERVATIONS = [
     {
@@ -109,14 +120,10 @@ EXAMPLE_OBSERVATIONS = [
         "sensor_type": "Optical",
         "azimuth_rad": a_rad,
         "elevation_rad": e_rad,
-        "sez_state_s_km": sez_s,
-        "sez_state_e_km": sez_e,
-        "sez_state_z_km": sez_z,
-        "position_lat_rad": lat,
-        "position_long_rad": lon,
-        "position_altitude_km": alt,
+        "sensor_eci": array([pos_x, pos_y, pos_z, vel_x, vel_y, vel_z]),
+        "measurement": Measurement.fromMeasurementLabels(["azimuth_rad", "elevation_rad"], eye(2)),
     }
-    for jd, uid, a_rad, e_rad, sez_s, sez_e, sez_z, lat, lon, alt in obs_vals
+    for jd, uid, a_rad, e_rad, pos_x, pos_y, pos_z, vel_x, vel_y, vel_z in obs_vals
 ]
 
 
@@ -189,14 +196,15 @@ def getMultipleObservations():
 
 
 @pytest.fixture(scope="module", name="database")
-def getDataInterface(agents, epochs, ephems, estimates, observations):
+def getDataInterface(agents, epochs, ephems, estimates, observations) -> ResonaateDatabase:
     """Create common, non-shared DB object for all tests.
 
     Yields:
         :class:`.ResonaateDatabase`: properly constructed DB object
     """
     # Create & yield instance.
-    shared_interface = ResonaateDatabase.getSharedInterface(db_path=None)
+    setDBPath("sqlite://")
+    shared_interface = getDBConnection()
     shared_interface.bulkSave(deepcopy(agents + epochs + ephems + estimates + observations))
     yield shared_interface
     shared_interface.resetData(ResonaateDatabase.VALID_DATA_TYPES)

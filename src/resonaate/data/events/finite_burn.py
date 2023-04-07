@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 # Third Party Imports
 from numpy import array
@@ -37,10 +37,11 @@ class ScheduledFiniteBurnEvent(Event):
     THRUST_FRAME_NTW: str = "ntw"
     """``str``: Configuration string used to delineate using the NTW frame to apply this burn."""
 
-    VALID_THRUST_FRAMES: tuple[str] = (
-        THRUST_FRAME_ECI,
-        THRUST_FRAME_NTW,
-    )
+    # [NOTE]: Old-style type hints required until we either:
+    #   1) Move to SQLAlchemy >= 2.0
+    #   2) Move to Python >= 3.10
+    # pylint: disable=deprecated-typing-alias
+    VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)
     """``tuple``: Valid values for :attr:`~.ScheduledFiniteBurnEvent.thrust_frame`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
@@ -94,7 +95,9 @@ class ScheduledFiniteBurnEvent(Event):
         else:
             err = f"{self.thrust_frame} is not a valid coordinate frame."
             raise ValueError(err)
-        finite_burn = ScheduledFiniteBurn(start_sim_time, end_sim_time, thrust_func)
+        finite_burn = ScheduledFiniteBurn(
+            start_sim_time, end_sim_time, thrust_func, scope_instance.simulation_id
+        )
 
         scope_instance.appendPropagateEvent(finite_burn)
 

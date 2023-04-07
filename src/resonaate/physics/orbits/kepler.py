@@ -1,6 +1,5 @@
 """Defines methods of solving Kepler's Equation & Kepler's Problem."""
-# Standard Library Imports
-from typing import Optional
+from __future__ import annotations
 
 # Third Party Imports
 from numpy import (
@@ -25,7 +24,8 @@ from scipy.optimize import newton
 # Local Imports
 from ...common.logger import resonaateLogError
 from ..bodies import Earth
-from ..math import _ATOL, _MAX_ITER
+from ..constants import KM2M, PI
+from ..maths import _ATOL, _MAX_ITER
 from .utils import getAngularMomentum, universalC2C3
 
 
@@ -123,8 +123,8 @@ def keplerSolveCOE(
     E_0: float,
     M: float,
     ecc: float,
-    tol: Optional[float] = _ATOL,
-    maxiter: Optional[int] = _MAX_ITER,
+    tol: float = _ATOL,
+    maxiter: int = _MAX_ITER,
     raise_err: bool = True,
 ) -> float:
     r"""Solve Kepler's equation via Newton-Raphson.
@@ -164,8 +164,8 @@ def keplerSolveEQE(
     h: float,
     k: float,
     lam: float,
-    tol: Optional[float] = _ATOL,
-    maxiter: Optional[int] = _MAX_ITER,
+    tol: float = _ATOL,
+    maxiter: int = _MAX_ITER,
     raise_err: bool = True,
 ) -> float:
     r"""Solve the equinoctial form of Kepler's equation via Newton-Raphson.
@@ -206,9 +206,9 @@ def keplerSolveEQE(
 def solveKeplerProblemUniversal(
     init_state: ndarray,
     tof: float,
-    mu: Optional[float] = Earth.mu,
-    tol: Optional[float] = _ATOL,
-    maxiter: Optional[int] = _MAX_ITER,
+    mu: float = Earth.mu,
+    tol: float = _ATOL,
+    maxiter: int = _MAX_ITER,
 ) -> ndarray:
     r"""Solver Kepler's problem using the universal variables formulation.
 
@@ -287,3 +287,21 @@ def solveKeplerProblemUniversal(
         raise KeplerProblemError(msg)
 
     return concatenate((f * r0 + g * v0, fdot * r0 + gdot * v0))
+
+
+def keplerThirdLaw(position_vector: ndarray) -> float:
+    """Find the Orbital Period of an RSO using Kepler's 3rd law.
+
+    Note:
+        Circular orbit assumed as first approximation.
+
+    Args:
+        position_vector (``ndarray``): 3x1 ECI RSO position vector
+
+    Returns:
+        ``float``: Orbital Period
+    """
+    constant = 4 * (PI**2) * (Earth.radius * KM2M) / Earth.gravity
+    radius_ratio = (norm(position_vector) / Earth.radius) ** 3
+    period = (constant * radius_ratio) ** (1 / 2)
+    return period
