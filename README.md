@@ -229,11 +229,10 @@ make install
 
 ### Generating Documentation
 
-- Navigate into the `docs/` directory
+- Build and serve the documentation
 
   ```bash
-  make clean
-  make docs
+  make doc
   ```
 
 - Open [http://localhost:8000/](http://localhost:8000/) in a browser
