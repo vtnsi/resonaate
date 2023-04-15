@@ -92,7 +92,7 @@ def createJobHandler(numpy_add_job: Job, sensor_agent: SensingAgent) -> JobHandl
             """Remove the last callback that was registered."""
             self.callback_registry.pop()
 
-    job_handler = GenericJobHandler()
+    job_handler = GenericJobHandler(dump_on_timeout=False)
     job_handler.registerCallback(sensor_agent)
     yield job_handler
     job_handler.queue_mgr.stopHandling()

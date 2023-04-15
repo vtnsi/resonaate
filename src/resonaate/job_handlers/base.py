@@ -71,8 +71,13 @@ class JobHandler(ParallelMixin, ABC):
     callback_class = None
     """:class:`.CallbackRegistration`: defines which callback type to register to the handler."""
 
-    def __init__(self):
-        """Initialize job handler for a parallel execution step."""
+    def __init__(self, dump_on_timeout: bool = True):
+        """Initialize job handler for a parallel execution step.
+
+        Args:
+            dump_on_timeout (``bool``, optional): whether the KVS dumps state on timeout errors.
+                Mostly for testing. Defaults to ``True``.
+        """
         self.logger = logging.getLogger("resonaate")
         """:class:`.Logger`: internal RESONAATE logging class."""
 
@@ -87,6 +92,9 @@ class JobHandler(ParallelMixin, ABC):
 
         self._total_jobs = 0
         """``int``: current total number of :class:`.Job` objects created."""
+
+        self._dump_on_timeout = dump_on_timeout
+        """``bool``: controls whether KVS will dump its state on a timeout error."""
 
     @property
     def total_jobs(self):
@@ -163,7 +171,10 @@ class JobHandler(ParallelMixin, ABC):
 
         # Wait for jobs to complete
         try:
-            self.queue_mgr.blockUntilProcessed(timeout=getTimeout(self.total_jobs))
+            self.queue_mgr.blockUntilProcessed(
+                timeout=getTimeout(self.total_jobs),
+                dump_on_timeout=self._dump_on_timeout,
+            )
         except JobTimeoutError:
             # jobs took longer to complete than expected
             for job_id in self.queue_mgr.queued_job_ids:
