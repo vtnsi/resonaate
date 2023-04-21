@@ -88,7 +88,9 @@ def getNonSphericalHarmonics(
 ) -> tuple[ndarray, ndarray]:
     r"""Compute the harmonic terms for a given position & gravity field.
 
-    In general, the gravity model order must be less than or equal to the gravity model degree.
+    Note:
+        The gravity model order must be less than or equal to the gravity model degree.
+        This function only considers J2 and above. It does not include Keplerian Force Accelerations.
 
     References:
         :cite:t:`montenbruck_2012_orbits`, Eqn 3.29 - 3.31
@@ -154,7 +156,9 @@ def nonSphericalAcceleration(
 ) -> ndarray:
     r"""Compute the non-spherical geopotential acceleration.
 
-    In general, the gravity model order must be less than or equal to the gravity model degree.
+    Note:
+        The gravity model order must be less than or equal to the gravity model degree.
+        This function only considers J2 and above. It does not include Keplerian Force Accelerations.
 
     References:
         :cite:t:`montenbruck_2012_orbits`, Eqn 3.32 - 3.33

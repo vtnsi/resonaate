@@ -44,7 +44,7 @@ ______________________________________________________________________
 
 ### Fixed
 
-*for any bug fixes*
+- SRP perturbation would not work without setting "sun" third body (see #184)
 
 ### Security
 

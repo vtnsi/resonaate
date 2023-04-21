@@ -100,6 +100,13 @@ class SpecialPerturbations(Celestial):
 
         # Get third body positions
         positions = {body: body.getPosition(julian_date) for body in self.third_bodies}
+
+        # Set sun position for SRP
+        if Sun not in self.third_bodies:
+            sun_positions = Sun.getPosition(julian_date)
+        else:
+            sun_positions = positions[Sun]
+
         for jj in range(step):
             # pylint: disable=unsupported-assignment-operation
 
@@ -134,7 +141,7 @@ class SpecialPerturbations(Celestial):
 
             # Solar Radiation Pressure accelerations
             if self.use_srp:
-                a_srp = self._getSolarRadiationPressureAcceleration(r_eci, array(positions[Sun]))
+                a_srp = self._getSolarRadiationPressureAcceleration(r_eci, array(sun_positions))
             else:
                 a_srp = 0.0
 
