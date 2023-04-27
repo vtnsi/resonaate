@@ -92,6 +92,7 @@ ______________________________________________________________________
 - incorrect updating of `delta_boresight` (see #180 and !198)
 - overuse of `updateReductionParameters()` since `getReductionParameters()` properly handles if they aren't updated (see #142)
 - TeX errors in documentation causing `make latexpdf` to fail (see !213)
+- obscure SQLAlchemy bug when creating the database before importing `AgentModel` (see #183 and !212)
 
 ### Added
 

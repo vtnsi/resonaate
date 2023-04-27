@@ -15,7 +15,6 @@ from sqlalchemy.pool import StaticPool
 # Local Imports
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
-from . import Base
 from .agent import AgentModel
 from .detected_maneuver import DetectedManeuver
 from .ephemeris import EstimateEphemeris, TruthEphemeris
@@ -23,6 +22,7 @@ from .epoch import Epoch
 from .events import Event
 from .filter_step import FilterStep
 from .observation import MissedObservation, Observation
+from .table_base import Base
 from .task import Task
 
 

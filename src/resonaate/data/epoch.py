@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import Column, Float, Integer, String
 
 # Local Imports
-from . import Base, _DataMixin
+from .table_base import Base, _DataMixin
 
 
 class Epoch(Base, _DataMixin):

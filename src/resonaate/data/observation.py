@@ -13,7 +13,7 @@ from sqlalchemy.orm import relationship
 from ..common.labels import Explanation
 from ..physics.measurements import MEASUREMENT_TYPE_MAP, Measurement
 from ..physics.time.stardate import JulianDate, julianDateToDatetime
-from . import Base, _DataMixin
+from .table_base import Base, _DataMixin
 
 # Type Checking Imports
 if TYPE_CHECKING:

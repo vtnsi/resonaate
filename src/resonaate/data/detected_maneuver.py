@@ -6,7 +6,7 @@ from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 # Local Imports
-from . import Base, _DataMixin
+from .table_base import Base, _DataMixin
 
 
 class DetectedManeuver(Base, _DataMixin):
