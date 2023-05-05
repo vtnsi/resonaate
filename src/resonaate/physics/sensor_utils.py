@@ -293,11 +293,12 @@ def calculatePhaseAngle(emitter: ndarray, reflector: ndarray, observer: ndarray)
 
 
 def checkGalacticExclusionZone(boresight_eci_vector, cone_angle=PI / 30):
-    """Determine if a sensor has appropriate lighting conditions.
+    r"""Determine if a sensor has appropriate lighting conditions.
 
-    RA 17h 45m 40.04s (radians: 4.649850924403647),
-    Dec -29° 00` 28.1″ (degrees: -29.007805555555555556)
-    range ~26 kilolight-years
+    | The ECI position of the galactic center is:
+    | :math:`\alpha = 17h\,45m\,40.04s` (:math:`4.649850924403647` radians)
+    | :math:`\delta = -29^{\circ}\,00^{\prime}\,28.1^{\prime\prime}` (:math:`-29.007805555555555556^{\circ}`)
+    | :math:`\rho \approx 26` kilolight-years
     """
     boresight_belt_angle = arccos(
         dot(GALACTIC_CENTER_ECI[:3], boresight_eci_vector)
