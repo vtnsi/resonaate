@@ -28,8 +28,8 @@ def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
 
     This assumes that the coefficients are normalized according to Eq 8-22 in Vallado:
 
-    :math:`\bar{S}_{n,m}=\PI_{n,m} S_{n,m}`
-    :math:`\bar{C}_{n,m}=\PI_{n,m} C_{n,m}`
+    :math:`\bar{S}_{n,m}=\Pi_{n,m} S_{n,m}`
+    :math:`\bar{C}_{n,m}=\Pi_{n,m} C_{n,m}`
 
     where the function returns :math:`S_{n,m}` and :math:`C_{n,m}` accordingly.
 
@@ -60,9 +60,9 @@ def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
 def _getGeopotentialCoefficientScale(degree: int, order: int) -> float:
     r"""Get the scale to un-normalize the corresponding geopotential coefficients.
 
-    :math:`\PI_{n,m} = \sqrt{\frac{(n + m)!}{(n - m)!k(2n + 1)}}` where
+    :math:`\Pi_{n,m} = \sqrt{\frac{(n + m)!}{(n - m)!k(2n + 1)}}` where
     :math:`k=1` if :math:`m=0`
-    :meth:`k=2` if :math:`m\neq 0`
+    :math:`k=2` if :math:`m \neq 0`
 
     References:
         :cite:t:`vallado_2013_astro`, Eqn 8-22, Pg 546

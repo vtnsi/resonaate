@@ -296,7 +296,7 @@ def checkGalacticExclusionZone(boresight_eci_vector, cone_angle=PI / 30):
     """Determine if a sensor has appropriate lighting conditions.
 
     RA 17h 45m 40.04s (radians: 4.649850924403647),
-    Dec -29° 00` 28.1″ (degrees: -29.007805555555555556)
+    Dec -29deg 00arcmin 28.1arcsec (degrees: -29.007805555555555556)
     range ~26 kilolight-years
     """
     boresight_belt_angle = arccos(

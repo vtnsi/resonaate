@@ -91,6 +91,7 @@ ______________________________________________________________________
 - incorrect relative state calculation in `eci2rsw()` transformation (see commit e6851c9f7)
 - incorrect updating of `delta_boresight` (see #180 and !198)
 - overuse of `updateReductionParameters()` since `getReductionParameters()` properly handles if they aren't updated (see #142)
+- TeX errors in documentation causing `make latexpdf` to fail (see !213)
 
 ### Added
 
