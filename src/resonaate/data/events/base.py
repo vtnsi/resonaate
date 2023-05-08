@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, Float, Integer, String
 
 # Local Imports
-from .. import Base, _DataMixin
+from ..table_base import Base, _DataMixin
 
 # Type Checking Import
 if TYPE_CHECKING:
