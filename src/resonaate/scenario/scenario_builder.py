@@ -169,7 +169,6 @@ class ScenarioBuilder:
                 tgt_cfg=target_config,
                 clock=self.clock,
                 dynamics=filter_dynamics,
-                prop_cfg=self.config.propagation,
                 time_cfg=self.config.time,
                 noise_cfg=self.config.noise,
                 estimation_cfg=self.config.estimation,

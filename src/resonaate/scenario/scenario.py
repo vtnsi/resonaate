@@ -446,7 +446,6 @@ class Scenario(ParallelMixin):
             tgt_cfg=target_spec,
             clock=self.clock,
             dynamics=filter_dynamics,
-            prop_cfg=self.scenario_config.propagation,
             time_cfg=self.scenario_config.time,
             noise_cfg=self.scenario_config.noise,
             estimation_cfg=self.scenario_config.estimation,
