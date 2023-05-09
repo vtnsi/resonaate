@@ -159,7 +159,6 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         tgt_cfg: TargetAgentConfig,
         clock: ScenarioClock,
         dynamics: Dynamics,
-        prop_cfg: PropagationConfig,
         time_cfg: TimeConfig,
         noise_cfg: NoiseConfig,
         estimation_cfg: EstimationConfig,
@@ -170,7 +169,6 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             tgt_cfg (:class:`.TargetAgentConfig`): config from which to generate an estimate agent.
             clock (:class:`.ScenarioClock`): common clock object for the simulation.
             dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
-            prop_cfg (:class:`.PropagationConfig`): various propagation simulation settings.
             time_cfg (:class:`.TimeConfig`): defines time configuration settings.
             noise_cfg (:class:`.NoiseConfig`): defines noise configuration settings.
             estimation_cfg (:class:`.EstimationConfig`): defines estimation configuration settings.
