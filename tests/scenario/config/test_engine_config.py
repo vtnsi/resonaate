@@ -19,6 +19,10 @@ from resonaate.scenario.config.base import (
 from resonaate.scenario.config.decision_config import DecisionConfig
 from resonaate.scenario.config.engine_config import EngineConfig
 from resonaate.scenario.config.reward_config import MetricConfig, RewardConfig
+from resonaate.scenario.config.sensor_config import SensorConfig
+
+# Local Imports
+from . import EARTH_SENSORS
 
 if TYPE_CHECKING:
     # RESONAATE Imports
@@ -26,6 +30,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(name="engine_cfg_dict")
+@patch("resonaate.scenario.config.sensor_config.SensorConfig", autospec=True)
 @patch("resonaate.scenario.config.agent_config.SensingAgentConfig", autospec=True)
 @patch("resonaate.scenario.config.agent_config.TargetAgentConfig", autospec=True)
 @patch("resonaate.scenario.config.engine_config.DecisionConfig", autospec=True)
@@ -35,10 +40,12 @@ def getEngineConfig(
     decision: DecisionConfig,
     tgt_agent: TargetAgentConfig,
     sen_agent: SensingAgentConfig,
+    sensor: SensorConfig,
 ) -> dict:
     """Generate the default EngineConfig dictionary."""
+    sensor.type = "adv_radar"
     decision.name = "AllVisibleDecision"
-    sen_agent.sensor_type = "adv_radar"
+    sen_agent.sensor = sensor
     sen_agent.id = 11111
     return {
         "unique_id": 1,
@@ -98,7 +105,8 @@ def testInputsEngineConfig(engine_cfg_dict: dict):
         EngineConfig(**cfg_dict)
 
     cfg_dict = copy(engine_cfg_dict)
-    cfg_dict["sensors"][0].sensor_type = "Optical"
+    # [NOTE]: This should point at a SensingAgent cfg with an Optical sensor
+    cfg_dict["sensors"][0] = EARTH_SENSORS[1]
     with pytest.raises(ConfigError):
         EngineConfig(**cfg_dict)
 
