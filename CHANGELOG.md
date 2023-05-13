@@ -45,6 +45,7 @@ ______________________________________________________________________
 ### Fixed
 
 - SRP perturbation would not work without setting "sun" third body (see #184)
+- `AllVisibleDecision` config sensor type check (see #187)
 
 ### Security
 
