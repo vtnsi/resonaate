@@ -34,8 +34,6 @@ pytest-unit:
   extends: .test-base
   script:
     - echo "Running unit tests with pytest"
-    # [FIXME]: This is a temporary fix for
-    - export MJOLNIR_SOCKET_PROTOCOL=ipc
     - pytest --cov -m "not (integration or regression)" $PYTEST_OPTIONS
   artifacts:
     name: coverage
@@ -62,8 +60,6 @@ pytest-integration:
   extends: .test-base
   script:
     - echo "Running integration tests with pytest"
-    # [FIXME]: This is a temporary fix for
-    - export MJOLNIR_SOCKET_PROTOCOL=ipc
     - pytest --cov -m integration $PYTEST_OPTIONS
 
 # ==========================================
@@ -74,6 +70,4 @@ pytest-regression:
   extends: .test-base
   script:
     - echo "Running regression tests with pytest"
-    # [FIXME]: This is a temporary fix for
-    - export MJOLNIR_SOCKET_PROTOCOL=ipc
     - pytest --cov -m regression $PYTEST_OPTIONS
