@@ -11,7 +11,7 @@ from unittest.mock import create_autospec
 # Third Party Imports
 import numpy as np
 import pytest
-from mjolnir import Job, KeyValueStore, WorkerManager
+from mjolnir import Job, KeyValueStore
 
 # RESONAATE Imports
 from resonaate.common.exceptions import (
@@ -36,15 +36,6 @@ if TYPE_CHECKING:
     from resonaate.agents.estimate_agent import EstimateAgent
     from resonaate.agents.sensing_agent import SensingAgent
     from resonaate.agents.target_agent import TargetAgent
-
-
-@pytest.fixture(name="worker_manager")
-def createWorkerManager() -> WorkerManager:
-    """Create a valid WorkerManager."""
-    worker_manager = WorkerManager(proc_count=1)
-    worker_manager.startWorkers()
-    yield worker_manager
-    worker_manager.stopWorkers(no_wait=True)
 
 
 @pytest.fixture(name="numpy_add_job")
@@ -109,7 +100,6 @@ def getMockedErrorJobObject() -> Job:
     return job
 
 
-@pytest.mark.usefixtures("worker_manager")
 class TestBaseJobHandler:
     """Tests related to job handlers."""
 
@@ -153,7 +143,6 @@ class TestBaseJobHandler:
         assert not job_handler.queue_mgr.queued_jobs_processed
 
 
-@pytest.mark.usefixtures("worker_manager")
 class TestAgentPropagateHandler:
     """Tests related to job handlers."""
 
@@ -174,6 +163,7 @@ class TestAgentPropagateHandler:
                 prior_julian_date=prior_julian_date,
                 julian_date=target_julian_date,
             )
+        handler.queue_mgr.stopHandling()
 
     def testProblemEstimateAgent(self, estimate_agent: EstimateAgent, target_agent: TargetAgent):
         """Test logging a bad estimate when an error occurs."""
@@ -197,6 +187,7 @@ class TestAgentPropagateHandler:
                 julian_date=target_julian_date,
                 datetime_epoch=target_datetime,
             )
+        handler.queue_mgr.stopHandling()
 
     def testProblemEstimateAgentNoMatch(
         self, estimate_agent: EstimateAgent, target_agent: TargetAgent
@@ -222,6 +213,7 @@ class TestAgentPropagateHandler:
                 julian_date=target_julian_date,
                 datetime_epoch=target_datetime,
             )
+        handler.queue_mgr.stopHandling()
 
         # Check for log, doesn't seem to work?
         # for record_tuple in caplog.record_tuples:
@@ -237,6 +229,7 @@ class TestAgentPropagateHandler:
         error_msg = r"A valid ImporterDatabase was not established: \w+"
         with pytest.raises(ValueError, match=error_msg):
             handler.registerCallback(target_agent)
+        handler.queue_mgr.stopHandling()
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testNoImporterData(self, datafiles: str, target_agent: TargetAgent):
@@ -266,3 +259,4 @@ class TestAgentPropagateHandler:
                 epoch_time=epoch_time,
                 datetime_epoch=julianDateToDatetime(j_date),
             )
+        handler.queue_mgr.stopHandling()

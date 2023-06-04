@@ -41,7 +41,7 @@ class TestScenarioFactory:
             JSON_INIT_PATH, "default_realtime_est_realtime_obs.json"
         )
         _ = buildScenarioFromConfigFile(
-            init_filepath, internal_db_path=None, importer_db_path=None
+            init_filepath, internal_db_path=None, importer_db_path=None, start_workers=False
         )
 
     @pytest.mark.usefixtures("custom_database")
@@ -57,6 +57,7 @@ class TestScenarioFactory:
             init_file_path,
             internal_db_path=None,
             importer_db_path=db_path if "import" in init_file else None,
+            start_workers=False,
         )
 
     @pytest.mark.parametrize("init_file", INVALID_JSON_CONFIGS)
@@ -69,7 +70,7 @@ class TestScenarioFactory:
         # Check missing target_set & sensor_set fields
         with pytest.raises(KeyError):
             _ = buildScenarioFromConfigFile(
-                init_file_path, internal_db_path=None, importer_db_path=None
+                init_file_path, internal_db_path=None, importer_db_path=None, start_workers=False
             )
 
     @pytest.mark.parametrize("init_file", EMPTY_JSON_ENGINE_CONFIGS)
@@ -83,5 +84,5 @@ class TestScenarioFactory:
         error_msg = r"Empty JSON file: \/.*?\.json+"
         with pytest.raises(IOError, match=error_msg):
             buildScenarioFromConfigFile(
-                init_file_path, internal_db_path=None, importer_db_path=None
+                init_file_path, internal_db_path=None, importer_db_path=None, start_workers=False
             )

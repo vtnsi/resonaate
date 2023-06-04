@@ -94,6 +94,7 @@ ______________________________________________________________________
 - overuse of `updateReductionParameters()` since `getReductionParameters()` properly handles if they aren't updated (see #142)
 - TeX errors in documentation causing `make latexpdf` to fail (see !213)
 - obscure SQLAlchemy bug when creating the database before importing `AgentModel` (see #183 and !212)
+- tests hanging when using TCP protocol (see #171 and !217)
 
 ### Added
 
