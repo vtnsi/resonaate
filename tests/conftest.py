@@ -5,11 +5,12 @@ from __future__ import annotations
 import logging
 import shutil
 import sys
+from multiprocessing import cpu_count
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
-from mjolnir import KeyValueStore
+from mjolnir import KeyValueStore, WorkerManager
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
@@ -90,6 +91,15 @@ def _createKeyValueStore():  # pylint: disable=useless-return
     _ = KeyValueStore.getClient()
 
     return
+
+
+@pytest.fixture(name="worker_manager", scope="session", autouse=True)
+def createWorkerManager() -> WorkerManager:
+    """Create a valid WorkerManager."""
+    worker_manager = WorkerManager(proc_count=cpu_count())
+    worker_manager.startWorkers()
+    yield worker_manager
+    worker_manager.stopWorkers(no_wait=True)
 
 
 @pytest.fixture(name="teardown_kvs", autouse=True)

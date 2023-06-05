@@ -60,6 +60,7 @@ def propagateScenario(
         init_file,
         internal_db_path=shared_db_path,
         importer_db_path=importer_db_path,
+        start_workers=False,
     )
 
     # Determine target Julian date based on elapsed time

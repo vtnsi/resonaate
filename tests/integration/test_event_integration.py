@@ -149,7 +149,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5)
@@ -207,7 +207,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5)
@@ -268,7 +268,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5)
@@ -325,7 +325,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5)
@@ -399,7 +399,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         initial_target_count = len(app.target_agents)
         initial_engine_target_count = app.tasking_engines[tasking_engine.unique_id].num_targets
@@ -495,7 +495,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         initial_sensor_count = len(app.sensor_agents)
         initial_engine_sensor_count = app.tasking_engines[tasking_engine.unique_id].num_sensors
@@ -556,7 +556,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         initial_target_count = len(app.target_agents)
         initial_engine_target_count = app.tasking_engines[tasking_engine.unique_id].num_targets
@@ -618,7 +618,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         initial_sensor_count = len(app.sensor_agents)
         initial_engine_sensor_count = app.tasking_engines[tasking_engine.unique_id].num_sensors
@@ -719,7 +719,7 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5)
