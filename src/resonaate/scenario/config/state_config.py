@@ -28,6 +28,8 @@ if TYPE_CHECKING:
     from numpy import ndarray
     from typing_extensions import Self
 
+# ruff: noqa: A003
+
 
 @dataclass
 class StateConfig(ABC, ConfigObject):

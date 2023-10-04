@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     from ...agents.estimate_agent import EstimateAgent
     from ...agents.sensing_agent import SensingAgent
 
+# ruff: noqa: ARG002
+
 
 class PositionCovarianceTrace(UncertaintyMetric):
     """Trace of the position covariance metric."""

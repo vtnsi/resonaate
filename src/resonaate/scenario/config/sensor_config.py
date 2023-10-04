@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     # Third Party Imports
     from typing_extensions import Self
 
+# ruff: noqa: A003
 
 VALID_SENSOR_FOV_LABELS: tuple[str] = (
     FoVLabel.CONIC,

@@ -7,6 +7,10 @@ import subprocess
 # RESONAATE Imports
 from resonaate.__main__ import main
 
+# ruff: noqa: F401
+# ruff: noqa: S603
+# ruff: noqa: S607
+
 
 def testModuleCommand():
     """Test that the module can be ran using `python -m`."""
