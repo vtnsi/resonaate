@@ -16,7 +16,10 @@ disable=
     too-many-arguments,
     singleton-comparison,
     consider-using-namedtuple-or-dataclass,
-    consider-using-assignment-expr,
+    invalid-name,
+    too-many-ancestors,
+    too-many-locals,
+    too-many-branches,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -28,7 +31,11 @@ enable=
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
-extension-pkg-allow-list=numpy
+extension-pkg-allow-list=
+    numpy,
+    zmq,
+    pandas,
+    xarray,
 
 # Files or directories to be skipped. They should be base names, not paths.
 ignore=
@@ -140,71 +147,6 @@ module-naming-style=snake_case
 
 # Naming style matching correct variable names.
 variable-naming-style=snake_case
-
-
-[DESIGN]
-
-# Maximum number of arguments for function / method.
-max-args=8
-
-# Maximum number of attributes for a class (see R0902).
-max-attributes=25
-
-# Maximum number of boolean expressions in an if statement.
-max-bool-expr=5
-
-# Maximum number of branch for function / method body.
-max-branches=12
-
-# Maximum number of locals for function / method body.
-max-locals=25
-
-# Maximum number of parents for a class (see R0901).
-max-parents=7
-
-# Maximum number of public methods for a class (see R0904).
-max-public-methods=20
-
-# Maximum number of return / yield for function / method body.
-max-returns=6
-
-# Maximum number of statements in function / method body.
-max-statements=75
-
-# Minimum number of public methods for a class (see R0903).
-min-public-methods=2
-
-
-[EXCEPTIONS]
-
-# Exceptions that will emit a warning when caught
-overgeneral-exceptions=
-    builtins.BaseException,
-    builtins.Exception,
-
-
-[FORMAT]
-
-# Expected format of line ending, e.g. empty (any line ending), LF or CRLF.
-expected-line-ending-format=LF
-
-# Number of spaces of indent required inside a hanging or continued line.
-indent-after-paren=4
-
-# String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1
-# tab).
-indent-string='    '
-
-
-[MISCELLANEOUS]
-
-# List of note tags to take in consideration, separated by a comma.
-notes=FIXME,
-      XXX,
-      TODO,
-      NOTE,
-      REVIEW,
-
 
 [TYPECHECK]
 

@@ -1,0 +1,103 @@
+#### ruff Configuration File ####
+
+# Where cached results go
+cache-dir = "~/.cache/ruff"
+
+# Extend set of paths to ignore
+extend-exclude = [
+    "coverage*",
+    "db",
+    "out",
+]
+
+# Extended set of fixable rules
+extend-fixable = [
+    "B",
+]
+
+# Extended set of ignored rules
+ignore = [
+    "D203",     # requires one blank line before class.
+    "D213",     # multiline summary first line.
+]
+
+# On top of the default `select` (`E`, `F`), enable:
+extend-select = [
+    "W",        # warnings - mostly whitespace
+    "C90",      # mccabe code complexity
+    "I",        # isort imports
+    "N",        # pep8-naming to enforce naming conventions
+    "UP",       # pyupgrade
+    "ANN",      # flake8-annotations
+    "ASYNC",    # flake8-async
+    "S",        # flake8-bandit
+    "BLE",      # flake8-blind-except
+    "B",        # flake8-bugbear
+    "A",        # flake8-builtins
+    "C4",       # flake8-comprehensions
+    "DTZ",      # flake8-datetimez
+    "T10",      # flake8-debugger
+    "EM",       # flake8-errmsg
+    "EXE",      # flake8-executable
+    "FA",       # flake8-future-annotations
+    "G",        # flake8-logging-format
+    "INP",      # flake8-no-pep420
+    "PT",       # flake8-pytest-style
+    "Q",        # flake8-quotes
+    "RSE",      # flake8-raise
+    "RET",      # flake8-return
+    "SIM",      # flake8-simplify
+    "TID",      # flake8-tidy-imports
+    "TCH",      # flake8-type-checking
+    "ARG",      # flake8-unused-arguments
+    "PTH",      # flake8-use-pathlib
+    "ERA",      # eradicate
+    "PD",       # pandas
+    "PL",       # pylint
+    "NPY",      # numpy
+    "PERF",     # perflint
+    "RUF",      # ruff
+]
+
+# Don't auto-fix rules (can be overidden with --fix argument)
+fix = false
+
+# Avoid automatically removing unused imports in __init__.py files
+ignore-init-module-imports = true
+
+# Line length to enforce
+line-length = 110
+
+# Auto-ignore stuff in .gitignore
+respect-gitignore = false
+
+# Allow imports relative to the "src" and "test" directories.
+src = ["src", "tests"]
+
+# Always generate Python 3.9-compatible code.
+target-version = "py39"
+
+# Extended set of ignores per-file
+[extend-per-file-ignores]
+"__init__.py" = ["E402"]
+"examples/*.py" = ["INP"]
+"tests/*.py" = ["D100", "D104"]
+
+### flake8-annotations settings ###
+[flake8-annotations]
+# Suppress fixes for *args & **kwargs types
+allow-star-arg-any = true
+
+# Suprress rules for untyped code - useful for gradually typing
+ignore-fully-untyped = true
+
+# Ignore no return type for __init__()
+mypy-init-return = true
+
+# Ignore rules for dummy variables/args like '_'
+suppress-dummy-args = true
+
+### pydocstyle settings ###
+[pydocstyle]
+# USe Google style docstrings
+convention = "google"
