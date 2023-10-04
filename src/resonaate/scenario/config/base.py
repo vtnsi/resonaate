@@ -28,7 +28,7 @@ class BaseConfigError(Exception, ABC):
     @abstractmethod
     def __str__(self) -> str:
         """``str``: string representation of this exception."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class ConfigError(BaseConfigError):
@@ -202,14 +202,12 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
                 raise ConfigTypeError(self.config_label, config, (config_type, dict))
 
             # An empty dictionary in the list
-            if isinstance(config, dict):
-                if not config:
-                    raise ConfigMissingRequiredError(self.config_label, config_type)
+            if isinstance(config, dict) and not config:
+                raise ConfigMissingRequiredError(self.config_label, config_type)
 
     def __iter__(self) -> ConfigObject:
         """:class:`.ConfigObject`: iterates over the stored config objects."""
-        for config_object in self.config_objects:
-            yield config_object
+        yield from self.config_objects
 
     def __getitem__(self, index: int) -> ConfigObject:
         """:class:`.ConfigObject`: returns the config object at the given index."""

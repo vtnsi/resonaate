@@ -83,7 +83,8 @@ class TargetAdditionEvent(Event):
         """``str``: JSON serialized list of station keeping key words for this target."""
         return Event.__table__.c.get("station_keeping_json", Column(String(128)))
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
+    MUTABLE_COLUMN_NAMES = (
+        *Event.MUTABLE_COLUMN_NAMES,
         "agent_id",
         "tasking_engine_id",
         "pos_x_km",

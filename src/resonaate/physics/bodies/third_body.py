@@ -181,9 +181,8 @@ def readKernelSegmentFile(kernel_module: str, filename: str | Path) -> ThirdBody
 
     # Get coefficient array
     res = resources.files(kernel_module).joinpath(filename)
-    with resources.as_file(res) as kernel_file:
-        with open(kernel_file, "rb") as segment_file:
-            coefficients = load(segment_file)
+    with resources.as_file(res) as kernel_file, open(kernel_file, "rb") as segment_file:
+        coefficients = load(segment_file)
 
     return ThirdBodyTuple(center, target, init_jd, interval, coefficients)
 

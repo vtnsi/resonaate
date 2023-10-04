@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 def asyncPredict(
-    seq_filter: SequentialFilter, time: ScenarioTime, scheduled_events: list[Event] = None
+    seq_filter: SequentialFilter, time: ScenarioTime, scheduled_events: list[Event] | None = None
 ) -> ndarray:
     """Wrap a filter prediction method for use with a parallel job submission module.
 

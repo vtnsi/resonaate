@@ -32,7 +32,7 @@ class SensorTimeBiasEvent(Event):
     applied_bias = Column(Float)
     """``float``: amount of time to bias the sensor (seconds)."""
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + ("applied_bias",)
+    MUTABLE_COLUMN_NAMES = (*Event.MUTABLE_COLUMN_NAMES, "applied_bias")
 
     def handleEvent(self, scope_instance: Agent) -> None:
         """Queue a :class:`.ScheduledImpulse` to take place during agent propagation.

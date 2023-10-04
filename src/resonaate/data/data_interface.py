@@ -157,10 +157,7 @@ class DataInterface(metaclass=ABCMeta):
             self.logger.error(msg)
             raise TypeError(query)
 
-        if multi:
-            retval = []
-        else:
-            retval = None
+        retval = [] if multi else None
 
         # [NOTE]: The context manager pattern isn't used here because of the lazy loading
         #   functionality of the ORM. Somehow the context manager causes data objects to become detached.
@@ -196,13 +193,10 @@ class DataInterface(metaclass=ABCMeta):
             self.logger.error(msg)
             raise TypeError(query)
 
-        deleted_count = 0
         with self._getSessionScope() as session:
             for result in query.with_session(session).all():
                 session.delete(result)
-            deleted_count = len(session.deleted)
-
-        return deleted_count
+            return len(session.deleted)
 
     def bulkSave(self, data):
         """Use a low latency method to make large amounts of updates to the database.
@@ -222,9 +216,6 @@ class DataInterface(metaclass=ABCMeta):
         Returns:
             ``int``: number of data objects saved to the database
         """
-        save_count = 0
         with self._getSessionScope() as session:
             session.bulk_save_objects(data)
-            save_count = len(data)
-
-        return save_count
+            return len(data)

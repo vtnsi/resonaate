@@ -9,7 +9,6 @@ from numpy import array, ndarray
 
 # Local Imports
 from ..data.ephemeris import TruthEphemeris
-from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from .agent_base import Agent
@@ -22,6 +21,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.dynamics_base import Dynamics
+    from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
     from ..scenario.config import PropagationConfig, TargetAgentConfig
 

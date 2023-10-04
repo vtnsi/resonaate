@@ -36,7 +36,6 @@ from .config.agent_config import SensingAgentConfig, TargetAgentConfig
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from collections.abc import Callable
 
     # Local Imports
     from ..data.observation import MissedObservation, Observation

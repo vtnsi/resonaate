@@ -156,12 +156,12 @@ class BehavioralConfig:
             res = resources.files("resonaate.common").joinpath(self.DEFAULT_CONFIG_FILE)
             with resources.as_file(res) as res_filepath:
                 # Read in the config file if it exists, otherwise use the defaults
-                with open(res_filepath, "r", encoding="utf-8") as config_file:
+                with open(res_filepath, encoding="utf-8") as config_file:
                     self._parser.read_file(config_file)
 
         elif Path(config_file_path).exists():
             # Read in the config file if it exists, otherwise use the defaults
-            with open(config_file_path, "r", encoding="utf-8") as config_file:
+            with open(config_file_path, encoding="utf-8") as config_file:
                 self._parser.read_file(config_file)
 
         for section, section_config in self.DEFAULT_SECTIONS.items():
@@ -169,22 +169,22 @@ class BehavioralConfig:
             for key, value in section_config.items():
                 # Grab the appropriate `getter` object for each key
                 getter: Callable[[str, str], Any]
-                if key in self.STR_ITEMS.get(section, tuple()):
+                if key in self.STR_ITEMS.get(section, ()):
                     getter = self._parser.get
 
-                elif key in self.INT_ITEMS.get(section, tuple()):
+                elif key in self.INT_ITEMS.get(section, ()):
                     getter = self._parser.getint
 
-                elif key in self.BOOL_ITEMS.get(section, tuple()):
+                elif key in self.BOOL_ITEMS.get(section, ()):
                     getter = self._parser.getboolean
 
-                elif key in self.LOGGING_LEVEL_ITEMS.get(section, tuple()):
+                elif key in self.LOGGING_LEVEL_ITEMS.get(section, ()):
                     getter = self._parser.getlogginglevel
 
-                elif key in self.NULL_INT_ITEMS.get(section, tuple()):
+                elif key in self.NULL_INT_ITEMS.get(section, ()):
                     getter = self._parser.getNullInt
 
-                elif key in self.LIST_ITEMS.get(section, tuple()):
+                elif key in self.LIST_ITEMS.get(section, ()):
                     getter = self._parser.getlist
 
                 else:

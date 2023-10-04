@@ -219,9 +219,8 @@ class FieldOfViewConfig(ConfigObject):
         if self.fov_shape not in VALID_SENSOR_FOV_LABELS:
             raise ConfigValueError("fov_shape", self.fov_shape, VALID_SENSOR_FOV_LABELS)
 
-        if self.fov_shape == FoVLabel.CONIC:
-            if self.cone_angle <= 0 or self.cone_angle >= 180:
-                raise ConfigValueError("cone_angle", self.cone_angle, "between 0 and 180")
+        if self.fov_shape == FoVLabel.CONIC and (self.cone_angle <= 0 or self.cone_angle >= 180):
+            raise ConfigValueError("cone_angle", self.cone_angle, "between 0 and 180")
 
         if self.fov_shape == FoVLabel.RECTANGULAR:
             if self.azimuth_angle <= 0 or self.azimuth_angle >= 180:

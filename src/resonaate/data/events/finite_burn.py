@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from functools import partial
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array
@@ -41,7 +41,7 @@ class ScheduledFiniteBurnEvent(Event):
     #   1) Move to SQLAlchemy >= 2.0
     #   2) Move to Python >= 3.10
     # pylint: disable=deprecated-typing-alias
-    VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)
+    VALID_THRUST_FRAMES: tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)
     """``tuple``: Valid values for :attr:`~.ScheduledFiniteBurnEvent.thrust_frame`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
@@ -67,7 +67,8 @@ class ScheduledFiniteBurnEvent(Event):
         """``bool``: Flag indicating whether this task is expected by the filter or not."""
         return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
+    MUTABLE_COLUMN_NAMES = (
+        *Event.MUTABLE_COLUMN_NAMES,
         "acc_vec_0",
         "acc_vec_1",
         "acc_vec_2",

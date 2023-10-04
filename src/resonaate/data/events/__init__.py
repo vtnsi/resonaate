@@ -5,7 +5,7 @@ This module defines the common functions used to interact with the events data o
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 # Third Party Imports
 from sqlalchemy.orm import Query, with_polymorphic
@@ -36,7 +36,7 @@ def getRelevantEvents(
     event_scope: EventScope,
     julian_date_lb: JulianDate,
     julian_date_ub: JulianDate,
-    scope_instance_id: int = None,
+    scope_instance_id: int | None = None,
 ) -> list[Event]:
     """Return a list of :class:`.Event` objects for the current time step and scope.
 
@@ -69,7 +69,7 @@ def handleRelevantEvents(
     julian_date_lb: JulianDate,
     julian_date_ub: JulianDate,
     logger: Logger,
-    scope_instance_id: int = None,
+    scope_instance_id: int | None = None,
 ) -> None:
     """Handle events relevant for a given scope and time.
 

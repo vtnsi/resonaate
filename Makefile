@@ -50,7 +50,7 @@ lint:
 	@echo "======="
 	@echo "Linting"
 	@echo "======="
-	ruff src tests src/resonaate docs
+	ruff check src tests src/resonaate docs
 	pylint *.py tests src/resonaate docs
 	@echo ""
 

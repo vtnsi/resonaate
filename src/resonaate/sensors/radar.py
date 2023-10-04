@@ -67,7 +67,7 @@ class Radar(Sensor):
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
-    ):  # noqa: E501
+    ):
         """Construct a `Radar` sensor object.
 
         Args:

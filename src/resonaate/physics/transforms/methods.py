@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -35,6 +34,9 @@ from ..time.stardate import JulianDate, julianDateToDatetime
 from .reductions import getReductionParameters
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from datetime import datetime
+
     # Third Party Imports
     from numpy import ndarray
 

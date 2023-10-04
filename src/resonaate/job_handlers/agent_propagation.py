@@ -43,8 +43,8 @@ def asyncPropagate(
     init_time: ScenarioTime,
     final_time: ScenarioTime,
     initial_state: ndarray,
-    station_keeping: list[StationKeeper] = None,
-    scheduled_events: list[Event] = None,
+    station_keeping: list[StationKeeper] | None = None,
+    scheduled_events: list[Event] | None = None,
 ) -> ndarray:
     """Wrap a dynamics propagation method for use with a parallel job submission module.
 

@@ -136,14 +136,13 @@ for iterator in [combinations(RSO_UNIQUE_IDS, n) for n in range(1, len(RSO_UNIQU
 
 # SET UP POSSIBLE JD QUERY BOUNDS
 JD_LIST = [JulianDate(jd) for jd in EXAMPLE_JD]
-JD_SPANS = [*permutations(JD_LIST + [None], 2)]
+JD_SPANS = [*permutations([*JD_LIST, None], 2)]
 # prune from `JD_SPANS` where the lower bound is greater than the upper bound, for use later
 BAD_JD_SPAN_BOUNDS = []
 bad_span_idxs = []
 for idx, span in enumerate(JD_SPANS):
-    if isinstance(span[0], JulianDate) and isinstance(span[1], JulianDate):
-        if span[0] > span[1]:
-            bad_span_idxs.append(idx)
+    if isinstance(span[0], JulianDate) and isinstance(span[1], JulianDate) and span[0] > span[1]:
+        bad_span_idxs.append(idx)
 for bad_idx in reversed(bad_span_idxs):
     BAD_JD_SPAN_BOUNDS.append(JD_SPANS.pop(bad_idx))
 

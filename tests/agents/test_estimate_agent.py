@@ -45,7 +45,7 @@ def getMockedScenarioClock() -> ScenarioClock:
 @pytest.fixture(name="earth_sensor")
 def getTestEarthSensor() -> AdvRadar:
     """Create a custom :class:`Agent` object for a sensor."""
-    earth_sensor = AdvRadar(
+    return AdvRadar(
         az_mask=np.array([0.0, 359.99999]),
         el_mask=np.array([1.0, 89.0]),
         r_matrix=np.diagflat([2.38820057e-11, 3.73156339e-11, 9.00000000e-08, 3.61000000e-10]),
@@ -61,13 +61,12 @@ def getTestEarthSensor() -> AdvRadar:
         minimum_range=0.0,
         maximum_range=99000,
     )
-    return earth_sensor
 
 
 @pytest.fixture(name="sensor_agent")
 def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> SensingAgent:
     """Create a custom :class:`Agent` object for a sensor."""
-    sensor_agent = SensingAgent(
+    return SensingAgent(
         300000,
         "Test_sensor",
         "GroundFacility",
@@ -101,7 +100,6 @@ def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> S
         100.0,
         0.21,
     )
-    return sensor_agent
 
 
 @pytest.fixture(name="observations")
@@ -146,7 +144,7 @@ def getTestEstimateAgent(
     mocked_clock: ScenarioClock,
 ) -> EstimateAgent:
     """Create a custom :class:.`Agent` object for testing."""
-    estimate_agent = EstimateAgent(
+    return EstimateAgent(
         10001,
         "estimate_agent",
         "Spacecraft",
@@ -169,7 +167,6 @@ def getTestEstimateAgent(
         100.0,
         0.21,
     )
-    return estimate_agent
 
 
 def testAttemptInitialOrbitDetermination(

@@ -175,7 +175,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
                 sensor_position_set.add(position_key)
             else:
                 obs_dict = observation.makeDictionary()
-                msg = f"Dropped duplicate observation: {obs_dict.sensor_id} of {obs_dict.target_id} at {obs_dict.julian_date}"  # noqa: E501
+                msg = f"Dropped duplicate observation: {obs_dict.sensor_id} of {obs_dict.target_id} at {obs_dict.julian_date}"
                 self.logger.warning(msg)
 
         if imported_observations:

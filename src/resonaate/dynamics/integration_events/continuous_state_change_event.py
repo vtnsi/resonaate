@@ -30,7 +30,7 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
         Returns:
             (float): value that the ode solver uses to root find
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def __eq__(self, other):  # pylint: disable=unused-argument
@@ -42,7 +42,7 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
         Returns:
             (bool): Boolean representing whether or not `other` object is equivalent
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def getStateChangeCallback(self, time):
@@ -55,4 +55,4 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
         Returns:
             numpy.ndarray: vector to add to `state` that results in the desired end state
         """
-        raise NotImplementedError()
+        raise NotImplementedError

@@ -327,4 +327,4 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         Returns:
             ``numpy.ndarray``: (6 * K, ) derivative of the state vector, (km/sec; km/sec^2)
         """
-        raise NotImplementedError()
+        raise NotImplementedError

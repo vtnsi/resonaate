@@ -58,10 +58,7 @@ def planeChangeThrust(state: ndarray, magnitude: float):
         (numpy.ndarray): acceleration vector in ECI coordinates
     """
     delta_a = array([0, 0, magnitude])
-    if state[2] >= 0:
-        delta_a = array([0, 0, magnitude])
-    else:
-        delta_a = array([0, 0, -magnitude])
+    delta_a = array([0, 0, magnitude]) if state[2] >= 0 else array([0, 0, -magnitude])
     acc_vector = concatenate((delta_a, zeros(3)))
     return ntw2eci(state, acc_vector)
 
@@ -151,7 +148,7 @@ class ScheduledFiniteThrust(ContinuousStateChangeEvent, metaclass=ABCMeta):
     @abstractmethod
     def valid_thrust_funcs(self):
         """Valid thrust functions for event type."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def getStateChangeCallback(self, time: ScenarioTime):
         """Return the thrust function.

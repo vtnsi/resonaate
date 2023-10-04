@@ -332,9 +332,7 @@ class TestEventIntegration:
         )
         app.propagateTo(target_time)
 
-        looking_for = (
-            f"Handled 1 'task_reward_generation' events of types {set(['task_priority'])}"
-        )
+        looking_for = f"Handled 1 'task_reward_generation' events of types { {'task_priority'} }"
         expected_count = 3
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -409,7 +407,7 @@ class TestEventIntegration:
         )
         app.propagateTo(target_time)
 
-        looking_for = f"Handled 1 'scenario_step' events of types {set(['target_addition'])}"
+        looking_for = f"Handled 1 'scenario_step' events of types { {'target_addition'} }"
         found = False
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -505,7 +503,7 @@ class TestEventIntegration:
         )
         app.propagateTo(target_time)
 
-        looking_for = f"Handled 1 'scenario_step' events of types {set(['sensor_addition'])}"
+        looking_for = f"Handled 1 'scenario_step' events of types { {'sensor_addition'} }"
         found = False
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -566,7 +564,7 @@ class TestEventIntegration:
         )
         app.propagateTo(target_time)
 
-        looking_for = f"Handled 1 'scenario_step' events of types {set(['agent_removal'])}"
+        looking_for = f"Handled 1 'scenario_step' events of types { {'agent_removal'} }"
         found = False
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -628,7 +626,7 @@ class TestEventIntegration:
         )
         app.propagateTo(target_time)
 
-        looking_for = f"Handled 1 'scenario_step' events of types {set(['agent_removal'])}"
+        looking_for = f"Handled 1 'scenario_step' events of types { {'agent_removal'} }"
         found = False
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -727,9 +725,9 @@ class TestEventIntegration:
         app.propagateTo(target_time)
 
         message_contents = {
-            "addition": f"Handled 1 'scenario_step' events of types {set(['target_addition'])}",
+            "addition": f"Handled 1 'scenario_step' events of types { {'target_addition'} }",
             "maneuver": "1 events of type NTW Impulse performed.",
-            "removal": f"Handled 1 'scenario_step' events of types {set(['agent_removal'])}",
+            "removal": f"Handled 1 'scenario_step' events of types { {'agent_removal'} }",
         }
         message_found = {"addition": False, "maneuver": False, "removal": False}
         for log_message in caplog.get_records("call"):

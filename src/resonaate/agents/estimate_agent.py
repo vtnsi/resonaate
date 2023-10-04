@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config import NoiseConfig, PropagationConfig, TimeConfig
+    from ..scenario.config import NoiseConfig, TimeConfig
     from ..scenario.config.agent_config import TargetAgentConfig
     from ..scenario.config.estimation_config import (
         AdaptiveEstimationConfig,

@@ -9,7 +9,6 @@ from numpy import array
 
 # Local Imports
 from ..data.ephemeris import TruthEphemeris
-from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..sensors import sensorFactory
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
     from ..data.ephemeris import _EphemerisMixin
     from ..data.events.sensor_time_bias import SensorTimeBiasEvent
     from ..dynamics.dynamics_base import Dynamics
+    from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
     from ..scenario.config import PropagationConfig
     from ..scenario.config.agent_config import SensingAgentConfig
