@@ -158,23 +158,22 @@ class SensingAgent(Agent):
         """
         # [NOTE][parallel-time-bias-event-handling] Step two: call this method via the event handler to queue the
         # relevant :class:`.SensorTimeBiasEvent`.
-        event_list = []
-        for old_event in self.sensor_time_bias_event_queue:
-            event_list.append(old_event.id)
+        event_list = [old_event.id for old_event in self.sensor_time_bias_event_queue]
+
         # Make sure you're not adding the same event over multiple timesteps
         if time_bias_event.id not in event_list:
             self.sensor_time_bias_event_queue.append(time_bias_event)
 
     def pruneTimeBiasEvents(self) -> None:
         """Remove events from the queue that happened in the past."""
-        relevant_events = []
-        for itr_event in self.sensor_time_bias_event_queue:
+        self.sensor_time_bias_event_queue = [
+            event
+            for event in self.sensor_time_bias_event_queue
             if (
-                self.julian_date_epoch <= itr_event.end_time_jd
-                and self.julian_date_epoch >= itr_event.start_time_jd
-            ):
-                relevant_events.append(itr_event)
-        self.sensor_time_bias_event_queue = relevant_events
+                self.julian_date_epoch <= event.end_time_jd
+                and self.julian_date_epoch >= event.start_time_jd
+            )
+        ]
 
     def getCurrentEphemeris(self) -> TruthEphemeris:
         """Returns the SensingAgent's current ephemeris information.

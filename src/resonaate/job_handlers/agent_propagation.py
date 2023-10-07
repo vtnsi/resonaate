@@ -462,7 +462,7 @@ class AgentPropagationJobHandler(PropagationJobHandler):
                 self.importer_registry[ephem.agent_id](ephem)
 
             # Caught if there are ephems without registered importer callbacks
-            except KeyError:
+            except KeyError:  # noqa: PERF203
                 # Only log if we haven't yet logged this warning
                 if self.log_data_missing_imports:
                     # Add to list for logging

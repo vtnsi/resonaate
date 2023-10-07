@@ -84,9 +84,7 @@ def loadDatFile(file_name, delim=None):
     """
     try:
         with open(file_name, encoding="utf-8") as data_file:
-            data = []
-            for line in data_file:
-                data.append([float(x) for x in line.split(sep=delim)])
+            data = [[float(x) for x in line.split(sep=delim)] for line in data_file]
     except FileNotFoundError as err:
         msg = f"Could not find DAT file: {file_name}"
         resonaateLogError(msg)

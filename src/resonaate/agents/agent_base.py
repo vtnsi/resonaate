@@ -188,17 +188,15 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         if platform_cfg.type != PlatformLabel.SPACECRAFT:
             return station_keepers
 
-        for routine in platform_cfg.station_keeping.routines:
-            station_keepers.append(
-                StationKeeper.factory(
-                    conf_str=routine,
-                    rso_id=agent_id,
-                    initial_eci=initial_state,
-                    julian_date_start=jd_start,
-                )
+        return [
+            StationKeeper.factory(
+                conf_str=routine,
+                rso_id=agent_id,
+                initial_eci=initial_state,
+                julian_date_start=jd_start,
             )
-
-        return station_keepers
+            for routine in platform_cfg.station_keeping.routines
+        ]
 
     ### Abstract Methods & Properties ###
 
