@@ -31,7 +31,7 @@ VALID_MEASUREMENTS = tuple(MEASUREMENT_TYPE_MAP.keys())
 class _ObservationMixin(_DataMixin):
     """Data Columns applicable to both Observation and Missed Observation Tables."""
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)  # noqa: A003
 
     # Type of the observing sensor (Optical, Radar, AdvRadar)
     sensor_type = Column(String(128), nullable=False)

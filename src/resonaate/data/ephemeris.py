@@ -12,7 +12,7 @@ from .table_base import Base, _DataMixin
 class _EphemerisMixin(_DataMixin):
     """Data Columns applicable to both Truth and Estimate Ephemeris Tables."""
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)  # noqa: A003
 
     ## Cartesian x-coordinate for inertial satellite location in ECI frame in kilometers
     pos_x_km = Column(Float)
