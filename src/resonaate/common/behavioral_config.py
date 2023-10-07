@@ -155,10 +155,11 @@ class BehavioralConfig:
 
         if config_file_path is None:
             res = resources.files("resonaate.common").joinpath(self.DEFAULT_CONFIG_FILE)
-            with resources.as_file(res) as res_filepath:
-                # Read in the config file if it exists, otherwise use the defaults
-                with open(res_filepath, encoding="utf-8") as config_file:
-                    self._parser.read_file(config_file)
+            # Read in the config file if it exists, otherwise use the defaults
+            with resources.as_file(res) as res_filepath, open(
+                res_filepath, encoding="utf-8"
+            ) as config_file:
+                self._parser.read_file(config_file)
 
         elif Path(config_file_path).exists():
             # Read in the config file if it exists, otherwise use the defaults

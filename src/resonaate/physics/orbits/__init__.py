@@ -86,12 +86,9 @@ def check_ecc(func: Callable[..., float]) -> Callable[..., float]:
 
     # pylint: disable=invalid-name
     @wraps(func)
-    def wrapper_check_ecc(anom, ecc, *args, **kwargs):
-        if not isEccentric(ecc):
-            new_anom = anom  # circular orbit -> f, E, M are equivalent
-        else:
-            new_anom = func(anom, ecc, *args, **kwargs)
-        return new_anom
+    def wrapper_check_ecc(anomaly, ecc, *args, **kwargs):
+        # circular orbit -> f, E, M are equivalent
+        return anomaly if not isEccentric(ecc) else func(anomaly, ecc, *args, **kwargs)
 
     return wrapper_check_ecc
 

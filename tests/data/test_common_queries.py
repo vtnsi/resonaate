@@ -245,9 +245,12 @@ def testIntervalFetches(test_func, fixture, target_column, database, rso, jd_spa
         jd_ub = float("inf")
     correct_instances = []
     for instance in fixture:
-        if getattr(instance, target_column) in rso:
-            if instance.julian_date >= jd_lb and instance.julian_date <= jd_ub:
-                correct_instances.append(instance)
+        if (
+            getattr(instance, target_column) in rso
+            and instance.julian_date >= jd_lb
+            and instance.julian_date <= jd_ub
+        ):
+            correct_instances.append(instance)
     ascending_rows = sorted(correct_instances, key=lambda d: d.julian_date)
     ascending_rows = sorted(ascending_rows, key=lambda d: getattr(d, target_column))
     ascending_results = sorted(results, key=lambda d: getattr(d, target_column))
