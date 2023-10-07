@@ -5,7 +5,7 @@ This module defines the common functions used to interact with the events data o
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy.orm import Query, with_polymorphic
@@ -29,6 +29,19 @@ if TYPE_CHECKING:
     from ...common.logger import Logger
     from ...data.resonaate_database import ResonaateDatabase
     from ...physics.time.stardate import JulianDate
+
+__all__ = [
+    "AgentRemovalEvent",
+    "Event",
+    "EventScope",
+    "ScheduledFiniteBurnEvent",
+    "ScheduledFiniteManeuverEvent",
+    "ScheduledImpulseEvent",
+    "SensorAdditionEvent",
+    "SensorTimeBiasEvent",
+    "TargetAdditionEvent",
+    "TargetTaskPriority",
+]
 
 
 def getRelevantEvents(
