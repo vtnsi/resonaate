@@ -111,6 +111,9 @@ target-version = "py39"
     "A001",
     "UP009",
 ]
+"src/resonaate/data/events/*.py" = [
+    "RUF012",
+]
 
 ### flake8-annotations settings ###
 [flake8-annotations]

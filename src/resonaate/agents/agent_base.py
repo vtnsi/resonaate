@@ -24,6 +24,7 @@ from ..scenario.clock import ScenarioClock
 if TYPE_CHECKING:
     # Standard Library Imports
     from datetime import datetime
+    from typing import Any, Final
 
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
 class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
     """Abstract base class for a generic Agent object, i.e. an actor in the simulation."""
 
-    TYPES = {
+    TYPES: Final[dict[str, Any]] = {
         "_id": int,
         "name": str,
         "agent_type": str,

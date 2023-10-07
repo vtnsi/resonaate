@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABCMeta
 from contextlib import contextmanager
 from traceback import format_exc
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import create_engine
@@ -25,6 +26,10 @@ from .observation import MissedObservation, Observation
 from .table_base import Base
 from .task import Task
 
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Final
+
 
 class DataInterface(metaclass=ABCMeta):
     """Common data interface that is DB agnostic.
@@ -33,7 +38,7 @@ class DataInterface(metaclass=ABCMeta):
     """
 
     # pylint: disable=no-member
-    VALID_DATA_TYPES = {
+    VALID_DATA_TYPES: Final[dict[str, Base]] = {
         AgentModel.__tablename__: AgentModel,
         Epoch.__tablename__: Epoch,
         DetectedManeuver.__tablename__: DetectedManeuver,

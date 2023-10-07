@@ -14,6 +14,9 @@ from numpy import array
 from ..metrics.metric_base import Metric
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import ClassVar
+
     # Third Party Imports
     from numpy import ndarray
 
@@ -25,7 +28,7 @@ if TYPE_CHECKING:
 class Reward(metaclass=ABCMeta):
     """Abstract base class to encapsulate behavior of general reward methods."""
 
-    REGISTRY: dict[str, Reward] = {}
+    REGISTRY: ClassVar[dict[str, Reward]] = {}
     """``dict``: Global reward object registry."""
 
     def __init__(self, metrics: list[Metric]):

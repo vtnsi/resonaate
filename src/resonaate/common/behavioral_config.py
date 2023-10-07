@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Callable
-    from typing import Any
+    from typing import Any, Final
 
 
 class SubConfig:
@@ -52,7 +52,7 @@ class SubConfig:
 class CustomConfigParser(ConfigParser):
     """Perform custom parsing operations on our custom config convention."""
 
-    LOGGING_LEVELS: dict[str, int] = {
+    LOGGING_LEVELS: Final[dict[str, int]] = {
         "CRITICAL": CRITICAL,
         "ERROR": ERROR,
         "WARNING": WARNING,
@@ -82,9 +82,9 @@ class CustomConfigParser(ConfigParser):
 class BehavioralConfig:
     """Singleton, config settings class."""
 
-    DEFAULT_CONFIG_FILE: str = "default_behavior.config"
+    DEFAULT_CONFIG_FILE: Final[str] = "default_behavior.config"
 
-    DEFAULT_SECTIONS: dict[str, dict[str, Any]] = {
+    DEFAULT_SECTIONS: Final[dict[str, dict[str, Any]]] = {
         "logging": {
             "OutputLocation": "stdout",
             "Level": DEBUG,
@@ -110,9 +110,9 @@ class BehavioralConfig:
         },
     }
 
-    LOGGING_LEVEL_ITEMS: dict[str, tuple[str, ...]] = {"logging": ("Level",)}
+    LOGGING_LEVEL_ITEMS: Final[dict[str, tuple[str, ...]]] = {"logging": ("Level",)}
 
-    STR_ITEMS: dict[str, tuple[str, ...]] = {
+    STR_ITEMS: Final[dict[str, tuple[str, ...]]] = {
         "logging": ("OutputLocation",),
         "database": ("DatabasePath",),
         "debugging": (
@@ -124,16 +124,16 @@ class BehavioralConfig:
         ),
     }
 
-    INT_ITEMS: dict[str, tuple[str, ...]] = {
+    INT_ITEMS: Final[dict[str, tuple[str, ...]]] = {
         "logging": (
             "MaxFileSize",
             "MaxFileCount",
         ),
     }
 
-    NULL_INT_ITEMS: dict[str, tuple[str, ...]] = {"parallel": ("WorkerCount",)}
+    NULL_INT_ITEMS: Final[dict[str, tuple[str, ...]]] = {"parallel": ("WorkerCount",)}
 
-    BOOL_ITEMS: dict[str, tuple[str, ...]] = {
+    BOOL_ITEMS: Final[dict[str, tuple[str, ...]]] = {
         "logging": ("AllowMultipleHandlers",),
         "debugging": (
             "NearestPD",
@@ -144,7 +144,7 @@ class BehavioralConfig:
         ),
     }
 
-    LIST_ITEMS: dict[str, tuple[str, ...]] = {}
+    LIST_ITEMS: Final[dict[str, tuple[str, ...]]] = {}
 
     __shared_inst: BehavioralConfig | None = None
 

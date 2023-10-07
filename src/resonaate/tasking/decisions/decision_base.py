@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import ClassVar
+
     # Third Party Imports
     from numpy import ndarray
 
@@ -14,7 +17,7 @@ if TYPE_CHECKING:
 class Decision(metaclass=ABCMeta):
     """Abstract base class to encapsulate behavior of general decision methods."""
 
-    REGISTRY: dict[str, Decision] = {}
+    REGISTRY: ClassVar[dict[str, Decision]] = {}
     """``dict``: Global decision object registry."""
 
     @classmethod

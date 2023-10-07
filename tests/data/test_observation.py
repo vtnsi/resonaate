@@ -40,7 +40,7 @@ def getSensorECI(epoch: Epoch) -> ndarray:
 class TestObservationTable:
     """Test class for :class:`.Observation` database table class."""
 
-    eci = [
+    eci = [  # noqa: RUF012
         -4957.659229144096,
         7894.2462525123365,
         3193.9292760074436,
