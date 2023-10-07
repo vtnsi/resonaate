@@ -394,8 +394,7 @@ class KeepLeoUp(StationKeeper):
         if self.initial_coe.is_eccentric:
             return False
         current_coe = ClassicalElements.fromECI(state)
-        delta_a = self.initial_coe.sma - current_coe.sma  # km
-        if delta_a >= self.ALT_DRIFT_THRESHOLD:
+        if (delta_a := self.initial_coe.sma - current_coe.sma) >= self.ALT_DRIFT_THRESHOLD:
             ntw_delta_v = current_coe.mean_motion * delta_a / 2  # km/s
             if abs(ntw_delta_v) >= self.BURN_THRESHOLD:
                 self.ntw_delta_v = ntw_delta_v

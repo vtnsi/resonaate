@@ -335,7 +335,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
             est_error = fabs(norm(truth[:3] - self.est_x[:3]))
 
             # If error increase is larger than desired log the debug information
-            if est_error > pred_error + tol_km:
+            if est_error > pred_error + tol_km:  # pylint: disable=consider-using-assignment-expr
                 file_name = logFilterStep(self, observations, truth)
                 msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
                 self._logger.warning(msg)

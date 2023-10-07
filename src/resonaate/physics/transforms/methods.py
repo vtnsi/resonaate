@@ -254,8 +254,7 @@ def ecef2lla(x_ecef: ndarray) -> ndarray:
     F = (b * r_k + (a**2 - b**2)) / (a * r_delta)
     P = 4.0 * (E * F + 1) / 3.0
     Q = 2.0 * (E**2 - F**2)
-    D = P**3 + Q**2
-    if D >= 0:
+    if (D := P**3 + Q**2) >= 0:
         nu = (sqrt(D) - Q) ** (1.0 / 3) - (sqrt(D) + Q) ** (1.0 / 3)
     else:
         nu = 2.0 * sqrt(-P) * cos(arccos(Q / (P * sqrt(-P))) / 3.0)

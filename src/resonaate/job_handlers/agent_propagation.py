@@ -337,11 +337,10 @@ class AgentPropagationJobHandler(PropagationJobHandler):
             query = Query(TruthEphemeris).filter(
                 TruthEphemeris.agent_id == registrant.simulation_id
             )
-            truth_ephem = self._importer_db.getData(query, multi=False)
 
             # If minimal truth data exists in the database, use importer model, otherwise default to
             # realtime propagation (and print warning that this happened).
-            if truth_ephem is None:
+            if self._importer_db.getData(query, multi=False) is None:
                 msg = f"Could not find importer truth for {registrant.simulation_id}. "
                 msg += "Defaulting to realtime propagation!"
                 self.logger.warning(msg)
