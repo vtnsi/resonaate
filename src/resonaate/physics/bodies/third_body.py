@@ -138,7 +138,8 @@ class TBK(Enum):
     def __lt__(self, other):
         """Explicitly define less than for use in sorting kernel segments."""
         msg = f"Can only compare a TBK enum to another: {type(other)}"
-        assert isinstance(other, TBK), msg
+        if not isinstance(other, TBK):
+            raise TypeError(msg)
         return int(self.value) < int(other.value)
 
 

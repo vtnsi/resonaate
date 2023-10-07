@@ -151,7 +151,9 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self._filter_info = []
 
         # Apply None value to estimate station_keeping
-        assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
+        if self.station_keeping:
+            msg = "Estimates do not perform station keeping maneuvers"
+            raise ValueError(msg)
 
     @classmethod
     def fromConfig(

@@ -32,7 +32,8 @@ class SubConfig:
             section (``str``): name of section that this SubConfig object represents
         """
         self.section = section
-        assert isinstance(self.section, str)
+        if not isinstance(self.section, str):
+            raise TypeError("Config section must be a string")
 
     def setonce(self, name: str, value: Any):
         """Set the field for this `SubConfig`, but raise an error if the field was already set.
