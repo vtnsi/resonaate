@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 class SensingAgent(Agent):
     """Define the behavior of the sensing agents in the simulation."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         _id: int,
         name: str,

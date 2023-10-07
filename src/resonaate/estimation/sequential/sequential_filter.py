@@ -122,7 +122,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
     INTERNAL_OBSERVATION_SOURCE = "Observation"
     """``str``: Constant string for an estimate source due to internal filter measurement update."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         tgt_id: int,
         time: ScenarioTime,

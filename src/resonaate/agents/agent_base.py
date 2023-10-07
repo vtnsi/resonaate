@@ -50,7 +50,7 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         "station_keeping": (list, type(None)),
     }
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         _id: int,
         name: str,

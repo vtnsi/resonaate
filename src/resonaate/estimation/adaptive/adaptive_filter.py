@@ -6,10 +6,23 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import argwhere, array, ceil, concatenate, delete, dot, hstack, linspace, ones, outer
+from numpy import (
+    argwhere,
+    array,
+    ceil,
+    concatenate,
+    delete,
+    dot,
+    hstack,
+    linspace,
+    ones,
+    outer,
+    union1d,
+    vstack,
+    zeros,
+)
 from numpy import round as np_round
 from numpy import sum as np_sum
-from numpy import union1d, vstack, zeros
 from scipy.linalg import norm
 
 # Local Imports
@@ -67,7 +80,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         num_models (``int``): number of models
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,

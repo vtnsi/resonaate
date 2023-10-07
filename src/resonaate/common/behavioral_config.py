@@ -148,7 +148,7 @@ class BehavioralConfig:
 
     __shared_inst: BehavioralConfig | None = None
 
-    def __init__(self, config_file_path: str | None = None):  # noqa: C901
+    def __init__(self, config_file_path: str | None = None):  # noqa: C901, PLR0912
         """Initialize the configuration object."""
         # pylint: disable=too-many-branches
         self._parser = CustomConfigParser()

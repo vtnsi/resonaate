@@ -62,7 +62,7 @@ class Optical(Sensor):
         #  :cite:t:`vallado_2016_aiaa_covariance`
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         az_mask: ndarray,
         el_mask: ndarray,
@@ -134,7 +134,7 @@ class Optical(Sensor):
             detectable_vismag=sensor_config.detectable_vismag,
         )
 
-    def isVisible(
+    def isVisible(  # noqa: PLR0911
         self,
         tgt_eci_state: ndarray,
         viz_cross_section: float,

@@ -36,7 +36,7 @@ class TargetAgent(Agent):
         #.  :cite:t:`GEO_RSO_2022_stats`
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         _id: int,
         name: str,

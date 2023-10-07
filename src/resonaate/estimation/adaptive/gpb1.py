@@ -36,7 +36,7 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         #. :cite:t:`bar-shalom_2001_estimation`, Section 11.6., Pg 447
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,

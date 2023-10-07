@@ -61,7 +61,7 @@ class Scenario(ParallelMixin):
     This class serves as a "public" API for running RESONAATE simulations.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         config: ScenarioConfig,
         clock: ScenarioClock,

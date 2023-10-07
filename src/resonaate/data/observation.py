@@ -121,7 +121,7 @@ class Observation(Base, _ObservationMixin):
         "vel_z_km_p_sec",
     )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         julian_date: JulianDate | float,
         target_id: int,
@@ -153,7 +153,7 @@ class Observation(Base, _ObservationMixin):
         self.measurement = measurement
 
     @classmethod
-    def fromMeasurement(
+    def fromMeasurement(  # noqa: PLR0913
         cls,
         epoch_jd: JulianDate | float,
         target_id: int,
