@@ -27,6 +27,7 @@ ignore = [
     "ARG001",   # Unused function argument
     "ARG002",   # Unused method argument
     "ERA001",   # Commented out code - lots of false positives
+    "NPY002",   # Deprecated numpy.random usage. FIXME: remove this ignore when working on Issue #103
 ]
 
 # On top of the default `select` (`E`, `F`), enable:
