@@ -149,7 +149,7 @@ class PropagationJobHandler(JobHandler):
             msg = f"Job hang: {file_name}"
             self.logger.error(msg)
 
-    def _getProblemAgentInformation(self, job, registrant):
+    def _getProblemAgentInformation(self, job, registrant):  # noqa: C901
         """Parse data from a bad :class:`.Job` & :class:`~.agent_base.Agent` pair.
 
         Args:
