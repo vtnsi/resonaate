@@ -24,6 +24,7 @@ prune .gitlab
 prune .vscode
 exclude .python-version
 exclude .flake8
+exclude ruff.toml
 exclude .pylintrc
 exclude .git-blame-ignore-revs
 include Makefile
