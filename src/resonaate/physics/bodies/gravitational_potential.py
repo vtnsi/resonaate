@@ -128,7 +128,7 @@ def getNonSphericalHarmonics(
             if m > n:  # pylint: disable=no-else-continue
                 continue
             # Diagonal terms
-            elif m == n:
+            if m == n:
                 v[m, m] = (2 * m - 1) * (x_bar * v[m - 1, m - 1] - y_bar * w[m - 1, m - 1])
                 w[m, m] = (2 * m - 1) * (x_bar * w[m - 1, m - 1] + y_bar * v[m - 1, m - 1])
             # Off-diagonal terms (m < n)

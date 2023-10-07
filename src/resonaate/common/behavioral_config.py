@@ -195,7 +195,7 @@ class BehavioralConfig:
                     )
 
                 try:
-                    value = getter(section, key)
+                    value = getter(section, key)  # noqa: PLW2901
                 except ConfigError:
                     # Use default
                     pass

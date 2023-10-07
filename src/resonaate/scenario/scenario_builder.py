@@ -237,8 +237,9 @@ class ScenarioBuilder:
         built_events = []
         for event_config in sorted(self._config.events, key=lambda x: x.start_time):
             for data_dependency in event_config.getDataDependencies():
-                # pylint: disable=unused-variable
-                if found_dependency := database.getData(data_dependency.query, multi=False):
+                if found_dependency := database.getData(  # noqa: F841
+                    data_dependency.query, multi=False
+                ):
                     continue
 
                 # else
