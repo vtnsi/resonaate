@@ -139,10 +139,7 @@ class SpecialPerturbations(Celestial):
             )
 
             # Solar Radiation Pressure accelerations
-            if self.use_srp:
-                a_srp = self._getSolarRadiationPressureAcceleration(r_eci, array(sun_positions))
-            else:
-                a_srp = 0.0
+            a_srp = self._getSolarRadiationPressureAcceleration(r_eci, array(sun_positions)) if self.use_srp else 0.0
 
             # General Relativity accelerations
             a_gr = _getGeneralRelativityAcceleration(r_eci, v_eci) if self.use_gr else 0.0
