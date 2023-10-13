@@ -218,13 +218,11 @@ def logFilterStep(filter_obj, observations, truth_state):
 
     # Write information to output file
     filename = f"err-inflation_{float(filter_obj.time)}_{filter_obj.target_id}"
-    complete_filename = debugToJSONFile(
+    return debugToJSONFile(
         filename,
         BehavioralConfig.getConfig().debugging.EstimateErrorInflationDirectory,
         filter_description,
     )
-
-    return complete_filename
 
 
 def createFilterDebugDict(filter_obj, observations, truth_state, sensor_agents):

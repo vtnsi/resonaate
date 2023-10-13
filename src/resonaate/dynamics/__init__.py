@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 # Local Imports
 from ..common.labels import DynamicsLabel
 from ..physics.transforms.methods import eci2ecef
-from .dynamics_base import Dynamics
 from .special_perturbations import SpecialPerturbations, calcSatRatio
 from .terrestrial import Terrestrial
 from .two_body import TwoBody
@@ -19,6 +18,7 @@ if TYPE_CHECKING:
     from ..scenario.config.geopotential_config import GeopotentialConfig
     from ..scenario.config.perturbations_config import PerturbationsConfig
     from ..scenario.config.propagation_config import PropagationConfig
+    from .dynamics_base import Dynamics
 
 
 def dynamicsFactory(

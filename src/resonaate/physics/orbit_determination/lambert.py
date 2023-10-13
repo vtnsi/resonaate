@@ -297,15 +297,13 @@ def lambertUniversal(
                 psi_low = psi_low + 0.001 * psi_up
                 psi_n = (psi_up + psi_low) * 0.5
                 [c_2, c_3] = universalC2C3(psi_n)
-                new_y_new = _calcYNew(r0_mag, r_mag, a_value, psi_n, c_2, c_3)
-                if new_y_new < y_new:
+                if (new_y_new := _calcYNew(r0_mag, r_mag, a_value, psi_n, c_2, c_3)) < y_new:
                     raise ValueError("Universal Lambert caught in an infinite loop")
                 y_new = new_y_new
 
         xi_new = sqrt(y_new / c_2)
-        delta_tn = (xi_new**3 * c_3 + a_value * sqrt(y_new)) / sqrt(mu)
 
-        if delta_tn <= delta_time:
+        if (delta_tn := (xi_new**3 * c_3 + a_value * sqrt(y_new)) / sqrt(mu)) <= delta_time:
             psi_low = psi_n
         else:
             psi_up = psi_n

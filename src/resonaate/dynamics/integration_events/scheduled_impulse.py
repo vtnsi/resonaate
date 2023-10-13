@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from ...physics.time.stardate import ScenarioTime
 
 
-class ScheduledImpulse(DiscreteStateChangeEvent, metaclass=ABCMeta):  # noqa: B024
+class ScheduledImpulse(DiscreteStateChangeEvent, metaclass=ABCMeta):
     """Describes an impulsive maneuver that takes place at a specific time."""
 
     def __init__(self, time: ScenarioTime, delta_v: ndarray, agent_id: int):

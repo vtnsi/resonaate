@@ -87,9 +87,9 @@ def testCOE(sma: float, ecc: float, inc: float, raan: float, argp: float, anom: 
     coe = ClassicalElements(sma, ecc, inc, raan, argp, anom)
     inclined, eccentric = isInclined(inc), isEccentric(ecc)
     assert inclined == coe.is_inclined
-    assert not inclined == coe.is_equatorial
+    assert inclined != coe.is_equatorial
     assert eccentric == coe.is_eccentric
-    assert not eccentric == coe.is_circular
+    assert eccentric != coe.is_circular
     assert coe == ClassicalElements(sma, ecc, inc, raan, argp, anom)
     assert coe != ClassicalElements(sma + 1, ecc, inc, raan, argp, anom)
 
@@ -107,9 +107,9 @@ def testEQE(sma: float, h: float, k: float, p: float, q: float, anom: float):
     ecc = getEccentricityFromEQE(h, k)
     inclined, eccentric = isInclined(inc), isEccentric(ecc)
     assert inclined == eqe.is_inclined
-    assert not inclined == eqe.is_equatorial
+    assert inclined != eqe.is_equatorial
     assert eccentric == eqe.is_eccentric
-    assert not eccentric == eqe.is_circular
+    assert eccentric != eqe.is_circular
     assert eqe == EquinoctialElements(sma, h, k, p, q, anom)
     assert eqe != EquinoctialElements(sma + 1, h, k, p, q, anom)
 

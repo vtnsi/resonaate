@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     # Local Imports
     from .state_config import StateConfig
 
+# ruff: noqa: A003
 
 MASS_MAP: dict[str, float] = {
     OrbitRegimeLabel.LEO: LEO_DEFAULT_MASS,

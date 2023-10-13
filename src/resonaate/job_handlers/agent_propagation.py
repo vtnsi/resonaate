@@ -43,8 +43,8 @@ def asyncPropagate(
     init_time: ScenarioTime,
     final_time: ScenarioTime,
     initial_state: ndarray,
-    station_keeping: list[StationKeeper] = None,
-    scheduled_events: list[Event] = None,
+    station_keeping: list[StationKeeper] | None = None,
+    scheduled_events: list[Event] | None = None,
 ) -> ndarray:
     """Wrap a dynamics propagation method for use with a parallel job submission module.
 
@@ -149,7 +149,7 @@ class PropagationJobHandler(JobHandler):
             msg = f"Job hang: {file_name}"
             self.logger.error(msg)
 
-    def _getProblemAgentInformation(self, job, registrant):
+    def _getProblemAgentInformation(self, job, registrant):  # noqa: C901
         """Parse data from a bad :class:`.Job` & :class:`~.agent_base.Agent` pair.
 
         Args:
@@ -337,11 +337,10 @@ class AgentPropagationJobHandler(PropagationJobHandler):
             query = Query(TruthEphemeris).filter(
                 TruthEphemeris.agent_id == registrant.simulation_id
             )
-            truth_ephem = self._importer_db.getData(query, multi=False)
 
             # If minimal truth data exists in the database, use importer model, otherwise default to
             # realtime propagation (and print warning that this happened).
-            if truth_ephem is None:
+            if self._importer_db.getData(query, multi=False) is None:
                 msg = f"Could not find importer truth for {registrant.simulation_id}. "
                 msg += "Defaulting to realtime propagation!"
                 self.logger.warning(msg)
@@ -462,7 +461,7 @@ class AgentPropagationJobHandler(PropagationJobHandler):
                 self.importer_registry[ephem.agent_id](ephem)
 
             # Caught if there are ephems without registered importer callbacks
-            except KeyError:
+            except KeyError:  # noqa: PERF203
                 # Only log if we haven't yet logged this warning
                 if self.log_data_missing_imports:
                     # Add to list for logging

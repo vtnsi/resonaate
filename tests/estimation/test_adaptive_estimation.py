@@ -196,7 +196,7 @@ def getTestSensorAgent(earth_sensor: Sensor) -> SensingAgent:
 @pytest.fixture(name="earth_sensor")
 def getTestEarthSensor() -> AdvRadar:
     """Create a custom :class:`Sensor` object for a sensor."""
-    earth_sensor = AdvRadar(
+    return AdvRadar(
         az_mask=array([0.0, 359.99999]),
         el_mask=array([1.0, 89.0]),
         r_matrix=diagflat([2.38820057e-11, 3.73156339e-11, 9.00000000e-08, 3.61000000e-10]),
@@ -212,14 +212,13 @@ def getTestEarthSensor() -> AdvRadar:
         minimum_range=0.0,
         maximum_range=99000,
     )
-    return earth_sensor
 
 
 @pytest.fixture(name="radar_observation")
 def getTestRadarObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
     julian_date = JulianDate(2459304.270833333)
-    radar_observation = Observation(
+    return Observation(
         julian_date=julian_date,
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
@@ -231,14 +230,13 @@ def getTestRadarObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) 
         sensor_eci=sensor_agent.eci_state,
         measurement=sensor_agent.sensors.measurement,
     )
-    return radar_observation
 
 
 @pytest.fixture(name="optical_observation")
 def getTestOpticalObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) -> Observation:
     """Create a custom :class:`Observation` object for a sensor."""
     julian_date = JulianDate(2459304.270833333)
-    optical_observation = Observation(
+    return Observation(
         julian_date=julian_date,
         sensor_id=sensor_agent.unique_id,
         target_id=rso_agent.unique_id,
@@ -248,7 +246,6 @@ def getTestOpticalObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent
         sensor_eci=sensor_agent.eci_state,
         measurement=sensor_agent.sensors.measurement,
     )
-    return optical_observation
 
 
 class TestAdaptiveEstimation:

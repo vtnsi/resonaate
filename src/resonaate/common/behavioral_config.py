@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Callable
-    from typing import Any
+    from typing import Any, Final
 
 
 class SubConfig:
@@ -32,7 +32,8 @@ class SubConfig:
             section (``str``): name of section that this SubConfig object represents
         """
         self.section = section
-        assert isinstance(self.section, str)
+        if not isinstance(self.section, str):
+            raise TypeError("Config section must be a string")
 
     def setonce(self, name: str, value: Any):
         """Set the field for this `SubConfig`, but raise an error if the field was already set.
@@ -51,7 +52,7 @@ class SubConfig:
 class CustomConfigParser(ConfigParser):
     """Perform custom parsing operations on our custom config convention."""
 
-    LOGGING_LEVELS: dict[str, int] = {
+    LOGGING_LEVELS: Final[dict[str, int]] = {
         "CRITICAL": CRITICAL,
         "ERROR": ERROR,
         "WARNING": WARNING,
@@ -81,9 +82,9 @@ class CustomConfigParser(ConfigParser):
 class BehavioralConfig:
     """Singleton, config settings class."""
 
-    DEFAULT_CONFIG_FILE: str = "default_behavior.config"
+    DEFAULT_CONFIG_FILE: Final[str] = "default_behavior.config"
 
-    DEFAULT_SECTIONS: dict[str, dict[str, Any]] = {
+    DEFAULT_SECTIONS: Final[dict[str, dict[str, Any]]] = {
         "logging": {
             "OutputLocation": "stdout",
             "Level": DEBUG,
@@ -109,9 +110,9 @@ class BehavioralConfig:
         },
     }
 
-    LOGGING_LEVEL_ITEMS: dict[str, tuple[str, ...]] = {"logging": ("Level",)}
+    LOGGING_LEVEL_ITEMS: Final[dict[str, tuple[str, ...]]] = {"logging": ("Level",)}
 
-    STR_ITEMS: dict[str, tuple[str, ...]] = {
+    STR_ITEMS: Final[dict[str, tuple[str, ...]]] = {
         "logging": ("OutputLocation",),
         "database": ("DatabasePath",),
         "debugging": (
@@ -123,16 +124,16 @@ class BehavioralConfig:
         ),
     }
 
-    INT_ITEMS: dict[str, tuple[str, ...]] = {
+    INT_ITEMS: Final[dict[str, tuple[str, ...]]] = {
         "logging": (
             "MaxFileSize",
             "MaxFileCount",
         ),
     }
 
-    NULL_INT_ITEMS: dict[str, tuple[str, ...]] = {"parallel": ("WorkerCount",)}
+    NULL_INT_ITEMS: Final[dict[str, tuple[str, ...]]] = {"parallel": ("WorkerCount",)}
 
-    BOOL_ITEMS: dict[str, tuple[str, ...]] = {
+    BOOL_ITEMS: Final[dict[str, tuple[str, ...]]] = {
         "logging": ("AllowMultipleHandlers",),
         "debugging": (
             "NearestPD",
@@ -143,25 +144,26 @@ class BehavioralConfig:
         ),
     }
 
-    LIST_ITEMS: dict[str, tuple[str, ...]] = {}
+    LIST_ITEMS: Final[dict[str, tuple[str, ...]]] = {}
 
     __shared_inst: BehavioralConfig | None = None
 
-    def __init__(self, config_file_path: str | None = None):  # noqa: C901
+    def __init__(self, config_file_path: str | None = None):  # noqa: C901, PLR0912
         """Initialize the configuration object."""
         # pylint: disable=too-many-branches
         self._parser = CustomConfigParser()
 
         if config_file_path is None:
             res = resources.files("resonaate.common").joinpath(self.DEFAULT_CONFIG_FILE)
-            with resources.as_file(res) as res_filepath:
-                # Read in the config file if it exists, otherwise use the defaults
-                with open(res_filepath, "r", encoding="utf-8") as config_file:
-                    self._parser.read_file(config_file)
+            # Read in the config file if it exists, otherwise use the defaults
+            with resources.as_file(res) as res_filepath, open(
+                res_filepath, encoding="utf-8"
+            ) as config_file:
+                self._parser.read_file(config_file)
 
         elif Path(config_file_path).exists():
             # Read in the config file if it exists, otherwise use the defaults
-            with open(config_file_path, "r", encoding="utf-8") as config_file:
+            with open(config_file_path, encoding="utf-8") as config_file:
                 self._parser.read_file(config_file)
 
         for section, section_config in self.DEFAULT_SECTIONS.items():
@@ -169,22 +171,22 @@ class BehavioralConfig:
             for key, value in section_config.items():
                 # Grab the appropriate `getter` object for each key
                 getter: Callable[[str, str], Any]
-                if key in self.STR_ITEMS.get(section, tuple()):
+                if key in self.STR_ITEMS.get(section, ()):
                     getter = self._parser.get
 
-                elif key in self.INT_ITEMS.get(section, tuple()):
+                elif key in self.INT_ITEMS.get(section, ()):
                     getter = self._parser.getint
 
-                elif key in self.BOOL_ITEMS.get(section, tuple()):
+                elif key in self.BOOL_ITEMS.get(section, ()):
                     getter = self._parser.getboolean
 
-                elif key in self.LOGGING_LEVEL_ITEMS.get(section, tuple()):
+                elif key in self.LOGGING_LEVEL_ITEMS.get(section, ()):
                     getter = self._parser.getlogginglevel
 
-                elif key in self.NULL_INT_ITEMS.get(section, tuple()):
+                elif key in self.NULL_INT_ITEMS.get(section, ()):
                     getter = self._parser.getNullInt
 
-                elif key in self.LIST_ITEMS.get(section, tuple()):
+                elif key in self.LIST_ITEMS.get(section, ()):
                     getter = self._parser.getlist
 
                 else:
@@ -193,7 +195,7 @@ class BehavioralConfig:
                     )
 
                 try:
-                    value = getter(section, key)
+                    value = getter(section, key)  # noqa: PLW2901
                 except ConfigError:
                     # Use default
                     pass

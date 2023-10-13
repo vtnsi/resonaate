@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from functools import partial
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple  # noqa: UP035
 
 # Third Party Imports
 from sqlalchemy import Boolean, Column, Float, String
@@ -40,11 +40,13 @@ class ScheduledFiniteManeuverEvent(Event):
     MANEUVER_TYPE_PLANE_CHANGE: str = "plane_change"
     """``str``: Configuration string used to delineate plane change maneuver to apply this thrust."""
 
-    # [NOTE]: Old-style type hints required until we either:
+    # [NOTE]: Old-style generic type hints builtins (Tuple vs tuple) required until we either:
     #   1) Move to SQLAlchemy >= 2.0
     #   2) Move to Python >= 3.10
-    # pylint: disable=deprecated-typing-alias
-    VALID_MANEUVER_TYPES: Tuple[str] = (MANEUVER_TYPE_SPIRAL, MANEUVER_TYPE_PLANE_CHANGE)
+    VALID_MANEUVER_TYPES: Tuple[str] = (  # noqa: UP006
+        MANEUVER_TYPE_SPIRAL,
+        MANEUVER_TYPE_PLANE_CHANGE,
+    )
     """``tuple``: Valid values for :attr:`.maneuver_type`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
@@ -60,7 +62,8 @@ class ScheduledFiniteManeuverEvent(Event):
         """``bool``: Flag indicating whether this task is expected by the filter or not."""
         return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
+    MUTABLE_COLUMN_NAMES = (
+        *Event.MUTABLE_COLUMN_NAMES,
         "maneuver_mag",
         "maneuver_type",
         "planned",

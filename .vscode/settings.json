@@ -6,24 +6,21 @@
   // Auto-import
   "python.analysis.autoImportCompletions": false,
   // Formatting options
-  "python.formatting.provider": "black",
-  "python.formatting.blackArgs": [
-      "--fast",
-  ],
+  "black-formatter.args": ["--fast", "--line-length", "99"],
+  "isort.args": ["--profile", "black", "--line-length", "99"],
   // Python settings
   "[python]": {
-      "editor.autoIndent": "full",
-      "editor.codeActionsOnSave": {
-          "source.organizeImports": true,
-      },
-      "editor.formatOnSave": true,
-      "editor.insertSpaces": true,
-      "editor.tabSize": 4,
-      "editor.wordBasedSuggestions": false,
-      "editor.wordWrap": "on",
-      "gitlens.codeLens.symbolScopes": [
-          "!Module"
-      ]
+    "editor.autoIndent": "full",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.wordBasedSuggestions": false,
+    "editor.wordWrap": "on",
+    "gitlens.codeLens.symbolScopes": ["!Module"],
+    "editor.defaultFormatter": "ms-python.black-formatter"
   },
   // Configure prettier formatter
   "prettier.enable": true,
@@ -74,7 +71,5 @@
     "editor.wordWrap": "on",
     "gitlens.codeLens.scopes": ["document"]
   },
-  "python.testing.pytestArgs": [
-    "tests"
-  ]
+  "python.testing.pytestArgs": ["tests"]
 }

@@ -6,10 +6,23 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import argwhere, array, ceil, concatenate, delete, dot, hstack, linspace, ones, outer
+from numpy import (
+    argwhere,
+    array,
+    ceil,
+    concatenate,
+    delete,
+    dot,
+    hstack,
+    linspace,
+    ones,
+    outer,
+    union1d,
+    vstack,
+    zeros,
+)
 from numpy import round as np_round
 from numpy import sum as np_sum
-from numpy import union1d, vstack, zeros
 from scipy.linalg import norm
 
 # Local Imports
@@ -67,7 +80,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         num_models (``int``): number of models
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
@@ -140,7 +153,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         mmae_config: AdaptiveEstimationConfig,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
-    ) -> "AdaptiveFilter":
+    ) -> AdaptiveFilter:
         """Create adaptive estimation filter from a config object.
 
         Args:
@@ -381,13 +394,11 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
                 crashed_indices.append(idx)
 
         # Prune off hypotheses that violate constraints
-        hypothesis_states = self._initialPruning(
+        return self._initialPruning(
             maneuvers,
             array(crashed_indices, dtype=int),
             hypothesis_states,
         )
-
-        return hypothesis_states
 
     def _calculateTimestep(self, prior_ob_scenario_time: ScenarioTime) -> tuple[float, int]:
         """Calculated the number of models and time_step between models.

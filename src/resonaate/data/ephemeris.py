@@ -12,7 +12,7 @@ from .table_base import Base, _DataMixin
 class _EphemerisMixin(_DataMixin):
     """Data Columns applicable to both Truth and Estimate Ephemeris Tables."""
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)  # noqa: A003
 
     ## Cartesian x-coordinate for inertial satellite location in ECI frame in kilometers
     pos_x_km = Column(Float)
@@ -75,9 +75,8 @@ class TruthEphemeris(Base, _EphemerisMixin):
         An `eci` keyword is provided as a 6x1 vector instead of the `pos[dimension]` and
         `vel[dimension]` keywords.
         """
-        assert (
-            kwargs.get("eci") is not None
-        ), "[Ephemeris.fromECIArray()] Missing keyword argument 'eci'."
+        if kwargs.get("eci") is None:
+            raise KeyError("[Ephemeris.fromECIArray()] Missing keyword argument 'eci'.")
 
         # Parse state vector into separate columns, one for each element
         kwargs["pos_x_km"] = kwargs["eci"][0]
@@ -206,9 +205,8 @@ class EstimateEphemeris(Base, _EphemerisMixin):
 
         A `covariance` keyword is provided as a 6x6 matrix instead of the `covar_[]` keywords.
         """
-        assert (
-            kwargs.get("covariance") is not None
-        ), "[Ephemeris.fromCovarianceMatrix()] Missing keyword argument"
+        if kwargs.get("covariance") is None:
+            raise KeyError("[Ephemeris.fromCovarianceMatrix()] Missing keyword argument 'covariance'.")
 
         # Parse covariance matrix into separate columns, one for each matrix element
         kwargs["covar_00"] = kwargs["covariance"][0][0]
@@ -252,9 +250,9 @@ class EstimateEphemeris(Base, _EphemerisMixin):
         del kwargs["covariance"]
 
         # Parse state vector into separate columns, one for each element
-        assert (
-            kwargs.get("eci") is not None
-        ), "[Ephemeris.fromECIArray()] Missing keyword argument 'eci'."
+        if kwargs.get("eci") is None:
+            raise KeyError("[Ephemeris.fromCovarianceMatrix()] Missing keyword argument 'eci'.")
+
         kwargs["pos_x_km"] = kwargs["eci"][0]
         kwargs["pos_y_km"] = kwargs["eci"][1]
         kwargs["pos_z_km"] = kwargs["eci"][2]

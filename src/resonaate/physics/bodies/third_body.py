@@ -138,7 +138,8 @@ class TBK(Enum):
     def __lt__(self, other):
         """Explicitly define less than for use in sorting kernel segments."""
         msg = f"Can only compare a TBK enum to another: {type(other)}"
-        assert isinstance(other, TBK), msg
+        if not isinstance(other, TBK):
+            raise TypeError(msg)
         return int(self.value) < int(other.value)
 
 
@@ -181,9 +182,8 @@ def readKernelSegmentFile(kernel_module: str, filename: str | Path) -> ThirdBody
 
     # Get coefficient array
     res = resources.files(kernel_module).joinpath(filename)
-    with resources.as_file(res) as kernel_file:
-        with open(kernel_file, "rb") as segment_file:
-            coefficients = load(segment_file)
+    with resources.as_file(res) as kernel_file, open(kernel_file, "rb") as segment_file:
+        coefficients = load(segment_file)
 
     return ThirdBodyTuple(center, target, init_jd, interval, coefficients)
 

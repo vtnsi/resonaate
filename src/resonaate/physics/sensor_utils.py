@@ -284,12 +284,10 @@ def calculatePhaseAngle(emitter: ndarray, reflector: ndarray, observer: ndarray)
     Returns:
         ``float``: angle between the light incident onto an observed object and the light reflected from the object
     """
-    phase_angle = subtendedAngle(
+    return subtendedAngle(
         emitter - reflector,
         observer - reflector,
     )
-
-    return phase_angle
 
 
 def checkGalacticExclusionZone(boresight_eci_vector, cone_angle=PI / 30):

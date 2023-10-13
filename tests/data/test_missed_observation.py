@@ -44,7 +44,7 @@ class TestMissedObservationTable:
 
     sensor_type = SensorLabel.OPTICAL
 
-    eci = [7000.44393147656176574, 1.124890532, 0.6253, 3.0, 2.0, 1.0]
+    eci = [7000.44393147656176574, 1.124890532, 0.6253, 3.0, 2.0, 1.0]  # noqa: RUF012
 
     def testInitKwargs(
         self,

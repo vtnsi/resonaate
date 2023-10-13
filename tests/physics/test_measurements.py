@@ -229,7 +229,7 @@ def testRMatrix() -> None:
     with pytest.raises(ShapeError, match=error_msg):
         _ = Measurement.fromMeasurementLabels(meas_types, r_matrix)
 
-    r_matrix = np.ones((n_dim + 1))
+    r_matrix = np.ones(n_dim + 1)
     error_msg = r"Measurement: Shape for r_matrix doesn't match measurement length: .*"
     with pytest.raises(ShapeError, match=error_msg):
         _ = Measurement.fromMeasurementLabels(meas_types, r_matrix)

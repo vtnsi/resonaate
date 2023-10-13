@@ -11,6 +11,8 @@ from .platform_config import PlatformConfig
 from .sensor_config import SensorConfig
 from .state_config import StateConfig
 
+# ruff: noqa: A003
+
 
 @dataclass
 class AgentConfig(ConfigObject):

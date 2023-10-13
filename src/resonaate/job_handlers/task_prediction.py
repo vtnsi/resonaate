@@ -52,10 +52,8 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
         sensor_agent = sensor_agents[sensor_id]
 
         # Attempt predicted observations, in order to perform sensor tasking
-        predicted_observation = predictObservation(sensor_agent, estimate)
-
         # Only calculate metrics if the estimate is observable
-        if predicted_observation:
+        if predicted_observation := predictObservation(sensor_agent, estimate):
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
             visibility[sensor_index] = True

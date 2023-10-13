@@ -17,18 +17,18 @@ from .. import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
 class TestScenarioFactory:
     """Tests for :func:`.scenarioFactory`."""
 
-    VALID_JSON_CONFIGS = [
+    VALID_JSON_CONFIGS = [  # noqa: RUF012
         "minimal_init.json",
         "default_imported_est_imported_obs.json",
         "default_realtime_est_realtime_obs.json",
     ]
 
-    INVALID_JSON_CONFIGS = [
+    INVALID_JSON_CONFIGS = [  # noqa: RUF012
         "no_sensor_set_init.json",
         "no_target_set_init.json",
     ]
 
-    EMPTY_JSON_ENGINE_CONFIGS = [
+    EMPTY_JSON_ENGINE_CONFIGS = [  # noqa: RUF012
         "no_sensors_init.json",
         "no_targets_init.json",
     ]

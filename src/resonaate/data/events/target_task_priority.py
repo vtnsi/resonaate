@@ -47,7 +47,7 @@ class TargetTaskPriority(Event):
     is_dynamic = Column(Boolean)
     """``bool``: Flag indicating whether this task is pre-canned or dynamically created."""
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + ("agent_id", "priority", "is_dynamic")
+    MUTABLE_COLUMN_NAMES = (*Event.MUTABLE_COLUMN_NAMES, "agent_id", "priority", "is_dynamic")
 
     def handleEvent(self, scope_instance: TaskingEngine) -> None:
         """Increase the reward for tasking sensors to observe the `target`.

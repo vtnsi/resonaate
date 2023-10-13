@@ -1,0 +1,153 @@
+#### ruff Configuration File ####
+
+# Where cached results go
+cache-dir = "~/.cache/ruff"
+
+# Extend set of paths to ignore
+extend-exclude = [
+    "coverage*",
+    "db",
+    "out",
+]
+
+# Extended set of fixable rules
+extend-fixable = [
+    "B",
+]
+
+# Extended set of ignored rules
+ignore = [
+    "D203",     # requires one blank line before class.
+    "D213",     # multiline summary first line.
+    "ANN101",   # Missing type annotation for `self` in method
+    "ANN102",   # Missing type annotation for `cls` in method
+    "S301",     # `pickle` and modules that wrap it can be unsafe, possible security issue
+    "E501",     # Line too long
+    "PLR2004",  # Magic value used in comparison
+    "ARG001",   # Unused function argument
+    "ARG002",   # Unused method argument
+    "ERA001",   # Commented out code - lots of false positives
+    "NPY002",   # Deprecated numpy.random usage. FIXME: remove this ignore when working on Issue #103
+]
+
+# On top of the default `select` (`E`, `F`), enable:
+# [TODO]: Add these when we officially support tzinfo, pathlib, and full type-hints!
+# "DTZ",      # flake8-datetimez
+# "PTH",      # flake8-use-pathlib
+# "ANN",      # flake8-annotations
+extend-select = [
+    "W",        # warnings - mostly whitespace
+    "C90",      # mccabe code complexity
+    "UP",       # pyupgrade
+    "ASYNC",    # flake8-async
+    "S",        # flake8-bandit
+    "BLE",      # flake8-blind-except
+    "B",        # flake8-bugbear
+    "A",        # flake8-builtins
+    "C4",       # flake8-comprehensions
+    "T10",      # flake8-debugger
+    "EXE",      # flake8-executable
+    "FA",       # flake8-future-annotations
+    "INP",      # flake8-no-pep420
+    "PT",       # flake8-pytest-style
+    "Q",        # flake8-quotes
+    "RSE",      # flake8-raise
+    "RET",      # flake8-return
+    "SIM",      # flake8-simplify
+    "TCH",      # flake8-type-checking
+    "ARG",      # flake8-unused-arguments
+    "ERA",      # eradicate
+    "PD",       # pandas
+    "PL",       # pylint
+    "NPY",      # numpy
+    "PERF",     # perflint
+    "RUF",      # ruff
+]
+
+# Don't auto-fix rules (can be overidden with --fix argument)
+fix = false
+
+# Avoid automatically removing unused imports in __init__.py files
+ignore-init-module-imports = true
+
+# Line length to enforce
+line-length = 110
+
+# Auto-ignore stuff in .gitignore
+respect-gitignore = false
+
+# Allow imports relative to the "src" and "test" directories.
+src = ["src", "tests"]
+
+# Always generate Python 3.9-compatible code.
+target-version = "py39"
+
+# Extended set of ignores per-file
+[extend-per-file-ignores]
+"__init__.py" = ["E402"]
+"tests/*.py" = [
+    "D100",
+    "D104",
+    "E501",
+    "ANN",
+    "S101",
+    "PLR",
+    "ARG001",
+    "ARG002",
+    "PTH118",
+    "TCH",
+    "PERF",
+]
+"tests/example.py" = [
+    "B011",
+    "PT"
+]
+"docs/*.py" = [
+    "D100",
+    "D104",
+    "E501",
+    "E402",
+    "INP",
+    "I",
+    "A001",
+    "UP009",
+]
+"src/resonaate/data/events/*.py" = [
+    "RUF012",
+]
+
+### flake8-annotations settings ###
+[flake8-annotations]
+# Suppress fixes for *args & **kwargs types
+allow-star-arg-any = true
+
+# Suprress rules for untyped code - useful for gradually typing
+ignore-fully-untyped = true
+
+# Ignore no return type for __init__()
+mypy-init-return = true
+
+# Ignore rules for dummy variables/args like '_'
+suppress-dummy-args = true
+
+### pydocstyle settings ###
+[pydocstyle]
+# USe Google style docstrings
+convention = "google"
+
+### pylint settings ###
+[pylint]
+# Maximum number of arguments for function / method.
+max-args=8
+
+# Maximum number of branch for function / method body.
+max-branches=12
+
+# Maximum number of public methods for a class (see R0904).
+max-public-methods=20
+
+# Maximum number of return / yield for function / method body.
+max-returns=6
+
+# Maximum number of statements in function / method body.
+max-statements=75

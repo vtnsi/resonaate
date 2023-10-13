@@ -213,15 +213,14 @@ class ScenarioBuilder:
         Args:
             database (ResonaateDatabase): reference to the simulation database.
         """
-        agent_data = []
-        for target_agent in self.target_agents.values():
-            agent_data.append(
-                AgentModel(unique_id=target_agent.simulation_id, name=target_agent.name)
-            )
-        for sensor_agent in self.sensor_agents.values():
-            agent_data.append(
-                AgentModel(unique_id=sensor_agent.simulation_id, name=sensor_agent.name)
-            )
+        agent_data = [
+            AgentModel(unique_id=tgt.simulation_id, name=tgt.name)
+            for tgt in self.target_agents.values()
+        ]
+        agent_data.extend(
+            AgentModel(unique_id=sen.simulation_id, name=sen.name)
+            for sen in self.sensor_agents.values()
+        )
 
         database.bulkSave(agent_data)
 
@@ -238,8 +237,9 @@ class ScenarioBuilder:
         built_events = []
         for event_config in sorted(self._config.events, key=lambda x: x.start_time):
             for data_dependency in event_config.getDataDependencies():
-                # pylint: disable=unused-variable
-                if found_dependency := database.getData(data_dependency.query, multi=False):
+                if found_dependency := database.getData(  # noqa: F841
+                    data_dependency.query, multi=False
+                ):
                     continue
 
                 # else

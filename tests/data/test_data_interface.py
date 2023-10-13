@@ -64,7 +64,7 @@ def getSingleEphemerisData() -> TruthEphemeris:
         name=EXAMPLE_RSO[0]["name"],
     )
     eci = EXAMPLE_RSO[0]["eci"]
-    ephem = TruthEphemeris(
+    return TruthEphemeris(
         epoch=epoch,
         agent=tgt,
         pos_x_km=eci[0],
@@ -74,8 +74,6 @@ def getSingleEphemerisData() -> TruthEphemeris:
         vel_y_km_p_sec=eci[4],
         vel_z_km_p_sec=eci[5],
     )
-
-    return ephem
 
 
 @pytest.fixture(name="ephems")
@@ -151,7 +149,7 @@ class TestResonaateDatabase:
         class NewEpoch(declarative_base()):
             __tablename__ = "new_epochs"
 
-            id = Column(Integer, primary_key=True)
+            id = Column(Integer, primary_key=True)  # noqa: A003
 
             julian_date = Column(Float, index=True, unique=True, nullable=False)
 
@@ -197,7 +195,7 @@ class TestResonaateDatabase:
         class NewEpoch(declarative_base()):
             __tablename__ = "new_epochs"
 
-            id = Column(Integer, primary_key=True)
+            id = Column(Integer, primary_key=True)  # noqa: A003
 
             julian_date = Column(Float, index=True, unique=True, nullable=False)
 

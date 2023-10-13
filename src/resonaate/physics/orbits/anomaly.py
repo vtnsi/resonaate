@@ -139,10 +139,7 @@ def meanAnom2EccAnom(M: float, ecc: float) -> float:
     """
     # pylint: disable=invalid-name
     M = wrapAngle2Pi(M)
-    if M > PI:
-        E_0 = M - ecc
-    else:
-        E_0 = M + ecc
+    E_0 = M - ecc if M > PI else M + ecc
 
     return keplerSolveCOE(E_0, M, ecc)
 

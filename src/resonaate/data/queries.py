@@ -12,7 +12,6 @@ from sqlalchemy.orm import Query
 from ..common.logger import resonaateLogError
 from ..physics.time.stardate import JulianDate
 from .agent import AgentModel
-from .data_interface import DataInterface
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .observation import Observation
 
@@ -20,6 +19,9 @@ from .observation import Observation
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Sequence
+
+    # Local Imports
+    from .data_interface import DataInterface
 
 
 def fetchAgentIDs(database: DataInterface) -> list[int]:

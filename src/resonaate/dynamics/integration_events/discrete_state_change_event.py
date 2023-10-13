@@ -30,7 +30,7 @@ class DiscreteStateChangeEvent(metaclass=ABCMeta):
         Returns:
             (float): value that the ode solver uses to root find
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def getStateChange(self, time, state):
@@ -43,4 +43,4 @@ class DiscreteStateChangeEvent(metaclass=ABCMeta):
         Returns:
             numpy.ndarray: vector to add to `state` that results in the desired end state
         """
-        raise NotImplementedError()
+        raise NotImplementedError

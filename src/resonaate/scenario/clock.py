@@ -78,7 +78,7 @@ class ScenarioClock:
 
         getDBConnection().insertData(*epochs)
 
-    def ticToc(self, dt: ScenarioTime | float | None = None) -> None:  # noqa: C901
+    def ticToc(self, dt: ScenarioTime | float | None = None) -> None:
         r"""Increment the time property by one step.
 
         Args:

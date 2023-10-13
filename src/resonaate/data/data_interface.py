@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABCMeta
 from contextlib import contextmanager
 from traceback import format_exc
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import create_engine
@@ -25,6 +26,10 @@ from .observation import MissedObservation, Observation
 from .table_base import Base
 from .task import Task
 
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Final
+
 
 class DataInterface(metaclass=ABCMeta):
     """Common data interface that is DB agnostic.
@@ -33,7 +38,7 @@ class DataInterface(metaclass=ABCMeta):
     """
 
     # pylint: disable=no-member
-    VALID_DATA_TYPES = {
+    VALID_DATA_TYPES: Final[dict[str, Base]] = {
         AgentModel.__tablename__: AgentModel,
         Epoch.__tablename__: Epoch,
         DetectedManeuver.__tablename__: DetectedManeuver,
@@ -157,10 +162,7 @@ class DataInterface(metaclass=ABCMeta):
             self.logger.error(msg)
             raise TypeError(query)
 
-        if multi:
-            retval = []
-        else:
-            retval = None
+        retval = [] if multi else None
 
         # [NOTE]: The context manager pattern isn't used here because of the lazy loading
         #   functionality of the ORM. Somehow the context manager causes data objects to become detached.
@@ -196,13 +198,10 @@ class DataInterface(metaclass=ABCMeta):
             self.logger.error(msg)
             raise TypeError(query)
 
-        deleted_count = 0
         with self._getSessionScope() as session:
             for result in query.with_session(session).all():
                 session.delete(result)
-            deleted_count = len(session.deleted)
-
-        return deleted_count
+            return len(session.deleted)
 
     def bulkSave(self, data):
         """Use a low latency method to make large amounts of updates to the database.
@@ -222,9 +221,6 @@ class DataInterface(metaclass=ABCMeta):
         Returns:
             ``int``: number of data objects saved to the database
         """
-        save_count = 0
         with self._getSessionScope() as session:
             session.bulk_save_objects(data)
-            save_count = len(data)
-
-        return save_count
+            return len(data)

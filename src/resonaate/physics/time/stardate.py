@@ -86,7 +86,7 @@ def getCalendarDate(julian_date):
     day_of_year = temp_val - ((year - 1900) * 365 + leap_years)
 
     # Case check: Beginning of the year
-    if day_of_year < 1.0:
+    if day_of_year < 1.0:  # pylint: disable=consider-using-assignment-expr
         year -= 1
         leap_years = floor((year - 1901) * 0.25)
         day_of_year = temp_val - ((year - 1900) * 365 + leap_years)
@@ -105,68 +105,90 @@ class JulianDate(float):
 
     def __add__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) + float(other_julianDate)
 
     def __sub__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) - float(other_julianDate)
 
     def __mul__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) * float(other_julianDate)
 
     def __mod__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) % float(other_julianDate)
 
     def __truediv__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) / float(other_julianDate)
 
     def __lt__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) < float(other_julianDate)
 
     def __le__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) <= float(other_julianDate)
 
     def __eq__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) == float(other_julianDate)
 
     def __ne__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) != float(other_julianDate)
 
     def __gt__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) > float(other_julianDate)
 
     def __ge__(self, other_julianDate):
         """."""
-        msg = "JulianDate: Cannot perform operations between JulianDate / ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_julianDate, ScenarioTime), msg
+        if isinstance(other_julianDate, ScenarioTime):
+            raise TypeError(
+                "JulianDate: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) >= float(other_julianDate)
 
     def __hash__(self):
@@ -223,7 +245,7 @@ class JulianDate(float):
         julian_day_fraction = (second + minute * 60 + hour * 3600) / 86400
 
         # Sanity check on the fractional part
-        if julian_day_fraction > 1.0:
+        if julian_day_fraction > 1.0:  # pylint: disable=consider-using-assignment-expr
             julian_day = julian_day + floor(julian_day_fraction)
             julian_day_fraction = julian_day_fraction - floor(julian_day_fraction)
 
@@ -291,68 +313,90 @@ class ScenarioTime(float):
 
     def __add__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return ScenarioTime(float(self) + float(other_scenarioTime))
 
     def __sub__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return ScenarioTime(float(self) - float(other_scenarioTime))
 
     def __mul__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return ScenarioTime(float(self) * float(other_scenarioTime))
 
     def __mod__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return ScenarioTime(float(self) % float(other_scenarioTime))
 
     def __truediv__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return ScenarioTime(float(self) / float(other_scenarioTime))
 
     def __lt__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) < float(other_scenarioTime)
 
     def __le__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) <= float(other_scenarioTime)
 
     def __eq__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) == float(other_scenarioTime)
 
     def __ne__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) != float(other_scenarioTime)
 
     def __gt__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) > float(other_scenarioTime)
 
     def __ge__(self, other_scenarioTime):
         """."""
-        msg = "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
-        assert not isinstance(other_scenarioTime, JulianDate), msg
+        if isinstance(other_scenarioTime, JulianDate):
+            raise TypeError(
+                "ScenarioTime: Cannot perform operations between JulianDate/ScenarioTime objects, use conversion methods."
+            )
         return float(self) >= float(other_scenarioTime)
 
     def __hash__(self):

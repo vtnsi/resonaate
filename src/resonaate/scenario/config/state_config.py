@@ -4,7 +4,6 @@ from __future__ import annotations
 # Standard Library Imports
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, fields
-from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
 # Third Party Imports
@@ -22,11 +21,14 @@ from .base import ConfigError, ConfigObject, ConfigValueError
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
+    from datetime import datetime
     from typing import Literal
 
     # Third Party Imports
     from numpy import ndarray
     from typing_extensions import Self
+
+# ruff: noqa: A003
 
 
 @dataclass

@@ -28,6 +28,25 @@ if TYPE_CHECKING:
     from typing import Any
 
 
+__all__ = [
+    "ScenarioConfig",
+    "ConfigObject",
+    "ConfigObjectList",
+    "SensingAgentConfig",
+    "TargetAgentConfig",
+    "EngineConfig",
+    "EstimationConfig",
+    "EventConfig",
+    "EventConfigList",
+    "GeopotentialConfig",
+    "NoiseConfig",
+    "ObservationConfig",
+    "PerturbationsConfig",
+    "PropagationConfig",
+    "TimeConfig",
+]
+
+
 @dataclass
 class ScenarioConfig(ConfigObject):
     """Configuration class for creating valid :class:`.Scenario` objects.
@@ -72,7 +91,7 @@ class ScenarioConfig(ConfigObject):
     }
     """``dict``: mapping that makes auto-validating optional sub-configs easier."""
 
-    def __post_init__(self) -> None:
+    def __post_init__(self) -> None:  # noqa: C901
         """Runs after the object is initialized."""
         # Required sections
         if isinstance(self.time, dict):

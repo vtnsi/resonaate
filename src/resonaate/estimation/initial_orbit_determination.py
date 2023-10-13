@@ -17,7 +17,6 @@ from ..common.labels import SensorLabel
 from ..data import getDBConnection
 from ..data.observation import Observation
 from ..physics.constants import DAYS2SEC
-from ..physics.orbit_determination import OrbitDeterminationFunction
 from ..physics.orbit_determination.lambert import determineTransferDirection
 from ..physics.orbits.utils import getPeriod, getSemiMajorAxis
 from ..physics.time.stardate import JulianDate, ScenarioTime
@@ -31,6 +30,7 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ..data.resonaate_database import ResonaateDatabase
+    from ..physics.orbit_determination import OrbitDeterminationFunction
     from ..scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
 

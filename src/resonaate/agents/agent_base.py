@@ -24,6 +24,7 @@ from ..scenario.clock import ScenarioClock
 if TYPE_CHECKING:
     # Standard Library Imports
     from datetime import datetime
+    from typing import Any, Final
 
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
 class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
     """Abstract base class for a generic Agent object, i.e. an actor in the simulation."""
 
-    TYPES = {
+    TYPES: Final[dict[str, Any]] = {
         "_id": int,
         "name": str,
         "agent_type": str,
@@ -49,7 +50,7 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         "station_keeping": (list, type(None)),
     }
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         _id: int,
         name: str,
@@ -187,17 +188,15 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         if platform_cfg.type != PlatformLabel.SPACECRAFT:
             return station_keepers
 
-        for routine in platform_cfg.station_keeping.routines:
-            station_keepers.append(
-                StationKeeper.factory(
-                    conf_str=routine,
-                    rso_id=agent_id,
-                    initial_eci=initial_state,
-                    julian_date_start=jd_start,
-                )
+        return [
+            StationKeeper.factory(
+                conf_str=routine,
+                rso_id=agent_id,
+                initial_eci=initial_state,
+                julian_date_start=jd_start,
             )
-
-        return station_keepers
+            for routine in platform_cfg.station_keeping.routines
+        ]
 
     ### Abstract Methods & Properties ###
 

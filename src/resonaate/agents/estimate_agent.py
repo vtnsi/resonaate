@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config import NoiseConfig, PropagationConfig, TimeConfig
+    from ..scenario.config import NoiseConfig, TimeConfig
     from ..scenario.config.agent_config import TargetAgentConfig
     from ..scenario.config.estimation_config import (
         AdaptiveEstimationConfig,
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
     """Define the behavior of the **estimated** target agents in the simulation."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         _id: int,
         name: str,
@@ -151,7 +151,9 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self._filter_info = []
 
         # Apply None value to estimate station_keeping
-        assert not self.station_keeping, "Estimates do not perform station keeping maneuvers"
+        if self.station_keeping:
+            msg = "Estimates do not perform station keeping maneuvers"
+            raise ValueError(msg)
 
     @classmethod
     def fromConfig(

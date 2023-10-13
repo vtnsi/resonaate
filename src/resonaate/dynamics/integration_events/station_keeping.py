@@ -58,13 +58,13 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
             initial_eci (``numpy.ndarray``): (6, ) initial ECI vector of the satellite, (km, km/s)
             julian_date_start (:class:`.JulianDate`): Julian date of initial epoch, for later reference.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     @abstractmethod
     def getConfigString(cls):
         """str: Configuration string indicating this :class:`.StationKeeper` should be used."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def _generateRegistry(cls):
@@ -106,7 +106,7 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
         Returns:
             bool: Indication of whether this :class:`.StationKeeper` needs to activate.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def __call__(self, time, state):
         """When this function returns zero during integration, it interrupts the integration process.
@@ -231,10 +231,7 @@ class KeepGeoEastWest(StationKeeper):
         if self.ntw_delta_v == 0.0:
             raise StationKeepingError("No state change to apply.")
 
-        if self.ntw_delta_v > 0:
-            direction = "West"
-        else:
-            direction = "East"
+        direction = "West" if self.ntw_delta_v > 0 else "East"
         EventStack.pushEvent(EventRecord(f"Station Keep GEO {direction}", self._rso_id))
 
         # apply to 'T' direction
@@ -332,10 +329,7 @@ class KeepGeoNorthSouth(StationKeeper):
         if self.ntw_delta_v == 0.0:
             raise StationKeepingError("No state change to apply.")
 
-        if self.ntw_delta_v > 0:
-            direction = "North"
-        else:
-            direction = "South"
+        direction = "North" if self.ntw_delta_v > 0 else "South"
         EventStack.pushEvent(EventRecord(f"Station Keep GEO {direction}", self._rso_id))
 
         # apply to 'W' direction
@@ -400,8 +394,7 @@ class KeepLeoUp(StationKeeper):
         if self.initial_coe.is_eccentric:
             return False
         current_coe = ClassicalElements.fromECI(state)
-        delta_a = self.initial_coe.sma - current_coe.sma  # km
-        if delta_a >= self.ALT_DRIFT_THRESHOLD:
+        if (delta_a := self.initial_coe.sma - current_coe.sma) >= self.ALT_DRIFT_THRESHOLD:
             ntw_delta_v = current_coe.mean_motion * delta_a / 2  # km/s
             if abs(ntw_delta_v) >= self.BURN_THRESHOLD:
                 self.ntw_delta_v = ntw_delta_v

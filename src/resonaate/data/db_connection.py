@@ -10,7 +10,7 @@ from mjolnir.key_value_store.transaction import Transaction
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any
+    from typing import Any, ClassVar
 
     # Local Imports
     from .resonaate_database import ResonaateDatabase
@@ -43,7 +43,7 @@ class ExclusiveSet(Transaction):
 class _GetDBConnection(Transaction):
     """Transaction logic for managing shared database connections."""
 
-    __cached_interfaces: dict[str, Any] = {}
+    __cached_interfaces: ClassVar[dict[str, Any]] = {}
 
     def transact(self, key_value_store: dict) -> None:
         """Execute the transaction on the specified `key_value_store`.

@@ -51,7 +51,7 @@ class Radar(Sensor):
         #  :cite:t:`vallado_2016_aiaa_covariance`
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         az_mask: ndarray,
         el_mask: ndarray,
@@ -67,7 +67,7 @@ class Radar(Sensor):
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
-    ):  # noqa: E501
+    ):
         """Construct a `Radar` sensor object.
 
         Args:

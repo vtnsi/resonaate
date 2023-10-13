@@ -74,7 +74,7 @@ def getCentralizedEngineClass(reward: Reward, decision: Decision) -> Centralized
     Returns:
         :class:`.CentralizedTaskingEngine`
     """
-    engine = CentralizedTaskingEngine(
+    return CentralizedTaskingEngine(
         engine_id=0,
         sensor_ids=SENSOR_NUMS,
         target_ids=TARGET_NUMS,
@@ -83,8 +83,6 @@ def getCentralizedEngineClass(reward: Reward, decision: Decision) -> Centralized
         importer_db_path=None,
         realtime_obs=True,
     )
-
-    return engine
 
 
 @patch.object(TaskExecutionJobHandler, "registerCallback", autospec=True)
@@ -382,7 +380,7 @@ def testGetCurrentTasking(reward: Reward, decision: Decision):
     target_list = sorted(target_list)
 
     # Null tasks
-    assert list(task for task in engine.getCurrentTasking(julian_date))
+    assert list(engine.getCurrentTasking(julian_date))
     for task in engine.getCurrentTasking(julian_date):
         assert task.sensor_id in sensor_list
         assert task.target_id in target_list

@@ -19,7 +19,7 @@ Base = declarative_base(cls=_Base)  # pylint: disable=invalid-name
 class _DataMixin:
     """Base class for objects that get stored via SQLAlchemy."""
 
-    MUTABLE_COLUMN_NAMES = tuple()
+    MUTABLE_COLUMN_NAMES = ()
     """tuple: Tuple of mutable column names."""
 
     def __repr__(self):

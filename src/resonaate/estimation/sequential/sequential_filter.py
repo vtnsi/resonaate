@@ -122,7 +122,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
     INTERNAL_OBSERVATION_SOURCE = "Observation"
     """``str``: Constant string for an estimate source due to internal filter measurement update."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         tgt_id: int,
         time: ScenarioTime,
@@ -335,7 +335,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
             est_error = fabs(norm(truth[:3] - self.est_x[:3]))
 
             # If error increase is larger than desired log the debug information
-            if est_error > pred_error + tol_km:
+            if est_error > pred_error + tol_km:  # pylint: disable=consider-using-assignment-expr
                 file_name = logFilterStep(self, observations, truth)
                 msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
                 self._logger.warning(msg)

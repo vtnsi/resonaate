@@ -87,7 +87,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         #. :cite:t:`wan_2001_ukf`
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         tgt_id: int,
         time: ScenarioTime,

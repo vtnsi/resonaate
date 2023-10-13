@@ -36,7 +36,6 @@ from .config.agent_config import SensingAgentConfig, TargetAgentConfig
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from collections.abc import Callable
 
     # Local Imports
     from ..data.observation import MissedObservation, Observation
@@ -62,7 +61,7 @@ class Scenario(ParallelMixin):
     This class serves as a "public" API for running RESONAATE simulations.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, C901
         self,
         config: ScenarioConfig,
         clock: ScenarioClock,

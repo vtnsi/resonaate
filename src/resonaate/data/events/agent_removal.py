@@ -61,7 +61,8 @@ class AgentRemovalEvent(Event):
     agent_type = Column(String(32))
     """``str``: Type of agent that's being removed."""
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
+    MUTABLE_COLUMN_NAMES = (
+        *Event.MUTABLE_COLUMN_NAMES,
         "agent_id",
         "tasking_engine_id",
         "agent_type",

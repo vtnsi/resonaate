@@ -139,7 +139,7 @@ class JobHandler(ParallelMixin, ABC):
         Args:
             callback_id (any): Unique identifier of the :class:`.CallbackRegistration` being removed.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def handleProcessedJob(self, job):
         """Handle jobs completed via the :class:`.QueueManager` process.

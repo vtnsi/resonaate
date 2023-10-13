@@ -43,16 +43,15 @@ def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
         ``tuple``: ``ndarray`` defining the un-normalized cosine & sine geopotential coefficients.
     """
     res = resources.files(GEOPOTENTIAL_MODULE).joinpath(model_file)
-    with resources.as_file(res) as grv_filepath:
-        with open(grv_filepath, "r", encoding="utf-8") as csv_file:
-            cos_terms = zeros((181, 181))
-            sin_terms = zeros((181, 181))
-            for row in reader(csv_file, delimiter=" ", skipinitialspace=True):
-                # Read normalized coefficients, un-normalize them.
-                degree, order = int(row[0]), int(row[1])
-                scale = _getGeopotentialCoefficientScale(degree, order)
-                cos_terms[degree, order] = float(row[2]) * scale
-                sin_terms[degree, order] = float(row[3]) * scale
+    with resources.as_file(res) as grv_filepath, open(grv_filepath, encoding="utf-8") as csv_file:
+        cos_terms = zeros((181, 181))
+        sin_terms = zeros((181, 181))
+        for row in reader(csv_file, delimiter=" ", skipinitialspace=True):
+            # Read normalized coefficients, un-normalize them.
+            degree, order = int(row[0]), int(row[1])
+            scale = _getGeopotentialCoefficientScale(degree, order)
+            cos_terms[degree, order] = float(row[2]) * scale
+            sin_terms[degree, order] = float(row[3]) * scale
 
     return cos_terms, sin_terms
 
@@ -75,7 +74,7 @@ def _getGeopotentialCoefficientScale(degree: int, order: int) -> float:
         ``float``: un-normalization scale value.
     """
     if order == 0:
-        return sqrt((2 * degree + 1))
+        return sqrt(2 * degree + 1)
 
     return sqrt((factorial(degree - order) * 2 * (2 * degree + 1)) / factorial(degree + order))
 
@@ -129,7 +128,7 @@ def getNonSphericalHarmonics(
             if m > n:  # pylint: disable=no-else-continue
                 continue
             # Diagonal terms
-            elif m == n:
+            if m == n:
                 v[m, m] = (2 * m - 1) * (x_bar * v[m - 1, m - 1] - y_bar * w[m - 1, m - 1])
                 w[m, m] = (2 * m - 1) * (x_bar * w[m - 1, m - 1] + y_bar * v[m - 1, m - 1])
             # Off-diagonal terms (m < n)

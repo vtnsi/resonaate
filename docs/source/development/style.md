@@ -129,7 +129,7 @@ mixed line ending........................................................Passed
 trim trailing whitespace.................................................Passed
 black....................................................................Passed
 isort....................................................................Passed
-flake8...................................................................Passed
+ruff.....................................................................Passed
 mdformat.................................................................Failed
 - hook id: mdformat
 - files were modified by this hook
@@ -193,7 +193,7 @@ The hooks that run are:
 - `check-json`, `check-yaml`, & `check-toml` ensure any files of those types have valid syntax
 - `end-of-file-fixer`, `mixed-line-ending`, & `trailing-whitespace` sort out white space discrepancies
 - `black`, `isort`, & `mdformat` run the respective formatters, see {ref}`dev-style-formatters` for more info
-- `flake8` runs the linter tool with several plugins to analyze code, see {ref}`dev-style-linters` for more info
+- `ruff` runs the linter tool with several plugins to analyze code, see {ref}`dev-style-linters` for more info
 
 (dev-style-formatters)=
 
@@ -227,14 +227,14 @@ There currently isn't a configured way to run Prettier via the command line (com
 
 ## Linters
 
-We use two primary Python linters: [flake8] and [pylint].
-The configuration for these tools live in separate files: [.pylintrc] and [.flake8], respectively.
+We use two primary Python linters: [pylint] and [ruff].
+The configuration for these tools live in separate files: [.pylintrc] and [ruff.toml], respectively.
 Although they both do many similar linting operations, they also cover some different cases:
 
 - `pylint` includes naming convention, code complexity checks, and common bugs
-- `flake8` checks overall style, docstring format, and `pytest` style
+- `ruff` checks overall style, docstring format, and `pytest` style
 
-Also, `pylint` is a good bit slower, so it is not run by `pre-commit` while `flake8` is run by `pre-commit`.
+Also, `pylint` is a good bit slower, so it is not run by `pre-commit` while `ruff` is run by `pre-commit`.
 Both these tools are run during every single CI pipeline as well.
 To run the linters, execute the following command:
 
@@ -266,14 +266,12 @@ The following command runs `check-manifest` to ensure proper source builds:
 check-manifest -v
 ```
 
-[.flake8]: https://code.vt.edu/space-research/resonaate/resonaate/-/blob/develop/.flake8
 [.pre-commit-config.yaml]: https://code.vt.edu/space-research/resonaate/resonaate/-/blob/develop/.pre-commit-config.yaml
 [.prettierrc.yaml]: https://code.vt.edu/space-research/resonaate/resonaate/-/blob/develop/.prettierrc.yaml
 [.pylintrc]: https://code.vt.edu/space-research/resonaate/resonaate/-/blob/develop/.pylintrc
 [black]: https://black.readthedocs.io/en/stable/
 [camel-cased]: https://en.wikipedia.org/wiki/Camel_case
 [check-manifest]: https://github.com/mgedmin/check-manifest
-[flake8]: https://flake8.pycqa.org/en/latest/
 [glfm]: https://docs.gitlab.com/ee/user/markdown.html
 [isort]: https://pycqa.github.io/isort/
 [mdformat]: https://mdformat.readthedocs.io/en/stable/
@@ -284,5 +282,7 @@ check-manifest -v
 [prettier ext]: https://github.com/prettier/prettier-vscode
 [pylint]: https://pylint.pycqa.org/en/latest/
 [pyproject.toml]: https://code.vt.edu/space-research/resonaate/resonaate/-/blob/develop/pyproject.toml
+[ruff]: https://docs.astral.sh/ruff/
+[ruff.toml]: https://code.vt.edu/space-research/resonaate/resonaate/-/blob/develop/ruff.toml
 [snake-cased]: https://en.wikipedia.org/wiki/Snake_case
 [visual studio code]: https://code.visualstudio.com/

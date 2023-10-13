@@ -5,14 +5,15 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from collections import deque
 from collections.abc import Callable
-from typing import Any, Union
-
-# Third Party Imports
-from numpy import ndarray
+from typing import TYPE_CHECKING, Any, Union
 
 # Local Imports
 from ..common.logger import resonaateLogError
 from ..physics.statistics import chiSquareQuadraticForm, oneSidedChiSquareTest
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
 
 TestType = Callable[[float, float, float, Union[float, None]], bool]
 

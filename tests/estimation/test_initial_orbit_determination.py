@@ -205,7 +205,7 @@ class TestLambertInitialOrbitDetermination:
 
         def mockDb(*args, **kwargs):
             mocked_db = MagicMock(spec=ResonaateDatabase)
-            mocked_db.getData = lambda query: []
+            mocked_db.getData = lambda query: []  # noqa: ARG005
             return mocked_db
 
         monkeypatch.setattr(

@@ -303,5 +303,4 @@ def keplerThirdLaw(position_vector: ndarray) -> float:
     """
     constant = 4 * (PI**2) * (Earth.radius * KM2M) / Earth.gravity
     radius_ratio = (norm(position_vector) / Earth.radius) ** 3
-    period = (constant * radius_ratio) ** (1 / 2)
-    return period
+    return (constant * radius_ratio) ** (1 / 2)

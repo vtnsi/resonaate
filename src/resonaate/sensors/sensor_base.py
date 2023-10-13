@@ -41,7 +41,7 @@ DEFAULT_VIEWING_ANGLE: float = 1.0
 class Sensor(ABC):
     """Abstract base class for a generic Sensor object."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         measurement: Measurement,
         az_mask: ndarray,
@@ -277,7 +277,7 @@ class Sensor(ABC):
         resonaateLogInfo(msg)
         return tgt_eci_state
 
-    def isVisible(
+    def isVisible(  # noqa: PLR0911
         self,
         tgt_eci_state: ndarray,
         viz_cross_section: float,

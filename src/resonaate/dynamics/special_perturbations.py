@@ -102,10 +102,9 @@ class SpecialPerturbations(Celestial):
         positions = {body: body.getPosition(julian_date) for body in self.third_bodies}
 
         # Set sun position for SRP
-        if Sun not in self.third_bodies:
-            sun_positions = Sun.getPosition(julian_date)
-        else:
-            sun_positions = positions[Sun]
+        sun_positions = (
+            Sun.getPosition(julian_date) if Sun not in self.third_bodies else positions[Sun]
+        )
 
         for jj in range(step):
             # pylint: disable=unsupported-assignment-operation
@@ -140,16 +139,10 @@ class SpecialPerturbations(Celestial):
             )
 
             # Solar Radiation Pressure accelerations
-            if self.use_srp:
-                a_srp = self._getSolarRadiationPressureAcceleration(r_eci, array(sun_positions))
-            else:
-                a_srp = 0.0
+            a_srp = self._getSolarRadiationPressureAcceleration(r_eci, array(sun_positions)) if self.use_srp else 0.0
 
             # General Relativity accelerations
-            if self.use_gr:
-                a_gr = _getGeneralRelativityAcceleration(r_eci, v_eci)
-            else:
-                a_gr = 0.0
+            a_gr = _getGeneralRelativityAcceleration(r_eci, v_eci) if self.use_gr else 0.0
 
             # Add all the perturbations together
             a_perturbations = a_nonspherical + a_third_body + a_srp + a_gr
@@ -250,9 +243,7 @@ def _getThirdBodyAcceleration(sat_position: ndarray, third_body_position: ndarra
     q_3 = denominator / (r_e_3_norm**3 * r_sat_3_norm**3 * (r_e_3_norm + r_sat_3_norm))
 
     # Compile the un-scaled acceleration
-    acceleration = r_sat_3 * q_3 - (r_e_sat / (r_e_3_norm**3))
-
-    return acceleration
+    return r_sat_3 * q_3 - (r_e_sat / (r_e_3_norm**3))
 
 
 def calcSatRatio(visual_cross_section: float, mass: float, reflectivity: float) -> float:
