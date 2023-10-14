@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from ...data.observation import Observation
     from ...dynamics.dynamics_base import Dynamics
     from ...dynamics.integration_events import ScheduledEventType
+    from ...physics.measurements import IsAngle
     from ...physics.time.stardate import ScenarioTime
     from ..maneuver_detection import ManeuverDetection
 
@@ -214,11 +215,15 @@ class UnscentedKalmanFilter(SequentialFilter):
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
         """
+        # Reset filter flags
         self._flags = FilterFlag.NONE
+
         # STEP 1: Calculate the predicted state estimate at t(k) (X(k + 1|k))
         self.predictStateEstimate(final_time, scheduled_events=scheduled_events)
+
         # STEP 2: Calculate the predicted covariance at t(k) (P(k + 1|k))
         self.predictCovariance(final_time)
+
         # STEP 3: Update the time step
         self.time = final_time
 
@@ -307,7 +312,6 @@ class UnscentedKalmanFilter(SequentialFilter):
             scheduled_events=scheduled_events,
         )
 
-        # Calculate the predicted state estimate by combining the sigma points
         self.pred_x = self.sigma_points.dot(self.mean_weight)
 
     def predictCovariance(self, final_time: ScenarioTime):
@@ -317,7 +321,6 @@ class UnscentedKalmanFilter(SequentialFilter):
             final_time (:class:`.ScenarioTime`): time to propagate to
         """
         # pylint: disable=unused-argument
-        # Calculate the predicted covariance estimate using the sigma points
         self.sigma_x_res = self.sigma_points - self.pred_x.reshape((self.x_dim, 1)).dot(
             ones((1, self.num_sigmas))
         )
@@ -382,7 +385,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         )
 
         # Save mean predicted measurement vector
-        self.mean_pred_y = self.calcMeasurementMean(sigma_obs)
+        self.mean_pred_y = self.calcMeasurementMean(sigma_obs, angular_measurements)
 
         # Determine the difference between the sigma pt observations and the mean observation
         self.sigma_y_res = zeros(sigma_obs.shape)
@@ -391,7 +394,9 @@ class UnscentedKalmanFilter(SequentialFilter):
                 sigma_obs[:, item], self.mean_pred_y, self.is_angular
             )
 
-    def calcMeasurementMean(self, measurement_sigma_pts: ndarray) -> ndarray:
+    def calcMeasurementMean(
+        self, measurement_sigma_pts: ndarray, is_angular: list[IsAngle]
+    ) -> ndarray:
         r"""Determine the mean of the predicted measurements.
 
         This is done generically which allows for measurements to be ordered in any fashion, but
@@ -412,15 +417,15 @@ class UnscentedKalmanFilter(SequentialFilter):
             \bar{x} = \frac{1}{N}\sum^{N}_{i=1}{x_i}
 
         Args:
-            measurement_sigma_pts (``ndarray``): :math:`M\times S` array of predicted measurements, where
+            measurement_sigma_pts (ndarray): :math:`M\times S` array of predicted measurements, where
                 :math:`M` is the compiled measurement space, and :math:`S` is the number of sigma points.
+            is_angular (list): :class:`.IsAngle` objects corresponding to type of angular measurement.
 
         Returns:
             ``ndarray``: :math:`M\times 1` predicted measurement mean
         """
-        # If we have an angle measurement, calculate mean differently
         meas_mean = zeros((measurement_sigma_pts.shape[0],))
-        for idx, (meas, angular) in enumerate(zip(measurement_sigma_pts, self.is_angular)):
+        for idx, (meas, angular) in enumerate(zip(measurement_sigma_pts, is_angular)):
             if angular in VALID_ANGULAR_MEASUREMENTS:
                 low, high = VALID_ANGLE_MAP[angular]
                 mean = angularMean(meas, weights=self.mean_weight, low=low, high=high)
