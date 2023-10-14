@@ -248,7 +248,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         self.kalman_gain = self.cross_cvr.dot(inv(self.innov_cvr))
 
         # STEP 4: Update the error covariance (P(k + 1|k + 1))
-        self.updateCovariance()
+        self.est_p = self.pred_p - self.kalman_gain.dot(self.innov_cvr.dot(self.kalman_gain.T))
 
     def update(self, observations: list[Observation]):
         r"""Update the state estimate with observations.
@@ -280,7 +280,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             self.nis = chiSquareQuadraticForm(self.innovation, self.innov_cvr)
 
             # STEP 3: Update the state estimate (X(k + 1|k + 1))
-            self.updateStateEstimate()
+            self.est_x = self.pred_x + self.kalman_gain.dot(self.innovation)
 
             # STEP 4: Maneuver detection
             self.checkManeuverDetection()
@@ -390,14 +390,6 @@ class UnscentedKalmanFilter(SequentialFilter):
             self.sigma_y_res[:, item] = residuals(
                 sigma_obs[:, item], self.mean_pred_y, self.is_angular
             )
-
-    def updateCovariance(self):
-        r"""Update the covariance estimate at :math:`k+1`."""
-        self.est_p = self.pred_p - self.kalman_gain.dot(self.innov_cvr.dot(self.kalman_gain.T))
-
-    def updateStateEstimate(self):
-        r"""Update the state estimate estimate at :math:`k+1`."""
-        self.est_x = self.pred_x + self.kalman_gain.dot(self.innovation)
 
     def calcMeasurementMean(self, measurement_sigma_pts: ndarray) -> ndarray:
         r"""Determine the mean of the predicted measurements.
