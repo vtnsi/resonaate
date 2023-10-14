@@ -378,15 +378,19 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self.last_observed_at = self.julian_date_epoch
         self._saveFilterStep()
 
+        # End MMAE
+        if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
+            self.resetFilter(self.nominal_filter.converged_filter)
+
         # Maneuver Detection Functions
         if self.nominal_filter.maneuver_detected:
             self._saveDetectedManeuver(observations)
 
-            # Start IOD?
+            # Start IOD
             if self.initial_orbit_determination and self.iod_start_time is None:
                 self._beginInitialOrbitDetermination()
 
-            # MMAE Functions
+            # Start MMAE
             elif self.adaptive_filter_config:
                 self._beginAdaptiveEstimation(observations)
 
@@ -432,7 +436,12 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
                 julian_date_start=self.julian_date_start,
             )
 
-            if mmae_started:
+            # End MMAE right away (GPB1)
+            if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in adaptive_filter.flags:
+                self.resetFilter(adaptive_filter.converged_filter)
+
+            # Persist an MMAE filter (SMM)
+            elif mmae_started:
                 self.resetFilter(adaptive_filter)
 
     def _beginInitialOrbitDetermination(self):

@@ -52,8 +52,6 @@ def asyncUpdateEstimate(estimate_agent: EstimateAgent, successful_obs: list[Obse
 
     # MMAE is closing
     if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in estimate_agent.nominal_filter.flags:
-        # [NOTE]: The next two lines MUST be in this order
-        estimate_agent.resetFilter(estimate_agent.nominal_filter.converged_filter)
         estimate_agent.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_CLOSE
         result["new_filter"] = estimate_agent.nominal_filter
 
