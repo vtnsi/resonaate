@@ -236,19 +236,22 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
 
     def checkManeuverDetection(self):
         """Performs maneuver detection, if configured and kicks off adaptive estimation, if configured."""
-        if self.maneuver_detection:
-            self.maneuver_detected = self.maneuver_detection(self.innovation, self.innov_cvr)
+        if self.maneuver_detection is None:
+            return
 
-        if self.maneuver_detected:
-            self.flags |= FilterFlag.MANEUVER_DETECTION
-            self.maneuver_metric = self.maneuver_detection.metric
-            if self.adaptive_estimation and FilterFlag.ADAPTIVE_ESTIMATION_START not in self.flags:
-                self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_START
-            if (
-                self.initial_orbit_determination
-                and FilterFlag.INITIAL_ORBIT_DETERMINATION_START not in self.flags
-            ):
-                self.flags |= FilterFlag.INITIAL_ORBIT_DETERMINATION_START
+        self.maneuver_detected = self.maneuver_detection(self.innovation, self.innov_cvr)
+        if not self.maneuver_detected:
+            return
+
+        self.flags |= FilterFlag.MANEUVER_DETECTION
+        self.maneuver_metric = self.maneuver_detection.metric
+        if self.adaptive_estimation and FilterFlag.ADAPTIVE_ESTIMATION_START not in self.flags:
+            self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_START
+        if (
+            self.initial_orbit_determination
+            and FilterFlag.INITIAL_ORBIT_DETERMINATION_START not in self.flags
+        ):
+            self.flags |= FilterFlag.INITIAL_ORBIT_DETERMINATION_START
 
     def getPredictionResult(self) -> dict[str, Any]:
         """Compile result message for a predict step.

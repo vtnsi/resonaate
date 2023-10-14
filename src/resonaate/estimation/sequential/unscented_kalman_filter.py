@@ -1,4 +1,4 @@
-"""Defines the :class:`.UnscentedKalmanFilter` class."""
+r"""Defines the :class:`.UnscentedKalmanFilter` class."""
 from __future__ import annotations
 
 # Standard Library Imports
@@ -11,7 +11,7 @@ from scipy.linalg import block_diag
 
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
-from ...physics.maths import angularMean, wrapAngleNegPiPi
+from ...physics.maths import angularMean, residuals
 from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ...physics.statistics import chiSquareQuadraticForm
 from ...physics.time.stardate import JulianDate, julianDateToDatetime
@@ -165,8 +165,23 @@ class UnscentedKalmanFilter(SequentialFilter):
 
     @property
     def num_sigmas(self):
-        """``int``: Returns the number of sigma points to use in this UKF."""
+        r"""``int``: Returns the number of sigma points to use in this UKF."""
         return 2 * self.x_dim + 1
+
+    def _checkSqrtCovariance(
+        self, cov: ndarray, sqrt_func: Callable[[ndarray], ndarray]
+    ) -> ndarray:
+        try:
+            sqrt_cov = sqrt_func(cov)
+        except LinAlgError:
+            if BehavioralConfig.getConfig().debugging.NearestPD:
+                msg = f"`nearestPD()` function was used on RSO {self.target_id}"
+                self._logger.warning(msg)
+                sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
+            else:
+                raise
+
+        return sqrt_cov
 
     def generateSigmaPoints(
         self, mean: ndarray, cov: ndarray, sqrt_func: Callable[[ndarray], ndarray] = cholesky
@@ -182,28 +197,16 @@ class UnscentedKalmanFilter(SequentialFilter):
         Returns:
             ``ndarray``: :math:`N\times S` sampled sigma points around the given mean and covariance.
         """
-        # Find the square root of the error covariance
-        try:
-            sqrt_cov = sqrt_func(cov)
-        except LinAlgError:
-            if BehavioralConfig.getConfig().debugging.NearestPD:
-                msg = f"`nearestPD()` function was used on RSO {self.target_id}"
-                self._logger.warning(msg)
-                sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
-            else:
-                raise
+        sqrt_cov = self._checkSqrtCovariance(cov, sqrt_func)
 
-        # Calculate the sigma points based on the current state estimate
         return mean.reshape((self.x_dim, 1)).dot(
             ones((1, self.num_sigmas))
         ) + self.gamma * concatenate((zeros((self.x_dim, 1)), sqrt_cov, -sqrt_cov), axis=1)
 
     def predict(
-        self,
-        final_time: ScenarioTime,
-        scheduled_events: list[ScheduledEventType] | None = None,
+        self, final_time: ScenarioTime, scheduled_events: list[ScheduledEventType] | None = None
     ):
-        """Propagate the state estimate and error covariance with uncertainty.
+        r"""Propagate the state estimate and error covariance with uncertainty.
 
         Args:
             final_time (:class:`.ScenarioTime`): time to propagate to
@@ -220,58 +223,74 @@ class UnscentedKalmanFilter(SequentialFilter):
         self.time = final_time
 
     def forecast(self, observations: list[Observation]):
-        """Update the error covariance with observations.
+        r"""Update the error covariance with observations.
 
         Args:
             observations (``list``): :class:`.Observation` objects associated with the UKF step
         """
+        # Reset filter flags
         self._flags = FilterFlag.NONE
-        # STEP 1: Re-sample the sigma points around predicted (sampled) state estimate
+
+        # STEP 0: Re-sample the sigma points around predicted (sampled) state estimate
         self.sigma_points = self.generateSigmaPoints(self.pred_x, self.pred_p)
-        # STEP 2: Calculate the Measurement Matrix (H)
+
+        # STEP 1: Calculate the Measurement Matrix (H)
         self.calculateMeasurementMatrix(observations)
-        # STEP 3: Compile the Observation Noise Covariance (R)
-        # STEP 4: Calculate the Cross Covariance (C), the Innovations Covariance (S), & the Kalman Gain (K)
-        self.calculateKalmanGain(observations)
-        # STEP 5: Update the Covariance for the state (P(k + 1|k + 1))
+
+        # STEP 2: Compile the Observation Noise Covariance (R)
+        self.r_matrix = block_diag(*[ob.r_matrix for ob in observations])
+
+        # STEP 3: Calculate the Cross Covariance (C), the Innovations Covariance (S), & the Kalman Gain (K)
+        self.innov_cvr = (
+            self.sigma_y_res.dot(self.cvr_weight.dot(self.sigma_y_res.T)) + self.r_matrix
+        )
+        self.cross_cvr = self.sigma_x_res.dot(self.cvr_weight.dot(self.sigma_y_res.T))
+        self.kalman_gain = self.cross_cvr.dot(inv(self.innov_cvr))
+
+        # STEP 4: Update the error covariance (P(k + 1|k + 1))
         self.updateCovariance()
 
     def update(self, observations: list[Observation]):
-        """Update the state estimate with observations.
+        r"""Update the state estimate with observations.
 
         Args:
             observations (``list``): :class:`.Observation` objects associated with the UKF step
         """
         if not observations:
             self.source = self.INTERNAL_PROPAGATION_SOURCE
+
             # Save the 0th sigma point because it is the non-sampled propagated state. This means that
             #   we don't inject any noise into the state estimate when no measurements occur.
             self.est_x = self.sigma_points[:, 0]
+
             # If there are no observations, there is no update information and the predicted error
             #   covariance is stored as the updated error covariance
             self.est_p = self.pred_p
         else:
             self.source = self.INTERNAL_OBSERVATION_SOURCE
 
-            # If there are observations, the predicted state estimate and covariance are updated
+            # Performs covariance portion of the update step
             self.forecast(observations)
+
             # STEP 1: Compile the true measurement state vector (Yt)
+            self.true_y = concatenate([ob.measurement_states for ob in observations], axis=0)
+
             # STEP 2: Calculate the Innovations vector (nu)
-            self.calculateInnovations(observations)
-            # STEP 3: Update the State EstimateAgent (X(k + 1|k + 1))
+            self.innovation = residuals(self.true_y, self.mean_pred_y, self.is_angular)
+            self.nis = chiSquareQuadraticForm(self.innovation, self.innov_cvr)
+
+            # STEP 3: Update the state estimate (X(k + 1|k + 1))
             self.updateStateEstimate()
+
             # STEP 4: Maneuver detection
             self.checkManeuverDetection()
 
-            # Check and write debugging info if needed
             self._debugChecks(observations)
 
     def predictStateEstimate(
-        self,
-        final_time: ScenarioTime,
-        scheduled_events: list[ScheduledEventType] | None = None,
+        self, final_time: ScenarioTime, scheduled_events: list[ScheduledEventType] | None = None
     ):
-        """Propagate the previous state estimate from :math:`k` to :math:`k+1`.
+        r"""Propagate the previous state estimate from :math:`k` to :math:`k+1`.
 
         Args:
             final_time (:class:`.ScenarioTime`): time to propagate to
@@ -292,7 +311,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         self.pred_x = self.sigma_points.dot(self.mean_weight)
 
     def predictCovariance(self, final_time: ScenarioTime):
-        """Propagate the previous covariance estimate from :math:`k` to :math:`k+1`.
+        r"""Propagate the previous covariance estimate from :math:`k` to :math:`k+1`.
 
         Args:
             final_time (:class:`.ScenarioTime`): time to propagate to
@@ -304,20 +323,23 @@ class UnscentedKalmanFilter(SequentialFilter):
         )
         self.pred_p = self.sigma_x_res.dot(self.cvr_weight.dot(self.sigma_x_res.T)) + self.q_matrix
 
-    def calculateMeasurementMatrix(self, observations: list[Observation]):
-        """Calculate the stacked observation/measurement matrix for a set of observations.
+    def _calcMeasurementSigmaPoints(self, observations: list[Observation]) -> ndarray:
+        r"""Calculate the measurement sigma points by passing sigma points into the measurement function.
 
-        The UKF doesn't use an :math:`H` Matrix. Instead, the differences between the predicted state or
-        observations, and the associated sigma values are calculated. These are used to
-        determine the cross and innovations covariances.
+        This properly handles disparate measurement types being combined on a single timestep by stacking
+        them together into a single measurement with an uncorrelated measurement noise covariance constructed
+        as a block diagonal of the individual measurement noise covariances.
 
         Args:
             observations (``list``): :class:`.Observation` objects associated with the UKF step
+
+        Returns:
+            ``ndarray``: :math:`M\times S` properly configured measurement sigma point set, where
+                :math:`M` is the compiled measurement space, and :math:`S` is the number of sigma points.
         """
         obs_vector_list = []
         for sigma_idx in range(self.num_sigmas):
             obs_states = []
-            is_angular = []
             for observation in observations:
                 utc_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
                 sigma_measurement = observation.measurement.calculateMeasurement(
@@ -327,7 +349,6 @@ class UnscentedKalmanFilter(SequentialFilter):
                     noisy=False,
                 )
                 obs_states.append(list(sigma_measurement.values()))
-                is_angular.append(observation.measurement.angular_values)
 
             # Add stacked observations to the list
             stacked_obs_state = concatenate(obs_states, axis=0)
@@ -335,10 +356,30 @@ class UnscentedKalmanFilter(SequentialFilter):
             obs_vector_list.append(stacked_obs_state)
 
         # Concatenate stacked obs into MxS
-        sigma_obs = concatenate(obs_vector_list, axis=1)
+        return concatenate(obs_vector_list, axis=1)
+
+    def calculateMeasurementMatrix(self, observations: list[Observation]):
+        r"""Calculate the stacked observation/measurement matrix for a set of observations.
+
+        The UKF doesn't use an :math:`H` Matrix. Instead, the differences between the predicted state or
+        observations, and the associated sigma values are calculated. These are used to
+        determine the cross and innovations covariances.
+
+        Args:
+            observations (``list``): :class:`.Observation` objects associated with the UKF step
+        """
+        # Create observations for each sigma point
+        sigma_obs = self._calcMeasurementSigmaPoints(observations)
+
+        # Convert to 1-D list of IsAngle values for the combined observation state
+        angular_measurements = concatenate(
+            [ob.measurement.angular_values for ob in observations], axis=0
+        )
 
         # Mx1 array of whether each corresponding measurement was angular or not
-        self.is_angular = concatenate(is_angular, axis=0)
+        self.is_angular = array(
+            [a in VALID_ANGULAR_MEASUREMENTS for a in angular_measurements], dtype=bool
+        )
 
         # Save mean predicted measurement vector
         self.mean_pred_y = self.calcMeasurementMean(sigma_obs)
@@ -346,68 +387,16 @@ class UnscentedKalmanFilter(SequentialFilter):
         # Determine the difference between the sigma pt observations and the mean observation
         self.sigma_y_res = zeros(sigma_obs.shape)
         for item in range(sigma_obs.shape[1]):
-            self.sigma_y_res[:, item] = self.calcMeasurementResiduals(
-                sigma_obs[:, item], self.mean_pred_y
+            self.sigma_y_res[:, item] = residuals(
+                sigma_obs[:, item], self.mean_pred_y, self.is_angular
             )
 
-    def calculateKalmanGain(self, observations: list[Observation]):
-        """Calculate the Kalman gain matrix.
-
-        Compiles the stacked measurement noise covariance matrix, calculates the innovations
-        covariance matrix, and calculates the cross covariance matrix.
-
-        Args:
-            observations (``list``): :class:`.Observation` objects associated with the UKF step
-        """
-        self.r_matrix = block_diag(*[ob.r_matrix for ob in observations])
-        self.innov_cvr = (
-            self.sigma_y_res.dot(self.cvr_weight.dot(self.sigma_y_res.T)) + self.r_matrix
-        )
-        self.cross_cvr = self.sigma_x_res.dot(self.cvr_weight.dot(self.sigma_y_res.T))
-        self.kalman_gain = self.cross_cvr.dot(inv(self.innov_cvr))
-
-    def calculateInnovations(self, observations: list[Observation]):
-        """Calculate the innovations (residuals) vector and normalized innovations squared.
-
-        Args:
-            observations (``list``): :class:`.Observation` objects associated with the UKF step
-        """
-        self.true_y = concatenate([ob.measurement_states for ob in observations], axis=0)
-        self.innovation = self.calcMeasurementResiduals(self.true_y, self.mean_pred_y)
-        self.nis = chiSquareQuadraticForm(self.innovation, self.innov_cvr)
-
-    def calcMeasurementResiduals(
-        self, measurement_set_a: ndarray, measurement_set_b: ndarray
-    ) -> ndarray:
-        r"""Determine the measurement residuals.
-
-        This is done generically which allows for measurements to be ordered in any fashion, but
-        requires an associated boolean vector to flag for angle measurements. This special
-        treatment is required because angles are nonlinear (modular), so subtraction is not a
-        linear operation.
-
-        Args:
-            measurement_set_a (``ndarray``): :math:`M\times 1` compiled measurement array.
-            measurement_set_b (``ndarray``): :math:`M\times 1` compiled measurement array.
-
-        Returns:
-            ``ndarray``: :math:`M\times 1` measurement residual
-        """
-        # If we have an angular measurement, normalize the angles
-        # Works for all angular values, because [-pi/2, pi/2] domains will never have diff > pi
-        residual = [
-            wrapAngleNegPiPi(err) if ang in VALID_ANGULAR_MEASUREMENTS else err
-            for err, ang in zip(measurement_set_a - measurement_set_b, self.is_angular)
-        ]
-
-        return array(residual)
-
     def updateCovariance(self):
-        """Update the covariance estimate at :math:`k+1`."""
+        r"""Update the covariance estimate at :math:`k+1`."""
         self.est_p = self.pred_p - self.kalman_gain.dot(self.innov_cvr.dot(self.kalman_gain.T))
 
     def updateStateEstimate(self):
-        """Update the state estimate estimate at :math:`k+1`."""
+        r"""Update the state estimate estimate at :math:`k+1`."""
         self.est_x = self.pred_x + self.kalman_gain.dot(self.innovation)
 
     def calcMeasurementMean(self, measurement_sigma_pts: ndarray) -> ndarray:
@@ -442,12 +431,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         for idx, (meas, angular) in enumerate(zip(measurement_sigma_pts, self.is_angular)):
             if angular in VALID_ANGULAR_MEASUREMENTS:
                 low, high = VALID_ANGLE_MAP[angular]
-                mean = angularMean(
-                    meas,
-                    weights=self.mean_weight,
-                    low=low,
-                    high=high,
-                )
+                mean = angularMean(meas, weights=self.mean_weight, low=low, high=high)
             else:
                 mean = meas.dot(self.mean_weight)
 
@@ -456,7 +440,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         return meas_mean
 
     def getPredictionResult(self) -> dict[str, Any]:
-        """Compile result message for a predict step.
+        r"""Compile result message for a predict step.
 
         Returns:
             ``dict``: message with predict information
@@ -471,7 +455,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         return result
 
     def getForecastResult(self) -> dict[str, Any]:
-        """Compile result message for a forecast step.
+        r"""Compile result message for a forecast step.
 
         Returns:
             ``dict``: message with forecast information
