@@ -1,4 +1,4 @@
-r"""Defines the :class:`.UnscentedKalmanFilter` class."""
+r"""Defines the Unscented Kalman Filter class."""
 from __future__ import annotations
 
 # Standard Library Imports
@@ -71,14 +71,14 @@ class UnscentedKalmanFilter(SequentialFilter):
         :class:`.SequentialFilter` for definition of common class attributes
 
     Attributes:
-        num_sigmas (``int``): number of sigma points to generate: :math:`S=2\times N + 1`.
-        gamma (``float``): sigma point scaling parameter.
-        mean_weight (``ndarray``): :math:`S\times 1` vector for calculating weighted sum in mean equations.
-        cvr_weight (``ndarray``): :math:`S\times 1` vector for calculating weighted sum in covariance
+        num_sigmas (int): number of sigma points to generate: :math:`S=2\times N + 1`.
+        gamma (float): sigma point scaling parameter.
+        mean_weight (ndarray): :math:`S\times 1` vector for calculating weighted sum in mean equations.
+        cvr_weight (ndarray): :math:`S\times 1` vector for calculating weighted sum in covariance
             equations.
-        sigma_points (``ndarray``): :math:`S` sigma point :math:`N\times 1` vectors combined into single matrix.
-        sigma_x_res (``ndarray``): :math:`N\times S` state sigma point residuals.
-        sigma_y_res (``ndarray``): :math:`M\times S` measurement sigma point residuals.
+        sigma_points (ndarray): :math:`S` sigma point :math:`N\times 1` vectors combined into single matrix.
+        sigma_x_res (ndarray): :math:`N\times S` state sigma point residuals.
+        sigma_y_res (ndarray): :math:`M\times S` measurement sigma point residuals.
 
     References:
         #. :cite:t:`bar-shalom_2001_estimation`
@@ -106,21 +106,21 @@ class UnscentedKalmanFilter(SequentialFilter):
         r"""Initialize a UKF instance.
 
         Args:
-            tgt_id (``int``): unique ID of the target associated with this filter object
-            time (:class:`.ScenarioTime`): value for the initial time (sec)
-            est_x (``ndarray``): :math:`N\times 1` initial state estimate
-            est_p (``ndarray``): :math:`N\times N` initial covariance
-            dynamics (:class:`.Dynamics`): dynamics object associated with the filter's target
-            q_matrix (``ndarray``): dynamics error covariance matrix
-            maneuver_detection (:class:`.ManeuverDetection`): ManeuverDetection associated with the filter
-            initial_orbit_determination (``bool``, optional): Indicator that IOD can be flagged by the filter
-            adaptive_estimation (``bool``, optional): Indicator that adaptive estimation can be flagged by the filter
-            alpha (``float``, optional): sigma point spread. Defaults to 0.001. This should be a
+            tgt_id (int): unique ID of the target associated with this filter object
+            time (.ScenarioTime): value for the initial time (sec)
+            est_x (ndarray): :math:`N\times 1` initial state estimate
+            est_p (ndarray): :math:`N\times N` initial covariance
+            dynamics (.Dynamics): dynamics object associated with the filter's target
+            q_matrix (ndarray): dynamics error covariance matrix
+            maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
+            initial_orbit_determination (bool): Indicator that IOD can be flagged by the filter
+            adaptive_estimation (bool): Indicator that adaptive estimation can be flagged by the filter
+            alpha (float): sigma point spread. Defaults to 0.001. This should be a
                 small positive value: :math:`\alpha <= 1`.
-            beta (``float``, optional): Gaussian pdf parameter. Defaults to 2.0. This parameter
+            beta (float): Gaussian pdf parameter. Defaults to 2.0. This parameter
                 defines prior knowledge of the distribution, and the default value of 2 is optimal
                 for Gaussian distributions.
-            kappa (``float``, optional): scaling parameter. Defaults to :math:`3 - N`. This parameter
+            kappa (float): scaling parameter. Defaults to :math:`3 - N`. This parameter
                 defines knowledge of the higher order moments. The equation used by default
                 minimizes the mean squared error to the fourth degree. However, when this value
                 is negative, the predicted error covariance can become positive semi-definite.
@@ -190,9 +190,9 @@ class UnscentedKalmanFilter(SequentialFilter):
         r"""Generate sigma points according to the Unscented Transform.
 
         Args:
-            mean (``ndarray``): :math:`N\times 1` estimate mean to sample around.
-            cov (``ndarray``): :math:`N\times N` covariance used to sample sigma points.
-            sqrt_func (``callable``, optional): matrix square root algorithm to use. Defaults to
+            mean (ndarray): :math:`N\times 1` estimate mean to sample around.
+            cov (ndarray): :math:`N\times N` covariance used to sample sigma points.
+            sqrt_func (callable): matrix square root algorithm to use. Defaults to
                 ``numpy.linalg.cholesky``. Defines how matrix square roots are calculated.
 
         Returns:
@@ -210,8 +210,8 @@ class UnscentedKalmanFilter(SequentialFilter):
         r"""Propagate the state estimate and error covariance with uncertainty.
 
         Args:
-            final_time (:class:`.ScenarioTime`): time to propagate to
-            scheduled_events (``list``, optional): scheduled events to apply during propagation which
+            final_time (.ScenarioTime): time to propagate to
+            scheduled_events (list): scheduled events to apply during propagation which
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
         """
@@ -231,7 +231,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         r"""Update the error covariance with observations.
 
         Args:
-            observations (``list``): :class:`.Observation` objects associated with the UKF step
+            observations (list): :class:`.Observation` objects associated with the UKF step
         """
         # Reset filter flags
         self._flags = FilterFlag.NONE
@@ -259,7 +259,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         r"""Update the state estimate with observations.
 
         Args:
-            observations (``list``): :class:`.Observation` objects associated with the UKF step
+            observations (list): :class:`.Observation` objects associated with the UKF step
         """
         if not observations:
             self.source = self.INTERNAL_PROPAGATION_SOURCE
@@ -298,8 +298,8 @@ class UnscentedKalmanFilter(SequentialFilter):
         r"""Propagate the previous state estimate from :math:`k` to :math:`k+1`.
 
         Args:
-            final_time (:class:`.ScenarioTime`): time to propagate to
-            scheduled_events (``list``, optional): scheduled events to apply during propagation which
+            final_time (.ScenarioTime): time to propagate to
+            scheduled_events (list): scheduled events to apply during propagation which
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
         """
@@ -318,7 +318,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         r"""Propagate the previous covariance estimate from :math:`k` to :math:`k+1`.
 
         Args:
-            final_time (:class:`.ScenarioTime`): time to propagate to
+            final_time (.ScenarioTime): time to propagate to
         """
         # pylint: disable=unused-argument
         self.sigma_x_res = self.sigma_points - self.pred_x.reshape((self.x_dim, 1)).dot(
@@ -334,11 +334,11 @@ class UnscentedKalmanFilter(SequentialFilter):
         as a block diagonal of the individual measurement noise covariances.
 
         Args:
-            observations (``list``): :class:`.Observation` objects associated with the UKF step
+            observations (list): :class:`.Observation` objects associated with the UKF step
 
         Returns:
             ``ndarray``: :math:`M\times S` properly configured measurement sigma point set, where
-                :math:`M` is the compiled measurement space, and :math:`S` is the number of sigma points.
+            :math:`M` is the compiled measurement space, and :math:`S` is the number of sigma points.
         """
         obs_vector_list = []
         for sigma_idx in range(self.num_sigmas):
@@ -369,7 +369,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         determine the cross and innovations covariances.
 
         Args:
-            observations (``list``): :class:`.Observation` objects associated with the UKF step
+            observations (list): :class:`.Observation` objects associated with the UKF step
         """
         # Create observations for each sigma point
         sigma_obs = self._calcMeasurementSigmaPoints(observations)
