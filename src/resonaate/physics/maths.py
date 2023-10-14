@@ -422,3 +422,82 @@ def subtendedAngle(vector1: ndarray, vector2: ndarray, safe: bool = False) -> fl
 
     # else
     return safeArccos(dotted)
+
+
+def residual(val1: float, val2: float, angular: bool) -> ndarray:
+    r"""Determine the residual (difference) between two values.
+
+    This requires an associated boolean to flag angle-valued components. This special
+    treatment is required because angles are nonlinear (modular), so subtraction is not
+    a linear operation. Therefore, the result is wrapped to ensure the residual is correct.
+    For example, values of :math:`359^{\circ}` and :math:`1^{\circ}` should have a residual
+    of :math:`-2^{\circ}`.
+
+    Note:
+        A positive angular value is measured counterclockwise from 1 to 2.
+
+    Warning:
+        Angular values are assumed to be in radians!
+
+    Examples:
+        >>> a = np.radians(359.0)
+        >>> b = np.radians(1.0)
+        >>> # No correction
+        >>> res = residual(a, b, angular=False)
+        >>> np.degrees(res)
+        358.0
+        >>> # Correction for angles
+        >>> res = residual(a, b, angular=True)
+        2.0
+
+    Args:
+        val1 (float): first value, radians.
+        val2 (float): second value, radians.
+        angular (bool): defines whether a value is an angle. If a component is an angle, the
+            residual calculation is wrapped to ensure a zero-centered difference.
+
+    Returns:
+        float: residual value, positive counterclockwise from 1 to 2.
+    """
+    return wrapAngleNegPiPi(wrapAngle2Pi(val1) - wrapAngle2Pi(val2)) if angular else val1 - val2
+
+
+def residuals(vec1: ndarray, vec2: ndarray, angular: ndarray) -> ndarray:
+    r"""Determine the residual (difference) between two vectors.
+
+    This requires an associated boolean vector to flag angle-valued components of the
+    vectors. This special treatment is required because angles are nonlinear (modular), so
+    subtraction is not a linear operation. Therefore, the result is wrapped to ensure the
+    residual is correct. For example, values of :math:`359^{\circ}` and :math:`1^{\circ}`
+    should have a residual of :math:`-2^{\circ}`.
+
+    Note:
+        A positive angular value is measured counterclockwise from 1 to 2.
+
+    Warning:
+        Angular values are assumed to be in radians!
+
+    Examples:
+        >>> a = np.radians([10.1, 359.0, 200.0])
+        >>> b = np.radians([0.1, 1.0, 100.0])
+        >>> # First and third won't have correction applied, second will
+        >>> angular = np.array([False, True, False])
+        >>> res = residuals(a, b, angular)
+        >>> np.degrees(res)
+        array([ 10.,  -2., 100.])
+
+    Args:
+        vec1 (ndarray): :math:`M\times 1` array.
+        vec2 (ndarray): :math:`M\times 1` array.
+        angular: :math:`M\times 1` boolean array defining whether a value is an
+            angle. If a component is an angle, the residual calculation is wrapped to ensure a
+            zero-centered difference.
+
+    Returns:
+        ndarray: :math:`M\times 1` residual vector, positive counterclockwise from 1 to 2..
+    """
+    if vec1.shape != vec2.shape or vec1.shape != angular.shape:
+        msg = f"Inputs must have equivalent shapes: {vec1.shape=}, {vec2.shape=}, {angular.shape=}"
+        raise ShapeError(msg)
+    # [NOTE]: Works for any angular value, because [-pi/2, pi/2] domains will never have diff > pi.
+    return array([residual(a, b, ang) for a, b, ang in zip(vec1, vec2, angular)])
