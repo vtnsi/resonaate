@@ -368,40 +368,26 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         if logging:
             self._logFilterEvents(observations)
 
-        # No observations -> save est/cov and continue
         if not observations:
             self.state_estimate = self.nominal_filter.est_x
             self.error_covariance = self.nominal_filter.est_p
             return
 
-        # else
         self.last_observed_at = self.julian_date_epoch
         self._saveFilterStep()
 
-        # End MMAE
-        if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
-            self.resetFilter(self.nominal_filter.converged_filter)
-
-        # Maneuver Detection Functions
+        # [NOTE]: Is there a reason for this to come AFTER "END MMAE"? Moved to before
+        #   to clean up logic.
         if self.nominal_filter.maneuver_detected:
             self._saveDetectedManeuver(observations)
 
-            # Start IOD
-            if self.initial_orbit_determination and self.iod_start_time is None:
-                self._beginInitialOrbitDetermination()
+        # [NOTE]: IOD & MMAE should be mutually exclusive - they should not be able to
+        #   be used at the same time, so order should not matter.
+        if self.initial_orbit_determination:
+            self._handleIOD(observations, logging)
 
-            # Start MMAE
-            elif self.adaptive_filter_config:
-                self._beginAdaptiveEstimation(observations)
-
-        # IOD closing Functions
-        if self.iod_start_time is not None and self.iod_start_time < self.time:
-            success, iod_state = self._attemptInitialOrbitDetermination(observations, logging)
-
-            # Check if IOD converged
-            if success:
-                self.iod_start_time = None
-                self.nominal_filter.est_x = iod_state
+        if self.adaptive_filter_config:
+            self._handleMMAE(observations, logging)
 
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
@@ -416,6 +402,49 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             ephemeris (:class:`._EphemerisMixin`): data object to update this SensingAgent's state with
         """
         raise NotImplementedError("Cannot load state estimates directly into simulation")
+
+    def _handleMMAE(self, observations: list[Observation], logging: bool) -> None:
+        """Handle MMAE logic.
+
+        Check for MMAE close flag and reset the filter if found. Also, if a maneuver
+        is detected and MMAE
+
+        Args:
+            observations (list): :class:`.Observation` objects of this agent.
+            logging (bool): whether to log MMAE events.
+        """
+        # pylint: disable=unused-argument
+
+        # [NOTE]: End MMAE & reset filter
+        if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
+            self.resetFilter(self.nominal_filter.converged_filter)
+
+        if self.maneuver_detected:
+            self._beginAdaptiveEstimation(observations)
+
+    def _handleIOD(self, observations: list[Observation], logging: bool) -> None:
+        """Handle IOD logic.
+
+        Try to perform a successful IOD. If successful, reset attributes accordingly
+        and update the filter estimate. Otherwise, leave IOD active for next timestep.
+
+        Args:
+            observations (list): :class:`.Observation` objects of this agent.
+            logging (bool): whether to log IOD events.
+        """
+        if self.maneuver_detected and not self.iod_active:
+            self._beginInitialOrbitDetermination()
+
+        if self.iod_active:
+            converged, iod_state = self._attemptInitialOrbitDetermination(observations, logging)
+            if converged:
+                self.iod_start_time = None
+                self.nominal_filter.est_x = iod_state
+
+    @property
+    def iod_active(self) -> bool:
+        """Returns whether IOD is currently active."""
+        return self.iod_start_time is not None and self.iod_start_time < self.time
 
     def _beginAdaptiveEstimation(self, observations: list[Observation]) -> None:
         """Try to start adaptive estimation on this RSO.
