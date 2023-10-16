@@ -138,10 +138,10 @@ make lint
 pylint `git diff --name-only --diff-filter=d | grep -E '\.py$' | tr '\n' ' '`
 ```
 
-`flake8` is another linter that covers different checks:
+`ruff` is another linter that covers different checks:
 
 ```bash
-flake8 .
+ruff check --no-fix src tests
 ```
 
 To run `pre-commit` against the entire repo:
