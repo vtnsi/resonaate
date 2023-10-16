@@ -143,7 +143,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         )
 
         # Calculate scaling parameters lambda & gamma.
-        if not kappa:
+        if kappa is None:
             kappa = 3 - self.x_dim
         lambda_kf = (alpha**2) * (self.x_dim + kappa) - self.x_dim
 
