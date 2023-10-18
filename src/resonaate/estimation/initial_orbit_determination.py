@@ -234,6 +234,11 @@ class LambertIOD(InitialOrbitDetermination):
         # Count the number of unique observation times
         previous_observation = self.getPreviousObservations(database, detection_time, current_time)
 
+        # Ensure there are observations of the RSO you're trying to do IOD for
+        if len(previous_observation) == 0:
+            msg = f"No observations in database of RSO {self.sat_num}"
+            return None, False, msg
+
         # [NOTE]: the `+1` is here because the observation from the current timestep is not yet in the database
         if len(previous_observation) + 1 < self.min_observations:
             msg = f"Not enough observations to perform IOD {len(previous_observation)}"
