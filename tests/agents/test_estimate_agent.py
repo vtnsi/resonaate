@@ -564,35 +564,72 @@ def testUpdateSuccessfulIOD(
     assert iod_estimate_agent.iod_start_time is None
 
 
-def testUpdateAdaptiveFilterClose(
-    nominal_filter: UnscentedKalmanFilter,
-    mmae_estimate_agent: EstimateAgent,
+def testUpdateAdaptiveFilterNoManeuverDetection(
+    estimate_agent: EstimateAgent,
     observations: Observation,
 ):
     """Test _update of a closing MMAE filter.
 
     Args:
-        nominal_filter (:class:`.UnscentedKalmanFilter`): UKF Object
-        mmae_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with MMAE on.
+        estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture.
         observations (:class:`.Observation`): Observation tuple fixture
     """
+    estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
+    estimate_agent.nominal_filter.forecast(observations)
+    estimate_agent.nominal_filter.update(observations)
+    estimate_agent.nominal_filter.maneuver_detected = False
 
-    # filter updates
-    mmae_estimate_agent.nominal_filter.models.append(nominal_filter)
-    mmae_estimate_agent.nominal_filter.predict(ScenarioTime(120.0))
-    mmae_estimate_agent.nominal_filter.mean_pred_y = nominal_filter.mean_pred_y
-    mmae_estimate_agent.nominal_filter.model_weights = array([1.0])
-    mmae_estimate_agent.nominal_filter.nis = 1.0
-    mmae_estimate_agent.nominal_filter.innovation = array([1.0, 1.0])
-    mmae_estimate_agent.nominal_filter.forecast(observations)
+    # Update with a maneuver detection
+    estimate_agent._update(observations)
+
+    assert isinstance(estimate_agent.nominal_filter, UnscentedKalmanFilter)
+
+
+def testUpdateAttemptAdaptiveEstimation(
+    nominal_filter: UnscentedKalmanFilter,
+    mocked_clock: ScenarioClock,
+    observations: Observation,
+):
+    """Test _attemptAdaptiveEstimation.
+
+    Args:
+        nominal_filter (:class:`.UnscentedKalmanFilter`): UKF Object
+        mocked_clock (:class:`.ScenarioClock`): Mocked Scenario Clock
+        observations (:class:`.Observation`): Observation tuple fixture
+    """
+    mmae_estimate_agent = EstimateAgent(
+        _id=10001,
+        name="estimate_agent",
+        agent_type="Spacecraft",
+        clock=mocked_clock,
+        initial_state=np.ones(6),
+        initial_covariance=np.diagflat(np.ones(6)),
+        _filter=nominal_filter,
+        adaptive_filter_config=AdaptiveEstimationConfig(
+            name="gpb1",
+            orbit_determination="lambert_universal",
+            stacking_method="eci_stack",
+            model_interval=600,
+            observation_window=1,
+            prune_threshold=1e-10,
+            prune_percentage=0.997,
+            parameters={},
+        ),
+        initial_orbit_determination_config=None,
+        visual_cross_section=10.0,
+        mass=100.0,
+        reflectivity=0.21,
+    )
     mmae_estimate_agent.nominal_filter.maneuver_detected = True
-    mmae_estimate_agent.nominal_filter._converged_filter = nominal_filter
-    mmae_estimate_agent.nominal_filter.flags = FilterFlag.ADAPTIVE_ESTIMATION_CLOSE
+
+    mmae_estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
+    mmae_estimate_agent.nominal_filter.forecast(observations)
+    mmae_estimate_agent.nominal_filter.update(observations)
 
     # Update with a maneuver detection
     mmae_estimate_agent._update(observations)
 
-    assert mmae_estimate_agent.nominal_filter == nominal_filter
+    assert isinstance(mmae_estimate_agent.nominal_filter, UnscentedKalmanFilter)
 
 
 def testAttemptAdaptiveEstimation(
@@ -635,7 +672,7 @@ def testAttemptAdaptiveEstimation(
         reflectivity=0.21,
     )
 
-    mmae_estimate_agent._attemptAdaptiveEstimation(observations)
+    mmae_estimate_agent._beginAdaptiveEstimation(observations)
 
     assert mmae_estimate_agent.nominal_filter == mmae_filter
 
@@ -648,7 +685,7 @@ def testAttemptAdaptiveEstimation(
 
     monkeypatch.setattr(GeneralizedPseudoBayesian1, "initialize", mockInitialize)
 
-    mmae_estimate_agent._attemptAdaptiveEstimation(observations)
+    mmae_estimate_agent._beginAdaptiveEstimation(observations)
 
     assert mmae_estimate_agent.nominal_filter != mmae_filter
 
@@ -687,6 +724,23 @@ def testBeginInitialOrbitDeterminationSuccess(iod_estimate_agent: EstimateAgent)
     assert iod_estimate_agent.iod_start_time == iod_estimate_agent.time
 
 
+def testBeginInitialOrbitDeterminationNoSuccess(
+    iod_estimate_agent: EstimateAgent, observations: Observation
+):
+    """Test _beginInitialOrbitDetermination sets iod start time.
+
+    Args:
+        iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
+        observations (:class:`.Observation`): Observation tuple fixture
+    """
+    iod_estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
+    iod_estimate_agent.nominal_filter.forecast(observations)
+    iod_estimate_agent.nominal_filter.update(observations)
+    iod_estimate_agent._update(observations=observations)
+
+    assert iod_estimate_agent.iod_start_time == iod_estimate_agent.time
+
+
 def testNoAttemptInitialOrbitDetermination(
     estimate_agent: EstimateAgent, observations: Observation
 ):
@@ -696,9 +750,20 @@ def testNoAttemptInitialOrbitDetermination(
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
         observations (:class:`.Observation`): Observation tuple fixture
     """
-    estimate_agent._attemptInitialOrbitDetermination(observations)
+    result, message = estimate_agent._attemptInitialOrbitDetermination(observations)
 
     assert estimate_agent.initial_orbit_determination is None
+    assert result is False
+    assert message is None
+
+    estimate_agent.initial_orbit_determination = True
+    estimate_agent.iod_start_time = ScenarioTime(0.0)
+    estimate_agent.time = ScenarioTime(0.0)
+
+    result, message = estimate_agent._attemptInitialOrbitDetermination(observations)
+
+    assert result is False
+    assert message is None
 
 
 def testAttemptInitialOrbitDeterminationFail(

@@ -377,19 +377,27 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         # else
         self.last_observed_at = self.julian_date_epoch
         self._saveFilterStep()
-        success, iod_state = self._attemptInitialOrbitDetermination(observations, logging)
-        if success:
-            self.iod_start_time = None
-            self.nominal_filter.est_x = iod_state
 
+        # Maneuver Detection Functions
         if self.nominal_filter.maneuver_detected:
             self._saveDetectedManeuver(observations)
-            if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
-                self.resetFilter(self.nominal_filter.converged_filter)
 
-            self._attemptAdaptiveEstimation(observations)
-            if not success:
+            # Start IOD?
+            if self.initial_orbit_determination and self.iod_start_time is None:
                 self._beginInitialOrbitDetermination()
+
+            # MMAE Functions
+            elif self.adaptive_filter_config:
+                self._beginAdaptiveEstimation(observations)
+
+        # IOD closing Functions
+        if self.iod_start_time is not None and self.iod_start_time < self.time:
+            success, iod_state = self._attemptInitialOrbitDetermination(observations, logging)
+
+            # Check if IOD converged
+            if success:
+                self.iod_start_time = None
+                self.nominal_filter.est_x = iod_state
 
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
@@ -405,7 +413,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         """
         raise NotImplementedError("Cannot load state estimates directly into simulation")
 
-    def _attemptAdaptiveEstimation(self, observations: list[Observation]) -> None:
+    def _beginAdaptiveEstimation(self, observations: list[Observation]) -> None:
         """Try to start adaptive estimation on this RSO.
 
         Args:
