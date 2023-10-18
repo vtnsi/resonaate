@@ -265,7 +265,19 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         Args:
             async_result (``dict``): Result from parallel :attr:`nominal_filter` update.
         """
+        # [NOTE]: Reset the filter. This is only for MMAE because IOD resets by
+        #   updating the state estimate only. The attribute is set in asyncUpdateEstimate().
+        #   This happens if MMAE is starting or stopping. MMAE also resets the filter
+        #   elsewhere, so I'm not sure why this is needed.
+        if async_result["new_filter"] is not None:
+            self._resetFilter(async_result["new_filter"])
+
+        # [NOTE]: Overwrite filter attributes in main thread filter
         self.nominal_filter.updateFromAsyncResult(async_result["filter_update"])
+
+        # [FIXME]: Not sure a full `self._update()` is necessary. Shouldn't most of
+        #   it be handled already by `resetFilter()` and
+        # `nominal_filter.updateFromAsyncResult()`?
         self._update(async_result["observations"])
 
     def getCurrentEphemeris(self) -> EstimateEphemeris:
@@ -417,7 +429,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         # [NOTE]: End MMAE & reset filter
         if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
-            self.resetFilter(self.nominal_filter.converged_filter)
+            self._resetFilter(self.nominal_filter.converged_filter)
 
         if self.maneuver_detected:
             self._beginAdaptiveEstimation(observations)
@@ -467,11 +479,11 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
             # End MMAE right away (GPB1)
             if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in adaptive_filter.flags:
-                self.resetFilter(adaptive_filter.converged_filter)
+                self._resetFilter(adaptive_filter.converged_filter)
 
             # Persist an MMAE filter (SMM)
             elif mmae_started:
-                self.resetFilter(adaptive_filter)
+                self._resetFilter(adaptive_filter)
 
     def _beginInitialOrbitDetermination(self):
         """Check if we need to turn on initial orbit determination on this RSO.
@@ -536,7 +548,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         return iod_solution.convergence, iod_solution.state_vector
 
-    def resetFilter(self, new_filter: SequentialFilter) -> None:
+    def _resetFilter(self, new_filter: SequentialFilter) -> None:
         """Overwrite the agent's filter object with a new filter instance.
 
         Args:

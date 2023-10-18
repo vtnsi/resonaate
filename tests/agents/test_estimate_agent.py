@@ -915,7 +915,7 @@ def testResetFilterGood(estimate_agent: EstimateAgent):
         maneuver_detection=StandardNis(0.001),
     )
 
-    estimate_agent.resetFilter(new_filter)
+    estimate_agent._resetFilter(new_filter)
     assert estimate_agent._filter is new_filter
     assert estimate_agent._filter.maneuver_detection.threshold == 0.001
     assert estimate_agent._filter.gamma == new_filter.gamma
@@ -929,7 +929,7 @@ def testResetFilterBad(estimate_agent: EstimateAgent):
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
     """
     with pytest.raises(TypeError):
-        estimate_agent.resetFilter("Bad!")
+        estimate_agent._resetFilter("Bad!")
 
 
 def testProperties(estimate_agent: EstimateAgent):

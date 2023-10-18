@@ -96,10 +96,6 @@ class EstimateUpdateRegistration(CallbackRegistration):
             job (:class:`.Job`): job object that's returned when a job completes.
         """
         est_agent: EstimateAgent = self.registrant.estimate_agents[job.retval["estimate_id"]]
-        if job.retval["new_filter"] is not None:
-            # [NOTE]: Reset nominal filter for MMAE starting/stopping
-            est_agent.resetFilter(job.retval["new_filter"])
-
         est_agent.updateFromAsyncUpdateEstimate(job.retval)
 
 
