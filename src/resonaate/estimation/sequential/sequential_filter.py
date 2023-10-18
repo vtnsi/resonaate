@@ -176,6 +176,10 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.pred_p = array([])
         self.source: str | None = "Initialization"
 
+        # Check that IOD and MMAE are both not set.
+        if initial_orbit_determination and adaptive_estimation:
+            raise ValueError("IOD & MMAE cannot be used at the same time")
+
         # MMAE products
         self.true_y = array([])
         self.adaptive_estimation = adaptive_estimation
