@@ -464,21 +464,31 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         if self.iod_start_time is None or self.iod_start_time == self.time:
             return False, None
 
-        msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
-        self._logger.info(msg)
-        iod_est_x, success, _ = self.initial_orbit_determination.determineNewEstimateState(
-            observations, self.iod_start_time, self.time
-        )
-
-        if success:
-            msg = f"IOD successful for RSO {self.simulation_id}"
-        else:
-            msg = f"IOD unsuccessful for RSO {self.simulation_id}"
+        if self.iod_start_time > self.time:
+            raise ValueError(
+                f"IOD beginning in the future: {self.iod_start_time} relative to current scenario time: {self.time}"
+            )
 
         if logging:
-            self._logger.debug(msg)
+            msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.datetime_epoch}"
+            self._logger.info(msg)
 
-        return success, iod_est_x
+        iod_solution = self.initial_orbit_determination.determineNewEstimateState(
+            observations, self.iod_start_time, self.time
+        )
+        if iod_solution.convergence:
+            msg = f"IOD successful for RSO {self.simulation_id} at time {self.datetime_epoch}"
+        else:
+            msg = f"IOD unsuccessful for RSO {self.simulation_id} at time {self.datetime_epoch}"
+
+        if logging:
+            self._logger.info(msg)
+
+            # check if IOD failed
+            if not iod_solution.convergence:
+                self._logger.warning(iod_solution.message)
+
+        return iod_solution.convergence, iod_solution.state_vector
 
     def resetFilter(self, new_filter: SequentialFilter) -> None:
         """Overwrite the agent's filter object with a new filter instance.

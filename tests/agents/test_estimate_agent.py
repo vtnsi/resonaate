@@ -23,6 +23,7 @@ from resonaate.dynamics.terrestrial import Terrestrial
 from resonaate.dynamics.two_body import TwoBody
 from resonaate.estimation.adaptive.adaptive_filter import AdaptiveFilter
 from resonaate.estimation.adaptive.gpb1 import GeneralizedPseudoBayesian1
+from resonaate.estimation.initial_orbit_determination import IODSolution
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.sequential_filter import FilterFlag
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
@@ -760,7 +761,9 @@ def testAttemptInitialOrbitDeterminationSuccess(
 
     # Patch IOD logic
     def determineNewEstimateStateGood(self, observations, detection_time, current_time):
-        return estimate_agent.state_estimate, True, None
+        return IODSolution(
+            state_vector=iod_estimate_agent.state_estimate, convergence=True, message=None
+        )
 
     monkeypatch.setattr(
         resonaate.estimation.initial_orbit_determination.LambertIOD,
@@ -814,7 +817,9 @@ def testAttemptInitialOrbitDeterminationSuccessLogging(
 
     # Patch IOD logic
     def determineNewEstimateStateGood(self, observations, detection_time, current_time):
-        return estimate_agent.state_estimate, True, None
+        return IODSolution(
+            state_vector=iod_estimate_agent.state_estimate, convergence=True, message=None
+        )
 
     monkeypatch.setattr(
         resonaate.estimation.initial_orbit_determination.LambertIOD,

@@ -199,7 +199,7 @@ class TestLambertInitialOrbitDetermination:
         prior_scenario_time = self.prior_julian_date.convertToScenarioTime(self.start_julian_date)
         current_scenario_time = iod.julian_date_start.convertToScenarioTime(self.start_julian_date)
         result = iod.determineNewEstimateState([], prior_scenario_time, current_scenario_time)
-        assert result[2] == "No Observations for IOD"
+        assert result.message == "No Observations for IOD"
 
         def mockDb(*args, **kwargs):
             mocked_db = MagicMock(spec=ResonaateDatabase)
@@ -214,7 +214,7 @@ class TestLambertInitialOrbitDetermination:
             observation, prior_scenario_time, current_scenario_time
         )
 
-        assert result[2] == "No observations in database of RSO 10001"
+        assert result.message == "No observations in database of RSO 10001"
 
         # Monkey Patch get previous observation
         def mockGetPreviousObservations(*args, **kwargs):
@@ -232,7 +232,7 @@ class TestLambertInitialOrbitDetermination:
             [bad_obs], prior_scenario_time, current_scenario_time
         )
 
-        assert result[2] == "No Radar observations to perform Lambert IOD"
+        assert result.message == "No Radar observations to perform Lambert IOD"
 
         # Monkey Patch get single pass
         def mockCheckSinglePass(*args, **kwargs):
@@ -249,7 +249,7 @@ class TestLambertInitialOrbitDetermination:
                 [observation], prior_scenario_time, current_scenario_time
             )
 
-            assert result[2] == "Observations not from a single pass"
+            assert result.message == "Observations not from a single pass"
 
         # Test Successful IOD
 
@@ -257,5 +257,5 @@ class TestLambertInitialOrbitDetermination:
             [observation], prior_scenario_time, current_scenario_time
         )
 
-        assert isinstance(result[0], ndarray)
-        assert result[1] is True
+        assert isinstance(result.state_vector, ndarray)
+        assert result.convergence is True
