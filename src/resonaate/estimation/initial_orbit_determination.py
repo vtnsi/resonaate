@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 # Standard Library Imports
-import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -34,6 +34,20 @@ if TYPE_CHECKING:
     from ..scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
 
+@dataclass(frozen=True)
+class IODSolution:
+    """Data class to define IOD output information."""
+
+    state_vector: ndarray | None
+    """Associated State vector from converged IOD or ``None`` if not converged."""
+
+    convergence: bool
+    """True if IOD successfully converged."""
+
+    message: str
+    """Context for convergence success or failure."""
+
+
 class InitialOrbitDetermination(ABC):
     r"""Abstract class that encapsulates Initial Orbit Determination methods."""
 
@@ -55,8 +69,6 @@ class InitialOrbitDetermination(ABC):
             julian_date_start (:class:`.JulianDate`): Starting JulianDate of the scenario
 
         """
-        self._logger = logging.getLogger("resonaate")
-
         self.minimum_observation_spacing: int = minimum_observation_spacing
         """``int``: minimum number of seconds required between observations."""
         self.orbit_determination_method: OrbitDeterminationFunction = orbit_determination_method
@@ -133,7 +145,7 @@ class InitialOrbitDetermination(ABC):
         observations: list[Observation],
         detection_time: ScenarioTime,
         current_time: ScenarioTime,
-    ) -> ndarray:
+    ) -> IODSolution:
         r"""Determine the state vector of an RSO estimate via IOD.
 
         Args:
@@ -142,7 +154,8 @@ class InitialOrbitDetermination(ABC):
             current_time (:class:`.ScenarioTime`): Upper Bound for query.
 
         Returns:
-            ``ndarray``: Estimate state determined from IOD.
+            .IODSolution: solution information including whether it converged, the state vector
+                if it converged, and if it didn't converge a message detailing why.
         """
         raise NotImplementedError
 
@@ -208,7 +221,7 @@ class LambertIOD(InitialOrbitDetermination):
         observations: list[Observation],
         detection_time: ScenarioTime,
         current_time: ScenarioTime,
-    ) -> tuple[ndarray | None, bool]:
+    ) -> IODSolution:
         r"""Determine the state vector of an RSO estimate via IOD.
 
         Args:
@@ -217,15 +230,12 @@ class LambertIOD(InitialOrbitDetermination):
             current_time (:class:`.ScenarioTime`): current scenario time
 
         Returns:
-            ``tuple``:
-
-            :``ndarray| None``: Estimate state determined from IOD
-            :``bool``: whether or not IOD was successful
+            .IODSolution: solution information including whether it converged, the state vector
+                if it converged, and if it didn't converge a message detailing why.
         """
         if not observations:
             msg = "No Observations for IOD"
-            self._logger.warning(msg)
-            return None, False
+            return IODSolution(None, False, msg)
 
         # load path to on-disk database for the current scenario run
         database = getDBConnection()
@@ -238,11 +248,15 @@ class LambertIOD(InitialOrbitDetermination):
         # Count the number of unique observation times
         previous_observation = self.getPreviousObservations(database, detection_time, current_time)
 
+        # Ensure there are observations of the RSO you're trying to do IOD for
+        if len(previous_observation) == 0:
+            msg = f"No observations in database of RSO {self.sat_num}"
+            return IODSolution(None, False, msg)
+
         # [NOTE]: the `+1` is here because the observation from the current timestep is not yet in the database
         if len(previous_observation) + 1 < self.min_observations:
             msg = f"Not enough observations to perform IOD {len(previous_observation)}"
-            self._logger.warning(msg)
-            return None, False
+            return IODSolution(None, False, msg)
 
         # Get position from Radar observation between maneuver detection time and now
         initial_position = radarObs2eciPosition(previous_observation[-1])
@@ -250,16 +264,14 @@ class LambertIOD(InitialOrbitDetermination):
         # Get position from Radar observation from current timestep
         if (final_position := self._determineFinalState(observations)) is None:
             msg = "No Radar observations to perform Lambert IOD"
-            self._logger.warning(msg)
-            return None, False
+            return IODSolution(None, False, msg)
 
         transit_time = self.checkSinglePass(
             final_position, previous_observation[-1].julian_date, current_julian_date
         )
         if not transit_time:
             msg = "Observations not from a single pass"
-            self._logger.warning(msg)
-            return None, False
+            return IODSolution(None, False, msg)
 
         # [NOTE]: Circular orbit assumed as first approx.
         transfer_method = determineTransferDirection(initial_position, transit_time)
@@ -271,8 +283,9 @@ class LambertIOD(InitialOrbitDetermination):
             transit_time,
             transfer_method,
         )
+        msg = "IOD successful"
 
-        return concatenate((final_position, final_velocity)), True
+        return IODSolution(concatenate((final_position, final_velocity)), True, msg)
 
     def _determineFinalState(self, observations: list[Observation]) -> ndarray | None:
         """Calculate Position vector at the current time given observations.

@@ -32,7 +32,8 @@ ______________________________________________________________________
 
 ### Changed
 
-*for changes in existing functionality*
+- EstimateAgent._update() logic split into sub-functions (see !164)
+- Several logic improvements for MMAE & IOD start and convergence handling (see !164)
 
 ### Deprecated
 
@@ -46,6 +47,9 @@ ______________________________________________________________________
 
 - SRP perturbation would not work without setting "sun" third body (see #184)
 - `AllVisibleDecision` config sensor type check (see #187)
+- Duplicate IOD logging (see !164)
+- GPB1 & SMM post-convergence re-initialization (see !164)
+- Ability to turn MMAE and IOD on simultaneously (see !164)
 
 ### Security
 
@@ -53,7 +57,7 @@ ______________________________________________________________________
 
 ### Test
 
-*for test suite specific improvements*
+- Add tests to cover `EstimateAgent` (see !164)
 
 ### Development
 

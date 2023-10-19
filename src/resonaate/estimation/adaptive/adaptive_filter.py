@@ -6,23 +6,10 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import (
-    argwhere,
-    array,
-    ceil,
-    concatenate,
-    delete,
-    dot,
-    hstack,
-    linspace,
-    ones,
-    outer,
-    union1d,
-    vstack,
-    zeros,
-)
+from numpy import argwhere, array, ceil, concatenate, delete, dot, hstack, linspace, ones, outer
 from numpy import round as np_round
 from numpy import sum as np_sum
+from numpy import union1d, vstack, zeros
 from scipy.linalg import norm
 
 # Local Imports
@@ -725,19 +712,21 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
     def _resumeSequentialFiltering(self):
         """The adaptive filter has converged, so create a nominal filter from the converged model."""
         # Reset adaptive estimation flags
-        self.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
+        if FilterFlag.ADAPTIVE_ESTIMATION_START in self.flags:
+            self.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
         self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_CLOSE
 
         # Set the converged filter attribute
         self._converged_filter = self._filter_class(
-            self.target_id,
-            self.time,
-            self.est_x,
-            self.est_p,
-            self.dynamics,
-            self.q_matrix,
-            self.maneuver_detection,
-            True,
+            tgt_id=self.target_id,
+            time=self.time,
+            est_x=self.est_x,
+            est_p=self.est_p,
+            dynamics=self.dynamics,
+            q_matrix=self.q_matrix,
+            maneuver_detection=self.maneuver_detection,
+            initial_orbit_determination=False,
+            adaptive_estimation=True,
             **self._original_filter.extra_parameters,
         )
 
@@ -749,7 +738,6 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             "innovation",
             "nis",
             "source",
-            "maneuver_detected",
             "mean_pred_y",
             "r_matrix",
             "cross_cvr",

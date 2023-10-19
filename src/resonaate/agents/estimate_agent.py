@@ -233,7 +233,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             observations (``list``): :class:`.Observation` objects associated with this timestep
         """
         self.nominal_filter.update(observations)
-        self._update(observations)
+        self._update(observations, logging=True)
 
     def updateFromAsyncPredict(self, async_result: dict[str, Any]) -> None:
         """Perform predict using EstimateAgent's :attr:`nominal_filter`'s async result.
@@ -265,7 +265,19 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         Args:
             async_result (``dict``): Result from parallel :attr:`nominal_filter` update.
         """
+        # [NOTE]: Reset the filter. This is only for MMAE because IOD resets by
+        #   updating the state estimate only. The attribute is set in asyncUpdateEstimate().
+        #   This happens if MMAE is starting or stopping. MMAE also resets the filter
+        #   elsewhere, so I'm not sure why this is needed.
+        if async_result["new_filter"] is not None:
+            self._resetFilter(async_result["new_filter"])
+
+        # [NOTE]: Overwrite filter attributes in main thread filter
         self.nominal_filter.updateFromAsyncResult(async_result["filter_update"])
+
+        # [FIXME]: Not sure a full `self._update()` is necessary. Shouldn't most of
+        #   it be handled already by `resetFilter()` and
+        # `nominal_filter.updateFromAsyncResult()`?
         self._update(async_result["observations"])
 
     def getCurrentEphemeris(self) -> EstimateEphemeris:
@@ -343,32 +355,51 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         # Check if a maneuver was detected
         if FilterFlag.MANEUVER_DETECTION in self.nominal_filter.flags:
             sensor_nums = {ob.sensor_id for ob in observations}
-            tgt = self.simulation_id
-            jd = self.julian_date_epoch
-            msg = f"Maneuver Detected for RSO {tgt} by sensors {sensor_nums} at time {jd}"
+            msg = f"Maneuver Detected for RSO {self.simulation_id} by sensors {sensor_nums} at time {self.datetime_epoch}"
             self._logger.info(msg)
 
-    def _update(self, observations: list[Observation]) -> None:
-        """Perform update of :attr:`nominal_filter`, state estimate, & covariance.
+        # [NOTE]: Extra check to make sure that IOD is not currently running for this particular agent.
+        if (
+            FilterFlag.INITIAL_ORBIT_DETERMINATION_START in self.nominal_filter.flags
+            and not self.iod_start_time
+        ):
+            self.nominal_filter.flags ^= FilterFlag.INITIAL_ORBIT_DETERMINATION_START
+            msg = f"Turning on IOD for RSO {self.simulation_id} at time {self.datetime_epoch}"
+            self._logger.info(msg)
+
+    def _update(self, observations: list[Observation], logging: bool = False) -> None:
+        """Perform local update of :attr:`nominal_filter`, state estimate, & covariance.
 
         Save the *a posteriori* :attr:`state_estimate` and :attr:`error_covariance`. Also, log
         filter events if the truth is passed in, typically done locally.
 
         Args:
             observations (``list``): :class:`.Observation` associated with this timestep
+            logging (``bool``): Bool indicating logging of estimate conops, Defaults to False.
         """
-        self._logFilterEvents(observations)
+        if logging:
+            self._logFilterEvents(observations)
 
-        if observations:
-            self.last_observed_at = self.julian_date_epoch
-            self._saveFilterStep()
-            self._attemptInitialOrbitDetermination(observations)
-            if self.nominal_filter.maneuver_detected:
-                self._saveDetectedManeuver(observations)
-                if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
-                    self.resetFilter(self.nominal_filter.converged_filter)
-                self._attemptAdaptiveEstimation(observations)
-                self._attemptInitialOrbitDetermination(observations)
+        if not observations:
+            self.state_estimate = self.nominal_filter.est_x
+            self.error_covariance = self.nominal_filter.est_p
+            return
+
+        self.last_observed_at = self.julian_date_epoch
+        self._saveFilterStep()
+
+        # [NOTE]: Is there a reason for this to come AFTER "END MMAE"? Moved to before
+        #   to clean up logic.
+        if self.nominal_filter.maneuver_detected:
+            self._saveDetectedManeuver(observations)
+
+        # [NOTE]: IOD & MMAE should be mutually exclusive - they should not be able to
+        #   be used at the same time, so order should not matter.
+        if self.initial_orbit_determination:
+            self._handleIOD(observations, logging)
+
+        if self.adaptive_filter_config:
+            self._handleMMAE(observations, logging)
 
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
@@ -384,7 +415,50 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         """
         raise NotImplementedError("Cannot load state estimates directly into simulation")
 
-    def _attemptAdaptiveEstimation(self, observations: list[Observation]) -> None:
+    def _handleMMAE(self, observations: list[Observation], logging: bool) -> None:
+        """Handle MMAE logic.
+
+        Check for MMAE close flag and reset the filter if found. Also, if a maneuver
+        is detected and MMAE
+
+        Args:
+            observations (list): :class:`.Observation` objects of this agent.
+            logging (bool): whether to log MMAE events.
+        """
+        # pylint: disable=unused-argument
+
+        # [NOTE]: End MMAE & reset filter
+        if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
+            self._resetFilter(self.nominal_filter.converged_filter)
+
+        if self.maneuver_detected:
+            self._beginAdaptiveEstimation(observations)
+
+    def _handleIOD(self, observations: list[Observation], logging: bool) -> None:
+        """Handle IOD logic.
+
+        Try to perform a successful IOD. If successful, reset attributes accordingly
+        and update the filter estimate. Otherwise, leave IOD active for next timestep.
+
+        Args:
+            observations (list): :class:`.Observation` objects of this agent.
+            logging (bool): whether to log IOD events.
+        """
+        if self.maneuver_detected and not self.iod_active:
+            self._beginInitialOrbitDetermination()
+
+        if self.iod_active:
+            converged, iod_state = self._attemptInitialOrbitDetermination(observations, logging)
+            if converged:
+                self.iod_start_time = None
+                self.nominal_filter.est_x = iod_state
+
+    @property
+    def iod_active(self) -> bool:
+        """Returns whether IOD is currently active."""
+        return self.iod_start_time is not None and self.iod_start_time < self.time
+
+    def _beginAdaptiveEstimation(self, observations: list[Observation]) -> None:
         """Try to start adaptive estimation on this RSO.
 
         Args:
@@ -403,39 +477,78 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
                 julian_date_start=self.julian_date_start,
             )
 
-            if mmae_started:
-                self.resetFilter(adaptive_filter)
+            # End MMAE right away (GPB1)
+            if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in adaptive_filter.flags:
+                self._resetFilter(adaptive_filter.converged_filter)
 
-    def _attemptInitialOrbitDetermination(self, observations: list[Observation]):
-        """Try to start initial orbit determination on this RSO.
+            # Persist an MMAE filter (SMM)
+            elif mmae_started:
+                self._resetFilter(adaptive_filter)
+
+    def _beginInitialOrbitDetermination(self):
+        """Check if we need to turn on initial orbit determination on this RSO.
 
         Args:
-            observations (``list``): :class:`.Observation` associated with this timestep
+            observations (``list``): :class:`.Observation` associated with this timestep.
+            logging (``bool``): Bool indicating logging of estimate conops, Defaults to False.
         """
         if not self.initial_orbit_determination:
             return
 
+        # [FIXME]: IOD start time is getting set on second _update call
         if self.iod_start_time is None and self.nominal_filter.maneuver_detected:
             self.iod_start_time = self.time
-            msg = f"Turning on IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
-            self._logger.info(msg)
+
+    def _attemptInitialOrbitDetermination(
+        self, observations: list[Observation], logging: bool = False
+    ) -> tuple[bool, ndarray | None]:
+        """Try to solve initial orbit determination on this RSO.
+
+        Args:
+            observations (``list``): :class:`.Observation` associated with this timestep.
+            logging (``bool``): Bool indicating logging of estimate conops, Defaults to False.
+
+        Returns:
+            ``tuple``:
+
+            :``bool``: whether or not IOD was success
+            :``ndarray | None``: Estimate state determined from IOD
+        """
+        # Early Returns
+        if not self.initial_orbit_determination:
+            return False, None
 
         # [NOTE]: IOD cannot converge on the same timestep as initialization
-        if self.iod_start_time is not None and self.iod_start_time < self.time:
-            msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.julian_date_epoch}"
-            self._logger.info(msg)
-            iod_est_x, success = self.initial_orbit_determination.determineNewEstimateState(
-                observations, self.iod_start_time, self.time
-            )
-            if success:
-                self.iod_start_time = None
-                self.nominal_filter.est_x = iod_est_x
-                msg = f"IOD successful for RSO {self.simulation_id}"
-            else:
-                msg = f"IOD unsuccessful for RSO {self.simulation_id}"
-            self._logger.debug(msg)
+        if self.iod_start_time is None or self.iod_start_time == self.time:
+            return False, None
 
-    def resetFilter(self, new_filter: SequentialFilter) -> None:
+        if self.iod_start_time > self.time:
+            raise ValueError(
+                f"IOD beginning in the future: {self.iod_start_time} relative to current scenario time: {self.time}"
+            )
+
+        if logging:
+            msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.datetime_epoch}"
+            self._logger.info(msg)
+
+        iod_solution = self.initial_orbit_determination.determineNewEstimateState(
+            observations, self.iod_start_time, self.time
+        )
+        if iod_solution.convergence:
+            msg = f"IOD successful for RSO {self.simulation_id} at time {self.datetime_epoch}"
+        else:
+            msg = f"IOD unsuccessful for RSO {self.simulation_id} at time {self.datetime_epoch}"
+
+        if logging:
+            self._logger.info(msg)
+
+            # check if IOD failed
+            if not iod_solution.convergence:
+                self._logger.warning(iod_solution.message)
+
+        return iod_solution.convergence, iod_solution.state_vector
+
+    def _resetFilter(self, new_filter: SequentialFilter) -> None:
         """Overwrite the agent's filter object with a new filter instance.
 
         Args:

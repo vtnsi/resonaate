@@ -52,8 +52,6 @@ def asyncUpdateEstimate(estimate_agent: EstimateAgent, successful_obs: list[Obse
 
     # MMAE is closing
     if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in estimate_agent.nominal_filter.flags:
-        # [NOTE]: The next two lines MUST be in this order
-        estimate_agent.resetFilter(estimate_agent.nominal_filter.converged_filter)
         estimate_agent.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_CLOSE
         result["new_filter"] = estimate_agent.nominal_filter
 
@@ -98,10 +96,6 @@ class EstimateUpdateRegistration(CallbackRegistration):
             job (:class:`.Job`): job object that's returned when a job completes.
         """
         est_agent: EstimateAgent = self.registrant.estimate_agents[job.retval["estimate_id"]]
-        if job.retval["new_filter"]:
-            # [NOTE]: Reset nominal filter for MMAE starting/stopping
-            est_agent.resetFilter(job.retval["new_filter"])
-
         est_agent.updateFromAsyncUpdateEstimate(job.retval)
 
 
