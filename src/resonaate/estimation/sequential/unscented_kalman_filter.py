@@ -99,6 +99,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         maneuver_detection: ManeuverDetection | None = None,
         initial_orbit_determination: bool = False,
         adaptive_estimation: bool = False,
+        resample: bool = False,
         alpha: float = 0.001,
         beta: float = 2.0,
         kappa: float | None = None,
@@ -115,6 +116,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
             initial_orbit_determination (bool): Indicator that IOD can be flagged by the filter
             adaptive_estimation (bool): Indicator that adaptive estimation can be flagged by the filter
+            resample (bool): Indicator sigma points should be resampled at the start of a measurement update step
             alpha (float): sigma point spread. Defaults to 0.001. This should be a
                 small positive value: :math:`\alpha <= 1`.
             beta (float): Gaussian pdf parameter. Defaults to 2.0. This parameter
@@ -139,6 +141,7 @@ class UnscentedKalmanFilter(SequentialFilter):
                 "alpha": alpha,
                 "beta": beta,
                 "kappa": kappa,
+                "resample": resample,
             },
         )
 
@@ -160,6 +163,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         self.cvr_weight = diagflat(self.mean_weight)
         self.cvr_weight[0, 0] += 1 - alpha**2.0 + beta
 
+        self._resample = resample
         self.sigma_points = array([])
         self.sigma_x_res = array([])
         self.sigma_y_res = array([])
@@ -237,7 +241,8 @@ class UnscentedKalmanFilter(SequentialFilter):
         self._flags = FilterFlag.NONE
 
         # STEP 0: Re-sample the sigma points around predicted (sampled) state estimate
-        self.sigma_points = self.generateSigmaPoints(self.pred_x, self.pred_p)
+        if self._resample:
+            self.sigma_points = self.generateSigmaPoints(self.pred_x, self.pred_p)
 
         # STEP 1: Calculate the Measurement Matrix (H)
         self.calculateMeasurementMatrix(observations)
