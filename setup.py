@@ -32,7 +32,7 @@ setuptools.setup(
             "ruff==0.0.292",
             "pylint==3.0.0",
             # Type Checking
-            "mypy==1.6.0",
+            "mypy==1.6.1",
             "types-sqlalchemy==1.4.53.38",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
