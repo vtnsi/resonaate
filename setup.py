@@ -29,7 +29,7 @@ setuptools.setup(
     extras_require={
         "dev": [
             # Linting
-            "ruff==0.0.292",
+            "ruff==0.1.1",
             "pylint==3.0.0",
             # Type Checking
             "mypy==1.6.1",
