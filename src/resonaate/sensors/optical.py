@@ -169,6 +169,13 @@ class Optical(Sensor):
         tgt_solar_flux = calculateIncidentSolarFlux(
             viz_cross_section, tgt_eci_state[:3], sun_eci_position
         )
+        line_of_sight, explanation = super().isVisible(
+            tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
+        )
+
+        if not line_of_sight:
+            return False, explanation
+
         if tgt_solar_flux <= 0:
             return False, Explanation.SOLAR_FLUX
 
@@ -220,4 +227,4 @@ class Optical(Sensor):
                 return False, Explanation.GROUND_ILLUMINATION
 
         # Passed all phenomenology-specific tests, call base class' visibility check
-        return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)
+        return True, explanation
