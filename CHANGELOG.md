@@ -32,8 +32,9 @@ ______________________________________________________________________
 
 ### Changed
 
-- EstimateAgent._update() logic split into sub-functions (see !164)
+- EstimateAgent.\_update() logic split into sub-functions (see !164)
 - Several logic improvements for MMAE & IOD start and convergence handling (see !164)
+- Reordered Optical visibility calculations in increasing complexity (see !191)
 
 ### Deprecated
 

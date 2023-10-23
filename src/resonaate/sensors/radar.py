@@ -176,12 +176,18 @@ class Radar(Sensor):
             ``bool``: True if target is visible; False if target is not visible
             :class:`.Explanation`: Reason observation was visible or not
         """
+        line_of_sight, explanation = super().isVisible(
+            tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
+        )
+        if not line_of_sight:
+            return False, explanation
+
         # Early exit if target not in radar sensor's range
         if getRange(slant_range_sez) > self.maximumRangeTo(viz_cross_section):
             return False, Explanation.RADAR_SENSITIVITY
 
         # Passed all phenomenology-specific tests, call base class' visibility check
-        return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)
+        return True, explanation
 
     def maximumRangeTo(self, viz_cross_section: float) -> float:
         """Calculate the maximum possible range based on a target's visible area.
