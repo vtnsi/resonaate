@@ -36,7 +36,7 @@ setuptools.setup(
             "types-sqlalchemy==1.4.53.38",
             "typing_extensions==4.1.1; python_version < '3.10'",
             # Formatters
-            "black==23.9.1",
+            "black==23.10.0",
             "isort[colors]==5.12.0",
             "mdformat==0.7.17",
             "mdformat-myst==0.1.5",
