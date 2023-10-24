@@ -16,9 +16,17 @@ ______________________________________________________________________
 
 <!-- TOC Formatted for GitLab -->
 
+<!-- markdownlint-disable MD036 -->
+
+<!-- markdownlint-disable MD049 -->
+
 **Table of Contents**
 
 \[\[_TOC_\]\]
+
+<!-- markdownlint-enable MD036 -->
+
+<!-- markdownlint-enable MD049 -->
 
 <!-- END TOC -->
 
@@ -28,13 +36,16 @@ ______________________________________________________________________
 
 ### Added
 
-*for new features*
+- add `residual()` and `residuals()` function to `resonaate.maths` (see !245)
 
 ### Changed
 
 - EstimateAgent.\_update() logic split into sub-functions (see !164)
 - Several logic improvements for MMAE & IOD start and convergence handling (see !164)
 - Reordered Optical visibility calculations in increasing complexity (see !191)
+- reordered `SequentialFilter.checkManeuverDetection()` to return early (see !245)
+- make sigma point resampling an option that is set on UKF creation (see !245)
+- organize UKF methods for clarity & refactor into smaller methods (see !245)
 
 ### Deprecated
 
@@ -51,6 +62,7 @@ ______________________________________________________________________
 - Duplicate IOD logging (see !164)
 - GPB1 & SMM post-convergence re-initialization (see !164)
 - Ability to turn MMAE and IOD on simultaneously (see !164)
+- UKF parameter overwritten when `kappa=0` (see !245)
 
 ### Security
 
@@ -59,6 +71,7 @@ ______________________________________________________________________
 ### Test
 
 - Add tests to cover `EstimateAgent` (see !164)
+- Add tests to cover `UnscentedKalmanFilter` (see !245)
 
 ### Development
 
