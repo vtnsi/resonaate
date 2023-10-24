@@ -1,6 +1,10 @@
 include *.md
 include *.txt
 include *.yaml
+include src/resonaate/common/default_behavior.config
+recursive-include src/resonaate/physics/data *.dat
+recursive-include src/resonaate/physics/data *.npy
+recursive-include src/resonaate/physics/data *.txt
 recursive-include configs *.json
 recursive-include configs *.yaml
 recursive-include docs/source *.bib
