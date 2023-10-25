@@ -5,11 +5,28 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
-from numpy import array, deg2rad, isclose, linspace
+from numpy import (
+    allclose,
+    array,
+    deg2rad,
+    degrees,
+    isclose,
+    linspace,
+    ones_like,
+    radians,
+    zeros_like,
+)
 
 # RESONAATE Imports
 from resonaate.physics.constants import PI, TWOPI
-from resonaate.physics.maths import ShapeError, angularMean, wrapAngle2Pi, wrapAngleNegPiPi
+from resonaate.physics.maths import (
+    ShapeError,
+    angularMean,
+    residual,
+    residuals,
+    wrapAngle2Pi,
+    wrapAngleNegPiPi,
+)
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -201,3 +218,92 @@ def testAngularMeanBadWeights():
     """Test different sets of weighted angular means."""
     with pytest.raises(ShapeError):
         angularMean(deg2rad([20, 30, 40]), weights=array([2, 3]))
+
+
+# [NOTE]: Values for testing residual calculation assuming angular and non-angular components.
+#   Assumes degrees as inputs
+RESIDUALS_VEC_1 = array(
+    [360.0, 360.0, 359.0, 180.0, 1.0, 10.0, 180.0, 181.0, 240.0, 181.0, 2.0, 190.0, 361.0, 361.0]
+)
+RESIDUALS_VEC_2 = array(
+    [0.0, 1.0, 2.0, 180.0, 1.0, 10.0, 50.0, 179.0, 30.0, 1.0, 190.0, 2.0, 1.0, 2.0]
+)
+
+ANGLES = ones_like(RESIDUALS_VEC_1, dtype=bool)
+EXPECTED_ANGLES = array(
+    [0.0, -1.0, -3.0, 0.0, 0.0, 0.0, 130.0, 2.0, -150.0, -180, 172.0, -172.0, 0.0, -1.0]
+)
+
+NOT_ANGLES = zeros_like(RESIDUALS_VEC_1, dtype=bool)
+EXPECTED_NOT_ANGLES = RESIDUALS_VEC_1 - RESIDUALS_VEC_2
+
+RESIDUAL_VALS_ANGLES = zip(RESIDUALS_VEC_1, RESIDUALS_VEC_2, ANGLES, EXPECTED_ANGLES)
+RESIDUAL_VALS_NOT_ANGLES = zip(RESIDUALS_VEC_1, RESIDUALS_VEC_2, NOT_ANGLES, EXPECTED_NOT_ANGLES)
+
+
+@pytest.mark.parametrize(("first", "second", "angular", "expected"), RESIDUAL_VALS_ANGLES)
+def testResidualAngular(first: float, second: float, angular: bool, expected: float):
+    """Test function for calculating the residual of angle values."""
+    # Normal
+    assert isclose(degrees(residual(radians(first), radians(second), angular)), expected)
+
+    # Distributive
+    assert isclose(
+        degrees(residual(radians(-1.0 * first), radians(-1.0 * second), angular)), -expected
+    )
+
+    # Not Commutative
+    assert isclose(degrees(residual(radians(second), radians(first), angular)), -expected)
+
+    # Invariant to wrapping
+    if angular:
+        assert isclose(
+            degrees(residual(radians(first + 360.0), radians(second), angular)), expected
+        )
+
+
+@pytest.mark.parametrize(("first", "second", "angular", "expected"), RESIDUAL_VALS_NOT_ANGLES)
+def testResidualNotAngular(first: float, second: float, angular: bool, expected: float):
+    """Test function for calculating residual of non-angle values."""
+    # Normal
+    assert isclose(degrees(residual(radians(first), radians(second), angular)), expected)
+
+    # Distributive
+    assert isclose(
+        degrees(residual(radians(-1.0 * first), radians(-1.0 * second), angular)), -expected
+    )
+
+    # Not Commutative
+    assert isclose(degrees(residual(radians(second), radians(first), angular)), -expected)
+
+
+def testResiduals():
+    """Test vector function for calculating residuals of angle and non-angle components."""
+    vec_1 = radians(RESIDUALS_VEC_1)
+    vec_2 = radians(RESIDUALS_VEC_2)
+
+    # Test angular values handled correctly.
+    angles = residuals(vec_1, vec_2, angular=ANGLES)
+    assert allclose(degrees(angles), EXPECTED_ANGLES)
+
+    # Test non-angular values handled correctly.
+    not_angles = residuals(vec_1, vec_2, angular=NOT_ANGLES)
+    assert allclose(degrees(not_angles), EXPECTED_NOT_ANGLES)
+
+    # Test mixed values handled correctly
+    a = radians([10.1, 359.0, 200.0])
+    b = radians([0.1, 1.0, 100.0])
+    expected = [10.0, -2.0, 100.0]
+    angular = array([False, True, False])
+    mixed = residuals(a, b, angular)
+    assert allclose(degrees(mixed), expected)
+
+    # Test bad shape matches
+    with pytest.raises(ShapeError):
+        residuals(a, b, angular[:2])
+
+    with pytest.raises(ShapeError):
+        residuals(a[:2], b, angular)
+
+    with pytest.raises(ShapeError):
+        residuals(a, array([0.1, 1.0, 100.0, 2.0]), angular)
