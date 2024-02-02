@@ -350,6 +350,12 @@ class Scenario(ParallelMixin):
             obs_dict = defaultdict(list)
             for tasking_engine in self._tasking_engines.values():
                 tasking_engine.assess(prior_datetime, self.clock.datetime_epoch)
+
+                # Update sensor boresight, and last time that it made an observation
+                for sensor_change in tasking_engine.sensor_changes:
+                    self.sensor_agents[sensor_change].updateInfo(
+                        tasking_engine.sensor_changes[sensor_change]
+                    )
                 for observation in tasking_engine.observations:
                     obs_dict[observation.target_id].append(observation)
 

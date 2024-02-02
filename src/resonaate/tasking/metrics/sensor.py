@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ...physics import constants as const
 from ...physics.transforms.methods import getSlantRangeVector
 from .metric_base import SensorMetric
 
@@ -31,8 +30,8 @@ def _getDeltaBoresight(estimate_agent: EstimateAgent, sensor_agent: SensingAgent
     return sensor_agent.sensors.deltaBoresight(slant_range_sez[:3])
 
 
-class DeltaPosition(SensorMetric):
-    """Delta position sensor metric.
+class SlewDistanceMaximization(SensorMetric):
+    """Slew Distance Maximization sensor metric.
 
     References:
         :cite:t:`nastasi_2018_diss`, Eqn 5.5
@@ -43,63 +42,87 @@ class DeltaPosition(SensorMetric):
         estimate_agent: EstimateAgent,
         sensor_agent: SensingAgent,
     ) -> float:
-        """Calculate the change in angular position required for an observation.
+        """Calculate the distance in angular position required for an observation.
 
         Args:
             estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
             sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            ``float``: Delta boresight metric
+            ``float``: Slew Distance Maximization metric
         """
-        delta_boresight = _getDeltaBoresight(estimate_agent, sensor_agent)
-        return const.PI - delta_boresight
+        return _getDeltaBoresight(estimate_agent, sensor_agent)
 
 
-class SlewCycle(SensorMetric):
-    """Slew cycle sensor metric."""
+class SlewDistanceMinimization(SensorMetric):
+    """Slew Distance Minimization sensor metric.
+
+    References:
+        :cite:t:`nastasi_2018_diss`, Eqn 5.5
+    """
 
     def calculate(
         self,
         estimate_agent: EstimateAgent,
         sensor_agent: SensingAgent,
     ) -> float:
-        """Calculate the slew frequency for the proposed observation.
+        """Calculate the reciprocal length in angular position required for an observation.
 
         Args:
             estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
             sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            ``float``: Slew cycle metric
+            ``float``: Slew Distance Minimization metric
+        """
+        delta_boresight = _getDeltaBoresight(estimate_agent, sensor_agent)
+        return 1 / delta_boresight
+
+
+class SlewTimeMinimization(SensorMetric):
+    """Minimum slew time sensor metric."""
+
+    def calculate(
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
+    ) -> float:
+        """Calculate the frequency to slew the sensor from the current position to the proposed observation, in seconds.
+
+        Args:
+            estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
+            sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
+
+        Returns:
+            ``float``: Slew minimization metric
         """
         delta_boresight = _getDeltaBoresight(estimate_agent, sensor_agent)
         return sensor_agent.sensors.slew_rate / delta_boresight
 
 
-class TimeToTransit(SensorMetric):
-    """Time-to-transit sensor metric.
+class SlewTimeMaximization(SensorMetric):
+    """Maximum slew time sensor metric.
 
     References:
         :cite:t:`nastasi_2018_diss`, Eqn 5.11 - 5.12
     """
 
     def __init__(self):
-        """Create a :class`.TimeToTransit` metric with a normalization factor."""
+        """Create a :class`.SlewTimeMaximization` metric."""
 
     def calculate(
         self,
         estimate_agent: EstimateAgent,
         sensor_agent: SensingAgent,
     ) -> float:
-        """Calculate the time to slew the sensor from the current position to the proposed observation.
+        """Calculate the time to slew the sensor from the current position to the proposed observation, in seconds.
 
         Args:
             estimate_agent (:class:`.EstimateAgent`): estimate agent for which this metric is being calculated
             sensor_agent (:class:`.SensorAgent`): sensor agent for which this metric is being calculated
 
         Returns:
-            ``float``: Time to transit metric
+            ``float``: time to slew metric
         """
         delta_boresight = _getDeltaBoresight(estimate_agent, sensor_agent)
         return delta_boresight / sensor_agent.sensors.slew_rate

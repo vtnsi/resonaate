@@ -148,6 +148,8 @@ class Sensor(ABC):
         Returns:
             ``list``: :class:`.Observation` for each successful tasked observation
             ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
+            ``ndarray``: 3x1 SEZ boresight unit vector
+            ``float``: :class:`.ScenarioTime` last time observed
         """
         obs_list = []
         missed_observation_list = []
@@ -190,7 +192,7 @@ class Sensor(ABC):
             ]
             obs_list.extend(visible_observations)
 
-        return obs_list, missed_observation_list
+        return obs_list, missed_observation_list, self.boresight, self.time_last_tasked
 
     def attemptObservation(
         self,

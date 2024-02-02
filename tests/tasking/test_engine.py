@@ -54,7 +54,7 @@ def getReward() -> Reward:
             "name": "CostConstrainedReward",
             "metrics": [
                 {"name": "KLDivergence", "parameters": {}},
-                {"name": "DeltaPosition", "parameters": {}},
+                {"name": "SlewDistanceMinimization", "parameters": {}},
                 {"name": "LyapunovStability", "parameters": {}},
             ],
             "parameters": {},
