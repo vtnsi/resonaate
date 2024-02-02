@@ -14,7 +14,12 @@ from resonaate.tasking.metrics.information import (
     ShannonInformation,
 )
 from resonaate.tasking.metrics.metric_base import Metric
-from resonaate.tasking.metrics.sensor import DeltaPosition, SlewCycle, TimeToTransit
+from resonaate.tasking.metrics.sensor import (
+    SlewDistanceMaximization,
+    SlewDistanceMinimization,
+    SlewTimeMaximization,
+    SlewTimeMinimization,
+)
 from resonaate.tasking.metrics.stability import LyapunovStability
 from resonaate.tasking.metrics.state import Range
 from resonaate.tasking.metrics.target import TimeSinceObservation
@@ -222,21 +227,31 @@ class TestSensorMetric:
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
 
-        delta_position = DeltaPosition()
-        delta_pos_value = delta_position.calculate(
+        distance_minimization = SlewDistanceMinimization()
+        distance_minimization_value = distance_minimization.calculate(
             target_agents[target_id], sensor_agents[sensor_id]
         )
-        assert delta_pos_value < 0.0
+        assert distance_minimization_value > 0.0
 
-        slew_cycle = SlewCycle()
-        slew_value = slew_cycle.calculate(target_agents[target_id], sensor_agents[sensor_id])
-        assert slew_value > 0.0
-
-        time_to_transit = TimeToTransit()
-        transit_value = time_to_transit.calculate(
+        distance_maximization = SlewDistanceMaximization()
+        distance_maximization_value = distance_maximization.calculate(
             target_agents[target_id], sensor_agents[sensor_id]
         )
-        assert transit_value > 0.0
+        assert distance_maximization_value > 0.0
+        assert distance_maximization_value > distance_minimization_value
+
+        slew_minimization = SlewTimeMinimization()
+        slew_min_value = slew_minimization.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert slew_min_value > 0.0
+
+        slew_maximization = SlewTimeMaximization()
+        slew_maximization_value = slew_maximization.calculate(
+            target_agents[target_id], sensor_agents[sensor_id]
+        )
+        assert slew_maximization_value > 0.0
+        assert slew_maximization_value > slew_min_value
 
 
 class TestStateMetric:

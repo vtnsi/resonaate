@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import KeyValueStore
 from numpy import zeros
 from sqlalchemy.orm import Query
 
@@ -27,7 +25,6 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
-    from ...agents.sensing_agent import SensingAgent
     from ...physics.time.stardate import JulianDate
     from ...sensors.sensor_base import Sensor
     from ..decisions import Decision
@@ -189,9 +186,6 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             self._createLoadedObs(observation, sensor_agents[observation.sensor_id].sensors)
             for observation in imported_observations
         ]
-
-    def _fetchSensorAgents(self) -> dict[int, SensingAgent]:
-        return loads(KeyValueStore.getValue("sensor_agents"))
 
     def _createLoadedObs(self, observation: Observation, sensor: Sensor) -> Observation:
         observation.measurement = sensor.measurement

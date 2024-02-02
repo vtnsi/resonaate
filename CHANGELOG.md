@@ -63,6 +63,7 @@ ______________________________________________________________________
 - GPB1 & SMM post-convergence re-initialization (see !164)
 - Ability to turn MMAE and IOD on simultaneously (see !164)
 - UKF parameter overwritten when `kappa=0` (see !245)
+- Sensor boresight and time_last_tasked were not being updated (see #203)
 
 ### Security
 
@@ -212,7 +213,7 @@ ______________________________________________________________________
 - `MeasurementType.calculate()`, `Measurement.calculateMeasurement()`, and `getSlantRangeVector()` take sensor/target ECI states and UTC as parameters (see #158)
 - refactored (and validated) `getEarthLimbConeAngle()` into `getBodyLimbConeAngle()` and `checkSpaceSensorEarthLimbObscuration()` (see #155)
 - renamed `Sensor.aperture_area` to `effective_aperture_area`
-- moved `sensors.measurement` to `physics.measurements` and combined with `physics.measurement_utls` (see #176 and !186)
+- moved `sensors.measurement` to `physics.measurements` and combined with `physics.measurement_utils` (see #176 and !186)
 - refactored `fieldOfViewFactory()` and most of `sensorFactory()` into respective `fromConfig()` class methods (see #176 and !186)
 - `Sensor.collectObservations()` slews sensor boresight to target before attempting observations (see !198)
 

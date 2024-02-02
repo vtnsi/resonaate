@@ -175,6 +175,10 @@ class SensingAgent(Agent):
             )
         ]
 
+    def updateInfo(self, sensor_change):
+        self.sensors.boresight = sensor_change["boresight"]
+        self.sensors.time_last_tasked = sensor_change["time_last_tasked"]
+
     def getCurrentEphemeris(self) -> TruthEphemeris:
         """Returns the SensingAgent's current ephemeris information.
 

@@ -425,7 +425,7 @@ def testCollectObservations(
     mocked_primary_target.visual_cross_section = 25.0
 
     # Test when target can be collected on
-    good_obs, _ = mocked_sensing_agent.sensors.collectObservations(
+    good_obs, _, _, _ = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
     )
     assert len(good_obs) == 1
@@ -447,7 +447,7 @@ def testCollectObservations(
     # pylint: disable=protected-access
     mocked_sensing_agent.sensors.boresight = mocked_sensing_agent.sensors._setInitialBoresight()
     with patch.object(mocked_sensing_agent.sensors, "canSlew", return_value=True):
-        good_obs, missed_obs = mocked_sensing_agent.sensors.collectObservations(
+        good_obs, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
             mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
         )
         assert not good_obs
@@ -469,7 +469,7 @@ def testCollectObservations(
     # pylint: disable=protected-access
     mocked_sensing_agent.sensors.boresight = mocked_sensing_agent.sensors._setInitialBoresight()
     with patch.object(mocked_sensing_agent.sensors, "canSlew", return_value=False):
-        good_obs, missed_obs = mocked_sensing_agent.sensors.collectObservations(
+        good_obs, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
             mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
         )
         assert not good_obs
@@ -518,7 +518,7 @@ def testCollectObservationsWithBackground(
 
     mocked_background_target.eci_state = mocked_background_target.initial_state
     mocked_background_target.visual_cross_section = 25.0
-    good_obs, _ = mocked_sensing_agent.sensors.collectObservations(
+    good_obs, _, _, _ = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_background_target],
@@ -549,7 +549,7 @@ def testNoMissedObservation(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
-    _, missed_obs = mocked_sensing_agent.sensors.collectObservations(
+    _, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
     )
     assert not missed_obs
@@ -578,7 +578,7 @@ def testMissedObservation(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
-    _, bad_obs = mocked_sensing_agent.sensors.collectObservations(
+    _, bad_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
         mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
     )
     assert len(bad_obs) == 1
