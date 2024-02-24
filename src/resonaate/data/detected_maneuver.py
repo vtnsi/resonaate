@@ -13,7 +13,7 @@ class DetectedManeuver(Base, _DataMixin):
     """Snapshot of maneuver detection."""
 
     __tablename__ = "detected_maneuvers"
-    id = Column(Integer, primary_key=True)  # noqa: A003
+    id = Column(Integer, primary_key=True)
 
     ## Defines the epoch associated with the maneuver detection data
     # Many to one relation with :class:`.Epoch`

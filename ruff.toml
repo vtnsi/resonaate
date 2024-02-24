@@ -11,12 +11,12 @@ extend-exclude = [
 ]
 
 # Extended set of fixable rules
-extend-fixable = [
+lint.extend-fixable = [
     "B",
 ]
 
 # Extended set of ignored rules
-ignore = [
+lint.ignore = [
     "D203",     # requires one blank line before class.
     "D213",     # multiline summary first line.
     "ANN101",   # Missing type annotation for `self` in method
@@ -35,7 +35,7 @@ ignore = [
 # "DTZ",      # flake8-datetimez
 # "PTH",      # flake8-use-pathlib
 # "ANN",      # flake8-annotations
-extend-select = [
+lint.extend-select = [
     "W",        # warnings - mostly whitespace
     "C90",      # mccabe code complexity
     "UP",       # pyupgrade
@@ -68,7 +68,7 @@ extend-select = [
 fix = false
 
 # Avoid automatically removing unused imports in __init__.py files
-ignore-init-module-imports = true
+lint.ignore-init-module-imports = true
 
 # Line length to enforce
 line-length = 110
@@ -83,7 +83,7 @@ src = ["src", "tests"]
 target-version = "py39"
 
 # Extended set of ignores per-file
-[extend-per-file-ignores]
+[lint.extend-per-file-ignores]
 "__init__.py" = ["E402"]
 "tests/*.py" = [
     "D100",
@@ -117,7 +117,7 @@ target-version = "py39"
 ]
 
 ### flake8-annotations settings ###
-[flake8-annotations]
+[lint.flake8-annotations]
 # Suppress fixes for *args & **kwargs types
 allow-star-arg-any = true
 
@@ -131,12 +131,12 @@ mypy-init-return = true
 suppress-dummy-args = true
 
 ### pydocstyle settings ###
-[pydocstyle]
+[lint.pydocstyle]
 # USe Google style docstrings
 convention = "google"
 
 ### pylint settings ###
-[pylint]
+[lint.pylint]
 # Maximum number of arguments for function / method.
 max-args=8
 

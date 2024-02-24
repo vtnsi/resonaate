@@ -16,7 +16,7 @@ class FilterStep(
     """Outputs valuable information from the Unscented Kalman Filter from each filter observation."""
 
     __tablename__ = "filterstep"
-    id = Column(Integer, primary_key=True)  # noqa: A003
+    id = Column(Integer, primary_key=True)
 
     ## Defines the epoch associated with the maneuver detection data
     # Many to one relation with :class:`.Epoch`
