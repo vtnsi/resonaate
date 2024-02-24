@@ -1,4 +1,5 @@
 """Defines the reward functions used to quantify tasking solutions."""
+
 from __future__ import annotations
 
 # Standard Library Imports

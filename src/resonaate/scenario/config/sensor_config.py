@@ -1,4 +1,5 @@
 """Defines sensor config types for describing the sensor hosted by a sensing agent."""
+
 from __future__ import annotations
 
 # Standard Library Imports

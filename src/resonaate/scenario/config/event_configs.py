@@ -1,4 +1,5 @@
 """Submodule defining the 'event' configuration objects."""
+
 from __future__ import annotations
 
 # Standard Library Imports

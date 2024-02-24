@@ -1,4 +1,5 @@
 """:class:`.Job` handler class that manages estimate prediction logic."""
+
 from __future__ import annotations
 
 # Standard Library Imports

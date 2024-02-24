@@ -1,4 +1,5 @@
 """Defines state config types for describing agent's location and velocity."""
+
 from __future__ import annotations
 
 # Standard Library Imports

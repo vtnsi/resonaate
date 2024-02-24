@@ -1,4 +1,5 @@
 """Define :class:`.Event` abstract base class and common functionality."""
+
 from __future__ import annotations
 
 # Standard Library Imports

@@ -1,4 +1,5 @@
 """Manage shared database connections."""
+
 from __future__ import annotations
 
 # Standard Library Imports

@@ -1,4 +1,5 @@
 """Abstract :class:`.Reward` base class defining the reward API."""
+
 from __future__ import annotations
 
 # Standard Library Imports

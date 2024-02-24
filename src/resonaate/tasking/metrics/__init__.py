@@ -1,4 +1,5 @@
 """Defines the metrics used to measure tasking performance."""
+
 from __future__ import annotations
 
 # Local Imports

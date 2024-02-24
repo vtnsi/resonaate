@@ -1,4 +1,5 @@
 """Tests for :func:`.runResonaate`."""
+
 from __future__ import annotations
 
 # Standard Library Imports

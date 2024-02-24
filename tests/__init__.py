@@ -1,4 +1,5 @@
 """Configure importable things that aren't pytest fixtures."""
+
 from __future__ import annotations
 
 # Standard Library Imports

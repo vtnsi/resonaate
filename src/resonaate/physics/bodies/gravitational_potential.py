@@ -1,4 +1,5 @@
 """Module for defining the nonspherical gravity potential of a central body being orbited by an object."""
+
 from __future__ import annotations
 
 # Standard Library Imports

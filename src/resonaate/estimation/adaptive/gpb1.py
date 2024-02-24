@@ -1,4 +1,5 @@
 """Defines the :class:`.GeneralizedPseudoBayesian1` class."""
+
 from __future__ import annotations
 
 # Standard Library Imports

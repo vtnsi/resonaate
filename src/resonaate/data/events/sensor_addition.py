@@ -1,4 +1,5 @@
 """Defines the :class:`.SensorAdditionEvent` data table class."""
+
 from __future__ import annotations
 
 # Standard Library Imports

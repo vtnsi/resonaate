@@ -1,4 +1,5 @@
 """Defines the :class:`.Task` data table class."""
+
 from __future__ import annotations
 
 # Third Party Imports

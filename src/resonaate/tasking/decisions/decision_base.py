@@ -1,4 +1,5 @@
 """Abstract :class:`.Decision` base class defining the decision API."""
+
 from __future__ import annotations
 
 # Standard Library Imports

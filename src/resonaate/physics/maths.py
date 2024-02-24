@@ -3,6 +3,7 @@
 * `scipy docs <https://docs.scipy.org/doc/scipy/index.html>`_
 * `numpy docs <https://numpy.org/doc/stable/>`_
 """
+
 from __future__ import annotations
 
 # Third Party Imports

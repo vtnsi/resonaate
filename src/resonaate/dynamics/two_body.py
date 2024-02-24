@@ -1,4 +1,5 @@
 """Defines the :class:`.TwoBody` class defining Keplerian motion."""
+
 from __future__ import annotations
 
 # Third Party Imports

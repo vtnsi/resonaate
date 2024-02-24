@@ -1,4 +1,5 @@
 """Defines the declarative base for data tables."""
+
 from __future__ import annotations
 
 # Third Party Imports

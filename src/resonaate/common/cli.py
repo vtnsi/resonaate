@@ -1,4 +1,5 @@
 """Define the command line interface for the RESONAATE simulation tool."""
+
 from __future__ import annotations
 
 # Standard Library Imports

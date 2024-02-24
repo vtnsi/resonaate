@@ -247,15 +247,18 @@ def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: Sensing
     # Test target inside FOV
     agent.eci_state = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))  # inside FOV
 
-    with patch.object(
-        sensor,
-        "isVisible",
-        return_value=(True, Explanation.VISIBLE),
-    ) as mock_visible_check, patch.object(
-        Observation,
-        "fromMeasurement",
-        return_value=create_autospec(Observation, instance=True),
-    ) as mock_observation_from_measurement:
+    with (
+        patch.object(
+            sensor,
+            "isVisible",
+            return_value=(True, Explanation.VISIBLE),
+        ) as mock_visible_check,
+        patch.object(
+            Observation,
+            "fromMeasurement",
+            return_value=create_autospec(Observation, instance=True),
+        ) as mock_observation_from_measurement,
+    ):
         observation = sensor.attemptObservation(agent, pointing_sez)
         assert isinstance(observation, Observation)
         mock_visible_check.assert_called_once()

@@ -1,4 +1,5 @@
 """Defines `Ephemeris` data table classes."""
+
 from __future__ import annotations
 
 # Third Party Imports
@@ -206,7 +207,9 @@ class EstimateEphemeris(Base, _EphemerisMixin):
         A `covariance` keyword is provided as a 6x6 matrix instead of the `covar_[]` keywords.
         """
         if kwargs.get("covariance") is None:
-            raise KeyError("[Ephemeris.fromCovarianceMatrix()] Missing keyword argument 'covariance'.")
+            raise KeyError(
+                "[Ephemeris.fromCovarianceMatrix()] Missing keyword argument 'covariance'."
+            )
 
         # Parse covariance matrix into separate columns, one for each matrix element
         kwargs["covar_00"] = kwargs["covariance"][0][0]

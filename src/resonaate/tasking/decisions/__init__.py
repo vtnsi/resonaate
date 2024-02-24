@@ -1,4 +1,5 @@
 """Defines the decisions algorithms available in RESONAATE."""
+
 from __future__ import annotations
 
 # Standard Library Imports

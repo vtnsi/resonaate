@@ -1,4 +1,5 @@
 """Abstract :class:`.Metric` base class defining the metric API."""
+
 from __future__ import annotations
 
 # Standard Library Imports

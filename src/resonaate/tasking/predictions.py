@@ -1,4 +1,5 @@
 """Define implemented prediction functions used to determine sensor task opportunities."""
+
 from __future__ import annotations
 
 # Standard Library Imports

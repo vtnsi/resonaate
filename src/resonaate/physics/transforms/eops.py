@@ -3,6 +3,7 @@
 This module is for calculating values of EOPs for different dates. This was split out from the
 reductions.py module for later expansion/customization of how this works.
 """
+
 from __future__ import annotations
 
 # Standard Library Imports

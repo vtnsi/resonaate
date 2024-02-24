@@ -1,4 +1,5 @@
 """Defines methods of solving Kepler's Equation & Kepler's Problem."""
+
 from __future__ import annotations
 
 # Third Party Imports

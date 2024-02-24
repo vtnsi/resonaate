@@ -1,4 +1,5 @@
 """Defines target-focused tasking metrics."""
+
 from __future__ import annotations
 
 # Standard Library Imports

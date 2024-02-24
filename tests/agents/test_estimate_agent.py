@@ -1,4 +1,5 @@
 """Test :class:`.EstimateAgent`."""
+
 # pylint:disable=unused-argument
 from __future__ import annotations
 

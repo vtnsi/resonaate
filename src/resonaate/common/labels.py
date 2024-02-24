@@ -1,4 +1,5 @@
 """Hold common label types for easier importing."""
+
 from __future__ import annotations
 
 # Standard Library Imports

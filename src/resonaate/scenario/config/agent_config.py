@@ -1,4 +1,5 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
+
 from __future__ import annotations
 
 # Standard Library Imports

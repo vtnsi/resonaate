@@ -1,4 +1,5 @@
 """Test initial_orbit_determination."""
+
 # pylint: disable=unused-argument
 from __future__ import annotations
 

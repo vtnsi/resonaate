@@ -1,4 +1,5 @@
 """Defines the :class:`.AdaptiveFilter` class to formalize an interface for adaptive filtering algorithms."""
+
 from __future__ import annotations
 
 # Standard Library Imports

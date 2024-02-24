@@ -1,4 +1,5 @@
 """Package describing events that take place during :class:`.Dynamics`'s propagation."""
+
 from __future__ import annotations
 
 # Standard Library Imports

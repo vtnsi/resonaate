@@ -1,4 +1,5 @@
 """Defines abstract base classes used throughout the ``job_handlers`` subpackage."""
+
 from __future__ import annotations
 
 # Standard Library Imports

@@ -1,4 +1,5 @@
 """Abstract base class that defines a common interface for all `Agent` classes."""
+
 from __future__ import annotations
 
 # Standard Library Imports

@@ -1,4 +1,5 @@
 """Define implemented decision algorithms used to optimize tasked sensors."""
+
 from __future__ import annotations
 
 # Standard Library Imports

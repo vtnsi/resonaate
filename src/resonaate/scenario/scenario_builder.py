@@ -1,4 +1,5 @@
 """Defines the :class:`.ScenarioBuilder` class to build valid :class:`.Scenario` objects from given configurations."""
+
 from __future__ import annotations
 
 # Standard Library Imports

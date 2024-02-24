@@ -1,4 +1,5 @@
 r"""Defines the Unscented Kalman Filter class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
