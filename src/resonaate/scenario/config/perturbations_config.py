@@ -1,4 +1,5 @@
 """Submodule defining the 'perturbations' configuration section."""
+
 from __future__ import annotations
 
 # Standard Library Imports

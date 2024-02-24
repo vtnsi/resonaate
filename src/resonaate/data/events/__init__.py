@@ -2,6 +2,7 @@
 
 This module defines the common functions used to interact with the events data objects.
 """
+
 from __future__ import annotations
 
 # Standard Library Imports

@@ -1,4 +1,5 @@
 """Abstract :class:`.FieldOfView` base class and subclasses for field of view interface."""
+
 from __future__ import annotations
 
 # Standard Library Imports

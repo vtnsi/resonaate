@@ -1,4 +1,5 @@
 """Defines platform config types for describing an agent's host entity and its behavior."""
+
 from __future__ import annotations
 
 # Standard Library Imports

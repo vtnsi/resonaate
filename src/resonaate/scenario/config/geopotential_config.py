@@ -1,4 +1,5 @@
 """Submodule defining the 'geopotential' configuration section."""
+
 from __future__ import annotations
 
 # Standard Library Imports

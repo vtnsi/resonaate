@@ -1,4 +1,5 @@
 """Test Dynamics module."""
+
 from __future__ import annotations
 
 # Third Party Imports

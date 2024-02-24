@@ -1,4 +1,5 @@
 """Agents conftest."""
+
 from __future__ import annotations
 
 # Standard Library Imports

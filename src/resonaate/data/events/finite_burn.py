@@ -1,4 +1,5 @@
 """Defines the :class:`.ScheduledFiniteBurnEvent` data table class."""
+
 from __future__ import annotations
 
 # Standard Library Imports

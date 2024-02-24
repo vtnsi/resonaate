@@ -19,6 +19,7 @@ This can be done in two primary ways:
 
 2. A direct definition of the process noise in discrete time (see :func:`.discreteWhiteNoise`)
 """
+
 from __future__ import annotations
 
 # Standard Library Imports

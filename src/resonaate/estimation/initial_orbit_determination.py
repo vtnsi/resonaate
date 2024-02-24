@@ -1,4 +1,5 @@
 """Defines class structure for IOD methods that utilize the ``physics.orbit_determination`` module."""
+
 from __future__ import annotations
 
 # Standard Library Imports

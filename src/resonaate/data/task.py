@@ -1,4 +1,5 @@
 """Defines the :class:`.Task` data table class."""
+
 from __future__ import annotations
 
 # Third Party Imports
@@ -13,7 +14,7 @@ class Task(Base, _DataMixin):
     """Represents tasking information in database."""
 
     __tablename__ = "tasks"
-    id = Column(Integer, primary_key=True)  # noqa: A003
+    id = Column(Integer, primary_key=True)
 
     ## Defines the epoch associated with the observation data
     # Many to one relation with :class:`.Epoch`

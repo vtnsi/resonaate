@@ -1,4 +1,5 @@
 """Defines a global set of configurations that define how the simulation operates."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -156,9 +157,10 @@ class BehavioralConfig:
         if config_file_path is None:
             res = resources.files("resonaate.common").joinpath(self.DEFAULT_CONFIG_FILE)
             # Read in the config file if it exists, otherwise use the defaults
-            with resources.as_file(res) as res_filepath, open(
-                res_filepath, encoding="utf-8"
-            ) as config_file:
+            with (
+                resources.as_file(res) as res_filepath,
+                open(res_filepath, encoding="utf-8") as config_file,
+            ):
                 self._parser.read_file(config_file)
 
         elif Path(config_file_path).exists():

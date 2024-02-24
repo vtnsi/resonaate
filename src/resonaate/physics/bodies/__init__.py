@@ -1,4 +1,5 @@
 """Contains classes defining Solar System bodies and their properties."""
+
 from __future__ import annotations
 
 # Local Imports

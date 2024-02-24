@@ -1,4 +1,5 @@
 """Defines the :class:`.SequentialFilter` base class to formalize an interface for sequential filtering algorithms."""
+
 from __future__ import annotations
 
 # Standard Library Imports

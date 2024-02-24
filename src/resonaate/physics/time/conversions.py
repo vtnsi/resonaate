@@ -1,4 +1,5 @@
 """Helper functions that convert between different forms of time."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -57,9 +58,7 @@ def greenwichApparentTime(year, elapsed_days, eq_equinox):
     gmst_jan1 = greenwichMeanTime(julian_date_jan1)
     # Earth's rotation rate (Eq. 3-40 Vallado Ed. 4)
     earth_rotation_rate = (
-        1.002737909350795
-        + 5.9006e-11 * julian_centuries_jan1
-        - 5.9e-15 * julian_centuries_jan1**2
+        1.002737909350795 + 5.9006e-11 * julian_centuries_jan1 - 5.9e-15 * julian_centuries_jan1**2
     )
     # GMST of the exact time
     gmst = gmst_jan1 + earth_rotation_rate * elapsed_days * const.TWOPI

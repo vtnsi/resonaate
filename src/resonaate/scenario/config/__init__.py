@@ -1,4 +1,5 @@
 """Subpackage defining how a :class:`.Scenario` can be configured."""
+
 from __future__ import annotations
 
 # Standard Library Imports

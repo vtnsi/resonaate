@@ -1,4 +1,5 @@
 """Define implemented reward functions used to evaluate sensor task opportunities."""
+
 from __future__ import annotations
 
 # Standard Library Imports

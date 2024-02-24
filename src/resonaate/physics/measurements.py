@@ -1,4 +1,5 @@
 """Functions that define physics related to sensors."""
+
 from __future__ import annotations
 
 # Standard Library Imports

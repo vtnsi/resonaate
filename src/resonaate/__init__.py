@@ -3,6 +3,7 @@
 The top-level module is documented below, which mainly serves as a command line entry point for
 running large, parallelized SDA scenarios.
 """
+
 from __future__ import annotations
 
 __version__ = "3.0.0"

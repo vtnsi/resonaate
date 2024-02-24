@@ -1,4 +1,5 @@
 """Defines station-keeping events that allow satellites to control their orbit "autonomously"."""
+
 from __future__ import annotations
 
 # Standard Library Imports

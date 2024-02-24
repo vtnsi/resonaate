@@ -1,4 +1,5 @@
 """Abstract :class:`.Sensor` base class which defines the common sensor interface."""
+
 from __future__ import annotations
 
 # Standard Library Imports

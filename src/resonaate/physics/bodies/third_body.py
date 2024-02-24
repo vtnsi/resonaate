@@ -70,6 +70,7 @@ See Also:
 .. _mapparms:
     https://numpy.org/devdocs/reference/generated/numpy.polynomial.polyutils.mapparms.html#numpy.polynomial.polyutils.mapparms
 """
+
 from __future__ import annotations
 
 # Standard Library Imports

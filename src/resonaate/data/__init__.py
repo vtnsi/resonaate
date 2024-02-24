@@ -2,6 +2,7 @@
 
 This module holds common functions and attributes used in many data modules.
 """
+
 from __future__ import annotations
 
 # Standard Library Imports

@@ -1,4 +1,5 @@
 """Defines the :class:`.DataInterface` abstract base class."""
+
 from __future__ import annotations
 
 # Standard Library Imports

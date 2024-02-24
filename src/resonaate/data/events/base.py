@@ -1,4 +1,5 @@
 """Define :class:`.Event` abstract base class and common functionality."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -81,7 +82,7 @@ class Event(_DataMixin, Base):
     EVENT_TYPE: str = "event"
     """``str``: Name of this type of event."""
 
-    id = Column(Integer, primary_key=True)  # noqa: A003
+    id = Column(Integer, primary_key=True)
     """``int``: Primary key for the 'events' table."""
 
     scope = Column(String(128), nullable=False)

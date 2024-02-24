@@ -1,4 +1,5 @@
 """Defines finite thrust burn and maneuver events for basic control of satellites."""
+
 from __future__ import annotations
 
 # Standard Library Imports

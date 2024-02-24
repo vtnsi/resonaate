@@ -1,4 +1,5 @@
 """Defines the :class:`.ScenarioClock` class to track simulation time."""
+
 from __future__ import annotations
 
 # Standard Library Imports

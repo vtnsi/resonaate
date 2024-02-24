@@ -1,4 +1,5 @@
 """Defines dynamics of agents that can be used in RESONAATE simulations."""
+
 from __future__ import annotations
 
 # Standard Library Imports

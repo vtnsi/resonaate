@@ -1,4 +1,5 @@
 """Define a collection of common functions used across the orbits package."""
+
 from __future__ import annotations
 
 # Third Party Imports

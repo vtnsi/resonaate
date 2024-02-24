@@ -1,4 +1,5 @@
 """Defines the abstract base class :class:`.Celestial`."""
+
 from __future__ import annotations
 
 # Standard Library Imports

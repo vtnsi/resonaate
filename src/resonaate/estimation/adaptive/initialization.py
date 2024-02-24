@@ -1,4 +1,5 @@
 """Define MMAE initialization algorithms."""
+
 from __future__ import annotations
 
 # Standard Library Imports

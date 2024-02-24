@@ -1,4 +1,5 @@
 """Defines the :class:`.TargetAgent` class."""
+
 from __future__ import annotations
 
 # Standard Library Imports

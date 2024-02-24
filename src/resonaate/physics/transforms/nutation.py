@@ -2,6 +2,7 @@
 
 This module is for storing coefficients for different nutation series.
 """
+
 from __future__ import annotations
 
 # Standard Library Imports

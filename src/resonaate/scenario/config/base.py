@@ -1,4 +1,5 @@
 """Submodule defining base classes for use in the ``scenario.config`` module."""
+
 from __future__ import annotations
 
 # Standard Library Imports

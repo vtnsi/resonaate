@@ -1,4 +1,5 @@
 """Defines the :class:`.Scenario` class which controls RESONAATE simulations."""
+
 from __future__ import annotations
 
 # Standard Library Imports
