@@ -32,7 +32,7 @@ dev = [
     "mdformat-myst==0.1.5",
     "mdformat-gfm==0.3.6",
     # Pre-commit stuff
-    "pre-commit==3.6.1",
+    "pre-commit==3.6.2",
     # Misc.
     "check-manifest==0.49",
 ]
