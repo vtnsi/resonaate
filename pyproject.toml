@@ -20,7 +20,7 @@ requires-python = ">=3.9"
 dev = [
     # Linting
     "ruff==0.2.2",
-    "pylint==3.0.4",
+    "pylint==3.1.0",
     # Type Checking
     "mypy==1.8.0",
     "types-sqlalchemy==1.4.53.38",
