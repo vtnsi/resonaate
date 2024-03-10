@@ -19,7 +19,7 @@ requires-python = ">=3.9"
 [project.optional-dependencies]
 dev = [
     # Linting
-    "ruff==0.3.0",
+    "ruff==0.3.2",
     "pylint==3.1.0",
     # Type Checking
     "mypy==1.8.0",
