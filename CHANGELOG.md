@@ -78,6 +78,7 @@ ______________________________________________________________________
 
 - Migrated to usage of `ruff` for linting, removing `flake8` and all plugins completely as well as most of `pylint` (see #194 & !239)
 - Apply various fixes for new linting rules from `ruff` (see !239)
+- Develop dependency conflict (see #206 & !298)
 
 ### CI
 
