@@ -21,7 +21,7 @@
 # Docker images for different Pythons
 .python312: &python312
   extends: .python-base
-  image: python:3.11-bullseye
+  image: python:3.12-bullseye
 
 .python311: &python311
   extends: .python-base
