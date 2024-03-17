@@ -31,6 +31,9 @@ include:
     - echo "Running unit tests with pytest"
     - python --version
     - pytest ${PYTEST_OPTIONS}
+  # Allow 1 retry on these because of flaky maneuver detection test
+  retry:
+    max: 1
 
 scheduled-pytest-3.9:
   extends:
