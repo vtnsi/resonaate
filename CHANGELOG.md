@@ -64,6 +64,7 @@ ______________________________________________________________________
 - Ability to turn MMAE and IOD on simultaneously (see !164)
 - UKF parameter overwritten when `kappa=0` (see !245)
 - Sensor boresight and time_last_tasked were not being updated (see #203)
+- Properly point RESONAATE at valid `mjolnir` version (see #207 & !299)
 
 ### Security
 
@@ -79,10 +80,12 @@ ______________________________________________________________________
 - Migrated to usage of `ruff` for linting, removing `flake8` and all plugins completely as well as most of `pylint` (see #194 & !239)
 - Apply various fixes for new linting rules from `ruff` (see !239)
 - Develop dependency conflict (see #206 & !298)
+- Update `make install` to use new `mjolnir` optional dependency (see !299)
 
 ### CI
 
-*related to the continuous integration system*
+- Added 3.12 nightly test job (see !299)
+- Allow nightly test jobs to fail once and retry (see !299)
 
 ## [3.0.0][v3.0.0] - 2023-04-07
 
