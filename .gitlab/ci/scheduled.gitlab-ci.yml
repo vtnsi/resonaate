@@ -49,3 +49,8 @@ scheduled-pytest-3.11:
   extends:
     - .scheduled-pytest
   image: python:3.11-bullseye
+
+scheduled-pytest-3.12:
+  extends:
+    - .scheduled-pytest
+  image: python:3.12-bullseye

@@ -48,7 +48,7 @@ publish-pages:
 publish-pkg:
   extends:
     - .publish-base
-    - .python-latest
+    - .python-oldest
   before_script:
     - !reference [.create-venv, before_script]
     - python3 -m pip install twine

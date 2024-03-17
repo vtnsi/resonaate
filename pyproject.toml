@@ -82,7 +82,7 @@ testpaths = ["tests"]
 # Line length recommendation
 line-length = 99
 # Python versions to target
-target-version = ["py39", "py310", "py311"]
+target-version = ["py39", "py310", "py311", "py312"]
 
 [tool.isort]
 # Play nicely with black

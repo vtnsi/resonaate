@@ -27,7 +27,7 @@ include:
 build-pkg:
   extends:
     - .build-base
-    - .python-latest
+    - .python-oldest
   before_script:
     - !reference [.pip-base, before_script]
     - python3 -m pip install build[virtualenv]
@@ -54,7 +54,7 @@ build-pkg:
 build-docs:
   extends:
     - .build-base
-    - .python-latest
+    - .python-oldest
   before_script:
     - !reference [.pip-doc, before_script]
   script:
