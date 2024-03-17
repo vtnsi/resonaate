@@ -29,7 +29,7 @@ install:
 	@echo "================="
 	@echo "Developer Install"
 	@echo "================="
-	pip install -e ".[dev,test,doc]"
+	pip install -e ".[mjolnir,dev,test,doc]"
 	pre-commit install
 	@echo ""
 
