@@ -57,6 +57,7 @@ venv/
 README.html
 README.pdf
 *.pdf
+**/sg_execution_times.rst
 
 # Mac stuff
 *.DS_Store

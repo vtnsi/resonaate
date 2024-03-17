@@ -14,7 +14,7 @@ include:
 .check-base:
   stage: check
   extends:
-    - .python39
+    - .python-oldest
     - .rules:default
   before_script:
     - !reference [.pip-dev, before_script]

@@ -19,6 +19,10 @@
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 # Docker images for different Pythons
+.python312: &python312
+  extends: .python-base
+  image: python:3.12-bullseye
+
 .python311: &python311
   extends: .python-base
   image: python:3.11-bullseye
@@ -31,5 +35,5 @@
   extends: .python-base
   image: python:3.9-bullseye
 
-.python-latest: *python311
+.python-latest: *python312
 .python-oldest: *python39
