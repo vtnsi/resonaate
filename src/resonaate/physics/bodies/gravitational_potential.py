@@ -169,8 +169,8 @@ def nonSphericalAcceleration(
         cb_radius (``float``): spherical radius of the central body (km).
         c (``ndarray``): cosine geopotential coefficients, not normalized.
         s (``ndarray``): sine geopotential coefficients, not normalized.
-        degree (``int``): maximum degree (:math:`n`) of the gravity model
-        order (``int``): maximum order (:math`m`) of the gravity model
+        max_degree (``int``): maximum degree (:math:`n`) of the gravity model
+        max_order (``int``): maximum order (:math`m`) of the gravity model
 
     Returns:
         ``ndarray``: vector of geopotential acceleration terms in ITRF/ECEF coordinates

@@ -32,7 +32,7 @@ def fileChecker(filepath):
 def getCommandLineParser():
     """Create parser for command line arguments.
 
-    Returns
+    Returns:
         ``argparse.ArgumentParser``: valid parser object
     """
     parser = argparse.ArgumentParser(description="RESONAATE Command Line Interface")

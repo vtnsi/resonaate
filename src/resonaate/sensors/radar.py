@@ -119,6 +119,7 @@ class Radar(Sensor):
 
         Args:
             sensor_config (RadarConfig): radar sensor configuration object.
+            field_of_view (FieldOfView): sensor field of view model.
 
         Returns:
             Self: constructed radar sensor object.

@@ -234,7 +234,7 @@ class AgentPropagationRegistration(CallbackRegistration):
         KeywordArgs:
             new_time (:class:`.ScenarioTime`): payload indicating the current simulation time.
 
-        Returns
+        Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
         new_time = kwargs["new_time"]

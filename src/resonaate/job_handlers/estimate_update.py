@@ -76,7 +76,7 @@ class EstimateUpdateRegistration(CallbackRegistration):
             estimate_id (``int``): ID associated with the :class:`.EstimateAgent` to be updated.
             observations (``list``): :class:`.Observation` objects with which to update the :class:`EstimateAgent`.
 
-        Returns
+        Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
         estimate_id = kwargs["estimate_id"]

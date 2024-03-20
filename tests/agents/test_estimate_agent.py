@@ -480,7 +480,6 @@ def testGestFilterSteps(estimate_agent: EstimateAgent, observations: Observation
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
         observations (:class:`.Observation`): Observation tuple fixture
     """
-
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
     estimate_agent.nominal_filter.forecast(observations)
     estimate_agent.updateEstimate(observations)

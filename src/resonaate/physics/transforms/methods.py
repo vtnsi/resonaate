@@ -77,7 +77,7 @@ def ecef2eci(x_ecef: ndarray, utc_date: datetime) -> ndarray:
         :cite:t:`vallado_2013_astro`, Sections 3.7 - 3.7.2
 
     Args:
-        x_eci (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
+        x_ecef (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
         utc_date (``datetime``): UTC date and time that this transformation takes place.
 
     Returns:
@@ -623,9 +623,9 @@ def radec2razel(
         rng (``float``): topocentric equatorial range to target (km)
         dec (``float``): topocentric equatorial declination angle [-pi/2, pi/2] (radians)
         ra (``float``): topocentric equatorial right ascension angle [0, 2pi] (radians)
-        rng_rate (``float``): topocentric equatorial range rate of target (km/sec)
-        dec_rate (``float``): topocentric equatorial declination angular rate (radians/sec)
-        ra_rate (``float``): topocentric equatorial right ascension angular rate (radians/sec)
+        rng_rt (``float``): topocentric equatorial range rate of target (km/sec)
+        dec_rt (``float``): topocentric equatorial declination angular rate (radians/sec)
+        ra_rt (``float``): topocentric equatorial right ascension angular rate (radians/sec)
         observer_eci (``np.ndarray``): 6x1 ECI state vector of observer (km; km/sec)
         utc_date (``datetime``): UTC date and time that this transformation takes place.
 
@@ -648,6 +648,7 @@ def eci2radec(target_eci: ndarray, observer_eci: ndarray, utc_date: datetime) ->
     Args:
         target_eci (``ndarray``): 6x1 ECI state vector of target
         observer_eci (``ndarray``): 6x1 ECI state vector of observer
+        utc_date (datetime): epoch datetime for the conversion
 
     Returns:
         rng (``float``): topocentric equatorial range to target (km)

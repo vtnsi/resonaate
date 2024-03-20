@@ -62,6 +62,7 @@ lint.extend-select = [
     "NPY",      # numpy
     "PERF",     # perflint
     "RUF",      # ruff
+    "D",        # pydocstyle
 ]
 
 # Don't auto-fix rules (can be overidden with --fix argument)
@@ -103,8 +104,7 @@ target-version = "py39"
     "PT"
 ]
 "docs/*.py" = [
-    "D100",
-    "D104",
+    "D",
     "E501",
     "E402",
     "INP",

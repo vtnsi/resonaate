@@ -44,6 +44,7 @@ class CostConstrainedReward(Reward):
             metrics (``list``): :class:`.Metric` instances for calculating the reward
             delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
+            kwargs (Any): variable keyword arguments
 
         Raises:
             ValueError: raised if not supplied three metric objects
@@ -132,6 +133,7 @@ class CombinedReward(Reward):
             metrics (``list``): :class:`.Metric` instances for calculating the reward
             delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
+            kwargs (Any): variable keyword arguments
 
         Raises:
             ValueError: raised if not supplied three metric objects

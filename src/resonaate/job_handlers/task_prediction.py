@@ -79,7 +79,7 @@ class TaskPredictionRegistration(CallbackRegistration):
         KeywordArgs:
             estimate_id (``int``): ID associated with the :class:`.EstimateAgent`.
 
-        Returns
+        Returns:
             :class:`.Job`: Job to be processed in parallel.
         """
         return Job(

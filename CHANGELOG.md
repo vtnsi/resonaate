@@ -81,6 +81,7 @@ ______________________________________________________________________
 - Apply various fixes for new linting rules from `ruff` (see !239)
 - Develop dependency conflict (see #206 & !298)
 - Update `make install` to use new `mjolnir` optional dependency (see !299)
+- Added docstring linting back using `ruff` (see #44)
 
 ### CI
 

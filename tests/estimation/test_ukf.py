@@ -50,6 +50,7 @@ from .ukf_support import (
 
 @pytest.fixture(name="ukf")
 def createUKF() -> UnscentedKalmanFilter:
+    """Construct a valid UKF object."""
     ukf = UnscentedKalmanFilter(
         tgt_id=10001,
         time=ScenarioTime(0.0),
@@ -72,6 +73,7 @@ def createUKF() -> UnscentedKalmanFilter:
 
 @pytest.fixture(name="radar_obs")
 def createRadarObservation() -> Observation:
+    """Construct a valid radar Observation object."""
     # [NOTE]: Easier to provide actual measurement than mocking...
     radar_measurement = Measurement.fromMeasurementLabels(
         ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], R_MATRIX_RADAR
@@ -87,7 +89,7 @@ def createRadarObservation() -> Observation:
 
 @pytest.fixture(name="optical_obs")
 def createOpticalObservation() -> Observation:
-    # mocked_jd2dt.return_value = datetime.datetime(2021, 10, 21, 11, 26, 13)
+    """Construct a valid optical Observation object."""
     # [NOTE]: Easier to provide actual measurement than mocking...
     optical_measurement = Measurement.fromMeasurementLabels(
         ["azimuth_rad", "elevation_rad"], R_MATRIX_OPTICAL

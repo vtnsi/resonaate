@@ -195,8 +195,8 @@ class LambertIOD(InitialOrbitDetermination):
 
         Args:
             database (:class:`.ResonaateDatabase`): RESONAATE internal database object.
-            start_time (:class:`.ScenarioTime`) time of start of the current scenario
-            end_time (:class:`.ScenarioTime`) time of the current scenario
+            start_time (:class:`.ScenarioTime`): time of start of the current scenario
+            end_time (:class:`.ScenarioTime`): time of the current scenario
 
         Returns:
             ``list``: the last :math:`N` :class:`.Observation` objects since ``start_time``

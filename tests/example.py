@@ -22,7 +22,7 @@ def exampleModuleFixture(test_logger: Logger):
         https://docs.pytest.org/en/latest/fixture.html
 
     Args:
-        testLogger (`logging.Logger`): unit test logger defined in conftest.py
+        test_logger (`logging.Logger`): unit test logger defined in conftest.py
     """
     print("")
     test_logger.warning("Executed before running any tests in a module")
@@ -41,7 +41,7 @@ def exampleFunctionFixture(test_logger: Logger):
         https://docs.pytest.org/en/latest/fixture.html
 
     Args:
-        testLogger (`logging.Logger`): unit test logger defined in conftest.py
+        test_logger (`logging.Logger`): unit test logger defined in conftest.py
     """
     print("")
     test_logger.info("Executed before a test function")

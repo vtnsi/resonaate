@@ -99,6 +99,7 @@ class Sensor(ABC):
 
         Args:
             sensor_config (SensorConfig): sensor configuration object.
+            field_of_view (FieldOfView): sensor FoV model.
 
         Returns:
             Self: constructed concrete sensor object.
@@ -419,7 +420,6 @@ class Sensor(ABC):
     @property
     def host(self) -> SensingAgent:
         r""":class:`.SensingAgent`: Returns reference to agent that contains this sensor."""
-
         if self._host is None:
             raise ValueError("SensingAgent.host was not (or was incorrectly) initialized")
         return self._host

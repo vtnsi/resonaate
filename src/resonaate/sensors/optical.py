@@ -117,6 +117,7 @@ class Optical(Sensor):
 
         Args:
             sensor_config (OpticalConfig): optical sensor configuration object.
+            field_of_view (FieldOfView): sensor FoV model.
 
         Returns:
             Self: constructed optical sensor object.
