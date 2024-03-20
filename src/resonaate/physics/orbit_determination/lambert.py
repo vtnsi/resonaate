@@ -75,8 +75,6 @@ def lambertGauss(
         initial_velocity (``ndarray``): 3x1 ECI velocity, km/sec
         current_velocity (``ndarray``): 3x1 ECI velocity, km/sec
     """
-    # pylint:disable=unused-argument
-    # pylint:disable=too-many-locals
     r_mag = norm(current_position)
     r0_mag = norm(initial_position)
 
@@ -146,7 +144,6 @@ def lambertBattin(
         initial_velocity (``ndarray``): 3x1 ECI velocity, km/sec
         current_velocity (``ndarray``): 3x1 ECI velocity, km/sec
     """
-    # pylint:disable=too-many-locals,invalid-name
     if delta_time <= 0.0:
         raise ValueError("delta_time must be positive")
 
@@ -342,7 +339,7 @@ _BATTIN_SUPPORT_COEFFICIENTS_ETA: ndarray = array(
         400.0 / 1599.0,
         441.0 / 1763.0,
         484.0 / 1935.0,
-    ]
+    ],
 )
 
 _BATTIN_SUPPORT_COEFFICIENTS_KAPPA: ndarray = array(
@@ -368,7 +365,7 @@ _BATTIN_SUPPORT_COEFFICIENTS_KAPPA: ndarray = array(
         2968.0 / 11655.0,
         3190.0 / 12987.0,
         3658.0 / 14391.0,
-    ]
+    ],
 )
 
 
@@ -385,7 +382,6 @@ def _battinGetXi(x: float, tol: float = _ATOL) -> float:
     Returns:
         ``float``: :math:`\xi(x)`
     """
-    # pylint: disable=invalid-name
     sqrt_1_plus_x = sqrt(1.0 + x)
     eta = x / (1.0 + sqrt_1_plus_x) ** 2
     cont_frac_sum = _battinContinuedFraction(_BATTIN_SUPPORT_COEFFICIENTS_ETA, eta, tol=tol)
@@ -408,7 +404,6 @@ def _battinGetKappa(u: float, tol: float = _ATOL) -> float:
     Returns:
         ``float``: :math:`\kappa(x)`
     """
-    # pylint: disable=invalid-name
     return _battinContinuedFraction(_BATTIN_SUPPORT_COEFFICIENTS_KAPPA, u, tol=tol)
 
 
@@ -426,7 +421,6 @@ def _battinContinuedFraction(coefficients: ndarray, factor: float, tol: float = 
     Returns:
         ``float``: continued fraction term
     """
-    # pylint: disable=invalid-name
     del_old = 1.0
     term_old = coefficients[0]
     continued_frac = term_old
@@ -443,7 +437,12 @@ def _battinContinuedFraction(coefficients: ndarray, factor: float, tol: float = 
 
 
 def _cubicSplineBattin(
-    y: float, h1: float, h2: float, m: float, L: float, lim: float
+    y: float,
+    h1: float,
+    h2: float,
+    m: float,
+    L: float,  # noqa: N803
+    lim: float,
 ) -> tuple[float, float]:
     r"""Cubic spline approximation used with :func:`.lambertBattin`.
 
@@ -469,7 +468,6 @@ def _cubicSplineBattin(
     Returns:
         ``tuple[float, float]``: :math:`x` from Algorithm 59 in Vallado, approx. solution of cubic spline, :math:`y`
     """
-    # pylint: disable=invalid-name
     b = (27.0 * h2) / (4.0 * (1.0 + h1) ** 3)
     x = -1.0
     # resets the initial condition
@@ -512,7 +510,12 @@ def _calculateVelocities(
 
 
 def _calcYNew(
-    r0_mag: float, r_mag: float, a_value: float, psi_n: float, c_2: float, c_3: float
+    r0_mag: float,
+    r_mag: float,
+    a_value: float,
+    psi_n: float,
+    c_2: float,
+    c_3: float,
 ) -> float:
     """Private helper function for :func:`.lambertUniversal`.
 

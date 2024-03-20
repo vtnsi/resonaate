@@ -18,7 +18,7 @@ from resonaate.scenario.config.event_configs import (
     DataDependency,
     EventConfig,
     EventConfigList,
-    MissingDataDependency,
+    MissingDataDependencyError,
     ScheduledImpulseEventConfig,
 )
 from resonaate.scenario.config.time_config import TIME_STAMP_FORMAT
@@ -106,7 +106,7 @@ class TestDataDependency:
     def testNoAttributes(self):
         """Test a :class:`.DataDependency` with no ``attributes``."""
         dep = DataDependency(Epoch, Query([Epoch]))
-        with pytest.raises(MissingDataDependency):
+        with pytest.raises(MissingDataDependencyError):
             dep.createDependency()
 
     def testWithAttributes(self):
@@ -137,24 +137,20 @@ class TestEventConfigClass:
 
         with pytest.raises(ConfigValueError):
             _TestEventConfig(
-                **{
-                    "scope": "invalid",
-                    "scope_instance_id": 0,
-                    "start_time": "2020-01-01T00:00:00.000Z",
-                    "end_time": "2020-01-02T00:00:00.000Z",
-                    "event_type": "test_event",
-                }
+                scope="invalid",
+                scope_instance_id=0,
+                start_time="2020-01-01T00:00:00.000Z",
+                end_time="2020-01-02T00:00:00.000Z",
+                event_type="test_event",
             )
 
         with pytest.raises(ConfigValueError):
             _TestEventConfig(
-                **{
-                    "scope": "agent_propagation",
-                    "scope_instance_id": 0,
-                    "start_time": "2020-01-01T00:00:00.000Z",
-                    "end_time": None,
-                    "event_type": "invalid",
-                }
+                scope="agent_propagation",
+                scope_instance_id=0,
+                start_time="2020-01-01T00:00:00.000Z",
+                end_time=None,
+                event_type="invalid",
             )
 
         cfg = ScheduledImpulseEventConfig(

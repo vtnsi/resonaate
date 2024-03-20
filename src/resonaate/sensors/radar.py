@@ -88,7 +88,8 @@ class Radar(Sensor):
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         measurement = Measurement.fromMeasurementLabels(
-            ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], r_matrix
+            ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"],
+            r_matrix,
         )
         super().__init__(
             measurement,
@@ -179,7 +180,10 @@ class Radar(Sensor):
             :class:`.Explanation`: Reason observation was visible or not
         """
         line_of_sight, explanation = super().isVisible(
-            tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
+            tgt_eci_state,
+            viz_cross_section,
+            reflectivity,
+            slant_range_sez,
         )
         if not line_of_sight:
             return False, explanation

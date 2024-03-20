@@ -34,7 +34,7 @@ def testCreatePerturbationsConfig(perturbations_cfg_dict: dict):
     assert cfg.solar_radiation_pressure is True
 
     # Test that this can be created from an empty dictionary
-    cfg = PerturbationsConfig(**{})
+    cfg = PerturbationsConfig()
     assert cfg is not None
     for field in fields(PerturbationsConfig):
         assert field.name in cfg.__dict__

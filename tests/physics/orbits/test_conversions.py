@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
 COE_SET: tuple[tuple[float, float, float, float, float, float]] = tuple(
-    zip(SMA, ECC, INC, RAAN, ARGP, ANOM)
+    zip(SMA, ECC, INC, RAAN, ARGP, ANOM),
 )
 EQE_SET: tuple[tuple[float, float, float, float, float, float]] = tuple(zip(SMA, H, K, P, Q, ANOM))
 RV_CASES: tuple[tuple[ndarray, ndarray]] = tuple(zip(POS_TEST_CASES, VEL_TEST_CASES))
@@ -94,7 +94,6 @@ def testRV2COE():
 @pytest.mark.parametrize(("sma", "h", "k", "p", "q", "anom"), EQE_SET)
 def testEQE(sma: float, h: float, k: float, p: float, q: float, anom: float):
     """Test EQE conversion functions to make sure they are reversible."""
-    # pylint: disable=invalid-name
     orig_eqe = [sma, h, k, p, q, anom]
     eci = eqe2eci(*orig_eqe)
     assert allclose(orig_eqe, eci2eqe(eci), rtol=1e-8, atol=1e-8)

@@ -1,4 +1,3 @@
-# pylint: disable=abstract-class-instantiated, invalid-name
 from __future__ import annotations
 
 # Standard Library Imports
@@ -65,7 +64,8 @@ def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     assert np.allclose(base_sensor.az_mask, np.deg2rad(base_sensor_args["az_mask"]))
     assert np.allclose(base_sensor.el_mask, np.deg2rad(base_sensor_args["el_mask"]))
     assert np.isclose(
-        base_sensor.effective_aperture_area, np.pi * (base_sensor_args["diameter"] * 0.5) ** 2
+        base_sensor.effective_aperture_area,
+        np.pi * (base_sensor_args["diameter"] * 0.5) ** 2,
     )
     assert np.isclose(base_sensor.aperture_diameter, base_sensor_args["diameter"])
     assert np.isclose(base_sensor.slew_rate, np.deg2rad(base_sensor_args["slew_rate"]))
@@ -82,7 +82,7 @@ def testSensorInit(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
             np.cos(np.deg2rad(45)) * np.cos(np.deg2rad(180)),
             np.cos(np.deg2rad(45)) * np.sin(np.deg2rad(180)),
             np.sin(np.deg2rad(45)),
-        ]
+        ],
     )
     assert np.allclose(base_sensor.boresight, init_boresight)
 
@@ -172,7 +172,6 @@ def testCanSlew(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testInFOVConic(base_sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
-    # pylint:disable=protected-access
     sensor = Sensor(**base_sensor_args)
     sensor.field_of_view = ConicFoV(cone_angle=np.pi)
 
@@ -194,7 +193,6 @@ def testInFOVConic(base_sensor_args: dict):
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testInFOVRegular(base_sensor_args: dict):
     """Test whether a target is in the field of view of the sensor."""
-    # pylint:disable=protected-access
     sensor = Sensor(**base_sensor_args)
     sensor.field_of_view = RectangularFoV(azimuth_angle=np.pi, elevation_angle=np.pi)
     tgt_sez = np.array((1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
@@ -214,10 +212,11 @@ def testInFOVRegular(base_sensor_args: dict):
 
 
 def _dummySlantRange(
-    eci_sensor: np.ndarray, eci_tgt: np.ndarray, utc_date: datetime
+    eci_sensor: np.ndarray,
+    eci_tgt: np.ndarray,
+    utc_date: datetime,
 ) -> np.ndarray:
     """Dummy slant range function; passes through the eci_tgt parameter."""
-    # pylint: disable=unused-argument
     return eci_tgt
 
 
@@ -225,7 +224,6 @@ def _dummySlantRange(
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Checks whether list of targets is in the FOV of the sensor."""
-    # pylint: disable=abstract-class-instantiated
     sensor = Sensor(**base_sensor_args)
     conic_fov_config = FieldOfViewConfig(fov_shape=FoVLabel.CONIC, cone_angle=np.pi * RAD2DEG - 1)
     sensor.field_of_view = FieldOfView.fromConfig(conic_fov_config)
@@ -268,7 +266,6 @@ def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: Sensing
 @patch.multiple(Sensor, __abstractmethods__=set())
 def testIsVisible(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Test that and RSO `isVisible`."""
-    # pylint: disable=too-many-statements
     sensor = Sensor(**base_sensor_args)
     # Requires self.host.eci_state to be set
     sensor.host = mocked_sensing_agent
@@ -429,7 +426,9 @@ def testCollectObservations(
 
     # Test when target can be collected on
     good_obs, _, _, _ = mocked_sensing_agent.sensors.collectObservations(
-        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+        mocked_primary_target.initial_state,
+        mocked_primary_target,
+        [mocked_primary_target],
     )
     assert len(good_obs) == 1
 
@@ -447,11 +446,12 @@ def testCollectObservations(
     # Test when target is not in line of sight (Earth is blocking)
     mocked_sensing_agent.eci_state = np.array((0.0, -Earth.radius, 0.0, 0.0, 0.0, 0.0))
 
-    # pylint: disable=protected-access
     mocked_sensing_agent.sensors.boresight = mocked_sensing_agent.sensors._setInitialBoresight()
     with patch.object(mocked_sensing_agent.sensors, "canSlew", return_value=True):
         good_obs, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
-            mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+            mocked_primary_target.initial_state,
+            mocked_primary_target,
+            [mocked_primary_target],
         )
         assert not good_obs
 
@@ -469,11 +469,12 @@ def testCollectObservations(
     for missed_ob in missed_obs:
         assert missed_ob.reason == Explanation.LINE_OF_SIGHT.value
 
-    # pylint: disable=protected-access
     mocked_sensing_agent.sensors.boresight = mocked_sensing_agent.sensors._setInitialBoresight()
     with patch.object(mocked_sensing_agent.sensors, "canSlew", return_value=False):
         good_obs, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
-            mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+            mocked_primary_target.initial_state,
+            mocked_primary_target,
+            [mocked_primary_target],
         )
         assert not good_obs
 
@@ -483,7 +484,6 @@ def testCollectObservations(
         mocked_primary_target.initial_state,
         mocked_sensing_agent.datetime_epoch,
     )
-    # pylint: disable=protected-access
     assert np.allclose(
         mocked_sensing_agent.sensors.boresight,
         mocked_sensing_agent.sensors._setInitialBoresight(),
@@ -531,7 +531,9 @@ def testCollectObservationsWithBackground(
 
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testNoMissedObservation(
-    radar_sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+    radar_sensor_args: dict,
+    mocked_sensing_agent: SensingAgent,
+    mocked_primary_target: TargetAgent,
 ):
     """Test that an RSO is in the FoV."""
     sensor = Radar(**radar_sensor_args)
@@ -553,14 +555,18 @@ def testNoMissedObservation(
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
     _, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
-        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+        mocked_primary_target.initial_state,
+        mocked_primary_target,
+        [mocked_primary_target],
     )
     assert not missed_obs
 
 
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector", new=_dummySlantRange)
 def testMissedObservation(
-    radar_sensor_args: dict, mocked_sensing_agent: SensingAgent, mocked_primary_target: TargetAgent
+    radar_sensor_args: dict,
+    mocked_sensing_agent: SensingAgent,
+    mocked_primary_target: TargetAgent,
 ):
     """Test that an RSO is Not in the FoV."""
     sensor = Radar(**radar_sensor_args)
@@ -582,7 +588,9 @@ def testMissedObservation(
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
     _, bad_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
-        mocked_primary_target.initial_state, mocked_primary_target, [mocked_primary_target]
+        mocked_primary_target.initial_state,
+        mocked_primary_target,
+        [mocked_primary_target],
     )
     assert len(bad_obs) == 1
 
@@ -600,7 +608,6 @@ def testAttemptObservation(
     mocked_primary_target: TargetAgent,
 ):
     """Test that observations and missed observations are encoded correctly."""
-    # pylint: disable=too-many-statements
     sensor = Sensor(**base_sensor_args)
     # Requires self.host.eci_state to be set
     sensor.host = mocked_sensing_agent

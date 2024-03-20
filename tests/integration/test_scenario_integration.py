@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -42,7 +41,10 @@ class TestScenarioRealtime:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testTruthSimulationOnly(
-        self, datafiles: str, propagate_scenario: PropagateFunc, caplog: pytest.LogCaptureFixture
+        self,
+        datafiles: str,
+        propagate_scenario: PropagateFunc,
+        caplog: pytest.LogCaptureFixture,
     ):
         """Test a small simulation with Tasking and Estimation turned off."""
         init_filepath = "truth_simulation_only_init.json"
@@ -55,7 +57,6 @@ class TestScenarioRealtime:
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testSaveObservation(self, datafiles: Path, propagate_scenario: PropagateFunc):
         """Test `_saveObservation` function."""
-        # pylint: disable=protected-access
         init_filepath = "main_init.json"
         elapsed_time = timedelta(minutes=5)
         app = propagate_scenario(datafiles, init_filepath, elapsed_time)
@@ -98,11 +99,13 @@ def loadSensorTruthData(directory: Path, importer_database: ImporterDatabase) ->
 
 
 def assertImporterDBLogWarnings(
-    caplog: pytest.LogCaptureFixture, sub_string: re.Pattern[str], expected: int
+    caplog: pytest.LogCaptureFixture,
+    sub_string: re.Pattern[str],
+    expected: int,
 ) -> None:
     """Uses regular expressions to check for proper ImporterDB warning logs."""
     base_pattern = re.compile(
-        r"Could not find importer truth for \d*\. Defaulting to realtime propagation!"
+        r"Could not find importer truth for \d*\. Defaulting to realtime propagation!",
     )
     matches = []
     for record in caplog.records:
@@ -125,7 +128,10 @@ class TestScenarioImporter:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testImporterModel(
-        self, datafiles: str, propagate_scenario: PropagateFunc, caplog: pytest.LogCaptureFixture
+        self,
+        datafiles: str,
+        propagate_scenario: PropagateFunc,
+        caplog: pytest.LogCaptureFixture,
     ):
         """Test a small simulation using imported data. 5 minute long test."""
         init_filepath = "default_imported_est_imported_obs.json"
@@ -139,7 +145,10 @@ class TestScenarioImporter:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testImporterModelForSensors(
-        self, datafiles: Path, propagate_scenario: PropagateFunc, caplog: pytest.LogCaptureFixture
+        self,
+        datafiles: Path,
+        propagate_scenario: PropagateFunc,
+        caplog: pytest.LogCaptureFixture,
     ):
         """Include sensors that will utilize the importer model in a 5 minute test."""
         init_filepath = "long_sat_sen_imported_est_imported_obs.json"
@@ -154,7 +163,10 @@ class TestScenarioImporter:
     @pytest.mark.slow()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testImporterModelLong(
-        self, datafiles: Path, propagate_scenario: PropagateFunc, caplog: pytest.LogCaptureFixture
+        self,
+        datafiles: Path,
+        propagate_scenario: PropagateFunc,
+        caplog: pytest.LogCaptureFixture,
     ):
         """Test a small simulation using imported data. 5 day hour test."""
         init_filepath = "long_full_ssn_imported_est_imported_obs.json"

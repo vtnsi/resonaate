@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from .integration_events.station_keeping import StationKeeper
 
 
-class EarthCollision(Exception):
+class EarthCollisionError(Exception):
     """Exception raised if a :class:`.Celestial` object crashes into the Earth."""
 
 
@@ -49,7 +49,7 @@ def checkEarthCollision(r_norm: float):
     """
     # Check if an RSO crashed into the Earth
     if r_norm <= Earth.radius:
-        raise EarthCollision("An RSO has crashed into the Earth")
+        raise EarthCollisionError("An RSO has crashed into the Earth")
 
     if r_norm < Earth.radius + Earth.atmosphere:
         msg = "An RSO is within 100km of Earth surface"
@@ -129,7 +129,8 @@ class Celestial(Dynamics, metaclass=ABCMeta):
                     self.finite_thrust = event.getStateChangeCallback(current_time)
                 else:
                     current_state += event.getStateChange(current_time, current_state[:, 0])[
-                        :, None
+                        :,
+                        None,
                     ]
 
         return current_state

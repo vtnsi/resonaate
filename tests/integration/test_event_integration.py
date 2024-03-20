@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -67,14 +66,16 @@ class TestEventIntegration:
                     "event_type": "impulse",
                     "thrust_vector": [0.0, 0.0, 0.00123],
                     "thrust_frame": "ntw",
-                }
+                },
             ],
         )
         assert ScenarioBuilder(minimal_config)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testBuildTargetTaskingPriorityDependency(
-        self, datafiles: str, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        database: ResonaateDatabase,
     ):
         """Validate that a TargetTaskingPriority's data dependency is built."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -95,7 +96,7 @@ class TestEventIntegration:
                     "target_name": priority_agent["name"],
                     "priority": 2.0,
                     "is_dynamic": False,
-                }
+                },
             ],
         )
         _ = ScenarioBuilder(minimal_config)
@@ -136,7 +137,7 @@ class TestEventIntegration:
                     "thrust_vector": [0.0, 0.0, 0.125],
                     "thrust_frame": "ntw",
                     "planned": False,
-                }
+                },
             ],
         )
 
@@ -152,7 +153,7 @@ class TestEventIntegration:
             start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -194,7 +195,7 @@ class TestEventIntegration:
                     "thrust_vector": [0.0, 0.0, 0.125],
                     "thrust_frame": "ntw",
                     "planned": planned,
-                }
+                },
             ],
         )
 
@@ -210,7 +211,7 @@ class TestEventIntegration:
             start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -255,7 +256,7 @@ class TestEventIntegration:
                     "acc_vector": [0.0, 0.0, 0.002],
                     "thrust_frame": "ntw",
                     "planned": planned,
-                }
+                },
             ],
         )
 
@@ -271,7 +272,7 @@ class TestEventIntegration:
             start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -288,7 +289,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteTargetTaskPriority(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a TargetTaskPriority is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -312,7 +316,7 @@ class TestEventIntegration:
                     "target_name": priority_target.name,
                     "priority": 2.0,
                     "is_dynamic": False,
-                }
+                },
             ],
         )
 
@@ -328,7 +332,7 @@ class TestEventIntegration:
             start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -343,7 +347,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteTargetAddition(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a TargetAddition is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -384,7 +391,7 @@ class TestEventIntegration:
                     "event_type": "target_addition",
                     "target_agent": target_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
-                }
+                },
             ],
         )
 
@@ -403,7 +410,7 @@ class TestEventIntegration:
         initial_engine_target_count = app.tasking_engines[tasking_engine.unique_id].num_targets
 
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -424,7 +431,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteSensorAddition(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a SensorAddition is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -480,7 +490,7 @@ class TestEventIntegration:
                     "event_type": "sensor_addition",
                     "sensor_agent": sensor_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
-                }
+                },
             ],
         )
 
@@ -499,7 +509,7 @@ class TestEventIntegration:
         initial_engine_sensor_count = app.tasking_engines[tasking_engine.unique_id].num_sensors
 
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -519,7 +529,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteAgentRemovalTarget(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a AgentRemoval of a target is handled correctly."""
         minimal_config = _getMainConfig(datafiles)
@@ -541,7 +554,7 @@ class TestEventIntegration:
                     "tasking_engine_id": tasking_engine.unique_id,
                     "agent_id": removed_target.id,
                     "agent_type": "target",
-                }
+                },
             ],
         )
 
@@ -560,7 +573,7 @@ class TestEventIntegration:
         initial_engine_target_count = app.tasking_engines[tasking_engine.unique_id].num_targets
 
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -581,7 +594,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteAgentRemovalSensor(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a AgentRemoval of a target is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -603,7 +619,7 @@ class TestEventIntegration:
                     "tasking_engine_id": tasking_engine.unique_id,
                     "agent_id": removed_sensor.id,
                     "agent_type": "sensor",
-                }
+                },
             ],
         )
 
@@ -622,7 +638,7 @@ class TestEventIntegration:
         initial_engine_sensor_count = app.tasking_engines[tasking_engine.unique_id].num_sensors
 
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -642,7 +658,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testMultiEvent(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that multiple consecutive events are handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -720,7 +739,7 @@ class TestEventIntegration:
             start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 

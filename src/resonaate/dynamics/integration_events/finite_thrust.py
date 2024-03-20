@@ -78,7 +78,7 @@ def ntwBurn(state: ndarray, acc_vector: ndarray):
     return ntw2eci(state, full_a_vec)
 
 
-def eciBurn(state: ndarray, acc_vector: ndarray):  # pylint: disable=unused-argument
+def eciBurn(state: ndarray, acc_vector: ndarray):
     """Perform a continuous burn in ECI coordinates.
 
     Args:
@@ -142,7 +142,7 @@ class ScheduledFiniteThrust(ContinuousStateChangeEvent, metaclass=ABCMeta):
                 self.end_time == other.end_time,
                 self.thrust_func.func == other.thrust_func.func,
                 self.agent_id == other.agent_id,
-            ]
+            ],
         )
 
     @property

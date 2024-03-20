@@ -149,9 +149,7 @@ class Event(_DataMixin, Base):
                     err = f"{subclass} needs to define a 'fromConfig' method."
                     raise AttributeError(err)
 
-                cls.EVENT_REGISTRY[  # pylint: disable=unsupported-assignment-operation
-                    subclass.EVENT_TYPE
-                ] = subclass
+                cls.EVENT_REGISTRY[subclass.EVENT_TYPE] = subclass
 
     @classmethod
     def eventTypes(cls) -> list[str]:
@@ -170,7 +168,5 @@ class Event(_DataMixin, Base):
             :class:`.Event`: object based on specified `config`.
         """
         Event._generateRegistry()
-        child_event = Event.EVENT_REGISTRY[  # pylint: disable=unsubscriptable-object
-            config.event_type
-        ]
+        child_event = Event.EVENT_REGISTRY[config.event_type]
         return child_event.fromConfig(config)

@@ -52,5 +52,7 @@ class TimeConfig(ConfigObject):
 
         if self.start_timestamp >= self.stop_timestamp:
             raise ConfigValueError(
-                "start_timestamp", self.start_timestamp, (f"before {self.stop_timestamp}",)
+                "start_timestamp",
+                self.start_timestamp,
+                (f"before {self.stop_timestamp}",),
             )

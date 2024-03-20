@@ -24,7 +24,6 @@ mjolnir = [
 dev = [
     # Linting
     "ruff==0.3.3",
-    "pylint==3.1.0",
     # Type Checking
     "mypy==1.9.0",
     "types-sqlalchemy==1.4.53.38",

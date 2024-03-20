@@ -25,5 +25,6 @@ def addAlmostEqualFilter(query, data_type, field, value, decimal_places=6):
     lower_bound = rounded_target - delta
 
     return query.filter(
-        getattr(data_type, field) < upper_bound, getattr(data_type, field) > lower_bound
+        getattr(data_type, field) < upper_bound,
+        getattr(data_type, field) > lower_bound,
     )

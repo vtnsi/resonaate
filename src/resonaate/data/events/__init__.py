@@ -100,7 +100,11 @@ def handleRelevantEvents(
     event_types = set()
     event_count = 0
     for event in getRelevantEvents(
-        database, event_scope, julian_date_lb, julian_date_ub, scope_instance_id
+        database,
+        event_scope,
+        julian_date_lb,
+        julian_date_ub,
+        scope_instance_id,
     ):
         event.handleEvent(scope_instance)
         event_types.add(event.event_type)

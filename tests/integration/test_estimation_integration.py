@@ -1,4 +1,3 @@
-# pylint: disable=protected-access
 from __future__ import annotations
 
 # Standard Library Imports
@@ -27,7 +26,9 @@ class TestAdaptiveEstimationIntegration:
     @pytest.mark.slow()
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testGeneralizedPseudoBayesianFirstOrderModel(
-        self, datafiles: str, propagate_scenario: PropagateFunc
+        self,
+        datafiles: str,
+        propagate_scenario: PropagateFunc,
     ):
         """Test the gpb1 and mmae converging on a single timestep."""
         init_filepath = "gpb1_init.json"

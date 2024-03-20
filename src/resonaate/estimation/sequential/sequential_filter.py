@@ -43,7 +43,7 @@ class FilterFlag(Flag):
     INITIAL_ORBIT_DETERMINATION_START = auto()
 
 
-class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
+class SequentialFilter(ABC):
     r"""Defines common interface for a recursive sequential state estimation filter.
 
     Most methods are abstract, so implementers can define their custom algorithms, but users can
@@ -299,7 +299,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
                 "source": self.source,
                 "maneuver_metric": self.maneuver_metric,
                 "maneuver_detected": self.maneuver_detected,
-            }
+            },
         )
         return result
 
@@ -343,7 +343,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
             est_error = fabs(norm(truth[:3] - self.est_x[:3]))
 
             # If error increase is larger than desired log the debug information
-            if est_error > pred_error + tol_km:  # pylint: disable=consider-using-assignment-expr
+            if est_error > pred_error + tol_km:
                 file_name = logFilterStep(self, observations, truth)
                 msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
                 self._logger.warning(msg)

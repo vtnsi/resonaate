@@ -32,7 +32,9 @@ class TestDynamics:
         """Test TwoBody dynamics."""
         dynamics = TwoBody()
         final_state = dynamics.propagate(
-            initial_time=0.0, final_time=60.0, initial_state=self.stable_orbit
+            initial_time=0.0,
+            final_time=60.0,
+            initial_state=self.stable_orbit,
         )
 
         assert final_state.shape == (6,)

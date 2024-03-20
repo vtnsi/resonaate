@@ -62,7 +62,12 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             realtime_obs (``bool``): whether to execute realtime observations
         """
         super().__init__(
-            engine_id, sensor_ids, target_ids, reward, decision, importer_db_path=importer_db_path
+            engine_id,
+            sensor_ids,
+            target_ids,
+            reward,
+            decision,
+            importer_db_path=importer_db_path,
         )
 
         self._realtime_obs = realtime_obs
@@ -90,7 +95,8 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self.decision_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         self.reward_matrix = zeros((self.num_targets, self.num_sensors), dtype=float)
         self.metric_matrix = zeros(
-            (self.num_targets, self.num_sensors, self.num_metrics), dtype=float
+            (self.num_targets, self.num_sensors, self.num_metrics),
+            dtype=float,
         )
 
         # Only task if we say so.... :P

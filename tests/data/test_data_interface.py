@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -88,7 +87,7 @@ def getMultipleEphemerisData() -> list[TruthEphemeris]:
                 epoch=epoch,
                 agent=AgentModel(unique_id=rso["unique_id"], name=rso["name"]),
                 eci=rso["eci"],
-            )
+            ),
         )
 
     return ephems
@@ -114,7 +113,10 @@ class TestResonaateDatabase:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testSaveDB(
-        self, datafiles: str, database: ResonaateDatabase, ephems: list[TruthEphemeris]
+        self,
+        datafiles: str,
+        database: ResonaateDatabase,
+        ephems: list[TruthEphemeris],
     ):
         """Test saving database to new file."""
         db_path = join(datafiles, "db/copied.sqlite3")
@@ -138,7 +140,7 @@ class TestResonaateDatabase:
                     julian_date=EXAMPLE_EPOCH["julian_date"],
                     agent_id=rso["unique_id"],
                     eci=rso["eci"],
-                )
+                ),
             )
         database.bulkSave(ephems)
 
@@ -372,7 +374,7 @@ class TestImporterDatabase:
             stop=2458454.0 + 1 / 24,  # one hour later
         )
         ephems = importer_db.getData(
-            Query(TruthEphemeris).join(AgentModel).filter(AgentModel.unique_id == 11111)
+            Query(TruthEphemeris).join(AgentModel).filter(AgentModel.unique_id == 11111),
         )
         assert len(ephems) == 61
 
@@ -392,7 +394,7 @@ class TestImporterDatabase:
             importer_db.deleteData(
                 Query(TruthEphemeris)
                 .join(AgentModel)
-                .filter(AgentModel.unique_id == EXAMPLE_RSO[0]["unique_id"])
+                .filter(AgentModel.unique_id == EXAMPLE_RSO[0]["unique_id"]),
             )
 
         # `bulkSave()`
@@ -405,7 +407,7 @@ class TestImporterDatabase:
         # Create DB using API
         importer_db_url = "sqlite:///" + join(datafiles, IMPORTER_DB_PATH)
         importer_db = ImporterDatabase(importer_db_url, logger=None, verbose_echo=True)
-        importer_db._insertData(*ephems)  # pylint: disable=protected-access
+        importer_db._insertData(*ephems)
 
         # Query on ID and Julian date
         combined_query = (
@@ -501,7 +503,10 @@ class TestDatabaseIssues:
 
     @pytest.fixture(name="matched_epoch_db")
     def createMatchedDB(
-        self, epochs: list[Epoch], agent: AgentModel, matched_ephems: list[TruthEphemeris]
+        self,
+        epochs: list[Epoch],
+        agent: AgentModel,
+        matched_ephems: list[TruthEphemeris],
     ):
         """Create a DB object where the `TruthEphemeris` table entries have matching julian dates in the `Epoch` table.
 
@@ -517,7 +522,10 @@ class TestDatabaseIssues:
 
     @pytest.fixture(name="unmatched_epoch_db")
     def createUnmatchedDB(
-        self, epochs: list[Epoch], agent: AgentModel, unmatched_ephems: list[TruthEphemeris]
+        self,
+        epochs: list[Epoch],
+        agent: AgentModel,
+        unmatched_ephems: list[TruthEphemeris],
     ):
         """Create a DB object where the `TruthEphemeris` table entries where julian dates have truncated precision from the `Epoch` table.
 
@@ -532,7 +540,9 @@ class TestDatabaseIssues:
         unmatched_db.resetData(ResonaateDatabase.VALID_DATA_TYPES)
 
     def testBadJDJoin(
-        self, matched_epoch_db: ResonaateDatabase, unmatched_epoch_db: ResonaateDatabase
+        self,
+        matched_epoch_db: ResonaateDatabase,
+        unmatched_epoch_db: ResonaateDatabase,
     ):
         """Test that ephemeris queries only return the correct number of ephemeris when there is a matching epoch entry in the `Epoch` table.
 

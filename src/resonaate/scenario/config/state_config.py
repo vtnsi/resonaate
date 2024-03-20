@@ -239,8 +239,6 @@ class COEStateConfig(StateConfig):
 class EQEStateConfig(StateConfig):
     R"""Configuration defining an EQE state."""
 
-    #  pylint: disable=invalid-name
-
     type: Literal["eqe"]
     R"""``str``: type of state being defined."""
 

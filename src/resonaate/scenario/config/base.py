@@ -175,7 +175,9 @@ class ConfigObjectList(ConfigObject, Sequence[ConfigObject]):
         self._config_objects = config_objects
 
     def _validateRawConfig(
-        self, raw_config: list[dict[str, Any]], config_type: type[ConfigObject]
+        self,
+        raw_config: list[dict[str, Any]],
+        config_type: type[ConfigObject],
     ) -> None:
         """Raise exceptions if types of `raw_config` are wrong.
 

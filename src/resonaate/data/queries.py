@@ -82,7 +82,9 @@ def fetchEstimatesByJDInterval(
 
 
 def fetchEstimatesByJDEpoch(
-    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
+    database: DataInterface,
+    sat_nums: Sequence[int],
+    jd: JulianDate,
 ) -> list[EstimateEphemeris]:
     """Get a posteriori estimate states during a specific time.
 
@@ -120,7 +122,9 @@ def fetchTruthByJDInterval(
 
 
 def fetchTruthByJDEpoch(
-    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
+    database: DataInterface,
+    sat_nums: Sequence[int],
+    jd: JulianDate,
 ) -> list[TruthEphemeris]:
     """Get truth during a specific time.
 
@@ -158,7 +162,9 @@ def fetchObservationsByJDInterval(
 
 
 def fetchObservationsByJDEpoch(
-    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
+    database: DataInterface,
+    sat_nums: Sequence[int],
+    jd: JulianDate,
 ) -> list[Observation]:
     """Get observations during a specific time.
 
@@ -246,7 +252,7 @@ def filterByJulianDateInterval(
             resonaateLogError(msg)
             raise ValueError(msg)
         return query.filter(table.julian_date.between(float(jd_lb), float(jd_ub))).order_by(
-            asc(table.julian_date)
+            asc(table.julian_date),
         )
 
     type_error_msg = "Julian date inputs must be type `.JulianDate`."

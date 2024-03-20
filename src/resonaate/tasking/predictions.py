@@ -17,7 +17,8 @@ if TYPE_CHECKING:
 
 
 def predictObservation(
-    sensing_agent: SensingAgent, estimate_agent: EstimateAgent
+    sensing_agent: SensingAgent,
+    estimate_agent: EstimateAgent,
 ) -> Observation | None:
     """Forecasting an observation for reward matrix purposes.
 
@@ -29,7 +30,9 @@ def predictObservation(
         :class:`.Observation` | None : constructed observation if observable
     """
     slant_range_sez = getSlantRangeVector(
-        sensing_agent.eci_state, estimate_agent.eci_state, sensing_agent.datetime_epoch
+        sensing_agent.eci_state,
+        estimate_agent.eci_state,
+        sensing_agent.datetime_epoch,
     )
 
     # Check if the estimated target is reachable

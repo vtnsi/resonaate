@@ -62,7 +62,8 @@ class EarthOrientationParameter:
 
 @lru_cache(maxsize=5)
 def getEarthOrientationParameters(
-    eop_date: datetime.date, filename: str | Path | None = None
+    eop_date: datetime.date,
+    filename: str | Path | None = None,
 ) -> EarthOrientationParameter:
     """Return the :class:`.EarthOrientationParameter` based on the current calendar date.
 

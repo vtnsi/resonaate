@@ -63,8 +63,8 @@ def _dummyAnomFunc(angle: float) -> float:
     return angle + 1
 
 
-wrappedEccCheck: Callable[..., float] = check_ecc(_dummyAnomCheckFunc)
-wrappedAnomWrap: Callable[..., float] = wrap_anomaly(_dummyAnomFunc)
+wrapped_ecc_check: Callable[..., float] = check_ecc(_dummyAnomCheckFunc)
+wrapped_anom_wrap: Callable[..., float] = wrap_anomaly(_dummyAnomFunc)
 
 
 QUAD_CHECK_TEST: list[tuple[float, float]] = list(
@@ -95,7 +95,7 @@ QUAD_CHECK_TEST: list[tuple[float, float]] = list(
                 355,
                 360,
                 365,
-            ]
+            ],
         ),
         [
             -1,
@@ -123,7 +123,7 @@ QUAD_CHECK_TEST: list[tuple[float, float]] = list(
             0,
             0,
         ],
-    )
+    ),
 )
 
 ECC_CHECK_TEST: list[tuple[float, float]] = list(
@@ -146,7 +146,7 @@ ECC_CHECK_TEST: list[tuple[float, float]] = list(
                 355,
                 360,
                 365,
-            ]
+            ],
         ),
         [
             0.1,
@@ -166,7 +166,7 @@ ECC_CHECK_TEST: list[tuple[float, float]] = list(
             0,
             0,
         ],
-    )
+    ),
 )
 
 ANOM_WRAP_TEST: ndarray = linspace(-5, 5, 21) * const.PI
@@ -185,12 +185,12 @@ def testQuadCheckDecorator(angle: float, check: float):
 def testEccCheckDecorator(anom: float, ecc: float):
     """Test eccentricity check decorator function."""
     if isEccentric(ecc) >= 0:
-        assert wrappedEccCheck(anom, ecc) == anom - ecc
+        assert wrapped_ecc_check(anom, ecc) == anom - ecc
     else:
-        assert wrappedEccCheck(anom, ecc) == anom
+        assert wrapped_ecc_check(anom, ecc) == anom
 
 
 @pytest.mark.parametrize("angle", ANOM_WRAP_TEST)
 def testAnomWrapDecorator(angle: float):
     """Test anomaly wrap decorator function."""
-    assert wrappedAnomWrap(angle) == wrapAngle2Pi(angle + 1)
+    assert wrapped_anom_wrap(angle) == wrapAngle2Pi(angle + 1)

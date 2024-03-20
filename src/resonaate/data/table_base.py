@@ -14,7 +14,7 @@ class _Base:
 
 
 # Base declarative class used by SQLAlchemy to track ORM's
-Base = declarative_base(cls=_Base)  # pylint: disable=invalid-name
+Base = declarative_base(cls=_Base)
 
 
 class _DataMixin:

@@ -1,4 +1,3 @@
-# pylint: disable=protected-access
 from __future__ import annotations
 
 # Standard Library Imports
@@ -76,7 +75,8 @@ def createRadarObservation() -> Observation:
     """Construct a valid radar Observation object."""
     # [NOTE]: Easier to provide actual measurement than mocking...
     radar_measurement = Measurement.fromMeasurementLabels(
-        ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], R_MATRIX_RADAR
+        ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"],
+        R_MATRIX_RADAR,
     )
 
     obs: Observation = MagicMock(spec=Observation)
@@ -92,7 +92,8 @@ def createOpticalObservation() -> Observation:
     """Construct a valid optical Observation object."""
     # [NOTE]: Easier to provide actual measurement than mocking...
     optical_measurement = Measurement.fromMeasurementLabels(
-        ["azimuth_rad", "elevation_rad"], R_MATRIX_OPTICAL
+        ["azimuth_rad", "elevation_rad"],
+        R_MATRIX_OPTICAL,
     )
 
     obs: Observation = MagicMock(spec=Observation)
@@ -126,7 +127,7 @@ def testCheckSqrtCovariance(mocked_config: MagicMock, ukf: UnscentedKalmanFilter
             [4.4408921e-16, 0.0000000e00, 0.0000000e00],
             [0.0000000e00, 4.4408921e-16, 0.0000000e00],
             [0.0000000e00, 0.0000000e00, 4.4408921e-16],
-        ]
+        ],
     )
     assert allclose(sqrt_cov, expected, rtol=1e-4, atol=1e-7)
 
@@ -250,7 +251,9 @@ def testCalcMeasurementSigmaPoints(mocked_jd2dt: MagicMock, ukf: UnscentedKalman
 
 @patch("resonaate.estimation.sequential.unscented_kalman_filter.julianDateToDatetime")
 def testCalcMeasurementMean(
-    mocked_jd2dt: MagicMock, ukf: UnscentedKalmanFilter, radar_obs: Observation
+    mocked_jd2dt: MagicMock,
+    ukf: UnscentedKalmanFilter,
+    radar_obs: Observation,
 ):
     """Test measurement mean calculation."""
     mocked_jd2dt.return_value = datetime.datetime(2021, 10, 21, 11, 26, 13)

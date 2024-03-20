@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
+# ruff: noqa: N803, N806
+
 E_PAR = 1.0
 P_PAR = 25512.0
 PAR_CASE = (P_PAR, E_PAR)
@@ -36,14 +38,14 @@ HYP_CASE = (P_HYP, E_HYP)
 # Various TOFs for each Vallado test case from his software
 TOF: tuple[float] = (-300, -55, 0, 30, 100)
 KEPLER_PROBLEM_CASES: tuple[float, ndarray, ndarray] = tuple(
-    zip(TOF, POS_TEST_CASES, VEL_TEST_CASES)
+    zip(TOF, POS_TEST_CASES, VEL_TEST_CASES),
 )
 
 # First case comes from Vallado Example 2-1, Others from Montenbruck Exercise 2-2
 MEAN_ANOM_CASES: ndarray = deg2rad([235.4, 4, 50])
 ECC_CASES: tuple[float] = (0.4, 0.72, 0.72)
 ECC_ANOM_CASES: ndarray = deg2rad(
-    [220.512074767522, rad2deg(0.24318719638), rad2deg(1.59249513093)]
+    [220.512074767522, rad2deg(0.24318719638), rad2deg(1.59249513093)],
 )
 KEPLER_EQN_TESTS: tuple[float] = tuple(zip(MEAN_ANOM_CASES, ECC_CASES, ECC_ANOM_CASES))
 
@@ -54,7 +56,6 @@ CIRCULAR_ANOM_CASES = (0, 90, 180, 360, -90, -270)
 @pytest.mark.parametrize(("M", "ecc", "E"), KEPLER_EQN_TESTS)
 def testKeplerCOE(M, ecc, E):
     """Test Kepler's equation accuracy using COE form."""
-    # pylint: disable=invalid-name
     E_0 = M - ecc if (0 > M > -const.PI or M > const.PI) else M + ecc
     assert isclose(E, keplerSolveCOE(E_0, M, ecc), rtol=0, atol=_ATOL)
 
@@ -62,7 +63,6 @@ def testKeplerCOE(M, ecc, E):
 @pytest.mark.parametrize("M", CIRCULAR_ANOM_CASES)
 def testKeplerCOECircular(M):
     """Test Kepler's equation COE form for the circular orbit case."""
-    # pylint: disable=invalid-name
     ecc = 0.0
     E_0 = M - ecc if (0 > M > -const.PI or M > const.PI) else M + ecc
     assert isclose(M, keplerSolveCOE(E_0, M, ecc), rtol=0, atol=_ATOL)
@@ -71,7 +71,6 @@ def testKeplerCOECircular(M):
 @pytest.mark.parametrize(("M", "ecc", "E"), KEPLER_EQN_TESTS)
 def testKeplerEQE(M, ecc, E):
     """Test Kepler's equation accuracy using EQE form."""
-    # pylint: disable=invalid-name
     raan = deg2rad(35)
     argp = deg2rad(182)
     h = ecc * sin(argp + raan)
@@ -83,7 +82,6 @@ def testKeplerEQE(M, ecc, E):
 @pytest.mark.parametrize("M", CIRCULAR_ANOM_CASES)
 def testKeplerEQECircular(M):
     """Test Kepler's equation EQE form for the circular orbit case."""
-    # pylint: disable=invalid-name
     ecc = 0.0
     raan = deg2rad(35)
     argp = deg2rad(182)
@@ -95,7 +93,6 @@ def testKeplerEQECircular(M):
 
 def testKeplerProblemAccuracy():
     """Test the accuracy of Kepler's problem using Example 2-4 from Vallado."""
-    # pylint: disable=invalid-name
     init_eci = [1131.340, -2282.343, 6672.423, -5.64305, 4.30333, 2.42879]
     final_eci = [-4219.7527, 4363.0292, -3958.7666, 3.689866, -1.916735, -6.112511]
     tof = 40 * 60
@@ -109,7 +106,6 @@ def testKeplerProblemAccuracy():
 @pytest.mark.parametrize(("pos", "vel"), tuple(zip(POS_TEST_CASES, VEL_TEST_CASES)))
 def testKeplerProblemCases(tof, pos, vel):
     """Test Kepler's problem forwards and then backwards is consistent."""
-    # pylint: disable=invalid-name
     init_eci = concatenate((pos, vel), axis=0)
     final_eci = solveKeplerProblemUniversal(init_eci, tof * 60, tol=1e-12)
     assert allclose(init_eci, solveKeplerProblemUniversal(final_eci, -tof * 60, tol=1e-12))
@@ -118,7 +114,6 @@ def testKeplerProblemCases(tof, pos, vel):
 @pytest.mark.parametrize(("p", "e"), [PAR_CASE, HYP_CASE])
 def testKeplerProblemParabolicHyperbolic(p, e):
     """Test Kepler's problem raises error for parabolic case."""
-    # pylint: disable=invalid-name
     tof = 3600
     inc = deg2rad(55.0)
     raan = deg2rad(10.0)
@@ -132,7 +127,6 @@ def testKeplerProblemParabolicHyperbolic(p, e):
 
 def testKeplerProblemBadValues():
     """Test Kepler's problem raises error for parabolic case."""
-    # pylint: disable=invalid-name
     tof = 3600
     pos = POS_TEST_CASES[0]
     vel = VEL_TEST_CASES[0]
@@ -147,7 +141,6 @@ def testKeplerProblemBadValues():
 
 def _coe2rv(p, ecc, inc, raan, argp, true_anom):
     """Convert a set of COEs to an ECI (J2000) position and velocity vector."""
-    # pylint: disable=invalid-name
     # Save cos(), sin() of anomaly angle, semiparameter rectum
     cos_anom, sin_anom = cos(true_anom), sin(true_anom)
 

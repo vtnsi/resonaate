@@ -27,29 +27,6 @@ include:
   needs: []
 
 # ==========================================
-# `pylint` Job
-# ==========================================
-# Lint source code with pylint
-
-pylint:
-  extends: .check-base
-  before_script:
-    # [NOTE]: pylint requires the package be installed
-    - !reference [.pip-dev, before_script]
-    - echo -e "\e[0Ksection_start:`date +%s`:pip_test[collapsed=true]\r\e[0K Install resonaate & test dependencies via pip"
-    - python3 -m pip install .[test]
-    - echo -e "\e[0Ksection_end:`date +%s`:pip_test\r\e[0K"
-  script:
-    - echo "Linting with pylint"
-    - pylint *.py src docs | tee pylint.log
-    - pylint tests | tee -a pylint.log
-  artifacts:
-    name: pylint
-    paths:
-      - pylint.log
-    expose_as: "pylint log"
-
-# ==========================================
 # `ruff` Job
 # ==========================================
 # Lint source code with ruff

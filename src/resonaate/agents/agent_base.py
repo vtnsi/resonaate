@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from ..scenario.config.platform_config import PlatformConfig
 
 
-class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
+class Agent(metaclass=ABCMeta):
     """Abstract base class for a generic Agent object, i.e. an actor in the simulation."""
 
     TYPES: Final[dict[str, Any]] = {
@@ -152,7 +152,8 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         for itr_event in self.propagate_event_queue:
             if isinstance(itr_event, (ScheduledFiniteManeuver, ScheduledFiniteBurn)):
                 if not self._time < itr_event.end_time or fpe_equals(
-                    itr_event.end_time, self._time
+                    itr_event.end_time,
+                    self._time,
                 ):
                     continue
                 if itr_event in relevant_events:

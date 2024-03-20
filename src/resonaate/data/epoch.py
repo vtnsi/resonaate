@@ -17,7 +17,7 @@ class Epoch(Base, _DataMixin):
     id = Column(Integer, primary_key=True)
 
     ## Defines the human readable version of the `julian_date`
-    timestampISO = Column(String, unique=True, nullable=False)
+    timestampISO = Column(String, unique=True, nullable=False)  # noqa: N815
     # [NOTE]: We may want to transfer this to a property or function, or to
     #   add new columns for year, day, month, hour, minute, second columns
 

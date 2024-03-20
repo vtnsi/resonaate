@@ -85,7 +85,6 @@ def check_ecc(func: Callable[..., float]) -> Callable[..., float]:
         Callable[..., float]: wrapped `anomaly` function that properly accounts for circular orbits.
     """
 
-    # pylint: disable=invalid-name
     @wraps(func)
     def wrapper_check_ecc(anomaly, ecc, *args, **kwargs):
         # circular orbit -> f, E, M are equivalent
@@ -107,7 +106,6 @@ def wrap_anomaly(func: Callable[..., float]) -> Callable[..., float]:
         Callable[..., float]: wrapped `anomaly` function that properly converts its output.
     """
 
-    # pylint: disable=invalid-name
     @wraps(func)
     def wrapper_wrap_angle_2pi(*args, **kwargs):
         return wrapAngle2Pi(func(*args, **kwargs))
@@ -127,7 +125,7 @@ def isInclined(inc: float, tol: float = INCLINATION_LIMIT) -> bool:
     """
     if inc < 0.0 or inc > const.PI:
         raise InclinationError(
-            f"Invalid inclination, must be in [0, 180]. inc={inc * const.RAD2DEG:.1f} deg"
+            f"Invalid inclination, must be in [0, 180]. inc={inc * const.RAD2DEG:.1f} deg",
         )
     return tol <= inc <= const.PI - tol
 

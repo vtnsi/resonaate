@@ -305,11 +305,18 @@ def testJulianDateRangeFiltering(sat_data, target_column, jd_span):
     if not jd_ub:
         jd_ub = float("inf")
     filtered_query = filterByJulianDateInterval(
-        Query(sat_data), sat_data, jd_lb=JulianDate(jd_lb), jd_ub=JulianDate(jd_ub)
+        Query(sat_data),
+        sat_data,
+        jd_lb=JulianDate(jd_lb),
+        jd_ub=JulianDate(jd_ub),
     )
     assert isinstance(filtered_query, Query)
     interval_query = jdIntervalQuery(
-        sat_data, target_column, [1], JulianDate(jd_lb), JulianDate(jd_ub)
+        sat_data,
+        target_column,
+        [1],
+        JulianDate(jd_lb),
+        JulianDate(jd_ub),
     )
     assert isinstance(interval_query, Query)
 

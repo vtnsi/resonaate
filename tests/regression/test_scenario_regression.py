@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -31,7 +30,10 @@ class TestScenarioRegression:
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     @pytest.mark.parametrize("init_filepath", MANEUVER_DETECTION_INIT)
     def testDetectedManeuver(
-        self, datafiles: Path, propagate_scenario: PropagateFunc, init_filepath: str
+        self,
+        datafiles: Path,
+        propagate_scenario: PropagateFunc,
+        init_filepath: str,
     ):
         """Test a maneuver detection simulation using real time propagation. 20 minute long test."""
         elapsed_time = timedelta(minutes=20)

@@ -91,14 +91,13 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
     Returns:
         ``float``: percentage of the Sun that is visible from the satellite
     """
-    # pylint: disable=invalid-name
     sat_sun_vector = sun_eci_position - tgt_eci_position
 
     # Montenbruck, Eqs. 3.85 to 3.87
     a = arcsin(Sun.radius / norm(sat_sun_vector))
     b = arcsin(Earth.radius / norm(tgt_eci_position))
     c = arccos(
-        dot(-tgt_eci_position, sat_sun_vector) / (norm(tgt_eci_position) * norm(sat_sun_vector))
+        dot(-tgt_eci_position, sat_sun_vector) / (norm(tgt_eci_position) * norm(sat_sun_vector)),
     )
 
     # No occultation is possible if the satellite is closer to the Sun than the ECI origin
@@ -116,7 +115,7 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
         y = sqrt(a**2 - x**2)
 
         # Montenbruck Eqs. 3.92 & 3.94
-        A = a**2 * arccos(x / a) + b**2 * arccos((c - x) / b) - c * y
+        A = a**2 * arccos(x / a) + b**2 * arccos((c - x) / b) - c * y  # noqa: N806
 
         # Partial occultation
         return 1.0 - A / (PI * a**2)
@@ -125,7 +124,9 @@ def calculateSunVizFraction(tgt_eci_position: ndarray, sun_eci_position: ndarray
 
 
 def calculateIncidentSolarFlux(
-    viz_cross_section: float, tgt_eci_position: ndarray, sun_eci_position: ndarray
+    viz_cross_section: float,
+    tgt_eci_position: ndarray,
+    sun_eci_position: ndarray,
 ) -> float:
     r"""Calculate the current solar flux of a target object.
 
@@ -145,7 +146,9 @@ def calculateIncidentSolarFlux(
 
 
 def checkGroundSensorLightingConditions(
-    sensor_eci_position: ndarray, sun_eci_unit_vector: ndarray, buffer_angle: float = PI / 12
+    sensor_eci_position: ndarray,
+    sun_eci_unit_vector: ndarray,
+    buffer_angle: float = PI / 12,
 ) -> bool:
     r"""Determine if a ground sensor has the appropriate lighting condition.
 
@@ -166,13 +169,15 @@ def checkGroundSensorLightingConditions(
         ``bool``: whether the sensor can view objects or not based on the lighting condition.
     """
     satellite_sun_angle = arccos(
-        dot(sun_eci_unit_vector, sensor_eci_position) / norm(sensor_eci_position)
+        dot(sun_eci_unit_vector, sensor_eci_position) / norm(sensor_eci_position),
     )
     return satellite_sun_angle >= PI / 2 + buffer_angle
 
 
 def checkSpaceSensorLightingConditions(
-    boresight_eci_vector: ndarray, sun_eci_unit_vector: ndarray, cone_angle: float = PI / 12
+    boresight_eci_vector: ndarray,
+    sun_eci_unit_vector: ndarray,
+    cone_angle: float = PI / 12,
 ) -> bool:
     r"""Determine if a space sensor has the appropriate lighting condition.
 
@@ -193,7 +198,7 @@ def checkSpaceSensorLightingConditions(
         ``bool``: whether the sensor can view objects or not based on the lighting condition.
     """
     boresight_sun_angle = arccos(
-        dot(sun_eci_unit_vector, boresight_eci_vector) / norm(boresight_eci_vector)
+        dot(sun_eci_unit_vector, boresight_eci_vector) / norm(boresight_eci_vector),
     )
     return boresight_sun_angle >= cone_angle
 
@@ -237,7 +242,10 @@ def checkSpaceSensorEarthLimbObscuration(
 
 
 def apparentVisualMagnitude(
-    visual_cross_section: float, reflectivity: float, phase_function: float, rso_range: float
+    visual_cross_section: float,
+    reflectivity: float,
+    phase_function: float,
+    rso_range: float,
 ) -> float:
     """Calculate apparent visual magnitude of an RSO.
 
@@ -255,7 +263,7 @@ def apparentVisualMagnitude(
     """
     vcs_km2 = visual_cross_section * 1e-6
     return Sun.absolute_magnitude - 2.5 * log10(
-        (vcs_km2 * reflectivity * phase_function) / rso_range**2
+        (vcs_km2 * reflectivity * phase_function) / rso_range**2,
     )
 
 
@@ -301,7 +309,7 @@ def checkGalacticExclusionZone(boresight_eci_vector, cone_angle=PI / 30):
     """
     boresight_belt_angle = arccos(
         dot(GALACTIC_CENTER_ECI[:3], boresight_eci_vector)
-        / (norm(GALACTIC_CENTER_ECI[:3]) * norm(boresight_eci_vector))
+        / (norm(GALACTIC_CENTER_ECI[:3]) * norm(boresight_eci_vector)),
     )
     return boresight_belt_angle >= cone_angle
 

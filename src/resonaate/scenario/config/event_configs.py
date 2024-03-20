@@ -61,7 +61,9 @@ class EventConfigList(ConfigObjectList):
             if isinstance(event, dict) and event:
                 if event["event_type"] not in event_classes:
                     raise ConfigValueError(
-                        "event_type", event["event_type"], tuple(event_classes.keys())
+                        "event_type",
+                        event["event_type"],
+                        tuple(event_classes.keys()),
                     )
                 config_objects.append(event_classes[event["event_type"]](**event))
 
@@ -73,7 +75,7 @@ class EventConfigList(ConfigObjectList):
         self._config_objects = config_objects
 
 
-class MissingDataDependency(Exception):
+class MissingDataDependencyError(Exception):
     """Exception raised when a data dependency is missing from the database and it cannot be created at runtime."""
 
 
@@ -85,7 +87,10 @@ class DataDependency:
     """
 
     def __init__(
-        self, data_type: _DataMixin, query: Query, attributes: dict | None = None
+        self,
+        data_type: _DataMixin,
+        query: Query,
+        attributes: dict | None = None,
     ) -> None:
         """Construct an instance of a :class:`.DataDependency`.
 
@@ -104,7 +109,7 @@ class DataDependency:
         """Returns the database object that the :class:`.Event` depends on."""
         if self.attributes is None:
             err = f"Cannot create missing {self.data_type} dependency"
-            raise MissingDataDependency(err)
+            raise MissingDataDependencyError(err)
         return self.data_type(**self.attributes)
 
 
@@ -155,7 +160,6 @@ class EventConfig(ConfigObject):
 
     def validateScopeEventType(self) -> None:
         """Raise a ``ConfigError`` if :attr:`~.Event.event_type` or :attr:`~.Event.scope` aren't set correctly."""
-        # pylint: disable=no-member
         if self.event_type != self.EVENT_CLASS.EVENT_TYPE:
             err = f"{self.EVENT_CLASS} must have event_type set to {self.EVENT_CLASS.EVENT_TYPE}"
             raise ConfigError(self.__class__.__name__, err)
@@ -204,7 +208,9 @@ class ScheduledImpulseEventConfig(EventConfig):
 
         if self.thrust_frame not in ScheduledImpulseEvent.VALID_THRUST_FRAMES:
             raise ConfigValueError(
-                "thrust_frame", self.thrust_frame, ScheduledImpulseEvent.VALID_THRUST_FRAMES
+                "thrust_frame",
+                self.thrust_frame,
+                ScheduledImpulseEvent.VALID_THRUST_FRAMES,
             )
 
 
@@ -232,7 +238,9 @@ class ScheduledFiniteBurnConfig(EventConfig):
 
         if self.thrust_frame not in ScheduledFiniteBurnEvent.VALID_THRUST_FRAMES:
             raise ConfigValueError(
-                "thrust_frame", self.thrust_frame, ScheduledFiniteBurnEvent.VALID_THRUST_FRAMES
+                "thrust_frame",
+                self.thrust_frame,
+                ScheduledFiniteBurnEvent.VALID_THRUST_FRAMES,
             )
 
 
@@ -294,7 +302,7 @@ class TargetTaskPriorityConfig(EventConfig):
                 AgentModel,
                 Query(AgentModel).filter(AgentModel.unique_id == self.target_id),
                 {"unique_id": self.target_id, "name": self.target_name},
-            )
+            ),
         )
         return dependency_list
 
@@ -330,7 +338,7 @@ class TargetAdditionEventConfig(EventConfig):
                 AgentModel,
                 Query(AgentModel).filter(AgentModel.unique_id == self.target_agent.id),
                 {"unique_id": self.target_agent.id, "name": self.target_agent.name},
-            )
+            ),
         )
         return dependency_list
 
@@ -366,7 +374,7 @@ class SensorAdditionEventConfig(EventConfig):
                 AgentModel,
                 Query(AgentModel).filter(AgentModel.unique_id == self.sensor_agent.id),
                 {"unique_id": self.sensor_agent.id, "name": self.sensor_agent.name},
-            )
+            ),
         )
         return dependency_list
 
@@ -402,8 +410,9 @@ class AgentRemovalEventConfig(EventConfig):
         dependency_list = super().getDataDependencies()
         dependency_list.append(
             DataDependency(
-                AgentModel, Query(AgentModel).filter(AgentModel.unique_id == self.agent_id)
-            )
+                AgentModel,
+                Query(AgentModel).filter(AgentModel.unique_id == self.agent_id),
+            ),
         )
         return dependency_list
 

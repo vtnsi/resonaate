@@ -45,7 +45,7 @@ class SubConfig:
         """
         if already_set := getattr(self, name, None):
             raise AttributeError(
-                f"SubConfig {self.section!r} already has a value set for {name!r}:{already_set!r}"
+                f"SubConfig {self.section!r} already has a value set for {name!r}:{already_set!r}",
             )
         setattr(self, name, value)
 
@@ -151,7 +151,6 @@ class BehavioralConfig:
 
     def __init__(self, config_file_path: str | None = None):  # noqa: C901, PLR0912
         """Initialize the configuration object."""
-        # pylint: disable=too-many-branches
         self._parser = CustomConfigParser()
 
         if config_file_path is None:
@@ -193,7 +192,7 @@ class BehavioralConfig:
 
                 else:
                     raise KeyError(
-                        f"Configuration item '{section}::{key}' lacks a type classification."
+                        f"Configuration item '{section}::{key}' lacks a type classification.",
                     )
 
                 try:
@@ -207,7 +206,7 @@ class BehavioralConfig:
             # Set this config object's `SubConfig`
             setattr(self, section, sub)
 
-        BehavioralConfig.__shared_inst = self  # pylint: disable=unused-private-member
+        BehavioralConfig.__shared_inst = self
 
     @classmethod
     def getConfig(cls, config_file_path: str | None = None) -> BehavioralConfig:

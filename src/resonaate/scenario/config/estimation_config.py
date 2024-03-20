@@ -55,7 +55,7 @@ class EstimationConfig(ConfigObject):
 
         if isinstance(self.initial_orbit_determination, dict):
             self.initial_orbit_determination = InitialOrbitDeterminationConfig(
-                **self.initial_orbit_determination
+                **self.initial_orbit_determination,
             )
 
 
@@ -172,17 +172,23 @@ class AdaptiveEstimationConfig(ConfigObject):
 
         if self.observation_window <= 0:
             raise ConfigValueError(
-                "observation_window", self.observation_window, "must be positive"
+                "observation_window",
+                self.observation_window,
+                "must be positive",
             )
 
         if self.prune_threshold <= 0.0 or self.prune_threshold >= 1.0:
             raise ConfigValueError(
-                "prune_threshold", self.prune_threshold, "must be between 0 and 1"
+                "prune_threshold",
+                self.prune_threshold,
+                "must be between 0 and 1",
             )
 
         if self.prune_percentage <= 0.0 or self.prune_percentage >= 1.0:
             raise ConfigValueError(
-                "prune_percentage", self.prune_percentage, "must be between 0 and 1"
+                "prune_percentage",
+                self.prune_percentage,
+                "must be between 0 and 1",
             )
 
 

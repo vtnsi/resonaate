@@ -36,7 +36,7 @@ def testCreateGeopotentialConfig(geopotential_cfg_dict: dict):
     assert cfg.order == DEFAULT_GRAVITY_ORDER
 
     # Test that this can be created from an empty dictionary
-    cfg = GeopotentialConfig(**{})
+    cfg = GeopotentialConfig()
     assert cfg is not None
     for field in fields(GeopotentialConfig):
         assert field.name in cfg.__dict__

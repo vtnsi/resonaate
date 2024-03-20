@@ -169,7 +169,7 @@ class PropagationJobHandler(JobHandler):
                     "target_id": registrant.simulation_id,
                     "name": registrant.name,
                     "eci": registrant.eci_state,
-                }
+                },
             )
         if getTypeString(registrant) == "EstimateAgent":
             target_agents = pickle.loads(KeyValueStore.getValue("target_agents"))
@@ -186,14 +186,14 @@ class PropagationJobHandler(JobHandler):
                     "error_covariance": registrant.error_covariance,
                     "x_dim": registrant.nominal_filter.x_dim,
                     "source": registrant.nominal_filter.source,
-                }
+                },
             )
             if isinstance(registrant.nominal_filter, UnscentedKalmanFilter):
                 data.update(
                     {
                         "gamma": registrant.nominal_filter.gamma,
                         "num_sigmas": registrant.nominal_filter.num_sigmas,
-                    }
+                    },
                 )
             if tgt_agent:
                 data.update(
@@ -201,7 +201,7 @@ class PropagationJobHandler(JobHandler):
                         "truth_state": tgt_agent.eci_state,
                         "truth_jd": tgt_agent.julian_date_epoch,
                         "truth_calendar": tgt_agent.julian_date_epoch.calendar_date,
-                    }
+                    },
                 )
             else:
                 self.logger.error("No matching TargetAgent for problem EstimateAgent!")
@@ -336,7 +336,7 @@ class AgentPropagationJobHandler(PropagationJobHandler):
         elif self._importer_db:
             # Realtime propagation is off, attempt to query database for valid `Ephemeris` objects
             query = Query(TruthEphemeris).filter(
-                TruthEphemeris.agent_id == registrant.simulation_id
+                TruthEphemeris.agent_id == registrant.simulation_id,
             )
 
             # If minimal truth data exists in the database, use importer model, otherwise default to

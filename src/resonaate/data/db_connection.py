@@ -55,7 +55,7 @@ class _GetDBConnection(Transaction):
         self.response_payload = key_value_store.get(DB_PATH_KEY)
         if self.response_payload is None:
             self.error = DBConnectionError(
-                "setDBPath() must be called once before getDBConnection()"
+                "setDBPath() must be called once before getDBConnection()",
             )
 
     def getResponse(self) -> Any:
@@ -67,7 +67,6 @@ class _GetDBConnection(Transaction):
         Raises:
             Exception: If an error occurred while executing this transaction.
         """
-        # pylint: disable=import-outside-toplevel
         db_path = super().getResponse()
         if self.__cached_interfaces.get(db_path) is None:
             # Local Imports
@@ -89,7 +88,7 @@ def setDBPath(path: str) -> None:
         KeyValueStore.submitTransaction(ExclusiveSet(DB_PATH_KEY, path))
     except KeyError as err:
         raise DBConnectionError(
-            "setDBPath() should only be called once per script/simulation"
+            "setDBPath() should only be called once per script/simulation",
         ) from err
 
 

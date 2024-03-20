@@ -38,7 +38,6 @@ class DataInterface(metaclass=ABCMeta):
     This defines the common data model by which all RESONAATE DBs are assumed to adhere to.
     """
 
-    # pylint: disable=no-member
     VALID_DATA_TYPES: Final[dict[str, Base]] = {
         AgentModel.__tablename__: AgentModel,
         Epoch.__tablename__: Epoch,
@@ -70,7 +69,8 @@ class DataInterface(metaclass=ABCMeta):
         self.logger = logger
         if self.logger is None:
             self.logger = Logger(
-                "resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation
+                "resonaate",
+                path=BehavioralConfig.getConfig().logging.OutputLocation,
             )
 
         if db_path.startswith(self.SQLITE_PREFIX):
@@ -104,7 +104,7 @@ class DataInterface(metaclass=ABCMeta):
             current_session.commit()
         except SQLAlchemyError:
             self.logger.error(
-                f"Exception thrown in `::getSessionScope()` by {self}: \n{format_exc()}"
+                f"Exception thrown in `::getSessionScope()` by {self}: \n{format_exc()}",
             )
             current_session.rollback()
             raise

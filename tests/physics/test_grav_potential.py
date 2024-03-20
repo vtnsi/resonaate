@@ -54,7 +54,13 @@ def testGeoPotentialFunction(degree: int, order: int, truth: ndarray):
     """Test the non-spherical geopotential acceleration function."""
     c_nm, s_nm = loadGeopotentialCoefficients("egm96.txt")
     accelerations = nonSphericalAcceleration(
-        ITRF_POSITION, Earth.mu, Earth.radius, c_nm, s_nm, degree, order
+        ITRF_POSITION,
+        Earth.mu,
+        Earth.radius,
+        c_nm,
+        s_nm,
+        degree,
+        order,
     )
     assert allclose(accelerations, array(truth) * 1e-5, atol=1e-10, rtol=1e-8)
 
@@ -73,7 +79,7 @@ def testNonsphericalAcceleration():
             -7.108806806,
             -2.822740035,
             1.130313493,
-        ]
+        ],
     )
     # Full acceleration values
     eci_accel = array([2.383405021e-03, -7.611372878e-03, -4.087216625e-03])

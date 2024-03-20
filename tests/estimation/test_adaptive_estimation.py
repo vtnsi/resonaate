@@ -1,4 +1,3 @@
-# pylint: disable=protected-access,unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -38,7 +37,15 @@ if TYPE_CHECKING:
 EST_X = array([6378.0, 2.0, 10.0, 0.0, 7.0, 0.0])
 EST_P = diagflat([1.0, 2.0, 1.0, 1, 1, 1])
 NOMINAL_FILTER = UnscentedKalmanFilter(
-    10001, 0.0, EST_X, EST_P, TwoBody(), 3 * EST_P, StandardNis(0.01), None, False
+    10001,
+    0.0,
+    EST_X,
+    EST_P,
+    TwoBody(),
+    3 * EST_P,
+    StandardNis(0.01),
+    None,
+    False,
 )
 TIMESTEP = 300
 ORBIT_DETERMINATION = lambertInitializationFactory("lambert_universal")
@@ -70,7 +77,7 @@ HYPOTHESIS_STATES = array(
             1.23195891e-02,
             -5.61649491e00,
         ],
-    ]
+    ],
 )
 JULIAN_DATE_START = JulianDate(2459304.16666666665)
 PRIOR_OB_JULIAN_DATE = JulianDate(2459304.208333333)
@@ -127,7 +134,14 @@ MANEUVER_TIMES = array([3600, 3600, 4200, 8400])
 def getTestAdaptiveFilter() -> AdaptiveFilter:
     """Create a custom :class:`AdaptiveFilter` object."""
     adaptive_filter = AdaptiveFilter(
-        NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
+        NOMINAL_FILTER,
+        TIMESTEP,
+        ORBIT_DETERMINATION,
+        STACKING_METHOD,
+        1,
+        300,
+        1e-10,
+        0.997,
     )
     adaptive_filter.x_dim = 6
     adaptive_filter.pred_x = EST_X
@@ -152,7 +166,7 @@ def getTestRSOAgent() -> TargetAgent:
     rso_agent.unique_id = 10001
     rso_agent.name = "Test_sat"
     rso_agent.eci_state = array(
-        [-948.311943, 750.624874, 6767.19073, 7.46101124, 1.20802706, 0.911776855]
+        [-948.311943, 750.624874, 6767.19073, 7.46101124, 1.20802706, 0.911776855],
     )
     return rso_agent
 
@@ -171,7 +185,7 @@ def getTestSensorAgent(earth_sensor: Sensor) -> SensingAgent:
             -1.07453539e-01,
             -1.14109571e-01,
             2.19474290e-04,
-        ]
+        ],
     )
     sensor_agent.ecef_state = array(
         [
@@ -181,7 +195,7 @@ def getTestSensorAgent(earth_sensor: Sensor) -> SensingAgent:
             1.16467265e-24,
             -6.00704788e-24,
             3.01869766e-18,
-        ]
+        ],
     )
     sensor_agent.julian_date_epoch = JULIAN_DATE_START
     sensor_agent.lla_state = array([1.22813479, 0.54328225, 0.063])
@@ -254,7 +268,14 @@ class TestAdaptiveEstimation:
     def testInit(self):
         """Test creation of :class:`.AdaptiveEstimation`."""
         _ = AdaptiveFilter(
-            NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
+            NOMINAL_FILTER,
+            TIMESTEP,
+            ORBIT_DETERMINATION,
+            STACKING_METHOD,
+            1,
+            300,
+            1e-10,
+            0.997,
         )
 
     def testFromConfig(self):
@@ -287,7 +308,9 @@ class TestAdaptiveEstimation:
             return None
 
         monkeypatch.setattr(
-            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+            resonaate.estimation.adaptive.adaptive_filter,
+            "getDBConnection",
+            mockDb,
         )
 
         # Creating Monkey Patch of database calls
@@ -295,7 +318,9 @@ class TestAdaptiveEstimation:
             return estimate_ephem
 
         monkeypatch.setattr(
-            resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
+            resonaate.estimation.adaptive.adaptive_filter,
+            "fetchEstimatesByJDInterval",
+            mockGetEst,
         )
 
         def mockObsBad(*args, **kwargs):
@@ -331,7 +356,9 @@ class TestAdaptiveEstimation:
         assert good_init is True
 
     def testCalcNominalStates(
-        self, monkeypatch: pytest.MonkeyPatch, adaptive_filter: AdaptiveFilter
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        adaptive_filter: AdaptiveFilter,
     ):
         """Test calculation of nominal states for hypotheses."""
         adaptive_filter.num_models = 3
@@ -342,7 +369,9 @@ class TestAdaptiveEstimation:
             return estimate_ephem
 
         monkeypatch.setattr(
-            resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGet
+            resonaate.estimation.adaptive.adaptive_filter,
+            "fetchEstimatesByJDInterval",
+            mockGet,
         )
 
         nominal_states = adaptive_filter._calculateNominalStates(
@@ -361,11 +390,13 @@ class TestAdaptiveEstimation:
                 [0.0, 0.0, 0.0],
                 [-0.00669838, -0.00723921, -0.04762473],
                 [-0.01061822, -10.00306015, -0.01149563],
-            ]
+            ],
         )
         adaptive_filter.mmae_antecedent_time = 4200
         hypothesis_states = adaptive_filter._generateHypothesisStates(
-            HYPOTHESIS_STATES, maneuvers, MANEUVER_TIMES
+            HYPOTHESIS_STATES,
+            maneuvers,
+            MANEUVER_TIMES,
         )
         assert hypothesis_states.shape == (2, 6)
 
@@ -395,16 +426,20 @@ class TestAdaptiveEstimation:
         """Test generating maneuver hypotheses."""
         adaptive_filter.num_models = 3
         adaptive_filter.est_x = array(
-            [-948.311943, 750.624874, 6767.19073, 7.46101124, 1.20802706, 0.911776855]
+            [-948.311943, 750.624874, 6767.19073, 7.46101124, 1.20802706, 0.911776855],
         )
         adaptive_filter.time = 9000
         delta_v = adaptive_filter._generateHypothesisManeuvers(
-            [radar_observation], HYPOTHESIS_STATES, MANEUVER_TIMES
+            [radar_observation],
+            HYPOTHESIS_STATES,
+            MANEUVER_TIMES,
         )
         assert delta_v.shape == (3, 3)
         # Test Optical option
         optical_v = adaptive_filter._generateHypothesisManeuvers(
-            [optical_observation], HYPOTHESIS_STATES, MANEUVER_TIMES
+            [optical_observation],
+            HYPOTHESIS_STATES,
+            MANEUVER_TIMES,
         )
         assert optical_v.shape == (3, 3)
 
@@ -415,16 +450,20 @@ class TestAdaptiveEstimation:
                 [0.0, 0.0, 0.0],
                 [-0.00669838, -0.00723921, -0.04762473],
                 [-0.01061822, -10.00306015, -0.01149563],
-            ]
+            ],
         )
         crashed_indices = [2]
         hypothesis_states = adaptive_filter._initialPruning(
-            maneuvers, crashed_indices, HYPOTHESIS_STATES
+            maneuvers,
+            crashed_indices,
+            HYPOTHESIS_STATES,
         )
         assert hypothesis_states.shape == (2, 6)
         crashed_indices = [0, 1]
         hypothesis_states = adaptive_filter._initialPruning(
-            maneuvers, crashed_indices, HYPOTHESIS_STATES
+            maneuvers,
+            crashed_indices,
+            HYPOTHESIS_STATES,
         )
         assert hypothesis_states.size == 0
         assert adaptive_filter.num_models == 0
@@ -532,7 +571,9 @@ class TestAdaptiveEstimation:
         adaptive_filter.num_models = 4
         adaptive_filter.time = 9000
         maneuvers = adaptive_filter._calculateDeltaV(
-            HYPOTHESIS_STATES, MANEUVER_TIMES, tgt_eci_position
+            HYPOTHESIS_STATES,
+            MANEUVER_TIMES,
+            tgt_eci_position,
         )
         assert maneuvers.shape == (4, 3)
 
@@ -564,7 +605,14 @@ class TestAdaptiveEstimation:
 def getTestSMM() -> StaticMultipleModel:
     """Create a custom :class:`StaticMultipleModel` object."""
     smm = StaticMultipleModel(
-        NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
+        NOMINAL_FILTER,
+        TIMESTEP,
+        ORBIT_DETERMINATION,
+        STACKING_METHOD,
+        1,
+        300,
+        1e-10,
+        0.997,
     )
     smm.x_dim = 6
     smm.models = smm._createModels(HYPOTHESIS_STATES)
@@ -608,7 +656,9 @@ class TestSMM:
             return None
 
         monkeypatch.setattr(
-            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+            resonaate.estimation.adaptive.adaptive_filter,
+            "getDBConnection",
+            mockDb,
         )
 
         # Creating Monkey Patch of database calls
@@ -616,7 +666,9 @@ class TestSMM:
             return estimate_ephem
 
         monkeypatch.setattr(
-            resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
+            resonaate.estimation.adaptive.adaptive_filter,
+            "fetchEstimatesByJDInterval",
+            mockGetEst,
         )
 
         def mockObsGood(*args, **kwargs):
@@ -652,7 +704,9 @@ class TestSMM:
         assert single_model is True
 
     def testConvergedToSingleModel(
-        self, monkeypatch: pytest.MonkeyPatch, smm: StaticMultipleModel
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        smm: StaticMultipleModel,
     ):
         """Test converging to a single model."""
         no_converge = smm._convergedToSingleModel([])
@@ -660,7 +714,7 @@ class TestSMM:
         smm.prune_threshold = 2.0
         smm.prune_percentage = 2.0
 
-        def mockChi2(*args, **kwargs):  # pylint:disable=unused-argument
+        def mockChi2(*args, **kwargs):
             return True
 
         monkeypatch.setattr(resonaate.estimation.adaptive.smm, "oneSidedChiSquareTest", mockChi2)
@@ -680,7 +734,14 @@ class TestSMM:
 def getTestGPB1() -> GeneralizedPseudoBayesian1:
     """Create a custom :class:`GeneralizedPseudoBayesian1` object."""
     gpb1 = GeneralizedPseudoBayesian1(
-        NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
+        NOMINAL_FILTER,
+        TIMESTEP,
+        ORBIT_DETERMINATION,
+        STACKING_METHOD,
+        1,
+        300,
+        1e-10,
+        0.997,
     )
     gpb1.x_dim = 6
     gpb1.models = gpb1._createModels(HYPOTHESIS_STATES)
@@ -724,7 +785,9 @@ class TestGPB1:
             return None
 
         monkeypatch.setattr(
-            resonaate.estimation.adaptive.adaptive_filter, "getDBConnection", mockDb
+            resonaate.estimation.adaptive.adaptive_filter,
+            "getDBConnection",
+            mockDb,
         )
 
         # Creating Monkey Patch of database calls
@@ -732,7 +795,9 @@ class TestGPB1:
             return estimate_ephem
 
         monkeypatch.setattr(
-            resonaate.estimation.adaptive.adaptive_filter, "fetchEstimatesByJDInterval", mockGetEst
+            resonaate.estimation.adaptive.adaptive_filter,
+            "fetchEstimatesByJDInterval",
+            mockGetEst,
         )
 
         def mockObsGood(*args, **kwargs):
@@ -767,6 +832,6 @@ class TestGPB1:
                 [0.42857143, 0.28571429, 0.28571429],
                 [0.28571429, 0.42857143, 0.28571429],
                 [0.28571429, 0.28571429, 0.42857143],
-            ]
+            ],
         )
         assert mix.all() == tru_mix.all()

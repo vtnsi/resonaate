@@ -105,7 +105,6 @@ def getNonSphericalHarmonics(
         ``ndarray``: (n+1 x m+1) matrix of recursive cosine harmonic terms.
         ``ndarray``: (n+1 x m+1) matrix of recursive sine harmonic terms.
     """
-    # pylint: disable=invalid-name
     # Temporary variables for convenience
     norm_r = norm(ecef_pos)
     rho = cb_radius / norm_r
@@ -126,7 +125,7 @@ def getNonSphericalHarmonics(
     for m in range(order + 1):
         for n in range(2, degree + 1):
             # Skip terms above the diagonal
-            if m > n:  # pylint: disable=no-else-continue
+            if m > n:
                 continue
             # Diagonal terms
             if m == n:
@@ -175,7 +174,6 @@ def nonSphericalAcceleration(
     Returns:
         ``ndarray``: vector of geopotential acceleration terms in ITRF/ECEF coordinates
     """
-    # pylint: disable=invalid-name
     # We require one degree & order higher harmonic terms due to the partial acceleration equations
     v, w = getNonSphericalHarmonics(ecef_pos, cb_radius, max_degree + 1, max_order + 1)
     acceleration = zeros((3,), dtype=float64)

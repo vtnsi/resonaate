@@ -72,7 +72,9 @@ def testIsVisible(
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state, utc_datetime)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.eci_state, mocked_primary_target.initial_state, utc_datetime
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        utc_datetime,
     )
 
     visibility, explanation = radar_sensor.isVisible(

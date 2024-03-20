@@ -31,7 +31,8 @@ from resonaate.scenario.config.estimation_config import (
 @patch("resonaate.scenario.config.estimation_config.SequentialFilterConfig", autospec=True)
 @patch("resonaate.scenario.config.estimation_config.AdaptiveEstimationConfig", autospec=True)
 @patch(
-    "resonaate.scenario.config.estimation_config.InitialOrbitDeterminationConfig", autospec=True
+    "resonaate.scenario.config.estimation_config.InitialOrbitDeterminationConfig",
+    autospec=True,
 )
 def getEstimationConfig(
     initial_orbit_determination: InitialOrbitDeterminationConfig,
@@ -60,7 +61,7 @@ def testCreateEstimationConfig(estimation_cfg_dict: dict):
 
     # Cannot be created from empty dictionary
     with pytest.raises(TypeError):
-        _ = EstimationConfig(**{})
+        _ = EstimationConfig()
 
     # Use sub configs as dicts
     cfg_dict = {"sequential_filter": {"name": "ukf"}}
@@ -116,7 +117,7 @@ def testCreateSequentialFilterConfig(sequential_filter_cfg_dict: dict):
 
     # Cannot be created from empty dictionary
     with pytest.raises(TypeError):
-        _ = SequentialFilterConfig(**{})
+        _ = SequentialFilterConfig()
 
     # Use sub configs as dicts
     cfg_dict = deepcopy(sequential_filter_cfg_dict)
@@ -168,7 +169,7 @@ def testCreateManeuverDetectionConfig(maneuver_detection_cfg_dict: dict):
 
     # Cannot be created from empty dictionary
     with pytest.raises(TypeError):
-        _ = ManeuverDetectionConfig(**{})
+        _ = ManeuverDetectionConfig()
 
     # Ensure the correct amount of req/opt keys
     assert len(ManeuverDetectionConfig.getRequiredFields()) == 1
@@ -238,7 +239,7 @@ def testCreateAdaptiveEstimationConfig(adaptive_estimation_cfg_dict: dict):
 
     # Cannot be created from empty dictionary
     with pytest.raises(TypeError):
-        _ = AdaptiveEstimationConfig(**{})
+        _ = AdaptiveEstimationConfig()
 
     # Ensure the correct amount of req/opt keys
     assert len(AdaptiveEstimationConfig.getRequiredFields()) == 1
@@ -349,7 +350,7 @@ def testCreateInitialOrbitDeterminationConfig(initial_orbit_determination_cfg_di
         assert getattr(cfg, field.name) is not None
 
     # Can be created from empty dictionary
-    _ = InitialOrbitDeterminationConfig(**{})
+    _ = InitialOrbitDeterminationConfig()
 
     # Ensure the correct amount of req/opt keys
     assert len(InitialOrbitDeterminationConfig.getRequiredFields()) == 0

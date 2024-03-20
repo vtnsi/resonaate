@@ -126,10 +126,10 @@ class JobHandler(ParallelMixin, ABC):
         Raises:
             `TypeError`: when :attr:`.callback_class` is an invalid registration type
         """
-        registration = self.callback_class(registrant)  # pylint: disable=not-callable
+        registration = self.callback_class(registrant)
         if not isinstance(registration, CallbackRegistration):
             raise TypeError(
-                f"Use `CallbackRegistration` to register job callbacks, not {type(registration)}"
+                f"Use `CallbackRegistration` to register job callbacks, not {type(registration)}",
             )
         self.callback_registry.append(registration)
 

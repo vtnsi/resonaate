@@ -38,7 +38,7 @@ def testCreatePropagationConfig(propagation_cfg_dict: dict):
     assert cfg.truth_simulation_only is False
 
     # Test that this can be created from an empty dictionary
-    cfg = PropagationConfig(**{})
+    cfg = PropagationConfig()
     assert cfg is not None
     for field in fields(PropagationConfig):
         assert field.name in cfg.__dict__

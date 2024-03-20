@@ -401,23 +401,6 @@ Also, these jobs have zero dependencies, so they are always immediately started 
 
   </details>
 
-- **pylint** runs a full `pylint` linter check
-
-  <details><summary>Config (Click to expand)</summary>
-
-  ```{literalinclude} ../../../.gitlab/ci/check.gitlab-ci.yml
-  ---
-  name: ci-pylint-job
-  caption: pylint
-  language: yaml
-  linenos: true
-  start-at: 'pylint:'
-  end-before: ====
-  ---
-  ```
-
-  </details>
-
 - **manifest** verifies that the `Manifest.in` file properly includes tracked files, so that source distributions work properly
 
   <details><summary>Config (Click to expand)</summary>

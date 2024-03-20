@@ -57,7 +57,7 @@ def rot1(angle: float) -> ndarray:
             [1, 0, 0],
             [0, cos(angle), sin(angle)],
             [0, -sin(angle), cos(angle)],
-        ]
+        ],
     )
 
 
@@ -75,7 +75,7 @@ def rot2(angle: float) -> ndarray:
             [cos(angle), 0, -sin(angle)],
             [0, 1, 0],
             [sin(angle), 0, cos(angle)],
-        ]
+        ],
     )
 
 
@@ -93,7 +93,7 @@ def rot3(angle: float) -> ndarray:
             [cos(angle), sin(angle), 0],
             [-sin(angle), cos(angle), 0],
             [0, 0, 1],
-        ]
+        ],
     )
 
 
@@ -207,13 +207,12 @@ def skewSymmetric(w: ndarray) -> ndarray:
     Returns:
         ``ndarray``: corresponding 3x3 skew-symmetric matrix.
     """
-    # pylint: disable=invalid-name
     return array(
         [
             [0, -w[2], w[1]],
             [w[2], 0, -w[0]],
             [-w[1], w[1], 0],
-        ]
+        ],
     )
 
 
@@ -281,7 +280,7 @@ def wrapAngle2Pi(angle: float) -> float:
     return angle
 
 
-def fpe_equals(value: float, expected: float) -> float:  # pylint: disable=invalid-name
+def fpe_equals(value: float, expected: float) -> float:
     r"""Utility for checking that `value` and `expected` are equal within the bounds of floating point error (FPE).
 
     Args:
@@ -292,7 +291,7 @@ def fpe_equals(value: float, expected: float) -> float:  # pylint: disable=inval
         ``bool``: If `True`, then it should be safe to assume that `value == expected` and the `value` is just
         misrepresented due to FPE.
     """
-    return fabs(value - expected) < finfo(float).resolution  # pylint: disable=no-member
+    return fabs(value - expected) < finfo(float).resolution
 
 
 def safeArccos(arg: float) -> float:

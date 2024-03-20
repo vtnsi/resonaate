@@ -74,7 +74,7 @@ def getReductionParameters(utc_date: datetime) -> dict:
     return param_dict
 
 
-def _updateFK5Parameters(utc_date: datetime, eops=None):  # pylint: disable=too-many-locals
+def _updateFK5Parameters(utc_date: datetime, eops=None):
     """Retrieve set of transformation parameters required for FK5 transformation.
 
     Determine the needed nutation parameters to successfully transform between
@@ -113,7 +113,9 @@ def _updateFK5Parameters(utc_date: datetime, eops=None):  # pylint: disable=too-
     # [NOTE] EOP corrections not added when converting to mean J2000 according to Vallado
     #           They are added here because we are rotating to GCRF instead
     delta_psi, true_eps, mean_eps, eq_equinox = _getNutationParameters(
-        ttt, eops.d_delta_psi, eops.d_delta_eps
+        ttt,
+        eops.d_delta_psi,
+        eops.d_delta_eps,
     )
 
     # Polar motion - Vallado 4th Ed. Eq 3-77 (full) & Eq 3-78 (simplified)
@@ -138,7 +140,9 @@ def _updateFK5Parameters(utc_date: datetime, eops=None):  # pylint: disable=too-
     )
     # Find Greenwich apparent sidereal time. [radians]
     greenwich_apparent_sidereal_time = greenwichApparentTime(
-        utc_date.year, elapsed_days, eq_equinox
+        utc_date.year,
+        elapsed_days,
+        eq_equinox,
     )
 
     # Get precession angles. Vallado 4th Ed. Eq 3-88

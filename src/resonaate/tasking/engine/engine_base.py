@@ -30,9 +30,6 @@ if TYPE_CHECKING:
     from ...physics.time.stardate import JulianDate
 
 
-# pylint:disable=too-many-public-methods
-
-
 class TaskingEngine(metaclass=ABCMeta):
     """Abstract base class defining common API for tasking engines.
 
@@ -100,7 +97,8 @@ class TaskingEngine(metaclass=ABCMeta):
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         """``ndarray``: NxM array defining the visibility condition for every target/sensor pair."""
         self.metric_matrix = zeros(
-            (self.num_targets, self.num_sensors, self.num_metrics), dtype=float
+            (self.num_targets, self.num_sensors, self.num_metrics),
+            dtype=float,
         )
         """``ndarray``: NxMxP array defining the metrics for every target/sensor pair."""
 

@@ -306,7 +306,7 @@ class KeepGeoNorthSouth(StationKeeper):
             current_coe = ClassicalElements.fromECI(state)
             delta_theta = safeArccos(
                 (sin(current_coe.inc) ** 2) * cos(current_coe.raan - self.initial_coe.raan)
-                + cos(current_coe.inc) ** 2
+                + cos(current_coe.inc) ** 2,
             )
             ntw_delta_v = 2 * current_vel * sin(delta_theta)  # km/s (sin assumes radians)
             if abs(ntw_delta_v) >= self.BURN_THRESHOLD:
