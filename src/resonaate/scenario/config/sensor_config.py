@@ -167,11 +167,15 @@ class RadarConfig(SensorConfig):
             raise ConfigValueError(self.type + ": tx_power", self.tx_power, ">0 (W)")
         if self.tx_frequency is None:
             raise ConfigValueError(
-                self.type + ": tx_frequency", self.tx_frequency, ">0 (Hz) or band"
+                self.type + ": tx_frequency",
+                self.tx_frequency,
+                ">0 (Hz) or band",
             )
         if self.min_detectable_power is None:
             raise ConfigValueError(
-                self.type + ": min_detectable_power", self.min_detectable_power, ">0 (W)"
+                self.type + ": min_detectable_power",
+                self.min_detectable_power,
+                ">0 (W)",
             )
 
         if isinstance(self.tx_frequency, str):
@@ -229,5 +233,7 @@ class FieldOfViewConfig(ConfigObject):
 
             if self.elevation_angle <= 0 or self.elevation_angle >= 180:
                 raise ConfigValueError(
-                    "elevation_angle", self.elevation_angle, "between 0 and 180"
+                    "elevation_angle",
+                    self.elevation_angle,
+                    "between 0 and 180",
                 )

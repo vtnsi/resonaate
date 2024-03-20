@@ -70,7 +70,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
 
@@ -91,7 +92,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
         assert obs.sensor_eci.shape == (6,)
@@ -107,7 +109,6 @@ class TestObservationTable:
         sensor_eci: ndarray,
     ):
         """Test measurement property."""
-        # pylint: disable=protected-access
         obs = Observation(
             julian_date=epoch.julian_date,
             sensor_id=sensor_agent.unique_id,
@@ -117,7 +118,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
 
@@ -153,7 +155,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
         print(obs)
@@ -176,7 +179,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
 
@@ -189,7 +193,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
 
@@ -202,7 +207,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
         obs3.range_km = 500
@@ -230,7 +236,8 @@ class TestObservationTable:
             range_rate_km_p_sec=0.10,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], np.eye(4)
+                ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"],
+                np.eye(4),
             ),
         )
         assert obs.measurement_states.shape == (4,)
@@ -253,7 +260,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
 
@@ -278,7 +286,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
         # Pre-insert required objects
@@ -310,7 +319,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
         database.insertData(epoch)
@@ -346,7 +356,8 @@ class TestObservationTable:
             elevation_rad=self.elevation_rad,
             sensor_eci=sensor_eci,
             measurement=Measurement.fromMeasurementLabels(
-                ["azimuth_rad", "elevation_rad"], np.eye(2)
+                ["azimuth_rad", "elevation_rad"],
+                np.eye(2),
             ),
         )
         database.insertData(epoch)

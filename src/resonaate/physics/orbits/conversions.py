@@ -29,6 +29,8 @@ from .utils import (
     singularityCheck,
 )
 
+# ruff: noqa: N806
+
 OrbitalElementTuple = tuple[float, float, float, float, float, float]
 
 
@@ -58,7 +60,6 @@ def coe2eci(
     Returns:
         ``ndarray``: 6x1 ECI state vector (km; km/sec).
     """
-    # pylint: disable=invalid-name
     # Save cos(), sin() of anomaly angle, semi-parameter rectum
     cos_anom, sin_anom = cos(true_anom), sin(true_anom)
     p = sma * (1.0 - ecc**2)
@@ -174,7 +175,6 @@ def coe2eqe(
         - q (``float``): inclination term, :math:`q=\psi`.
         - mean_long (``float``): mean longitude (location) angle, :math:`\lambda_M\in[0,2\pi)`, in radians.
     """
-    # pylint: disable=invalid-name
     II = 1 if not retro else -1
     h = ecc * sin(argp + II * raan)
     k = ecc * cos(argp + II * raan)
@@ -185,7 +185,13 @@ def coe2eqe(
 
 
 def eqe2coe(
-    sma: float, h: float, k: float, p: float, q: float, mean_long: float, retro: bool = False
+    sma: float,
+    h: float,
+    k: float,
+    p: float,
+    q: float,
+    mean_long: float,
+    retro: bool = False,
 ) -> OrbitalElementTuple:
     r"""Convert an orbit defined by a set of EQEs into corresponding COEs.
 
@@ -212,7 +218,6 @@ def eqe2coe(
         - argp (``float``): argument of perigee, :math:`\omega\in[0,2\pi)`, in radians.
         - true_anom (``float``): true anomaly (location) angle, :math:`f\in[0,2\pi)`, in radians.
     """
-    # pylint: disable=invalid-name
     II = 1 if not retro else -1
     ecc = getEccentricityFromEQE(h, k)
     inc = getInclinationFromEQE(p, q, retro=retro)
@@ -243,7 +248,6 @@ def eci2eqe(eci_state: ndarray, mu: float = Earth.mu, retro: bool = False) -> Or
         - q (``float``): inclination term, :math:`q=\psi`.
         - mean_long (``float``): mean longitude (location) angle, :math:`\lambda_M\in[0,2\pi)`, in radians.
     """
-    # pylint: disable=invalid-name
     II = 1 if not retro else -1
     # Get position and velocity vectors
     pos_vec, vel_vec = array(eci_state[:3], copy=True), array(eci_state[3:], copy=True)
@@ -316,7 +320,6 @@ def eqe2eci(
     Returns:
         ``ndarray``: 6x1 ECI state vector (km; km/sec).
     """
-    # pylint: disable=invalid-name
     # Common intermediate terms
     h_sq, k_sq = h**2, k**2
     n = getMeanMotion(sma, mu=mu)

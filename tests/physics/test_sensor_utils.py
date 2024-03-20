@@ -69,7 +69,8 @@ def testGetFrequencyFromString():
 def testBodyLimbConeAngleBadInputs():
     """Test that invalid inputs to `getBodyLimbConeAngle()` raises a `ValueError`."""
     with pytest.raises(
-        ValueError, match="Observer distance cannot be less than the celestial body limb."
+        ValueError,
+        match="Observer distance cannot be less than the celestial body limb.",
     ):
         getBodyLimbConeAngle(2.0, 1.0)
 

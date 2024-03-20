@@ -26,7 +26,12 @@ class Terrestrial(Dynamics):
         self.x_ecef = x_ecef
 
     def propagate(
-        self, initial_time, final_time, initial_state, station_keeping=None, scheduled_events=None
+        self,
+        initial_time,
+        final_time,
+        initial_state,
+        station_keeping=None,
+        scheduled_events=None,
     ):
         """Propagate the state from the initial time to the final time.
 
@@ -42,7 +47,7 @@ class Terrestrial(Dynamics):
         """
         if final_time < initial_time:
             raise ValueError(
-                "Terrestrial: Invalid input for final_time. final_time must be greater than initial_time."
+                "Terrestrial: Invalid input for final_time. final_time must be greater than initial_time.",
             )
 
         final_datetime = self.datetime_start + timedelta(seconds=final_time)

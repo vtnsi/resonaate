@@ -26,8 +26,6 @@ if TYPE_CHECKING:
 class TargetAdditionEvent(Event):
     """Event data object describing a target that is added after scenario start."""
 
-    # pylint: disable=invalid-name, no-member
-
     EVENT_TYPE: str = "target_addition"
     """``str``: Name of this type of event."""
 

@@ -120,7 +120,8 @@ class EstimateUpdateJobHandler(JobHandler):
         for registration in self.callback_registry:
             for estimate_id in registration.registrant.target_agents:
                 job = registration.jobCreateCallback(
-                    estimate_id=estimate_id, observations=obs_dict[estimate_id]
+                    estimate_id=estimate_id,
+                    observations=obs_dict[estimate_id],
                 )
                 self.job_id_registration_dict[job.id] = registration
                 jobs.append(job)

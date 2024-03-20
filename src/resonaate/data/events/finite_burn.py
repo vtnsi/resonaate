@@ -41,7 +41,6 @@ class ScheduledFiniteBurnEvent(Event):
     # [NOTE]: Old-style generic type hints builtins (Tuple vs tuple) required until we either:
     #   1) Move to SQLAlchemy >= 2.0
     #   2) Move to Python >= 3.10
-    # pylint: disable=deprecated-typing-alias
     VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)  # noqa: UP006
     """``tuple``: Valid values for :attr:`~.ScheduledFiniteBurnEvent.thrust_frame`."""
 
@@ -57,16 +56,14 @@ class ScheduledFiniteBurnEvent(Event):
     """``float``: Third element of acceleration vector in km/s^2."""
 
     @declared_attr
-    def thrust_frame(self):  # pylint: disable=invalid-name
+    def thrust_frame(self):
         """``str``: Label for frame that thrust should be applied in."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "thrust_frame", Column(String(10))
-        )
+        return Event.__table__.c.get("thrust_frame", Column(String(10)))
 
     @declared_attr
-    def planned(self):  # pylint: disable=invalid-name
+    def planned(self):
         """``bool``: Flag indicating whether this task is expected by the filter or not."""
-        return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
+        return Event.__table__.c.get("planned", Column(Boolean))
 
     MUTABLE_COLUMN_NAMES = (
         *Event.MUTABLE_COLUMN_NAMES,
@@ -98,7 +95,10 @@ class ScheduledFiniteBurnEvent(Event):
             err = f"{self.thrust_frame} is not a valid coordinate frame."
             raise ValueError(err)
         finite_burn = ScheduledFiniteBurn(
-            start_sim_time, end_sim_time, thrust_func, scope_instance.simulation_id
+            start_sim_time,
+            end_sim_time,
+            thrust_func,
+            scope_instance.simulation_id,
         )
 
         scope_instance.appendPropagateEvent(finite_burn)

@@ -1,4 +1,3 @@
-# pylint: disable=import-outside-toplevel, reimported
 from __future__ import annotations
 
 # Standard Library Imports
@@ -52,7 +51,7 @@ CORRECT_DEFAULTS = OrderedDict(
             "SaveSpaceSensors": False,
             "SaveSpaceSensorsDirectory": "space_sensor_truth",
         },
-    }
+    },
 )
 
 
@@ -109,9 +108,9 @@ def testSinglePattern():
 
     config = BehavioralConfig.getConfig()
     # RESONAATE Imports
-    from resonaate.common.behavioral_config import BehavioralConfig as second_config
+    from resonaate.common.behavioral_config import BehavioralConfig as SecondConfig
 
-    assert config is second_config.getConfig()
+    assert config is SecondConfig.getConfig()
 
 
 @pytest.mark.no_debug()

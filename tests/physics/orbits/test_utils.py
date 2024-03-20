@@ -44,6 +44,8 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
+# ruff: noqa: N803, N806
+
 PSI: tuple[float] = (-1e-8, 0, 1e-8, 6.150035, -6.174583)
 
 IS_RETRO: tuple[bool] = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1)
@@ -69,7 +71,6 @@ ENERGY: list[float] = [-27.678777, -5.516604]
 @pytest.mark.parametrize("psi", PSI)
 def testUniversalC2C3(psi: float):
     """Test edge case values of Stumpff coeff calculations."""
-    # pylint: disable=invalid-name
     c2, c3 = universalC2C3(psi)
     if fabs(psi) <= 1e-6:
         assert c2 == 0.5
@@ -116,7 +117,6 @@ def testGetPeriod():
 @pytest.mark.parametrize("eci", RV_SET[1:])
 def testGetEccentricity(eci: ndarray):
     """Test calculating ecc from ECI pos, vel."""
-    # pylint: disable=invalid-name
     e_vec = array([-0.3146, -0.38523, 0.66804])
     e = 0.832853
     ecc, ecc_vec = getEccentricity(eci[:3], eci[3:])
@@ -193,7 +193,6 @@ def testGetTrueAnomaly(eci: ndarray):
 
 def testGetIncFromEQE():
     """Test calculating inc from p & q."""
-    # pylint: disable=invalid-name
     p = VALLADO_AAS_EQE[3]
     q = VALLADO_AAS_EQE[4]
     assert allclose(getInclinationFromEQE(p, q, retro=True), VALLADO_AAS_COE[2])
@@ -213,7 +212,6 @@ def testGetIncFromEQEBadVal():
 
 def testGetEccFromEQE():
     """Test calculating ecc from h & k."""
-    # pylint: disable=invalid-name
     h = VALLADO_AAS_EQE[1]
     k = VALLADO_AAS_EQE[2]
     assert allclose(getEccentricityFromEQE(h, k), VALLADO_AAS_COE[1])
@@ -231,11 +229,11 @@ def testGetEccFromEQEBadVal():
 
 def testGetBasisEQE():
     """Test calculating EQE basis vectors from p & q."""
-    # pylint: disable=invalid-name
     a = VALLADO_AAS_EQE[0]
     p, q = VALLADO_AAS_EQE[3], VALLADO_AAS_EQE[4]
     h, k = VALLADO_AAS_EQE[1], VALLADO_AAS_EQE[2]
     lam = VALLADO_AAS_EQE[5]
+
     F = meanLong2EccLong(lam, h, k)
     f, g = getEquinoctialBasisVectors(p, q, retro=True)
 
@@ -250,7 +248,6 @@ def testGetBasisEQE():
 
 def testGetAngMomFromEQE():
     """Test calculating angular momentum from p & q."""
-    # pylint: disable=invalid-name
     h_vec = getAngularMomentum(VALLADO_AAS_RV[:3], VALLADO_AAS_RV[3:])
     h_vec = h_vec / norm(h_vec)
     p = VALLADO_AAS_EQE[3]
@@ -260,7 +257,6 @@ def testGetAngMomFromEQE():
 
 def testGetFlightPathAngle():
     """Test calculating fpa from ecc and anomaly."""
-    # pylint: disable=invalid-name
     fpa = getFlightPathAngle(VALLADO_AAS_COE[1], VALLADO_AAS_COE[5])
     # Vallado AAS paper case
     assert allclose(fpa, deg2rad(0.0553210))

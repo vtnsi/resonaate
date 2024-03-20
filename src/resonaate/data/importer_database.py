@@ -170,10 +170,10 @@ class ImporterDatabase(DataInterface):
                 del ephemeris["velocity"]
 
                 agent_query = Query(AgentModel).filter(
-                    AgentModel.unique_id == ephemeris["sat_num"]
+                    AgentModel.unique_id == ephemeris["sat_num"],
                 )
                 julian_date_query = Query(Epoch).filter(
-                    Epoch.julian_date == ephemeris["julian_date"]
+                    Epoch.julian_date == ephemeris["julian_date"],
                 )
 
                 # Get agent. Insert into DB if it doesn't exist yet
@@ -182,7 +182,7 @@ class ImporterDatabase(DataInterface):
                         AgentModel(
                             unique_id=ephemeris.pop("sat_num"),
                             name=ephemeris.pop("sat_name"),
-                        )
+                        ),
                     )
                     agent = self.getData(agent_query, multi=False)
                 else:
@@ -193,13 +193,14 @@ class ImporterDatabase(DataInterface):
                 if not (epoch := self.getData(julian_date_query, multi=False)):
                     # [NOTE]: quick-fix for slightly malformed timestamps
                     epoch_dt = datetime.strptime(
-                        ephemeris.pop("timestampISO"), "%Y-%m-%dT%H:%M:%S.%fZ"
+                        ephemeris.pop("timestampISO"),
+                        "%Y-%m-%dT%H:%M:%S.%fZ",
                     )
                     self._insertData(
                         Epoch(
                             julian_date=ephemeris.pop("julian_date"),
                             timestampISO=epoch_dt.isoformat(timespec="microseconds"),
-                        )
+                        ),
                     )
                     epoch = self.getData(julian_date_query, multi=False)
                 else:
@@ -215,11 +216,11 @@ class ImporterDatabase(DataInterface):
                         **ephemeris,
                         agent_id=agent.unique_id,
                         julian_date=epoch.julian_date,
-                    )
+                    ),
                 )
 
             self.logger.info(
-                f"Loading {len(valid_ephemerides)} ephemerides from file {filename!r}."
+                f"Loading {len(valid_ephemerides)} ephemerides from file {filename!r}.",
             )
             self._insertData(*valid_ephemerides)
 
@@ -254,7 +255,7 @@ class ImporterDatabase(DataInterface):
                     observation["r_matrix"],
                 )
                 sensor_eci = concatenate(
-                    (array(observation["position"]), array(observation["velocity"]))
+                    (array(observation["position"]), array(observation["velocity"])),
                 )
 
                 # Build new observation entry
@@ -275,6 +276,6 @@ class ImporterDatabase(DataInterface):
                 valid_observations.append(obs_entry)
 
             self.logger.info(
-                f"Loading {len(valid_observations)} observations from file {filename!r}."
+                f"Loading {len(valid_observations)} observations from file {filename!r}.",
             )
             self._insertData(*observations)

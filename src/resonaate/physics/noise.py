@@ -49,7 +49,6 @@ def discreteWhiteNoise(dt: float, sigma: float) -> ndarray:
     Returns:
         (``ndarray``): 6x6 process noise covariance matrix
     """
-    # pylint: disable=invalid-name
     rr_term = 0.25 * dt**4
     rv_term = 0.5 * dt**3
     vv_term = dt**2
@@ -62,7 +61,7 @@ def discreteWhiteNoise(dt: float, sigma: float) -> ndarray:
             [rv_term, 0.0, 0.0, vv_term, 0.0, 0.0],
             [0.0, rv_term, 0.0, 0.0, vv_term, 0.0],
             [0.0, 0.0, rv_term, 0.0, 0.0, vv_term],
-        ]
+        ],
     )
 
     return temp_mat * sigma**2
@@ -86,7 +85,6 @@ def continuousWhiteNoise(dt: float, q: float) -> ndarray:
     Returns:
         (``ndarray``): 6x6 process noise covariance matrix
     """
-    # pylint: disable=invalid-name
     rr_term = (1 / 3) * dt**3
     rv_term = 0.5 * dt**2
     vv_term = dt
@@ -99,7 +97,7 @@ def continuousWhiteNoise(dt: float, q: float) -> ndarray:
             [rv_term, 0.0, 0.0, vv_term, 0.0, 0.0],
             [0.0, rv_term, 0.0, 0.0, vv_term, 0.0],
             [0.0, 0.0, rv_term, 0.0, 0.0, vv_term],
-        ]
+        ],
     )
 
     return temp_mat * q
@@ -118,12 +116,14 @@ def simpleNoise(dt: float, std: float) -> ndarray:
     Returns:
         (``ndarray``): 6x6 process noise covariance matrix
     """
-    # pylint: disable=invalid-name
     return dt * diagflat([0, 0, 0, std, std, std]) ** 2
 
 
 def initialEstimateNoise(
-    true_target_state: ndarray, pos_std: float, vel_std: float, rng: Any
+    true_target_state: ndarray,
+    pos_std: float,
+    vel_std: float,
+    rng: Any,
 ) -> tuple[ndarray, ndarray]:
     r"""Initialize the estimate error for a target.
 

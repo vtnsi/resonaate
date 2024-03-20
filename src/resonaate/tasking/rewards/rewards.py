@@ -81,10 +81,12 @@ class CostConstrainedReward(Reward):
             ``float``: Cost constrained reward
         """
         stability = metric_matrix[
-            ..., self._metric_type_indices[MetricTypeLabel.STABILITY]
+            ...,
+            self._metric_type_indices[MetricTypeLabel.STABILITY],
         ].squeeze()
         information = metric_matrix[
-            ..., self._metric_type_indices[MetricTypeLabel.INFORMATION]
+            ...,
+            self._metric_type_indices[MetricTypeLabel.INFORMATION],
         ].squeeze()
         sensor = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.SENSOR]].squeeze()
 
@@ -175,10 +177,12 @@ class CombinedReward(Reward):
             ``float``: Combined reward
         """
         stability = metric_matrix[
-            ..., self._metric_type_indices[MetricTypeLabel.STABILITY]
+            ...,
+            self._metric_type_indices[MetricTypeLabel.STABILITY],
         ].squeeze()
         information = metric_matrix[
-            ..., self._metric_type_indices[MetricTypeLabel.INFORMATION]
+            ...,
+            self._metric_type_indices[MetricTypeLabel.INFORMATION],
         ].squeeze()
         sensor = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.SENSOR]].squeeze()
         behavior = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.TARGET]].squeeze()

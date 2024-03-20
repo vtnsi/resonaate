@@ -83,7 +83,7 @@ def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> S
                 -1.07453539e-01,
                 -1.14109571e-01,
                 2.19474290e-04,
-            ]
+            ],
         ),
         mocked_clock,
         earth_sensor,
@@ -97,7 +97,7 @@ def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> S
                     1.16467265e-24,
                     -6.00704788e-24,
                     3.01869766e-18,
-                ]
+                ],
             ),
         ),
         True,
@@ -165,7 +165,8 @@ def getTestEstimateAgent(
 
 @pytest.fixture(name="mmae_filter")
 def getTestMMAEFilter(
-    nominal_filter: UnscentedKalmanFilter, estimate_agent: EstimateAgent
+    nominal_filter: UnscentedKalmanFilter,
+    estimate_agent: EstimateAgent,
 ) -> AdaptiveFilter:
     """Create a :class:`.AdaptiveFilter`."""
     return GeneralizedPseudoBayesian1(
@@ -182,7 +183,8 @@ def getTestMMAEFilter(
 
 @pytest.fixture(name="mmae_estimate_agent")
 def getTestMMAEEstimateAgent(
-    mocked_clock: ScenarioClock, mmae_filter: AdaptiveFilter
+    mocked_clock: ScenarioClock,
+    mmae_filter: AdaptiveFilter,
 ) -> EstimateAgent:
     """Create a custom :class:.`Agent` object for testing."""
     return EstimateAgent(
@@ -212,7 +214,8 @@ def getTestMMAEEstimateAgent(
 
 @pytest.fixture(name="iod_estimate_agent")
 def getTestIODEstimateAgent(
-    mocked_clock: ScenarioClock, nominal_filter: UnscentedKalmanFilter
+    mocked_clock: ScenarioClock,
+    nominal_filter: UnscentedKalmanFilter,
 ) -> EstimateAgent:
     """Create a custom :class:.`Agent` object for testing."""
     nominal_filter.maneuver_detected = True

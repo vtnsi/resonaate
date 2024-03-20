@@ -63,7 +63,7 @@ def asyncExecuteTasking(tasked_sensor_ids: list[int], target_id: int) -> dict:
                     "sensor_id": sensor_id,
                     "boresight": boresight,
                     "time_last_tasked": time_last_tasked,
-                }
+                },
             )
 
     return {

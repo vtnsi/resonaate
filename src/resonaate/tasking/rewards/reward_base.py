@@ -82,7 +82,9 @@ class Reward(metaclass=ABCMeta):
         return self.__class__.__name__ in self.REGISTRY
 
     def calculateMetrics(
-        self, estimate_agent: EstimateAgent, sensor_agent: SensingAgent
+        self,
+        estimate_agent: EstimateAgent,
+        sensor_agent: SensingAgent,
     ) -> ndarray:
         """Calculate each metric and saves to a dictionary.
 

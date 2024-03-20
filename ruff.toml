@@ -8,6 +8,7 @@ extend-exclude = [
     "coverage*",
     "db",
     "out",
+    "build",
 ]
 
 # Extended set of fixable rules
@@ -28,33 +29,43 @@ lint.ignore = [
     "ARG002",   # Unused method argument
     "ERA001",   # Commented out code - lots of false positives
     "NPY002",   # Deprecated numpy.random usage. FIXME: remove this ignore when working on Issue #103
+    "N802",     # Don't compain about our mixedCase funcs/meths, see Issue #209
 ]
 
 # On top of the default `select` (`E`, `F`), enable:
-# [TODO]: Add these when we officially support tzinfo, pathlib, and full type-hints!
-# "DTZ",      # flake8-datetimez
-# "PTH",      # flake8-use-pathlib
-# "ANN",      # flake8-annotations
 lint.extend-select = [
-    "W",        # warnings - mostly whitespace
+    "F",        # pyflakes
+    "E",        # pycodestyle errors
+    "W",        # pycodestyle warnings - mostly whitespace
     "C90",      # mccabe code complexity
+    "N",        # pep8-naming
+    "D",        # pydocstyle
     "UP",       # pyupgrade
+    "YTT",      # flake8-2020
     "ASYNC",    # flake8-async
     "S",        # flake8-bandit
     "BLE",      # flake8-blind-except
     "B",        # flake8-bugbear
     "A",        # flake8-builtins
+    "COM",      # flake8-commas
     "C4",       # flake8-comprehensions
     "T10",      # flake8-debugger
     "EXE",      # flake8-executable
     "FA",       # flake8-future-annotations
+    "ISC",      # flake8-implicit-str-concat
+    "ICN",      # flake8-import-conventions
     "INP",      # flake8-no-pep420
+    "PIE",      # flake8-pie
+    "T20",      # flake8-print
     "PT",       # flake8-pytest-style
     "Q",        # flake8-quotes
     "RSE",      # flake8-raise
     "RET",      # flake8-return
+    "SLF",      # flake8-self
+    "SLOT",     # flake8-slots
     "SIM",      # flake8-simplify
     "TCH",      # flake8-type-checking
+    "INT",      # flake8-gettext
     "ARG",      # flake8-unused-arguments
     "ERA",      # eradicate
     "PD",       # pandas
@@ -62,8 +73,22 @@ lint.extend-select = [
     "NPY",      # numpy
     "PERF",     # perflint
     "RUF",      # ruff
-    "D",        # pydocstyle
 ]
+
+# [TODO]: Add these when we officially support tzinfo, pathlib, and full type-hints!
+# "DTZ",        # flake8-datetimez
+# "PTH",        # flake8-use-pathlib
+# "ANN",        # flake8-annotations
+
+# [NOTE]: Add these later maybe?
+# "D",          # pydocstyle
+# "I",          # isort
+# "FBT",        # flake8-boolean-trap
+# "G",          # flake8-logging-format
+# "TD",         # flake8-todos
+# "FIX",        # flake8-fixme
+# "LOG",        # flake8-logging
+# "EM",         # flake8-errmsg
 
 # Don't auto-fix rules (can be overidden with --fix argument)
 fix = false
@@ -98,6 +123,8 @@ target-version = "py39"
     "PTH118",
     "TCH",
     "PERF",
+    "SLF001",
+    "T201",
 ]
 "tests/example.py" = [
     "B011",
@@ -111,6 +138,7 @@ target-version = "py39"
     "I",
     "A001",
     "UP009",
+    "T201",
 ]
 "src/resonaate/data/events/*.py" = [
     "RUF012",

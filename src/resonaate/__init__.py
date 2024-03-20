@@ -30,7 +30,6 @@ def runResonaate(
         debug_mode (``bool``, optional): whether to allow worker jobs to block
             indefinitely so debugging doesn't fail
     """
-    # pylint: disable=import-outside-toplevel
     # Standard Library Imports
     from datetime import timedelta
 
@@ -44,7 +43,9 @@ def runResonaate(
 
     # Build the Scenario application from the JSON init
     app = buildScenarioFromConfigFile(
-        init_message, internal_db_path=internal_db_path, importer_db_path=importer_db_path
+        init_message,
+        internal_db_path=internal_db_path,
+        importer_db_path=importer_db_path,
     )
 
     # Determine final time as a Julian date
@@ -72,7 +73,6 @@ def main() -> None:
     This is the function that the :command:`resonaate` command points to. See :mod:`.cli` for
     details on what command line options are available.
     """
-    # pylint: disable=import-outside-toplevel
     # Local Imports
     from .common.cli import getCommandLineParser
 

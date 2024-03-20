@@ -26,8 +26,6 @@ if TYPE_CHECKING:
 class SensorAdditionEvent(Event):
     """Event data object describing a sensor that is added after scenario start."""
 
-    # pylint: disable=invalid-name,no-member
-
     EVENT_TYPE: str = "sensor_addition"
     """``str``: Name of this type of event."""
 

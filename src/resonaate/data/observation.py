@@ -66,7 +66,7 @@ class _ObservationMixin(_DataMixin):
                 self.vel_x_km_p_sec,
                 self.vel_y_km_p_sec,
                 self.vel_z_km_p_sec,
-            ]
+            ],
         )
 
 
@@ -175,7 +175,10 @@ class Observation(Base, _ObservationMixin):
             sensor_eci=sensor_eci,
             measurement=measurement,
             **measurement.calculateMeasurement(
-                sensor_eci, tgt_eci_state, utc_datetime, noisy=noisy
+                sensor_eci,
+                tgt_eci_state,
+                utc_datetime,
+                noisy=noisy,
             ),
         )
 
@@ -195,7 +198,7 @@ class Observation(Base, _ObservationMixin):
                 self.__dict__[meas_type]
                 for meas_type in VALID_MEASUREMENTS
                 if self.__dict__[meas_type] is not None
-            ]
+            ],
         )
 
     @property

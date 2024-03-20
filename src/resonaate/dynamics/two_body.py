@@ -18,7 +18,7 @@ class TwoBody(Celestial):
     reference frame) using the Two-Body equations of motion.
     """
 
-    def _differentialEquation(self, time, state):  # pylint: disable=unused-argument
+    def _differentialEquation(self, time, state):
         """Calculate the first time derivative of the state for numerical integration.
 
         References:
@@ -40,8 +40,6 @@ class TwoBody(Celestial):
         half = int(state.shape[0] / 2)
         derivative = empty_like(state, dtype=float)
         for jj in range(step):
-            # pylint: disable=unsupported-assignment-operation
-
             # Parse position vector
             r_vector = state[jj : jj + half : step]
             r_norm = norm(r_vector)

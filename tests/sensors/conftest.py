@@ -17,7 +17,8 @@ def getSensorArgs() -> dict:
     r_matrix = np.diag((1.0e-4, 2.5e-5))
     return {
         "measurement": Measurement.fromMeasurementLabels(
-            ["azimuth_rad", "elevation_rad"], r_matrix
+            ["azimuth_rad", "elevation_rad"],
+            r_matrix,
         ),
         "az_mask": np.array((0.0, 360.0)),
         "el_mask": np.array((0.0, 90.0)),

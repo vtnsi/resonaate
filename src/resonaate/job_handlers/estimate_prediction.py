@@ -26,7 +26,9 @@ if TYPE_CHECKING:
 
 
 def asyncPredict(
-    seq_filter: SequentialFilter, time: ScenarioTime, scheduled_events: list[Event] | None = None
+    seq_filter: SequentialFilter,
+    time: ScenarioTime,
+    scheduled_events: list[Event] | None = None,
 ) -> ndarray:
     """Wrap a filter prediction method for use with a parallel job submission module.
 
@@ -67,7 +69,7 @@ class EstimatePredictionRegistration(CallbackRegistration):
             args=[self.registrant.nominal_filter, new_time],
             kwargs={
                 # [NOTE][parallel-maneuver-event-handling] Step three: pass the event queue to the propagation process.
-                "scheduled_events": self.registrant.propagate_event_queue
+                "scheduled_events": self.registrant.propagate_event_queue,
             },
         )
         self.registrant.time = new_time

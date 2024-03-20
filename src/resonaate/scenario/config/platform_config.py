@@ -125,7 +125,9 @@ class PlatformConfig(ABC, ConfigObject):
 
         if state.type not in self.valid_states:
             raise ConfigValueError(
-                f"{self.CONFIG_LABEL} referenced state", state.type, self.valid_states
+                f"{self.CONFIG_LABEL} referenced state",
+                state.type,
+                self.valid_states,
             )
 
     @classmethod

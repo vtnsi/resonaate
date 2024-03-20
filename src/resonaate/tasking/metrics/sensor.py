@@ -26,7 +26,9 @@ def _getDeltaBoresight(estimate_agent: EstimateAgent, sensor_agent: SensingAgent
         float: angular separation between `estimate_agent` position and sensor boresight (radians)
     """
     slant_range_sez = getSlantRangeVector(
-        sensor_agent.eci_state, estimate_agent.eci_state, sensor_agent.datetime_epoch
+        sensor_agent.eci_state,
+        estimate_agent.eci_state,
+        sensor_agent.datetime_epoch,
     )
     return sensor_agent.sensors.deltaBoresight(slant_range_sez[:3])
 

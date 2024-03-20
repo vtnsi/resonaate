@@ -80,7 +80,6 @@ def propagateScenario(
 
 def patchCreateDatabasePath(path: str | Path | None, importer: bool) -> str:
     """Quick and dirty patch of createDatabasePath() so test can overwrite DB files."""
-    # pylint: disable=unused-argument
     base = "sqlite:///"
     if path is None:
         return base

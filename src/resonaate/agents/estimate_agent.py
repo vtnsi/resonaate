@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     from ..sensors.sensor_base import Observation
 
 
-class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
+class EstimateAgent(Agent):
     """Define the behavior of the **estimated** target agents in the simulation."""
 
     def __init__(  # noqa: PLR0913
@@ -137,7 +137,9 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         # Attribute to track the initial_orbit_determination config of this object
         self.initial_orbit_determination = initialOrbitDeterminationFactory(
-            initial_orbit_determination_config, self.simulation_id, self.julian_date_start
+            initial_orbit_determination_config,
+            self.simulation_id,
+            self.julian_date_start,
         )
 
         # Attribute to track the time at which IOD begins
@@ -180,7 +182,6 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         Returns:
             :class:`.EstimateAgent`: properly constructed agent object.
         """
-        # pylint: disable=unused-argument
         # Create the initial state & covariance
         initial_state = tgt_cfg.state.toECI(clock.datetime_epoch)
         init_x, init_p = initialEstimateNoise(
@@ -315,7 +316,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
                 method=getTypeString(self.nominal_filter.maneuver_detection),
                 metric=self.nominal_filter.maneuver_metric,
                 threshold=self.nominal_filter.maneuver_detection.threshold,
-            )
+            ),
         )
 
     def getDetectedManeuvers(self) -> list[DetectedManeuver]:
@@ -333,7 +334,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
                 target_id=self.simulation_id,
                 innovation=self.nominal_filter.innovation,
                 nis=self.nominal_filter.nis,
-            )
+            ),
         )
 
     def getFilterSteps(self) -> list[FilterStep]:
@@ -427,8 +428,6 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             observations (list): :class:`.Observation` objects of this agent.
             logging (bool): whether to log MMAE events.
         """
-        # pylint: disable=unused-argument
-
         # [NOTE]: End MMAE & reset filter
         if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in self.nominal_filter.flags:
             self._resetFilter(self.nominal_filter.converged_filter)
@@ -470,7 +469,9 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         if FilterFlag.ADAPTIVE_ESTIMATION_START in self.nominal_filter.flags:
             self.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
             adaptive_filter = adaptiveEstimationFactory(
-                self.adaptive_filter_config, self.nominal_filter, self.dt_step
+                self.adaptive_filter_config,
+                self.nominal_filter,
+                self.dt_step,
             )
 
             # Create a multiple_model_filter
@@ -502,7 +503,9 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             self.iod_start_time = self.time
 
     def _attemptInitialOrbitDetermination(
-        self, observations: list[Observation], logging: bool = False
+        self,
+        observations: list[Observation],
+        logging: bool = False,
     ) -> tuple[bool, ndarray | None]:
         """Try to solve initial orbit determination on this RSO.
 
@@ -526,7 +529,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         if self.iod_start_time > self.time:
             raise ValueError(
-                f"IOD beginning in the future: {self.iod_start_time} relative to current scenario time: {self.time}"
+                f"IOD beginning in the future: {self.iod_start_time} relative to current scenario time: {self.time}",
             )
 
         if logging:
@@ -534,7 +537,9 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             self._logger.info(msg)
 
         iod_solution = self.initial_orbit_determination.determineNewEstimateState(
-            observations, self.iod_start_time, self.time
+            observations,
+            self.iod_start_time,
+            self.time,
         )
         if iod_solution.convergence:
             msg = f"IOD successful for RSO {self.simulation_id} at time {self.datetime_epoch}"

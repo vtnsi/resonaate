@@ -71,7 +71,9 @@ def checkThreeSigmaObs(current_obs, sigma=3):
         ob_ephem = eci2ecef(np.asarray(ephem.eci), julianDateToDatetime(observation.julian_date))
         ephem_minus_sensor_ecef = ob_ephem - sensor_agent.ecef_state
         ephem_sez = ecef2sez(
-            ephem_minus_sensor_ecef, sensor_agent.lla_state[0], sensor_agent.lla_state[1]
+            ephem_minus_sensor_ecef,
+            sensor_agent.lla_state[0],
+            sensor_agent.lla_state[1],
         )
 
         # Calculate SEZ vector from observation azimuth, elevation, (and range) measurements
@@ -81,7 +83,7 @@ def checkThreeSigmaObs(current_obs, sigma=3):
                 -np.cos(observation.elevation_rad) * np.cos(observation.azimuth_rad),
                 np.cos(observation.elevation_rad) * np.sin(observation.azimuth_rad),
                 np.sin(observation.elevation_rad),
-            ]
+            ],
         )
 
         if observation.dim > 2:
@@ -103,7 +105,9 @@ def checkThreeSigmaObs(current_obs, sigma=3):
         sez_diff = np.absolute(norm(ephem_sez[0:3] - observation.sez[0:3]))
 
         dist = mahalanobis(
-            true_measurements, observation.measurement_states, inv(sensor_agent.sensors.r_matrix)
+            true_measurements,
+            observation.measurement_states,
+            inv(sensor_agent.sensors.r_matrix),
         )
 
         meas_diff = norm(true_measurements - np.asarray(observation.measurement_states))
@@ -114,9 +118,7 @@ def checkThreeSigmaObs(current_obs, sigma=3):
         sez_from_azel_diff = np.absolute(norm(ephem_sez[0:3] - obs_sez_from_azel))
 
         # Calculate three sigma noise limit based on sensor's R matrix.
-        noise_limit = norm(
-            sigma * sensor_agent.sensors._sqrt_noise_covar  # pylint: disable=protected-access
-        )
+        noise_limit = norm(sigma * sensor_agent.sensors._sqrt_noise_covar)  # noqa: SLF001
 
         if sez_diff > 1e-8 or dist > sigma or meas_diff > noise_limit:
             target = target_agents[observation.target_id]
@@ -141,7 +143,7 @@ def checkThreeSigmaObs(current_obs, sigma=3):
                     "lla_state": sensor_agent.lla_state.tolist(),
                     "ecef_state": sensor_agent.ecef_state.tolist(),
                     "time": sensor_agent.time,
-                }
+                },
             )
             description["truth_ephemeris"] = {
                 "sat_num": ephem.unique_id,
@@ -149,7 +151,7 @@ def checkThreeSigmaObs(current_obs, sigma=3):
                 "eci": ephem.eci,
             }
             description["target_agent"].update(
-                {"ecef_state": target.ecef_state.tolist(), "time": target.time}
+                {"ecef_state": target.ecef_state.tolist(), "time": target.time},
             )
 
             # Write to debug file, and add to filenames
@@ -190,7 +192,9 @@ def findNearestPositiveDefiniteMatrix(covariance):
     # Write information to output file
     filename = f"not-pos-def_{str(uuid4().hex)[:8]}"
     _ = debugToJSONFile(
-        filename, BehavioralConfig.getConfig().debugging.NearestPDDirectory, description
+        filename,
+        BehavioralConfig.getConfig().debugging.NearestPDDirectory,
+        description,
     )
 
     return cholesky_p
@@ -244,7 +248,6 @@ def createFilterDebugDict(filter_obj, observations, truth_state, sensor_agents):
         "q_matrix": filter_obj.q_matrix.tolist(),
     }
     if getTypeString(filter_obj) == "UnscentedKalmanFilter":
-        # pylint: disable=protected-access
         description.update(filter_obj.parameters)
         description["gamma"] = filter_obj.gamma
 
@@ -258,7 +261,7 @@ def createFilterDebugDict(filter_obj, observations, truth_state, sensor_agents):
                 "lla_state": sensor_agent.lla_state.tolist(),
                 "ecef_state": sensor_agent.ecef_state.tolist(),
                 "time": sensor_agent.time,
-            }
+            },
         )
 
     # Update information from the prediction step data

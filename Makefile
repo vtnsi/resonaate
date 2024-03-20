@@ -53,7 +53,6 @@ lint:
 	@echo "Linting"
 	@echo "======="
 	ruff check src tests src/resonaate docs
-	pylint *.py tests src/resonaate docs
 	@echo ""
 
 # Runs unit tests

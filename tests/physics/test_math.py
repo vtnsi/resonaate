@@ -80,7 +80,7 @@ WRAPPED_NEG_PI: ndarray = (
             0.5,
             0.75,
             1.0,
-        ]
+        ],
     )
     * PI
 )
@@ -130,7 +130,7 @@ WRAPPED_TWO_PI: ndarray = (
             0.5,
             0.75,
             1.0,
-        ]
+        ],
     )
     * PI
 )
@@ -187,7 +187,8 @@ WEIGHTED_ANGULAR_MEAN: list[tuple[ndarray, float, ndarray]] = [
 
 
 @pytest.mark.parametrize(
-    ("unwrapped_angle", "wrapped_angle"), zip(UNWRAPPED_ANGLES, WRAPPED_NEG_PI)
+    ("unwrapped_angle", "wrapped_angle"),
+    zip(UNWRAPPED_ANGLES, WRAPPED_NEG_PI),
 )
 def testWrapAngleNegPiPi(unwrapped_angle: float, wrapped_angle: float):
     """Test wrapAngleNegPiPi."""
@@ -195,7 +196,8 @@ def testWrapAngleNegPiPi(unwrapped_angle: float, wrapped_angle: float):
 
 
 @pytest.mark.parametrize(
-    ("unwrapped_angle", "wrapped_angle"), zip(UNWRAPPED_ANGLES, WRAPPED_TWO_PI)
+    ("unwrapped_angle", "wrapped_angle"),
+    zip(UNWRAPPED_ANGLES, WRAPPED_TWO_PI),
 )
 def testWrapAngle2Pi(unwrapped_angle: float, wrapped_angle: float):
     """Test wrapAngle2Pi."""
@@ -223,15 +225,15 @@ def testAngularMeanBadWeights():
 # [NOTE]: Values for testing residual calculation assuming angular and non-angular components.
 #   Assumes degrees as inputs
 RESIDUALS_VEC_1 = array(
-    [360.0, 360.0, 359.0, 180.0, 1.0, 10.0, 180.0, 181.0, 240.0, 181.0, 2.0, 190.0, 361.0, 361.0]
+    [360.0, 360.0, 359.0, 180.0, 1.0, 10.0, 180.0, 181.0, 240.0, 181.0, 2.0, 190.0, 361.0, 361.0],
 )
 RESIDUALS_VEC_2 = array(
-    [0.0, 1.0, 2.0, 180.0, 1.0, 10.0, 50.0, 179.0, 30.0, 1.0, 190.0, 2.0, 1.0, 2.0]
+    [0.0, 1.0, 2.0, 180.0, 1.0, 10.0, 50.0, 179.0, 30.0, 1.0, 190.0, 2.0, 1.0, 2.0],
 )
 
 ANGLES = ones_like(RESIDUALS_VEC_1, dtype=bool)
 EXPECTED_ANGLES = array(
-    [0.0, -1.0, -3.0, 0.0, 0.0, 0.0, 130.0, 2.0, -150.0, -180, 172.0, -172.0, 0.0, -1.0]
+    [0.0, -1.0, -3.0, 0.0, 0.0, 0.0, 130.0, 2.0, -150.0, -180, 172.0, -172.0, 0.0, -1.0],
 )
 
 NOT_ANGLES = zeros_like(RESIDUALS_VEC_1, dtype=bool)
@@ -249,7 +251,8 @@ def testResidualAngular(first: float, second: float, angular: bool, expected: fl
 
     # Distributive
     assert isclose(
-        degrees(residual(radians(-1.0 * first), radians(-1.0 * second), angular)), -expected
+        degrees(residual(radians(-1.0 * first), radians(-1.0 * second), angular)),
+        -expected,
     )
 
     # Not Commutative
@@ -258,7 +261,8 @@ def testResidualAngular(first: float, second: float, angular: bool, expected: fl
     # Invariant to wrapping
     if angular:
         assert isclose(
-            degrees(residual(radians(first + 360.0), radians(second), angular)), expected
+            degrees(residual(radians(first + 360.0), radians(second), angular)),
+            expected,
         )
 
 
@@ -270,7 +274,8 @@ def testResidualNotAngular(first: float, second: float, angular: bool, expected:
 
     # Distributive
     assert isclose(
-        degrees(residual(radians(-1.0 * first), radians(-1.0 * second), angular)), -expected
+        degrees(residual(radians(-1.0 * first), radians(-1.0 * second), angular)),
+        -expected,
     )
 
     # Not Commutative

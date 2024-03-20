@@ -45,7 +45,6 @@ def dynamicsFactory(
     Returns:
         :class:`.Dynamics`: constructed dynamics object
     """
-    # pylint: disable=import-outside-toplevel
     # Local Imports
     from ..scenario.config.platform_config import GroundFacilityConfig, SpacecraftConfig
 

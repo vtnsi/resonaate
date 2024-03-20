@@ -100,7 +100,10 @@ class InitialOrbitDetermination(ABC):
         raise NotImplementedError
 
     def getPreviousObservations(
-        self, database: ResonaateDatabase, start_time: ScenarioTime, end_time: ScenarioTime
+        self,
+        database: ResonaateDatabase,
+        start_time: ScenarioTime,
+        end_time: ScenarioTime,
     ) -> list[Observation]:
         """Get the Previous observations.
 
@@ -115,7 +118,10 @@ class InitialOrbitDetermination(ABC):
         raise NotImplementedError
 
     def checkSinglePass(
-        self, ob1_eci: ndarray, ob1_jdate: JulianDate, ob2_jdate: JulianDate
+        self,
+        ob1_eci: ndarray,
+        ob1_jdate: JulianDate,
+        ob2_jdate: JulianDate,
     ) -> bool:
         """Ensure observations are from the same pass.
 
@@ -189,7 +195,10 @@ class LambertIOD(InitialOrbitDetermination):
         )
 
     def getPreviousObservations(
-        self, database: ResonaateDatabase, start_time: ScenarioTime, end_time: ScenarioTime
+        self,
+        database: ResonaateDatabase,
+        start_time: ScenarioTime,
+        end_time: ScenarioTime,
     ) -> list[Observation]:
         """Retrieve and RSO's previous observations.
 
@@ -210,7 +219,7 @@ class LambertIOD(InitialOrbitDetermination):
             .filter(Observation.julian_date <= current_jdate)
             .filter(Observation.julian_date >= start_jdate)
             .filter(
-                Observation.sensor_type != SensorLabel.OPTICAL
+                Observation.sensor_type != SensorLabel.OPTICAL,
             )  # Only Radar/AdvRadar Obs for Lambert IOD
             .order_by(asc(Observation.julian_date))
         )
@@ -243,7 +252,7 @@ class LambertIOD(InitialOrbitDetermination):
 
         # Ensure observations are from the same pass
         current_julian_date = ScenarioTime(current_time).convertToJulianDate(
-            self.julian_date_start
+            self.julian_date_start,
         )
 
         # Count the number of unique observation times
@@ -268,7 +277,9 @@ class LambertIOD(InitialOrbitDetermination):
             return IODSolution(None, False, msg)
 
         transit_time = self.checkSinglePass(
-            final_position, previous_observation[-1].julian_date, current_julian_date
+            final_position,
+            previous_observation[-1].julian_date,
+            current_julian_date,
         )
         if not transit_time:
             msg = "Observations not from a single pass"

@@ -153,12 +153,6 @@ To execute linting checks please run both of the following commands:
 make lint
 ```
 
-`pylint` is pretty slow for checking every file, so this only checks dirty **.py** files:
-
-```bash
-pylint `git diff --name-only --diff-filter=d | grep -E '\.py$' | tr '\n' ' '`
-```
-
 `ruff` is another linter that covers different checks:
 
 ```bash

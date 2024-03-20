@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument, invalid-name
 from __future__ import annotations
 
 # Standard Library Imports
@@ -71,7 +70,9 @@ def testAsyncCalculateReward(
     reward_class = SimpleSummationReward(metric_list)
 
     monkeypatch.setattr(
-        resonaate.job_handlers.task_prediction.KeyValueStore, "getValue", mocked_kvs_get_func
+        resonaate.job_handlers.task_prediction.KeyValueStore,
+        "getValue",
+        mocked_kvs_get_func,
     )
     monkeypatch.setattr(resonaate.job_handlers.task_prediction, "loads", mocked_pickle_loads_func)
 
@@ -85,7 +86,9 @@ def testAsyncCalculateReward(
         return_value=create_autospec(Observation, instance=True),
     ) as mock_predict_obs:
         reward_dict = asyncCalculateReward(
-            estimate_agent.simulation_id, reward_class, [sensor_agent.simulation_id]
+            estimate_agent.simulation_id,
+            reward_class,
+            [sensor_agent.simulation_id],
         )
         mock_predict_obs.assert_called_once()
         estimate_agent.nominal_filter.forecast.assert_called_once()
@@ -102,10 +105,13 @@ def testAsyncCalculateReward(
     estimate_agent.nominal_filter.forecast.reset_mock()
 
     with patch(
-        "resonaate.job_handlers.task_prediction.predictObservation", return_value=None
+        "resonaate.job_handlers.task_prediction.predictObservation",
+        return_value=None,
     ) as mock_predict_obs:
         reward_dict = asyncCalculateReward(
-            estimate_agent.simulation_id, reward_class, [sensor_agent.simulation_id]
+            estimate_agent.simulation_id,
+            reward_class,
+            [sensor_agent.simulation_id],
         )
         mock_predict_obs.assert_called_once()
         estimate_agent.nominal_filter.forecast.assert_not_called()

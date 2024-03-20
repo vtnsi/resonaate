@@ -137,7 +137,9 @@ def saveMatrix(name, matrix, path=None):
         elif isinstance(matrix, np.ndarray):
             json.dump(matrix.tolist(), out_file)
         else:
-            print("saveMatrix() only takes `list` and `np.ndarray` types for 'matrix' argument")
+            resonaateLogError(
+                "saveMatrix() only takes `list` and `np.ndarray` types for 'matrix' argument",
+            )
             raise TypeError(type(matrix))
 
     return file_name

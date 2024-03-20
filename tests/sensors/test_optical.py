@@ -73,7 +73,9 @@ def testIsVisible(
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state, utc_datetime)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.eci_state, mocked_primary_target.initial_state, utc_datetime
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        utc_datetime,
     )
 
     visibility, explanation = space_optical.isVisible(
@@ -107,7 +109,9 @@ def testIsNotVisibleSolarFlux(
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state, utc_datetime)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.eci_state, mocked_primary_target.initial_state, utc_datetime
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        utc_datetime,
     )
 
     # Check Solar Flux
@@ -141,7 +145,9 @@ def testIsNotVisibleVismag(
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state, utc_datetime)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.eci_state, mocked_primary_target.initial_state, utc_datetime
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        utc_datetime,
     )
 
     # Check Visual Magnitude
@@ -175,7 +181,9 @@ def testIsNotVisibleGroundIllumination(
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state, utc_datetime)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.eci_state, mocked_primary_target.initial_state, utc_datetime
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        utc_datetime,
     )
 
     # Check Ground Illumination
@@ -213,7 +221,9 @@ def testIsNotVisibleGalacticBelt(
     mocked_sensing_agent.ecef_state = eci2ecef(mocked_sensing_agent.truth_state, utc_datetime)
     mocked_sensing_agent.eci_state = mocked_sensing_agent.truth_state
     slant_range_sez = getSlantRangeVector(
-        mocked_sensing_agent.eci_state, mocked_primary_target.initial_state, utc_datetime
+        mocked_sensing_agent.eci_state,
+        mocked_primary_target.initial_state,
+        utc_datetime,
     )
 
     # Check Galactic Belt
@@ -225,7 +235,7 @@ def testIsNotVisibleGalacticBelt(
             0,
             0,
             0,
-        ]
+        ],
     )
 
     visibility, explanation = ground_optical.isVisible(

@@ -43,7 +43,6 @@ class ScheduledImpulseEvent(Event):
     # [NOTE]: Old-style generic type hints builtins (Tuple vs tuple) required until we either:
     #   1) Move to SQLAlchemy >= 2.0
     #   2) Move to Python >= 3.10
-    # pylint: disable=deprecated-typing-alias
     VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)  # noqa: UP006
     """``tuple``: Valid values for :attr:`~.ScheduledImpulseEvent.thrust_frame`."""
 
@@ -59,16 +58,14 @@ class ScheduledImpulseEvent(Event):
     """``float``: Third element of impulse vector in km/s."""
 
     @declared_attr
-    def thrust_frame(self):  # pylint: disable=invalid-name
+    def thrust_frame(self):
         """``str``: Label for frame that thrust should be applied in."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "thrust_frame", Column(String(10))
-        )
+        return Event.__table__.c.get("thrust_frame", Column(String(10)))
 
     @declared_attr
-    def planned(self):  # pylint: disable=invalid-name
+    def planned(self):
         """``bool``: Flag indicating whether this task is expected by the filter or not."""
-        return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
+        return Event.__table__.c.get("planned", Column(Boolean))
 
     MUTABLE_COLUMN_NAMES = (
         *Event.MUTABLE_COLUMN_NAMES,
@@ -92,11 +89,15 @@ class ScheduledImpulseEvent(Event):
         impulse = None
         if str(self.thrust_frame).lower() == self.THRUST_FRAME_ECI:
             impulse = ScheduledECIImpulse(
-                start_sim_time, burn_vector, scope_instance.simulation_id
+                start_sim_time,
+                burn_vector,
+                scope_instance.simulation_id,
             )
         elif str(self.thrust_frame).lower() == self.THRUST_FRAME_NTW:
             impulse = ScheduledNTWImpulse(
-                start_sim_time, burn_vector, scope_instance.simulation_id
+                start_sim_time,
+                burn_vector,
+                scope_instance.simulation_id,
             )
         else:
             err = f"{self.thrust_frame} is not a valid coordinate frame."

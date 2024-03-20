@@ -92,5 +92,7 @@ class NoiseConfig(ConfigObject):
 
         if self.init_velocity_std_km_p_sec <= 0.0:
             raise ConfigValueError(
-                "init_velocity_std_km_p_sec", self.init_velocity_std_km_p_sec, "> 0.0"
+                "init_velocity_std_km_p_sec",
+                self.init_velocity_std_km_p_sec,
+                "> 0.0",
             )

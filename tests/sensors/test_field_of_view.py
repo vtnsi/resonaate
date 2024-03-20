@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -72,7 +71,10 @@ def getConicFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
     dynamics = create_autospec(TwoBody, instance=True)
 
     conic_sensor_agent = SensingAgent.fromConfig(
-        SensingAgentConfig(**SENSOR_CONFIG), clock, dynamics, prop_cfg
+        SensingAgentConfig(**SENSOR_CONFIG),
+        clock,
+        dynamics,
+        prop_cfg,
     )
     conic_sensor_agent.sensors.host.time = ScenarioTime(30)
     return conic_sensor_agent
@@ -91,7 +93,10 @@ def getRectangularFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
     dynamics = create_autospec(TwoBody, instance=True)
 
     rectangular_sensor_agent = SensingAgent.fromConfig(
-        SensingAgentConfig(**cfg), clock, dynamics, prop_cfg
+        SensingAgentConfig(**cfg),
+        clock,
+        dynamics,
+        prop_cfg,
     )
     rectangular_sensor_agent.sensors.host.time = ScenarioTime(30)
     return rectangular_sensor_agent
@@ -160,7 +165,7 @@ def testCanSlew(conic_sensor_agent: SensingAgent):
             2.07249105e-04,
             -6.64332739e-05,
             2.16300407e-04,
-        ]
+        ],
     )
     val = conic_sensor_agent.sensors.canSlew(good_slant)
     assert bool(val) is True
@@ -174,13 +179,19 @@ def testCheckTargetsInView(
 ):
     """Test if multiple targets are in the Field of View."""
     pointing_sez = getSlantRangeVector(
-        conic_sensor_agent.sensors.host.eci_state, primary_rso.eci_state, clock.datetime_epoch
+        conic_sensor_agent.sensors.host.eci_state,
+        primary_rso.eci_state,
+        clock.datetime_epoch,
     )
     primary_rso_sez = getSlantRangeVector(
-        conic_sensor_agent.eci_state, primary_rso.eci_state, conic_sensor_agent.datetime_epoch
+        conic_sensor_agent.eci_state,
+        primary_rso.eci_state,
+        conic_sensor_agent.datetime_epoch,
     )
     secondary_rso_sez = getSlantRangeVector(
-        conic_sensor_agent.eci_state, secondary_rso.eci_state, conic_sensor_agent.datetime_epoch
+        conic_sensor_agent.eci_state,
+        secondary_rso.eci_state,
+        conic_sensor_agent.datetime_epoch,
     )
     agents = [
         conic_sensor_agent.sensors.field_of_view.inFieldOfView(pointing_sez, slant_range_sez)
@@ -197,15 +208,18 @@ def testInFieldOfView(
 ):
     """Test observations of two RSO with a single sensor at one time."""
     in_fov = conic_sensor_agent.sensors.field_of_view.inFieldOfView(
-        primary_rso.eci_state[:3], secondary_rso.eci_state[:3]
+        primary_rso.eci_state[:3],
+        secondary_rso.eci_state[:3],
     )
     assert bool(in_fov) is True
     not_in_fov = conic_sensor_agent.sensors.field_of_view.inFieldOfView(
-        primary_rso.eci_state[:3], array([0, 0.01, 0])
+        primary_rso.eci_state[:3],
+        array([0, 0.01, 0]),
     )
     assert bool(not_in_fov) is False
 
     rectangle_in_fov = rectangular_sensor_agent.sensors.field_of_view.inFieldOfView(
-        primary_rso.eci_state[:3], secondary_rso.eci_state[:3]
+        primary_rso.eci_state[:3],
+        secondary_rso.eci_state[:3],
     )
     assert bool(rectangle_in_fov) is True

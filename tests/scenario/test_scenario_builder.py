@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument, invalid-name
 from __future__ import annotations
 
 # Standard Library Imports
@@ -20,7 +19,7 @@ from resonaate.data.resonaate_database import ResonaateDatabase
 from resonaate.scenario.config import ScenarioConfig
 from resonaate.scenario.config.event_configs import (
     DataDependency,
-    MissingDataDependency,
+    MissingDataDependencyError,
     TargetTaskPriorityConfig,
 )
 from resonaate.scenario.scenario_builder import ScenarioBuilder
@@ -149,7 +148,9 @@ def testFoundDataDependency(datafiles: str, tgt_task_priority: dict, database: R
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
 def testNotFoundDataDependency(
-    datafiles: str, tgt_task_priority: dict, database: ResonaateDatabase
+    datafiles: str,
+    tgt_task_priority: dict,
+    database: ResonaateDatabase,
 ):
     """Verify no errors are thrown if two engines are looking at the same target network."""
     init_filepath = os.path.join(datafiles, JSON_INIT_PATH, "test_init.json")
@@ -183,7 +184,7 @@ def testMissingDataDependency(
     #   `dependency.createDependency()` raises a `MissingDataDependency` exception.
     dummy_data_dependency = create_autospec(DataDependency, instance=True)
     dummy_data_dependency.query = "SQL QUERY"
-    _udder_mock = Mock(side_effect=MissingDataDependency("DataType"))
+    _udder_mock = Mock(side_effect=MissingDataDependencyError("DataType"))
     dummy_data_dependency.createDependency = _udder_mock
 
     # Mock the `getDataDependencies()` method of the `EventConfig` class, so that it returns

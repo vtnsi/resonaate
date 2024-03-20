@@ -108,8 +108,6 @@ class SpecialPerturbations(Celestial):
         )
 
         for jj in range(step):
-            # pylint: disable=unsupported-assignment-operation
-
             # Determine the position vectors in J2000 frame
             r_eci = state[jj : jj + half : step]
 
@@ -126,7 +124,13 @@ class SpecialPerturbations(Celestial):
             a_nonspherical = matmul(
                 ecef_2_eci,
                 nonSphericalAcceleration(
-                    r_ecef, Earth.mu, Earth.radius, self.c_nm, self.s_nm, self.degree, self.order
+                    r_ecef,
+                    Earth.mu,
+                    Earth.radius,
+                    self.c_nm,
+                    self.s_nm,
+                    self.degree,
+                    self.order,
                 ),
             )
 
@@ -164,7 +168,9 @@ class SpecialPerturbations(Celestial):
         return derivative
 
     def _getSolarRadiationPressureAcceleration(
-        self, sat_position: ndarray, sun_eci_position: ndarray
+        self,
+        sat_position: ndarray,
+        sun_eci_position: ndarray,
     ) -> ndarray:
         """Calculate the acceleration on the spacecraft due to solar radiation pressure.
 
@@ -207,10 +213,12 @@ def _getRotationMatrix(julian_date: JulianDate, reduction: dict) -> ndarray:
     year, month, day, hours, minutes, seconds = julian_date.calendar_date
     elapsed_days = dayOfYear(year, month, day, hours, minutes, seconds + reduction["dut1"]) - 1
     greenwich_apparent_sidereal_time = greenwichApparentTime(
-        year, elapsed_days, reduction["eq_equinox"]
+        year,
+        elapsed_days,
+        reduction["eq_equinox"],
     )
     return multi_dot(
-        [reduction["rot_pn"], rot3(-1.0 * greenwich_apparent_sidereal_time), reduction["rot_w"]]
+        [reduction["rot_pn"], rot3(-1.0 * greenwich_apparent_sidereal_time), reduction["rot_w"]],
     )
 
 
@@ -373,6 +381,7 @@ def _getGeneralRelativityAccelerationIERS(
         * ((3 / r_norm**2) * cross(r_eci, v_eci) * vdot(r_eci, j_e) + cross(v_eci, j_e))
     )
     line_3 = (1 + 2 * gamma) * cross(
-        sun_eci[3:], cross((-gms * sun_eci[:3]) / (c_sq * norm(sun_eci[:3]) ** 3), v_eci)
+        sun_eci[3:],
+        cross((-gms * sun_eci[:3]) / (c_sq * norm(sun_eci[:3]) ** 3), v_eci),
     )
     return line_1 + line_2 + line_3

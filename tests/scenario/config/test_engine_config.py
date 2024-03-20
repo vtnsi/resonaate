@@ -73,7 +73,7 @@ def testCreateEngineConfig(engine_cfg_dict: dict):
 
     # Test that this can be created from an empty dictionary
     with pytest.raises(TypeError):
-        _ = EngineConfig(**{})
+        _ = EngineConfig()
 
     # Use sub configs as dicts
     cfg_dict = copy(engine_cfg_dict)
@@ -81,7 +81,7 @@ def testCreateEngineConfig(engine_cfg_dict: dict):
         {
             "name": "SimpleSummationReward",
             "metrics": {"name": "FisherInformation"},
-        }
+        },
     ]
     cfg_dict["decision"] = {"name": "MunkresDecision"}
     cfg = EngineConfig(**cfg_dict)
@@ -162,7 +162,7 @@ def testCreateRewardConfig(reward_cfg_dict: dict, metric_cfg_dict: dict):
     assert isinstance(cfg.metrics, ConfigObjectList)
     assert len(cfg.metrics) == 2
     assert cfg.metrics[0] == MetricConfig(**metric_cfg_dict)
-    assert cfg.metrics[1] == MetricConfig(**{"name": "LyapunovStability"})
+    assert cfg.metrics[1] == MetricConfig(name="LyapunovStability")
     assert not cfg.parameters
     assert cfg.parameters is not None
 

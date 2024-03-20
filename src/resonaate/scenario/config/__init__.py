@@ -168,12 +168,12 @@ class ScenarioConfig(ConfigObject):
 
             # Load the RSO target set
             targets = file_loader(
-                os.path.join(config_directory, engine_config.pop("targets_file"))
+                os.path.join(config_directory, engine_config.pop("targets_file")),
             )
 
             # Load the sensor set
             sensors = file_loader(
-                os.path.join(config_directory, engine_config.pop("sensors_file"))
+                os.path.join(config_directory, engine_config.pop("sensors_file")),
             )
 
             engine_config.update({"targets": targets, "sensors": sensors})

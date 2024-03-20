@@ -43,18 +43,14 @@ class AgentRemovalEvent(Event):
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
-    def agent_id(self):  # pylint: disable=invalid-name
+    def agent_id(self):
         """``int``: Unique ID of the :class:`~.agent_base.AgentModel` being removed from the scenario."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
-        )
+        return Event.__table__.c.get("agent_id", Column(Integer, ForeignKey("agents.unique_id")))
 
     @declared_attr
-    def tasking_engine_id(self):  # pylint: disable=invalid-name
+    def tasking_engine_id(self):
         """``int``: Unique ID for the :class:`.TaskingEngine` that this agent should be removed from."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "tasking_engine_id", Column(Integer)
-        )
+        return Event.__table__.c.get("tasking_engine_id", Column(Integer))
 
     agent = relationship("AgentModel", lazy="joined", innerjoin=True)
     """:class:`~.agent.AgentModel`: The `AgentModel` object being removed from the scenario."""

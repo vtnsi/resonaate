@@ -1,4 +1,3 @@
-# pylint: disable=invalid-name
 from __future__ import annotations
 
 # Standard Library Imports
@@ -31,6 +30,8 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
+# ruff: noqa: N803, N806
+
 MEAN_ANOM: float = deg2rad(65.10238)
 TRUE_LONG: float = deg2rad(69.5264380)
 
@@ -42,10 +43,10 @@ EQE_ANOM_ECC: tuple[tuple[float, float, bool]] = tuple(zip(H, K, IS_ECC))
 MEAN_ANOM_CASES: ndarray = deg2rad([235.4, 4, 50])
 ECC_CASES: tuple[float] = (0.4, 0.72, 0.72)
 ECC_ANOM_CASES: ndarray = deg2rad(
-    [220.512074767522, rad2deg(0.24318719638), rad2deg(1.59249513093)]
+    [220.512074767522, rad2deg(0.24318719638), rad2deg(1.59249513093)],
 )
 ANOM_TESTS: tuple[tuple[float, float, float]] = tuple(
-    zip(MEAN_ANOM_CASES, ECC_CASES, ECC_ANOM_CASES)
+    zip(MEAN_ANOM_CASES, ECC_CASES, ECC_ANOM_CASES),
 )
 
 

@@ -21,7 +21,7 @@ class DiscreteStateChangeEvent(metaclass=ABCMeta):
     """float: Value of zero indicates that either direction of zero crossing should trigger this event."""
 
     @abstractmethod
-    def __call__(self, time, state):  # pylint: disable=unused-argument
+    def __call__(self, time, state):
         """When this function returns zero during integration, it interrupts the integration process.
 
         Args:

@@ -46,6 +46,7 @@ ______________________________________________________________________
 - reordered `SequentialFilter.checkManeuverDetection()` to return early (see !245)
 - make sigma point resampling an option that is set on UKF creation (see !245)
 - organize UKF methods for clarity & refactor into smaller methods (see !245)
+- a few names of variables and exceptions to adhere to pep8-naming (see !302)
 
 ### Deprecated
 
@@ -82,6 +83,8 @@ ______________________________________________________________________
 - Develop dependency conflict (see #206 & !298)
 - Update `make install` to use new `mjolnir` optional dependency (see !299)
 - Added docstring linting back using `ruff` (see #44)
+- Remove `pylint` as a dev tool (see #208)
+- Add several new ruff rules and apply (see !302)
 
 ### CI
 

@@ -9,6 +9,7 @@ import datetime
 from numpy import floor, remainder
 
 # Local Imports
+from ...common.logger import resonaateLogError
 from ...physics import constants as const
 from ..maths import wrapAngle2Pi
 from .stardate import JulianDate, julianDateToDatetime
@@ -163,7 +164,7 @@ def getTargetJulianDate(start_julian_date, jump_delta):
         start_julian_date = JulianDate(start_julian_date)
 
     if not isinstance(jump_delta, datetime.timedelta):
-        print("Error: `jump_delta` must be a `datetime.timedelta` object.")
+        resonaateLogError("Error: `jump_delta` must be a `datetime.timedelta` object.")
         raise TypeError(type(jump_delta))
 
     start_calendar_date = julianDateToDatetime(start_julian_date)

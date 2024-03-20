@@ -59,9 +59,9 @@ class ScheduledFiniteManeuverEvent(Event):
     """``float``: Magnitude of maneuver vector in km/s^2."""
 
     @declared_attr
-    def planned(self):  # pylint: disable=invalid-name
+    def planned(self):
         """``bool``: Flag indicating whether this task is expected by the filter or not."""
-        return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
+        return Event.__table__.c.get("planned", Column(Boolean))
 
     MUTABLE_COLUMN_NAMES = (
         *Event.MUTABLE_COLUMN_NAMES,
@@ -90,7 +90,10 @@ class ScheduledFiniteManeuverEvent(Event):
             err = f"{self.maneuver_type} is not a valid thrust type."
             raise ValueError(err)
         finite_maneuver = ScheduledFiniteManeuver(
-            start_sim_time, end_sim_time, thrust_func, scope_instance.simulation_id
+            start_sim_time,
+            end_sim_time,
+            thrust_func,
+            scope_instance.simulation_id,
         )
 
         # if finite_burn not in scope_instance.propagate_event_queue:

@@ -175,7 +175,9 @@ class UnscentedKalmanFilter(SequentialFilter):
         return 2 * self.x_dim + 1
 
     def _checkSqrtCovariance(
-        self, cov: ndarray, sqrt_func: Callable[[ndarray], ndarray]
+        self,
+        cov: ndarray,
+        sqrt_func: Callable[[ndarray], ndarray],
     ) -> ndarray:
         try:
             sqrt_cov = sqrt_func(cov)
@@ -190,7 +192,10 @@ class UnscentedKalmanFilter(SequentialFilter):
         return sqrt_cov
 
     def generateSigmaPoints(
-        self, mean: ndarray, cov: ndarray, sqrt_func: Callable[[ndarray], ndarray] = cholesky
+        self,
+        mean: ndarray,
+        cov: ndarray,
+        sqrt_func: Callable[[ndarray], ndarray] = cholesky,
     ) -> ndarray:
         r"""Generate sigma points according to the Unscented Transform.
 
@@ -206,11 +211,13 @@ class UnscentedKalmanFilter(SequentialFilter):
         sqrt_cov = self._checkSqrtCovariance(cov, sqrt_func)
 
         return mean.reshape((self.x_dim, 1)).dot(
-            ones((1, self.num_sigmas))
+            ones((1, self.num_sigmas)),
         ) + self.gamma * concatenate((zeros((self.x_dim, 1)), sqrt_cov, -sqrt_cov), axis=1)
 
     def predict(
-        self, final_time: ScenarioTime, scheduled_events: list[ScheduledEventType] | None = None
+        self,
+        final_time: ScenarioTime,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ):
         r"""Propagate the state estimate and error covariance with uncertainty.
 
@@ -299,7 +306,9 @@ class UnscentedKalmanFilter(SequentialFilter):
             self._debugChecks(observations)
 
     def predictStateEstimate(
-        self, final_time: ScenarioTime, scheduled_events: list[ScheduledEventType] | None = None
+        self,
+        final_time: ScenarioTime,
+        scheduled_events: list[ScheduledEventType] | None = None,
     ):
         r"""Propagate the previous state estimate from :math:`k` to :math:`k+1`.
 
@@ -326,9 +335,8 @@ class UnscentedKalmanFilter(SequentialFilter):
         Args:
             final_time (.ScenarioTime): time to propagate to
         """
-        # pylint: disable=unused-argument
         self.sigma_x_res = self.sigma_points - self.pred_x.reshape((self.x_dim, 1)).dot(
-            ones((1, self.num_sigmas))
+            ones((1, self.num_sigmas)),
         )
         self.pred_p = self.sigma_x_res.dot(self.cvr_weight.dot(self.sigma_x_res.T)) + self.q_matrix
 
@@ -382,12 +390,14 @@ class UnscentedKalmanFilter(SequentialFilter):
 
         # Convert to 1-D list of IsAngle values for the combined observation state
         angular_measurements = concatenate(
-            [ob.measurement.angular_values for ob in observations], axis=0
+            [ob.measurement.angular_values for ob in observations],
+            axis=0,
         )
 
         # Mx1 array of whether each corresponding measurement was angular or not
         self.is_angular = array(
-            [a in VALID_ANGULAR_MEASUREMENTS for a in angular_measurements], dtype=bool
+            [a in VALID_ANGULAR_MEASUREMENTS for a in angular_measurements],
+            dtype=bool,
         )
 
         # Save mean predicted measurement vector
@@ -397,11 +407,15 @@ class UnscentedKalmanFilter(SequentialFilter):
         self.sigma_y_res = zeros(sigma_obs.shape)
         for item in range(sigma_obs.shape[1]):
             self.sigma_y_res[:, item] = residuals(
-                sigma_obs[:, item], self.mean_pred_y, self.is_angular
+                sigma_obs[:, item],
+                self.mean_pred_y,
+                self.is_angular,
             )
 
     def calcMeasurementMean(
-        self, measurement_sigma_pts: ndarray, is_angular: list[IsAngle]
+        self,
+        measurement_sigma_pts: ndarray,
+        is_angular: list[IsAngle],
     ) -> ndarray:
         r"""Determine the mean of the predicted measurements.
 
@@ -453,7 +467,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             {
                 "sigma_points": self.sigma_points,
                 "sigma_x_res": self.sigma_x_res,
-            }
+            },
         )
         return result
 
@@ -468,6 +482,6 @@ class UnscentedKalmanFilter(SequentialFilter):
             {
                 "sigma_points": self.sigma_points,
                 "sigma_y_res": self.sigma_y_res,
-            }
+            },
         )
         return result

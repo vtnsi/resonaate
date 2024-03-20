@@ -208,7 +208,7 @@ class EstimateEphemeris(Base, _EphemerisMixin):
         """
         if kwargs.get("covariance") is None:
             raise KeyError(
-                "[Ephemeris.fromCovarianceMatrix()] Missing keyword argument 'covariance'."
+                "[Ephemeris.fromCovarianceMatrix()] Missing keyword argument 'covariance'.",
             )
 
         # Parse covariance matrix into separate columns, one for each matrix element

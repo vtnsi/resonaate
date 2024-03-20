@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -152,7 +151,7 @@ class TestAgentPropagateHandler:
         handler.registerCallback(target_agent)
         target_scenario_time = ScenarioTime(60)
         target_julian_date = target_scenario_time.convertToJulianDate(
-            target_agent.julian_date_epoch
+            target_agent.julian_date_epoch,
         )
         prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
 
@@ -168,13 +167,14 @@ class TestAgentPropagateHandler:
     def testProblemEstimateAgent(self, estimate_agent: EstimateAgent, target_agent: TargetAgent):
         """Test logging a bad estimate when an error occurs."""
         KeyValueStore.setValue(
-            "target_agents", pickle.dumps({target_agent.simulation_id: target_agent})
+            "target_agents",
+            pickle.dumps({target_agent.simulation_id: target_agent}),
         )
         handler = AgentPropagationJobHandler()
         handler.registerCallback(estimate_agent)
         target_scenario_time = ScenarioTime(60)
         target_julian_date = target_scenario_time.convertToJulianDate(
-            target_agent.julian_date_epoch
+            target_agent.julian_date_epoch,
         )
         target_datetime = target_scenario_time.convertToDatetime(target_agent.datetime_epoch)
         prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
@@ -190,17 +190,20 @@ class TestAgentPropagateHandler:
         handler.queue_mgr.stopHandling()
 
     def testProblemEstimateAgentNoMatch(
-        self, estimate_agent: EstimateAgent, target_agent: TargetAgent
+        self,
+        estimate_agent: EstimateAgent,
+        target_agent: TargetAgent,
     ):
         """Test logging a bad estimate when an error occurs, but with no matching target agent."""
         KeyValueStore.setValue(
-            "target_agents", pickle.dumps({target_agent.simulation_id + 1: target_agent})
+            "target_agents",
+            pickle.dumps({target_agent.simulation_id + 1: target_agent}),
         )
         handler = AgentPropagationJobHandler()
         handler.registerCallback(estimate_agent)
         target_scenario_time = ScenarioTime(60)
         target_julian_date = target_scenario_time.convertToJulianDate(
-            target_agent.julian_date_epoch
+            target_agent.julian_date_epoch,
         )
         target_datetime = target_scenario_time.convertToDatetime(target_agent.datetime_epoch)
         prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
@@ -224,7 +227,7 @@ class TestAgentPropagateHandler:
 
     def testNoImporterDB(self, target_agent: TargetAgent):
         """Test registering importer model without Importer DB created."""
-        target_agent._realtime = False  # pylint: disable=protected-access
+        target_agent._realtime = False
         handler = AgentPropagationJobHandler()
         error_msg = r"A valid ImporterDatabase was not established: \w+"
         with pytest.raises(ValueError, match=error_msg):
@@ -245,7 +248,7 @@ class TestAgentPropagateHandler:
             stop=ScenarioTime(1200).convertToJulianDate(jd_start),
         )
         # Setup scenario
-        target_agent._realtime = False  # pylint: disable=protected-access
+        target_agent._realtime = False
         handler = AgentPropagationJobHandler(importer_db_path=db_path)
         handler.registerCallback(target_agent)
 

@@ -28,6 +28,5 @@ prune .gitlab
 prune .vscode
 exclude .python-version
 exclude ruff.toml
-exclude .pylintrc
 exclude .git-blame-ignore-revs
 include Makefile

@@ -97,10 +97,12 @@ GEO: float = 35785 + Earth.radius
 
 # COEs
 SMA: ndarray = array(
-    [LEO, GEO, LEO, LEO, LEO, LEO, LEO, LEO, GEO, LEO, LEO, LEO, LEO, GEO], dtype=float
+    [LEO, GEO, LEO, LEO, LEO, LEO, LEO, LEO, GEO, LEO, LEO, LEO, LEO, GEO],
+    dtype=float,
 )
 ECC: ndarray = array(
-    [0, 0, 0, 0.0001, 0.0001, 0.001, 0.01, 0.1, 0, 0.0001, 0.001, 0.01, 0.1, 0.0001], dtype=float
+    [0, 0, 0, 0.0001, 0.0001, 0.001, 0.01, 0.1, 0, 0.0001, 0.001, 0.01, 0.1, 0.0001],
+    dtype=float,
 )
 INC: ndarray = deg2rad([0, 0, 10, 0.1, 0, 1, 10, 100, 10, 0, 1, 0.1, 1, 100])
 RAAN: ndarray = deg2rad([0, 0, 12, 55, 0, 324, 127, 61, 12, 0, 55, 324, 127, 10])
@@ -109,10 +111,12 @@ ANOM: ndarray = deg2rad([280, 280, 2, 20, 20, 200, 70, 140, 140, 2, 20, 200, 70,
 
 # EQEs
 H: ndarray = array(
-    [0.0, 0.0001, 0.001, 0.01, 0.15, 0.2, 0.3, 0.61, 0.3, 0.1, 0.2, 0.11, 0.02, 0.08], dtype=float
+    [0.0, 0.0001, 0.001, 0.01, 0.15, 0.2, 0.3, 0.61, 0.3, 0.1, 0.2, 0.11, 0.02, 0.08],
+    dtype=float,
 )
 K: ndarray = array(
-    [0.0, 0.0002, 0.001, 0.03, 0.1, 0.25, 0.3, 0.61, 0.5, 0.3, 0.21, 0.1, 0.04, 0.04], dtype=float
+    [0.0, 0.0002, 0.001, 0.03, 0.1, 0.25, 0.3, 0.61, 0.5, 0.3, 0.21, 0.1, 0.04, 0.04],
+    dtype=float,
 )
 P: ndarray = array([1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 3, 3, 1, 6], dtype=float)
 Q: ndarray = array([1, 2, 3, 4, 2, 2, 3, 4, 3, 3, 3, 4, 6, 1], dtype=float)
@@ -120,7 +124,7 @@ Q: ndarray = array([1, 2, 3, 4, 2, 2, 3, 4, 3, 3, 3, 4, 6, 1], dtype=float)
 # VALLADO AAS RV/COE/EQE Sets
 # Example from "Updated Analytical Partials for Covariance Transformations and Optimizations", Vallado
 VALLADO_AAS_RV: ndarray = array(
-    [-605.7922166, -5870.2295111, 3493.0531990, -1.568254290, -3.702348910, -6.479483950]
+    [-605.7922166, -5870.2295111, 3493.0531990, -1.568254290, -3.702348910, -6.479483950],
 )
 VALLADO_AAS_COE: tuple[float] = (
     6860.7631,

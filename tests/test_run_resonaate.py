@@ -31,7 +31,9 @@ def testRunResonaate(
 
     # Check that scenario builder was called
     mock_scenario_builder.assert_called_once_with(
-        "foo", internal_db_path=None, importer_db_path=None
+        "foo",
+        internal_db_path=None,
+        importer_db_path=None,
     )
 
     # Check that target julian date was called

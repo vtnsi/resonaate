@@ -162,17 +162,21 @@ class Optical(Sensor):
             ``bool``: True if target is visible; False if target is not visible
             :class:`.Explanation`: Reason observation was visible or not
         """
-        # pylint:disable=too-many-return-statements
         jd = self.host.julian_date_epoch
         sun_eci_position = Sun.getPosition(jd)
         boresight_eci = tgt_eci_state - self.host.eci_state
 
         # Check if target is illuminated
         tgt_solar_flux = calculateIncidentSolarFlux(
-            viz_cross_section, tgt_eci_state[:3], sun_eci_position
+            viz_cross_section,
+            tgt_eci_state[:3],
+            sun_eci_position,
         )
         line_of_sight, explanation = super().isVisible(
-            tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez
+            tgt_eci_state,
+            viz_cross_section,
+            reflectivity,
+            slant_range_sez,
         )
 
         if not line_of_sight:
@@ -183,7 +187,9 @@ class Optical(Sensor):
 
         # Check visual magnitude of RSO
         solar_phase_angle = calculatePhaseAngle(
-            sun_eci_position, tgt_eci_state[:3], self.host.eci_state[:3]
+            sun_eci_position,
+            tgt_eci_state[:3],
+            self.host.eci_state[:3],
         )
         rso_apparent_vismag = apparentVisualMagnitude(
             viz_cross_section,
@@ -201,10 +207,11 @@ class Optical(Sensor):
         if self.host.agent_type == PlatformLabel.SPACECRAFT:
             # Check if sensor is pointed at the Sun
             target_sun_unit_vector_eci = (sun_eci_position - tgt_eci_state[:3]) / norm(
-                tgt_eci_state[:3] - sun_eci_position
+                tgt_eci_state[:3] - sun_eci_position,
             )
             space_lighting = checkSpaceSensorLightingConditions(
-                boresight_eci[:3], target_sun_unit_vector_eci
+                boresight_eci[:3],
+                target_sun_unit_vector_eci,
             )
             if not space_lighting:
                 return False, Explanation.SPACE_ILLUMINATION
@@ -214,7 +221,8 @@ class Optical(Sensor):
             #           the limb of the Earth. Therefore, they cannot observe a target if the Earth
             #           or its atmosphere is in the background.
             target_is_obscured = checkSpaceSensorEarthLimbObscuration(
-                self.host.eci_state, slant_range_sez
+                self.host.eci_state,
+                slant_range_sez,
             )
 
             if target_is_obscured:
@@ -223,7 +231,8 @@ class Optical(Sensor):
         # Ground based require eclipse conditions
         else:
             ground_lighting = checkGroundSensorLightingConditions(
-                self.host.eci_state[:3], sun_eci_position / norm(sun_eci_position)
+                self.host.eci_state[:3],
+                sun_eci_position / norm(sun_eci_position),
             )
             if not ground_lighting:
                 return False, Explanation.GROUND_ILLUMINATION

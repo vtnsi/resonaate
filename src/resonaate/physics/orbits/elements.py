@@ -155,7 +155,9 @@ class ClassicalElements(OrbitalElements):
             :cite:t:`vallado_2013_astro`, Sections 2-4 - 2-6
         """
         super().__init__(
-            array([sma, ecc, inc, raan, argp, true_anom]), isInclined(inc), isEccentric(ecc)
+            array([sma, ecc, inc, raan, argp, true_anom]),
+            isInclined(inc),
+            isEccentric(ecc),
         )
 
         # Update raan, argp, anomaly for singular orbits
@@ -219,7 +221,6 @@ class ClassicalElements(OrbitalElements):
         Returns:
             :class:`.ClassicalElements`: constructed COE object.
         """
-        # pylint: disable=invalid-name
         return cls(*eqe2coe(sma, h, k, p, q, mean_long, retro=retro))
 
     def toECI(self, mu: float = Earth.mu) -> ndarray:
@@ -236,7 +237,13 @@ class ClassicalElements(OrbitalElements):
             ``ndarray``: 6x1 ECI state vector (km; km/sec).
         """
         return coe2eci(
-            self.sma, self.ecc, self.inc, self.raan, self.argp, self.true_anomaly, mu=mu
+            self.sma,
+            self.ecc,
+            self.inc,
+            self.raan,
+            self.argp,
+            self.true_anomaly,
+            mu=mu,
         )
 
     @classmethod
@@ -309,7 +316,6 @@ class EquinoctialElements(OrbitalElements):
             #. :cite:t:`vallado_2003_aiaa_covariance`
             #. :cite:t:`hintz_2008_elements`
         """
-        # pylint: disable=invalid-name
         super().__init__(
             array([sma, h, k, p, q, mean_longitude]),
             isInclined(getInclinationFromEQE(p, q)),

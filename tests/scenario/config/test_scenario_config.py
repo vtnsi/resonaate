@@ -127,7 +127,7 @@ def testEmptyConfig():
     """Test passing invalid, empty config dict."""
     # Pass an empty dictionary, ensure ConfigMissingRequiredError is raise
     with pytest.raises(TypeError):
-        ScenarioConfig(**{})
+        ScenarioConfig()
 
 
 @patch("resonaate.scenario.config.event_configs.EventConfigList", autospec=True)

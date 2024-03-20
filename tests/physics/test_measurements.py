@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 
 # Vallado example 4-1 (pg. 273), second part
 ECI: ndarray = np.array(
-    [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093]
+    [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093],
 )
 TRUE_RNG: float = 11710.812
 TRUE_AZ: float = np.radians(210.8777747)
@@ -75,7 +75,6 @@ EOP: EarthOrientationParameter = EarthOrientationParameter(
 @pytest.fixture(name="sez_state")
 def convertToSEZ() -> ndarray:
     """Fixture to get properly converted SEZ observation vector."""
-    # pylint: disable=unused-argument
     updateReductionParameters(CALENDAR_DATE, eops=EOP)
     return getSlantRangeVector(ecef2eci(lla2ecef(LLA), CALENDAR_DATE), ECI, CALENDAR_DATE)
 
@@ -98,7 +97,7 @@ TEST_SEZ_STATE = np.array(
         -1.76725463e00,
         6.81911631e00,
         1.95015349e00,
-    ]
+    ],
 )
 TEST_SEN_LLA = np.array((0.4, -1.2, 0.4))
 TEST_DATETIME = datetime.datetime(2021, 6, 14, 5, 8, 22)
@@ -150,7 +149,6 @@ def testElevation(mocked_elevation_func: MagicMock):
 
 def testMeasurementConstructor() -> None:
     """Test the main constructor for Measurement class."""
-    # pylint: disable=protected-access
     meas_types = (Range(), RangeRate(), Elevation(), Azimuth())
     r_matrix = np.eye(len(meas_types))
     measurement = Measurement(meas_types, r_matrix)
@@ -170,7 +168,6 @@ def testMeasurementConstructor() -> None:
 @pytest.mark.parametrize("meas_types", permutations(MEASUREMENT_TYPE_MAP.keys(), 2))
 def testMeasurementAltConstructor(meas_types: tuple[str]) -> None:
     """Test the alternative constructor for Measurement class."""
-    # pylint: disable=protected-access
     r_matrix = np.eye(len(meas_types))
     measurement = Measurement.fromMeasurementLabels(meas_types, r_matrix)
     assert set(measurement.labels) == set(meas_types)
@@ -194,7 +191,6 @@ def getBaseMeasurement() -> Measurement:
 
 def testRMatrix() -> None:
     """Tests proper and improper r_matrix arguments."""
-    # pylint: disable=protected-access
     meas_types = ["azimuth_rad", "elevation_rad"]
     n_dim = len(meas_types)
 
@@ -251,10 +247,15 @@ def testNoise(measurement: Measurement) -> None:
 def testCalculateMeasurement(measurement: Measurement) -> None:
     """Tests calculating normal and noisy measurement vectors."""
     norm_meas_vector = measurement.calculateMeasurement(
-        TEST_SEN_ECI, TEST_TGT_ECI, TEST_DATETIME, noisy=False
+        TEST_SEN_ECI,
+        TEST_TGT_ECI,
+        TEST_DATETIME,
+        noisy=False,
     )
     noisy_meas_vector = measurement.calculateNoisyMeasurement(
-        TEST_SEN_ECI, TEST_TGT_ECI, TEST_DATETIME
+        TEST_SEN_ECI,
+        TEST_TGT_ECI,
+        TEST_DATETIME,
     )
     assert norm_meas_vector.keys() == noisy_meas_vector.keys()
     for meas_type, noisy_val in noisy_meas_vector.items():

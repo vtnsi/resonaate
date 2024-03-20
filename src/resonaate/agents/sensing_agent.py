@@ -207,7 +207,7 @@ class SensingAgent(Agent):
         """
         self.eci_state = array(ephemeris.eci)
         self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(
-            self.julian_date_start
+            self.julian_date_start,
         )
 
     @property

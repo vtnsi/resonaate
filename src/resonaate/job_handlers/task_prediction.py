@@ -40,7 +40,6 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
         :``"reward_matrix"``: (``ndarray``): numeric reward array for each sensor.
         :``"estimate_id"``: (``int``): ID of the :class:`.EstimateAgent` to calculate metrics for.
     """
-    # pylint: disable=unsupported-assignment-operation
     sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
     estimate_agents = loads(KeyValueStore.getValue("estimate_agents"))
     estimate = estimate_agents[estimate_id]

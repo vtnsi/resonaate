@@ -1,6 +1,5 @@
 """Test :class:`.EstimateAgent`."""
 
-# pylint:disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -34,7 +33,6 @@ from resonaate.scenario.clock import ScenarioClock
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
 
-# pylint: disable=protected-access
 pytestmark = pytest.mark.usefixtures("database")
 
 
@@ -90,7 +88,7 @@ def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> S
                 -1.07453539e-01,
                 -1.14109571e-01,
                 2.19474290e-04,
-            ]
+            ],
         ),
         mocked_clock,
         earth_sensor,
@@ -104,7 +102,7 @@ def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> S
                     1.16467265e-24,
                     -6.00704788e-24,
                     3.01869766e-18,
-                ]
+                ],
             ),
         ),
         True,
@@ -210,7 +208,7 @@ def getTestEstimateAgent(
                 -5.76471671e00,
                 -1.46542677e00,
                 -4.75396773e00,
-            ]
+            ],
         ),
         np.diagflat([1.0, 2.0, 1.0, 1, 1, 1]),
         nominal_filter,
@@ -247,7 +245,8 @@ def testEstimateAgentGoodInit(nominal_filter: UnscentedKalmanFilter, mocked_cloc
 
 
 def testEstimateAgentBadCovarianceInit(
-    nominal_filter: UnscentedKalmanFilter, mocked_clock: ScenarioClock
+    nominal_filter: UnscentedKalmanFilter,
+    mocked_clock: ScenarioClock,
 ):
     """Test EstimateAgent with bad covariance shape.
 
@@ -274,7 +273,8 @@ def testEstimateAgentBadCovarianceInit(
 
 
 def testEstimateAgentBadSeedInit(
-    nominal_filter: UnscentedKalmanFilter, mocked_clock: ScenarioClock
+    nominal_filter: UnscentedKalmanFilter,
+    mocked_clock: ScenarioClock,
 ):
     """Test EstimateAgent with bad seed shape.
 
@@ -360,7 +360,9 @@ def testUpdateEstimateWithObservations(estimate_agent: EstimateAgent, observatio
 
 
 def testUpdateFromAsyncPredict(
-    estimate_agent: EstimateAgent, observations: Observation, async_result_predict: dict
+    estimate_agent: EstimateAgent,
+    observations: Observation,
+    async_result_predict: dict,
 ):
     """Test updateEstimate without observations.
 
@@ -377,7 +379,9 @@ def testUpdateFromAsyncPredict(
 
 
 def testUpdateFromAsyncUpdateEstimate(
-    estimate_agent: EstimateAgent, observations: Observation, async_result_update: dict
+    estimate_agent: EstimateAgent,
+    observations: Observation,
+    async_result_update: dict,
 ):
     """Test updateEstimate without observations.
 
@@ -725,7 +729,8 @@ def testBeginInitialOrbitDeterminationSuccess(iod_estimate_agent: EstimateAgent)
 
 
 def testBeginInitialOrbitDeterminationNoSuccess(
-    iod_estimate_agent: EstimateAgent, observations: Observation
+    iod_estimate_agent: EstimateAgent,
+    observations: Observation,
 ):
     """Test _beginInitialOrbitDetermination sets iod start time.
 
@@ -742,7 +747,8 @@ def testBeginInitialOrbitDeterminationNoSuccess(
 
 
 def testNoAttemptInitialOrbitDetermination(
-    estimate_agent: EstimateAgent, observations: Observation
+    estimate_agent: EstimateAgent,
+    observations: Observation,
 ):
     """Test _attemptInitialOrbitDetermination returns if no IOD set.
 
@@ -827,7 +833,9 @@ def testAttemptInitialOrbitDeterminationSuccess(
     # Patch IOD logic
     def determineNewEstimateStateGood(self, observations, detection_time, current_time):
         return IODSolution(
-            state_vector=iod_estimate_agent.state_estimate, convergence=True, message=None
+            state_vector=iod_estimate_agent.state_estimate,
+            convergence=True,
+            message=None,
         )
 
     monkeypatch.setattr(
@@ -883,7 +891,9 @@ def testAttemptInitialOrbitDeterminationSuccessLogging(
     # Patch IOD logic
     def determineNewEstimateStateGood(self, observations, detection_time, current_time):
         return IODSolution(
-            state_vector=iod_estimate_agent.state_estimate, convergence=True, message=None
+            state_vector=iod_estimate_agent.state_estimate,
+            convergence=True,
+            message=None,
         )
 
     monkeypatch.setattr(
@@ -892,7 +902,8 @@ def testAttemptInitialOrbitDeterminationSuccessLogging(
         determineNewEstimateStateGood,
     )
     success, iod_state = iod_estimate_agent._attemptInitialOrbitDetermination(
-        observations=observations, logging=True
+        observations=observations,
+        logging=True,
     )
 
     assert success is True
@@ -942,7 +953,8 @@ def testProperties(estimate_agent: EstimateAgent):
     assert np.allclose(estimate_agent.ecef_state, estimate_agent._ecef_state)
     assert np.allclose(estimate_agent.lla_state, estimate_agent._lla_state)
     assert np.allclose(
-        estimate_agent.process_noise_covariance, estimate_agent.nominal_filter.q_matrix
+        estimate_agent.process_noise_covariance,
+        estimate_agent.nominal_filter.q_matrix,
     )
     assert np.allclose(estimate_agent.initial_covariance, estimate_agent._initial_covariance)
     assert np.allclose(estimate_agent.error_covariance, estimate_agent._error_covariance)
@@ -967,5 +979,6 @@ def testSetters(estimate_agent: EstimateAgent):
     estimate_agent.state_estimate = new_state
 
     assert np.allclose(
-        estimate_agent.ecef_state, eci2ecef(new_state, estimate_agent.datetime_epoch)
+        estimate_agent.ecef_state,
+        eci2ecef(new_state, estimate_agent.datetime_epoch),
     )

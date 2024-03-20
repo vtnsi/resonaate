@@ -6,8 +6,6 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
-# pylint: disable=invalid-name, redefined-builtin
-
 # -- Path setup --------------------------------------------------------------
 
 # Standard Library Imports
