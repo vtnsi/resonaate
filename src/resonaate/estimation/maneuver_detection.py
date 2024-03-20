@@ -38,8 +38,10 @@ class ManeuverDetection(metaclass=ABCMeta):
         r"""Implements the ``Callable`` protocol/interface, so the class can be used like a function.
 
         Args:
+            args (Any): variable set of positional arguments.
             test (``Callable``, optional): the hypothesis testing function used to determine
                 whether a maneuver occurred or not. Defaults to :func:`.oneSidedChiSquareTest`.
+            kwargs (Any): variable set of keyword arguments.
 
         Returns:
             ``bool``: ``True`` if the tests fails, which means a maneuver is detected, and
@@ -85,6 +87,8 @@ class StandardNis(ManeuverDetection):
             innov_cvr (``ndarray``): innovation covariance matrix.
             test (``Callable``, optional): the hypothesis testing function used to determine
                 whether a maneuver occurred or not. Defaults to :func:`.oneSidedChiSquareTest`.
+            args (Any): variable set of positional arguments.
+            kwargs (Any): variable set of keyword arguments.
 
         Returns:
             ``bool``: ``True`` if the tests fails, which means a maneuver is detected, and
@@ -150,6 +154,8 @@ class SlidingNis(StandardNis):
             innov_cvr (``ndarray``): innovation covariance matrix.
             test (``Callable``, optional): the hypothesis testing function used to determine
                 whether a maneuver occurred or not. Defaults to :func:`.oneSidedChiSquareTest`.
+            args (Any): variable set of positional arguments.
+            kwargs (Any): variable set of keyword arguments.
 
         Returns:
             ``bool``: ``True`` if the tests fails, which means a maneuver is detected, and
@@ -220,6 +226,8 @@ class FadingMemoryNis(StandardNis):
             innov_cvr (``ndarray``): innovation covariance matrix.
             test (``Callable``, optional): the hypothesis testing function used to determine
                 whether a maneuver occurred or not. Defaults to :func:`.oneSidedChiSquareTest`.
+            args (Any): variable set of positional arguments.
+            kwargs (Any): variable set of keyword arguments.
 
         Returns:
             ``bool``: ``True`` if the tests fails, which means a maneuver is detected, and

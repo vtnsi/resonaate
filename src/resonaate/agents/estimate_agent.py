@@ -79,7 +79,8 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             initial_state (``ndarray``): 6x1 ECI initial state vector
             initial_covariance (``ndarray``): 6x6 initial covariance or uncertainty
             _filter (:class:`.SequentialFilter`): tracks the estimate's state throughout the simulation
-            adaptive_filter_config (:class:`.ConfigOption`): adaptive filter configuration to be used if needed
+            adaptive_filter_config (:class:`.AdaptiveEstimationConfig`): adaptive filter configuration to be used if needed
+            initial_orbit_determination_config (:class:`.InitialOrbitDeterminationConfig`): IOD configuration to be used if needed
             visual_cross_section (``float, int``): constant visual cross-section of the agent
             mass (``float, int``): constant mass of the agent
             reflectivity (``float``): constant reflectivity of the agent

@@ -213,7 +213,7 @@ class ClassicalElements(OrbitalElements):
             k (``float``): EQE eccentricity term, :math:`k=e\cos(\omega + \Omega)`.
             p (``float``): inclination term, :math:`p=\chi=\tan(\frac{i}{2})\sin(\Omega)`.
             q (``float``): inclination term, :math:`q=\psi=\tan(\frac{i}{2})\cos(\Omega)`.
-            mean_longitude (``float``): mean longitude (location) angle, :math:`\lambda_M\in[0,2\pi)`, in radians.
+            mean_long (``float``): mean longitude (location) angle, :math:`\lambda_M\in[0,2\pi)`, in radians.
             retro (``bool``, optional): whether to use the retrograde conversion equations.
 
         Returns:

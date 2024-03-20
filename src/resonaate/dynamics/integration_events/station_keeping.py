@@ -89,6 +89,7 @@ class StationKeeper(DiscreteStateChangeEvent, metaclass=ABCMeta):
             conf_str (str): Configuration string used to indicate which :class:`.StationKeeper` to construct.
             rso_id (int): Identifier for the RSO that's performing these station keeping maneuvers
             initial_eci (numpy.ndarray): Initial ECI state of the RSO that's performing these station keeping maneuvers
+            julian_date_start (:class:`.JulianDate`): epoch associated with the initial state.
 
         Returns:
             StationKeeper: A concrete :class:`.StationKeeper` object based on specified parameters.

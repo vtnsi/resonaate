@@ -134,6 +134,7 @@ class PlatformConfig(ABC, ConfigObject):
 
         Args:
             platform_cfg (``dict``): config dictionary
+            state (:class:`.StateConfig`): corresponding initial state configuration
 
         Raises:
             ConfigValueError: raised if an incorrect type is set

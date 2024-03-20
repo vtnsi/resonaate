@@ -51,7 +51,7 @@ class CallbackRegistration(ABC):
         KeywordArgs:
             kwargs (``dict``): arguments specific to an implemented :class:`.CallbackRegistration`.
 
-        Returns
+        Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
         raise NotImplementedError

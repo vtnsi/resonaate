@@ -34,6 +34,8 @@ class Terrestrial(Dynamics):
             initial_time (:class:`.ScenarioTime`): time value when the integration will begin (seconds)
             final_time (:class:`.ScenarioTime`): time value when the integration will stop (seconds)
             initial_state (``numpy.ndarray``): (6, ) state vector for the integration step, (km; km/sec)
+            station_keeping (None): Not used.
+            scheduled_events (None): Not used.
 
         Returns:
             ``numpy.ndarray``: 6x1 ECI state vector (km; km/sec)

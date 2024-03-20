@@ -218,6 +218,8 @@ def testAssessWithObservations(
 
         Args:
             engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+            args (Any): not used.
+            kwargs (Any): not used.
         """
         engine._observations = [obs_1, obs_2]
 

@@ -16,7 +16,6 @@ def testRunResonaate(
     mock_get_target_jd: MagicMock,
 ):
     """Test :func:`.runResonaate`."""
-
     # Create a fake scenario that is returned by the scenario builder
     mocked_app = MagicMock()
     mocked_propagate = MagicMock()

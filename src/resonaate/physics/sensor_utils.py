@@ -220,7 +220,7 @@ def checkSpaceSensorEarthLimbObscuration(
 
     Args:
         sensor_eci_state (``ndarray``): 6x1 ECI position vector of the sensor satellite (km; km/s)
-        target_sez (``ndarray``): 6x1 slant range vector of the target (km; km/s)
+        target_sez_state (``ndarray``): 6x1 slant range vector of the target (km; km/s)
 
     Returns:
         ``bool``: whether the target is in front of the Earth's limb, from the sensor's perspective
@@ -265,7 +265,7 @@ def lambertianPhaseFunction(phi: float) -> float:
     Args:
         phi (``float``): phase angle
 
-    Returns
+    Returns:
         (``float``): phase angle
 
     References:

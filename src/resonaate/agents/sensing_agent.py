@@ -177,6 +177,11 @@ class SensingAgent(Agent):
         ]
 
     def updateInfo(self, sensor_change):
+        """Update the boresight and last time tasked attributes.
+
+        Args:
+            sensor_change (dict): values to change in the sensor.
+        """
         self.sensors.boresight = sensor_change["boresight"]
         self.sensors.time_last_tasked = sensor_change["time_last_tasked"]
 

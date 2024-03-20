@@ -264,7 +264,7 @@ def filterBySingleJulianDate(
     Args:
         query (``Query``): Query object to filter
         table (:class:`.EstimateEphemeris`|:class:`.TruthEphemeris`|:class:`.Observation`): data table to query
-        jd (:class:`.JulianDate`) single time of Julian date for query
+        jd (:class:`.JulianDate`): single time of Julian date for query
 
     Returns:
         (:class:`Query`): Query object to retrieve data
