@@ -7,7 +7,7 @@ from pickle import loads
 # Third Party Imports
 import numpy as np
 import pytest
-from mjolnir import KeyValueStore
+from strmbrkr import KeyValueStore
 
 # RESONAATE Imports
 import resonaate.physics.constants as const

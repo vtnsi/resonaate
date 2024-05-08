@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
-from mjolnir import KeyValueStore, WorkerManager
+from strmbrkr import KeyValueStore, WorkerManager
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig

@@ -10,7 +10,7 @@ from unittest.mock import create_autospec
 # Third Party Imports
 import numpy as np
 import pytest
-from mjolnir import Job, KeyValueStore
+from strmbrkr import Job, KeyValueStore
 
 # RESONAATE Imports
 from resonaate.common.exceptions import (

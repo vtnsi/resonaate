@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
-from mjolnir import KeyValueStore
+from strmbrkr import KeyValueStore
 
 # RESONAATE Imports
 from resonaate.data.db_connection import (
