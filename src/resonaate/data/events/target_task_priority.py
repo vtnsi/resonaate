@@ -1,4 +1,5 @@
 """Defines the :class:`.TargetTaskPriority` data table class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -32,11 +33,9 @@ class TargetTaskPriority(Event):
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
-    def agent_id(self):  # pylint: disable=invalid-name
+    def agent_id(self):
         """``int``: Unique ID of the :class:`.AgentModel` with the observation priority."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "agent_id", Column(Integer, ForeignKey("agents.unique_id"))
-        )
+        return Event.__table__.c.get("agent_id", Column(Integer, ForeignKey("agents.unique_id")))
 
     agent = relationship("AgentModel", lazy="joined", innerjoin=True)
     """:class:`~.agent.AgentModel`: The `AgentModel` that has increased observation priority."""
@@ -47,7 +46,7 @@ class TargetTaskPriority(Event):
     is_dynamic = Column(Boolean)
     """``bool``: Flag indicating whether this task is pre-canned or dynamically created."""
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + ("agent_id", "priority", "is_dynamic")
+    MUTABLE_COLUMN_NAMES = (*Event.MUTABLE_COLUMN_NAMES, "agent_id", "priority", "is_dynamic")
 
     def handleEvent(self, scope_instance: TaskingEngine) -> None:
         """Increase the reward for tasking sensors to observe the `target`.
@@ -57,7 +56,8 @@ class TargetTaskPriority(Event):
                 :class:`.TargetTaskPriority`.
         """
         scope_instance.reward_matrix[
-            scope_instance.target_indices[self.agent_id], :
+            scope_instance.target_indices[self.agent_id],
+            :,
         ] *= self.priority
 
     @classmethod

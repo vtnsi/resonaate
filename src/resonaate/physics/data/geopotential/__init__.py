@@ -1,0 +1,1 @@
+"""RESONAATE-provided geopotential models."""

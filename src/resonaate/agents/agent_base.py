@@ -1,4 +1,5 @@
 """Abstract base class that defines a common interface for all `Agent` classes."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -24,6 +25,7 @@ from ..scenario.clock import ScenarioClock
 if TYPE_CHECKING:
     # Standard Library Imports
     from datetime import datetime
+    from typing import Any, Final
 
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
@@ -32,10 +34,10 @@ if TYPE_CHECKING:
     from ..scenario.config.platform_config import PlatformConfig
 
 
-class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
+class Agent(metaclass=ABCMeta):
     """Abstract base class for a generic Agent object, i.e. an actor in the simulation."""
 
-    TYPES = {
+    TYPES: Final[dict[str, Any]] = {
         "_id": int,
         "name": str,
         "agent_type": str,
@@ -49,7 +51,7 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         "station_keeping": (list, type(None)),
     }
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         _id: int,
         name: str,
@@ -150,7 +152,8 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         for itr_event in self.propagate_event_queue:
             if isinstance(itr_event, (ScheduledFiniteManeuver, ScheduledFiniteBurn)):
                 if not self._time < itr_event.end_time or fpe_equals(
-                    itr_event.end_time, self._time
+                    itr_event.end_time,
+                    self._time,
                 ):
                     continue
                 if itr_event in relevant_events:
@@ -187,17 +190,15 @@ class Agent(metaclass=ABCMeta):  # pylint: disable=too-many-public-methods
         if platform_cfg.type != PlatformLabel.SPACECRAFT:
             return station_keepers
 
-        for routine in platform_cfg.station_keeping.routines:
-            station_keepers.append(
-                StationKeeper.factory(
-                    conf_str=routine,
-                    rso_id=agent_id,
-                    initial_eci=initial_state,
-                    julian_date_start=jd_start,
-                )
+        return [
+            StationKeeper.factory(
+                conf_str=routine,
+                rso_id=agent_id,
+                initial_eci=initial_state,
+                julian_date_start=jd_start,
             )
-
-        return station_keepers
+            for routine in platform_cfg.station_keeping.routines
+        ]
 
     ### Abstract Methods & Properties ###
 

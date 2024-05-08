@@ -1,4 +1,5 @@
 """Defines platform config types for describing an agent's host entity and its behavior."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     # Local Imports
     from .state_config import StateConfig
 
+# ruff: noqa: A003
 
 MASS_MAP: dict[str, float] = {
     OrbitRegimeLabel.LEO: LEO_DEFAULT_MASS,
@@ -123,7 +125,9 @@ class PlatformConfig(ABC, ConfigObject):
 
         if state.type not in self.valid_states:
             raise ConfigValueError(
-                f"{self.CONFIG_LABEL} referenced state", state.type, self.valid_states
+                f"{self.CONFIG_LABEL} referenced state",
+                state.type,
+                self.valid_states,
             )
 
     @classmethod
@@ -132,6 +136,7 @@ class PlatformConfig(ABC, ConfigObject):
 
         Args:
             platform_cfg (``dict``): config dictionary
+            state (:class:`.StateConfig`): corresponding initial state configuration
 
         Raises:
             ConfigValueError: raised if an incorrect type is set

@@ -25,7 +25,7 @@ class TestFilterStep:
             -2.0436287793690333e-05,
             -0.0362834239294898,
             -0.000185071151261873,
-        ]
+        ],
     )
     nis = 5.37607495178574
     innovation2 = array([-2.334817207660933e-05, -2.0436287793690333e-05])
@@ -35,7 +35,7 @@ class TestFilterStep:
         _ = FilterStep()
 
     def testInitKwargs(self, epoch, target_agent):
-        """Test initializing the kewards of the truth ephemeris table.
+        """Test initializing the keywords of the truth ephemeris table.
 
         Args:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
@@ -50,8 +50,8 @@ class TestFilterStep:
             measurement_residual_range_rate=self.innovation[3],
         )
 
-    def testrecordFilterStep(self, epoch, target_agent):
-        """Test initializing the kewards of the table.
+    def testRecordFilterStep(self, epoch, target_agent):
+        """Test initializing the keywords of the table.
 
         Args:
             epoch (class: `.Epoch`): current epoch at which filter information is taken

@@ -1,4 +1,5 @@
 """Defines the :class:`.Scenario` class which controls RESONAATE simulations."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -10,9 +11,9 @@ from pickle import dumps
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import KeyValueStore, WorkerManager
 from numpy import around, seterr
 from sqlalchemy.orm import Query
+from strmbrkr import KeyValueStore, WorkerManager
 
 # Local Imports
 from ..agents.estimate_agent import EstimateAgent
@@ -36,7 +37,6 @@ from .config.agent_config import SensingAgentConfig, TargetAgentConfig
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from collections.abc import Callable
 
     # Local Imports
     from ..data.observation import MissedObservation, Observation
@@ -62,7 +62,7 @@ class Scenario(ParallelMixin):
     This class serves as a "public" API for running RESONAATE simulations.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, C901
         self,
         config: ScenarioConfig,
         clock: ScenarioClock,
@@ -110,12 +110,13 @@ class Scenario(ParallelMixin):
         self.logger = logger
         if logger is None:
             self.logger = Logger(
-                "resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation
+                "resonaate",
+                path=BehavioralConfig.getConfig().logging.OutputLocation,
             )
 
         if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
             self.logger.warning(
-                "Simulation is running in debug mode. Worker jobs can block indefinitely."
+                "Simulation is running in debug mode. Worker jobs can block indefinitely.",
             )
 
         self.worker_mgr = None
@@ -129,7 +130,8 @@ class Scenario(ParallelMixin):
                 watchdog_terminate_after = None
 
             self.worker_mgr = WorkerManager(
-                proc_count=proc_count, watchdog_terminate_after=watchdog_terminate_after
+                proc_count=proc_count,
+                watchdog_terminate_after=watchdog_terminate_after,
             )
             self.worker_mgr.startWorkers()
 
@@ -139,34 +141,34 @@ class Scenario(ParallelMixin):
         self.logger.info(f"Initial estimate error std: {pos_std} km; {vel_std} km/sec")
         self.logger.info(f"Random seed: {config.noise.random_seed}")
         self.logger.info(
-            f"Using real-time propagation for RSO truth data: {config.propagation.target_realtime_propagation}"
+            f"Using real-time propagation for RSO truth data: {config.propagation.target_realtime_propagation}",
         )
         self.logger.info(
-            f"Using real-time propagation for sensor truth data: {config.propagation.sensor_realtime_propagation}"
+            f"Using real-time propagation for sensor truth data: {config.propagation.sensor_realtime_propagation}",
         )
         self.logger.info(
-            f"Using real-time observation for tasking: {config.observation.realtime_observation}"
+            f"Using real-time observation for tasking: {config.observation.realtime_observation}",
         )
         self.logger.info(
-            f"Spacecraft truth dynamics model: {config.propagation.propagation_model}"
+            f"Spacecraft truth dynamics model: {config.propagation.propagation_model}",
         )
         self.logger.info(
-            f"Spacecraft filter dynamics model: {config.estimation.sequential_filter.dynamics_model}"
+            f"Spacecraft filter dynamics model: {config.estimation.sequential_filter.dynamics_model}",
         )
         self.logger.info(f"Numerical integration method: {config.propagation.integration_method}")
         self.logger.info(f"Earth gravity model: {config.geopotential.model}")
         self.logger.info(
-            f"Earth geopotential degree, order: {config.geopotential.degree}, {config.geopotential.order}"
+            f"Earth geopotential degree, order: {config.geopotential.degree}, {config.geopotential.order}",
         )
         if config.perturbations.third_bodies:
             self.logger.info(f"Third body perturbations: {config.perturbations.third_bodies}")
         if config.perturbations.solar_radiation_pressure:
             self.logger.info(
-                f"Solar Radiation Pressure perturbations: {config.perturbations.solar_radiation_pressure}"
+                f"Solar Radiation Pressure perturbations: {config.perturbations.solar_radiation_pressure}",
             )
         if config.perturbations.general_relativity:
             self.logger.info(
-                f"General Relativity perturbations: {config.perturbations.general_relativity}"
+                f"General Relativity perturbations: {config.perturbations.general_relativity}",
             )
 
         # [NOTE] We want to print all Numpy warnings to stdout, otherwise they are suppressed. However,
@@ -181,7 +183,7 @@ class Scenario(ParallelMixin):
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents
         self._agent_propagation_handler = AgentPropagationJobHandler(
-            importer_db_path=importer_db_path
+            importer_db_path=importer_db_path,
         )
 
         for target_agent in self.target_agents.values():
@@ -217,7 +219,7 @@ class Scenario(ParallelMixin):
 
         self.logger.info(f"Current model time: {self.clock.julian_date_epoch}.")
         self.logger.info(
-            f"Target propagation time: {target_time}. Rounded delta: {rounded_delta} seconds."
+            f"Target propagation time: {target_time}. Rounded delta: {rounded_delta} seconds.",
         )
 
         if self.scenario_config.propagation.truth_simulation_only:
@@ -226,7 +228,7 @@ class Scenario(ParallelMixin):
         if rounded_delta >= self.physics_time_step:
             steps = rounded_delta / self.physics_time_step
             self.logger.info(
-                f"Propagating model forward {steps * self.physics_time_step} seconds."
+                f"Propagating model forward {steps * self.physics_time_step} seconds.",
             )
             for _ in range(int(steps)):
                 self.stepForward()
@@ -237,7 +239,7 @@ class Scenario(ParallelMixin):
 
         else:
             self.logger.error(
-                f"Delta less than physics time step of {self.physics_time_step} seconds."
+                f"Delta less than physics time step of {self.physics_time_step} seconds.",
             )
             raise ValueError(rounded_delta)
 
@@ -246,7 +248,7 @@ class Scenario(ParallelMixin):
         # Grab `TruthEphemeris` for targets & sensors
         if not self.database.getData(
             Query(Epoch).filter(
-                Epoch.timestampISO == self.clock.datetime_epoch.isoformat(timespec="microseconds")
+                Epoch.timestampISO == self.clock.datetime_epoch.isoformat(timespec="microseconds"),
             ),
             multi=False,
         ):
@@ -254,7 +256,7 @@ class Scenario(ParallelMixin):
                 Epoch(
                     julian_date=self.clock.julian_date_epoch,
                     timestampISO=self.clock.datetime_epoch.isoformat(timespec="microseconds"),
-                )
+                ),
             )
 
         output_data = [tgt.getCurrentEphemeris() for tgt in self.target_agents.values()]
@@ -301,7 +303,12 @@ class Scenario(ParallelMixin):
         prior_datetime = self.clock.datetime_epoch
         next_jd = JulianDate(float(prior_jd) + self.clock.dt_step * SEC2DAYS)
         handleRelevantEvents(
-            self, self.database, EventScope.SCENARIO_STEP, prior_jd, next_jd, self.logger
+            self,
+            self.database,
+            EventScope.SCENARIO_STEP,
+            prior_jd,
+            next_jd,
+            self.logger,
         )
         # Call to update the entire model
         self.logger.debug("TicToc")
@@ -351,6 +358,12 @@ class Scenario(ParallelMixin):
             obs_dict = defaultdict(list)
             for tasking_engine in self._tasking_engines.values():
                 tasking_engine.assess(prior_datetime, self.clock.datetime_epoch)
+
+                # Update sensor boresight, and last time that it made an observation
+                for sensor_change in tasking_engine.sensor_changes:
+                    self.sensor_agents[sensor_change].updateInfo(
+                        tasking_engine.sensor_changes[sensor_change],
+                    )
                 for observation in tasking_engine.observations:
                     obs_dict[observation.target_id].append(observation)
 
@@ -387,7 +400,6 @@ class Scenario(ParallelMixin):
             target_spec (:class:`.TargetAgentConfig` | ``dict``): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
-        # pylint: disable=unused-argument
         err = f"Can't handle target specification of type {type(target_spec)}"
         raise TypeError(err)
 
@@ -446,7 +458,6 @@ class Scenario(ParallelMixin):
             tgt_cfg=target_spec,
             clock=self.clock,
             dynamics=filter_dynamics,
-            prop_cfg=self.scenario_config.propagation,
             time_cfg=self.scenario_config.time,
             noise_cfg=self.scenario_config.noise,
             estimation_cfg=self.scenario_config.estimation,
@@ -482,7 +493,6 @@ class Scenario(ParallelMixin):
             sensor_spec (:class:`.SensingAgentConfig` | ``dict``): Specification of sensor being added.
             tasking_engine_id (``int``): Unique identifier to add the specified sensor to.
         """
-        # pylint: disable=unused-argument
         err = f"Can't handle sensor specification of type {type(sensor_spec)}"
         raise TypeError(err)
 

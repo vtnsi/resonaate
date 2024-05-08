@@ -384,34 +384,17 @@ Jobs in the check stage define **pre**-test checks to enforce code styling, enco
 These jobs are quick, run for every pipeline, and only expose the job log as an artifact if they fail.
 Also, these jobs have zero dependencies, so they are always immediately started by each pipeline.
 
-- **flake8** runs a full `flake8` linter check
+- **ruff** runs a full `ruff` linter check
 
   <details><summary>Config (Click to expand)</summary>
 
   ```{literalinclude} ../../../.gitlab/ci/check.gitlab-ci.yml
   ---
-  name: ci-flake8-job
-  caption: flake8
+  name: ci-ruff-job
+  caption: ruff
   language: yaml
   linenos: true
-  start-at: 'flake8:'
-  end-before: ====
-  ---
-  ```
-
-  </details>
-
-- **pylint** runs a full `pylint` linter check
-
-  <details><summary>Config (Click to expand)</summary>
-
-  ```{literalinclude} ../../../.gitlab/ci/check.gitlab-ci.yml
-  ---
-  name: ci-pylint-job
-  caption: pylint
-  language: yaml
-  linenos: true
-  start-at: 'pylint:'
+  start-at: 'ruff:'
   end-before: ====
   ---
   ```

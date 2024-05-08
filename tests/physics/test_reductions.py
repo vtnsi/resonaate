@@ -7,7 +7,7 @@ from pickle import loads
 # Third Party Imports
 import numpy as np
 import pytest
-from mjolnir import KeyValueStore
+from strmbrkr import KeyValueStore
 
 # RESONAATE Imports
 import resonaate.physics.constants as const
@@ -33,7 +33,6 @@ def _reductionsCheck(reductions: dict, other_reductions: dict) -> None:
 
 def testGetReductionParameters() -> None:
     """Test creation and retrieving of values in KVS."""
-    # pylint: disable=unused-argument
     utc = datetime.datetime(2022, 6, 10, 4, 12, 30)
 
     # Test no KVS started
@@ -42,7 +41,7 @@ def testGetReductionParameters() -> None:
     assert reductions["datetime"] == new_utc.isoformat()
     kvs_reductions = loads(KeyValueStore.getValue(REDUCTION_KEY))
     direct_reductions = dict(
-        zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=new_utc))
+        zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=new_utc)),
     )
     _reductionsCheck(reductions, kvs_reductions)
     _reductionsCheck(reductions, direct_reductions)
@@ -54,7 +53,7 @@ def testGetReductionParameters() -> None:
     assert reductions["datetime"] == new_utc.isoformat()
     kvs_reductions = loads(KeyValueStore.getValue(REDUCTION_KEY))
     direct_reductions = dict(
-        zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=new_utc))
+        zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=new_utc)),
     )
     _reductionsCheck(reductions, kvs_reductions)
     _reductionsCheck(reductions, direct_reductions)
@@ -70,7 +69,6 @@ def testGetReductionParameters() -> None:
 
 def testFK5ReductionAlgorithm():
     """Numerically validate reduction algorithm against results from IERS."""
-    # pylint: disable=too-many-locals
     # Correct values, taken from IERS examples
     correct_tt = 54195.500754444444444
     correct_ut1 = 54195.499999165813831
@@ -79,21 +77,21 @@ def testFK5ReductionAlgorithm():
             [0.999998403176203, -0.001639032970562, -0.000712190961847],
             [0.001639000942243, 0.999998655799521, -0.000045552846624],
             [0.000712264667137, 0.000044385492226, 0.999999745354454],
-        ]
+        ],
     )
     correct_rnp_mat = np.asarray(
         [
             [0.973104317592265, 0.230363826166883, -0.000703332813776],
             [-0.230363798723533, 0.973104570754697, 0.000120888299841],
             [0.000712264667137, 0.000044385492226, 0.999999745354454],
-        ]
+        ],
     )
     correct_full_mat = np.asarray(
         [
             [0.973104317712772, 0.230363826174782, -0.000703163477127],
             [-0.230363800391868, 0.973104570648022, 0.000118545116892],
             [0.000711560100206, 0.000046626645796, 0.999999745754058],
-        ]
+        ],
     )
 
     # Given UTC
@@ -123,7 +121,14 @@ def testFK5ReductionAlgorithm():
     # Calculate the required parameters
     lod = 0.00001
     eops = EarthOrientationParameter(
-        datetime.date(year, month, day), x_p, y_p, ddp80, dde80, dut1, lod, dat
+        datetime.date(year, month, day),
+        x_p,
+        y_p,
+        ddp80,
+        dde80,
+        dut1,
+        lod,
+        dat,
     )
     # (rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt, eops, gast, eq_equinox)
     updateReductionParameters(calendar_date, eops=eops)

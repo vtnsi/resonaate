@@ -1,5 +1,5 @@
 """Test initial_orbit_determination."""
-# pylint: disable=unused-argument
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -36,7 +36,7 @@ def getObservation():
                 1.228134787553298,
                 0.5432822498364407,
                 0.06300000000101136,
-            ]
+            ],
         ),
         utc_datetime,
     )
@@ -51,7 +51,8 @@ def getObservation():
         range_rate_km_p_sec=-6.1473412228123365,
         sensor_eci=sen_eci_state,
         measurement=Measurement.fromMeasurementLabels(
-            ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], eye(4)
+            ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"],
+            eye(4),
         ),
     )
 
@@ -75,7 +76,7 @@ class TestLambertInitialOrbitDetermination:
             0.12101067280870113,
             -0.19296748190340082,
             -0.0002437709361113743,
-        ]
+        ],
     )
 
     def testIODFactory(self, iod: LambertIOD):
@@ -86,7 +87,9 @@ class TestLambertInitialOrbitDetermination:
         """
         config = InitialOrbitDeterminationConfig()
         factory_result = initialOrbitDeterminationFactory(
-            config, iod.sat_num, self.start_julian_date
+            config,
+            iod.sat_num,
+            self.start_julian_date,
         )
         assert factory_result is not None
 
@@ -102,7 +105,8 @@ class TestLambertInitialOrbitDetermination:
         bad_config = InitialOrbitDeterminationConfig()
         bad_config.name = "bad_name"
         with pytest.raises(
-            ValueError, match=f"Invalid Initial Orbit Determination type: {bad_config.name}"
+            ValueError,
+            match=f"Invalid Initial Orbit Determination type: {bad_config.name}",
         ):
             _ = initialOrbitDeterminationFactory(bad_config, iod.sat_num, self.start_julian_date)
 
@@ -130,7 +134,10 @@ class TestLambertInitialOrbitDetermination:
         assert init.julian_date_start is iod.julian_date_start
 
     def testGetPreviousObservations(
-        self, observation: Observation, monkeypatch: pytest.MonkeyPatch, iod: LambertIOD
+        self,
+        observation: Observation,
+        monkeypatch: pytest.MonkeyPatch,
+        iod: LambertIOD,
     ):
         """Test getPreviousObservations() function.
 
@@ -164,14 +171,18 @@ class TestLambertInitialOrbitDetermination:
         """
         # Test not single pass
         result = iod.checkSinglePass(
-            self.observation_array, self.prior_julian_date, iod.julian_date_start
+            self.observation_array,
+            self.prior_julian_date,
+            iod.julian_date_start,
         )
         assert result is False
 
         # Test single pass
         test_julian_date = JulianDate(2459304.20833334)
         result = iod.checkSinglePass(
-            self.observation_array, self.prior_julian_date, test_julian_date
+            self.observation_array,
+            self.prior_julian_date,
+            test_julian_date,
         )
         assert isinstance(result, float)
 
@@ -179,13 +190,14 @@ class TestLambertInitialOrbitDetermination:
         bad_julian_date = JulianDate(-1)
         with pytest.raises(ValueError):  # noqa: PT011
             assert iod.checkSinglePass(
-                self.observation_array, self.prior_julian_date, bad_julian_date
+                self.observation_array,
+                self.prior_julian_date,
+                bad_julian_date,
             )
 
     def testDetermineNewEstimateState(
         self,
         observation: Observation,
-        caplog: pytest.LogCaptureFixture,
         monkeypatch: pytest.MonkeyPatch,
         iod: LambertIOD,
     ):
@@ -193,7 +205,6 @@ class TestLambertInitialOrbitDetermination:
 
         Args:
             observation (:class:`.Observation`): Observation fixture
-            caplog (:class:`.LogCaptureFixture`): pytest logging capture
             monkeypatch (``:class:`.MonkeyPatch``): patch of function
             iod (:class:`.LambertIOD`): LambertIOD fixture
         """
@@ -201,22 +212,26 @@ class TestLambertInitialOrbitDetermination:
         prior_scenario_time = self.prior_julian_date.convertToScenarioTime(self.start_julian_date)
         current_scenario_time = iod.julian_date_start.convertToScenarioTime(self.start_julian_date)
         result = iod.determineNewEstimateState([], prior_scenario_time, current_scenario_time)
-        assert caplog.record_tuples[-1][-1] == "No Observations for IOD"
+        assert result.message == "No Observations for IOD"
 
         def mockDb(*args, **kwargs):
             mocked_db = MagicMock(spec=ResonaateDatabase)
-            mocked_db.getData = lambda query: []
+            mocked_db.getData = lambda query: []  # noqa: ARG005
             return mocked_db
 
         monkeypatch.setattr(
-            resonaate.estimation.initial_orbit_determination, "getDBConnection", mockDb
+            resonaate.estimation.initial_orbit_determination,
+            "getDBConnection",
+            mockDb,
         )
 
         result = iod.determineNewEstimateState(
-            observation, prior_scenario_time, current_scenario_time
+            observation,
+            prior_scenario_time,
+            current_scenario_time,
         )
 
-        assert caplog.record_tuples[-1][-1] == "Not enough observations to perform IOD 0"
+        assert result.message == "No observations in database of RSO 10001"
 
         # Monkey Patch get previous observation
         def mockGetPreviousObservations(*args, **kwargs):
@@ -231,10 +246,12 @@ class TestLambertInitialOrbitDetermination:
         bad_obs = deepcopy(observation)
         bad_obs.range_km = None
         result = iod.determineNewEstimateState(
-            [bad_obs], prior_scenario_time, current_scenario_time
+            [bad_obs],
+            prior_scenario_time,
+            current_scenario_time,
         )
 
-        assert caplog.record_tuples[-1][-1] == "No Radar observations to perform Lambert IOD"
+        assert result.message == "No Radar observations to perform Lambert IOD"
 
         # Monkey Patch get single pass
         def mockCheckSinglePass(*args, **kwargs):
@@ -248,16 +265,20 @@ class TestLambertInitialOrbitDetermination:
             )
 
             result = iod.determineNewEstimateState(
-                [observation], prior_scenario_time, current_scenario_time
+                [observation],
+                prior_scenario_time,
+                current_scenario_time,
             )
 
-            assert caplog.record_tuples[-1][-1] == "Observations not from a single pass"
+            assert result.message == "Observations not from a single pass"
 
         # Test Successful IOD
 
         result = iod.determineNewEstimateState(
-            [observation], prior_scenario_time, current_scenario_time
+            [observation],
+            prior_scenario_time,
+            current_scenario_time,
         )
 
-        assert isinstance(result[0], ndarray)
-        assert result[1] is True
+        assert isinstance(result.state_vector, ndarray)
+        assert result.convergence is True

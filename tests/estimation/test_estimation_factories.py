@@ -75,7 +75,13 @@ def testSequentialFilterFactory(sequential_filter_type, dynamics):
     estimation_config = SequentialFilterConfig(**config)
     # Call factory function
     filter_obj = sequentialFilterFactory(
-        estimation_config, TGT_ID, INITIAL_TIME, EST_X, EST_P, dynamics, Q_MATRIX
+        estimation_config,
+        TGT_ID,
+        INITIAL_TIME,
+        EST_X,
+        EST_P,
+        dynamics,
+        Q_MATRIX,
     )
     assert isinstance(filter_obj, SequentialFilter)
 
@@ -86,12 +92,40 @@ def testSequentialFilterFactoryError(dynamics):
     config["name"] = "ukf"
     # Create config object
     estimation_config = SequentialFilterConfig(**config)
-    estimation_config.name = "invlaid_name"
+    estimation_config.name = "invalid_name"
     # Call factory function
     error_msg = f"Invalid filter type: {estimation_config.name}"
     with pytest.raises(ValueError, match=error_msg):
         _ = sequentialFilterFactory(
-            estimation_config, TGT_ID, INITIAL_TIME, EST_X, EST_P, dynamics, Q_MATRIX
+            estimation_config,
+            TGT_ID,
+            INITIAL_TIME,
+            EST_X,
+            EST_P,
+            dynamics,
+            Q_MATRIX,
+        )
+
+
+def testSequentialFilterFactoryDupManeuverHandlingError(dynamics):
+    """Tests catching errors for setting MMAE and IOD for a single filter."""
+    config = deepcopy(ESTIMATION_CONFIG["sequential_filter"])
+    config["name"] = "ukf"
+    config["adaptive_estimation"] = True
+    config["initial_orbit_determination"] = True
+    # Create config object
+    estimation_config = SequentialFilterConfig(**config)
+    # Call factory function
+    error_msg = "IOD & MMAE cannot be used at the same time"
+    with pytest.raises(ValueError, match=error_msg):
+        _ = sequentialFilterFactory(
+            estimation_config,
+            TGT_ID,
+            INITIAL_TIME,
+            EST_X,
+            EST_P,
+            dynamics,
+            Q_MATRIX,
         )
 
 
@@ -144,7 +178,13 @@ def testAdaptiveFilterFactory(adaptive_filter_type, dynamics):
     sequential_config = SequentialFilterConfig(**config2)
 
     sequential_filter = sequentialFilterFactory(
-        sequential_config, TGT_ID, INITIAL_TIME, EST_X, EST_P, dynamics, Q_MATRIX
+        sequential_config,
+        TGT_ID,
+        INITIAL_TIME,
+        EST_X,
+        EST_P,
+        dynamics,
+        Q_MATRIX,
     )
 
     config3 = deepcopy(MANEUVER_DETECTION_CONFIG)

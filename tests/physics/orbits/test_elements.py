@@ -60,7 +60,7 @@ EQE_CONFIGS: list[dict[str, float]] = [
 
 
 COE_SET: tuple[tuple[float, float, float, float, float, float]] = tuple(
-    zip(SMA, ECC, INC, RAAN, ARGP, ANOM)
+    zip(SMA, ECC, INC, RAAN, ARGP, ANOM),
 )
 EQE_SET: tuple[tuple[float, float, float, float, float, float]] = tuple(zip(SMA, H, K, P, Q, ANOM))
 
@@ -87,9 +87,9 @@ def testCOE(sma: float, ecc: float, inc: float, raan: float, argp: float, anom: 
     coe = ClassicalElements(sma, ecc, inc, raan, argp, anom)
     inclined, eccentric = isInclined(inc), isEccentric(ecc)
     assert inclined == coe.is_inclined
-    assert not inclined == coe.is_equatorial
+    assert inclined != coe.is_equatorial
     assert eccentric == coe.is_eccentric
-    assert not eccentric == coe.is_circular
+    assert eccentric != coe.is_circular
     assert coe == ClassicalElements(sma, ecc, inc, raan, argp, anom)
     assert coe != ClassicalElements(sma + 1, ecc, inc, raan, argp, anom)
 
@@ -101,15 +101,14 @@ def testCOE(sma: float, ecc: float, inc: float, raan: float, argp: float, anom: 
 @pytest.mark.parametrize(("sma", "h", "k", "p", "q", "anom"), EQE_SET)
 def testEQE(sma: float, h: float, k: float, p: float, q: float, anom: float):
     """Test valid combos of EQEs and the class methods."""
-    # pylint: disable=invalid-name
     eqe = EquinoctialElements(sma, h, k, p, q, anom)
     inc = getInclinationFromEQE(p, q)
     ecc = getEccentricityFromEQE(h, k)
     inclined, eccentric = isInclined(inc), isEccentric(ecc)
     assert inclined == eqe.is_inclined
-    assert not inclined == eqe.is_equatorial
+    assert inclined != eqe.is_equatorial
     assert eccentric == eqe.is_eccentric
-    assert not eccentric == eqe.is_circular
+    assert eccentric != eqe.is_circular
     assert eqe == EquinoctialElements(sma, h, k, p, q, anom)
     assert eqe != EquinoctialElements(sma + 1, h, k, p, q, anom)
 
@@ -121,7 +120,6 @@ def testEQE(sma: float, h: float, k: float, p: float, q: float, anom: float):
 @pytest.mark.parametrize(("sma", "ecc", "inc", "raan", "argp", "anom"), COE_SET)
 def testConversions(sma: float, ecc: float, inc: float, raan: float, argp: float, anom: float):
     """Test conversion between element classes."""
-    # pylint: disable=invalid-name
     # Classical to Equinoctial
     coe = ClassicalElements(sma, ecc, inc, raan, argp, anom)
     eqe = EquinoctialElements.fromCOE(sma, ecc, inc, raan, argp, anom)
@@ -138,7 +136,12 @@ def testConversions(sma: float, ecc: float, inc: float, raan: float, argp: float
     eqe = EquinoctialElements(coe.sma + 1, h, k, p, q, anomaly)
     coe = ClassicalElements.fromEQE(eqe.sma, h, k, p, q, anomaly)
     new_eqe = EquinoctialElements.fromCOE(
-        coe.sma, coe.ecc, coe.inc, coe.raan, coe.argp, coe.true_anomaly
+        coe.sma,
+        coe.ecc,
+        coe.inc,
+        coe.raan,
+        coe.argp,
+        coe.true_anomaly,
     )
     assert eqe != coe
     assert new_eqe == eqe
@@ -147,7 +150,6 @@ def testConversions(sma: float, ecc: float, inc: float, raan: float, argp: float
 @pytest.mark.parametrize(("sma", "ecc", "inc", "raan", "argp", "anom"), BAD_COES)
 def testBadCOE(sma: float, ecc: float, inc: float, raan: float, argp: float, anom: float):
     """Test bad values of COEs."""
-    # pylint: disable=invalid-name
     with pytest.raises((InclinationError, EccentricityError)):
         ClassicalElements(sma, ecc, inc, raan, argp, anom)
 
@@ -155,7 +157,6 @@ def testBadCOE(sma: float, ecc: float, inc: float, raan: float, argp: float, ano
 @pytest.mark.parametrize(("sma", "h", "k", "p", "q", "anom"), BAD_EQES)
 def testBadEQE(sma: float, h: float, k: float, p: float, q: float, anom: float):
     """Test bad values of EQEs."""
-    # pylint: disable=invalid-name
     with pytest.raises((InclinationError, EccentricityError)):
         EquinoctialElements(sma, h, k, p, q, anom)
 

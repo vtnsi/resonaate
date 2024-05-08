@@ -1,4 +1,5 @@
 """Defines the :class:`.AdaptiveFilter` class to formalize an interface for adaptive filtering algorithms."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -15,7 +16,7 @@ from scipy.linalg import norm
 # Local Imports
 from ...data import getDBConnection
 from ...data.queries import fetchEstimatesByJDInterval, fetchObservationsByJDInterval
-from ...dynamics.celestial import EarthCollision
+from ...dynamics.celestial import EarthCollisionError
 from ...physics.orbit_determination.lambert import determineTransferDirection
 from ...physics.time.stardate import JulianDate, ScenarioTime
 from ...physics.transforms.methods import radarObs2eciPosition
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
     from ...scenario.config.estimation_config import AdaptiveEstimationConfig
 
 
-class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attributes
+class AdaptiveFilter(SequentialFilter):
     r"""Describes necessary equations for state estimation using multiple model adaptive estimation.
 
     The Adaptive Filter Interface provides a standard method for integrating any adaptive
@@ -67,7 +68,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         num_models (``int``): number of models
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
@@ -140,7 +141,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         mmae_config: AdaptiveEstimationConfig,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
-    ) -> "AdaptiveFilter":
+    ) -> AdaptiveFilter:
         """Create adaptive estimation filter from a config object.
 
         Args:
@@ -197,7 +198,9 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         current_jdate = ScenarioTime(self.time).convertToJulianDate(julian_date_start)
 
         observation_ephem = fetchObservationsByJDInterval(
-            database, [self.target_id], jd_ub=current_jdate
+            database,
+            [self.target_id],
+            jd_ub=current_jdate,
         )[-self.previous_obs_window :]
 
         # Check if there are enough obs to perform MMAE
@@ -241,17 +244,25 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
 
         # Calculate the nominal states of each model at their maneuver time
         nominal_states = self._calculateNominalStates(
-            database, julian_date_start, prior_ob_jdate, current_jdate, maneuver_times
+            database,
+            julian_date_start,
+            prior_ob_jdate,
+            current_jdate,
+            maneuver_times,
         )
 
         # Calculate the required impulsive maneuver for each model
         hypothesis_maneuvers = self._generateHypothesisManeuvers(
-            observations, nominal_states, maneuver_times
+            observations,
+            nominal_states,
+            maneuver_times,
         )
 
         # Determine new states for each hypothesis at the MMAE antecedent time
         hypothesis_states = self._generateHypothesisStates(
-            nominal_states, hypothesis_maneuvers, maneuver_times
+            nominal_states,
+            hypothesis_maneuvers,
+            maneuver_times,
         )
 
         # Check after initial pruning
@@ -294,7 +305,10 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         """
         # Query the database for previous estimate state from last observation
         estimate_ephem = fetchEstimatesByJDInterval(
-            database, [self.target_id], jd_lb=prior_obs_jd, jd_ub=current_jd
+            database,
+            [self.target_id],
+            jd_lb=prior_obs_jd,
+            jd_ub=current_jd,
         )
 
         # Convert Julian dates of estimate ephemerides to epoch seconds
@@ -333,7 +347,9 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
 
             # Remove processed maneuver times
             unprocessed_maneuver_times = delete(
-                unprocessed_maneuver_times, maneuver_indices, axis=0
+                unprocessed_maneuver_times,
+                maneuver_indices,
+                axis=0,
             )
             # Ensures we only continue to process when there are unprocessed maneuvers
             if not unprocessed_maneuver_times.any():
@@ -362,7 +378,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             [
                 nominal_state + concatenate((zeros(3), delta_v))
                 for nominal_state, delta_v in zip(nominal_states, maneuvers)
-            ]
+            ],
         )
 
         crashed_indices = []
@@ -375,19 +391,19 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             # Propagate to time t(k+1) - dt, not the current time t(k+1)
             try:
                 hypothesis_states[idx] = self.dynamics.propagate(
-                    maneuver_time, self.mmae_antecedent_time, hypothesis_states[idx]
+                    maneuver_time,
+                    self.mmae_antecedent_time,
+                    hypothesis_states[idx],
                 )
-            except EarthCollision:
+            except EarthCollisionError:
                 crashed_indices.append(idx)
 
         # Prune off hypotheses that violate constraints
-        hypothesis_states = self._initialPruning(
+        return self._initialPruning(
             maneuvers,
             array(crashed_indices, dtype=int),
             hypothesis_states,
         )
-
-        return hypothesis_states
 
     def _calculateTimestep(self, prior_ob_scenario_time: ScenarioTime) -> tuple[float, int]:
         """Calculated the number of models and time_step between models.
@@ -409,7 +425,10 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         return time_step, int(ceil(gap_time / time_step) + 1)
 
     def _generateHypothesisManeuvers(
-        self, observations: list[Observation], nominal_states: ndarray, maneuver_times: ndarray
+        self,
+        observations: list[Observation],
+        nominal_states: ndarray,
+        maneuver_times: ndarray,
     ) -> ndarray:
         """Generate deltaV hypotheses for each timestep.
 
@@ -431,7 +450,10 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         return self._calculateDeltaV(nominal_states[1:], maneuver_times[1:], tgt_eci_position)
 
     def _initialPruning(
-        self, maneuvers: ndarray, crashed_indices: ndarray, hypothesis_states: ndarray
+        self,
+        maneuvers: ndarray,
+        crashed_indices: ndarray,
+        hypothesis_states: ndarray,
     ) -> ndarray:
         """Prune off physically impossible maneuver hypotheses.
 
@@ -575,7 +597,8 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             self.is_angular = self.models[0].is_angular
             self.r_matrix = self.models[0].r_matrix
             self.mean_pred_y = dot(
-                vstack([[x.mean_pred_y for x in self.models]]).T, self.model_weights
+                vstack([[x.mean_pred_y for x in self.models]]).T,
+                self.model_weights,
             )
             y_dim = self.mean_pred_y.shape[0]
             self.cross_cvr = zeros((self.x_dim, y_dim))
@@ -611,7 +634,8 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         if observations:
             self.true_y = self.models[0].true_y
             self.innovation = dot(
-                vstack([[x.innovation for x in self.models]]).T, self.model_weights
+                vstack([[x.innovation for x in self.models]]).T,
+                self.model_weights,
             )
             self.nis = dot([x.nis for x in self.models], self.model_weights)
 
@@ -635,7 +659,10 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         self._compileUpdateStep(observations)
 
     def _calculateDeltaV(
-        self, pre_maneuver_states: ndarray, maneuver_times: list[float], tgt_eci_position: ndarray
+        self,
+        pre_maneuver_states: ndarray,
+        maneuver_times: list[float],
+        tgt_eci_position: ndarray,
     ) -> ndarray:
         """Apply Universal Method Lambert Targeter to each MMAE model.
 
@@ -657,7 +684,7 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
         maneuvers = zeros((self.num_models, 3))
         # [NOTE]: first model has no maneuver so it is skipped
         for idx, (pre_maneuver_state, maneuver_time) in enumerate(
-            zip(pre_maneuver_states, maneuver_times)
+            zip(pre_maneuver_states, maneuver_times),
         ):
             # [NOTE]: Circular orbit assumed as first approx.
             transfer_method = determineTransferDirection(
@@ -707,26 +734,28 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
                 "model_weights": self.model_weights,
                 "mean_pred_y": self.mean_pred_y,
                 "true_y": self.true_y,
-            }
+            },
         )
         return result
 
     def _resumeSequentialFiltering(self):
         """The adaptive filter has converged, so create a nominal filter from the converged model."""
         # Reset adaptive estimation flags
-        self.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
+        if FilterFlag.ADAPTIVE_ESTIMATION_START in self.flags:
+            self.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_START
         self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_CLOSE
 
         # Set the converged filter attribute
         self._converged_filter = self._filter_class(
-            self.target_id,
-            self.time,
-            self.est_x,
-            self.est_p,
-            self.dynamics,
-            self.q_matrix,
-            self.maneuver_detection,
-            True,
+            tgt_id=self.target_id,
+            time=self.time,
+            est_x=self.est_x,
+            est_p=self.est_p,
+            dynamics=self.dynamics,
+            q_matrix=self.q_matrix,
+            maneuver_detection=self.maneuver_detection,
+            initial_orbit_determination=False,
+            adaptive_estimation=True,
             **self._original_filter.extra_parameters,
         )
 
@@ -738,7 +767,6 @@ class AdaptiveFilter(SequentialFilter):  # pylint:disable=too-many-instance-attr
             "innovation",
             "nis",
             "source",
-            "maneuver_detected",
             "mean_pred_y",
             "r_matrix",
             "cross_cvr",

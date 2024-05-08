@@ -1,4 +1,5 @@
 """:class:`.Job` handler class that manage task prediction logic."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -6,8 +7,8 @@ from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import Job, KeyValueStore
 from numpy import zeros
+from strmbrkr import Job, KeyValueStore
 
 # Local Imports
 from ..tasking.predictions import predictObservation
@@ -39,7 +40,6 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
         :``"reward_matrix"``: (``ndarray``): numeric reward array for each sensor.
         :``"estimate_id"``: (``int``): ID of the :class:`.EstimateAgent` to calculate metrics for.
     """
-    # pylint: disable=unsupported-assignment-operation
     sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
     estimate_agents = loads(KeyValueStore.getValue("estimate_agents"))
     estimate = estimate_agents[estimate_id]
@@ -52,10 +52,8 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
         sensor_agent = sensor_agents[sensor_id]
 
         # Attempt predicted observations, in order to perform sensor tasking
-        predicted_observation = predictObservation(sensor_agent, estimate)
-
         # Only calculate metrics if the estimate is observable
-        if predicted_observation:
+        if predicted_observation := predictObservation(sensor_agent, estimate):
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
             visibility[sensor_index] = True
@@ -80,7 +78,7 @@ class TaskPredictionRegistration(CallbackRegistration):
         KeywordArgs:
             estimate_id (``int``): ID associated with the :class:`.EstimateAgent`.
 
-        Returns
+        Returns:
             :class:`.Job`: Job to be processed in parallel.
         """
         return Job(

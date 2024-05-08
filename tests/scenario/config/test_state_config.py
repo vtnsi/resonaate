@@ -1,4 +1,3 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -24,8 +23,6 @@ from resonaate.scenario.config.state_config import (
 @patch.multiple(StateConfig, __abstractmethods__=set())
 class TestStateConfig:
     """Test abstract StateConfig object."""
-
-    # pylint: disable=abstract-class-instantiated
 
     @pytest.mark.parametrize("state_type", StateConfig.VALID_LABELS)
     def testCreation(self, state_type: str):

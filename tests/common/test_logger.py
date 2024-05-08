@@ -78,7 +78,7 @@ def testLogfile(datafiles: str):
     file_logger.error("This is an error message.")
     file_logger.critical("This is a critical message.")
 
-    with open(file_logger.filename, "r", encoding="utf-8") as logfile:
+    with open(file_logger.filename, encoding="utf-8") as logfile:
         line_count = 0
         for item, line in enumerate(logfile):
             assert line.split(" - ")[1:] == CORRECT_FILE_OUTPUT[item]

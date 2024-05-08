@@ -136,14 +136,13 @@ for iterator in [combinations(RSO_UNIQUE_IDS, n) for n in range(1, len(RSO_UNIQU
 
 # SET UP POSSIBLE JD QUERY BOUNDS
 JD_LIST = [JulianDate(jd) for jd in EXAMPLE_JD]
-JD_SPANS = [*permutations(JD_LIST + [None], 2)]
+JD_SPANS = [*permutations([*JD_LIST, None], 2)]
 # prune from `JD_SPANS` where the lower bound is greater than the upper bound, for use later
 BAD_JD_SPAN_BOUNDS = []
 bad_span_idxs = []
 for idx, span in enumerate(JD_SPANS):
-    if isinstance(span[0], JulianDate) and isinstance(span[1], JulianDate):
-        if span[0] > span[1]:
-            bad_span_idxs.append(idx)
+    if isinstance(span[0], JulianDate) and isinstance(span[1], JulianDate) and span[0] > span[1]:
+        bad_span_idxs.append(idx)
 for bad_idx in reversed(bad_span_idxs):
     BAD_JD_SPAN_BOUNDS.append(JD_SPANS.pop(bad_idx))
 
@@ -246,9 +245,12 @@ def testIntervalFetches(test_func, fixture, target_column, database, rso, jd_spa
         jd_ub = float("inf")
     correct_instances = []
     for instance in fixture:
-        if getattr(instance, target_column) in rso:
-            if instance.julian_date >= jd_lb and instance.julian_date <= jd_ub:
-                correct_instances.append(instance)
+        if (
+            getattr(instance, target_column) in rso
+            and instance.julian_date >= jd_lb
+            and instance.julian_date <= jd_ub
+        ):
+            correct_instances.append(instance)
     ascending_rows = sorted(correct_instances, key=lambda d: d.julian_date)
     ascending_rows = sorted(ascending_rows, key=lambda d: getattr(d, target_column))
     ascending_results = sorted(results, key=lambda d: getattr(d, target_column))
@@ -303,11 +305,18 @@ def testJulianDateRangeFiltering(sat_data, target_column, jd_span):
     if not jd_ub:
         jd_ub = float("inf")
     filtered_query = filterByJulianDateInterval(
-        Query(sat_data), sat_data, jd_lb=JulianDate(jd_lb), jd_ub=JulianDate(jd_ub)
+        Query(sat_data),
+        sat_data,
+        jd_lb=JulianDate(jd_lb),
+        jd_ub=JulianDate(jd_ub),
     )
     assert isinstance(filtered_query, Query)
     interval_query = jdIntervalQuery(
-        sat_data, target_column, [1], JulianDate(jd_lb), JulianDate(jd_ub)
+        sat_data,
+        target_column,
+        [1],
+        JulianDate(jd_lb),
+        JulianDate(jd_ub),
     )
     assert isinstance(interval_query, Query)
 

@@ -1,10 +1,16 @@
 """Defines the metrics used to measure tasking performance."""
+
 from __future__ import annotations
 
 # Local Imports
 from .information import FisherInformation, KLDivergence, ShannonInformation
 from .metric_base import Metric
-from .sensor import DeltaPosition, SlewCycle, TimeToTransit
+from .sensor import (
+    SlewDistanceMaximization,
+    SlewDistanceMinimization,
+    SlewTimeMaximization,
+    SlewTimeMinimization,
+)
 from .stability import LyapunovStability
 from .state import Range
 from .target import TimeSinceObservation
@@ -39,9 +45,10 @@ Metric.register(VelocityCovarianceReduction)
 Metric.register(Range)
 
 # Sensor Metrics
-Metric.register(DeltaPosition)
-Metric.register(SlewCycle)
-Metric.register(TimeToTransit)
+Metric.register(SlewDistanceMinimization)
+Metric.register(SlewDistanceMaximization)
+Metric.register(SlewTimeMinimization)
+Metric.register(SlewTimeMaximization)
 
 # Target Metrics
 Metric.register(TimeSinceObservation)

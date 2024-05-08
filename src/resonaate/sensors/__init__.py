@@ -1,4 +1,5 @@
 """Defines the capabilities and operation of different types of sensors."""
+
 from __future__ import annotations
 
 # Standard Library Imports

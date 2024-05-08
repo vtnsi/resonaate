@@ -1,4 +1,5 @@
 """Defines information-focused tasking metrics."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -82,9 +83,7 @@ class ShannonInformation(InformationMetric):
         """
         predicted_covar = estimate_agent.nominal_filter.pred_p
         estimated_covar = estimate_agent.nominal_filter.est_p
-        shannon_info = 0.5 * log(det(predicted_covar) / det(estimated_covar))
-
-        return shannon_info
+        return 0.5 * log(det(predicted_covar) / det(estimated_covar))
 
 
 class KLDivergence(InformationMetric):
@@ -110,6 +109,4 @@ class KLDivergence(InformationMetric):
         """
         predicted_covar = estimate_agent.nominal_filter.pred_p
         estimated_covar = estimate_agent.nominal_filter.est_p
-        kld = det(predicted_covar) * log(det(predicted_covar) / det(estimated_covar))
-
-        return kld
+        return det(predicted_covar) * log(det(predicted_covar) / det(estimated_covar))

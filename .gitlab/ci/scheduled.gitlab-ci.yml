@@ -27,10 +27,13 @@ include:
     - !reference [.pip-test, before_script]
   script:
     # [FIXME]: This is a temporary fix for
-    - export MJOLNIR_SOCKET_PROTOCOL=ipc
+    - export STRMBRKR_SOCKET_PROTOCOL=ipc
     - echo "Running unit tests with pytest"
     - python --version
     - pytest ${PYTEST_OPTIONS}
+  # Allow 1 retry on these because of flaky maneuver detection test
+  retry:
+    max: 1
 
 scheduled-pytest-3.9:
   extends:
@@ -46,3 +49,8 @@ scheduled-pytest-3.11:
   extends:
     - .scheduled-pytest
   image: python:3.11-bullseye
+
+scheduled-pytest-3.12:
+  extends:
+    - .scheduled-pytest
+  image: python:3.12-bullseye

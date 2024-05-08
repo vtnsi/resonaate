@@ -43,7 +43,6 @@ def testConfigError():
 @patch.multiple(ConfigSettingError, __abstractmethods__=set())
 def testConfigSettingError():
     """Make sure the ConfigSettingError class works properly."""
-    # pylint: disable=abstract-class-instantiated
     label = "test_label"
     setting = 45  # supposed to be a list or tuple
     requirements = (
@@ -240,7 +239,10 @@ def testConfigObjectList(test_config_dict: dict[str, Any]):
 
     input_list_dicts = [deepcopy(test_config_dict), deepcopy(test_config_dict)]
     object_list = ConfigObjectList(
-        "test_list", _TestConfigObject, input_list_dicts, default_empty=False
+        "test_list",
+        _TestConfigObject,
+        input_list_dicts,
+        default_empty=False,
     )
     assert object_list
     for obj_list_item, test_dict in zip(object_list, input_list_dicts):
@@ -257,7 +259,6 @@ def testConfigObjectList(test_config_dict: dict[str, Any]):
     assert len(object_list) == 2
 
     # Test removing all items
-    # pylint: disable=protected-access
     object_list._config_objects = []
     with pytest.raises(ConfigMissingRequiredError):
         _ = object_list.config_objects
@@ -299,6 +300,9 @@ def testConfigObjectListDefaultEmpty(test_config_dict: dict[str, Any]):
     test_obj1 = _TestConfigObject(**test_config_dict)
     test_obj2 = _TestConfigObject(**test_config_dict)
     conf_list = ConfigObjectList(
-        "list_label", _TestConfigObject, [test_obj1, test_obj2], default_empty=True
+        "list_label",
+        _TestConfigObject,
+        [test_obj1, test_obj2],
+        default_empty=True,
     )
     assert conf_list.config_objects

@@ -1,4 +1,5 @@
 """Define implemented reward functions used to evaluate sensor task opportunities."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -43,6 +44,7 @@ class CostConstrainedReward(Reward):
             metrics (``list``): :class:`.Metric` instances for calculating the reward
             delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
+            kwargs (Any): variable keyword arguments
 
         Raises:
             ValueError: raised if not supplied three metric objects
@@ -79,10 +81,12 @@ class CostConstrainedReward(Reward):
             ``float``: Cost constrained reward
         """
         stability = metric_matrix[
-            ..., self._metric_type_indices[MetricTypeLabel.STABILITY]
+            ...,
+            self._metric_type_indices[MetricTypeLabel.STABILITY],
         ].squeeze()
         information = metric_matrix[
-            ..., self._metric_type_indices[MetricTypeLabel.INFORMATION]
+            ...,
+            self._metric_type_indices[MetricTypeLabel.INFORMATION],
         ].squeeze()
         sensor = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.SENSOR]].squeeze()
 
@@ -131,6 +135,7 @@ class CombinedReward(Reward):
             metrics (``list``): :class:`.Metric` instances for calculating the reward
             delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
+            kwargs (Any): variable keyword arguments
 
         Raises:
             ValueError: raised if not supplied three metric objects
@@ -172,10 +177,12 @@ class CombinedReward(Reward):
             ``float``: Combined reward
         """
         stability = metric_matrix[
-            ..., self._metric_type_indices[MetricTypeLabel.STABILITY]
+            ...,
+            self._metric_type_indices[MetricTypeLabel.STABILITY],
         ].squeeze()
         information = metric_matrix[
-            ..., self._metric_type_indices[MetricTypeLabel.INFORMATION]
+            ...,
+            self._metric_type_indices[MetricTypeLabel.INFORMATION],
         ].squeeze()
         sensor = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.SENSOR]].squeeze()
         behavior = metric_matrix[..., self._metric_type_indices[MetricTypeLabel.TARGET]].squeeze()

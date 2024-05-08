@@ -1,11 +1,14 @@
 """The :class:`.Scenario` object is the main "application" used in large RESONAATE simulations."""
-# pylint: disable=import-outside-toplevel
+
 # [NOTE][avoid-circular-import]: Import inside of functions to avoid circular imports
 from __future__ import annotations
 
 
 def buildScenarioFromConfigFile(
-    config_file_path, internal_db_path=None, importer_db_path=None, start_workers=True
+    config_file_path,
+    internal_db_path=None,
+    importer_db_path=None,
+    start_workers=True,
 ):
     """Instantiate a :class:`.Scenario` based on the specified `config_file_path`.
 
@@ -41,7 +44,10 @@ def buildScenarioFromConfigFile(
 
 
 def buildScenarioFromConfigDict(
-    config_dict, internal_db_path=None, importer_db_path=None, start_workers=True
+    config_dict,
+    internal_db_path=None,
+    importer_db_path=None,
+    start_workers=True,
 ):
     """Instantiate a :class:`.Scenario` based on the specified `config_dict`.
 

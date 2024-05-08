@@ -12,9 +12,9 @@ This shows how to directly create and use the following classes:
 - :class:`.Observation`
 """
 
-# pylint: disable=invalid-name, wrong-import-position
 # isort: skip
 
+# Standard Library Imports
 # %%
 # Initial Setup
 # -------------
@@ -23,13 +23,18 @@ This shows how to directly create and use the following classes:
 # ###############
 #
 from datetime import datetime
+
+# Third Party Imports
 import numpy as np
+
+# RESONAATE Imports
 from resonaate.data import setDBPath
 
 # In-memory database.
 # [NOTE]: This must be called before any calls to getDBConnection() are made!
 setDBPath("sqlite://")
 
+# RESONAATE Imports
 # %%
 # Setup problem time variables
 # ----------------------------
@@ -48,6 +53,7 @@ clock = ScenarioClock(datetime_start, tspan, dt)
 # For convenience, time is initialized to zero
 t0 = clock.time
 
+# RESONAATE Imports
 # %%
 #
 # Build a satellite as a :class:`.TargetAgent`
@@ -84,6 +90,7 @@ sat1_agent = TargetAgent(
     0.21,
 )
 
+# RESONAATE Imports
 # %%
 #
 # Build a corresponding :class:`.EstimateAgent`
@@ -107,7 +114,14 @@ q_matrix = continuousWhiteNoise(dt, 1e-12)
 
 # Create an unscented Kalman filter (UKF) for tracking the satellite
 ukf = UnscentedKalmanFilter(
-    sat1_id, clock.time, sat1_est0, sat1_cov0, two_body_dynamics, q_matrix, None, False
+    sat1_id,
+    clock.time,
+    sat1_est0,
+    sat1_cov0,
+    two_body_dynamics,
+    q_matrix,
+    None,
+    False,
 )
 
 # Create an EstimateAgent object to track the actual TargetAgent satellite
@@ -126,6 +140,7 @@ sat1_estimate_agent = EstimateAgent(
     0.21,
 )
 
+# RESONAATE Imports
 # %%
 #
 # Build a :class:`.SensingAgent`
@@ -148,12 +163,12 @@ r_matrix = np.diagflat(
         3.0461741978670863e-12,
         2.5000000000000004e-11,
         1.0000000000000002e-14,
-    ]
+    ],
 )
 
 az_mask = np.array([60.0, 300.0])  # Valid azimuth range (deg), measured positive from North
 el_mask = np.array(
-    [5.0, 90.0]
+    [5.0, 90.0],
 )  # Valid elevation range (deg), measured positive from local horizon
 slew_rate = 5.0  # Sensor slew rate (deg/sec)
 efficiency = 0.95  # Sensor efficiency (unitless)
@@ -186,7 +201,7 @@ sensor_lla = np.asarray(
         np.radians(37.20723655488582),  # latitude (degrees)
         np.radians(-80.41918669095047),  # longitude (degrees)
         0.105,  # Altitude (km)
-    ]
+    ],
 )
 
 # Convert sensor location to ECEF
@@ -238,6 +253,7 @@ sat1_estimate_agent.updateEstimate(obs)
 prior_error = np.linalg.norm(truth_state[:3] - sat1_estimate_agent.eci_state[:3])
 print(prior_error)
 
+# RESONAATE Imports
 # %%
 #
 # Make an :class:`.Observation`

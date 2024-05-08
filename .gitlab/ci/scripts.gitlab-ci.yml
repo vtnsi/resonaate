@@ -18,10 +18,9 @@
   before_script:
     - echo -e "\e[0Ksection_start:`date +%s`:venv[collapsed=true]\r\e[0K Create venv, install dependencies"
     - python3 -V
-    - python3 -m pip install --upgrade pip virtualenv
-    - virtualenv .venv
+    - python3 -m pip install --upgrade pip
+    - python3 -m venv .venv
     - source .venv/bin/activate
-    - python3 -m pip install mjolnir --index-url https://gitlab-ci-token:$CI_JOB_TOKEN@code.vt.edu/api/v4/projects/16484/packages/pypi/simple
     - echo -e "\e[0Ksection_end:`date +%s`:venv\r\e[0K"
 
 # `pip install` RESONAATE only

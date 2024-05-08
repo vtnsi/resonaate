@@ -16,9 +16,17 @@ ______________________________________________________________________
 
 <!-- TOC Formatted for GitLab -->
 
+<!-- markdownlint-disable MD036 -->
+
+<!-- markdownlint-disable MD049 -->
+
 **Table of Contents**
 
 \[\[_TOC_\]\]
+
+<!-- markdownlint-enable MD036 -->
+
+<!-- markdownlint-enable MD049 -->
 
 <!-- END TOC -->
 
@@ -62,6 +70,66 @@ ______________________________________________________________________
 
 *related to the continuous integration system*
 
+## [4.0.0][v4.0.0] - 2024-05-08
+
+### Added
+
+- add `residual()` and `residuals()` function to `resonaate.maths` (see !245)
+
+### Changed
+
+- EstimateAgent.\_update() logic split into sub-functions (see !164)
+- Several logic improvements for MMAE & IOD start and convergence handling (see !164)
+- Reordered Optical visibility calculations in increasing complexity (see !191)
+- reordered `SequentialFilter.checkManeuverDetection()` to return early (see !245)
+- make sigma point resampling an option that is set on UKF creation (see !245)
+- organize UKF methods for clarity & refactor into smaller methods (see !245)
+- a few names of variables and exceptions to adhere to pep8-naming (see !302)
+- refactored `mjolnir` references to `strmbrkr`
+
+### Deprecated
+
+*for soon-to-be removed features*
+
+### Removed
+
+*for now removed features*
+
+### Fixed
+
+- SRP perturbation would not work without setting "sun" third body (see #184)
+- `AllVisibleDecision` config sensor type check (see #187)
+- Duplicate IOD logging (see !164)
+- GPB1 & SMM post-convergence re-initialization (see !164)
+- Ability to turn MMAE and IOD on simultaneously (see !164)
+- UKF parameter overwritten when `kappa=0` (see !245)
+- Sensor boresight and time_last_tasked were not being updated (see #203)
+- Properly point RESONAATE at valid `mjolnir` version (see #207 & !299)
+
+### Security
+
+*in case of vulnerabilities*
+
+### Test
+
+- Add tests to cover `EstimateAgent` (see !164)
+- Add tests to cover `UnscentedKalmanFilter` (see !245)
+
+### Development
+
+- Migrated to usage of `ruff` for linting, removing `flake8` and all plugins completely as well as most of `pylint` (see #194 & !239)
+- Apply various fixes for new linting rules from `ruff` (see !239)
+- Develop dependency conflict (see #206 & !298)
+- Update `make install` to use new `mjolnir` optional dependency (see !299)
+- Added docstring linting back using `ruff` (see #44)
+- Remove `pylint` as a dev tool (see #208)
+- Add several new ruff rules and apply (see !302)
+
+### CI
+
+- Added 3.12 nightly test job (see !299)
+- Allow nightly test jobs to fail once and retry (see !299)
+
 ## [3.0.0][v3.0.0] - 2023-04-07
 
 ### Breaking Changes
@@ -91,6 +159,9 @@ ______________________________________________________________________
 - incorrect relative state calculation in `eci2rsw()` transformation (see commit e6851c9f7)
 - incorrect updating of `delta_boresight` (see #180 and !198)
 - overuse of `updateReductionParameters()` since `getReductionParameters()` properly handles if they aren't updated (see #142)
+- TeX errors in documentation causing `make latexpdf` to fail (see !213)
+- obscure SQLAlchemy bug when creating the database before importing `AgentModel` (see #183 and !212)
+- tests hanging when using TCP protocol (see #171 and !217)
 
 ### Added
 
@@ -189,7 +260,7 @@ ______________________________________________________________________
 - `MeasurementType.calculate()`, `Measurement.calculateMeasurement()`, and `getSlantRangeVector()` take sensor/target ECI states and UTC as parameters (see #158)
 - refactored (and validated) `getEarthLimbConeAngle()` into `getBodyLimbConeAngle()` and `checkSpaceSensorEarthLimbObscuration()` (see #155)
 - renamed `Sensor.aperture_area` to `effective_aperture_area`
-- moved `sensors.measurement` to `physics.measurements` and combined with `physics.measurement_utls` (see #176 and !186)
+- moved `sensors.measurement` to `physics.measurements` and combined with `physics.measurement_utils` (see #176 and !186)
 - refactored `fieldOfViewFactory()` and most of `sensorFactory()` into respective `fromConfig()` class methods (see #176 and !186)
 - `Sensor.collectObservations()` slews sensor boresight to target before attempting observations (see !198)
 

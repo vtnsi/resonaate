@@ -12,7 +12,7 @@ doc:
 # For quickly cleaning up files
 .PHONY: clean
 clean:
-	rm -rf .mjolnir*
+	rm -rf .strmbrkr*
 	rm -rf kvs_dump*
 	rm -rf debugging/
 	(cd docs && make clean)
@@ -34,6 +34,8 @@ install:
 	@echo ""
 
 # Runs formatters
+# [NOTE]: mdformat must be run using pre-commit because it's version conflicts
+#	with myst-parser. This is temporary until we move to using `nox`
 .PHONY: format
 format:
 	@echo "=========="
@@ -41,7 +43,7 @@ format:
 	@echo "=========="
 	isort .
 	black .
-	mdformat .
+	pre-commit run mdformat --all-files
 	@echo ""
 
 # Runs linters
@@ -50,8 +52,7 @@ lint:
 	@echo "======="
 	@echo "Linting"
 	@echo "======="
-	flake8 .
-	pylint *.py tests src/resonaate docs
+	ruff check src tests src/resonaate docs
 	@echo ""
 
 # Runs unit tests

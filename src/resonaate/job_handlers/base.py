@@ -1,4 +1,5 @@
 """Defines abstract base classes used throughout the ``job_handlers`` subpackage."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -6,7 +7,7 @@ import logging
 from abc import ABC, abstractmethod
 
 # Third Party Imports
-from mjolnir import Job, JobTimeoutError, QueueManager
+from strmbrkr import Job, JobTimeoutError, QueueManager
 
 # Local Imports
 from ..common.exceptions import JobProcessingError
@@ -50,7 +51,7 @@ class CallbackRegistration(ABC):
         KeywordArgs:
             kwargs (``dict``): arguments specific to an implemented :class:`.CallbackRegistration`.
 
-        Returns
+        Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
         raise NotImplementedError
@@ -71,8 +72,13 @@ class JobHandler(ParallelMixin, ABC):
     callback_class = None
     """:class:`.CallbackRegistration`: defines which callback type to register to the handler."""
 
-    def __init__(self):
-        """Initialize job handler for a parallel execution step."""
+    def __init__(self, dump_on_timeout: bool = True):
+        """Initialize job handler for a parallel execution step.
+
+        Args:
+            dump_on_timeout (``bool``, optional): whether the KVS dumps state on timeout errors.
+                Mostly for testing. Defaults to ``True``.
+        """
         self.logger = logging.getLogger("resonaate")
         """:class:`.Logger`: internal RESONAATE logging class."""
 
@@ -87,6 +93,9 @@ class JobHandler(ParallelMixin, ABC):
 
         self._total_jobs = 0
         """``int``: current total number of :class:`.Job` objects created."""
+
+        self._dump_on_timeout = dump_on_timeout
+        """``bool``: controls whether KVS will dump its state on a timeout error."""
 
     @property
     def total_jobs(self):
@@ -117,10 +126,10 @@ class JobHandler(ParallelMixin, ABC):
         Raises:
             `TypeError`: when :attr:`.callback_class` is an invalid registration type
         """
-        registration = self.callback_class(registrant)  # pylint: disable=not-callable
+        registration = self.callback_class(registrant)
         if not isinstance(registration, CallbackRegistration):
             raise TypeError(
-                f"Use `CallbackRegistration` to register job callbacks, not {type(registration)}"
+                f"Use `CallbackRegistration` to register job callbacks, not {type(registration)}",
             )
         self.callback_registry.append(registration)
 
@@ -131,7 +140,7 @@ class JobHandler(ParallelMixin, ABC):
         Args:
             callback_id (any): Unique identifier of the :class:`.CallbackRegistration` being removed.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def handleProcessedJob(self, job):
         """Handle jobs completed via the :class:`.QueueManager` process.
@@ -163,7 +172,10 @@ class JobHandler(ParallelMixin, ABC):
 
         # Wait for jobs to complete
         try:
-            self.queue_mgr.blockUntilProcessed(timeout=getTimeout(self.total_jobs))
+            self.queue_mgr.blockUntilProcessed(
+                timeout=getTimeout(self.total_jobs),
+                dump_on_timeout=self._dump_on_timeout,
+            )
         except JobTimeoutError:
             # jobs took longer to complete than expected
             for job_id in self.queue_mgr.queued_job_ids:

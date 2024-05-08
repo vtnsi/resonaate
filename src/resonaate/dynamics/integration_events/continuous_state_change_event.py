@@ -1,4 +1,5 @@
 """Defines the :class:`.ContinuousStateChangeEvent` class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -20,7 +21,7 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
     """float: Value of zero indicates that either direction of zero crossing should trigger this event."""
 
     @abstractmethod
-    def __call__(self, time, state):  # pylint: disable=unused-argument
+    def __call__(self, time, state):
         """When this function returns zero during integration, it interrupts the integration process.
 
         Args:
@@ -30,10 +31,10 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
         Returns:
             (float): value that the ode solver uses to root find
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
-    def __eq__(self, other):  # pylint: disable=unused-argument
+    def __eq__(self, other):
         """When this function returns True, events are equivalent.
 
         Args:
@@ -42,7 +43,7 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
         Returns:
             (bool): Boolean representing whether or not `other` object is equivalent
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def getStateChangeCallback(self, time):
@@ -55,4 +56,4 @@ class ContinuousStateChangeEvent(metaclass=ABCMeta):
         Returns:
             numpy.ndarray: vector to add to `state` that results in the desired end state
         """
-        raise NotImplementedError()
+        raise NotImplementedError

@@ -1,4 +1,3 @@
-# pylint: disable=attribute-defined-outside-init
 from __future__ import annotations
 
 # Standard Library Imports
@@ -72,7 +71,14 @@ class TestECI:
 
         # Calculate the required parameters
         self.eops = EarthOrientationParameter(
-            datetime.date(year, month, day), x_p, y_p, ddp80, dde80, dut1, lod, dat
+            datetime.date(year, month, day),
+            x_p,
+            y_p,
+            ddp80,
+            dde80,
+            dut1,
+            lod,
+            dat,
         )
         # Actually update with our test values
         updateReductionParameters(self.calendar_date, eops=self.eops)
@@ -80,7 +86,8 @@ class TestECI:
     def testEci2Ecef(self):
         """Test conversion from ECI (inertial) to ECEF (fixed)."""
         ecef_state = eci2ecef(
-            np.concatenate((self.r_gcrf, self.v_gcrf), axis=0), self.calendar_date
+            np.concatenate((self.r_gcrf, self.v_gcrf), axis=0),
+            self.calendar_date,
         )
         assert isinstance(ecef_state, np.ndarray)
         assert ecef_state.shape == (6,)
@@ -90,7 +97,8 @@ class TestECI:
     def testEcef2Eci(self):
         """Test conversion from ECEF (fixed) to ECI (inertial)."""
         eci_state = ecef2eci(
-            np.concatenate((self.r_itrf, self.v_itrf), axis=0), self.calendar_date
+            np.concatenate((self.r_itrf, self.v_itrf), axis=0),
+            self.calendar_date,
         )
         assert isinstance(eci_state, np.ndarray)
         assert eci_state.shape == (6,)
@@ -107,7 +115,7 @@ class TestSatelliteFrames:
             [500, 0.001, np.deg2rad(40), np.deg2rad(10), np.deg2rad(100), np.deg2rad(90)],
             [500, 0.001, np.deg2rad(40), np.deg2rad(10), np.deg2rad(100), np.deg2rad(180)],
             [500, 0.001, np.deg2rad(40), np.deg2rad(10), np.deg2rad(100), np.deg2rad(270)],
-        ]
+        ],
     )
 
     x_ntw = np.asarray([0.1, 0.2, -0.05, 0.00001, -0.00004, 0.000003])
@@ -128,13 +136,16 @@ class TestSatelliteFrames:
                 rot1(-1.0 * orbit.inc),
                 rot3(-1.0 * (orbit.argp + orbit.true_anomaly)),
                 rot3(getFlightPathAngle(orbit.ecc, orbit.true_anomaly)),
-            ]
+            ],
         )
         correct_pos = ntw2eci_rot.dot(self.x_ntw[:3])
         correct_vel = ntw2eci_rot.dot(self.x_ntw[3:])
 
         assert np.allclose(
-            rel_eci, np.concatenate([correct_pos, correct_vel], axis=0), atol=1e-9, rtol=1e-6
+            rel_eci,
+            np.concatenate([correct_pos, correct_vel], axis=0),
+            atol=1e-9,
+            rtol=1e-6,
         )
 
     @pytest.mark.parametrize("elements", ORBITAL_ELEMENTS)
@@ -150,13 +161,16 @@ class TestSatelliteFrames:
                 rot3(-1.0 * orbit.raan),
                 rot1(-1.0 * orbit.inc),
                 rot3(-1.0 * (orbit.argp + orbit.true_anomaly)),
-            ]
+            ],
         )
         correct_pos = rsw2eci_rot.dot(self.x_rsw[:3])
         correct_vel = rsw2eci_rot.dot(self.x_rsw[3:])
 
         assert np.allclose(
-            rel_eci, np.concatenate([correct_pos, correct_vel], axis=0), atol=1e-9, rtol=1e-6
+            rel_eci,
+            np.concatenate([correct_pos, correct_vel], axis=0),
+            atol=1e-9,
+            rtol=1e-6,
         )
 
     @pytest.mark.parametrize("elements", ORBITAL_ELEMENTS)
@@ -170,7 +184,7 @@ class TestSatelliteFrames:
                 rot3(-1.0 * (orbit.argp + orbit.true_anomaly)).T,
                 rot1(-1.0 * orbit.inc).T,
                 rot3(-1.0 * orbit.raan).T,
-            ]
+            ],
         )
         chaser_relative_eci_state = np.asarray([0.1, 0.2, -0.05, 0.00001, -0.00004, 0.000003])
         chaser_rsw = eci2rsw(
@@ -181,7 +195,10 @@ class TestSatelliteFrames:
         correct_vel = eci2rsw_rot.dot(chaser_relative_eci_state[3:])
 
         assert np.allclose(
-            chaser_rsw, np.concatenate([correct_pos, correct_vel], axis=0), atol=1e-9, rtol=1e-6
+            chaser_rsw,
+            np.concatenate([correct_pos, correct_vel], axis=0),
+            atol=1e-9,
+            rtol=1e-6,
         )
 
 
@@ -192,7 +209,7 @@ class TestLLA:
         [
             [6379, 1, 0.0, -5, 1, 3],  # equator
             [0.0, 0.0, 0.0, -5, 1, 3],  # equator & 0 deg lat/lon
-        ]
+        ],
     )
 
     @pytest.fixture(autouse=True)
@@ -200,7 +217,7 @@ class TestLLA:
         """Fixture to setup LLA conversion tests."""
         # Vallado example 4-1 (pg. 273), second part
         self.eci = np.asarray(
-            [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093]
+            [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093],
         )
 
         # Vallado example 4-1
@@ -240,7 +257,10 @@ class TestLLA:
         # Vallado example 7-1
         ecef = lla2ecef(self.lla)
         assert np.allclose(
-            ecef, np.asarray([-1275.1219, -4797.9890, 3994.2975, 0, 0, 0]), atol=1e-9, rtol=1e-6
+            ecef,
+            np.asarray([-1275.1219, -4797.9890, 3994.2975, 0, 0, 0]),
+            atol=1e-9,
+            rtol=1e-6,
         )
         assert np.allclose(ecef2lla(ecef), self.lla, atol=1e-9, rtol=1e-6)
 
@@ -256,7 +276,7 @@ class TestRaDecRazelSEZ:
             np.linspace(-5, 5, 10),
             np.linspace(-1, 1, 10),
             np.linspace(-1, 1, 10),
-        ]
+        ],
     ).T
 
     @pytest.fixture(autouse=True)
@@ -271,7 +291,7 @@ class TestRaDecRazelSEZ:
                 6.7985140,
                 np.radians(-0.00000001794),
                 np.radians(-0.00000012244),
-            ]
+            ],
         )
         self.true_radec_topo = np.asarray(
             [
@@ -281,7 +301,7 @@ class TestRaDecRazelSEZ:
                 6.0842826,
                 np.radians(0.01439246203),
                 np.radians(0.01233970405),
-            ]
+            ],
         )
         self.true_azel = np.asarray(
             [
@@ -291,12 +311,12 @@ class TestRaDecRazelSEZ:
                 6.0842826,
                 np.radians(0.01495847759),
                 np.radians(0.00384011466),
-            ]
+            ],
         )
         self.lla = np.asarray([np.radians(39.007), np.radians(-104.883), 2.19456])
         self.calendar_date = datetime.datetime(1994, 5, 14, 13, 11, 20, 598560)
         self.eci = np.asarray(
-            [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093]
+            [5036.736529, -10806.660797, -4534.633784, 2.6843855, -5.7595920, -2.4168093],
         )
         # From celestrak.com for May 14, 1994
         # 1994 05 14 49486  0.189443  0.306064 -0.1279402  0.0021743 -0.016163 -0.008660  0.000187  0.000039  28
@@ -388,7 +408,9 @@ class TestRaDecRazelSEZ:
         """Test converting ECI to AzEl."""
         assert np.allclose(
             eci2razel(
-                self.eci, ecef2eci(lla2ecef(self.lla), self.calendar_date), self.calendar_date
+                self.eci,
+                ecef2eci(lla2ecef(self.lla), self.calendar_date),
+                self.calendar_date,
             ),
             self.true_azel,
         )
@@ -425,7 +447,8 @@ class TestRaDecRazelSEZ:
         slant_range_eci = self.eci - observer_eci
         tgt_sez = eci2sez(slant_range_eci, self.lla[0], self.lla[1], self.calendar_date)
         assert np.allclose(
-            getSlantRangeVector(observer_eci, self.eci, self.calendar_date), tgt_sez
+            getSlantRangeVector(observer_eci, self.eci, self.calendar_date),
+            tgt_sez,
         )
 
     def testTopocentricRaDec(self):

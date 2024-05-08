@@ -81,17 +81,17 @@ class TestRewardBase:
             stub_metric_class (:class:`.Metric`): Mock Metric
         """
         with pytest.raises(TypeError):
-            Reward(stub_metric_class())  # pylint: disable=abstract-class-instantiated
+            Reward(stub_metric_class())
 
     def testBadMetricType(self):
         """Test when a non-metric is passed into the `Reward` Init."""
         non_iterable = "string"
         with pytest.raises(TypeError):
-            Reward(non_iterable)  # pylint: disable=abstract-class-instantiated
+            Reward(non_iterable)
 
         bad_list = [non_iterable]
         with pytest.raises(TypeError):
-            Reward(bad_list)  # pylint: disable=abstract-class-instantiated
+            Reward(bad_list)
 
     def testNormalizeMetrics(self, stub_reward_class: Reward, stub_metric_class: Metric):
         """Test normalizeMetrics().
@@ -188,7 +188,7 @@ class TestSimpleSummationReward:
         """Test _calculateReward() function of the SimpleSummationReward class."""
         reward = SimpleSummationReward(metric_list)
         metrics = np.array([[[1.0]], [[2.0]]])
-        reward.calculate(metrics)  # pylint:disable=protected-access
+        reward.calculate(metrics)
 
 
 class TestCombinedReward:

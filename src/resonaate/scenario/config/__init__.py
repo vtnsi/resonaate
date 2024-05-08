@@ -1,4 +1,5 @@
 """Subpackage defining how a :class:`.Scenario` can be configured."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -26,6 +27,25 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
     from typing import Any
+
+
+__all__ = [
+    "ScenarioConfig",
+    "ConfigObject",
+    "ConfigObjectList",
+    "SensingAgentConfig",
+    "TargetAgentConfig",
+    "EngineConfig",
+    "EstimationConfig",
+    "EventConfig",
+    "EventConfigList",
+    "GeopotentialConfig",
+    "NoiseConfig",
+    "ObservationConfig",
+    "PerturbationsConfig",
+    "PropagationConfig",
+    "TimeConfig",
+]
 
 
 @dataclass
@@ -72,7 +92,7 @@ class ScenarioConfig(ConfigObject):
     }
     """``dict``: mapping that makes auto-validating optional sub-configs easier."""
 
-    def __post_init__(self) -> None:
+    def __post_init__(self) -> None:  # noqa: C901
         """Runs after the object is initialized."""
         # Required sections
         if isinstance(self.time, dict):
@@ -148,12 +168,12 @@ class ScenarioConfig(ConfigObject):
 
             # Load the RSO target set
             targets = file_loader(
-                os.path.join(config_directory, engine_config.pop("targets_file"))
+                os.path.join(config_directory, engine_config.pop("targets_file")),
             )
 
             # Load the sensor set
             sensors = file_loader(
-                os.path.join(config_directory, engine_config.pop("sensors_file"))
+                os.path.join(config_directory, engine_config.pop("sensors_file")),
             )
 
             engine_config.update({"targets": targets, "sensors": sensors})

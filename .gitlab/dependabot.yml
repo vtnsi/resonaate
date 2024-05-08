@@ -17,9 +17,3 @@ updates:
     labels:
       - "Type: DEP"
       - "1: High"
-    ignore:
-      # flake8 has broken dep, so keep until isolated somehow
-      - dependency-name: "flake8"
-        versions: [">=4"]
-      # mjolnir b/c it shares a name with a diff package on PyPI
-      - dependency-name: "mjolnir"

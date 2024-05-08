@@ -6,8 +6,6 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
-# pylint: disable=invalid-name, redefined-builtin
-
 # -- Path setup --------------------------------------------------------------
 
 # Standard Library Imports
@@ -25,7 +23,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 # -- Project information -----------------------------------------------------
 
 project = "RESONAATE"
-copyright = "2018-2023, Virginia Tech"
+copyright = "2018-2024, Virginia Tech"
 author = "Dylan Thomas, David Kusterer, Jon Kadan, Cameron Harris"
 
 project_ver = version(project)

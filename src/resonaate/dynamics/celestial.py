@@ -1,4 +1,5 @@
 """Defines the abstract base class :class:`.Celestial`."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
     from .integration_events.station_keeping import StationKeeper
 
 
-class EarthCollision(Exception):
+class EarthCollisionError(Exception):
     """Exception raised if a :class:`.Celestial` object crashes into the Earth."""
 
 
@@ -48,7 +49,7 @@ def checkEarthCollision(r_norm: float):
     """
     # Check if an RSO crashed into the Earth
     if r_norm <= Earth.radius:
-        raise EarthCollision("An RSO has crashed into the Earth")
+        raise EarthCollisionError("An RSO has crashed into the Earth")
 
     if r_norm < Earth.radius + Earth.atmosphere:
         msg = "An RSO is within 100km of Earth surface"
@@ -95,10 +96,12 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             #  Add the event queue to the list of events to be handled by the integration solver.
             events.extend(scheduled_events)
             for event in scheduled_events:
-                if isinstance(event, ScheduledFiniteThrust):
-                    # Grab finite thrust events that should already be active
-                    if event.start_time < initial_time < event.end_time:
-                        self.finite_thrust = event.getStateChangeCallback(initial_time)
+                # Grab finite thrust events that should already be active
+                if (
+                    isinstance(event, ScheduledFiniteThrust)
+                    and event.start_time < initial_time < event.end_time
+                ):
+                    self.finite_thrust = event.getStateChangeCallback(initial_time)
 
         return events
 
@@ -126,7 +129,8 @@ class Celestial(Dynamics, metaclass=ABCMeta):
                     self.finite_thrust = event.getStateChangeCallback(current_time)
                 else:
                     current_state += event.getStateChange(current_time, current_state[:, 0])[
-                        :, None
+                        :,
+                        None,
                     ]
 
         return current_state
@@ -266,11 +270,10 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             n_t = len(solution.t)
             states = solution.y
 
-            if solution.status == 0:
-                # Integration completed, check if event occurred between last two `times`
-                if times.size == 0:
-                    n_t = 1
-                    states = states[::, -1]
+            # Integration completed, check if event occurred between last two `times`
+            if solution.status == 0 and times.size == 0:
+                n_t = 1
+                states = states[::, -1]
 
             # Properly reshape states
             states = states.reshape((*state_shape, n_t)).copy()
@@ -327,4 +330,4 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         Returns:
             ``numpy.ndarray``: (6 * K, ) derivative of the state vector, (km/sec; km/sec^2)
         """
-        raise NotImplementedError()
+        raise NotImplementedError

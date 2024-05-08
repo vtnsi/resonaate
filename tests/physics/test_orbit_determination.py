@@ -1,4 +1,5 @@
 """Test orbit utility functions."""
+
 # Standard Library Imports
 # Third Party Imports
 import pytest
@@ -33,7 +34,10 @@ def testLambertBattin(vallado_inputs):
     battin_v0 = array([2.058913, 2.915965, 0.0])
     battin_v = array([-3.451565, 0.910301, 0.0])
     initial_velocity, final_velocity = lambertBattin(
-        vallado_inputs[0], vallado_inputs[1], vallado_inputs[2], vallado_inputs[3]
+        vallado_inputs[0],
+        vallado_inputs[1],
+        vallado_inputs[2],
+        vallado_inputs[3],
     )
     assert allclose(initial_velocity, battin_v0)
     assert allclose(final_velocity, battin_v, rtol=1e-4)
@@ -92,7 +96,10 @@ def testLambertUniversal(vallado_inputs):
     universal_v0 = array([2.058913, 2.915965, 0.0])
     universal_v = array([-3.451565, 0.910315, 0.0])
     initial_velocity, final_velocity = lambertUniversal(
-        vallado_inputs[0], vallado_inputs[1], vallado_inputs[2], vallado_inputs[3]
+        vallado_inputs[0],
+        vallado_inputs[1],
+        vallado_inputs[2],
+        vallado_inputs[3],
     )
     assert allclose(initial_velocity, universal_v0)
     assert allclose(final_velocity, universal_v)
@@ -112,7 +119,10 @@ def testLambertUniversalPoliastro():
     delta_time = 3600  # seconds
     transfer_method = 1
     initial_velocity, final_velocity = lambertUniversal(
-        initial_state, current_state, delta_time, transfer_method
+        initial_state,
+        current_state,
+        delta_time,
+        transfer_method,
     )
     assert allclose(initial_velocity, poliastro_velocity_1_result)
     assert allclose(final_velocity, poliastro_velocity_2_result)
@@ -154,7 +164,10 @@ def testLambertGauss(vallado_inputs):
     gauss_v0 = array([2.058913, 2.915965, 0.0])
     gauss_v = array([-3.451565, 0.910315, 0.0])
     initial_velocity, final_velocity = lambertGauss(
-        vallado_inputs[0], vallado_inputs[1], vallado_inputs[2], vallado_inputs[3]
+        vallado_inputs[0],
+        vallado_inputs[1],
+        vallado_inputs[2],
+        vallado_inputs[3],
     )
     assert allclose(initial_velocity, gauss_v0)
     assert allclose(final_velocity, gauss_v)

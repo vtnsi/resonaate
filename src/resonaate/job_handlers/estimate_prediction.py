@@ -1,4 +1,5 @@
 """:class:`.Job` handler class that manages estimate prediction logic."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -6,7 +7,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import Job
+from strmbrkr import Job
 
 # Local Imports
 from ..data import getDBConnection
@@ -25,7 +26,9 @@ if TYPE_CHECKING:
 
 
 def asyncPredict(
-    seq_filter: SequentialFilter, time: ScenarioTime, scheduled_events: list[Event] = None
+    seq_filter: SequentialFilter,
+    time: ScenarioTime,
+    scheduled_events: list[Event] | None = None,
 ) -> ndarray:
     """Wrap a filter prediction method for use with a parallel job submission module.
 
@@ -57,7 +60,7 @@ class EstimatePredictionRegistration(CallbackRegistration):
         KeywordArgs:
             new_time (:class:`.ScenarioTime`): payload indicating the current simulation time.
 
-        Returns
+        Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
         new_time = kwargs["new_time"]
@@ -66,7 +69,7 @@ class EstimatePredictionRegistration(CallbackRegistration):
             args=[self.registrant.nominal_filter, new_time],
             kwargs={
                 # [NOTE][parallel-maneuver-event-handling] Step three: pass the event queue to the propagation process.
-                "scheduled_events": self.registrant.propagate_event_queue
+                "scheduled_events": self.registrant.propagate_event_queue,
             },
         )
         self.registrant.time = new_time

@@ -1,4 +1,5 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -10,6 +11,8 @@ from .base import ConfigObject
 from .platform_config import PlatformConfig
 from .sensor_config import SensorConfig
 from .state_config import StateConfig
+
+# ruff: noqa: A003
 
 
 @dataclass

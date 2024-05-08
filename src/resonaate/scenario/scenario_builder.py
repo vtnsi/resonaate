@@ -1,4 +1,5 @@
 """Defines the :class:`.ScenarioBuilder` class to build valid :class:`.Scenario` objects from given configurations."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -20,7 +21,7 @@ from ..tasking.decisions import decisionFactory
 from ..tasking.engine.centralized_engine import CentralizedTaskingEngine
 from ..tasking.rewards import rewardsFactory
 from .clock import ScenarioClock
-from .config.event_configs import MissingDataDependency
+from .config.event_configs import MissingDataDependencyError
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -41,7 +42,9 @@ class ScenarioBuilder:
     """
 
     def __init__(
-        self, scenario_config: ScenarioConfig, importer_db_path: str | None = None
+        self,
+        scenario_config: ScenarioConfig,
+        importer_db_path: str | None = None,
     ) -> None:
         """Instantiate a :class:`.ScenarioBuilder` from a config dictionary.
 
@@ -113,7 +116,7 @@ class ScenarioBuilder:
 
             tasking_engines[tasking_engine.unique_id] = tasking_engine
             self.logger.info(
-                f"Successfully built tasking engine: {tasking_engine.__class__.__name__}"
+                f"Successfully built tasking engine: {tasking_engine.__class__.__name__}",
             )
 
         self.logger.info(f"Successfully loaded {len(tasking_engines)} tasking engines")
@@ -169,7 +172,6 @@ class ScenarioBuilder:
                 tgt_cfg=target_config,
                 clock=self.clock,
                 dynamics=filter_dynamics,
-                prop_cfg=self.config.propagation,
                 time_cfg=self.config.time,
                 noise_cfg=self.config.noise,
                 estimation_cfg=self.config.estimation,
@@ -214,15 +216,14 @@ class ScenarioBuilder:
         Args:
             database (ResonaateDatabase): reference to the simulation database.
         """
-        agent_data = []
-        for target_agent in self.target_agents.values():
-            agent_data.append(
-                AgentModel(unique_id=target_agent.simulation_id, name=target_agent.name)
-            )
-        for sensor_agent in self.sensor_agents.values():
-            agent_data.append(
-                AgentModel(unique_id=sensor_agent.simulation_id, name=sensor_agent.name)
-            )
+        agent_data = [
+            AgentModel(unique_id=tgt.simulation_id, name=tgt.name)
+            for tgt in self.target_agents.values()
+        ]
+        agent_data.extend(
+            AgentModel(unique_id=sen.simulation_id, name=sen.name)
+            for sen in self.sensor_agents.values()
+        )
 
         database.bulkSave(agent_data)
 
@@ -239,14 +240,16 @@ class ScenarioBuilder:
         built_events = []
         for event_config in sorted(self._config.events, key=lambda x: x.start_time):
             for data_dependency in event_config.getDataDependencies():
-                # pylint: disable=unused-variable
-                if found_dependency := database.getData(data_dependency.query, multi=False):
+                if found_dependency := database.getData(  # noqa: F841
+                    data_dependency.query,
+                    multi=False,
+                ):
                     continue
 
                 # else
                 try:
                     new_dependency = data_dependency.createDependency()
-                except MissingDataDependency as missing_dep:
+                except MissingDataDependencyError as missing_dep:
                     err = f"Event {event_config.event_type!r} is missing a data dependency."
                     raise ValueError(err) from missing_dep
 

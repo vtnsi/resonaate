@@ -14,7 +14,7 @@ include:
 .check-base:
   stage: check
   extends:
-    - .python39
+    - .python-oldest
     - .rules:default
   before_script:
     - !reference [.pip-dev, before_script]
@@ -27,43 +27,20 @@ include:
   needs: []
 
 # ==========================================
-# `pylint` Job
+# `ruff` Job
 # ==========================================
-# Lint source code with pylint
+# Lint source code with ruff
 
-pylint:
-  extends: .check-base
-  before_script:
-    # [NOTE]: pylint requires the package be installed
-    - !reference [.pip-dev, before_script]
-    - echo -e "\e[0Ksection_start:`date +%s`:pip_test[collapsed=true]\r\e[0K Install resonaate & test dependencies via pip"
-    - python3 -m pip install .[test]
-    - echo -e "\e[0Ksection_end:`date +%s`:pip_test\r\e[0K"
-  script:
-    - echo "Linting with pylint"
-    - pylint *.py src docs | tee pylint.log
-    - pylint tests --disable=invalid-name | tee -a pylint.log
-  artifacts:
-    name: pylint
-    paths:
-      - pylint.log
-    expose_as: "pylint log"
-
-# ==========================================
-# `flake8` Job
-# ==========================================
-# Lint source code with flake8
-
-flake8:
+ruff:
   extends: .check-base
   script:
-    - echo "Linting with flake8"
-    - flake8 $LINT_SOURCES | tee flake8.log
+    - echo "Linting with ruff"
+    - ruff $LINT_SOURCES --no-fix | tee ruff.log
   artifacts:
-    name: flake8
+    name: ruff
     paths:
-      - flake8.log
-    expose_as: "flake8 log"
+      - ruff.log
+    expose_as: "ruff log"
 
 # ==========================================
 # `check-manifest` job

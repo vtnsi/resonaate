@@ -1,4 +1,5 @@
 """Defines statistical functions and tests."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -44,7 +45,7 @@ def getConfidenceRegion(sigma: float | ndarray, dim: float | ndarray) -> float |
         0.7385358700508888
 
     Args:
-        std (``float | ndarray``): the N-dimensional standard deviation, :math:`sigma`.
+        sigma (``float | ndarray``): the N-dimensional standard deviation, :math:`sigma`.
         dim (``float | ndarray``): degrees of freedom, or dimension, of the random variable.
 
     Returns:

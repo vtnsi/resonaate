@@ -70,6 +70,7 @@ See Also:
 .. _mapparms:
     https://numpy.org/devdocs/reference/generated/numpy.polynomial.polyutils.mapparms.html#numpy.polynomial.polyutils.mapparms
 """
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -138,7 +139,8 @@ class TBK(Enum):
     def __lt__(self, other):
         """Explicitly define less than for use in sorting kernel segments."""
         msg = f"Can only compare a TBK enum to another: {type(other)}"
-        assert isinstance(other, TBK), msg
+        if not isinstance(other, TBK):
+            raise TypeError(msg)
         return int(self.value) < int(other.value)
 
 
@@ -158,7 +160,7 @@ KERNEL_MAP: dict[str, dict[tuple[int, int], TBK]] = {
         (3, 399): TBK.EARTH_BC_2_EARTH_CENTER,
         (1, 199): TBK.MERCURY_BC_2_MERCURY_CENTER,
         (2, 299): TBK.VENUS_BC_2_VENUS_CENTER,
-    }
+    },
 }
 """``dict``: map describing how the (center, target) pairs of a kernel map to common tuple index."""
 
@@ -181,9 +183,8 @@ def readKernelSegmentFile(kernel_module: str, filename: str | Path) -> ThirdBody
 
     # Get coefficient array
     res = resources.files(kernel_module).joinpath(filename)
-    with resources.as_file(res) as kernel_file:
-        with open(kernel_file, "rb") as segment_file:
-            coefficients = load(segment_file)
+    with resources.as_file(res) as kernel_file, open(kernel_file, "rb") as segment_file:
+        coefficients = load(segment_file)
 
     return ThirdBodyTuple(center, target, init_jd, interval, coefficients)
 
@@ -226,7 +227,8 @@ def loadKernelData(kernel_name: str) -> tuple[tuple[float, float, ndarray], ...]
     # Sort segments according to TBK enum
     segment_map: dict[tuple[int, int], TBK] = KERNEL_MAP[kernel_name]
     sorted_segments = sorted(
-        kernel_segments, key=lambda segment: segment_map[(segment.center, segment.target)]
+        kernel_segments,
+        key=lambda segment: segment_map[(segment.center, segment.target)],
     )
     return tuple(
         (segment.init_epoch, segment.interval, segment.coefficients) for segment in sorted_segments
@@ -242,7 +244,9 @@ IterFloatType = Union[float, Iterable[float]]
 
 
 def _scaleChebyshevInputs(
-    jd: IterFloatType, init_jd: float, int_length: float
+    jd: IterFloatType,
+    init_jd: float,
+    int_length: float,
 ) -> tuple[ndarray, ndarray]:
     """Scale the input(s) for a Chebyshev series based to a domain of :math:`[-1, 1]`.
 
@@ -314,7 +318,7 @@ def getSegmentPosition(jd: IterFloatType, segment: TBK) -> ndarray:
     #   requires looping rather than a direct call.
     if isinstance(scaled_jd, Iterable):
         return array(
-            tuple(chebval(jd, coefficients[:, ii, :].T) for jd, ii in zip(scaled_jd, idx))
+            tuple(chebval(jd, coefficients[:, ii, :].T) for jd, ii in zip(scaled_jd, idx)),
         )
 
     # else

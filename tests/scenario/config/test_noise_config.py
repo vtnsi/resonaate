@@ -48,7 +48,7 @@ def testCreateNoiseConfig(noise_cfg_dict: dict):
     assert noise_cfg.random_seed is None
 
     # Test that this can be created from an empty dictionary
-    noise_cfg = NoiseConfig(**{})
+    noise_cfg = NoiseConfig()
     assert noise_cfg is not None
     for field in fields(NoiseConfig):
         assert field.name in noise_cfg.__dict__

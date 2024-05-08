@@ -1,4 +1,5 @@
 """Defines the :class:`.Terrestrial` class for agents that are stationary on the Earth."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -25,7 +26,12 @@ class Terrestrial(Dynamics):
         self.x_ecef = x_ecef
 
     def propagate(
-        self, initial_time, final_time, initial_state, station_keeping=None, scheduled_events=None
+        self,
+        initial_time,
+        final_time,
+        initial_state,
+        station_keeping=None,
+        scheduled_events=None,
     ):
         """Propagate the state from the initial time to the final time.
 
@@ -33,13 +39,15 @@ class Terrestrial(Dynamics):
             initial_time (:class:`.ScenarioTime`): time value when the integration will begin (seconds)
             final_time (:class:`.ScenarioTime`): time value when the integration will stop (seconds)
             initial_state (``numpy.ndarray``): (6, ) state vector for the integration step, (km; km/sec)
+            station_keeping (None): Not used.
+            scheduled_events (None): Not used.
 
         Returns:
             ``numpy.ndarray``: 6x1 ECI state vector (km; km/sec)
         """
         if final_time < initial_time:
             raise ValueError(
-                "Terrestrial: Invalid input for final_time. final_time must be greater than initial_time."
+                "Terrestrial: Invalid input for final_time. final_time must be greater than initial_time.",
             )
 
         final_datetime = self.datetime_start + timedelta(seconds=final_time)

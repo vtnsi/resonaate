@@ -1,4 +1,5 @@
 """Submodule defining the 'propagation' configuration section."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -56,10 +57,14 @@ class PropagationConfig(ConfigObject):
         """Runs after the object is initialized."""
         if self.propagation_model not in VALID_PROPAGATION_METHODS:
             raise ConfigValueError(
-                "propagation_model", self.propagation_model, VALID_PROPAGATION_METHODS
+                "propagation_model",
+                self.propagation_model,
+                VALID_PROPAGATION_METHODS,
             )
 
         if self.integration_method not in VALID_INTEGRATION_METHODS:
             raise ConfigValueError(
-                "integration_method", self.integration_method, VALID_INTEGRATION_METHODS
+                "integration_method",
+                self.integration_method,
+                VALID_INTEGRATION_METHODS,
             )

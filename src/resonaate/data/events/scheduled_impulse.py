@@ -1,8 +1,9 @@
 """Defines the :class:`.ScheduledImpulseEvent` data table class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple  # noqa: UP035
 
 # Third Party Imports
 from numpy import array
@@ -39,11 +40,10 @@ class ScheduledImpulseEvent(Event):
     THRUST_FRAME_NTW: str = "ntw"
     """``str``: Configuration string used to delineate using the NTW frame to apply this impulse."""
 
-    # [NOTE]: Old-style type hints required until we either:
+    # [NOTE]: Old-style generic type hints builtins (Tuple vs tuple) required until we either:
     #   1) Move to SQLAlchemy >= 2.0
     #   2) Move to Python >= 3.10
-    # pylint: disable=deprecated-typing-alias
-    VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)
+    VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)  # noqa: UP006
     """``tuple``: Valid values for :attr:`~.ScheduledImpulseEvent.thrust_frame`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
@@ -58,18 +58,17 @@ class ScheduledImpulseEvent(Event):
     """``float``: Third element of impulse vector in km/s."""
 
     @declared_attr
-    def thrust_frame(self):  # pylint: disable=invalid-name
+    def thrust_frame(self):
         """``str``: Label for frame that thrust should be applied in."""
-        return Event.__table__.c.get(  # pylint: disable=no-member
-            "thrust_frame", Column(String(10))
-        )
+        return Event.__table__.c.get("thrust_frame", Column(String(10)))
 
     @declared_attr
-    def planned(self):  # pylint: disable=invalid-name
+    def planned(self):
         """``bool``: Flag indicating whether this task is expected by the filter or not."""
-        return Event.__table__.c.get("planned", Column(Boolean))  # pylint: disable=no-member
+        return Event.__table__.c.get("planned", Column(Boolean))
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
+    MUTABLE_COLUMN_NAMES = (
+        *Event.MUTABLE_COLUMN_NAMES,
         "thrust_vec_0",
         "thrust_vec_1",
         "thrust_vec_2",
@@ -90,11 +89,15 @@ class ScheduledImpulseEvent(Event):
         impulse = None
         if str(self.thrust_frame).lower() == self.THRUST_FRAME_ECI:
             impulse = ScheduledECIImpulse(
-                start_sim_time, burn_vector, scope_instance.simulation_id
+                start_sim_time,
+                burn_vector,
+                scope_instance.simulation_id,
             )
         elif str(self.thrust_frame).lower() == self.THRUST_FRAME_NTW:
             impulse = ScheduledNTWImpulse(
-                start_sim_time, burn_vector, scope_instance.simulation_id
+                start_sim_time,
+                burn_vector,
+                scope_instance.simulation_id,
             )
         else:
             err = f"{self.thrust_frame} is not a valid coordinate frame."

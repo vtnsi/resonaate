@@ -1,4 +1,5 @@
 """Defines the :class:`.Radar` sensor class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -51,7 +52,7 @@ class Radar(Sensor):
         #  :cite:t:`vallado_2016_aiaa_covariance`
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         az_mask: ndarray,
         el_mask: ndarray,
@@ -67,7 +68,7 @@ class Radar(Sensor):
         minimum_range: float,
         maximum_range: float,
         **sensor_args: dict,
-    ):  # noqa: E501
+    ):
         """Construct a `Radar` sensor object.
 
         Args:
@@ -87,7 +88,8 @@ class Radar(Sensor):
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         measurement = Measurement.fromMeasurementLabels(
-            ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"], r_matrix
+            ["azimuth_rad", "elevation_rad", "range_km", "range_rate_km_p_sec"],
+            r_matrix,
         )
         super().__init__(
             measurement,
@@ -118,6 +120,7 @@ class Radar(Sensor):
 
         Args:
             sensor_config (RadarConfig): radar sensor configuration object.
+            field_of_view (FieldOfView): sensor field of view model.
 
         Returns:
             Self: constructed radar sensor object.
@@ -176,12 +179,21 @@ class Radar(Sensor):
             ``bool``: True if target is visible; False if target is not visible
             :class:`.Explanation`: Reason observation was visible or not
         """
+        line_of_sight, explanation = super().isVisible(
+            tgt_eci_state,
+            viz_cross_section,
+            reflectivity,
+            slant_range_sez,
+        )
+        if not line_of_sight:
+            return False, explanation
+
         # Early exit if target not in radar sensor's range
         if getRange(slant_range_sez) > self.maximumRangeTo(viz_cross_section):
             return False, Explanation.RADAR_SENSITIVITY
 
         # Passed all phenomenology-specific tests, call base class' visibility check
-        return super().isVisible(tgt_eci_state, viz_cross_section, reflectivity, slant_range_sez)
+        return True, explanation
 
     def maximumRangeTo(self, viz_cross_section: float) -> float:
         """Calculate the maximum possible range based on a target's visible area.

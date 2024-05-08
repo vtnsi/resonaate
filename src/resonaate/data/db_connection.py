@@ -1,16 +1,17 @@
 """Manage shared database connections."""
+
 from __future__ import annotations
 
 # Standard Library Imports
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir.key_value_store import KeyValueStore
-from mjolnir.key_value_store.transaction import Transaction
+from strmbrkr.key_value_store import KeyValueStore
+from strmbrkr.key_value_store.transaction import Transaction
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Any
+    from typing import Any, ClassVar
 
     # Local Imports
     from .resonaate_database import ResonaateDatabase
@@ -43,7 +44,7 @@ class ExclusiveSet(Transaction):
 class _GetDBConnection(Transaction):
     """Transaction logic for managing shared database connections."""
 
-    __cached_interfaces: dict[str, Any] = {}
+    __cached_interfaces: ClassVar[dict[str, Any]] = {}
 
     def transact(self, key_value_store: dict) -> None:
         """Execute the transaction on the specified `key_value_store`.
@@ -54,7 +55,7 @@ class _GetDBConnection(Transaction):
         self.response_payload = key_value_store.get(DB_PATH_KEY)
         if self.response_payload is None:
             self.error = DBConnectionError(
-                "setDBPath() must be called once before getDBConnection()"
+                "setDBPath() must be called once before getDBConnection()",
             )
 
     def getResponse(self) -> Any:
@@ -66,7 +67,6 @@ class _GetDBConnection(Transaction):
         Raises:
             Exception: If an error occurred while executing this transaction.
         """
-        # pylint: disable=import-outside-toplevel
         db_path = super().getResponse()
         if self.__cached_interfaces.get(db_path) is None:
             # Local Imports
@@ -88,7 +88,7 @@ def setDBPath(path: str) -> None:
         KeyValueStore.submitTransaction(ExclusiveSet(DB_PATH_KEY, path))
     except KeyError as err:
         raise DBConnectionError(
-            "setDBPath() should only be called once per script/simulation"
+            "setDBPath() should only be called once per script/simulation",
         ) from err
 
 

@@ -1,11 +1,12 @@
 """Defines the :class:`~.agent.AgentModel` data table class."""
+
 from __future__ import annotations
 
 # Third Party Imports
 from sqlalchemy import Column, Integer, String
 
 # Local Imports
-from . import Base, _DataMixin
+from .table_base import Base, _DataMixin
 
 
 class AgentModel(Base, _DataMixin):

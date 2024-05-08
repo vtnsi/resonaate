@@ -1,4 +1,5 @@
 """Module for defining the nonspherical gravity potential of a central body being orbited by an object."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -28,8 +29,8 @@ def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
 
     This assumes that the coefficients are normalized according to Eq 8-22 in Vallado:
 
-    :math:`\bar{S}_{n,m}=\PI_{n,m} S_{n,m}`
-    :math:`\bar{C}_{n,m}=\PI_{n,m} C_{n,m}`
+    :math:`\bar{S}_{n,m}=\Pi_{n,m} S_{n,m}`
+    :math:`\bar{C}_{n,m}=\Pi_{n,m} C_{n,m}`
 
     where the function returns :math:`S_{n,m}` and :math:`C_{n,m}` accordingly.
 
@@ -43,16 +44,15 @@ def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
         ``tuple``: ``ndarray`` defining the un-normalized cosine & sine geopotential coefficients.
     """
     res = resources.files(GEOPOTENTIAL_MODULE).joinpath(model_file)
-    with resources.as_file(res) as grv_filepath:
-        with open(grv_filepath, "r", encoding="utf-8") as csv_file:
-            cos_terms = zeros((181, 181))
-            sin_terms = zeros((181, 181))
-            for row in reader(csv_file, delimiter=" ", skipinitialspace=True):
-                # Read normalized coefficients, un-normalize them.
-                degree, order = int(row[0]), int(row[1])
-                scale = _getGeopotentialCoefficientScale(degree, order)
-                cos_terms[degree, order] = float(row[2]) * scale
-                sin_terms[degree, order] = float(row[3]) * scale
+    with resources.as_file(res) as grv_filepath, open(grv_filepath, encoding="utf-8") as csv_file:
+        cos_terms = zeros((181, 181))
+        sin_terms = zeros((181, 181))
+        for row in reader(csv_file, delimiter=" ", skipinitialspace=True):
+            # Read normalized coefficients, un-normalize them.
+            degree, order = int(row[0]), int(row[1])
+            scale = _getGeopotentialCoefficientScale(degree, order)
+            cos_terms[degree, order] = float(row[2]) * scale
+            sin_terms[degree, order] = float(row[3]) * scale
 
     return cos_terms, sin_terms
 
@@ -60,9 +60,9 @@ def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
 def _getGeopotentialCoefficientScale(degree: int, order: int) -> float:
     r"""Get the scale to un-normalize the corresponding geopotential coefficients.
 
-    :math:`\PI_{n,m} = \sqrt{\frac{(n + m)!}{(n - m)!k(2n + 1)}}` where
+    :math:`\Pi_{n,m} = \sqrt{\frac{(n + m)!}{(n - m)!k(2n + 1)}}` where
     :math:`k=1` if :math:`m=0`
-    :meth:`k=2` if :math:`m\neq 0`
+    :math:`k=2` if :math:`m \neq 0`
 
     References:
         :cite:t:`vallado_2013_astro`, Eqn 8-22, Pg 546
@@ -75,7 +75,7 @@ def _getGeopotentialCoefficientScale(degree: int, order: int) -> float:
         ``float``: un-normalization scale value.
     """
     if order == 0:
-        return sqrt((2 * degree + 1))
+        return sqrt(2 * degree + 1)
 
     return sqrt((factorial(degree - order) * 2 * (2 * degree + 1)) / factorial(degree + order))
 
@@ -88,7 +88,9 @@ def getNonSphericalHarmonics(
 ) -> tuple[ndarray, ndarray]:
     r"""Compute the harmonic terms for a given position & gravity field.
 
-    In general, the gravity model order must be less than or equal to the gravity model degree.
+    Note:
+        The gravity model order must be less than or equal to the gravity model degree.
+        This function only considers J2 and above. It does not include Keplerian Force Accelerations.
 
     References:
         :cite:t:`montenbruck_2012_orbits`, Eqn 3.29 - 3.31
@@ -103,7 +105,6 @@ def getNonSphericalHarmonics(
         ``ndarray``: (n+1 x m+1) matrix of recursive cosine harmonic terms.
         ``ndarray``: (n+1 x m+1) matrix of recursive sine harmonic terms.
     """
-    # pylint: disable=invalid-name
     # Temporary variables for convenience
     norm_r = norm(ecef_pos)
     rho = cb_radius / norm_r
@@ -124,10 +125,10 @@ def getNonSphericalHarmonics(
     for m in range(order + 1):
         for n in range(2, degree + 1):
             # Skip terms above the diagonal
-            if m > n:  # pylint: disable=no-else-continue
+            if m > n:
                 continue
             # Diagonal terms
-            elif m == n:
+            if m == n:
                 v[m, m] = (2 * m - 1) * (x_bar * v[m - 1, m - 1] - y_bar * w[m - 1, m - 1])
                 w[m, m] = (2 * m - 1) * (x_bar * w[m - 1, m - 1] + y_bar * v[m - 1, m - 1])
             # Off-diagonal terms (m < n)
@@ -154,7 +155,9 @@ def nonSphericalAcceleration(
 ) -> ndarray:
     r"""Compute the non-spherical geopotential acceleration.
 
-    In general, the gravity model order must be less than or equal to the gravity model degree.
+    Note:
+        The gravity model order must be less than or equal to the gravity model degree.
+        This function only considers J2 and above. It does not include Keplerian Force Accelerations.
 
     References:
         :cite:t:`montenbruck_2012_orbits`, Eqn 3.32 - 3.33
@@ -165,13 +168,12 @@ def nonSphericalAcceleration(
         cb_radius (``float``): spherical radius of the central body (km).
         c (``ndarray``): cosine geopotential coefficients, not normalized.
         s (``ndarray``): sine geopotential coefficients, not normalized.
-        degree (``int``): maximum degree (:math:`n`) of the gravity model
-        order (``int``): maximum order (:math`m`) of the gravity model
+        max_degree (``int``): maximum degree (:math:`n`) of the gravity model
+        max_order (``int``): maximum order (:math`m`) of the gravity model
 
     Returns:
         ``ndarray``: vector of geopotential acceleration terms in ITRF/ECEF coordinates
     """
-    # pylint: disable=invalid-name
     # We require one degree & order higher harmonic terms due to the partial acceleration equations
     v, w = getNonSphericalHarmonics(ecef_pos, cb_radius, max_degree + 1, max_order + 1)
     acceleration = zeros((3,), dtype=float64)

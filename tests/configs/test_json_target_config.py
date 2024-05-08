@@ -15,7 +15,7 @@ from resonaate.physics.bodies import Earth
 def testStationKeepingAssignment():
     """Test that every target has proper station keeping based on orbital regime."""
     for target_sets in listdir("configs/json/targets"):
-        with open(f"configs/json/targets/{str(target_sets)}", "r", encoding="utf-8") as target_set:
+        with open(f"configs/json/targets/{target_sets!s}", encoding="utf-8") as target_set:
             targets = load(target_set)
 
         for target in targets:

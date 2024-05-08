@@ -1,4 +1,5 @@
 """Package that defines agent-based simulation behavior."""
+
 from __future__ import annotations
 
 DEFAULT_MASS = 10000.0

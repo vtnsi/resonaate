@@ -1,4 +1,5 @@
 """Abstract :class:`.Sensor` base class which defines the common sensor interface."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -41,7 +42,7 @@ DEFAULT_VIEWING_ANGLE: float = 1.0
 class Sensor(ABC):
     """Abstract base class for a generic Sensor object."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         measurement: Measurement,
         az_mask: ndarray,
@@ -98,6 +99,7 @@ class Sensor(ABC):
 
         Args:
             sensor_config (SensorConfig): sensor configuration object.
+            field_of_view (FieldOfView): sensor FoV model.
 
         Returns:
             Self: constructed concrete sensor object.
@@ -148,12 +150,16 @@ class Sensor(ABC):
         Returns:
             ``list``: :class:`.Observation` for each successful tasked observation
             ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
+            ``ndarray``: 3x1 SEZ boresight unit vector
+            ``float``: :class:`.ScenarioTime` last time observed
         """
         obs_list = []
         missed_observation_list = []
         # Check if sensor will slew to point in time
         pointing_sez = getSlantRangeVector(
-            self.host.eci_state, estimate_eci, self.host.datetime_epoch
+            self.host.eci_state,
+            estimate_eci,
+            self.host.datetime_epoch,
         )
         if self.canSlew(pointing_sez):
             # If the sensor can slew to the target, then it does before attempting observations
@@ -176,7 +182,7 @@ class Sensor(ABC):
                     target_id=target_agent.simulation_id,
                     sensor_eci=self.host.eci_state,
                     reason=Explanation.SLEW_DISTANCE.value,
-                )
+                ),
             )
 
         # If doing Serendipitous Observations
@@ -185,12 +191,13 @@ class Sensor(ABC):
                 observation
                 for tgt in background_agents
                 if isinstance(
-                    observation := self.attemptObservation(tgt, pointing_sez), Observation
+                    observation := self.attemptObservation(tgt, pointing_sez),
+                    Observation,
                 )
             ]
             obs_list.extend(visible_observations)
 
-        return obs_list, missed_observation_list
+        return obs_list, missed_observation_list, self.boresight, self.time_last_tasked
 
     def attemptObservation(
         self,
@@ -213,7 +220,9 @@ class Sensor(ABC):
             tgt_eci_state = target_agent.eci_state
 
         slant_range_sez = getSlantRangeVector(
-            self.host.eci_state, tgt_eci_state, self.host.datetime_epoch
+            self.host.eci_state,
+            tgt_eci_state,
+            self.host.datetime_epoch,
         )
         if not self.field_of_view.inFieldOfView(pointing_sez, slant_range_sez):
             return MissedObservation(
@@ -277,7 +286,7 @@ class Sensor(ABC):
         resonaateLogInfo(msg)
         return tgt_eci_state
 
-    def isVisible(
+    def isVisible(  # noqa: PLR0911
         self,
         tgt_eci_state: ndarray,
         viz_cross_section: float,
@@ -299,7 +308,6 @@ class Sensor(ABC):
             ``bool``: True if target is visible; False if target is not visible
             :class:`.Explanation`: Reason observation was visible or not
         """
-        # pylint:disable=unused-argument, too-many-return-statements
         # Early exit if target not in sensor's minimum range
         if self.minimum_range is not None and getRange(slant_range_sez) < self.minimum_range:
             return False, Explanation.MINIMUM_RANGE
@@ -416,7 +424,6 @@ class Sensor(ABC):
     @property
     def host(self) -> SensingAgent:
         r""":class:`.SensingAgent`: Returns reference to agent that contains this sensor."""
-
         if self._host is None:
             raise ValueError("SensingAgent.host was not (or was incorrectly) initialized")
         return self._host

@@ -1,13 +1,16 @@
 """Abstract :class:`.Tasking` base class defining the tasking engine API."""
+
 from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from logging import getLogger
+from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import zeros
+from strmbrkr import KeyValueStore
 
 # Local Imports
 from ...data import getDBConnection
@@ -21,6 +24,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
+    from ...agents.sensing_agent import SensingAgent
     from ...data.observation import MissedObservation, Observation
     from ...data.task import Task
     from ...physics.time.stardate import JulianDate
@@ -93,7 +97,8 @@ class TaskingEngine(metaclass=ABCMeta):
         self.visibility_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         """``ndarray``: NxM array defining the visibility condition for every target/sensor pair."""
         self.metric_matrix = zeros(
-            (self.num_targets, self.num_sensors, self.num_metrics), dtype=float
+            (self.num_targets, self.num_sensors, self.num_metrics),
+            dtype=float,
         )
         """``ndarray``: NxMxP array defining the metrics for every target/sensor pair."""
 
@@ -106,6 +111,8 @@ class TaskingEngine(metaclass=ABCMeta):
         """``list``: transient :class:`.MissedObservation` tasked & saved by this engine during the current timestep."""
         self._saved_missed_observations: list[MissedObservation] = []
         """``list``: transient :class:`.MissedObservation` tasked & saved by this engine not loaded to the DB."""
+
+        self.sensor_changes = {}
 
         self._database = getDBConnection()
         """:class:`.ResonaateDatabase`: shared instance of simulation database."""
@@ -178,12 +185,28 @@ class TaskingEngine(metaclass=ABCMeta):
                 self._missed_observations.extend(missed_observations)
                 self._saved_missed_observations.extend(missed_observations)
 
+    def updateFromAsyncTaskExecution(self, sensor_info_list: list) -> None:
+        """Save Changes to sensor as a result of tasking.
+
+        Args:
+            sensor_info_list (list): list of dict
+        """
+        self.sensor_changes = {}
+        for sensor_info in sensor_info_list:
+            self.sensor_changes[sensor_info["sensor_id"]] = {
+                "boresight": sensor_info["boresight"],
+                "time_last_tasked": sensor_info["time_last_tasked"],
+            }
+
     def getCurrentMissedObservations(self) -> list[Observation]:
         """``list``: Returns current list of :class:`.MissedObservation` saved internally & resets transient list."""
         missed_observations = self._saved_missed_observations
         self._saved_missed_observations = []
 
         return missed_observations
+
+    def _fetchSensorAgents(self) -> dict[int, SensingAgent]:
+        return loads(KeyValueStore.getValue("sensor_agents"))
 
     @abstractmethod
     def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:

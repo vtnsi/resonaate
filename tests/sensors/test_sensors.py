@@ -29,7 +29,9 @@ def getConicFoV() -> FieldOfViewConfig:
 def getRectangularFoV() -> FieldOfViewConfig:
     """Create a rectangular FOV config object."""
     return FieldOfViewConfig(
-        fov_shape=FoVLabel.RECTANGULAR, azimuth_angle=5.0, elevation_angle=5.0
+        fov_shape=FoVLabel.RECTANGULAR,
+        azimuth_angle=5.0,
+        elevation_angle=5.0,
     )
 
 
@@ -48,13 +50,14 @@ def getStateConfig() -> StateConfig:
             "latitude": 20.0,
             "longitude": -40.0,
             "altitude": 0.5,
-        }
+        },
     )
 
 
 @pytest.fixture(name="radar_agent_cfg")
 def getRadarAgentConfig(
-    platform_cfg: PlatformConfig, state_cfg: StateConfig
+    platform_cfg: PlatformConfig,
+    state_cfg: StateConfig,
 ) -> SensingAgentConfig:
     """Create valid Radar Sensing Agent config object."""
     sensor_dict = {
@@ -80,7 +83,8 @@ def getRadarAgentConfig(
 
 @pytest.fixture(name="adv_radar_agent_cfg")
 def getAdvRadarAgentConfig(
-    platform_cfg: PlatformConfig, state_cfg: StateConfig
+    platform_cfg: PlatformConfig,
+    state_cfg: StateConfig,
 ) -> SensingAgentConfig:
     """Create valid Advanced Radar Sensing Agent config object."""
     sensor_dict = {
@@ -106,7 +110,8 @@ def getAdvRadarAgentConfig(
 
 @pytest.fixture(name="optical_agent_cfg")
 def getOpticalAgentConfig(
-    platform_cfg: PlatformConfig, state_cfg: StateConfig
+    platform_cfg: PlatformConfig,
+    state_cfg: StateConfig,
 ) -> SensingAgentConfig:
     """Create valid Optical Sensing Agent config object."""
     sensor_dict = {

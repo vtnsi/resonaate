@@ -1,11 +1,12 @@
 """:class:`.Job` handler class that manages estimate updating logic."""
+
 from __future__ import annotations
 
 # Standard Library Imports
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import Job
+from strmbrkr import Job
 
 # Local Imports
 from ..estimation.sequential.sequential_filter import FilterFlag
@@ -52,8 +53,6 @@ def asyncUpdateEstimate(estimate_agent: EstimateAgent, successful_obs: list[Obse
 
     # MMAE is closing
     if FilterFlag.ADAPTIVE_ESTIMATION_CLOSE in estimate_agent.nominal_filter.flags:
-        # [NOTE]: The next two lines MUST be in this order
-        estimate_agent.resetFilter(estimate_agent.nominal_filter.converged_filter)
         estimate_agent.nominal_filter.flags ^= FilterFlag.ADAPTIVE_ESTIMATION_CLOSE
         result["new_filter"] = estimate_agent.nominal_filter
 
@@ -77,7 +76,7 @@ class EstimateUpdateRegistration(CallbackRegistration):
             estimate_id (``int``): ID associated with the :class:`.EstimateAgent` to be updated.
             observations (``list``): :class:`.Observation` objects with which to update the :class:`EstimateAgent`.
 
-        Returns
+        Returns:
             :class:`.Job`: job to be processed by :class:`.QueueManager`.
         """
         estimate_id = kwargs["estimate_id"]
@@ -98,10 +97,6 @@ class EstimateUpdateRegistration(CallbackRegistration):
             job (:class:`.Job`): job object that's returned when a job completes.
         """
         est_agent: EstimateAgent = self.registrant.estimate_agents[job.retval["estimate_id"]]
-        if job.retval["new_filter"]:
-            # [NOTE]: Reset nominal filter for MMAE starting/stopping
-            est_agent.resetFilter(job.retval["new_filter"])
-
         est_agent.updateFromAsyncUpdateEstimate(job.retval)
 
 
@@ -123,9 +118,10 @@ class EstimateUpdateJobHandler(JobHandler):
         jobs = []
         obs_dict = kwargs["observations"]
         for registration in self.callback_registry:
-            for estimate_id in registration.registrant.target_agents.keys():
+            for estimate_id in registration.registrant.target_agents:
                 job = registration.jobCreateCallback(
-                    estimate_id=estimate_id, observations=obs_dict[estimate_id]
+                    estimate_id=estimate_id,
+                    observations=obs_dict[estimate_id],
                 )
                 self.job_id_registration_dict[job.id] = registration
                 jobs.append(job)

@@ -1,12 +1,11 @@
 """Defines the :class:`.CentralizedTaskingEngine` class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
-from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import KeyValueStore
 from numpy import zeros
 from sqlalchemy.orm import Query
 
@@ -27,7 +26,6 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
-    from ...agents.sensing_agent import SensingAgent
     from ...physics.time.stardate import JulianDate
     from ...sensors.sensor_base import Sensor
     from ..decisions import Decision
@@ -64,7 +62,12 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             realtime_obs (``bool``): whether to execute realtime observations
         """
         super().__init__(
-            engine_id, sensor_ids, target_ids, reward, decision, importer_db_path=importer_db_path
+            engine_id,
+            sensor_ids,
+            target_ids,
+            reward,
+            decision,
+            importer_db_path=importer_db_path,
         )
 
         self._realtime_obs = realtime_obs
@@ -92,7 +95,8 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self.decision_matrix = zeros((self.num_targets, self.num_sensors), dtype=bool)
         self.reward_matrix = zeros((self.num_targets, self.num_sensors), dtype=float)
         self.metric_matrix = zeros(
-            (self.num_targets, self.num_sensors, self.num_metrics), dtype=float
+            (self.num_targets, self.num_sensors, self.num_metrics),
+            dtype=float,
         )
 
         # Only task if we say so.... :P
@@ -175,7 +179,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
                 sensor_position_set.add(position_key)
             else:
                 obs_dict = observation.makeDictionary()
-                msg = f"Dropped duplicate observation: {obs_dict.sensor_id} of {obs_dict.target_id} at {obs_dict.julian_date}"  # noqa: E501
+                msg = f"Dropped duplicate observation: {obs_dict.sensor_id} of {obs_dict.target_id} at {obs_dict.julian_date}"
                 self.logger.warning(msg)
 
         if imported_observations:
@@ -189,9 +193,6 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             self._createLoadedObs(observation, sensor_agents[observation.sensor_id].sensors)
             for observation in imported_observations
         ]
-
-    def _fetchSensorAgents(self) -> dict[int, SensingAgent]:
-        return loads(KeyValueStore.getValue("sensor_agents"))
 
     def _createLoadedObs(self, observation: Observation, sensor: Sensor) -> Observation:
         observation.measurement = sensor.measurement

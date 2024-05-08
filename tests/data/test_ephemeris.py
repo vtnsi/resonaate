@@ -92,7 +92,9 @@ class TestTruthEphemerisTable:
     def testReprAndDict(self, epoch, target_agent):
         """Test printing DB table object & making into dict."""
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
+            epoch=epoch,
+            agent=target_agent,
+            eci=EXAMPLE_STATE["eci"],
         )
         print(ephem)
         ephem.makeDictionary()
@@ -100,11 +102,15 @@ class TestTruthEphemerisTable:
     def testEquality(self, epoch, target_agent):
         """Test equals and not equals operators."""
         ephem1 = TruthEphemeris.fromECIVector(
-            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
+            epoch=epoch,
+            agent=target_agent,
+            eci=EXAMPLE_STATE["eci"],
         )
 
         ephem2 = TruthEphemeris.fromECIVector(
-            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
+            epoch=epoch,
+            agent=target_agent,
+            eci=EXAMPLE_STATE["eci"],
         )
 
         ephem3 = TruthEphemeris.fromECIVector(
@@ -120,7 +126,9 @@ class TestTruthEphemerisTable:
     def testECIProperty(self, epoch, target_agent):
         """Test eci property."""
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
+            epoch=epoch,
+            agent=target_agent,
+            eci=EXAMPLE_STATE["eci"],
         )
         assert isinstance(ephem.eci, list)
         assert len(ephem.eci) == 6
@@ -128,7 +136,9 @@ class TestTruthEphemerisTable:
     def testInsertWithRelationship(self, database, epoch, target_agent):
         """Test inserting ephemeris with related objects."""
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
+            epoch=epoch,
+            agent=target_agent,
+            eci=EXAMPLE_STATE["eci"],
         )
 
         # Test insert of object
@@ -153,7 +163,9 @@ class TestTruthEphemerisTable:
         julian_date = epoch.julian_date
         agent_id = target_agent.unique_id
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
+            epoch=epoch,
+            agent=target_agent,
+            eci=EXAMPLE_STATE["eci"],
         )
         database.insertData(ephem)
 
@@ -168,7 +180,9 @@ class TestTruthEphemerisTable:
         agent_copy = deepcopy(target_agent)
 
         ephem = TruthEphemeris.fromECIVector(
-            epoch=epoch, agent=target_agent, eci=EXAMPLE_STATE["eci"]
+            epoch=epoch,
+            agent=target_agent,
+            eci=EXAMPLE_STATE["eci"],
         )
         database.insertData(ephem)
 

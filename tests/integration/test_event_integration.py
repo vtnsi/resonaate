@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -67,14 +66,16 @@ class TestEventIntegration:
                     "event_type": "impulse",
                     "thrust_vector": [0.0, 0.0, 0.00123],
                     "thrust_frame": "ntw",
-                }
+                },
             ],
         )
         assert ScenarioBuilder(minimal_config)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testBuildTargetTaskingPriorityDependency(
-        self, datafiles: str, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        database: ResonaateDatabase,
     ):
         """Validate that a TargetTaskingPriority's data dependency is built."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -95,7 +96,7 @@ class TestEventIntegration:
                     "target_name": priority_agent["name"],
                     "priority": 2.0,
                     "is_dynamic": False,
-                }
+                },
             ],
         )
         _ = ScenarioBuilder(minimal_config)
@@ -136,7 +137,7 @@ class TestEventIntegration:
                     "thrust_vector": [0.0, 0.0, 0.125],
                     "thrust_frame": "ntw",
                     "planned": False,
-                }
+                },
             ],
         )
 
@@ -149,10 +150,10 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -194,7 +195,7 @@ class TestEventIntegration:
                     "thrust_vector": [0.0, 0.0, 0.125],
                     "thrust_frame": "ntw",
                     "planned": planned,
-                }
+                },
             ],
         )
 
@@ -207,10 +208,10 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -255,7 +256,7 @@ class TestEventIntegration:
                     "acc_vector": [0.0, 0.0, 0.002],
                     "thrust_frame": "ntw",
                     "planned": planned,
-                }
+                },
             ],
         )
 
@@ -268,10 +269,10 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
@@ -288,7 +289,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteTargetTaskPriority(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a TargetTaskPriority is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -312,7 +316,7 @@ class TestEventIntegration:
                     "target_name": priority_target.name,
                     "priority": 2.0,
                     "is_dynamic": False,
-                }
+                },
             ],
         )
 
@@ -325,16 +329,14 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
-        looking_for = (
-            f"Handled 1 'task_reward_generation' events of types {set(['task_priority'])}"
-        )
+        looking_for = f"Handled 1 'task_reward_generation' events of types { {'task_priority'} }"
         expected_count = 3
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -345,7 +347,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteTargetAddition(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a TargetAddition is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -386,7 +391,7 @@ class TestEventIntegration:
                     "event_type": "target_addition",
                     "target_agent": target_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
-                }
+                },
             ],
         )
 
@@ -399,17 +404,17 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         initial_target_count = len(app.target_agents)
         initial_engine_target_count = app.tasking_engines[tasking_engine.unique_id].num_targets
 
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
-        looking_for = f"Handled 1 'scenario_step' events of types {set(['target_addition'])}"
+        looking_for = f"Handled 1 'scenario_step' events of types { {'target_addition'} }"
         found = False
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -426,7 +431,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteSensorAddition(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a SensorAddition is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -482,7 +490,7 @@ class TestEventIntegration:
                     "event_type": "sensor_addition",
                     "sensor_agent": sensor_agent,
                     "tasking_engine_id": tasking_engine.unique_id,
-                }
+                },
             ],
         )
 
@@ -495,17 +503,17 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         initial_sensor_count = len(app.sensor_agents)
         initial_engine_sensor_count = app.tasking_engines[tasking_engine.unique_id].num_sensors
 
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
-        looking_for = f"Handled 1 'scenario_step' events of types {set(['sensor_addition'])}"
+        looking_for = f"Handled 1 'scenario_step' events of types { {'sensor_addition'} }"
         found = False
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -521,7 +529,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteAgentRemovalTarget(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a AgentRemoval of a target is handled correctly."""
         minimal_config = _getMainConfig(datafiles)
@@ -543,7 +554,7 @@ class TestEventIntegration:
                     "tasking_engine_id": tasking_engine.unique_id,
                     "agent_id": removed_target.id,
                     "agent_type": "target",
-                }
+                },
             ],
         )
 
@@ -556,17 +567,17 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         initial_target_count = len(app.target_agents)
         initial_engine_target_count = app.tasking_engines[tasking_engine.unique_id].num_targets
 
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
-        looking_for = f"Handled 1 'scenario_step' events of types {set(['agent_removal'])}"
+        looking_for = f"Handled 1 'scenario_step' events of types { {'agent_removal'} }"
         found = False
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -583,7 +594,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testExecuteAgentRemovalSensor(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that a AgentRemoval of a target is handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -605,7 +619,7 @@ class TestEventIntegration:
                     "tasking_engine_id": tasking_engine.unique_id,
                     "agent_id": removed_sensor.id,
                     "agent_type": "sensor",
-                }
+                },
             ],
         )
 
@@ -618,17 +632,17 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         initial_sensor_count = len(app.sensor_agents)
         initial_engine_sensor_count = app.tasking_engines[tasking_engine.unique_id].num_sensors
 
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
-        looking_for = f"Handled 1 'scenario_step' events of types {set(['agent_removal'])}"
+        looking_for = f"Handled 1 'scenario_step' events of types { {'agent_removal'} }"
         found = False
         for log_message in caplog.get_records("call"):
             if log_message.message == looking_for:
@@ -644,7 +658,10 @@ class TestEventIntegration:
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testMultiEvent(
-        self, datafiles: str, caplog: pytest.LogCaptureFixture, database: ResonaateDatabase
+        self,
+        datafiles: str,
+        caplog: pytest.LogCaptureFixture,
+        database: ResonaateDatabase,
     ):
         """Validate that multiple consecutive events are handled correctly."""
         minimal_config = _getMinimalConfig(datafiles)
@@ -719,17 +736,17 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=True,
+            start_workers=False,
         )
         target_time = datetimeToJulianDate(
-            minimal_config.time.start_timestamp + timedelta(minutes=5)
+            minimal_config.time.start_timestamp + timedelta(minutes=5),
         )
         app.propagateTo(target_time)
 
         message_contents = {
-            "addition": f"Handled 1 'scenario_step' events of types {set(['target_addition'])}",
+            "addition": f"Handled 1 'scenario_step' events of types { {'target_addition'} }",
             "maneuver": "1 events of type NTW Impulse performed.",
-            "removal": f"Handled 1 'scenario_step' events of types {set(['agent_removal'])}",
+            "removal": f"Handled 1 'scenario_step' events of types { {'agent_removal'} }",
         }
         message_found = {"addition": False, "maneuver": False, "removal": False}
         for log_message in caplog.get_records("call"):

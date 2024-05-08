@@ -64,7 +64,6 @@ The full documentation has a thorough explanation of the developer workflow, so 
 As a quick overview, the general process for working on an issue is:
 
 1. Install the [Developer Tools](#developer-tools)
-1. Clone the repository & checkout the **develop** branch
 1. Create a new branch to track the issue (typically a **feat/** or **bug/**)
 1. Code away, making sure to `git commit` *often*
 1. Push the code back to GitLab
@@ -77,7 +76,29 @@ Then you can create an [Issue][new issue] following instructions in the provided
 
 ## Developer Tools
 
-To install all development dependencies:
+### Development Installation
+
+First clone the repository (make sure you have [ssh keys][ssh-keys] set up):
+
+```bash
+git clone git@code.vt.edu:space-research/resonaate/resonaate.git
+cd resonaate
+```
+
+Ensure the latest **develop** branch is checked out:
+
+```bash
+git checkout develop
+```
+
+Create a virtual environment and activate it:
+
+```bash
+python3 -m venv .venv --prompt res-dev
+source .venv/bin/activate
+```
+
+It's highly recommended to install all development dependencies:
 
 ```bash
 make install
@@ -132,16 +153,10 @@ To execute linting checks please run both of the following commands:
 make lint
 ```
 
-`pylint` is pretty slow for checking every file, so this only checks dirty **.py** files:
+`ruff` is another linter that covers different checks:
 
 ```bash
-pylint `git diff --name-only --diff-filter=d | grep -E '\.py$' | tr '\n' ' '`
-```
-
-`flake8` is another linter that covers different checks:
-
-```bash
-flake8 .
+ruff check --no-fix src tests
 ```
 
 To run `pre-commit` against the entire repo:
@@ -221,3 +236,4 @@ Here is a brief description of each channel, and the most appropriate communicat
 [pytest-docs]: https://docs.pytest.org/en/latest/
 [pytest-realpython]: https://realpython.com/pytest-python-testing/
 [pytest-tutorial]: https://docs.pytest.org/en/latest/getting-started.html#getstarted
+[ssh-keys]: https://code.vt.edu/help/user/ssh

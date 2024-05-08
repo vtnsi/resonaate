@@ -1,4 +1,5 @@
 """Defines information-focused tasking metrics."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -16,6 +17,8 @@ if TYPE_CHECKING:
     # Local Imports
     from ...agents.estimate_agent import EstimateAgent
     from ...agents.sensing_agent import SensingAgent
+
+# ruff: noqa: ARG002
 
 
 class PositionCovarianceTrace(UncertaintyMetric):
@@ -163,9 +166,7 @@ class PositionCovarianceReduction(UncertaintyMetric):
         """
         predicted_covar = estimate_agent.nominal_filter.pred_p
         estimated_covar = estimate_agent.nominal_filter.est_p
-        covar_reduction = trace(predicted_covar[:3, :3] - estimated_covar[:3, :3])
-
-        return covar_reduction
+        return trace(predicted_covar[:3, :3] - estimated_covar[:3, :3])
 
 
 class VelocityCovarianceReduction(UncertaintyMetric):
@@ -187,6 +188,4 @@ class VelocityCovarianceReduction(UncertaintyMetric):
         """
         predicted_covar = estimate_agent.nominal_filter.pred_p
         estimated_covar = estimate_agent.nominal_filter.est_p
-        covar_reduction = trace(predicted_covar[3:, 3:] - estimated_covar[3:, 3:])
-
-        return covar_reduction
+        return trace(predicted_covar[3:, 3:] - estimated_covar[3:, 3:])

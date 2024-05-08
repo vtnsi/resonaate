@@ -7,8 +7,6 @@ Show propagation of Two Body dynamics.
 This example demonstrates how the :class:`.TwoBody` class works along with a simple plot.
 """
 
-# pylint: disable=invalid-name, wrong-import-position
-
 # %%
 # Imports
 # -------
@@ -27,7 +25,7 @@ from matplotlib import pyplot as plt
 
 # [km, km, km, km/s, km/s, km/s]
 init_state = np.array(
-    [-2872.57438, 3128.21583, -5311.55207, -5.250942201, -5.547484592, -0.428942173]
+    [-2872.57438, 3128.21583, -5311.55207, -5.250942201, -5.547484592, -0.428942173],
 )
 init_epoch = 0.0  # seconds
 final_epoch = 3600.0  # seconds

@@ -1,4 +1,5 @@
 """Defines the :class:`.SpecialPerturbations` class for high fidelity astrodynamics models."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -100,9 +101,13 @@ class SpecialPerturbations(Celestial):
 
         # Get third body positions
         positions = {body: body.getPosition(julian_date) for body in self.third_bodies}
-        for jj in range(step):
-            # pylint: disable=unsupported-assignment-operation
 
+        # Set sun position for SRP
+        sun_positions = (
+            Sun.getPosition(julian_date) if Sun not in self.third_bodies else positions[Sun]
+        )
+
+        for jj in range(step):
             # Determine the position vectors in J2000 frame
             r_eci = state[jj : jj + half : step]
 
@@ -119,7 +124,13 @@ class SpecialPerturbations(Celestial):
             a_nonspherical = matmul(
                 ecef_2_eci,
                 nonSphericalAcceleration(
-                    r_ecef, Earth.mu, Earth.radius, self.c_nm, self.s_nm, self.degree, self.order
+                    r_ecef,
+                    Earth.mu,
+                    Earth.radius,
+                    self.c_nm,
+                    self.s_nm,
+                    self.degree,
+                    self.order,
                 ),
             )
 
@@ -133,16 +144,14 @@ class SpecialPerturbations(Celestial):
             )
 
             # Solar Radiation Pressure accelerations
-            if self.use_srp:
-                a_srp = self._getSolarRadiationPressureAcceleration(r_eci, array(positions[Sun]))
-            else:
-                a_srp = 0.0
+            a_srp = (
+                self._getSolarRadiationPressureAcceleration(r_eci, array(sun_positions))
+                if self.use_srp
+                else 0.0
+            )
 
             # General Relativity accelerations
-            if self.use_gr:
-                a_gr = _getGeneralRelativityAcceleration(r_eci, v_eci)
-            else:
-                a_gr = 0.0
+            a_gr = _getGeneralRelativityAcceleration(r_eci, v_eci) if self.use_gr else 0.0
 
             # Add all the perturbations together
             a_perturbations = a_nonspherical + a_third_body + a_srp + a_gr
@@ -159,7 +168,9 @@ class SpecialPerturbations(Celestial):
         return derivative
 
     def _getSolarRadiationPressureAcceleration(
-        self, sat_position: ndarray, sun_eci_position: ndarray
+        self,
+        sat_position: ndarray,
+        sun_eci_position: ndarray,
     ) -> ndarray:
         """Calculate the acceleration on the spacecraft due to solar radiation pressure.
 
@@ -202,10 +213,12 @@ def _getRotationMatrix(julian_date: JulianDate, reduction: dict) -> ndarray:
     year, month, day, hours, minutes, seconds = julian_date.calendar_date
     elapsed_days = dayOfYear(year, month, day, hours, minutes, seconds + reduction["dut1"]) - 1
     greenwich_apparent_sidereal_time = greenwichApparentTime(
-        year, elapsed_days, reduction["eq_equinox"]
+        year,
+        elapsed_days,
+        reduction["eq_equinox"],
     )
     return multi_dot(
-        [reduction["rot_pn"], rot3(-1.0 * greenwich_apparent_sidereal_time), reduction["rot_w"]]
+        [reduction["rot_pn"], rot3(-1.0 * greenwich_apparent_sidereal_time), reduction["rot_w"]],
     )
 
 
@@ -243,9 +256,7 @@ def _getThirdBodyAcceleration(sat_position: ndarray, third_body_position: ndarra
     q_3 = denominator / (r_e_3_norm**3 * r_sat_3_norm**3 * (r_e_3_norm + r_sat_3_norm))
 
     # Compile the un-scaled acceleration
-    acceleration = r_sat_3 * q_3 - (r_e_sat / (r_e_3_norm**3))
-
-    return acceleration
+    return r_sat_3 * q_3 - (r_e_sat / (r_e_3_norm**3))
 
 
 def calcSatRatio(visual_cross_section: float, mass: float, reflectivity: float) -> float:
@@ -370,6 +381,7 @@ def _getGeneralRelativityAccelerationIERS(
         * ((3 / r_norm**2) * cross(r_eci, v_eci) * vdot(r_eci, j_e) + cross(v_eci, j_e))
     )
     line_3 = (1 + 2 * gamma) * cross(
-        sun_eci[3:], cross((-gms * sun_eci[:3]) / (c_sq * norm(sun_eci[:3]) ** 3), v_eci)
+        sun_eci[3:],
+        cross((-gms * sun_eci[:3]) / (c_sq * norm(sun_eci[:3]) ** 3), v_eci),
     )
     return line_1 + line_2 + line_3

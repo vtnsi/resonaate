@@ -14,7 +14,12 @@ from resonaate.tasking.metrics.information import (
     ShannonInformation,
 )
 from resonaate.tasking.metrics.metric_base import Metric
-from resonaate.tasking.metrics.sensor import DeltaPosition, SlewCycle, TimeToTransit
+from resonaate.tasking.metrics.sensor import (
+    SlewDistanceMaximization,
+    SlewDistanceMinimization,
+    SlewTimeMaximization,
+    SlewTimeMinimization,
+)
 from resonaate.tasking.metrics.stability import LyapunovStability
 from resonaate.tasking.metrics.state import Range
 from resonaate.tasking.metrics.target import TimeSinceObservation
@@ -67,7 +72,7 @@ class TestMetricsBase:
     def testCreation(self):
         """Test creating a Metric Object."""
         with pytest.raises(TypeError):
-            Metric()  # pylint: disable=abstract-class-instantiated
+            Metric()
 
     def testMetricCall(
         self,
@@ -100,7 +105,8 @@ class TestInformationMetric:
 
         shannon_metric = ShannonInformation()
         shannon_value = shannon_metric.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert shannon_value > 0.0
 
@@ -129,7 +135,8 @@ class TestUncertaintyMetric:
 
         position_covar_metric = PositionCovarianceReduction()
         pos_covar_value = position_covar_metric.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert pos_covar_value > 0.0
 
@@ -139,19 +146,22 @@ class TestUncertaintyMetric:
 
         position_trace = PositionCovarianceTrace()
         pos_trace_value = position_trace.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert pos_trace_value > 0.0
 
         position_eigen = PositionMaxEigenValue()
         pos_eig_value = position_eigen.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert pos_eig_value > 0.0
 
         velocity_covar_metric = VelocityCovarianceReduction()
         vel_covar_value = velocity_covar_metric.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert vel_covar_value > 0.0
 
@@ -161,13 +171,15 @@ class TestUncertaintyMetric:
 
         velocity_trace = VelocityCovarianceTrace()
         vel_trace_value = velocity_trace.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert vel_trace_value > 0.0
 
         velocity_eigen = VelocityMaxEigenValue()
         vel_eig_value = velocity_eigen.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert vel_eig_value > 0.0
 
@@ -187,7 +199,8 @@ class TestStabilityMetric:
         sensor_id = 1234
         lyapunov_metric = LyapunovStability()
         lyapunov_value = lyapunov_metric.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert lyapunov_value > 0.0
 
@@ -200,10 +213,11 @@ class TestStabilityMetric:
                 [0.0e00, 0.0e00, 0.0e00, 2.0e-13, 0.0e00, 0.0e00],
                 [0.0e00, 0.0e00, 0.0e00, 0.0e00, 2.0e-13, 0.0e00],
                 [0.0e00, 0.0e00, 0.0e00, 0.0e00, 0.0e00, 2.0e-13],
-            ]
+            ],
         )
         negative_lyapunov = lyapunov_metric.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert negative_lyapunov < 0.0
 
@@ -222,21 +236,35 @@ class TestSensorMetric:
         sensor_agents = {1234: mocked_sensing_agent}
         sensor_id = 1234
 
-        delta_position = DeltaPosition()
-        delta_pos_value = delta_position.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+        distance_minimization = SlewDistanceMinimization()
+        distance_minimization_value = distance_minimization.calculate(
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
-        assert delta_pos_value < 0.0
+        assert distance_minimization_value > 0.0
 
-        slew_cycle = SlewCycle()
-        slew_value = slew_cycle.calculate(target_agents[target_id], sensor_agents[sensor_id])
-        assert slew_value > 0.0
-
-        time_to_transit = TimeToTransit()
-        transit_value = time_to_transit.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+        distance_maximization = SlewDistanceMaximization()
+        distance_maximization_value = distance_maximization.calculate(
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
-        assert transit_value > 0.0
+        assert distance_maximization_value > 0.0
+        assert distance_maximization_value > distance_minimization_value
+
+        slew_minimization = SlewTimeMinimization()
+        slew_min_value = slew_minimization.calculate(
+            target_agents[target_id],
+            sensor_agents[sensor_id],
+        )
+        assert slew_min_value > 0.0
+
+        slew_maximization = SlewTimeMaximization()
+        slew_maximization_value = slew_maximization.calculate(
+            target_agents[target_id],
+            sensor_agents[sensor_id],
+        )
+        assert slew_maximization_value > 0.0
+        assert slew_maximization_value > slew_min_value
 
 
 class TestStateMetric:
@@ -274,6 +302,7 @@ class TestTargetMetric:
 
         time_since_observation = TimeSinceObservation()
         staleness_value = time_since_observation.calculate(
-            target_agents[target_id], sensor_agents[sensor_id]
+            target_agents[target_id],
+            sensor_agents[sensor_id],
         )
         assert staleness_value > 0.0

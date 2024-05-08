@@ -1,4 +1,5 @@
 """Defines the :class:`.Observation` data table class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -13,7 +14,7 @@ from sqlalchemy.orm import relationship
 from ..common.labels import Explanation
 from ..physics.measurements import MEASUREMENT_TYPE_MAP, Measurement
 from ..physics.time.stardate import JulianDate, julianDateToDatetime
-from . import Base, _DataMixin
+from .table_base import Base, _DataMixin
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -65,7 +66,7 @@ class _ObservationMixin(_DataMixin):
                 self.vel_x_km_p_sec,
                 self.vel_y_km_p_sec,
                 self.vel_z_km_p_sec,
-            ]
+            ],
         )
 
 
@@ -121,7 +122,7 @@ class Observation(Base, _ObservationMixin):
         "vel_z_km_p_sec",
     )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         julian_date: JulianDate | float,
         target_id: int,
@@ -153,7 +154,7 @@ class Observation(Base, _ObservationMixin):
         self.measurement = measurement
 
     @classmethod
-    def fromMeasurement(
+    def fromMeasurement(  # noqa: PLR0913
         cls,
         epoch_jd: JulianDate | float,
         target_id: int,
@@ -174,7 +175,10 @@ class Observation(Base, _ObservationMixin):
             sensor_eci=sensor_eci,
             measurement=measurement,
             **measurement.calculateMeasurement(
-                sensor_eci, tgt_eci_state, utc_datetime, noisy=noisy
+                sensor_eci,
+                tgt_eci_state,
+                utc_datetime,
+                noisy=noisy,
             ),
         )
 
@@ -194,7 +198,7 @@ class Observation(Base, _ObservationMixin):
                 self.__dict__[meas_type]
                 for meas_type in VALID_MEASUREMENTS
                 if self.__dict__[meas_type] is not None
-            ]
+            ],
         )
 
     @property

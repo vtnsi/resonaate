@@ -1,4 +1,5 @@
 """Defines the :class:`.ScenarioClock` class to track simulation time."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -44,7 +45,7 @@ class ScenarioClock:
         """
         if not isinstance(start_date, datetime):
             raise TypeError(
-                "ScenarioClock: start date argument must be a `datetime` or `str` object."
+                "ScenarioClock: start date argument must be a `datetime` or `str` object.",
             )
 
         self.datetime_start = start_date
@@ -69,16 +70,16 @@ class ScenarioClock:
                 Epoch(
                     julian_date=jd_iter,
                     timestampISO=(start_date + timedelta(seconds=sim_time_iter)).isoformat(
-                        timespec="microseconds"
+                        timespec="microseconds",
                     ),
-                )
+                ),
             )
 
             sim_time_iter += self.dt_step
 
         getDBConnection().insertData(*epochs)
 
-    def ticToc(self, dt: ScenarioTime | float | None = None) -> None:  # noqa: C901
+    def ticToc(self, dt: ScenarioTime | float | None = None) -> None:
         r"""Increment the time property by one step.
 
         Args:

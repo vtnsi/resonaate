@@ -1,4 +1,5 @@
 """Defines sensor config types for describing the sensor hosted by a sensing agent."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
     # Third Party Imports
     from typing_extensions import Self
 
+# ruff: noqa: A003
 
 VALID_SENSOR_FOV_LABELS: tuple[str] = (
     FoVLabel.CONIC,
@@ -165,11 +167,15 @@ class RadarConfig(SensorConfig):
             raise ConfigValueError(self.type + ": tx_power", self.tx_power, ">0 (W)")
         if self.tx_frequency is None:
             raise ConfigValueError(
-                self.type + ": tx_frequency", self.tx_frequency, ">0 (Hz) or band"
+                self.type + ": tx_frequency",
+                self.tx_frequency,
+                ">0 (Hz) or band",
             )
         if self.min_detectable_power is None:
             raise ConfigValueError(
-                self.type + ": min_detectable_power", self.min_detectable_power, ">0 (W)"
+                self.type + ": min_detectable_power",
+                self.min_detectable_power,
+                ">0 (W)",
             )
 
         if isinstance(self.tx_frequency, str):
@@ -218,9 +224,8 @@ class FieldOfViewConfig(ConfigObject):
         if self.fov_shape not in VALID_SENSOR_FOV_LABELS:
             raise ConfigValueError("fov_shape", self.fov_shape, VALID_SENSOR_FOV_LABELS)
 
-        if self.fov_shape == FoVLabel.CONIC:
-            if self.cone_angle <= 0 or self.cone_angle >= 180:
-                raise ConfigValueError("cone_angle", self.cone_angle, "between 0 and 180")
+        if self.fov_shape == FoVLabel.CONIC and (self.cone_angle <= 0 or self.cone_angle >= 180):
+            raise ConfigValueError("cone_angle", self.cone_angle, "between 0 and 180")
 
         if self.fov_shape == FoVLabel.RECTANGULAR:
             if self.azimuth_angle <= 0 or self.azimuth_angle >= 180:
@@ -228,5 +233,7 @@ class FieldOfViewConfig(ConfigObject):
 
             if self.elevation_angle <= 0 or self.elevation_angle >= 180:
                 raise ConfigValueError(
-                    "elevation_angle", self.elevation_angle, "between 0 and 180"
+                    "elevation_angle",
+                    self.elevation_angle,
+                    "between 0 and 180",
                 )

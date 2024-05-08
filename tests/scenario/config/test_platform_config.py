@@ -1,4 +1,3 @@
-# pylint: disable=attribute-defined-outside-init, unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -38,8 +37,6 @@ def testStationKeepingConfig():
 @patch.multiple(PlatformConfig, __abstractmethods__=set())
 class TestPlatformConfig:
     """Test abstract PlatformConfig object."""
-
-    # pylint: disable=abstract-class-instantiated
 
     @pytest.mark.parametrize("platform_type", PlatformConfig.VALID_LABELS)
     @pytest.mark.parametrize("mass", [None, 5000.0])
@@ -167,7 +164,8 @@ class TestGroundFacilityConfig:
         )
 
         _ = GroundFacilityConfig.fromDict(
-            {"type": PlatformLabel.GROUND_FACILITY}, state=mock_state
+            {"type": PlatformLabel.GROUND_FACILITY},
+            state=mock_state,
         )
 
     def testValidStates(self):

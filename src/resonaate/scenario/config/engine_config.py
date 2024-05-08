@@ -1,4 +1,5 @@
 """Submodule defining the objects listed in the 'engines' configuration section."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -45,7 +46,7 @@ class EngineConfig(ConfigObject):
         # [NOTE]: Only Advanced Radar can used with an AllVisibleDecision type.
         if self.decision.name == "AllVisibleDecision":
             for sensor in self.sensors:
-                if sensor.sensor_type != SensorLabel.ADV_RADAR:
+                if sensor.sensor.type != SensorLabel.ADV_RADAR:
                     err = "Only AdvRadar sensors can use the AllVisibleDecision"
-                    err += f": sensor {sensor.id} is {sensor.sensor_type}"
+                    err += f": sensor {sensor.id} is {sensor.sensor.type}"
                     raise ConfigError(self.__class__.__name__, err)

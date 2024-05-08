@@ -1,4 +1,5 @@
 """Functions that define physics related to sensors."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -176,7 +177,10 @@ class MeasurementType(ABC):
 
     @abstractmethod
     def calculate(
-        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+        self,
+        sen_eci_state: ndarray,
+        tgt_eci_state: ndarray,
+        utc_date: datetime,
     ) -> float:
         r"""Calculate the measurement value given a sensor/target configuration.
 
@@ -211,7 +215,10 @@ class Range(MeasurementType):
     r"""``str``: corresponding range measurement label in :class:`.SensingAgentConfig` and :class:`.Observation` table."""
 
     def calculate(
-        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+        self,
+        sen_eci_state: ndarray,
+        tgt_eci_state: ndarray,
+        utc_date: datetime,
     ) -> float:
         r"""Calculate the range of the target relative to the sensor.
 
@@ -239,7 +246,10 @@ class RangeRate(MeasurementType):
     r"""``str``: corresponding range rate measurement label in :class:`.SensingAgentConfig` and :class:`.Observation` table."""
 
     def calculate(
-        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+        self,
+        sen_eci_state: ndarray,
+        tgt_eci_state: ndarray,
+        utc_date: datetime,
     ) -> float:
         r"""Calculate the range rate of the target relative to the sensor.
 
@@ -267,7 +277,10 @@ class Azimuth(MeasurementType):
     r"""``str``: corresponding azimuth measurement label in :class:`.SensingAgentConfig` and :class:`.Observation` table."""
 
     def calculate(
-        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+        self,
+        sen_eci_state: ndarray,
+        tgt_eci_state: ndarray,
+        utc_date: datetime,
     ) -> float:
         r"""Calculate the azimuth of the target relative to the sensor.
 
@@ -295,7 +308,10 @@ class Elevation(MeasurementType):
     r"""``str``: corresponding elevation rate measurement label in :class:`.SensingAgentConfig` and :class:`.Observation` table."""
 
     def calculate(
-        self, sen_eci_state: ndarray, tgt_eci_state: ndarray, utc_date: datetime
+        self,
+        sen_eci_state: ndarray,
+        tgt_eci_state: ndarray,
+        utc_date: datetime,
     ) -> float:
         r"""Calculate the elevation of the target relative to the sensor.
 
@@ -380,7 +396,10 @@ class Measurement:
             ``dict``: measurements made by the sensor
         """
         meas_state = array(
-            [meas.calculate(sen_eci_state, tgt_eci_state, utc_date) for meas in self._measurements]
+            [
+                meas.calculate(sen_eci_state, tgt_eci_state, utc_date)
+                for meas in self._measurements
+            ],
         )
         if noisy:
             meas_state += self.noise
@@ -460,7 +479,7 @@ class Measurement:
 
         if self._r_matrix.shape[0] != len(self._measurements):
             raise ShapeError(
-                f"Measurement: Shape for r_matrix doesn't match measurement length: {r_matrix.shape} vs. {len(self._measurements)}"
+                f"Measurement: Shape for r_matrix doesn't match measurement length: {r_matrix.shape} vs. {len(self._measurements)}",
             )
 
         if not isPD(self._r_matrix):

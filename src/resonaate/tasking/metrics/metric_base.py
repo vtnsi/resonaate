@@ -1,4 +1,5 @@
 """Abstract :class:`.Metric` base class defining the metric API."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -9,6 +10,9 @@ from typing import TYPE_CHECKING
 from ...common.labels import MetricTypeLabel
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import ClassVar
+
     # Local Imports
     from ...agents.estimate_agent import EstimateAgent
     from ...agents.sensing_agent import SensingAgent
@@ -20,7 +24,7 @@ class Metric(metaclass=ABCMeta):
     METRIC_TYPE: str = "base"
     """``str``: Type of metric in str format, for reward logic."""
 
-    REGISTRY: dict[str, Metric] = {}
+    REGISTRY: ClassVar[dict[str, Metric]] = {}
     """``dict``: Global metric object registry."""
 
     @classmethod

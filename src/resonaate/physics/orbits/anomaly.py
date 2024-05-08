@@ -1,4 +1,5 @@
 """Defines common orbital anomaly conversions."""
+
 from __future__ import annotations
 
 # Third Party Imports
@@ -10,6 +11,8 @@ from ..maths import wrapAngle2Pi
 from . import check_ecc, isEccentric, wrap_anomaly
 from .kepler import keplerSolveCOE, keplerSolveEQE
 from .utils import getEccentricityFromEQE
+
+# ruff: noqa: N803, N806
 
 
 @wrap_anomaly
@@ -26,7 +29,6 @@ def trueAnom2MeanAnom(nu: float, ecc: float) -> float:
     Returns:
         ``float``: mean anomaly in radians, :math:`M\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     E = trueAnom2EccAnom(nu, ecc)
     return eccAnom2MeanAnom(E, ecc)
 
@@ -50,7 +52,6 @@ def meanAnom2TrueAnom(M: float, ecc: float) -> float:
     Returns:
         ``float``: true anomaly in radians, :math:`\nu\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     E = meanAnom2EccAnom(M, ecc)
     return eccAnom2TrueAnom(E, ecc)
 
@@ -72,7 +73,6 @@ def trueAnom2EccAnom(nu: float, ecc: float) -> float:
     Returns:
         ``float``: eccentric anomaly in radians, :math:`E\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     return arctan2(sin(nu) * sqrt(1 - ecc**2), ecc + cos(nu))
 
 
@@ -93,7 +93,6 @@ def eccAnom2TrueAnom(E: float, ecc: float) -> float:
     Returns:
         ``float``: true anomaly in radians, :math:`\nu\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     return arctan2(sin(E) * sqrt(1 - ecc**2), cos(E) - ecc)
 
 
@@ -114,7 +113,6 @@ def eccAnom2MeanAnom(E: float, ecc: float) -> float:
     Returns:
         ``float``: mean anomaly in radians, :math:`M\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     return E - ecc * sin(E)
 
 
@@ -137,12 +135,8 @@ def meanAnom2EccAnom(M: float, ecc: float) -> float:
     Returns:
         ``float``: eccentric anomaly in radians, :math:`E\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     M = wrapAngle2Pi(M)
-    if M > PI:
-        E_0 = M - ecc
-    else:
-        E_0 = M + ecc
+    E_0 = M - ecc if M > PI else M + ecc
 
     return keplerSolveCOE(E_0, M, ecc)
 
@@ -170,7 +164,6 @@ def eccLong2MeanLong(F: float, h: float, k: float) -> float:
     Returns:
         ``float``: mean longitude in radians, :math:`\lambda\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     if not isEccentric(getEccentricityFromEQE(h, k)):
         return F
 
@@ -202,7 +195,6 @@ def meanLong2EccLong(lam: float, h: float, k: float) -> float:
     Returns:
         ``float``: eccentric longitude in radians, :math:`F\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     if not isEccentric(getEccentricityFromEQE(h, k)):
         return lam
 
@@ -213,7 +205,11 @@ def meanLong2EccLong(lam: float, h: float, k: float) -> float:
 
 @wrap_anomaly
 def meanLong2TrueAnom(
-    lam: float, ecc: float, raan: float, argp: float, retro: bool = False
+    lam: float,
+    ecc: float,
+    raan: float,
+    argp: float,
+    retro: bool = False,
 ) -> float:
     r"""Convert mean longitude to true anomaly.
 
@@ -232,14 +228,17 @@ def meanLong2TrueAnom(
     Returns:
         ``float``: true anomaly in radians, :math:`\nu\in[0, 2\pi)`.
     """
-    # pylint: disable=invalid-name
     II = 1 if not retro else -1
     return meanAnom2TrueAnom(lam - argp - II * raan, ecc)
 
 
 @wrap_anomaly
 def trueAnom2MeanLong(
-    nu: float, ecc: float, raan: float, argp: float, retro: bool = False
+    nu: float,
+    ecc: float,
+    raan: float,
+    argp: float,
+    retro: bool = False,
 ) -> float:
     r"""Convert mean longitude to true anomaly.
 
@@ -258,6 +257,5 @@ def trueAnom2MeanLong(
     Returns:
         ``float``: mean longitude, :math:`\lambda=M + \omega + \Omega`, in radians.
     """
-    # pylint: disable=invalid-name
     II = 1 if not retro else -1
     return trueAnom2MeanAnom(nu, ecc) + argp + II * raan

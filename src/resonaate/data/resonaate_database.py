@@ -1,4 +1,5 @@
 """Defines the :class:`.ResonaateDatabase` shared data interface class."""
+
 from __future__ import annotations
 
 # Local Imports
@@ -57,8 +58,8 @@ class ResonaateDatabase(DataInterface):
         raw_connection_file = new_database.engine.raw_connection()
 
         # Progress print statement for backup function
-        def progress(status, remaining, total):  # pylint: disable=unused-argument
-            print(f"Copied {total-remaining} of {total} pages...")
+        def progress(status, remaining, total):
+            print(f"Copied {total-remaining} of {total} pages...")  # noqa: T201
 
         # Perform backup
         raw_connection_memory.backup(raw_connection_file.driver_connection, progress=progress)

@@ -1,4 +1,5 @@
 """Various helper functions that are used across multiple modules."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -42,7 +43,7 @@ def loadJSONFile(file_name):
         ``dict``: documents loaded from the JSON file
     """
     try:
-        with open(file_name, "r", encoding="utf-8") as input_file:
+        with open(file_name, encoding="utf-8") as input_file:
             json_data = json.load(input_file)
     except FileNotFoundError as err:
         msg = f"Could not find JSON file: {file_name}"
@@ -58,7 +59,7 @@ def loadJSONFile(file_name):
     if not json_data:
         msg = f"Empty JSON file: {file_name}"
         resonaateLogError(msg)
-        raise IOError(msg)
+        raise OSError(msg)
 
     return json_data
 
@@ -83,10 +84,8 @@ def loadDatFile(file_name, delim=None):
         ``list``: nested list of float values of each row
     """
     try:
-        with open(file_name, "r", encoding="utf-8") as data_file:
-            data = []
-            for line in data_file:
-                data.append([float(x) for x in line.split(sep=delim)])
+        with open(file_name, encoding="utf-8") as data_file:
+            data = [[float(x) for x in line.split(sep=delim)] for line in data_file]
     except FileNotFoundError as err:
         msg = f"Could not find DAT file: {file_name}"
         resonaateLogError(msg)
@@ -99,7 +98,7 @@ def loadDatFile(file_name, delim=None):
     if not data:
         msg = f"Empty DAT file: {file_name}"
         resonaateLogError(msg)
-        raise IOError(msg)
+        raise OSError(msg)
 
     return data
 
@@ -138,7 +137,9 @@ def saveMatrix(name, matrix, path=None):
         elif isinstance(matrix, np.ndarray):
             json.dump(matrix.tolist(), out_file)
         else:
-            print("saveMatrix() only takes `list` and `np.ndarray` types for 'matrix' argument")
+            resonaateLogError(
+                "saveMatrix() only takes `list` and `np.ndarray` types for 'matrix' argument",
+            )
             raise TypeError(type(matrix))
 
     return file_name

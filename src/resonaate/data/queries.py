@@ -1,4 +1,5 @@
 """This module contains functions that execute common database queries for post-processing RESONAATE data."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -12,7 +13,6 @@ from sqlalchemy.orm import Query
 from ..common.logger import resonaateLogError
 from ..physics.time.stardate import JulianDate
 from .agent import AgentModel
-from .data_interface import DataInterface
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .observation import Observation
 
@@ -20,6 +20,9 @@ from .observation import Observation
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Sequence
+
+    # Local Imports
+    from .data_interface import DataInterface
 
 
 def fetchAgentIDs(database: DataInterface) -> list[int]:
@@ -79,7 +82,9 @@ def fetchEstimatesByJDInterval(
 
 
 def fetchEstimatesByJDEpoch(
-    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
+    database: DataInterface,
+    sat_nums: Sequence[int],
+    jd: JulianDate,
 ) -> list[EstimateEphemeris]:
     """Get a posteriori estimate states during a specific time.
 
@@ -117,7 +122,9 @@ def fetchTruthByJDInterval(
 
 
 def fetchTruthByJDEpoch(
-    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
+    database: DataInterface,
+    sat_nums: Sequence[int],
+    jd: JulianDate,
 ) -> list[TruthEphemeris]:
     """Get truth during a specific time.
 
@@ -155,7 +162,9 @@ def fetchObservationsByJDInterval(
 
 
 def fetchObservationsByJDEpoch(
-    database: DataInterface, sat_nums: Sequence[int], jd: JulianDate
+    database: DataInterface,
+    sat_nums: Sequence[int],
+    jd: JulianDate,
 ) -> list[Observation]:
     """Get observations during a specific time.
 
@@ -243,7 +252,7 @@ def filterByJulianDateInterval(
             resonaateLogError(msg)
             raise ValueError(msg)
         return query.filter(table.julian_date.between(float(jd_lb), float(jd_ub))).order_by(
-            asc(table.julian_date)
+            asc(table.julian_date),
         )
 
     type_error_msg = "Julian date inputs must be type `.JulianDate`."
@@ -261,7 +270,7 @@ def filterBySingleJulianDate(
     Args:
         query (``Query``): Query object to filter
         table (:class:`.EstimateEphemeris`|:class:`.TruthEphemeris`|:class:`.Observation`): data table to query
-        jd (:class:`.JulianDate`) single time of Julian date for query
+        jd (:class:`.JulianDate`): single time of Julian date for query
 
     Returns:
         (:class:`Query`): Query object to retrieve data

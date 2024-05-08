@@ -1,4 +1,5 @@
 """Defines the :class:`.GeneralizedPseudoBayesian1` class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -36,7 +37,7 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         #. :cite:t:`bar-shalom_2001_estimation`, Section 11.6., Pg 447
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
@@ -115,7 +116,7 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
             for num, model in enumerate(self.models):
                 # Nastasi, K.N. Dissertation: Section 4.5 Algorithm 4.3 eq 4.9 pg 64
                 self.model_likelihoods[num] = exp(-0.5 * model.nis) / sqrt(
-                    (2 * const.PI) ** self.true_y.shape[0] * det(model.innov_cvr)
+                    (2 * const.PI) ** self.true_y.shape[0] * det(model.innov_cvr),
                 )
 
             c = dot(self.model_likelihoods, self.mode_probabilities)
@@ -138,7 +139,9 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
 
         # Check maneuver detection to see if MMAE converged
         maneuver_gate = oneSidedChiSquareTest(
-            self.nis, 1 - self.prune_percentage, self.true_y.shape[0]
+            self.nis,
+            1 - self.prune_percentage,
+            self.true_y.shape[0],
         )
         if maneuver_gate:
             msg = f"GPB1 converged for {self.target_id} at {self.time}"

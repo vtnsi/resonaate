@@ -1,4 +1,3 @@
-# pylint: disable=protected-access
 from __future__ import annotations
 
 # Third Party Imports
@@ -56,7 +55,7 @@ HYPOTHESIS_STATES = array(
             1.23195891e-02,
             -5.61649491e00,
         ],
-    ]
+    ],
 )
 
 
@@ -64,7 +63,14 @@ HYPOTHESIS_STATES = array(
 def getAdaptiveFilter() -> AdaptiveFilter:
     """Returns an AdaptiveFilter object."""
     adaptive_filter = AdaptiveFilter(
-        NOMINAL_FILTER, TIMESTEP, ORBIT_DETERMINATION, STACKING_METHOD, 1, 300, 1e-10, 0.997
+        NOMINAL_FILTER,
+        TIMESTEP,
+        ORBIT_DETERMINATION,
+        STACKING_METHOD,
+        1,
+        300,
+        1e-10,
+        0.997,
     )
     adaptive_filter.x_dim = 6
     adaptive_filter.pred_x = EST_X

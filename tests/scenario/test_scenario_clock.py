@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -79,7 +78,9 @@ def clockFromConfig(scenario_start: datetime, scenario_end: datetime, database: 
 
 
 def testClockFromConfig(
-    clock_from_config: ScenarioClock, scenario_start: datetime, scenario_end: datetime
+    clock_from_config: ScenarioClock,
+    scenario_start: datetime,
+    scenario_end: datetime,
 ):
     """Test that the attributes of the clock match the config."""
     assert clock_from_config.datetime_start == scenario_start

@@ -1,4 +1,3 @@
-# pylint: disable=protected-access, unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -42,7 +41,7 @@ pytestmark = pytest.mark.usefixtures("database")
 @pytest.fixture(name="decision")
 def getDecision() -> Decision:
     """Returns a valid Decision object."""
-    decision_config = DecisionConfig(**{"name": "MunkresDecision", "parameters": {}})
+    decision_config = DecisionConfig(name="MunkresDecision", parameters={})
     return decisionFactory(decision_config)
 
 
@@ -50,15 +49,13 @@ def getDecision() -> Decision:
 def getReward() -> Reward:
     """Returns a valid Reward object."""
     reward_config = RewardConfig(
-        **{
-            "name": "CostConstrainedReward",
-            "metrics": [
-                {"name": "KLDivergence", "parameters": {}},
-                {"name": "DeltaPosition", "parameters": {}},
-                {"name": "LyapunovStability", "parameters": {}},
-            ],
-            "parameters": {},
-        }
+        name="CostConstrainedReward",
+        metrics=[
+            {"name": "KLDivergence", "parameters": {}},
+            {"name": "SlewDistanceMinimization", "parameters": {}},
+            {"name": "LyapunovStability", "parameters": {}},
+        ],
+        parameters={},
     )
     return rewardsFactory(reward_config)
 
@@ -74,7 +71,7 @@ def getCentralizedEngineClass(reward: Reward, decision: Decision) -> Centralized
     Returns:
         :class:`.CentralizedTaskingEngine`
     """
-    engine = CentralizedTaskingEngine(
+    return CentralizedTaskingEngine(
         engine_id=0,
         sensor_ids=SENSOR_NUMS,
         target_ids=TARGET_NUMS,
@@ -83,8 +80,6 @@ def getCentralizedEngineClass(reward: Reward, decision: Decision) -> Centralized
         importer_db_path=None,
         realtime_obs=True,
     )
-
-    return engine
 
 
 @patch.object(TaskExecutionJobHandler, "registerCallback", autospec=True)
@@ -152,7 +147,8 @@ def testCalculateRewards(centralized_tasking_engine: CentralizedTaskingEngine):
     centralized_tasking_engine.metric_matrix = np.eye(3)
     centralized_tasking_engine.calculateRewards()
     assert np.isclose(
-        centralized_tasking_engine.reward_matrix, np.array([[0.85], [-0.15], [0.85]])
+        centralized_tasking_engine.reward_matrix,
+        np.array([[0.85], [-0.15], [0.85]]),
     ).all()
 
 
@@ -171,7 +167,8 @@ def testGenerateTasking(centralized_tasking_engine: CentralizedTaskingEngine):
 
 @patch("resonaate.tasking.engine.centralized_engine.handleRelevantEvents")
 def testAssessWithNoObservations(
-    event_handler_mock: MagicMock, centralized_tasking_engine: CentralizedTaskingEngine
+    event_handler_mock: MagicMock,
+    centralized_tasking_engine: CentralizedTaskingEngine,
 ):
     """Test assess() when no observations occur.
 
@@ -195,7 +192,8 @@ def testAssessWithNoObservations(
 
 @patch("resonaate.tasking.engine.centralized_engine.handleRelevantEvents")
 def testAssessWithObservations(
-    event_handler_mock: MagicMock, centralized_tasking_engine: CentralizedTaskingEngine
+    event_handler_mock: MagicMock,
+    centralized_tasking_engine: CentralizedTaskingEngine,
 ):
     """Test assess() when no observations occur.
 
@@ -220,6 +218,8 @@ def testAssessWithObservations(
 
         Args:
             engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
+            args (Any): not used.
+            kwargs (Any): not used.
         """
         engine._observations = [obs_1, obs_2]
 
@@ -382,7 +382,7 @@ def testGetCurrentTasking(reward: Reward, decision: Decision):
     target_list = sorted(target_list)
 
     # Null tasks
-    assert list(task for task in engine.getCurrentTasking(julian_date))
+    assert list(engine.getCurrentTasking(julian_date))
     for task in engine.getCurrentTasking(julian_date):
         assert task.sensor_id in sensor_list
         assert task.target_id in target_list
@@ -392,10 +392,15 @@ def testGetCurrentTasking(reward: Reward, decision: Decision):
 
     # Apply "tasking algorithm"
     engine.visibility_matrix = rng.integers(
-        low=0, high=1, size=(engine.num_targets, engine.num_sensors), endpoint=True
+        low=0,
+        high=1,
+        size=(engine.num_targets, engine.num_sensors),
+        endpoint=True,
     )
     engine.reward_matrix = rng.uniform(
-        low=0, high=1, size=(engine.num_targets, engine.num_sensors)
+        low=0,
+        high=1,
+        size=(engine.num_targets, engine.num_sensors),
     )
     engine.decision_matrix = np.multiply(engine.visibility_matrix, engine.reward_matrix)
 
@@ -442,7 +447,6 @@ def testLoadImportedObservation(
     mocked_importer_db.getData = MagicMock()
     centralized_tasking_engine._fetchSensorAgents = MagicMock()
     centralized_tasking_engine._importer_db = mocked_importer_db
-    # pylint: disable=invalid-name
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     # Create mock observations
     obs_1 = create_autospec(Observation, instance=True)
@@ -538,8 +542,6 @@ def testCreateTaskingEngine(mocked_importer_db: MagicMock, reward: Reward, decis
         reward (:class:`.Reward`): Loaded reward object
         decision (:class:`.Decision`): Loaded decision object
     """
-    # pylint: disable=abstract-class-instantiated
-
     # Valid creation
     engine = TaskingEngine(
         engine_id=0,
@@ -596,7 +598,6 @@ def testSortOnCreation(reward: Reward, decision: Decision):
         reward (:class:`.Reward`): Loaded reward object
         decision (:class:`.Decision`): Loaded decision object
     """
-    # pylint: disable=abstract-class-instantiated
     rng = np.random.default_rng(seed=654135132156)
     sensor_list = set(rng.integers(low=10000, high=20000, size=200))
     target_list = set(rng.integers(low=60000, high=70000, size=1000))
@@ -625,7 +626,6 @@ def testAddingRemovingSensors(reward: Reward, decision: Decision):
         reward (:class:`.Reward`): Loaded reward object
         decision (:class:`.Decision`): Loaded decision object
     """
-    # pylint: disable=abstract-class-instantiated
     engine = TaskingEngine(
         engine_id=0,
         sensor_ids=[],
@@ -684,7 +684,6 @@ def testAddingRemovingTargets(reward: Reward, decision: Decision):
         reward (:class:`.Reward`): Loaded reward object
         decision (:class:`.Decision`): Loaded decision object
     """
-    # pylint: disable=abstract-class-instantiated
     engine = TaskingEngine(
         engine_id=0,
         sensor_ids=SENSOR_NUMS,

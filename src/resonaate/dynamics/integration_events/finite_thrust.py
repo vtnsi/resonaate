@@ -1,4 +1,5 @@
 """Defines finite thrust burn and maneuver events for basic control of satellites."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -58,10 +59,7 @@ def planeChangeThrust(state: ndarray, magnitude: float):
         (numpy.ndarray): acceleration vector in ECI coordinates
     """
     delta_a = array([0, 0, magnitude])
-    if state[2] >= 0:
-        delta_a = array([0, 0, magnitude])
-    else:
-        delta_a = array([0, 0, -magnitude])
+    delta_a = array([0, 0, magnitude]) if state[2] >= 0 else array([0, 0, -magnitude])
     acc_vector = concatenate((delta_a, zeros(3)))
     return ntw2eci(state, acc_vector)
 
@@ -80,7 +78,7 @@ def ntwBurn(state: ndarray, acc_vector: ndarray):
     return ntw2eci(state, full_a_vec)
 
 
-def eciBurn(state: ndarray, acc_vector: ndarray):  # pylint: disable=unused-argument
+def eciBurn(state: ndarray, acc_vector: ndarray):
     """Perform a continuous burn in ECI coordinates.
 
     Args:
@@ -144,14 +142,14 @@ class ScheduledFiniteThrust(ContinuousStateChangeEvent, metaclass=ABCMeta):
                 self.end_time == other.end_time,
                 self.thrust_func.func == other.thrust_func.func,
                 self.agent_id == other.agent_id,
-            ]
+            ],
         )
 
     @property
     @abstractmethod
     def valid_thrust_funcs(self):
         """Valid thrust functions for event type."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def getStateChangeCallback(self, time: ScenarioTime):
         """Return the thrust function.

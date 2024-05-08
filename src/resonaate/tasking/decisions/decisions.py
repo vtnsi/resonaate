@@ -1,4 +1,5 @@
 """Define implemented decision algorithms used to optimize tasked sensors."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -118,5 +119,4 @@ class AllVisibleDecision(Decision):
         Returns:
             ``ndarray``: decision set of all visible targets
         """
-        decision_matrix = where(visibility_matrix > 0.0, True, False)
-        return decision_matrix
+        return where(visibility_matrix > 0.0, True, False)

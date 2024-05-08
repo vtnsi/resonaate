@@ -1,4 +1,5 @@
 """Defines the :class:`.TargetAdditionEvent` data table class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -24,8 +25,6 @@ if TYPE_CHECKING:
 
 class TargetAdditionEvent(Event):
     """Event data object describing a target that is added after scenario start."""
-
-    # pylint: disable=invalid-name, no-member
 
     EVENT_TYPE: str = "target_addition"
     """``str``: Name of this type of event."""
@@ -83,7 +82,8 @@ class TargetAdditionEvent(Event):
         """``str``: JSON serialized list of station keeping key words for this target."""
         return Event.__table__.c.get("station_keeping_json", Column(String(128)))
 
-    MUTABLE_COLUMN_NAMES = Event.MUTABLE_COLUMN_NAMES + (
+    MUTABLE_COLUMN_NAMES = (
+        *Event.MUTABLE_COLUMN_NAMES,
         "agent_id",
         "tasking_engine_id",
         "pos_x_km",

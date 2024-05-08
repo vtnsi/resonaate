@@ -53,7 +53,7 @@ def testCreateTimeConfig(time_cfg_dict: dict):
 
     # Test that this can be created from an empty dictionary
     with pytest.raises(TypeError):
-        TimeConfig(**{})
+        TimeConfig()
 
     # Ensure the correct amount of req/opt keys
     assert len(TimeConfig.getRequiredFields()) == 2

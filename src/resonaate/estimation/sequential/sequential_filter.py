@@ -1,4 +1,5 @@
 """Defines the :class:`.SequentialFilter` base class to formalize an interface for sequential filtering algorithms."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -42,7 +43,7 @@ class FilterFlag(Flag):
     INITIAL_ORBIT_DETERMINATION_START = auto()
 
 
-class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
+class SequentialFilter(ABC):
     r"""Defines common interface for a recursive sequential state estimation filter.
 
     Most methods are abstract, so implementers can define their custom algorithms, but users can
@@ -122,7 +123,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
     INTERNAL_OBSERVATION_SOURCE = "Observation"
     """``str``: Constant string for an estimate source due to internal filter measurement update."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         tgt_id: int,
         time: ScenarioTime,
@@ -175,6 +176,10 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
         self.pred_x = array([])
         self.pred_p = array([])
         self.source: str | None = "Initialization"
+
+        # Check that IOD and MMAE are both not set.
+        if initial_orbit_determination and adaptive_estimation:
+            raise ValueError("IOD & MMAE cannot be used at the same time")
 
         # MMAE products
         self.true_y = array([])
@@ -232,19 +237,22 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
 
     def checkManeuverDetection(self):
         """Performs maneuver detection, if configured and kicks off adaptive estimation, if configured."""
-        if self.maneuver_detection:
-            self.maneuver_detected = self.maneuver_detection(self.innovation, self.innov_cvr)
+        if self.maneuver_detection is None:
+            return
 
-        if self.maneuver_detected:
-            self.flags |= FilterFlag.MANEUVER_DETECTION
-            self.maneuver_metric = self.maneuver_detection.metric
-            if self.adaptive_estimation and FilterFlag.ADAPTIVE_ESTIMATION_START not in self.flags:
-                self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_START
-            if (
-                self.initial_orbit_determination
-                and FilterFlag.INITIAL_ORBIT_DETERMINATION_START not in self.flags
-            ):
-                self.flags |= FilterFlag.INITIAL_ORBIT_DETERMINATION_START
+        self.maneuver_detected = self.maneuver_detection(self.innovation, self.innov_cvr)
+        if not self.maneuver_detected:
+            return
+
+        self.flags |= FilterFlag.MANEUVER_DETECTION
+        self.maneuver_metric = self.maneuver_detection.metric
+        if self.adaptive_estimation and FilterFlag.ADAPTIVE_ESTIMATION_START not in self.flags:
+            self.flags |= FilterFlag.ADAPTIVE_ESTIMATION_START
+        if (
+            self.initial_orbit_determination
+            and FilterFlag.INITIAL_ORBIT_DETERMINATION_START not in self.flags
+        ):
+            self.flags |= FilterFlag.INITIAL_ORBIT_DETERMINATION_START
 
     def getPredictionResult(self) -> dict[str, Any]:
         """Compile result message for a predict step.
@@ -291,7 +299,7 @@ class SequentialFilter(ABC):  # pylint: disable=too-many-instance-attributes
                 "source": self.source,
                 "maneuver_metric": self.maneuver_metric,
                 "maneuver_detected": self.maneuver_detected,
-            }
+            },
         )
         return result
 

@@ -2,6 +2,7 @@
 
 This includes Kalman filter classes, statistical tests, and debugging utility functions.
 """
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -34,6 +35,10 @@ if TYPE_CHECKING:
     )
     from .initial_orbit_determination import InitialOrbitDetermination
 
+
+__all__ = [
+    "AdaptiveFilter",
+]
 
 VALID_ESTIMATE_SOURCES: tuple[str] = (
     SequentialFilter.INTERNAL_PROPAGATION_SOURCE,
@@ -141,7 +146,9 @@ def maneuverDetectionFactory(config: ManeuverDetectionConfig) -> ManeuverDetecti
 
 
 def adaptiveEstimationFactory(
-    config: AdaptiveEstimationConfig, nominal_filter: SequentialFilter, time_step: ScenarioTime
+    config: AdaptiveEstimationConfig,
+    nominal_filter: SequentialFilter,
+    time_step: ScenarioTime,
 ) -> AdaptiveFilter:
     """Build an adaptive estimation class for use in filtering.
 
@@ -162,7 +169,9 @@ def adaptiveEstimationFactory(
         raise ValueError("Adaptive estimation turned on by sequential filter, but no config given")
     if config.name in VALID_ADAPTIVE_ESTIMATION_LABELS:
         adaptive_filter = _ADAPTIVE_ESTIMATION_MAP[config.name].fromConfig(
-            config, nominal_filter, time_step
+            config,
+            nominal_filter,
+            time_step,
         )
     else:
         raise ValueError(f"Invalid adaptive estimation type: {config.name}")
@@ -171,7 +180,9 @@ def adaptiveEstimationFactory(
 
 
 def initialOrbitDeterminationFactory(
-    config: InitialOrbitDeterminationConfig, sat_num: int, julian_date_start: JulianDate
+    config: InitialOrbitDeterminationConfig,
+    sat_num: int,
+    julian_date_start: JulianDate,
 ) -> InitialOrbitDetermination:
     """Build an initial orbit determination class for use in filtering.
 

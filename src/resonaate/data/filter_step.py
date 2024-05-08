@@ -1,4 +1,5 @@
 """Defines the :class:`.FilterStep` data table class."""
+
 from __future__ import annotations
 
 # Third Party Imports
@@ -6,7 +7,7 @@ from sqlalchemy import Column, Float, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 # Local Imports
-from . import Base, _DataMixin
+from .table_base import Base, _DataMixin
 
 
 class FilterStep(

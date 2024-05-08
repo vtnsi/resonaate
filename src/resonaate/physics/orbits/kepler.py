@@ -1,4 +1,5 @@
 """Defines methods of solving Kepler's Equation & Kepler's Problem."""
+
 from __future__ import annotations
 
 # Third Party Imports
@@ -28,6 +29,8 @@ from ..constants import KM2M, PI
 from ..maths import _ATOL, _MAX_ITER
 from .utils import getAngularMomentum, universalC2C3
 
+# ruff: noqa: N803
+
 
 class KeplerProblemError(Exception):
     r"""Exception indicating that Kepler's problem solver didn't converge."""
@@ -53,7 +56,6 @@ def _keplerEquation(E: float, M: float, ecc: float) -> float:
     Returns:
         ``float``: zero of Kepler's equation, :math:`E - e \sin{E} - M=0`.
     """
-    # pylint: disable=invalid-name
     return E - ecc * sin(E) - M
 
 
@@ -73,7 +75,6 @@ def _keplerEquationDerivative(E: float, M: float, ecc: float) -> float:
     Returns:
         ``float``: derivate of Kepler's equation, :math:`1 - e\cos{E}`.
     """
-    # pylint: disable=invalid-name, unused-argument
     return 1 - ecc * cos(E)
 
 
@@ -94,7 +95,6 @@ def _equinoctialKeplerEquation(F: float, h: float, k: float, lam: float) -> floa
     Returns:
         ``float``: zero of equinoctial Kepler's equation, :math:`F + h\cos{F} - k\sin{F} - \lambda=0`.
     """
-    # pylint: disable=invalid-name
     return F + h * cos(F) - k * sin(F) - lam
 
 
@@ -115,7 +115,6 @@ def _equinoctialKeplerEquationDerivative(F: float, h: float, k: float, lam: floa
     Returns:
         ``float``: derivate of equinoctial Kepler's equation, :math:`1 - h\sin{F} - k\cos{F}`.
     """
-    # pylint: disable=invalid-name, unused-argument
     return 1 - h * sin(F) - k * cos(F)
 
 
@@ -147,7 +146,6 @@ def keplerSolveCOE(
     Returns:
         ``float``: ``np.nan`` or converged value of eccentric anomaly, :math:`E`, in radians.
     """
-    # pylint: disable=invalid-name
     return newton(
         _keplerEquation,
         E_0,
@@ -191,7 +189,6 @@ def keplerSolveEQE(
     Returns:
         ``float``: ``np.nan`` or converged value of eccentric anomaly, :math:`F`,  in radians.
     """
-    # pylint: disable=invalid-name
     return newton(
         _equinoctialKeplerEquation,
         F_0,
@@ -233,7 +230,6 @@ def solveKeplerProblemUniversal(
     Returns:
         ``ndarray``: 6x1 ECI state vector after propagating through the time of flight (km; km/sec).
     """
-    # pylint: disable=invalid-name, too-many-locals
     r0, v0 = array(init_state[:3], copy=True), array(init_state[3:], copy=True)
     alpha = -norm(v0) ** 2 / mu + 2.0 / norm(r0)
     sqrt_mu = sqrt(mu)
@@ -250,7 +246,7 @@ def solveKeplerProblemUniversal(
             * sqrt_a
             * log(
                 (-2 * mu * alpha * tof)
-                / (vdot(r0, v0) + sign(tof) * sqrt_mu * sqrt_a * (1 - norm(r0) * alpha))
+                / (vdot(r0, v0) + sign(tof) * sqrt_mu * sqrt_a * (1 - norm(r0) * alpha)),
             )
         )
 
@@ -303,5 +299,4 @@ def keplerThirdLaw(position_vector: ndarray) -> float:
     """
     constant = 4 * (PI**2) * (Earth.radius * KM2M) / Earth.gravity
     radius_ratio = (norm(position_vector) / Earth.radius) ** 3
-    period = (constant * radius_ratio) ** (1 / 2)
-    return period
+    return (constant * radius_ratio) ** (1 / 2)

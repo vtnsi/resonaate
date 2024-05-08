@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -58,7 +57,7 @@ def createScenarioClock(database: None) -> ScenarioClock:
 @pytest.fixture(name="target_agent")
 def createTargetAgent(scenario_clock: ScenarioClock) -> TargetAgent:
     """Create valid target agent for testing propagate jobs."""
-    agent = TargetAgent(
+    return TargetAgent(
         11111,
         "test_tgt",
         "Spacecraft",
@@ -70,7 +69,6 @@ def createTargetAgent(scenario_clock: ScenarioClock) -> TargetAgent:
         500.0,
         0.21,
     )
-    return agent
 
 
 @pytest.fixture(name="estimate_agent")
@@ -78,7 +76,7 @@ def createEstimateAgent(target_agent: TargetAgent, scenario_clock: ScenarioClock
     """Create valid estimate agent for testing propagate jobs."""
     est_x = np.asarray([6378.0, 2.0, 10.0, 0.0, 0.0, 0.0])
     est_p = np.diagflat([1.0, 2.0, 1.0, 0.001, 0.002, 0.001])
-    agent = EstimateAgent(
+    return EstimateAgent(
         target_agent.simulation_id,
         target_agent.name,
         target_agent.agent_type,
@@ -102,7 +100,6 @@ def createEstimateAgent(target_agent: TargetAgent, scenario_clock: ScenarioClock
         500.0,
         0.21,
     )
-    return agent
 
 
 @pytest.fixture(name="mocked_kvs_get_func")

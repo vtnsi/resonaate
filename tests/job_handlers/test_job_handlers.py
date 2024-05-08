@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 # Standard Library Imports
@@ -11,7 +10,7 @@ from unittest.mock import create_autospec
 # Third Party Imports
 import numpy as np
 import pytest
-from mjolnir import Job, KeyValueStore, WorkerManager
+from strmbrkr import Job, KeyValueStore
 
 # RESONAATE Imports
 from resonaate.common.exceptions import (
@@ -36,15 +35,6 @@ if TYPE_CHECKING:
     from resonaate.agents.estimate_agent import EstimateAgent
     from resonaate.agents.sensing_agent import SensingAgent
     from resonaate.agents.target_agent import TargetAgent
-
-
-@pytest.fixture(name="worker_manager")
-def createWorkerManager() -> WorkerManager:
-    """Create a valid WorkerManager."""
-    worker_manager = WorkerManager(proc_count=1)
-    worker_manager.startWorkers()
-    yield worker_manager
-    worker_manager.stopWorkers(no_wait=True)
 
 
 @pytest.fixture(name="numpy_add_job")
@@ -92,7 +82,7 @@ def createJobHandler(numpy_add_job: Job, sensor_agent: SensingAgent) -> JobHandl
             """Remove the last callback that was registered."""
             self.callback_registry.pop()
 
-    job_handler = GenericJobHandler()
+    job_handler = GenericJobHandler(dump_on_timeout=False)
     job_handler.registerCallback(sensor_agent)
     yield job_handler
     job_handler.queue_mgr.stopHandling()
@@ -109,7 +99,6 @@ def getMockedErrorJobObject() -> Job:
     return job
 
 
-@pytest.mark.usefixtures("worker_manager")
 class TestBaseJobHandler:
     """Tests related to job handlers."""
 
@@ -153,7 +142,6 @@ class TestBaseJobHandler:
         assert not job_handler.queue_mgr.queued_jobs_processed
 
 
-@pytest.mark.usefixtures("worker_manager")
 class TestAgentPropagateHandler:
     """Tests related to job handlers."""
 
@@ -163,7 +151,7 @@ class TestAgentPropagateHandler:
         handler.registerCallback(target_agent)
         target_scenario_time = ScenarioTime(60)
         target_julian_date = target_scenario_time.convertToJulianDate(
-            target_agent.julian_date_epoch
+            target_agent.julian_date_epoch,
         )
         prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
 
@@ -174,17 +162,19 @@ class TestAgentPropagateHandler:
                 prior_julian_date=prior_julian_date,
                 julian_date=target_julian_date,
             )
+        handler.queue_mgr.stopHandling()
 
     def testProblemEstimateAgent(self, estimate_agent: EstimateAgent, target_agent: TargetAgent):
         """Test logging a bad estimate when an error occurs."""
         KeyValueStore.setValue(
-            "target_agents", pickle.dumps({target_agent.simulation_id: target_agent})
+            "target_agents",
+            pickle.dumps({target_agent.simulation_id: target_agent}),
         )
         handler = AgentPropagationJobHandler()
         handler.registerCallback(estimate_agent)
         target_scenario_time = ScenarioTime(60)
         target_julian_date = target_scenario_time.convertToJulianDate(
-            target_agent.julian_date_epoch
+            target_agent.julian_date_epoch,
         )
         target_datetime = target_scenario_time.convertToDatetime(target_agent.datetime_epoch)
         prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
@@ -197,19 +187,23 @@ class TestAgentPropagateHandler:
                 julian_date=target_julian_date,
                 datetime_epoch=target_datetime,
             )
+        handler.queue_mgr.stopHandling()
 
     def testProblemEstimateAgentNoMatch(
-        self, estimate_agent: EstimateAgent, target_agent: TargetAgent
+        self,
+        estimate_agent: EstimateAgent,
+        target_agent: TargetAgent,
     ):
         """Test logging a bad estimate when an error occurs, but with no matching target agent."""
         KeyValueStore.setValue(
-            "target_agents", pickle.dumps({target_agent.simulation_id + 1: target_agent})
+            "target_agents",
+            pickle.dumps({target_agent.simulation_id + 1: target_agent}),
         )
         handler = AgentPropagationJobHandler()
         handler.registerCallback(estimate_agent)
         target_scenario_time = ScenarioTime(60)
         target_julian_date = target_scenario_time.convertToJulianDate(
-            target_agent.julian_date_epoch
+            target_agent.julian_date_epoch,
         )
         target_datetime = target_scenario_time.convertToDatetime(target_agent.datetime_epoch)
         prior_julian_date = ScenarioTime(0).convertToJulianDate(target_agent.julian_date_epoch)
@@ -222,6 +216,7 @@ class TestAgentPropagateHandler:
                 julian_date=target_julian_date,
                 datetime_epoch=target_datetime,
             )
+        handler.queue_mgr.stopHandling()
 
         # Check for log, doesn't seem to work?
         # for record_tuple in caplog.record_tuples:
@@ -232,11 +227,12 @@ class TestAgentPropagateHandler:
 
     def testNoImporterDB(self, target_agent: TargetAgent):
         """Test registering importer model without Importer DB created."""
-        target_agent._realtime = False  # pylint: disable=protected-access
+        target_agent._realtime = False
         handler = AgentPropagationJobHandler()
         error_msg = r"A valid ImporterDatabase was not established: \w+"
         with pytest.raises(ValueError, match=error_msg):
             handler.registerCallback(target_agent)
+        handler.queue_mgr.stopHandling()
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testNoImporterData(self, datafiles: str, target_agent: TargetAgent):
@@ -252,7 +248,7 @@ class TestAgentPropagateHandler:
             stop=ScenarioTime(1200).convertToJulianDate(jd_start),
         )
         # Setup scenario
-        target_agent._realtime = False  # pylint: disable=protected-access
+        target_agent._realtime = False
         handler = AgentPropagationJobHandler(importer_db_path=db_path)
         handler.registerCallback(target_agent)
 
@@ -266,3 +262,4 @@ class TestAgentPropagateHandler:
                 epoch_time=epoch_time,
                 datetime_epoch=julianDateToDatetime(j_date),
             )
+        handler.queue_mgr.stopHandling()

@@ -47,13 +47,13 @@ class TestDecisionBase:
     def testCreation(self):
         """Test creating a Decision Object."""
         with pytest.raises(TypeError):
-            Decision()  # pylint: disable=abstract-class-instantiated
+            Decision()
 
     def testDecisionCall(self, mocked_decision_class: Decision):
         """Test the call function of the Decision base class."""
         reward_matrix = asarray([[10, 1.1, 0], [4, 15.9, 1], [2.1, 3, 11]])
         visibility_matrix = asarray(
-            [[True, False, False], [False, True, False], [False, False, True]]
+            [[True, False, False], [False, True, False], [False, False, True]],
         )
         decision = mocked_decision_class()
         decision.calculate(reward_matrix, visibility_matrix)
@@ -73,7 +73,7 @@ class TestMyopicNaiveGreedyDecision:
         # Create example reward matrix & expected decision matrix
         reward_matrix = asarray([[10, 1.1, 0], [4, 15.9, 11], [2.1, 3, 1]])
         visibility_matrix = asarray(
-            [[True, False, False], [False, True, True], [False, False, False]]
+            [[True, False, False], [False, True, True], [False, False, False]],
         )
 
         # Perform decision making, test expected
@@ -107,7 +107,7 @@ class TestMyopicNaiveGreedyDecision:
         reward_matrix = full((3, 3), 10)
         expected = [[True, True, True], [False, False, False], [False, False, False]]
         visibility_matrix = asarray(
-            [[True, True, True], [False, False, False], [False, False, False]]
+            [[True, True, True], [False, False, False], [False, False, False]],
         )
         # Perform decision making, test expected
         decision = myopic_decision.calculate(reward_matrix, visibility_matrix)
@@ -141,7 +141,7 @@ class TestMunkresDecision:
         # Create example reward matrix & expected decision matrix
         reward_matrix = asarray([[1.1, 10, 12], [4, 15.9, 1], [2.1, 3, 11]])
         visibility_matrix = asarray(
-            [[False, False, True], [False, True, False], [True, False, False]]
+            [[False, False, True], [False, True, False], [True, False, False]],
         )
         expected = [[False, False, True], [False, True, False], [True, False, False]]
 
@@ -174,7 +174,7 @@ class TestMunkresDecision:
         reward_matrix = full((3, 3), 10)
         expected = [[True, False, False], [False, True, False], [False, False, True]]
         visibility_matrix = asarray(
-            [[True, False, False], [False, True, False], [False, False, True]]
+            [[True, False, False], [False, True, False], [False, False, True]],
         )
 
         # Perform decision making, test expected
@@ -214,7 +214,7 @@ class TestRandomDecision:
         # Create example reward matrix & expected decision matrix
         reward_matrix = asarray([[0, 10, 12], [4, 15.9, 0], [2.1, 3, 11]])
         visibility_matrix = asarray(
-            [[False, False, True], [True, False, False], [False, True, False]]
+            [[False, False, True], [True, False, False], [False, True, False]],
         )
         expected = [[False, False, True], [True, False, False], [False, True, False]]
 

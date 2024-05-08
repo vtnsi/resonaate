@@ -1,4 +1,5 @@
 """Test suite for predicting feasible tasking."""
+
 from __future__ import annotations
 
 # Standard Library Imports

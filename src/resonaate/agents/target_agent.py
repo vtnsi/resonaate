@@ -1,4 +1,5 @@
 """Defines the :class:`.TargetAgent` class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -9,7 +10,6 @@ from numpy import array, ndarray
 
 # Local Imports
 from ..data.ephemeris import TruthEphemeris
-from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from .agent_base import Agent
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..data.ephemeris import _EphemerisMixin
     from ..dynamics.dynamics_base import Dynamics
+    from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
     from ..scenario.config import PropagationConfig, TargetAgentConfig
 
@@ -36,7 +37,7 @@ class TargetAgent(Agent):
         #.  :cite:t:`GEO_RSO_2022_stats`
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         _id: int,
         name: str,
@@ -154,7 +155,7 @@ class TargetAgent(Agent):
         """
         self.eci_state = array(ephemeris.eci)
         self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(
-            self.julian_date_start
+            self.julian_date_start,
         )
 
     @property

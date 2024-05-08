@@ -28,7 +28,7 @@ def getMockedEstimateObject() -> EstimateAgent:
             -1.36159013e00,
             7.19231774e00,
             1.05193500e00,
-        ]
+        ],
     )
     estimate.nominal_filter.pred_p = np.array(
         [
@@ -38,7 +38,7 @@ def getMockedEstimateObject() -> EstimateAgent:
             [0.0e00, 0.0e00, 0.0e00, 2.0e-9, 0.0e00, 0.0e00],
             [0.0e00, 0.0e00, 0.0e00, 0.0e00, 2.0e-9, 0.0e00],
             [0.0e00, 0.0e00, 0.0e00, 0.0e00, 0.0e00, 2.0e-9],
-        ]
+        ],
     )
     estimate.nominal_filter.est_x = np.array(
         [
@@ -48,7 +48,7 @@ def getMockedEstimateObject() -> EstimateAgent:
             -4.88899365e-01,
             6.71106022e00,
             3.06846558e00,
-        ]
+        ],
     )
     estimate.nominal_filter.est_p = np.array(
         [
@@ -58,7 +58,7 @@ def getMockedEstimateObject() -> EstimateAgent:
             [0.0e00, 0.0e00, 0.0e00, 1.0e-9, 0.0e00, 0.0e00],
             [0.0e00, 0.0e00, 0.0e00, 0.0e00, 1.0e-9, 0.0e00],
             [0.0e00, 0.0e00, 0.0e00, 0.0e00, 0.0e00, 1.0e-9],
-        ]
+        ],
     )
     estimate.nominal_filter.cross_cvr = np.array(
         [
@@ -68,7 +68,7 @@ def getMockedEstimateObject() -> EstimateAgent:
             [-3.99419639e-14, -1.33959325e-13, 2.35517983e-11, -2.96946975e-12],
             [-7.77013112e-14, -1.80179387e-14, -2.81226071e-10, 2.31623526e-13],
             [-6.60450355e-14, 1.61556233e-13, 4.33291706e-10, 1.79400632e-12],
-        ]
+        ],
     )
     estimate.nominal_filter.time = 60.0
     estimate.initial_covariance = estimate.nominal_filter.est_p
@@ -88,7 +88,7 @@ def getMockedSensorObject() -> Sensor:
             [0.00000000e00, 6.58247782e-12, 0.00000000e00, 0.00000000e00],
             [0.00000000e00, 0.00000000e00, 9.00000000e-10, 0.00000000e00],
             [0.00000000e00, 0.00000000e00, 0.00000000e00, 1.00000000e-14],
-        ]
+        ],
     )
     sensor.deltaBoresight = MagicMock(return_value=4.0)
     sensor.slew_rate = 2.0

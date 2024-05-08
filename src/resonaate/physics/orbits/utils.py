@@ -1,4 +1,5 @@
 """Define a collection of common functions used across the orbits package."""
+
 from __future__ import annotations
 
 # Third Party Imports
@@ -18,6 +19,8 @@ from . import (
     wrap_anomaly,
 )
 
+# ruff: noqa: N806
+
 
 def getTrueAnomaly(r_vec: ndarray, v_vec: ndarray, e_unit_vec: ndarray) -> float:
     r"""Calculate an orbit's true anomaly from position, velocity, & eccentricity vectors.
@@ -33,7 +36,6 @@ def getTrueAnomaly(r_vec: ndarray, v_vec: ndarray, e_unit_vec: ndarray) -> float
     Returns:
         ``float``: true anomaly, :math:`\nu\in[0,2\pi)`, in radians.
     """
-    # pylint: disable=invalid-name
     anomaly = safeArccos(vdot(e_unit_vec, r_vec) / norm(r_vec))
     return fixAngleQuadrant(anomaly, vdot(r_vec, v_vec))
 
@@ -137,7 +139,6 @@ def getInclinationFromEQE(p: float, q: float, retro: bool = False) -> float:
     Returns:
         ``float``: orbit inclination, :math:`i\in[0,\pi]`, in radians.
     """
-    # pylint: disable=invalid-name
     II = 1 if not retro else -1
     inc = 0.5 * PI * (1 - II) + 2.0 * II * arctan(sqrt(p**2 + q**2))
     if not isInclined(inc) and inc > 0.5 * PI and not retro:
@@ -159,7 +160,6 @@ def getEccentricityFromEQE(h: float, k: float) -> float:
     Returns:
         ``float``: orbit eccentricity, :math:`e\in[0,1)`, in radians.
     """
-    # pylint: disable=invalid-name
     if (ecc := sqrt(h**2 + k**2)) >= 1.0:
         msg = f"Parabolic or hyperbolic orbit. ecc={ecc}"
         raise EccentricityError(msg)
@@ -181,7 +181,6 @@ def getEquinoctialBasisVectors(p: float, q: float, retro: bool = False) -> tuple
         - 3x1 equinoctial basis vector, :math:`\vec{\mathbf{f}}`.
         - 3x1 equinoctial basis vector, :math:`\vec{\mathbf{g}}`.
     """
-    # pylint: disable=invalid-name
     II = 1 if not retro else -1
     p_sq, q_sq = p**2, q**2
     # Vector normalization term
@@ -208,14 +207,14 @@ def getAngularMomentumFromEQE(p: float, q: float, retro: bool = False) -> ndarra
     Returns:
         ``ndarray``: 3x1 angular momentum unit vector, :math:`\hat{h}=\hat{w}`.
     """
-    # pylint: disable=invalid-name
     II = 1 if not retro else -1
     p_sq, q_sq = p**2, q**2
     return (1 / (1 + p_sq + q_sq)) * array([2 * p, -2 * q, (1 - p_sq - q_sq) * II])
 
 
 def getAngularMomentum(
-    r_vec: ndarray[float, float, float], v_vec: ndarray[float, float, float]
+    r_vec: ndarray[float, float, float],
+    v_vec: ndarray[float, float, float],
 ) -> ndarray:
     r"""Get the angular momentum vector from position & velocity vectors.
 
@@ -261,7 +260,6 @@ def getEccentricity(r_vec: ndarray, v_vec: ndarray, mu: float = Earth.mu) -> tup
     Returns:
         ``tuple``: eccentricity, :math:`e`, & 3x1 eccentricity unit vector, :math:`\hat{e}`.
     """
-    # pylint: disable=invalid-name
     r, v = norm(r_vec), norm(v_vec)
     ecc_vector = ((v**2 - mu / r) * r_vec - vdot(r_vec, v_vec) * v_vec) / mu
     ecc = norm(ecc_vector)
@@ -288,7 +286,6 @@ def getOrbitalEnergy(r: float, v: float, mu: float = Earth.mu) -> float:
     Returns:
         ``float``: orbital specific energy, :math:`\xi` (km^2/s^2).
     """
-    # pylint: disable=invalid-name
     return 0.5 * v**2 - mu / r
 
 
@@ -306,7 +303,6 @@ def getSemiMajorAxis(r: float, v: float, mu: float = Earth.mu) -> float:
     Returns:
         ``float``: semi-major axis, :math:`a` (km).
     """
-    # pylint: disable=invalid-name
     energy = getOrbitalEnergy(r, v, mu=mu)
     return -0.5 * mu / energy
 
@@ -340,12 +336,15 @@ def getMeanMotion(sma: float, mu: float = Earth.mu) -> float:
     Returns:
         ``float``: mean motion, :math:`n` (rad/s).
     """
-    # pylint: disable=invalid-name
     return sqrt(mu / sma**3)
 
 
 def singularityCheck(
-    ecc: float, inc: float, raan: float, argp: float, anomaly: float
+    ecc: float,
+    inc: float,
+    raan: float,
+    argp: float,
+    anomaly: float,
 ) -> tuple[float, float, float]:
     r"""Check and convert angular elements, accounting for COE singularities.
 
@@ -429,7 +428,6 @@ def universalC2C3(psi: float) -> tuple[float, float]:
     Returns:
         ``tuple``: universal variable coefficients, :math:`c_2` & :math:`c_3`.
     """
-    # pylint: disable=invalid-name
     # Default values: abs(psi) <= 1e-6 ()
     c2: float = 0.5
     c3: float = 1.0 / 6.0

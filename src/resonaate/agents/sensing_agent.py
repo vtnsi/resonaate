@@ -1,4 +1,5 @@
 """Defines the :class:`.SensingAgent` class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -9,7 +10,6 @@ from numpy import array
 
 # Local Imports
 from ..data.ephemeris import TruthEphemeris
-from ..dynamics.integration_events.station_keeping import StationKeeper
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..sensors import sensorFactory
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from ..data.ephemeris import _EphemerisMixin
     from ..data.events.sensor_time_bias import SensorTimeBiasEvent
     from ..dynamics.dynamics_base import Dynamics
+    from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
     from ..scenario.config import PropagationConfig
     from ..scenario.config.agent_config import SensingAgentConfig
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
 class SensingAgent(Agent):
     """Define the behavior of the sensing agents in the simulation."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         _id: int,
         name: str,
@@ -158,23 +159,31 @@ class SensingAgent(Agent):
         """
         # [NOTE][parallel-time-bias-event-handling] Step two: call this method via the event handler to queue the
         # relevant :class:`.SensorTimeBiasEvent`.
-        event_list = []
-        for old_event in self.sensor_time_bias_event_queue:
-            event_list.append(old_event.id)
+        event_list = [old_event.id for old_event in self.sensor_time_bias_event_queue]
+
         # Make sure you're not adding the same event over multiple timesteps
         if time_bias_event.id not in event_list:
             self.sensor_time_bias_event_queue.append(time_bias_event)
 
     def pruneTimeBiasEvents(self) -> None:
         """Remove events from the queue that happened in the past."""
-        relevant_events = []
-        for itr_event in self.sensor_time_bias_event_queue:
+        self.sensor_time_bias_event_queue = [
+            event
+            for event in self.sensor_time_bias_event_queue
             if (
-                self.julian_date_epoch <= itr_event.end_time_jd
-                and self.julian_date_epoch >= itr_event.start_time_jd
-            ):
-                relevant_events.append(itr_event)
-        self.sensor_time_bias_event_queue = relevant_events
+                self.julian_date_epoch <= event.end_time_jd
+                and self.julian_date_epoch >= event.start_time_jd
+            )
+        ]
+
+    def updateInfo(self, sensor_change):
+        """Update the boresight and last time tasked attributes.
+
+        Args:
+            sensor_change (dict): values to change in the sensor.
+        """
+        self.sensors.boresight = sensor_change["boresight"]
+        self.sensors.time_last_tasked = sensor_change["time_last_tasked"]
 
     def getCurrentEphemeris(self) -> TruthEphemeris:
         """Returns the SensingAgent's current ephemeris information.
@@ -198,7 +207,7 @@ class SensingAgent(Agent):
         """
         self.eci_state = array(ephemeris.eci)
         self._time = JulianDate(ephemeris.julian_date).convertToScenarioTime(
-            self.julian_date_start
+            self.julian_date_start,
         )
 
     @property

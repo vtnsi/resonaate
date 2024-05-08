@@ -1,4 +1,5 @@
 """Submodule defining the 'time' configuration section."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -51,5 +52,7 @@ class TimeConfig(ConfigObject):
 
         if self.start_timestamp >= self.stop_timestamp:
             raise ConfigValueError(
-                "start_timestamp", self.start_timestamp, (f"before {self.stop_timestamp}",)
+                "start_timestamp",
+                self.start_timestamp,
+                (f"before {self.stop_timestamp}",),
             )

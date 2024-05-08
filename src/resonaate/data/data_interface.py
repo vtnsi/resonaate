@@ -1,10 +1,12 @@
 """Defines the :class:`.DataInterface` abstract base class."""
+
 from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta
 from contextlib import contextmanager
 from traceback import format_exc
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import create_engine
@@ -15,7 +17,6 @@ from sqlalchemy.pool import StaticPool
 # Local Imports
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
-from . import Base
 from .agent import AgentModel
 from .detected_maneuver import DetectedManeuver
 from .ephemeris import EstimateEphemeris, TruthEphemeris
@@ -23,7 +24,12 @@ from .epoch import Epoch
 from .events import Event
 from .filter_step import FilterStep
 from .observation import MissedObservation, Observation
+from .table_base import Base
 from .task import Task
+
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Final
 
 
 class DataInterface(metaclass=ABCMeta):
@@ -32,8 +38,7 @@ class DataInterface(metaclass=ABCMeta):
     This defines the common data model by which all RESONAATE DBs are assumed to adhere to.
     """
 
-    # pylint: disable=no-member
-    VALID_DATA_TYPES = {
+    VALID_DATA_TYPES: Final[dict[str, Base]] = {
         AgentModel.__tablename__: AgentModel,
         Epoch.__tablename__: Epoch,
         DetectedManeuver.__tablename__: DetectedManeuver,
@@ -64,7 +69,8 @@ class DataInterface(metaclass=ABCMeta):
         self.logger = logger
         if self.logger is None:
             self.logger = Logger(
-                "resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation
+                "resonaate",
+                path=BehavioralConfig.getConfig().logging.OutputLocation,
             )
 
         if db_path.startswith(self.SQLITE_PREFIX):
@@ -98,7 +104,7 @@ class DataInterface(metaclass=ABCMeta):
             current_session.commit()
         except SQLAlchemyError:
             self.logger.error(
-                f"Exception thrown in `::getSessionScope()` by {self}: \n{format_exc()}"
+                f"Exception thrown in `::getSessionScope()` by {self}: \n{format_exc()}",
             )
             current_session.rollback()
             raise
@@ -157,10 +163,7 @@ class DataInterface(metaclass=ABCMeta):
             self.logger.error(msg)
             raise TypeError(query)
 
-        if multi:
-            retval = []
-        else:
-            retval = None
+        retval = [] if multi else None
 
         # [NOTE]: The context manager pattern isn't used here because of the lazy loading
         #   functionality of the ORM. Somehow the context manager causes data objects to become detached.
@@ -196,13 +199,10 @@ class DataInterface(metaclass=ABCMeta):
             self.logger.error(msg)
             raise TypeError(query)
 
-        deleted_count = 0
         with self._getSessionScope() as session:
             for result in query.with_session(session).all():
                 session.delete(result)
-            deleted_count = len(session.deleted)
-
-        return deleted_count
+            return len(session.deleted)
 
     def bulkSave(self, data):
         """Use a low latency method to make large amounts of updates to the database.
@@ -222,9 +222,6 @@ class DataInterface(metaclass=ABCMeta):
         Returns:
             ``int``: number of data objects saved to the database
         """
-        save_count = 0
         with self._getSessionScope() as session:
             session.bulk_save_objects(data)
-            save_count = len(data)
-
-        return save_count
+            return len(data)

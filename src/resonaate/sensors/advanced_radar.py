@@ -1,4 +1,5 @@
 """Defines the :class:`.AdvRadar` sensor class."""
+
 from __future__ import annotations
 
 # Standard Library Imports

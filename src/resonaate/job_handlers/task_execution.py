@@ -1,12 +1,13 @@
 """:class:`.Job` handler class that manage task execution logic."""
+
 from __future__ import annotations
 
 # Standard Library Imports
 from pickle import loads
 
 # Third Party Imports
-from mjolnir import Job, KeyValueStore
 from numpy import array, where
+from strmbrkr import Job, KeyValueStore
 
 # Local Imports
 from .base import CallbackRegistration, JobHandler
@@ -28,6 +29,7 @@ def asyncExecuteTasking(tasked_sensor_ids: list[int], target_id: int) -> dict:
         :``"observations"``: (``list``): successful :class:`.Observation` objects of target(s).
         :``"target_id"``: (``int``): ID of the :class:`.TargetAgent` observations were made of.
         :``"missed_observations"``: (``list``): list of :class:`.MissedObservation` objects of :class:`.Target_agent`
+        :``"sensor_info_list"``: (``list``): list of dict containing updates to sensing_agent.sensors
     """
     sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
     target_agents = loads(KeyValueStore.getValue("target_agents"))
@@ -40,21 +42,35 @@ def asyncExecuteTasking(tasked_sensor_ids: list[int], target_id: int) -> dict:
 
     successful_obs = []
     unsuccessful_obs = []
+    sensor_info_list = []
     if len(tasked_sensor_ids) > 0:
         for sensor_id in tasked_sensor_ids:
             sensing_agent = sensor_agents[sensor_id]
-            made_obs, missed_obs = sensing_agent.sensors.collectObservations(
+            (
+                made_obs,
+                missed_obs,
+                boresight,
+                time_last_tasked,
+            ) = sensing_agent.sensors.collectObservations(
                 estimate_agent.eci_state,
                 primary_tgt,
                 background_targets,
             )
             successful_obs.extend(made_obs)
             unsuccessful_obs.extend(missed_obs)
+            sensor_info_list.append(
+                {
+                    "sensor_id": sensor_id,
+                    "boresight": boresight,
+                    "time_last_tasked": time_last_tasked,
+                },
+            )
 
     return {
         "target_id": target_id,
         "observations": successful_obs,
         "missed_observations": unsuccessful_obs,
+        "sensor_info_list": sensor_info_list,
     }
 
 
@@ -84,6 +100,7 @@ class TaskExecutionRegistration(CallbackRegistration):
         """
         self.registrant.saveObservations(job.retval["observations"])
         self.registrant.saveMissedObservations(job.retval["missed_observations"])
+        self.registrant.updateFromAsyncTaskExecution(job.retval["sensor_info_list"])
 
 
 class TaskExecutionJobHandler(JobHandler):

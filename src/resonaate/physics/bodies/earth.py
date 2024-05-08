@@ -1,4 +1,5 @@
 """Defines the :class:`.Earth` class."""
+
 from __future__ import annotations
 
 
@@ -26,8 +27,6 @@ class Earth:
 
     # EGM-08 Zonal coefficients (normalized). Vallado Ed. 4, Appendix D.1, Table D-1. Dimensionless
     #   [NOTE]: J_i = -C_i = Cbar_i,0 / PI_i,o
-
-    # pylint: disable=invalid-name
     mu = 398600.4415
     radius = 6378.1363
     mass = 5.9742e24

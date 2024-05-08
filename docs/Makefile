@@ -37,7 +37,7 @@ serve:
 clean:
 	rm -rf $(BUILDDIR)/*
 	rm -rf $(GENDIR)/*
-	rm -rf $(SOURCEDIR)/examples/.mjolnir*
+	rm -rf $(SOURCEDIR)/examples/.strmbrkr*
 	rm -rf $(SOURCEDIR)/examples/kvs_dump*
 
 # Build html without running examples

@@ -1,4 +1,5 @@
 """Configure importable things that aren't pytest fixtures."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -60,6 +61,7 @@ def propagateScenario(
         init_file,
         internal_db_path=shared_db_path,
         importer_db_path=importer_db_path,
+        start_workers=False,
     )
 
     # Determine target Julian date based on elapsed time
@@ -78,7 +80,6 @@ def propagateScenario(
 
 def patchCreateDatabasePath(path: str | Path | None, importer: bool) -> str:
     """Quick and dirty patch of createDatabasePath() so test can overwrite DB files."""
-    # pylint: disable=unused-argument
     base = "sqlite:///"
     if path is None:
         return base

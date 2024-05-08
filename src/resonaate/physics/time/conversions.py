@@ -1,4 +1,5 @@
 """Helper functions that convert between different forms of time."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -8,6 +9,7 @@ import datetime
 from numpy import floor, remainder
 
 # Local Imports
+from ...common.logger import resonaateLogError
 from ...physics import constants as const
 from ..maths import wrapAngle2Pi
 from .stardate import JulianDate, julianDateToDatetime
@@ -57,9 +59,7 @@ def greenwichApparentTime(year, elapsed_days, eq_equinox):
     gmst_jan1 = greenwichMeanTime(julian_date_jan1)
     # Earth's rotation rate (Eq. 3-40 Vallado Ed. 4)
     earth_rotation_rate = (
-        1.002737909350795
-        + 5.9006e-11 * julian_centuries_jan1
-        - 5.9e-15 * julian_centuries_jan1**2
+        1.002737909350795 + 5.9006e-11 * julian_centuries_jan1 - 5.9e-15 * julian_centuries_jan1**2
     )
     # GMST of the exact time
     gmst = gmst_jan1 + earth_rotation_rate * elapsed_days * const.TWOPI
@@ -164,7 +164,7 @@ def getTargetJulianDate(start_julian_date, jump_delta):
         start_julian_date = JulianDate(start_julian_date)
 
     if not isinstance(jump_delta, datetime.timedelta):
-        print("Error: `jump_delta` must be a `datetime.timedelta` object.")
+        resonaateLogError("Error: `jump_delta` must be a `datetime.timedelta` object.")
         raise TypeError(type(jump_delta))
 
     start_calendar_date = julianDateToDatetime(start_julian_date)

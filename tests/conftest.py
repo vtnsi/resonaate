@@ -1,15 +1,15 @@
-# pylint: disable=invalid-name
 from __future__ import annotations
 
 # Standard Library Imports
 import logging
 import shutil
 import sys
+from multiprocessing import cpu_count
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
-from mjolnir import KeyValueStore
+from strmbrkr import KeyValueStore, WorkerManager
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
@@ -85,11 +85,20 @@ def getTestLoggerObject() -> Logger:
 
 
 @pytest.fixture(name="create_kvs", autouse=True, scope="session")
-def _createKeyValueStore():  # pylint: disable=useless-return
+def _createKeyValueStore():
     """Make sure that :class:`.KeyValueStore.Server` is created only once per test session."""
     _ = KeyValueStore.getClient()
 
     return
+
+
+@pytest.fixture(name="worker_manager", scope="session", autouse=True)
+def createWorkerManager() -> WorkerManager:
+    """Create a valid WorkerManager."""
+    worker_manager = WorkerManager(proc_count=cpu_count())
+    worker_manager.startWorkers()
+    yield worker_manager
+    worker_manager.stopWorkers(no_wait=True)
 
 
 @pytest.fixture(name="teardown_kvs", autouse=True)
@@ -136,7 +145,6 @@ def getDataInterface(tmp_path: Path) -> ResonaateDatabase:
 @pytest.fixture(name="propagate_scenario")
 def propagateFixture(custom_database: None) -> PropagateFunc:
     """Returns function that propagates a scenario."""
-    # pylint: disable=unused-argument
     return propagateScenario
 
 
@@ -156,7 +164,8 @@ def getPerturbationsConfig() -> PerturbationsConfig:
 
 @pytest.fixture(name="dynamics")
 def getDynamics(
-    perturbations_config: PerturbationsConfig, geopotential_config: GeopotentialConfig
+    perturbations_config: PerturbationsConfig,
+    geopotential_config: GeopotentialConfig,
 ) -> SpecialPerturbations:
     """Return a :class:`.SpecialPerturbations` object based on configurations."""
     return SpecialPerturbations(TEST_START_JD, geopotential_config, perturbations_config, 0.0)
@@ -179,10 +188,11 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 def pytest_collection_modifyitems(
-    session: pytest.Session, config: pytest.Config, items: list[pytest.Item]
+    session: pytest.Session,
+    config: pytest.Config,
+    items: list[pytest.Item],
 ) -> None:
     """Collect pytest modifiers."""
-    # pylint: disable=unused-argument
     if config.getoption("--runslow"):
         # --runslow given in cli: do not skip slow tests
         return
