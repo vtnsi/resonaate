@@ -11,8 +11,8 @@ from datetime import datetime
 from pickle import dumps, loads
 
 # Third Party Imports
-from mjolnir import KeyValueStore
 from numpy import asarray, cos, dot, fmod, matmul, sin
+from strmbrkr import KeyValueStore
 
 # Local Imports
 from .. import constants as const

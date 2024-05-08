@@ -7,7 +7,7 @@ import logging
 from abc import ABC, abstractmethod
 
 # Third Party Imports
-from mjolnir import Job, JobTimeoutError, QueueManager
+from strmbrkr import Job, JobTimeoutError, QueueManager
 
 # Local Imports
 from ..common.exceptions import JobProcessingError

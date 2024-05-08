@@ -6,8 +6,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir.key_value_store import KeyValueStore
-from mjolnir.key_value_store.transaction import Transaction
+from strmbrkr.key_value_store import KeyValueStore
+from strmbrkr.key_value_store.transaction import Transaction
 
 if TYPE_CHECKING:
     # Standard Library Imports

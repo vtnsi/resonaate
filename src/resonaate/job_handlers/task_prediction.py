@@ -7,8 +7,8 @@ from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import Job, KeyValueStore
 from numpy import zeros
+from strmbrkr import Job, KeyValueStore
 
 # Local Imports
 from ..tasking.predictions import predictObservation

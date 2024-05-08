@@ -1,4 +1,4 @@
-"""Encapsulation of event tracking using ``mjolnir`` with a :class:`.EventRecord` and :class:`.EventStack`."""
+"""Encapsulation of event tracking using ``strmbrkr`` with a :class:`.EventRecord` and :class:`.EventStack`."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from collections import defaultdict
 from json import dumps, loads
 
 # Third Party Imports
-from mjolnir import KeyValueStore
+from strmbrkr import KeyValueStore
 
 
 class EventRecord:
@@ -43,7 +43,7 @@ class EventRecord:
 
 
 class EventStack:
-    """Encapsulation of event tracking using ``mjolnir``."""
+    """Encapsulation of event tracking using ``strmbrkr``."""
 
     EVENT_STACK_LOCATION = "event_stack"
     """str: :class:`.KeyValueStore` key where state change events are recorded."""

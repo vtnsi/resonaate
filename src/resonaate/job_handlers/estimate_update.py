@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import Job
+from strmbrkr import Job
 
 # Local Imports
 from ..estimation.sequential.sequential_filter import FilterFlag

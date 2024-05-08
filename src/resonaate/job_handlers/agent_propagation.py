@@ -11,9 +11,9 @@ from enum import Flag
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import Job, KeyValueStore
 from numpy import ndarray
 from sqlalchemy.orm import Query
+from strmbrkr import Job, KeyValueStore
 
 # Local Imports
 from ..common.behavioral_config import BehavioralConfig

@@ -10,10 +10,10 @@ from uuid import uuid4
 
 # Third Party Imports
 import numpy as np
-from mjolnir import KeyValueStore
 from scipy.linalg import cholesky, inv, norm
 from scipy.spatial.distance import mahalanobis
 from sqlalchemy.orm import Query
+from strmbrkr import KeyValueStore
 
 # Local Imports
 from ..common.behavioral_config import BehavioralConfig

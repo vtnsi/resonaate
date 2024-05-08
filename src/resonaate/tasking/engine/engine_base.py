@@ -9,8 +9,8 @@ from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import KeyValueStore
 from numpy import zeros
+from strmbrkr import KeyValueStore
 
 # Local Imports
 from ...data import getDBConnection

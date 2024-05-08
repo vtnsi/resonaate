@@ -6,8 +6,8 @@ from __future__ import annotations
 from pickle import loads
 
 # Third Party Imports
-from mjolnir import Job, KeyValueStore
 from numpy import array, where
+from strmbrkr import Job, KeyValueStore
 
 # Local Imports
 from .base import CallbackRegistration, JobHandler

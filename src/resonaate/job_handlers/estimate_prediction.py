@@ -7,7 +7,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from mjolnir import Job
+from strmbrkr import Job
 
 # Local Imports
 from ..data import getDBConnection

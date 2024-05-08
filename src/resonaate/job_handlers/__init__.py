@@ -19,7 +19,7 @@ Examples:
 
     .. sourcecode:: python
 
-        from mjolnir import Job
+        from strmbrkr import Job
         from resonaate.job_handler.base import CallbackRegistration
 
         class NewCallback(CallbackRegistration):
