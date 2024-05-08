@@ -17,6 +17,3 @@ updates:
     labels:
       - "Type: DEP"
       - "1: High"
-    ignore:
-      # mjolnir b/c it shares a name with a diff package on PyPI
-      - dependency-name: "mjolnir"

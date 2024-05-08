@@ -46,7 +46,7 @@ Please see software documentation for best installation practices.
   - [SciPy](https://www.scipy.org/scipylib/index.html)
   - [SQLAlchemy](https://www.sqlalchemy.org/)
   - [matplotlib](https://matplotlib.org/index.html)
-  - [mjolnir](https://code.vt.edu/space-research/resonaate/mjolnir)
+  - [strmbrkr](https://pypi.org/project/strmbrkr/)
 - Software
   - [Python >= 3.9](https://www.python.org)
 

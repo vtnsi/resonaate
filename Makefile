@@ -12,7 +12,7 @@ doc:
 # For quickly cleaning up files
 .PHONY: clean
 clean:
-	rm -rf .mjolnir*
+	rm -rf .strmbrkr*
 	rm -rf kvs_dump*
 	rm -rf debugging/
 	(cd docs && make clean)
@@ -29,7 +29,7 @@ install:
 	@echo "================="
 	@echo "Developer Install"
 	@echo "================="
-	pip install -e ".[mjolnir,dev,test,doc]"
+	pip install -e ".[dev,test,doc]"
 	pre-commit install
 	@echo ""
 

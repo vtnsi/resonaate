@@ -50,8 +50,8 @@ venv/
 # Don't ignore .gitkeep files
 !**/**/.gitkeep
 
-# mjolnir-specific files
-.mjolnir*
+# strmbrkr-specific files
+.strmbrkr*
 
 # Ignore certain documentation
 README.html
