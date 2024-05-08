@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "resonaate"
-version = "3.0.0"
+version = "4.0.0"
 description = "The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE)"
 dynamic = ["readme"]
 dependencies = [
