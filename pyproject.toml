@@ -16,6 +16,8 @@ dependencies = [
 ]
 requires-python = ">=3.9"
 
+[project.optional-dependencies]
+
 dev = [
     # Linting
     "ruff==0.4.2",
