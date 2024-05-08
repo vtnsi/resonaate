@@ -49,7 +49,7 @@ Your prompt should now have a prefix that looks similar to:
 You can now install the latest RESONAATE version directly into your virtual environment:
 
 ```bash
-python3 -m pip install "resonaate[mjolnir]@git+ssh://git@code.vt.edu/space-research/resonaate/resonaate.git"
+python3 -m pip install "resonaate@git+ssh://git@code.vt.edu/space-research/resonaate/resonaate.git"
 ```
 
 If you wish to contribute or edit source code, please follow the instructions for a [development install][dev-install].
