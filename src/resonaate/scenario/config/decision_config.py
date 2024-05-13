@@ -2,29 +2,26 @@
 
 from __future__ import annotations
 
-# Standard Library Imports
-from dataclasses import dataclass, field
-from typing import ClassVar
+# Third Party Imports
+from pydantic import BaseModel, Field, field_validator
 
 # Local Imports
 from ...tasking.decisions import VALID_DECISIONS
-from .base import ConfigObject, ConfigValueError
 
 
-@dataclass
-class DecisionConfig(ConfigObject):
+class DecisionConfig(BaseModel):
     """Configuration section defining several decision-based options."""
-
-    CONFIG_LABEL: ClassVar[str] = "decision"
-    """``str``: Key where settings are stored in the configuration dictionary."""
 
     name: str
     """``str``: Name of this decision function."""
 
-    parameters: dict = field(default_factory=dict)
-    """``dict``: Parameters for the decision function."""
+    @field_validator
+    @classmethod
+    def name_must_be_valid(cls, v: str) -> str:
+        if v not in VALID_DECISIONS:
+            err = f"Decision '{v}' is not valid."
+            raise ValueError(err)
+        return v
 
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.name not in VALID_DECISIONS:
-            raise ConfigValueError("name", self.name, VALID_DECISIONS)
+    parameters: dict = Field(default_factory=dict)
+    """``dict``: Parameters for the decision function."""
