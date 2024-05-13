@@ -27,7 +27,7 @@ class Explanation(Enum):
     GALACTIC_EXCLUSION = "Galactic Exclusion Zone"
 
 
-class StateLabel:
+class StateLabel(str, Enum):
     """Defines valid labels for state types."""
 
     ECI: str = "eci"
@@ -43,7 +43,7 @@ class StateLabel:
     """``str``: latitude (geodetic), longitude, altitude (LLA) state type."""
 
 
-class PlatformLabel:
+class PlatformLabel(str, Enum):
     """Defines valid labels for platform types."""
 
     GROUND_FACILITY: str = "ground_facility"
@@ -53,7 +53,7 @@ class PlatformLabel:
     """``str``: spacecraft platform type."""
 
 
-class SensorLabel:
+class SensorLabel(str, Enum):
     """Defines valid labels for sensor types."""
 
     OPTICAL: str = "optical"
@@ -66,7 +66,7 @@ class SensorLabel:
     """``str``: advanced radar sensor type."""
 
 
-class FoVLabel:
+class FoVLabel(str, Enum):
     """Defines valid labels for Field of View types."""
 
     CONIC: str = "conic"
@@ -76,7 +76,7 @@ class FoVLabel:
     """str: rectangular field of view type."""
 
 
-class IntegratorLabel:
+class IntegratorLabel(str, Enum):
     """Defines valid labels for integrator methods."""
 
     RK45: str = "RK45"
@@ -86,7 +86,7 @@ class IntegratorLabel:
     """``str``: Dormand-Prince integration method of order 8(5)."""
 
 
-class DynamicsLabel:
+class DynamicsLabel(str, Enum):
     """Defines valid labels for satellite dynamics models."""
 
     TWO_BODY: str = "two_body"
@@ -96,7 +96,7 @@ class DynamicsLabel:
     """str: special perturbations satellite propagation model."""
 
 
-class ManeuverDetectionLabel:
+class ManeuverDetectionLabel(str, Enum):
     """Defines valid labels for maneuver detection techniques."""
 
     STANDARD_NIS: str = "standard_nis"
@@ -109,7 +109,7 @@ class ManeuverDetectionLabel:
     """``str``: fading memory normalized innovations squared (NIS) method."""
 
 
-class AdaptiveEstimationLabel:
+class AdaptiveEstimationLabel(str, Enum):
     """Defines valid labels for adaptive estimation techniques."""
 
     GPB1: str = "gpb1"
@@ -119,7 +119,7 @@ class AdaptiveEstimationLabel:
     """``str``: static multiple module adaptive estimator."""
 
 
-class SequentialFilterLabel:
+class SequentialFilterLabel(str, Enum):
     """Defines valid labels for sequential filter types."""
 
     UKF: str = "ukf"
@@ -129,7 +129,7 @@ class SequentialFilterLabel:
     """``str``: unscented Kalman filter algorithm."""
 
 
-class InitialOrbitDeterminationLabel:
+class InitialOrbitDeterminationLabel(str, Enum):
     """Defines valid labels for initial orbit determination (IOD) algorithms."""
 
     LAMBERT_BATTIN: str = "lambert_battin"
@@ -142,14 +142,14 @@ class InitialOrbitDeterminationLabel:
     """``str``: Lambert-Universal IOD algorithm."""
 
 
-class StackingLabel:
+class StackingLabel(str, Enum):
     """Defines valid labels for adaptive estimation state stacking techniques."""
 
     ECI_STACKING: str = "eci_stack"
     """``str``: ECI state stacking method."""
 
 
-class NoiseLabel:
+class NoiseLabel(str, Enum):
     """Defines valid labels for kinematic noise models."""
 
     CONTINUOUS_WHITE_NOISE: str = "continuous_white_noise"
@@ -162,7 +162,7 @@ class NoiseLabel:
     """``str``: simple noise model."""
 
 
-class OrbitRegimeLabel:
+class OrbitRegimeLabel(str, Enum):
     """Defines valid labels for orbital regimes."""
 
     LEO: str = "leo"
@@ -178,7 +178,7 @@ class OrbitRegimeLabel:
     """``str``: geosynchronous Earth orbit (GEO) regime."""
 
 
-class MetricTypeLabel:
+class MetricTypeLabel(str, Enum):
     """Defines valid labels for decision metric types."""
 
     INFORMATION: str = "information"
