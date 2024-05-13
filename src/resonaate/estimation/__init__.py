@@ -54,28 +54,16 @@ _MANEUVER_DETECTION_MAP: dict[str, ManeuverDetection] = {
 }
 
 
-VALID_MANEUVER_DETECTION_LABELS: tuple[str] = tuple(_MANEUVER_DETECTION_MAP.keys())
-"""``tuple[str]``: Valid entries for :py:data:`'maneuver_detection'` key in filter configuration."""
-
-
 _ADAPTIVE_ESTIMATION_MAP: dict[str, AdaptiveFilter] = {
     AdaptiveEstimationLabel.GPB1: GeneralizedPseudoBayesian1,
     AdaptiveEstimationLabel.SMM: StaticMultipleModel,
 }
 
 
-VALID_ADAPTIVE_ESTIMATION_LABELS: tuple[str] = tuple(_ADAPTIVE_ESTIMATION_MAP.keys())
-"""``tuple[str]``: Valid entries for :py:data:`'adaptive_estimation'` key in filter configuration."""
-
-
 _FILTER_MAP: dict[str, SequentialFilter] = {
     SequentialFilterLabel.UKF: UnscentedKalmanFilter,
     SequentialFilterLabel.UNSCENTED_KALMAN_FILTER: UnscentedKalmanFilter,
 }
-
-
-VALID_FILTER_LABELS: tuple[str] = tuple(_FILTER_MAP.keys())
-"""``tuple[str]``: Valid entries for the :py:data:`'name'` key in filter configuration."""
 
 
 def sequentialFilterFactory(
@@ -102,21 +90,18 @@ def sequentialFilterFactory(
         :class:`.SequentialFilter`: constructed filter object
     """
     # Create the base estimation filter for nominal operation
-    if config.name in VALID_FILTER_LABELS:
-        nominal_filter = _FILTER_MAP[config.name](
-            tgt_id,
-            time,
-            est_x,
-            est_p,
-            dynamics,
-            q_matrix,
-            maneuverDetectionFactory(config.maneuver_detection),
-            config.initial_orbit_determination,
-            config.adaptive_estimation,
-            **config.parameters,
-        )
-    else:
-        raise ValueError(f"Invalid filter type: {config.name}")
+    nominal_filter = _FILTER_MAP[config.name](
+        tgt_id,
+        time,
+        est_x,
+        est_p,
+        dynamics,
+        q_matrix,
+        maneuverDetectionFactory(config.maneuver_detection),
+        config.initial_orbit_determination,
+        config.adaptive_estimation,
+        **config.parameters,
+    )
 
     return nominal_filter
 
@@ -137,11 +122,7 @@ def maneuverDetectionFactory(config: ManeuverDetectionConfig) -> ManeuverDetecti
     if not config:
         return None
 
-    if config.name in VALID_MANEUVER_DETECTION_LABELS:
-        nis_class = _MANEUVER_DETECTION_MAP[config.name]
-    else:
-        raise ValueError(f"Invalid maneuver detection type: {config.name}")
-
+    nis_class = _MANEUVER_DETECTION_MAP[config.name]
     return nis_class(config.threshold, **config.parameters)
 
 
@@ -167,15 +148,12 @@ def adaptiveEstimationFactory(
     # Create the base estimation filter for nominal operation
     if config is None:
         raise ValueError("Adaptive estimation turned on by sequential filter, but no config given")
-    if config.name in VALID_ADAPTIVE_ESTIMATION_LABELS:
-        adaptive_filter = _ADAPTIVE_ESTIMATION_MAP[config.name].fromConfig(
-            config,
-            nominal_filter,
-            time_step,
-        )
-    else:
-        raise ValueError(f"Invalid adaptive estimation type: {config.name}")
 
+    adaptive_filter = _ADAPTIVE_ESTIMATION_MAP[config.name].fromConfig(
+        config,
+        nominal_filter,
+        time_step,
+    )
     return adaptive_filter
 
 
