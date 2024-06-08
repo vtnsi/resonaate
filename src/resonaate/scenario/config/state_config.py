@@ -3,91 +3,25 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, fields
-from typing import TYPE_CHECKING, ClassVar
+from datetime import datetime
+from typing import Annotated, Literal, Union
 
 # Third Party Imports
-from numpy import array, hstack
+from numpy import array, hstack, ndarray
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 from scipy.linalg import norm
+from typing_extensions import Self
 
 # Local Imports
-from ...common.labels import StateLabel
 from ...physics.bodies import Earth
 from ...physics.constants import DEG2RAD
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.transforms.methods import ecef2eci, lla2ecef
-from .base import ConfigError, ConfigObject, ConfigValueError
-
-# Type Checking Imports
-if TYPE_CHECKING:
-    # Standard Library Imports
-    from datetime import datetime
-    from typing import Literal
-
-    # Third Party Imports
-    from numpy import ndarray
-    from typing_extensions import Self
 
 # ruff: noqa: A003
 
 
-@dataclass
-class StateConfig(ABC, ConfigObject):
-    R"""Configuration base class defining a state."""
-
-    VALID_LABELS: ClassVar[list[str]] = [
-        StateLabel.ECI,
-        StateLabel.EQE,
-        StateLabel.COE,
-        StateLabel.LLA,
-    ]
-
-    # Config label class variable - not used by "dataclass"
-    CONFIG_LABEL: ClassVar[str] = "state"
-    R"""``str``: Key where settings are stored in the configuration dictionary."""
-
-    type: Literal["eci", "coe", "eqe", "lla"]
-    R"""``str``: type of state being defined."""
-
-    def __post_init__(self):
-        R"""Runs after the dataclass is initialized."""
-        if self.type not in self.VALID_LABELS:
-            raise ConfigValueError("type", self.type, self.VALID_LABELS)
-
-    @classmethod
-    def fromDict(cls, state_cfg: dict) -> Self:
-        R"""Construct a state config instance from a dictionary.
-
-        Args:
-            state_cfg (``dict``): config dictionary
-
-        Raises:
-            ConfigValueError: raised if an incorrect type is set
-        """
-        if state_cfg["type"] not in StateConfig.VALID_LABELS:
-            raise ConfigValueError(
-                StateConfig.CONFIG_LABEL + ".type",
-                state_cfg["type"],
-                StateConfig.VALID_LABELS,
-            )
-        return STATE_MAP[state_cfg["type"]](**state_cfg)
-
-    @abstractmethod
-    def toECI(self, utc_datetime: datetime) -> ndarray:
-        R"""Convert a state config object into an ECI array.
-
-        Args:
-            utc_datetime (``datetime``): current UTC datetime epoch.
-
-        Returns:
-            ``ndarray``: 6x1 ECI state, [km; km/sec].
-        """
-        raise NotImplementedError
-
-
-@dataclass
-class ECIStateConfig(StateConfig):
+class ECIStateConfig(BaseModel):
     R"""Configuration defining an ECI state."""
 
     type: Literal["eci"]
@@ -99,12 +33,12 @@ class ECIStateConfig(StateConfig):
     velocity: list[float]
     R"""``list[float]``: initial 3x1 ECI velocity vector, km/sec."""
 
-    def __post_init__(self):
-        R"""Runs after the dataclass is initialized."""
-        super().__post_init__()
+    @model_validator
+    def pos_outside_earth(self) -> Self:
         if norm(self.position) <= Earth.radius:
             msg = f"Position magnitude must be greater than Earth's radius: {norm(self.position)}"
-            raise ConfigError(self.CONFIG_LABEL + ".eci.position", msg)
+            raise ValueError(msg)
+        return self
 
     def toECI(self, utc_datetime: datetime) -> ndarray:
         R"""Convert a state config object into an ECI array.
@@ -118,8 +52,7 @@ class ECIStateConfig(StateConfig):
         return hstack((self.position, self.velocity))
 
 
-@dataclass
-class LLAStateConfig(StateConfig):
+class LLAStateConfig(BaseModel):
     R"""Configuration defining an lat-lon-alt state."""
 
     type: Literal["lla"]
@@ -148,8 +81,7 @@ class LLAStateConfig(StateConfig):
         return ecef2eci(lla2ecef(lla_orig), utc_datetime)
 
 
-@dataclass
-class COEStateConfig(StateConfig):
+class COEStateConfig(BaseModel):
     R"""Configuration defining an COE state.
 
     See Also:
@@ -159,22 +91,22 @@ class COEStateConfig(StateConfig):
     type: Literal["coe"]
     R"""``str``: type of state being defined."""
 
-    semi_major_axis: float
+    semi_major_axis: float = Field(..., gt=Earth.radius)
     R"""``float``: semi-major axis, :math:`a`, km."""
 
-    eccentricity: float
+    eccentricity: float = Field(..., ge=0.0, lt=1.0)
     R"""``float``: eccentricity, :math:`e\in[0,1)`."""
 
-    inclination: float
+    inclination: float = Field(..., ge=0.0, le=180.0)
     R"""``float``: inclination angle, :math:`i\in[0,180]`, degrees."""
 
-    true_anomaly: float | None = None
+    true_anomaly: float | None = Field(default=None, ge=0.0, lt=360.0)
     R"""``float``: true anomaly, :math:`\nu\in[0,360)`, degrees."""
 
-    right_ascension: float | None = None
+    right_ascension: float | None = Field(default=None, ge=0.0, lt=360.0)
     R"""``float``: right ascension of ascending node, :math:`\Omega\in[0,360)`, degrees."""
 
-    argument_periapsis: float | None = None
+    argument_periapsis: float | None = Field(default=None, ge=0.0, lt=360.0)
     R"""``float``: argument of periapsis, :math:`\omega\in[0,360)`, degrees."""
 
     true_longitude_periapsis: float | None = None
@@ -186,41 +118,45 @@ class COEStateConfig(StateConfig):
     true_longitude: float | None = None
     R"""``float``: true longitude, :math:`\lambda_{true}\approx\Omega + \omega + \nu\in[0,360)`, degrees."""
 
-    inclined: bool = field(init=False)
-    eccentric: bool = field(init=False)
+    _inclined: bool = PrivateAttr(default=False)
+    @property
+    def inclined(self) -> bool:
+        """bool: Indicates whether this orbit is considered inclined."""
+        return self._inclined
 
-    def __post_init__(self):
-        R"""Runs after the dataclass is initialized."""
-        super().__post_init__()
-        if self.semi_major_axis <= Earth.radius:
-            msg = f"SMA must be greater than Earth's radius: {self.semi_major_axis}"
-            raise ConfigError(self.CONFIG_LABEL + ".coe.semi_major_axis", msg)
+    _eccentric: bool = PrivateAttr(default=False)
+    @property
+    def eccentric(self) -> bool:
+        """bool: Indicates whether this orbit is considered eccentric."""
+        return self._eccentric
 
+    @model_validator
+    def validate_elements(self) -> Self:
+        R"""Runs after the model is initialized."""
         # Checks for valid COE combos
         if (
             self.true_anomaly is not None
             and self.right_ascension is not None
             and self.argument_periapsis is not None
         ):
-            self.eccentric = True
-            self.inclined = True
+            self._eccentric = True
+            self._inclined = True
 
         elif self.true_anomaly is not None and self.true_longitude_periapsis is not None:
-            self.eccentric = True
-            self.inclined = False
+            self._eccentric = True
+            self._inclined = False
 
         elif self.right_ascension is not None and self.argument_latitude is not None:
-            self.eccentric = False
-            self.inclined = True
+            self._eccentric = False
+            self._inclined = True
 
         elif self.true_longitude is not None:
-            self.eccentric = False
-            self.inclined = False
+            self._eccentric = False
+            self._inclined = False
 
         else:
-            msg = "Invalid definition of classical orbital elements, refer to ClassicalElements for details. Valid fields: \n"
-            msg += f"{[f.name for f in fields(self)]}"
-            raise ConfigError(self.CONFIG_LABEL + ".coe", msg)
+            raise ValueError("Invalid definition of classical orbital elements, refer to ClassicalElements for details.")
+        return self
 
     def toECI(self, utc_datetime: datetime) -> ndarray:
         R"""Convert a state config object into an ECI array.
@@ -235,14 +171,13 @@ class COEStateConfig(StateConfig):
         return orbit.toECI()
 
 
-@dataclass
-class EQEStateConfig(StateConfig):
+class EQEStateConfig(BaseModel):
     R"""Configuration defining an EQE state."""
 
     type: Literal["eqe"]
     R"""``str``: type of state being defined."""
 
-    semi_major_axis: float
+    semi_major_axis: float = Field(..., gt=Earth.radius)
     R"""``float``: semi-major axis, :math:`a`, km."""
 
     h: float
@@ -257,18 +192,11 @@ class EQEStateConfig(StateConfig):
     q: float
     R"""``float``: inclination term, :math:`q=\psi=\tan(\frac{i}{2})\cos(\Omega)`."""
 
-    mean_longitude: float
+    mean_longitude: float = Field(..., ge=0.0, lt=360.0)
     R"""``float``: mean longitude (location) angle, :math:`\lambda_M\in[0,360)`, degrees."""
 
     retrograde: bool = False
     R"""``bool``: whether to use the retrograde conversion equations."""
-
-    def __post_init__(self):
-        R"""Runs after the dataclass is initialized."""
-        super().__post_init__()
-        if self.semi_major_axis <= Earth.radius:
-            msg = f"SMA must be greater than Earth's radius: {self.semi_major_axis}"
-            raise ConfigError(self.CONFIG_LABEL + ".eqe.semi_major_axis", msg)
 
     def toECI(self, utc_datetime: datetime) -> ndarray:
         R"""Convert a state config object into an ECI array.
@@ -283,9 +211,4 @@ class EQEStateConfig(StateConfig):
         return orbit.toECI()
 
 
-STATE_MAP: dict[str, StateConfig] = {
-    StateLabel.ECI: ECIStateConfig,
-    StateLabel.LLA: LLAStateConfig,
-    StateLabel.COE: COEStateConfig,
-    StateLabel.EQE: EQEStateConfig,
-}
+StateConfig = Annotated[Union[ECIStateConfig, LLAStateConfig, COEStateConfig,EQEStateConfig], Field(..., discriminator='type')]
