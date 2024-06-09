@@ -33,7 +33,7 @@ class ECIStateConfig(BaseModel):
     velocity: list[float]
     R"""``list[float]``: initial 3x1 ECI velocity vector, km/sec."""
 
-    @model_validator
+    @model_validator(mode="after")
     def pos_outside_earth(self) -> Self:
         if norm(self.position) <= Earth.radius:
             msg = f"Position magnitude must be greater than Earth's radius: {norm(self.position)}"
@@ -100,22 +100,22 @@ class COEStateConfig(BaseModel):
     inclination: float = Field(..., ge=0.0, le=180.0)
     R"""``float``: inclination angle, :math:`i\in[0,180]`, degrees."""
 
-    true_anomaly: float | None = Field(default=None, ge=0.0, lt=360.0)
+    true_anomaly: Union[float, None] = Field(default=None, ge=0.0, lt=360.0)
     R"""``float``: true anomaly, :math:`\nu\in[0,360)`, degrees."""
 
-    right_ascension: float | None = Field(default=None, ge=0.0, lt=360.0)
+    right_ascension: Union[float, None] = Field(default=None, ge=0.0, lt=360.0)
     R"""``float``: right ascension of ascending node, :math:`\Omega\in[0,360)`, degrees."""
 
-    argument_periapsis: float | None = Field(default=None, ge=0.0, lt=360.0)
+    argument_periapsis: Union[float, None] = Field(default=None, ge=0.0, lt=360.0)
     R"""``float``: argument of periapsis, :math:`\omega\in[0,360)`, degrees."""
 
-    true_longitude_periapsis: float | None = None
+    true_longitude_periapsis: Union[float, None] = None
     R"""``float``: true longitude of periapsis, :math:`\tilde{\omega}_{true}\approx\Omega + \omega\in[0,360)`, degrees."""
 
-    argument_latitude: float | None = None
+    argument_latitude: Union[float, None] = None
     R"""``float``: argument of latitude, :math:`u=\omega + \nu\in[0,360)`, degrees."""
 
-    true_longitude: float | None = None
+    true_longitude: Union[float, None] = None
     R"""``float``: true longitude, :math:`\lambda_{true}\approx\Omega + \omega + \nu\in[0,360)`, degrees."""
 
     _inclined: bool = PrivateAttr(default=False)
@@ -130,7 +130,7 @@ class COEStateConfig(BaseModel):
         """bool: Indicates whether this orbit is considered eccentric."""
         return self._eccentric
 
-    @model_validator
+    @model_validator(mode="after")
     def validate_elements(self) -> Self:
         R"""Runs after the model is initialized."""
         # Checks for valid COE combos

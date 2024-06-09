@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+# Standard Library Imports
+from typing import Union
+
 # Third Party Imports
 from pydantic import BaseModel, Field
 
@@ -29,10 +32,10 @@ class EstimationConfig(BaseModel):
     sequential_filter: SequentialFilterConfig
     """:class:`.SequentialFilterConfig`: sequential technique as nested item."""
 
-    adaptive_filter: AdaptiveEstimationConfig | None = None
+    adaptive_filter: Union[AdaptiveEstimationConfig, None] = None
     """:class:`.AdaptiveEstimationConfig`: adaptive estimation technique as nested item."""
 
-    initial_orbit_determination: InitialOrbitDeterminationConfig | None = None
+    initial_orbit_determination: Union[InitialOrbitDeterminationConfig, None] = None
     """:class:`.InitialOrbitDeterminationConfig`: initial orbit determination technique as nested item."""
 
 
@@ -45,7 +48,7 @@ class SequentialFilterConfig(BaseModel):
     dynamics_model: DynamicsLabel = DynamicsLabel.SPECIAL_PERTURBATIONS
     """``str``: name of the dynamics to use in the filter."""
 
-    maneuver_detection: ManeuverDetectionConfig | None = None
+    maneuver_detection: Union[ManeuverDetectionConfig, None] = None
     """:class:`.ManeuverDetectionConfig`: maneuver detection technique."""
 
     adaptive_estimation: bool = False
