@@ -2,38 +2,20 @@
 
 from __future__ import annotations
 
-# Standard Library Imports
-from dataclasses import dataclass
-from typing import ClassVar
+# Third Party Imports
+from pydantic import BaseModel
 
 # Local Imports
 from ...common.labels import DynamicsLabel, IntegratorLabel
-from .base import ConfigObject, ConfigValueError
-
-VALID_PROPAGATION_METHODS: tuple[str] = (
-    DynamicsLabel.SPECIAL_PERTURBATIONS,
-    DynamicsLabel.TWO_BODY,
-)
-"""``tuple``: Valid propagation methods."""
-
-VALID_INTEGRATION_METHODS: tuple[str] = (
-    IntegratorLabel.RK45,
-    IntegratorLabel.DOP853,
-)
-"""``tuple``: Valid integration methods."""
 
 
-@dataclass
-class PropagationConfig(ConfigObject):
+class PropagationConfig(BaseModel):
     """Configuration section defining several propagation-based options."""
 
-    CONFIG_LABEL: ClassVar[str] = "propagation"
-    """``str``: Key where settings are stored in the configuration dictionary."""
-
-    propagation_model: str = DynamicsLabel.SPECIAL_PERTURBATIONS
+    propagation_model: DynamicsLabel = DynamicsLabel.SPECIAL_PERTURBATIONS
     """``str``: model with which to propagate RSOs."""
 
-    integration_method: str = IntegratorLabel.RK45
+    integration_method: IntegratorLabel = IntegratorLabel.RK45
     """``str``: method with which to numerically integrate RSOs."""
 
     station_keeping: bool = False
@@ -52,19 +34,3 @@ class PropagationConfig(ConfigObject):
 
     truth_simulation_only: bool = False
     """``bool``: whether to skip estimation and tasking during the simulation."""
-
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.propagation_model not in VALID_PROPAGATION_METHODS:
-            raise ConfigValueError(
-                "propagation_model",
-                self.propagation_model,
-                VALID_PROPAGATION_METHODS,
-            )
-
-        if self.integration_method not in VALID_INTEGRATION_METHODS:
-            raise ConfigValueError(
-                "integration_method",
-                self.integration_method,
-                VALID_INTEGRATION_METHODS,
-            )
