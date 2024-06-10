@@ -4,12 +4,18 @@ from __future__ import annotations
 
 # Standard Library Imports
 from enum import Enum
+from functools import partial
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import Column, Float, Integer, String
 
 # Local Imports
+from ...dynamics.integration_events.finite_thrust import eciBurn, ntwBurn
+from ...dynamics.integration_events.scheduled_impulse import (
+    ScheduledECIImpulse,
+    ScheduledNTWImpulse,
+)
 from ..table_base import Base, _DataMixin
 
 # Type Checking Import
@@ -18,7 +24,7 @@ if TYPE_CHECKING:
     from ...scenario.config.event_configs import EventConfig
 
 
-class EventScope(Enum):
+class EventScope(str, Enum):
     """Enumerated possible values of the :attr:`.Event.scope` attribute."""
 
     AGENT_PROPAGATION: str = "agent_propagation"
@@ -64,6 +70,24 @@ class EventScope(Enum):
     Note:
         Each step of this process is marked with a comment tag: ``[parallel-time-bias-event-handling]``.
     """
+
+
+class ThrustFrame(str, Enum):
+    """Valid descriptors for thrust vector frames."""
+
+    ECI = "eci"
+    """``str``: The event will be applied in the ECI frame."""
+
+    NTW = "ntw"
+    """``str``: The event will be applied in the NTW frame."""
+
+# Set `impulse` attribute of instances of :class:`.ThrustFrame`.
+setattr(ThrustFrame.ECI, "impulse", ScheduledECIImpulse)
+setattr(ThrustFrame.NTW, "impulse", ScheduledNTWImpulse)
+
+# Set `thrust` attribute of instances of :class;`.ThrustFrame`.
+setattr(ThrustFrame.ECI, "thrust", eciBurn)
+setattr(ThrustFrame.NTW, "thrust", ntwBurn)
 
 
 class Event(_DataMixin, Base):

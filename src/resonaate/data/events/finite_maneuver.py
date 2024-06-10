@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from enum import Enum
 from functools import partial
 from typing import TYPE_CHECKING, Tuple  # noqa: UP035
 
@@ -26,6 +27,20 @@ if TYPE_CHECKING:
     from ...scenario.config.event_configs import ScheduledFiniteManeuverConfig
 
 
+class ManeuverType(str, Enum):
+    """Valid values for :attr:`.ScheduledFiniteManeuverEvent.maneuver_type`."""
+
+    SPIRAL = "spiral"
+    """``str``: String designation of spiral maneuver."""
+
+    PLANE_CHANGE = "plane_change"
+    """``str``: String designation of plane change maneuver."""
+
+# Set `thrust` attribute of instances of :class:`.ManeuverType`.
+setattr(ManeuverType.SPIRAL, "thrust", spiralThrust)
+setattr(ManeuverType.PLANE_CHANGE, "thrust", planeChangeThrust)
+
+
 class ScheduledFiniteManeuverEvent(Event):
     """Event data object describing a scheduled finite maneuver."""
 
@@ -34,21 +49,6 @@ class ScheduledFiniteManeuverEvent(Event):
 
     INTENDED_SCOPE: EventScope = EventScope.AGENT_PROPAGATION
     """:class:`.EventScope`: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
-
-    MANEUVER_TYPE_SPIRAL: str = "spiral"
-    """``str``: Configuration string used to delineate spiral maneuver to apply this thrust."""
-
-    MANEUVER_TYPE_PLANE_CHANGE: str = "plane_change"
-    """``str``: Configuration string used to delineate plane change maneuver to apply this thrust."""
-
-    # [NOTE]: Old-style generic type hints builtins (Tuple vs tuple) required until we either:
-    #   1) Move to SQLAlchemy >= 2.0
-    #   2) Move to Python >= 3.10
-    VALID_MANEUVER_TYPES: Tuple[str] = (  # noqa: UP006
-        MANEUVER_TYPE_SPIRAL,
-        MANEUVER_TYPE_PLANE_CHANGE,
-    )
-    """``tuple``: Valid values for :attr:`.maneuver_type`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
@@ -81,14 +81,8 @@ class ScheduledFiniteManeuverEvent(Event):
         start_sim_time = start_jd.convertToScenarioTime(scope_instance.julian_date_start)
         end_sim_time = end_jd.convertToScenarioTime(scope_instance.julian_date_start)
 
-        finite_maneuver = None
-        if str(self.maneuver_type).lower() == self.MANEUVER_TYPE_SPIRAL:
-            thrust_func = partial(spiralThrust, magnitude=self.maneuver_mag)
-        elif str(self.maneuver_type).lower() == self.MANEUVER_TYPE_PLANE_CHANGE:
-            thrust_func = partial(planeChangeThrust, magnitude=self.maneuver_mag)
-        else:
-            err = f"{self.maneuver_type} is not a valid thrust type."
-            raise ValueError(err)
+        maneuver_type = ManeuverType(self.maneuver_type)  # raises `ValueError` if not a valid maneuver type
+        thrust_func = partial(maneuver_type.thrust, magnitude=self.maneuver_mag)
         finite_maneuver = ScheduledFiniteManeuver(
             start_sim_time,
             end_sim_time,
