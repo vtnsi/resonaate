@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Annotated, Literal, Union
 
@@ -19,6 +20,31 @@ from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.transforms.methods import ecef2eci, lla2ecef
 
 # ruff: noqa: A003
+
+
+class StateConfig(BaseModel, ABC):
+    """Abstract base class defines methods that all ``StateConfig`` children classes should implement."""
+
+    @abstractmethod
+    def toECI(self, utc_datetime: datetime) -> ndarray:
+        R"""Convert a state config object into an ECI array.
+
+        Args:
+            utc_datetime (``datetime``): current UTC datetime epoch.
+
+        Returns:
+            ``ndarray``: 6x1 ECI state, [km; km/sec].
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getAltitude(self) -> float:
+        R"""Return the altitude corresponding to this :class:`.StateConfig`.
+
+        Returns:
+            float: Altitude corresponding to this :class:`.StateConfig` (in km).
+        """
+        raise NotImplementedError()
 
 
 class ECIStateConfig(BaseModel):
@@ -51,6 +77,18 @@ class ECIStateConfig(BaseModel):
         """
         return hstack((self.position, self.velocity))
 
+    def getAltitude(self) -> float:
+        R"""Return the altitude corresponding to this :class:`.StateConfig`.
+
+        Note:
+            Returned value is based on current position and doesn't take median altitude into
+            account.
+
+        Returns:
+            float: Altitude corresponding to this :class:`.StateConfig` (in km).
+        """
+        return norm(self.position) - Earth.radius
+
 
 class LLAStateConfig(BaseModel):
     R"""Configuration defining an lat-lon-alt state."""
@@ -79,6 +117,18 @@ class LLAStateConfig(BaseModel):
         # radians, radians, km
         lla_orig = array([self.latitude * DEG2RAD, self.longitude * DEG2RAD, self.altitude])
         return ecef2eci(lla2ecef(lla_orig), utc_datetime)
+
+    def getAltitude(self) -> float:
+        R"""Return the altitude corresponding to this :class:`.StateConfig`.
+
+        Note:
+            Returned value is based on current position and doesn't take median altitude into
+            account.
+
+        Returns:
+            float: Altitude corresponding to this :class:`.StateConfig` (in km).
+        """
+        return self.altitude
 
 
 class COEStateConfig(BaseModel):
@@ -170,6 +220,18 @@ class COEStateConfig(BaseModel):
         orbit = ClassicalElements.fromConfig(self)
         return orbit.toECI()
 
+    def getAltitude(self) -> float:
+        R"""Return the altitude corresponding to this :class:`.StateConfig`.
+
+        Note:
+            Returned value is based on median altitude of the orbit, so it won't be accurate for
+            the entire period of the orbit.
+
+        Returns:
+            float: Altitude corresponding to this :class:`.StateConfig` (in km).
+        """
+        return self.semi_major_axis - Earth.radius
+
 
 class EQEStateConfig(BaseModel):
     R"""Configuration defining an EQE state."""
@@ -209,6 +271,18 @@ class EQEStateConfig(BaseModel):
         """
         orbit = EquinoctialElements.fromConfig(self)
         return orbit.toECI()
+
+    def getAltitude(self) -> float:
+        R"""Return the altitude corresponding to this :class:`.StateConfig`.
+
+        Note:
+            Returned value is based on median altitude of the orbit, so it won't be accurate for
+            the entire period of the orbit.
+
+        Returns:
+            float: Altitude corresponding to this :class:`.StateConfig` (in km).
+        """
+        return self.semi_major_axis - Earth.radius
 
 
 StateConfig = Annotated[Union[ECIStateConfig, LLAStateConfig, COEStateConfig,EQEStateConfig], Field(..., discriminator='type')]

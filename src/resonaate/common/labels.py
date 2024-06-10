@@ -178,6 +178,19 @@ class OrbitRegimeLabel(str, Enum):
     """``str``: geosynchronous Earth orbit (GEO) regime."""
 
 
+class StationKeepingRoutine(str, Enum):
+    """Defines valid labels for station keeping routines."""
+
+    GEO_NS = "GEO NS"
+    """``str``: Station keeping routine to keep GEO orbit stable in north-south direction."""
+
+    GEO_EW = "GEO EW"
+    """``str``: Station keeping routine to keep GEO orbit stable in east-west direction."""
+
+    LEO = "LEO"
+    """``str``: Station keeping routine to keep LEO orbit stable."""
+
+
 class MetricTypeLabel(str, Enum):
     """Defines valid labels for decision metric types."""
 
