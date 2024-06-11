@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Union
 
 # Third Party Imports
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # Local Imports
 from ...common.labels import (
@@ -79,6 +79,15 @@ class ManeuverDetectionConfig(BaseModel):
 
 class AdaptiveEstimationConfig(BaseModel):
     """Configuration section defining adaptive estimation options."""
+
+    model_config = ConfigDict(
+        protected_namespaces=()
+    )
+    """ConfigDict: Configuration management for ``pydantic.BaseModel`` class.
+
+    The ``protected_namespaces`` attribute is set to an empty tuple to avoid a warning being thrown
+    about :attr:`.model_interval`.
+    """
 
     name: AdaptiveEstimationLabel
     """``str``: Name of adaptive estimation method to use."""

@@ -16,7 +16,7 @@ class MetricConfig(BaseModel):
     name: str
     """``str``: Name of this metric function."""
 
-    @field_validator
+    @field_validator('name')
     @classmethod
     def name_must_be_valid(cls, v: str) -> str:
         if v not in VALID_METRICS:
@@ -34,7 +34,7 @@ class RewardConfig(BaseModel):
     name: str
     """``str``: Name of this reward function."""
 
-    @field_validator
+    @field_validator('name')
     @classmethod
     def name_must_be_valid(cls, v: str) -> str:
         if v not in VALID_REWARDS:

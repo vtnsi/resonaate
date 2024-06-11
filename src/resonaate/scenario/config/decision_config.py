@@ -15,7 +15,7 @@ class DecisionConfig(BaseModel):
     name: str
     """``str``: Name of this decision function."""
 
-    @field_validator
+    @field_validator('name')
     @classmethod
     def name_must_be_valid(cls, v: str) -> str:
         if v not in VALID_DECISIONS:

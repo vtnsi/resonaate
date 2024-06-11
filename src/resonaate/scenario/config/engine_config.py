@@ -31,7 +31,7 @@ class EngineConfig(BaseModel):
     targets: list[AgentConfig]
     """``list``: :class:`.TargetAgentConfig` objects that this engine can be task against."""
 
-    @model_validator
+    @model_validator(mode='after')
     def all_viz_compatibility(self) -> Self:
         # [NOTE]: Only Advanced Radar can used with an AllVisibleDecision type.
         if self.decision.name == "AllVisibleDecision":
