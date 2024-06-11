@@ -8,7 +8,7 @@ from typing_extensions import Self
 
 # Local Imports
 from ...common.labels import SensorLabel
-from .agent_config import SensingAgentConfig, TargetAgentConfig
+from .agent_config import AgentConfig, SensingAgentConfig
 from .decision_config import DecisionConfig
 from .reward_config import RewardConfig
 
@@ -28,7 +28,7 @@ class EngineConfig(BaseModel):
     sensors: list[SensingAgentConfig]
     """``list``: :class:`.SensingAgentConfig` objects that this engine can task."""
 
-    targets: list[TargetAgentConfig]
+    targets: list[AgentConfig]
     """``list``: :class:`.TargetAgentConfig` objects that this engine can be task against."""
 
     @model_validator
