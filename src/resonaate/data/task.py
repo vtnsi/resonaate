@@ -11,7 +11,7 @@ from .table_base import Base, _DataMixin
 
 
 class Task(Base, _DataMixin):
-    """Represents tasking information in database.
+    """Represents and contains sensor tasking information in the database.
 
     Attributes:
         id (sqlalchemy.Column(sqlalchemy.Integer)): The id number of the tasking order.
