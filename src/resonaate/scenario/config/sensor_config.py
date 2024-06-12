@@ -11,6 +11,7 @@ from numpy import inf
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 # Local Imports
+from ...common.labels import FoVLabel
 from ...physics.sensor_utils import FrequencyBand, calculateMinRadarRange
 from ...sensors.optical import OPTICAL_DETECTABLE_VISMAG
 from ...sensors.sensor_base import DEFAULT_VIEWING_ANGLE
@@ -42,7 +43,7 @@ PosFloat = Annotated[float, Field(..., gt=0.0)]
 class ConicFieldOfViewConfig(BaseModel):
     R"""Configuration for the field of view of a sensor."""
 
-    fov_shape: Literal["conic"]
+    fov_shape: Literal["conic"] = FoVLabel.CONIC
     R"""``str``: Type of Field of View being used."""
 
     cone_angle: Degree0to180 = DEFAULT_VIEWING_ANGLE
@@ -51,7 +52,7 @@ class ConicFieldOfViewConfig(BaseModel):
 
 class RectangularFieldOfViewConfig(BaseModel):
 
-    fov_shape: Literal["rectangular"]
+    fov_shape: Literal["rectangular"] = FoVLabel.RECTANGULAR
     R"""``str``: Type of Field of View being used."""
 
     azimuth_angle: Degree0to180 = DEFAULT_VIEWING_ANGLE
