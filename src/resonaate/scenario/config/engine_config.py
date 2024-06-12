@@ -29,7 +29,7 @@ class EngineConfig(BaseModel):
     """``list``: :class:`.SensingAgentConfig` objects that this engine can task."""
 
     targets: list[AgentConfig]
-    """``list``: :class:`.TargetAgentConfig` objects that this engine can be task against."""
+    """``list``: :class:`.AgentConfig` objects that this engine can be task against."""
 
     @model_validator(mode='after')
     def all_viz_compatibility(self) -> Self:

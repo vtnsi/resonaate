@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
     from ..scenario.config import NoiseConfig, TimeConfig
-    from ..scenario.config.agent_config import TargetAgentConfig
+    from ..scenario.config.agent_config import AgentConfig
     from ..scenario.config.estimation_config import (
         AdaptiveEstimationConfig,
         EstimationConfig,
@@ -162,7 +162,7 @@ class EstimateAgent(Agent):
     @classmethod
     def fromConfig(
         cls,
-        tgt_cfg: TargetAgentConfig,
+        tgt_cfg: AgentConfig,
         clock: ScenarioClock,
         dynamics: Dynamics,
         time_cfg: TimeConfig,
@@ -172,7 +172,7 @@ class EstimateAgent(Agent):
         """Factory to initialize `EstimateAgent` objects based on given configuration.
 
         Args:
-            tgt_cfg (:class:`.TargetAgentConfig`): config from which to generate an estimate agent.
+            tgt_cfg (:class:`.AgentConfig`): config from which to generate an estimate agent.
             clock (:class:`.ScenarioClock`): common clock object for the simulation.
             dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
             time_cfg (:class:`.TimeConfig`): defines time configuration settings.

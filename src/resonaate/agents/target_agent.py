@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config import PropagationConfig, TargetAgentConfig
+    from ..scenario.config import AgentConfig, PropagationConfig
 
 
 class TargetAgent(Agent):
@@ -93,7 +93,7 @@ class TargetAgent(Agent):
     @classmethod
     def fromConfig(
         cls,
-        tgt_cfg: TargetAgentConfig,
+        tgt_cfg: AgentConfig,
         clock: ScenarioClock,
         dynamics: Dynamics,
         prop_cfg: PropagationConfig,
@@ -101,7 +101,7 @@ class TargetAgent(Agent):
         """Factory to initialize `TargetAgent` objects based on given configuration.
 
         Args:
-            tgt_cfg (:class:`.TargetAgentConfig`): config from which to generate a target agent.
+            tgt_cfg (:class:`.AgentConfig`): config from which to generate a target agent.
             clock (:class:`.ScenarioClock`): common clock object for the simulation.
             dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
             prop_cfg (:class:`.PropagationConfig`): various propagation simulation settings.
