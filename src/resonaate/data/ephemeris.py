@@ -34,7 +34,7 @@ class _EphemerisMixin(_DataMixin):
     vel_z_km_p_sec = Column(Float)
 
     @property
-    def eci(self):
+    def eci(self) -> list:
         """``list``: returns formatted ECI state vector."""
         return [
             self.pos_x_km,

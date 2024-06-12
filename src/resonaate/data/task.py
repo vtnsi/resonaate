@@ -11,7 +11,16 @@ from .table_base import Base, _DataMixin
 
 
 class Task(Base, _DataMixin):
-    """Represents tasking information in database."""
+    """Represents tasking information in database.
+
+    Attributes:
+        id (Column(Integer)): The id number of the tasking order.
+        sensor_id (Column(Integer)): The id number of the assigned sensor.
+        target_id (Column(Integer)): The id number of the target that will be observed.
+        visibility (Column(Boolean)): Whether or not the target is visible to the sensor. True if visible, False otherwise.
+        reward (Column(Float)): A scalar reward matrix value.
+        decision (Column(Boolean)): Whether or not the sensor will observe the target.
+    """
 
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True)
