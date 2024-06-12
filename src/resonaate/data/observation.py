@@ -34,26 +34,26 @@ class _ObservationMixin(_DataMixin):
 
     id = Column(Integer, primary_key=True)
 
-    # Type of the observing sensor (Optical, Radar, AdvRadar)
     sensor_type = Column(String(128), nullable=False)
+    """Type of the observing sensor (Optical, Radar, AdvRadar)"""
 
-    ## Cartesian x-coordinate for Sensor location in ECI frame in kilometers
     pos_x_km = Column(Float, nullable=False)
+    """Cartesian x-coordinate for Sensor location in ECI frame in kilometers"""
 
-    ## Cartesian y-coordinate for Sensor location in ECI frame in kilometers
     pos_y_km = Column(Float, nullable=False)
+    """Cartesian y-coordinate for Sensor location in ECI frame in kilometers"""
 
-    ## Cartesian z-coordinate for Sensor location in ECI frame in kilometers
     pos_z_km = Column(Float, nullable=False)
+    """Cartesian z-coordinate for Sensor location in ECI frame in kilometers"""
 
-    ## Cartesian x-coordinate for Sensor velocity in ECI frame in kilometers per second
     vel_x_km_p_sec = Column(Float, nullable=False)
+    """Cartesian x-coordinate for Sensor velocity in ECI frame in kilometers per second"""
 
-    ## Cartesian y-coordinate for Sensor velocity in ECI frame in kilometers per second
     vel_y_km_p_sec = Column(Float, nullable=False)
+    """Cartesian y-coordinate for Sensor velocity in ECI frame in kilometers per second"""
 
-    ## Cartesian z-coordinate for Sensor velocity in ECI frame in kilometers per second
     vel_z_km_p_sec = Column(Float, nullable=False)
+    """Cartesian z-coordinate for Sensor velocity in ECI frame in kilometers per second"""
 
     @property
     def sensor_eci(self) -> ndarray:
