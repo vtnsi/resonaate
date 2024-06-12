@@ -2,18 +2,11 @@
 
 from __future__ import annotations
 
-# Standard Library Imports
-from enum import Enum
-
 # Third Party Imports
 from pydantic import BaseModel, Field
 
-
-class GeopotentialModel(str, Enum):
-    EGM2008 = "egm2008.txt"
-    EGM96 = "egm96.txt"
-    GGM03S = "GGM03S.txt"
-    JGM3 = "jgm3.txt"
+# Local Imports
+from ...common.labels import GeopotentialModel
 
 
 class GeopotentialConfig(BaseModel):

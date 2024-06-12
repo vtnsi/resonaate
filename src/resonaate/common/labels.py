@@ -211,3 +211,19 @@ class MetricTypeLabel(str, Enum):
 
     UNCERTAINTY: str = "uncertainty"
     """``str``: uncertainty-based metric type."""
+
+
+class GeopotentialModel(str, Enum):
+    """Enumeration of geopotential models mapped to their corresponding filename."""
+
+    EGM2008 = "egm2008.txt"
+    """str: Filename corresponding to the Earth Gravitational Model 2008."""
+
+    EGM96 = "egm96.txt"
+    """str: Filename corresponding to the Earth Gravitational Model 1996."""
+
+    GGM03S = "GGM03S.txt"
+    """str: Filename corresponding to the GRACE Gravity Model 03."""
+
+    JGM3 = "jgm3.txt"
+    """str: Filename corresponding to the Joint Gravity Model 3."""
