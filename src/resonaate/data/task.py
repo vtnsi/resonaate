@@ -25,20 +25,17 @@ class Task(Base, _DataMixin):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True)
 
-    ## Defines the epoch associated with the observation data
-    # Many to one relation with :class:`.Epoch`
     julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
+    """Defines the epoch associated with the observation data. Many to one relation with :class:`.Epoch`"""
 
-    ## Defines the associated sensor agent with the task data
-    # Many to one relation with :class:`.AgentModel`
     sensor_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
     sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
+    """Defines the associated sensor agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
-    ## Defines the associated target agent with the task data
-    # Many to one relation with :class:`.AgentModel`
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
     target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
+    """Defines the associated target agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
     ## Boolean visibility value
     visibility = Column(Boolean)
