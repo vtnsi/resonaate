@@ -33,27 +33,28 @@ class _ObservationMixin(_DataMixin):
     """Data Columns applicable to both Observation and Missed Observation Tables."""
 
     id = Column(Integer, primary_key=True)
+    """The observation id Column. Instance of :class:`sqlalchemy.Column`. Elements are of type ``int``."""
 
     sensor_type = Column(String(128), nullable=False)
-    """Type of the observing sensor (Optical, Radar, AdvRadar)"""
+    """Type of the observing sensor (Optical, Radar, AdvRadar). Instance of :class:`sqlalchemy.Column`. Elements are of type ``str`` with a max length of 128."""
 
     pos_x_km = Column(Float, nullable=False)
-    """Cartesian x-coordinate for Sensor location in ECI frame in kilometers"""
+    """Cartesian x-coordinate for Sensor location in ECI frame in kilometers. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float``."""
 
     pos_y_km = Column(Float, nullable=False)
-    """Cartesian y-coordinate for Sensor location in ECI frame in kilometers"""
+    """Cartesian y-coordinate for Sensor location in ECI frame in kilometers. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float``."""
 
     pos_z_km = Column(Float, nullable=False)
-    """Cartesian z-coordinate for Sensor location in ECI frame in kilometers"""
+    """Cartesian z-coordinate for Sensor location in ECI frame in kilometers. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float``."""
 
     vel_x_km_p_sec = Column(Float, nullable=False)
-    """Cartesian x-coordinate for Sensor velocity in ECI frame in kilometers per second"""
+    """Cartesian x-coordinate for Sensor velocity in ECI frame in kilometers per second. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float``."""
 
     vel_y_km_p_sec = Column(Float, nullable=False)
-    """Cartesian y-coordinate for Sensor velocity in ECI frame in kilometers per second"""
+    """Cartesian y-coordinate for Sensor velocity in ECI frame in kilometers per second. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float``."""
 
     vel_z_km_p_sec = Column(Float, nullable=False)
-    """Cartesian z-coordinate for Sensor velocity in ECI frame in kilometers per second"""
+    """Cartesian z-coordinate for Sensor velocity in ECI frame in kilometers per second. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float``."""
 
     @property
     def sensor_eci(self) -> ndarray:
@@ -75,32 +76,32 @@ class Observation(Base, _ObservationMixin):
 
     __tablename__ = "observations"
 
-    ## Defines the epoch associated with the observation data
-    # Many to one relation with :class:`.Epoch`
     julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the julian dates, which are of type ``float``."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
+    """Defines the epoch associated with the observation data. Many to one relation with :class:`.Epoch`"""
 
-    ## Defines the associated sensor agent with the observation data
-    # Many to one relation with :class:`.AgentModel`
     sensor_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the sensor id numbers, which are of type ``int``"""
     sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
+    """Defines the associated sensor agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
-    ## Defines the associated target agent with the observation data
-    # Many to one relation with :class:`.AgentModel`
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the target id numbers, which are of type ``int``"""
     target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
+    """Defines the associated target agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
-    # Observed azimuth of target from observing sensor in radians
     azimuth_rad = Column(Float)
+    """Observed azimuth of target from observing sensor in radians. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float``."""
 
-    # Observed elevation of target from observing sensor in radians
     elevation_rad = Column(Float)
+    """Observed elevation of target from observing sensor in radians. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float``."""
 
-    # Observed range of target from observing sensor in kilometers
     range_km = Column(Float, nullable=True)
+    """Observed range of target from observing sensor in kilometers. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float`` and are nullable."""
 
-    # Observed range rate of target from observing sensor in kilometers per second
     range_rate_km_p_sec = Column(Float, nullable=True)
+    """Observed range rate of target from observing sensor in kilometers per second. Instance of :class:`sqlalchemy.Column`. Elements are of type ``float`` and are nullable."""
 
     # It is visible...
     reason = Explanation.VISIBLE
@@ -136,22 +137,39 @@ class Observation(Base, _ObservationMixin):
         range_rate_km_p_sec: float | None = None,
     ) -> None:
         r"""Explicit constructor for creating an Observation."""
-        self.julian_date = float(julian_date)
-        self.sensor_id = sensor_id
-        self.target_id = target_id
-        self.sensor_type = sensor_type
-        self.pos_x_km = sensor_eci[0]
-        self.pos_y_km = sensor_eci[1]
-        self.pos_z_km = sensor_eci[2]
-        self.vel_x_km_p_sec = sensor_eci[3]
-        self.vel_y_km_p_sec = sensor_eci[4]
-        self.vel_z_km_p_sec = sensor_eci[5]
-        self.azimuth_rad = azimuth_rad
-        self.elevation_rad = elevation_rad
-        self.range_km = range_km
-        self.range_rate_km_p_sec = range_rate_km_p_sec
+        self.julian_date: float = float(julian_date)
+        """The Julian Date of the observation."""
+        self.sensor_id: int = sensor_id
+        """The id number of the sensor."""
+        self.target_id: int = target_id
+        """The id number of the target."""
+        self.sensor_type: str = (
+            sensor_type  # Will likely need to check at some point that len(sensor_type) is shorther than 128...
+        )
+        """The sensor type. Must be shorter than 128 characters"""
+        self.pos_x_km: float = sensor_eci[0]
+        """The x-coordinate in cartesian space in the ECI frame. Measured in km."""
+        self.pos_y_km: float = sensor_eci[1]
+        """The y-coordinate in cartesian space in the ECI frame. Measured in km."""
+        self.pos_z_km: float = sensor_eci[2]
+        """The z-coordinate in cartesian space in the ECI frame. Measured in km."""
+        self.vel_x_km_p_sec: float = sensor_eci[3]
+        """The x-component of the cartesian velocity vectory in the ECI frame. Measured in km/sec."""
+        self.vel_y_km_p_sec: float = sensor_eci[4]
+        """The y-component of the cartesian velocity vectory in the ECI frame. Measured in km/sec."""
+        self.vel_z_km_p_sec: float = sensor_eci[5]
+        """The z-component of the cartesian velocity vectory in the ECI frame. Measured in km/sec."""
+        self.azimuth_rad: float = azimuth_rad
+        """The azimuth of the observation in radians. Measured clockwise from due North. Ranges from 0 to 2pi"""
+        self.elevation_rad: float = elevation_rad
+        """The angular elevation of the observation in radians. Measured from the horizon to the zenith. -pi/4=nadir, 0=horizon, pi/4=zenith."""
+        self.range_km: float = range_km
+        """Distance between the spacecraft and the observer at the time of observation. Measured in km."""
+        self.range_rate_km_p_sec: float = range_rate_km_p_sec
+        """The change in range over time dr/dt. Measured in km/sec."""
         self._measurement: Measurement | None = None
         self.measurement = measurement
+        """The measurement associated with the observation, of type :class:`.Measurement`"""
 
     @classmethod
     def fromMeasurement(  # noqa: PLR0913
@@ -165,7 +183,7 @@ class Observation(Base, _ObservationMixin):
         measurement: Measurement,
         noisy: bool,
     ) -> Self:
-        r"""Alternative constructor for creating observation objects."""
+        r"""Alternative constructor for creating observation objects. Builds an instance of :class:`.Observation` from an instance of :class:`.Measurement`."""
         utc_datetime = julianDateToDatetime(JulianDate(epoch_jd))
         return cls(
             julian_date=epoch_jd,
@@ -239,23 +257,23 @@ class MissedObservation(Base, _ObservationMixin):
 
     __tablename__ = "missed_observations"
 
-    ## Defines the epoch associated with the observation data
-    # Many to one relation with :class:`.Epoch`
     julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the julian dates, which are of type ``float``."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
+    """ Defines the epoch associated with the observation data. Many to one relation with :class:`.Epoch`"""
 
-    ## Defines the associated sensor agent with the observation data
-    # Many to one relation with :class:`.AgentModel`
     sensor_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the sensor id numbers, which are of type ``int``"""
     sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
+    """ Defines the associated sensor agent with the observation data. Many to one relation with :class:`.AgentModel`"""
 
-    ## Defines the associated target agent with the observation data
-    # Many to one relation with :class:`.AgentModel`
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the target id numbers, which are of type ``int``"""
     target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
+    """ Defines the associated target agent with the observation data. Many to one relation with :class:`.AgentModel`."""
 
-    # True reason why observation was missed, for debugging only!
     reason = Column(String, nullable=False)
+    """True reason why observation was missed, for debugging only!"""
 
     MUTABLE_COLUMN_NAMES = (
         "julian_date",
@@ -281,14 +299,27 @@ class MissedObservation(Base, _ObservationMixin):
         reason: str,
     ) -> None:
         """Explicit constructor for creating an Observation."""
-        self.julian_date = float(julian_date)
-        self.sensor_id = sensor_id
-        self.target_id = target_id
-        self.sensor_type = sensor_type
-        self.pos_x_km = sensor_eci[0]
-        self.pos_y_km = sensor_eci[1]
-        self.pos_z_km = sensor_eci[2]
-        self.vel_x_km_p_sec = sensor_eci[3]
-        self.vel_y_km_p_sec = sensor_eci[4]
-        self.vel_z_km_p_sec = sensor_eci[5]
-        self.reason = reason
+        self.julian_date: float = float(julian_date)
+        """The Julian Date of the observation."""
+        self.sensor_id: int = sensor_id
+        """The id number of the sensor."""
+        self.target_id: int = target_id
+        """The id number of the target."""
+        self.sensor_type: str = (
+            sensor_type  # Will likely need to check at some point that len(sensor_type) is shorther than 128...
+        )
+        """The sensor type. Must be shorter than 128 characters"""
+        self.pos_x_km: float = sensor_eci[0]
+        """The x-coordinate in cartesian space in the ECI frame. Measured in km."""
+        self.pos_y_km: float = sensor_eci[1]
+        """The y-coordinate in cartesian space in the ECI frame. Measured in km."""
+        self.pos_z_km: float = sensor_eci[2]
+        """The z-coordinate in cartesian space in the ECI frame. Measured in km."""
+        self.vel_x_km_p_sec: float = sensor_eci[3]
+        """The x-component of the cartesian velocity vectory in the ECI frame. Measured in km/sec."""
+        self.vel_y_km_p_sec: float = sensor_eci[4]
+        """The y-component of the cartesian velocity vectory in the ECI frame. Measured in km/sec."""
+        self.vel_z_km_p_sec: float = sensor_eci[5]
+        """The z-component of the cartesian velocity vectory in the ECI frame. Measured in km/sec."""
+        self.reason: str = reason
+        """ The reason why the observation was missed. Used for debug reasons."""
