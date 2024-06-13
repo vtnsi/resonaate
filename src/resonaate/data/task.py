@@ -11,40 +11,36 @@ from .table_base import Base, _DataMixin
 
 
 class Task(Base, _DataMixin):
-    """Represents and contains sensor tasking information in the database.
-
-    Attributes:
-        id (sqlalchemy.Column(sqlalchemy.Integer)): The id number of the tasking order.
-        sensor_id (sqlalchemy.Column(sqlalchemy.Integer)): The id number of the assigned sensor.
-        target_id (sqlalchemy.Column(sqlalchemy.Integer)): The id number of the target that will be observed.
-        visibility (sqlalchemy.Column(sqlalchemy.Boolean)): Whether or not the target is visible to the sensor. True if visible, False otherwise.
-        reward (sqlalchemy.Column(sqlalchemy.Float)): A scalar reward matrix value.
-        decision (sqlalchemy.Column(sqlalchemy.Boolean)): Whether or not the sensor will observe the target.
-    """
+    """Represents and contains sensor tasking information in the database."""
 
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the task id numbers, which are of type ``int``"""
 
     julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the julian dates, which are of type ``float``."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     """Defines the epoch associated with the observation data. Many to one relation with :class:`.Epoch`"""
 
     sensor_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the sensor id numbers, which are of type ``int``"""
     sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
     """Defines the associated sensor agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the target id numbers, which are of type ``int``"""
     target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
     """Defines the associated target agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
-    ## Boolean visibility value
     visibility = Column(Boolean)
+    """An instance of :class:`sqlalchemy.Column`. Contains information regarding whether or not a target is visible to the sensor,
+    elements of this column are of type ``bool``."""
 
-    ## Scalar reward matrix value
     reward = Column(Float)
+    """An instance of :class:`sqlalchemy.Column`. Contains the scalar reward matrix value. Elements are of type ``float``."""
 
-    ## Boolean decision value
     decision = Column(Boolean)
+    """An instance of :class:`sqlalchemy.Column`. Contains decision data, of type ``bool``, on whether or not the sensor will observe the target"""
 
     MUTABLE_COLUMN_NAMES = (
         "julian_date",
