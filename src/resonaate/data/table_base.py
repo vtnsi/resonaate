@@ -55,7 +55,7 @@ class _DataMixin:
             getattr(self, attr) != getattr(other, attr) for attr in self.MUTABLE_COLUMN_NAMES
         )
 
-    def makeDictionary(self):
+    def makeDictionary(self) -> dict:
         """Return a dictionary representation of this :class:`.DataMixin` object.
 
         Returns:
