@@ -18,25 +18,36 @@ class FilterStep(
 
     __tablename__ = "filterstep"
     id = Column(Integer, primary_key=True)
+    """An instance of :class:`sqlalchemy.Column`. Contains all of the id numbers for each filter observation. Elements are of type ``int``."""
 
-    ## Defines the epoch associated with the maneuver detection data
-    # Many to one relation with :class:`.Epoch`
     julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the julian dates, which are of type ``float``."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
+    """ Defines the epoch associated with the maneuver detection data. Many to one relation with :class:`.Epoch`"""
 
-    # Many to one relation with :class:`.AgentModel`
     target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    """An instance of :class:`sqlalchemy.Column`. Contains all the target id numbers, which are of type ``int``"""
     target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
+    """Defines the associated target agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
-    # Measurement Residuals Corresponding to Observation
-    # Size is adjustable based upon sensor type (i.e. radar or optical)
     measurement_residual_azimuth = Column(Float)
+    """Measurement residual corresponding to azimuth, measured in radians. Size is adjustable based on sensor type (i.e. radar or optical).
+    Instance of :class:`sqlalchemy.Column`, elements are of type ``float``."""
     measurement_residual_elevation = Column(Float)
+    """Measurement residual corresponding to elevation, measured in radians. Size is adjustable based on sensor type (i.e. radar or optical).
+    Instance of :class:`sqlalchemy.Column`, elements are of type ``float``."""
     measurement_residual_range = Column(Float, nullable=True)
+    """Measurement residual corresponding to range (i.e. distance beween the spacecraft and observer), measured in km.
+    Size is adjustable based on sensor type (i.e. radar or optical).
+    Instance of :class:`sqlalchemy.Column`, elements are of type ``float``."""
     measurement_residual_range_rate = Column(Float, nullable=True)
+    """Measurement residual corresponding to change in range per unit time (i.e. speed the spacecraft is moving towards or away from observer), measured in km/sec.
+    Size is adjustable based on sensor type (i.e. radar or optical).
+    Instance of :class:`sqlalchemy.Column`, elements are of type ``float``."""
 
     # Innovations Corresponding to Observations
     nis = Column(Float)
+    """ Innovations Corresponding to Observations. Instance of :class:`sqlalchemy.Column`, elements are of type ``float``."""
 
     MUTABLE_COLUMN_NAMES = (
         "julian_date",
@@ -70,7 +81,7 @@ class FilterStep(
         return cls(**kwargs)
 
     @property
-    def innovation(self):
+    def innovation(self) -> list:
         """``list``: List containing available components of [measurement_residual_1,...,measurement_residual_n]."""
         # Define size returned based on sensor type (radar or optical)
         if self.measurement_residual_range:
