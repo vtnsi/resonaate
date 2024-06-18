@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 from numpy import array
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
 from ..common.labels import Explanation
@@ -32,28 +32,28 @@ VALID_MEASUREMENTS = tuple(MEASUREMENT_TYPE_MAP.keys())
 class _ObservationMixin(_DataMixin):
     """Data Columns applicable to both Observation and Missed Observation Tables."""
 
-    id: Column = Column(Integer, primary_key=True)
+    id: Mapped[float] = Column(Integer, primary_key=True)
     """The observation id Column. Elements are of type ``int``."""
 
-    sensor_type: Column = Column(String(128), nullable=False)
+    sensor_type: Mapped[float] = Column(String(128), nullable=False)
     """Type of the observing sensor (Optical, Radar, AdvRadar). Elements are of type ``str`` with a max length of 128."""
 
-    pos_x_km: Column = Column(Float, nullable=False)
+    pos_x_km: Mapped[float] = Column(Float, nullable=False)
     """Cartesian x-coordinate for Sensor location in ECI frame in kilometers. Elements are of type ``float``."""
 
-    pos_y_km: Column = Column(Float, nullable=False)
+    pos_y_km: Mapped[float] = Column(Float, nullable=False)
     """Cartesian y-coordinate for Sensor location in ECI frame in kilometers. Elements are of type ``float``."""
 
-    pos_z_km: Column = Column(Float, nullable=False)
+    pos_z_km: Mapped[float] = Column(Float, nullable=False)
     """Cartesian z-coordinate for Sensor location in ECI frame in kilometers. Elements are of type ``float``."""
 
-    vel_x_km_p_sec: Column = Column(Float, nullable=False)
+    vel_x_km_p_sec: Mapped[float] = Column(Float, nullable=False)
     """Cartesian x-coordinate for Sensor velocity in ECI frame in kilometers per second. Elements are of type ``float``."""
 
-    vel_y_km_p_sec: Column = Column(Float, nullable=False)
+    vel_y_km_p_sec: Mapped[float] = Column(Float, nullable=False)
     """Cartesian y-coordinate for Sensor velocity in ECI frame in kilometers per second. Elements are of type ``float``."""
 
-    vel_z_km_p_sec: Column = Column(Float, nullable=False)
+    vel_z_km_p_sec: Mapped[float] = Column(Float, nullable=False)
     """Cartesian z-coordinate for Sensor velocity in ECI frame in kilometers per second. Elements are of type ``float``."""
 
     @property
@@ -76,31 +76,31 @@ class Observation(Base, _ObservationMixin):
 
     __tablename__ = "observations"
 
-    julian_date: Column = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    julian_date: Mapped[float] = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
     """Contains all the julian dates, which are of type ``float``."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     """Defines the epoch associated with the observation data. Many to one relation with :class:`.Epoch`"""
 
-    sensor_id: Column = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    sensor_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
     """Contains all the sensor id numbers, which are of type ``int``"""
     sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
     """Defines the associated sensor agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
-    target_id: Column = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    target_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
     """Contains all the target id numbers, which are of type ``int``"""
     target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
     """Defines the associated target agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
-    azimuth_rad: Column = Column(Float)
+    azimuth_rad: Mapped[float] = Column(Float)
     """Observed azimuth of target from observing sensor in radians. Elements are of type ``float``."""
 
-    elevation_rad: Column = Column(Float)
+    elevation_rad: Mapped[float] = Column(Float)
     """Observed elevation of target from observing sensor in radians. Elements are of type ``float``."""
 
-    range_km: Column = Column(Float, nullable=True)
+    range_km: Mapped[float] = Column(Float, nullable=True)
     """Observed range of target from observing sensor in kilometers. Elements are of type ``float`` and are nullable."""
 
-    range_rate_km_p_sec: Column = Column(Float, nullable=True)
+    range_rate_km_p_sec: Mapped = Column(Float, nullable=True)
     """Observed range rate of target from observing sensor in kilometers per second. Elements are of type ``float`` and are nullable."""
 
     # It is visible...
@@ -257,19 +257,19 @@ class MissedObservation(Base, _ObservationMixin):
 
     __tablename__ = "missed_observations"
 
-    julian_date: Column = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    julian_date: Mapped[float] = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
     """Contains all the julian dates, which are of type ``float``."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     """ Defines the epoch associated with the observation data. Many to one relation with :class:`.Epoch`"""
 
-    sensor_id: Column = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    sensor_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
     """Contains all the sensor id numbers, which are of type ``int``"""
     sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
     """ Defines the associated sensor agent with the observation data. Many to one relation with :class:`.AgentModel`"""
 
-    target_id: Column = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    target_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
     """Contains all the target id numbers, which are of type ``int``"""
-    target: Column = relationship(
+    target = relationship(
         "AgentModel",
         foreign_keys=[target_id],
         lazy="joined",
@@ -277,7 +277,7 @@ class MissedObservation(Base, _ObservationMixin):
     )
     """ Defines the associated target agent with the observation data. Many to one relation with :class:`.AgentModel`."""
 
-    reason: Column = Column(String, nullable=False)
+    reason: Mapped[str] = Column(String, nullable=False)
     """True reason why observation was missed, for debugging only!"""
 
     MUTABLE_COLUMN_NAMES = (

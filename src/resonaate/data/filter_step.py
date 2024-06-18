@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Third Party Imports
 from sqlalchemy import Column, Float, ForeignKey, Integer
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
 from .table_base import Base, _DataMixin
@@ -17,30 +17,30 @@ class FilterStep(
     """Outputs valuable information from the Unscented Kalman Filter from each filter observation."""
 
     __tablename__ = "filterstep"
-    id = Column(Integer, primary_key=True)
+    id: Mapped[int] = Column(Integer, primary_key=True)
     """Contains all of the id numbers for each filter observation. Elements are of type ``int``."""
 
-    julian_date = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
+    julian_date: Mapped[float] = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
     """Contains all the julian dates, which are of type ``float``."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     """Defines the epoch associated with the maneuver detection data. Many to one relation with :class:`.Epoch`"""
 
-    target_id = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
+    target_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
     """Contains all the target id numbers, which are of type ``int``"""
     target = relationship("AgentModel", foreign_keys=[target_id], lazy="joined", innerjoin=True)
     """Defines the associated target agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
-    measurement_residual_azimuth = Column(Float)
+    measurement_residual_azimuth: Mapped[float] = Column(Float)
     """Measurement residual corresponding to azimuth, measured in radians. Size is adjustable based on sensor type (i.e. radar or optical).
     Elements are of type ``float``."""
-    measurement_residual_elevation = Column(Float)
+    measurement_residual_elevation: Mapped[float] = Column(Float)
     """Measurement residual corresponding to elevation, measured in radians. Size is adjustable based on sensor type (i.e. radar or optical).
     Elements are of type ``float``."""
-    measurement_residual_range = Column(Float, nullable=True)
+    measurement_residual_range: Mapped[float] = Column(Float, nullable=True)
     """Measurement residual corresponding to range (i.e. distance beween the spacecraft and observer), measured in km.
     Size is adjustable based on sensor type (i.e. radar or optical).
     Elements are of type ``float``."""
-    measurement_residual_range_rate = Column(Float, nullable=True)
+    measurement_residual_range_rate: Mapped[float] = Column(Float, nullable=True)
     """Measurement residual corresponding to change in range per unit time (i.e. speed the spacecraft is moving towards or away from observer), measured in km/sec.
     Size is adjustable based on sensor type (i.e. radar or optical).
     Elements are of type ``float``."""
