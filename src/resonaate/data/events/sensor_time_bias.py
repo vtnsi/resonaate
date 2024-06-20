@@ -14,8 +14,6 @@ from .base import Event, EventScope
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Third Party Imports
-    from sqlalchemy.orm import Mapped
 
     # Local Imports
     from ...agents.agent_base import Agent
@@ -33,7 +31,7 @@ class SensorTimeBiasEvent(Event):
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
-    applied_bias: Mapped[float] = Column(Float)
+    applied_bias = Column(Float)
     """``float``: amount of time to bias the sensor (seconds)."""
 
     MUTABLE_COLUMN_NAMES = (*Event.MUTABLE_COLUMN_NAMES, "applied_bias")
