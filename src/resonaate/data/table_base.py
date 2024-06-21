@@ -10,6 +10,7 @@ class _Base:
     """Dummy class to allow for type hints without Mapped[] until we enforce SQLAlchemy >= 2.0."""
 
     # [NOTE]: See https://docs.sqlalchemy.org/en/20/changelog/migration_20.html#migration-to-2-0-step-four-use-the-future-flag-on-engine
+    # __allow_unmapped__ doesn't seem to function as intended. Ended up type hinting with Mapped instead.
     __allow_unmapped__ = True
 
 
