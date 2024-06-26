@@ -38,6 +38,8 @@ ______________________________________________________________________
 
 *for new features*
 
+- Improved documentation for database schemas in `resonaate.data`.
+
 ### Changed
 
 *for changes in existing functionality*
@@ -70,7 +72,7 @@ ______________________________________________________________________
 
 *related to the continuous integration system*
 
-## [4.0.0][v4.0.0] - 2024-05-08
+## \[4.0.0\]\[v4.0.0\] - 2024-05-08
 
 ### Added
 
