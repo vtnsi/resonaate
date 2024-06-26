@@ -36,8 +36,6 @@ ______________________________________________________________________
 
 ### Added
 
-*for new features*
-
 - Improved documentation for database schemas in `resonaate.data`.
 
 ### Changed
