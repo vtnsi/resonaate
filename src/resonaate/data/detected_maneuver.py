@@ -15,35 +15,35 @@ class DetectedManeuver(Base, _DataMixin):
 
     __tablename__ = "detected_maneuvers"
     id: Mapped[int] = Column(Integer, primary_key=True)
-    """The id number of the detected maneuver, of type ``int``."""
+    """``int``: The id number of the detected maneuver."""
 
     julian_date: Mapped[float] = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
-    """The associated julian date, of type ``float``."""
+    """``float``: The associated julian date."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     """Defines the epoch associated with the maneuver detection data. Many to one relation with :class:`.Epoch`."""
 
     # [FIXME]: Lazy way to implement multiple sensor IDs before moving to postgres
     sensor_ids: Mapped[str] = Column(String, nullable=False)
-    """Defines the associated sensor agent with the observation data, of type ``str``."""
+    """``str``: Defines the associated sensor agent with the observation data."""
     # sensor = relationship("AgentModel", lazy="joined", innerjoin=True)
     # Many to one relation with :class:`.AgentModel`
 
     target_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    """The id number of the target, of type ``int``."""
+    """``int``: The id number of the target."""
     target = relationship("AgentModel", lazy="joined", innerjoin=True)
     """Defines the associated target agent with the observation data. Many to one relation with :class:`.AgentModel`."""
 
     nis: Mapped[float] = Column(Float, nullable=False)
-    """NIS at the time of the maneuver detection, of type ``float``."""
+    """``float``: NIS at the time of the maneuver detection."""
 
     method: Mapped[str] = Column(String(128), nullable=False)
-    """Method used to detect the maneuver, of type ``str``. Max length of 128 characters."""
+    """``str``: Method used to detect the maneuver. Max length of 128 characters."""
 
     metric: Mapped[float] = Column(Float, nullable=False)
-    """Maneuver metric at the time of the maneuver detection, of type ``float``."""
+    """``float``: Maneuver metric at the time of the maneuver detection."""
 
     threshold: Mapped[float] = Column(Float, nullable=False)
-    """Threshold which the maneuver was tested against, of type ``float``."""
+    """``float``: Threshold which the maneuver was tested against."""
 
     # [FIXME]: Lazy way to implement multiple sensor IDs before moving to postgres
     @property

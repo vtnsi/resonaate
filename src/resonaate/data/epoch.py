@@ -15,7 +15,7 @@ class Epoch(Base, _DataMixin):
     __tablename__ = "epochs"
 
     id = Column(Integer, primary_key=True)
-    """Contains epoch ids, of type ``int``."""
+    """``int``: The id number of the epoch."""
 
     timestampISO = Column(String, unique=True, nullable=False)  # noqa: N815
     """ Defines the human readable version of the `julian_date`"""
@@ -25,7 +25,7 @@ class Epoch(Base, _DataMixin):
     ## Defines the epoch associated with the given data
     # i.e. when this data is provided
     julian_date = Column(Float, index=True, unique=True, nullable=False)
-    """Contains all the julian dates, which are of type ``float``."""
+    """``float``: Contains all the julian dates."""
 
     MUTABLE_COLUMN_NAMES = (
         "julian_date",

@@ -15,20 +15,20 @@ class Task(Base, _DataMixin):
 
     __tablename__ = "tasks"
     id: Mapped[int] = Column(Integer, primary_key=True)
-    """Contains all the task id numbers, which are of type ``int``"""
+    """``int``: Contains all the task id numbers."""
 
     julian_date: Mapped[float] = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
-    """Contains all the julian dates, which are of type ``float``."""
+    """``float``: Contains all the julian dates."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     """Defines the epoch associated with the observation data. Many to one relation with :class:`.Epoch`"""
 
     sensor_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    """Contains all the sensor id numbers, which are of type ``int``"""
+    """``int``: Contains the sensor id numbers."""
     sensor = relationship("AgentModel", foreign_keys=[sensor_id], lazy="joined", innerjoin=True)
     """Defines the associated sensor agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
     target_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    """Contains all the target id numbers, which are of type ``int``"""
+    """``int``: Contains all the target id numbers."""
     target = relationship(
         "AgentModel",
         foreign_keys=[target_id],
@@ -38,14 +38,13 @@ class Task(Base, _DataMixin):
     """Defines the associated target agent with the task data. Many to one relation with :class:`.AgentModel`"""
 
     visibility: Mapped[bool] = Column(Boolean)
-    """Contains information regarding whether or not a target is visible to the sensor,
-    elements of this column are of type ``bool``."""
+    """``bool``: Contains information regarding whether or not a target is visible to the sensor."""
 
     reward: Mapped[float] = Column(Float)
-    """Contains the scalar reward matrix value. Elements are of type ``float``."""
+    """``float``: Contains the scalar reward matrix value."""
 
     decision: Mapped[bool] = Column(Boolean)
-    """Contains decision data, of type ``bool``, on whether or not the sensor will observe the target"""
+    """``bool``: Contains decision data on whether or not the sensor will observe the target"""
 
     MUTABLE_COLUMN_NAMES = (
         "julian_date",

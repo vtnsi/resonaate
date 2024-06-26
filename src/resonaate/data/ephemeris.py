@@ -14,25 +14,25 @@ class _EphemerisMixin(_DataMixin):
     """Data Columns applicable to both Truth and Estimate Ephemeris Tables."""
 
     id: Mapped[int] = Column(Integer, primary_key=True)
-    """ The Epheremis id number, of type ``int``."""
+    """``int``: The Epheremis id number."""
 
     pos_x_km: Mapped[float] = Column(Float)
-    """Cartesian x-coordinate for inertial satellite location in ECI frame in kilometers, of type ``float``."""
+    """``float``: Cartesian x-coordinate for inertial satellite location in ECI frame in kilometers."""
 
     pos_y_km: Mapped[float] = Column(Float)
-    """Cartesian y-coordinate for inertial satellite location in ECI frame in kilometers, of type ``float``."""
+    """``float``: Cartesian y-coordinate for inertial satellite location in ECI frame in kilometers."""
 
     pos_z_km: Mapped[float] = Column(Float)
-    """Cartesian z-coordinate for inertial satellite location in ECI frame in kilometers, of type ``float``."""
+    """``float``: Cartesian z-coordinate for inertial satellite location in ECI frame in kilometers."""
 
     vel_x_km_p_sec: Mapped[float] = Column(Float)
-    """Cartesian x-coordinate for inertial satellite velocity in ECI frame in kilometers per second."""
+    """``float``: Cartesian x-coordinate for inertial satellite velocity in ECI frame in kilometers per second."""
 
     vel_y_km_p_sec: Mapped[float] = Column(Float)
-    """Cartesian y-coordinate for inertial satellite velocity in ECI frame in kilometers per second."""
+    """``float``: Cartesian y-coordinate for inertial satellite velocity in ECI frame in kilometers per second."""
 
     vel_z_km_p_sec: Mapped[float] = Column(Float)
-    """Cartesian z-coordinate for inertial satellite velocity in ECI frame in kilometers per second."""
+    """``float``: Cartesian z-coordinate for inertial satellite velocity in ECI frame in kilometers per second."""
 
     @property
     def eci(self) -> list:
@@ -53,12 +53,12 @@ class TruthEphemeris(Base, _EphemerisMixin):
     __tablename__ = "truth_ephemerides"
 
     julian_date: Mapped[float] = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
-    """Julian date associated with the epheremis, of type ``float``."""
+    """``float``: Julian date associated with the epheremis."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     """Defines the epoch associated with the given data. Many to one relation with :class:`.Epoch`."""
 
     agent_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    """The agent id number, of type ``int``."""
+    """``int``: The agent id number."""
     agent = relationship("AgentModel", lazy="joined", innerjoin=True)
     """Many to one relation with :class:`.AgentModel`."""
 
@@ -103,17 +103,17 @@ class EstimateEphemeris(Base, _EphemerisMixin):
     __tablename__ = "estimate_ephemerides"
 
     julian_date: Mapped[float] = Column(Float, ForeignKey("epochs.julian_date"), nullable=False)
-    """The asscoiated julian date, of type ``float``."""
+    """``float``: The asscoiated julian date."""
     epoch = relationship("Epoch", lazy="joined", innerjoin=True)
     """Defines the epoch associated with the given data. Many to one relation with :class:`.Epoch`"""
 
     agent_id: Mapped[int] = Column(Integer, ForeignKey("agents.unique_id"), nullable=False)
-    """The agent id number, of type ``int``."""
+    """``int``: The agent id number."""
     agent = relationship("AgentModel", lazy="joined", innerjoin=True)
     """Many to one relation with :class:`.AgentModel`."""
 
     source: Mapped[str] = Column(String, nullable=False)
-    """Source of Estimate (Observation or Propagation), of type ``str``."""
+    """``str``: Source of Estimate (Observation or Propagation)."""
 
     # 6x6 Covariance Matrix
     # Row 0
