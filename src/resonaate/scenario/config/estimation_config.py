@@ -85,7 +85,7 @@ class SequentialFilterConfig(ConfigObject):
     """``dict``: extra parameters for the filter algorithm."""
 
     save_filter_steps: bool = False
-    """``bool``: Check if you would like to enable saving filter steps to the database."""
+    """``bool``: Check if you would like to enable saving filter steps to the database. Defaults to False."""
 
     def __post_init__(self):
         """Runs after the object is initialized."""
