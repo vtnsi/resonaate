@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     # Standard Library Imports
 
     # Local Imports
-    from ..data.filter_step import FilterStep
+    # from ..data.filter_step import FilterStep
     from ..data.observation import MissedObservation, Observation
     from ..physics.time.stardate import ScenarioTime
     from ..tasking.engine.engine_base import TaskingEngine
@@ -297,14 +297,13 @@ class Scenario(ParallelMixin):
 
         if self.estimation_config.sequential_filter.save_filter_steps:
             # Obtain all filter steps and save them to the db.
-            filter_steps: list[FilterStep] = []
             agents: list[EstimateAgent] = [
                 self.estimate_agents[key] for key in self.estimate_agents
             ]
             for agent in agents:
                 agent_filters = agent.getFilterSteps()
                 for filter_step in agent_filters:
-                    filter_steps.append(filter_step)  # noqa: PERF402
+                    self.database.insertData(filter_step)
 
         # Commit data to output DB
         self.database.bulkSave(output_data)
