@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     # Standard Library Imports
 
     # Local Imports
-    # from ..data.filter_step import FilterStep
     from ..data.observation import MissedObservation, Observation
     from ..physics.time.stardate import ScenarioTime
     from ..tasking.engine.engine_base import TaskingEngine
