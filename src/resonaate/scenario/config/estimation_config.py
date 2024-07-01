@@ -84,6 +84,9 @@ class SequentialFilterConfig(ConfigObject):
     parameters: dict = field(default_factory=dict)
     """``dict``: extra parameters for the filter algorithm."""
 
+    save_filter_steps: bool = False
+    """``bool``: Check if you would like to enable saving filter steps to the database."""
+
     def __post_init__(self):
         """Runs after the object is initialized."""
         if self.name not in VALID_FILTER_LABELS:
