@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import pickle
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 # Third Party Imports
@@ -26,8 +27,13 @@ from ..physics.measurements import getAzimuth, getElevation, getRange, getRangeR
 from ..physics.time.stardate import julianDateToDatetime
 from ..physics.transforms.methods import ecef2sez, eci2ecef
 
+if TYPE_CHECKING:
+    # Local Imports
+    from ..data.observation import Observation
+    from ..estimation.sequential.sequential_filter import SequentialFilter
 
-def debugToJSONFile(base_filename, debug_dir, json_dict):
+
+def debugToJSONFile(base_filename: str, debug_dir: str, json_dict: dict) -> str:
     """Write debugging information to a JSON file.
 
     Args:
@@ -53,8 +59,16 @@ def debugToJSONFile(base_filename, debug_dir, json_dict):
     return complete_filename
 
 
-def checkThreeSigmaObs(current_obs, sigma=3):
-    """Check if an :class:`.Observation`'s absolute error is greater than 3 std."""
+def checkThreeSigmaObs(current_obs: Observation, sigma: int = 3) -> list:
+    """Check if an :class:`.Observation`'s absolute error is greater than 3 std.
+
+    Args:
+        current_obs (Observation): The observation your are making.
+        sigma (int, optional): The threshold for a detection. Defaults to 3.
+
+    Returns:
+        list: _description_ #TODO: add documentation on what exactly this thing returns
+    """
     target_agents = pickle.loads(KeyValueStore.getValue("target_agents"))
     sensor_agents = pickle.loads(KeyValueStore.getValue("sensor_agents"))
     shared_interface = getDBConnection()
@@ -166,7 +180,7 @@ def checkThreeSigmaObs(current_obs, sigma=3):
     return filenames
 
 
-def findNearestPositiveDefiniteMatrix(covariance):
+def findNearestPositiveDefiniteMatrix(covariance: np.ndarray) -> np.ndarray:
     """Finds the nearest PD matrix of the given covariance.
 
     This is primarily for numerically stabilizing covariances that become poorly conditioned. This
@@ -200,7 +214,11 @@ def findNearestPositiveDefiniteMatrix(covariance):
     return cholesky_p
 
 
-def logFilterStep(filter_obj, observations, truth_state):
+def logFilterStep(
+    filter_obj: SequentialFilter,
+    observations: list,
+    truth_state: np.ndarray,
+) -> str:
     """Log information from a complete filter step for debugging purposes.
 
     This occurs at the end of the :meth:`.SequentialFilter.update` logic.
@@ -230,7 +248,12 @@ def logFilterStep(filter_obj, observations, truth_state):
     )
 
 
-def createFilterDebugDict(filter_obj, observations, truth_state, sensor_agents):
+def createFilterDebugDict(
+    filter_obj: SequentialFilter,
+    observations: list,
+    truth_state: np.ndarray,
+    sensor_agents: dict,
+) -> dict:
     """Create the dictionary used to log filter step information.
 
     Args:
