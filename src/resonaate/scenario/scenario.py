@@ -301,8 +301,7 @@ class Scenario(ParallelMixin):
             ]
             for agent in agents:
                 agent_filters = agent.getFilterSteps()
-                for filter_step in agent_filters:
-                    self.database.insertData(filter_step)
+                output_data.extend(filter_step for filter_step in agent_filters)
 
         # Commit data to output DB
         self.database.bulkSave(output_data)
