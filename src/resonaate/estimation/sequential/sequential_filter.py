@@ -154,25 +154,25 @@ class SequentialFilter(ABC):
         self._logger = logging.getLogger("resonaate")
 
         # Define the filter's scope/behavior
-        self.dynamics = dynamics
-        self.target_id = tgt_id
-        self.time = time
+        self.dynamics: Dynamics = dynamics
+        self.target_id: int = tgt_id
+        self.time: ScenarioTime = time
 
         # Initialize key variables used in filter process
-        self.x_dim = len(q_matrix)
-        self.q_matrix = q_matrix
+        self.x_dim: int = len(q_matrix)
+        self.q_matrix: ndarray = q_matrix
 
         # Maneuver detection attributes
         self.maneuver_metric: float | None = None
-        self.maneuver_detected = False
-        self.maneuver_detection = maneuver_detection
+        self.maneuver_detected: bool = False
+        self.maneuver_detection: ManeuverDetection = maneuver_detection
 
         # Extra parameters for subclasses
-        self.extra_parameters = extra_parameters
+        self.extra_parameters: dict = extra_parameters
 
         # Main estimation products, used as outputs of the filter class
-        self.est_x = est_x
-        self.est_p = est_p
+        self.est_x: ndarray = est_x
+        self.est_p: ndarray = est_p
         self.pred_x = array([])
         self.pred_p = array([])
         self.source: str | None = "Initialization"
@@ -183,10 +183,10 @@ class SequentialFilter(ABC):
 
         # MMAE products
         self.true_y = array([])
-        self.adaptive_estimation = adaptive_estimation
+        self.adaptive_estimation: bool = adaptive_estimation
 
         # Orbit Determination products
-        self.initial_orbit_determination = initial_orbit_determination
+        self.initial_orbit_determination: bool = initial_orbit_determination
 
         # Intermediate values, used for checking statistical consistency & simplifying equations
         self.nis = array([])
