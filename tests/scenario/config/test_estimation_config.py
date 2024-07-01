@@ -93,6 +93,7 @@ def getSequentialFilterConfig() -> dict:
         "dynamics_model": DynamicsLabel.SPECIAL_PERTURBATIONS,
         "maneuver_detection": None,
         "adaptive_estimation": False,
+        "save_filter_steps": False,
         "parameters": {},
     }
 
@@ -106,6 +107,7 @@ def testCreateSequentialFilterConfig(sequential_filter_cfg_dict: dict):
     assert cfg.maneuver_detection is None
     assert cfg.adaptive_estimation is False
     assert cfg.initial_orbit_determination is False
+    assert cfg.save_filter_steps is False
     assert not cfg.parameters
     assert cfg.parameters is not None
 
@@ -128,7 +130,7 @@ def testCreateSequentialFilterConfig(sequential_filter_cfg_dict: dict):
 
     # Ensure the correct amount of req/opt keys
     assert len(SequentialFilterConfig.getRequiredFields()) == 1
-    assert len(SequentialFilterConfig.getOptionalFields()) == 5
+    assert len(SequentialFilterConfig.getOptionalFields()) == 6
 
 
 def testBadInputsSequentialFilterConfig(sequential_filter_cfg_dict: dict):
