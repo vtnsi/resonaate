@@ -45,6 +45,19 @@ def ndArrayToString(obj: np.ndarray) -> str:
     return json.dumps(obj, cls=NumpyArrayEncoder)
 
 
+def stringToNdarray(json_string: str) -> np.ndarray:
+    """Converts a serialized json string to a :class:`np.ndarray`.
+
+    Args:
+        json_string (str): The serialized json string you wish to convert.
+
+    Returns:
+        np.ndarray: Converted numpy array.
+    """
+    obj = json.loads(json_string)
+    return np.array(obj)
+
+
 class FilterStep(
     Base,
     _DataMixin,
