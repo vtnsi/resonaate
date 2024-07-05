@@ -9,7 +9,7 @@ from numpy import array
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.data.filter_step import FilterStep
+from resonaate.data.filter_step import FilterStep, ndArrayToString
 
 if TYPE_CHECKING:
     # RESONAATE Imports
@@ -30,6 +30,9 @@ class TestFilterStep:
     nis = 5.37607495178574
     innovation2 = array([-2.334817207660933e-05, -2.0436287793690333e-05])
 
+    eci_state = array([6900, 6900, 6900, -10.0 - 2.03, 8.0])
+    q_matrix = array([[1, 2, 3], [1, 2, 3], [4, 5, 6]])
+
     def testInit(self):
         """Test the init of FilterStep database table."""
         _ = FilterStep()
@@ -48,6 +51,8 @@ class TestFilterStep:
             measurement_residual_elevation=self.innovation[1],
             measurement_residual_range=self.innovation[2],
             measurement_residual_range_rate=self.innovation[3],
+            truth_eci=ndArrayToString(self.eci_state),
+            q_matrix=ndArrayToString(self.q_matrix),
         )
 
     def testRecordFilterStep(self, epoch, target_agent):
@@ -62,6 +67,8 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
 
     def testReprAndDict(self, epoch, target_agent):

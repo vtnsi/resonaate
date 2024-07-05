@@ -4,30 +4,45 @@ from __future__ import annotations
 
 # Standard Library Imports
 import json
-from typing import TYPE_CHECKING
+from json import JSONEncoder
 
 # Third Party Imports
+# Third party imports
+import numpy as np
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
 from .table_base import Base, _DataMixin
 
-if TYPE_CHECKING:
-    # Third Party Imports
-    import numpy as np
+
+class NumpyArrayEncoder(JSONEncoder):
+    """Handles serialization of a numpy array."""
+
+    def default(self, obj):
+        """Serializes a numpy array and returns it as a json.
+
+        Args:
+            obj (np.ndarray): Numpy array you wish to serialize
+
+        Returns:
+            list, Any: Serialized json.
+        """
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
 
 
-def serailizeArray(array: np.ndarray) -> str:
-    """Serializes a :class:`np.ndarray` and converts it into a json string.
+def ndArrayToString(obj: np.ndarray) -> str:
+    """Converts an instance of :class:`np.ndarray` to a json string.
 
     Args:
-        array (np.ndarray): The array you wish to serialize.
+        obj (np.ndarray): The array you wish to convert.
 
     Returns:
-        str: The array serialized as a json string.
+        str: The array represented as a json string.
     """
-    return json.dumps(array.tolist)
+    return json.dumps(obj, cls=NumpyArrayEncoder)
 
 
 class FilterStep(
@@ -101,12 +116,12 @@ class FilterStep(
         # For any ndarray typed kwargs, serialize them into a json string.
         if "truth_eci" in kwargs:
             eci: np.ndarray = kwargs["truth_eci"]
-            eci_string: str = serailizeArray(eci)
+            eci_string: str = ndArrayToString(eci)
             kwargs["truth_eci"] = eci_string
 
         if "q_matrix" in kwargs:
             _q_matrix: np.ndarray = kwargs["q_matrix"]
-            _q_matrix_string: str = serailizeArray(_q_matrix)
+            _q_matrix_string: str = ndArrayToString(_q_matrix)
             kwargs["q_matrix"] = _q_matrix_string
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
