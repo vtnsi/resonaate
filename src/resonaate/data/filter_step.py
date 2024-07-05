@@ -66,6 +66,8 @@ class FilterStep(
         "measurement_residual_range",
         "measurement_residual_range_rate",
         "nis",
+        "truth_eci",
+        "q_matrix",
     )
 
     @classmethod
