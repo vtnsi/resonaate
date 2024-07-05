@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+# Standard Library Imports
+import json
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
 from .table_base import Base, _DataMixin
+
+if TYPE_CHECKING:
+    # Third Party Imports
+    import numpy as np
 
 
 class FilterStep(
@@ -66,10 +74,26 @@ class FilterStep(
 
         A keyword is provided either in a 4x1 size or a 2x1 size and if 4x1, range and range-rate
         components are written.
+
+        Any kwargs of type :class:`np.ndarray` should be passed in as their original array type.
+        This method handles the json serialization and stores them in the database as a string.
         """
         # Parse measurement residual array into separate columns
         kwargs["measurement_residual_azimuth"] = kwargs["innovation"][0]
         kwargs["measurement_residual_elevation"] = kwargs["innovation"][1]
+
+        # Handle serializing the various array elements into strings
+
+        # Verify the the eci element exists, and serialize it into a json string
+        if kwargs["truth_eci"] is not None:
+            eci: np.ndarray = kwargs["truth_eci"]
+            eci_string: str = json.dumps(eci.tolist())
+            kwargs["truth_eci"] = eci_string
+
+        if kwargs["q_matrix"] is not None:
+            _q_matrix: np.ndarray = kwargs["q_matrix"]
+            _q_matrix_string: str = json.dumps(_q_matrix.tolist())
+            kwargs["q_matrix"] = _q_matrix_string
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
         if len(kwargs["innovation"]) == 4:
