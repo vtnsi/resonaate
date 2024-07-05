@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Third Party Imports
-from sqlalchemy import Column, Float, ForeignKey, Integer
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
@@ -40,6 +40,11 @@ class FilterStep(
     measurement_residual_range_rate: Mapped[float] = Column(Float, nullable=True)
     """``float``: Measurement residual corresponding to change in range per unit time (i.e. speed the spacecraft is moving towards or away from observer), measured in km/sec.
     Size is adjustable based on sensor type (i.e. radar or optical)."""
+
+    truth_eci: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the 6-element ECI vector in list format."""
+    q_matrix: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the q-matrix."""
 
     nis = Column(Float)
     """``float``: Innovations Corresponding to Observations."""
