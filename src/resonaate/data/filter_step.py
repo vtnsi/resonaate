@@ -84,13 +84,13 @@ class FilterStep(
 
         # Handle serializing the various array elements into strings
 
-        # Verify the the eci element exists, and serialize it into a json string
-        if kwargs["truth_eci"] is not None:
+        # For any ndarray typed kwargs, serialize them into a json string.
+        if "truth_eci" in kwargs:
             eci: np.ndarray = kwargs["truth_eci"]
             eci_string: str = json.dumps(eci.tolist())
             kwargs["truth_eci"] = eci_string
 
-        if kwargs["q_matrix"] is not None:
+        if "q_matrix" in kwargs:
             _q_matrix: np.ndarray = kwargs["q_matrix"]
             _q_matrix_string: str = json.dumps(_q_matrix.tolist())
             kwargs["q_matrix"] = _q_matrix_string
