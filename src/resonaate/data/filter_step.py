@@ -18,6 +18,18 @@ if TYPE_CHECKING:
     import numpy as np
 
 
+def serailizeArray(array: np.ndarray) -> str:
+    """Serializes a :class:`np.ndarray` and converts it into a json string.
+
+    Args:
+        array (np.ndarray): The array you wish to serialize.
+
+    Returns:
+        str: The array serialized as a json string.
+    """
+    return json.dumps(array.tolist)
+
+
 class FilterStep(
     Base,
     _DataMixin,
@@ -89,12 +101,12 @@ class FilterStep(
         # For any ndarray typed kwargs, serialize them into a json string.
         if "truth_eci" in kwargs:
             eci: np.ndarray = kwargs["truth_eci"]
-            eci_string: str = json.dumps(eci.tolist())
+            eci_string: str = serailizeArray(eci)
             kwargs["truth_eci"] = eci_string
 
         if "q_matrix" in kwargs:
             _q_matrix: np.ndarray = kwargs["q_matrix"]
-            _q_matrix_string: str = json.dumps(_q_matrix.tolist())
+            _q_matrix_string: str = serailizeArray(_q_matrix)
             kwargs["q_matrix"] = _q_matrix_string
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
