@@ -83,6 +83,8 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
         print(filt)
         filt.makeDictionary()
@@ -99,6 +101,8 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
 
         filt2 = FilterStep.recordFilterStep(
@@ -106,6 +110,8 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
 
         filt3 = FilterStep.recordFilterStep(
@@ -113,6 +119,8 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation + self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
         # Test equality and inequality
         assert filt1 == filt2
@@ -129,6 +137,8 @@ class TestFilterStep:
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
         assert isinstance(filt.innovation, list)
         assert len(filt.innovation) == 4
@@ -144,6 +154,8 @@ class TestFilterStep:
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation2,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
         assert isinstance(filt.innovation, list)
         assert len(filt.innovation) == 2
@@ -162,6 +174,8 @@ class TestFilterStep:
             target_id=target_agent.unique_id,
             innovation=self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
 
         # Test insert of object
@@ -180,6 +194,8 @@ class TestFilterStep:
             target_id=target_agent.unique_id,
             innovation=self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
         # Pre-insert required objects
         database.insertData(epoch)
@@ -203,6 +219,8 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
         database.insertData(filt)
 
@@ -227,6 +245,8 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
+            truth_eci=self.eci_state,
+            q_matrix=self.q_matrix,
         )
         database.insertData(filt)
 
