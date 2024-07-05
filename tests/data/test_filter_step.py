@@ -5,13 +5,16 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array
+from numpy import array, array_equal
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.data.filter_step import FilterStep, ndArrayToString
+from resonaate.data.filter_step import FilterStep, ndArrayToString, stringToNdarray
 
 if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
     # RESONAATE Imports
     from resonaate.data.resonaate_database import ResonaateDatabase
 
@@ -57,6 +60,17 @@ class TestFilterStep:
             truth_eci=ndArrayToString(self.eci_state),
             q_matrix=ndArrayToString(self.q_matrix),
         )
+
+    def testJSONSerializer(self):
+        """Test the conversions between :class:`ndarray` and json string."""
+        q_mat_str: str = ndArrayToString(self.q_matrix)
+        q_mat_from_str: ndarray = stringToNdarray(q_mat_str)
+
+        eci_str: str = ndArrayToString(self.eci_state)
+        eci_from_str: ndarray = stringToNdarray(eci_str)
+
+        assert array_equal(self.q_matrix, q_mat_from_str)
+        assert array_equal(self.eci_state, eci_from_str)
 
     def testRecordFilterStep(self, epoch, target_agent):
         """Test initializing the keywords of the table.
