@@ -137,3 +137,4 @@ class FilterStep(
     @property
     def sigma_y_res(self) -> np.ndarray:
         """``np.ndarray``: The sigma y residual array."""
+        return stringToNdarray(self._sigma_y_res)
