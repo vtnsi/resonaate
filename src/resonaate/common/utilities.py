@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime
+from json import JSONEncoder
 
 # Third Party Imports
 import numpy as np
@@ -13,6 +14,48 @@ import numpy as np
 # Local Imports
 from .behavioral_config import BehavioralConfig
 from .logger import resonaateLogError
+
+
+class NumpyArrayEncoder(JSONEncoder):
+    """Handles serialization of a numpy array."""
+
+    def default(self, obj):
+        """Serializes a numpy array and returns it as a json.
+
+        Args:
+            obj (np.ndarray): Numpy array you wish to serialize
+
+        Returns:
+            list, Any: Serialized json.
+        """
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
+
+
+def ndArrayToString(obj: np.ndarray) -> str:
+    """Converts an instance of :class:`np.ndarray` to a json string.
+
+    Args:
+        obj (np.ndarray): The array you wish to convert.
+
+    Returns:
+        str: The array represented as a json string.
+    """
+    return json.dumps(obj, cls=NumpyArrayEncoder)
+
+
+def stringToNdarray(json_string: str) -> np.ndarray:
+    """Converts a serialized json string to a :class:`np.ndarray`.
+
+    Args:
+        json_string (str): The serialized json string you wish to convert.
+
+    Returns:
+        np.ndarray: Converted numpy array.
+    """
+    obj = json.loads(json_string)
+    return np.array(obj)
 
 
 def getTypeString(class_instance):

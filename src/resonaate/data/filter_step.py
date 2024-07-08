@@ -3,59 +3,19 @@
 from __future__ import annotations
 
 # Standard Library Imports
-import json
-from json import JSONEncoder
+from typing import TYPE_CHECKING
 
 # Third Party Imports
-# Third party imports
-import numpy as np
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
+from ..common.utilities import ndArrayToString, stringToNdarray  # noqa: F401
 from .table_base import Base, _DataMixin
 
-
-class NumpyArrayEncoder(JSONEncoder):
-    """Handles serialization of a numpy array."""
-
-    def default(self, obj):
-        """Serializes a numpy array and returns it as a json.
-
-        Args:
-            obj (np.ndarray): Numpy array you wish to serialize
-
-        Returns:
-            list, Any: Serialized json.
-        """
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return JSONEncoder.default(self, obj)
-
-
-def ndArrayToString(obj: np.ndarray) -> str:
-    """Converts an instance of :class:`np.ndarray` to a json string.
-
-    Args:
-        obj (np.ndarray): The array you wish to convert.
-
-    Returns:
-        str: The array represented as a json string.
-    """
-    return json.dumps(obj, cls=NumpyArrayEncoder)
-
-
-def stringToNdarray(json_string: str) -> np.ndarray:
-    """Converts a serialized json string to a :class:`np.ndarray`.
-
-    Args:
-        json_string (str): The serialized json string you wish to convert.
-
-    Returns:
-        np.ndarray: Converted numpy array.
-    """
-    obj = json.loads(json_string)
-    return np.array(obj)
+if TYPE_CHECKING:
+    # Third Party Imports
+    import numpy as np
 
 
 class FilterStep(

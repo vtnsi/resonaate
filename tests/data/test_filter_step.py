@@ -9,7 +9,8 @@ from numpy import array, array_equal
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.data.filter_step import FilterStep, ndArrayToString, stringToNdarray
+from resonaate.common.utilities import ndArrayToString, stringToNdarray
+from resonaate.data.filter_step import FilterStep
 
 if TYPE_CHECKING:
     # Third Party Imports
