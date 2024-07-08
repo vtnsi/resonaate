@@ -335,6 +335,8 @@ class EstimateAgent(Agent):
                 innovation=self.nominal_filter.innovation,
                 nis=self.nominal_filter.nis,
                 q_matrix=self.nominal_filter.q_matrix,
+                sigma_x_res=self.nominal_filter.getPredictionResult()["sigma_x_res"],
+                sigma_y_res=self.nominal_filter.getForecastResult()["sigma_y_res"],
             ),
         )
 
