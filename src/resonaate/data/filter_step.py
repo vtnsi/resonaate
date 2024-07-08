@@ -91,6 +91,8 @@ class FilterStep(
         # For any ndarray typed kwargs, serialize them into a json string.
 
         kwargs = serializeArrayKwarg("q_matrix", kwargs)
+        kwargs = serializeArrayKwarg("sigma_x_res", kwargs)
+        kwargs = serializeArrayKwarg("sigma_y_res", kwargs)
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
         if len(kwargs["innovation"]) == 4:
