@@ -70,6 +70,8 @@ class FilterStep(
         "measurement_residual_range_rate",
         "nis",
         "_q_matrix",
+        "_sigma_x_res",
+        "_sigma_y_res",
     )
 
     @classmethod
