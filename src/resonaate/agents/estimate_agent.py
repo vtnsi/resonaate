@@ -328,6 +328,8 @@ class EstimateAgent(Agent):
 
     def _saveFilterStep(self) -> None:
         """Save :class:`.FilterStep` events to insert into the DB later."""
+        predicition: dict = self.nominal_filter.getPredictionResult()
+        forecast: dict = self.nominal_filter.getForecastResult()
         self._filter_info.append(
             FilterStep.recordFilterStep(
                 julian_date=self.julian_date_epoch,
@@ -335,10 +337,11 @@ class EstimateAgent(Agent):
                 innovation=self.nominal_filter.innovation,
                 nis=self.nominal_filter.nis,
                 q_matrix=self.nominal_filter.q_matrix,
-                sigma_x_res=self.nominal_filter.getPredictionResult()["sigma_x_res"],
-                sigma_y_res=self.nominal_filter.getForecastResult()["sigma_y_res"],
-                cross_cvr=self.nominal_filter.getForecastResult()["cross_cvr"],
-                innov_cvr=self.nominal_filter.getForecastResult()["innov_cvr"],
+                sigma_x_res=predicition["sigma_x_res"],
+                sigma_y_res=forecast["sigma_y_res"],
+                cross_cvr=forecast["cross_cvr"],
+                innov_cvr=forecast["innov_cvr"],
+                kalman_gain=forecast["kalman_gain"],
             ),
         )
 
