@@ -147,3 +147,8 @@ class FilterStep(
     def cross_cvr(self) -> np.ndarray:
         """``np.ndarray``: The cross covrariance array."""
         return stringToNdarray(self._cross_cvr)
+
+    @property
+    def innov_cvr(self) -> np.ndarray:
+        """``np.ndarray``: the innovation covariance array."""
+        return stringToNdarray(self._innov_cvr)
