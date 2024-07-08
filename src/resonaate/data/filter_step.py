@@ -53,9 +53,9 @@ class FilterStep(
     """``str``: Serialized json containing the q-matrix."""
 
     _sigma_x_res: Mapped[str] = Column(String)
-    """``str``: Serialized json containing the sigma x response array"""  # TODO: Figure out a better description of what this is.
+    """``str``: Serialized json containing the sigma x residual array"""  # TODO: Figure out a better description of what this is.
     _sigma_y_res: Mapped[str] = Column(String)
-    """``str``: Serialized json containing the sigma y response array"""  # TODO: Figure out a better description of what this is.
+    """``str``: Serialized json containing the sigma y residual array"""  # TODO: Figure out a better description of what this is.
 
     nis = Column(Float)
     """``float``: Innovations Corresponding to Observations."""
@@ -123,3 +123,12 @@ class FilterStep(
     def q_matrix(self) -> np.ndarray:
         """``np.ndarray``: The Q-Matrix associated with the filter step."""
         return stringToNdarray(self._q_matrix)
+
+    @property
+    def sigma_x_res(self) -> np.ndarray:
+        """``np.ndarray``: The sigma x residual array."""
+        return stringToNdarray(self._sigma_x_res)
+
+    @property
+    def sigma_y_res(self) -> np.ndarray:
+        """``np.ndarray``: The sigma y residual array."""
