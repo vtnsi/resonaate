@@ -10,7 +10,7 @@ from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
-from ..common.utilities import ndArrayToString, stringToNdarray  # noqa: F401
+from ..common.utilities import ndArrayToString, stringToNdarray
 from .table_base import Base, _DataMixin
 
 if TYPE_CHECKING:
@@ -113,3 +113,8 @@ class FilterStep(
             ]
 
         return [self.measurement_residual_azimuth, self.measurement_residual_elevation]
+
+    @property
+    def q_matrix(self) -> np.ndarray:
+        """``np.ndarray``: The Q-Matrix associated with the filter step."""
+        return stringToNdarray(self._q_matrix)

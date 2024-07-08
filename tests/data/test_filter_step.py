@@ -5,7 +5,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, array_equal
+from numpy import array, array_equal, ndarray
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
@@ -137,6 +137,22 @@ class TestFilterStep:
         # Test equality and inequality
         assert filt1 == filt2
         assert filt1 != filt3
+
+    def testQMatrixProperty(self, epoch, target_agent):
+        """Test Q-Matrix Property.
+
+        Args:
+            epoch (class: `.Epoch`): current epoch at which filter information is taken
+            target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+        """
+        filt = FilterStep.recordFilterStep(
+            epoch=epoch,
+            target=target_agent,
+            innovation=self.innovation,
+            q_matrix=self.q_matrix,
+        )
+        assert isinstance(filt.q_matrix, ndarray)
+        assert array_equal(filt.q_matrix, self.q_matrix)
 
     def testInnovationProperty(self, epoch, target_agent):
         """Test Innovation Property.
