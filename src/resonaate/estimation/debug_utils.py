@@ -294,17 +294,17 @@ def createFilterDebugDict(
     description["predicted_covar"] = prediction_result["pred_p"].tolist()
     description["predicted_error"] = np.absolute(norm(truth_state - prediction_result["pred_x"]))
     description["sigma_points"] = prediction_result["sigma_points"].tolist()
-    description["sigma_x_res"] = prediction_result["sigma_x_res"].tolist()
+    description["sigma_x_res"] = prediction_result["sigma_x_res"].tolist()  # todo
 
     # Update information from the forecast step data
     forecast_result = filter_obj.getForecastResult()
     description["is_angular"] = forecast_result["is_angular"].tolist()
     description["est_y"] = forecast_result["est_y"].tolist()
-    description["sigma_y_res"] = forecast_result["sigma_y_res"].tolist()
+    description["sigma_y_res"] = forecast_result["sigma_y_res"].tolist()  # todo
     description["r_matrix"] = forecast_result["r_matrix"].tolist()
-    description["cross_cvr"] = forecast_result["cross_cvr"].tolist()
-    description["innov_cvr"] = forecast_result["innov_cvr"].tolist()
-    description["kalman_gain"] = forecast_result["kalman_gain"].tolist()
+    description["cross_cvr"] = forecast_result["cross_cvr"].tolist()  # todo
+    description["innov_cvr"] = forecast_result["innov_cvr"].tolist()  # todo
+    description["kalman_gain"] = forecast_result["kalman_gain"].tolist()  # todo
     description["covar_after"] = forecast_result["est_p"].tolist()
 
     # Update information from the update step data

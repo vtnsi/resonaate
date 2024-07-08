@@ -334,7 +334,6 @@ class EstimateAgent(Agent):
                 target_id=self.simulation_id,
                 innovation=self.nominal_filter.innovation,
                 nis=self.nominal_filter.nis,
-                truth_eci=self.eci_state,
                 q_matrix=self.nominal_filter.q_matrix,
             ),
         )

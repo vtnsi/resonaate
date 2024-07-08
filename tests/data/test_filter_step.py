@@ -57,8 +57,7 @@ class TestFilterStep:
             measurement_residual_elevation=self.innovation[1],
             measurement_residual_range=self.innovation[2],
             measurement_residual_range_rate=self.innovation[3],
-            truth_eci=ndArrayToString(self.eci_state),
-            q_matrix=ndArrayToString(self.q_matrix),
+            _q_matrix=ndArrayToString(self.q_matrix),
         )
 
     def testJSONSerializer(self):
@@ -84,7 +83,6 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
 
@@ -100,7 +98,6 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
         print(filt)
@@ -118,7 +115,6 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
 
@@ -127,7 +123,6 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
 
@@ -136,7 +131,6 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation + self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state_2,
             q_matrix=self.q_matrix_2,
         )
         # Test equality and inequality
@@ -154,7 +148,6 @@ class TestFilterStep:
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
         assert isinstance(filt.innovation, list)
@@ -171,7 +164,6 @@ class TestFilterStep:
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation2,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
         assert isinstance(filt.innovation, list)
@@ -191,7 +183,6 @@ class TestFilterStep:
             target_id=target_agent.unique_id,
             innovation=self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
 
@@ -211,7 +202,6 @@ class TestFilterStep:
             target_id=target_agent.unique_id,
             innovation=self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
         # Pre-insert required objects
@@ -236,7 +226,6 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
         database.insertData(filt)
@@ -262,7 +251,6 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             nis=self.nis,
-            truth_eci=self.eci_state,
             q_matrix=self.q_matrix,
         )
         database.insertData(filt)

@@ -89,9 +89,7 @@ class FilterStep(
     """``float``: Measurement residual corresponding to change in range per unit time (i.e. speed the spacecraft is moving towards or away from observer), measured in km/sec.
     Size is adjustable based on sensor type (i.e. radar or optical)."""
 
-    truth_eci: Mapped[str] = Column(String)
-    """``str``: Serialized json containing the 6-element ECI vector in list format."""
-    q_matrix: Mapped[str] = Column(String)
+    _q_matrix: Mapped[str] = Column(String)
     """``str``: Serialized json containing the q-matrix."""
 
     nis = Column(Float)
@@ -106,8 +104,7 @@ class FilterStep(
         "measurement_residual_range",
         "measurement_residual_range_rate",
         "nis",
-        "truth_eci",
-        "q_matrix",
+        "_q_matrix",
     )
 
     @classmethod
@@ -127,15 +124,12 @@ class FilterStep(
         # Handle serializing the various array elements into strings
 
         # For any ndarray typed kwargs, serialize them into a json string.
-        if "truth_eci" in kwargs:
-            eci: np.ndarray = kwargs["truth_eci"]
-            eci_string: str = ndArrayToString(eci)
-            kwargs["truth_eci"] = eci_string
 
         if "q_matrix" in kwargs:
             _q_matrix: np.ndarray = kwargs["q_matrix"]
+            kwargs.pop("q_matrix")
             _q_matrix_string: str = ndArrayToString(_q_matrix)
-            kwargs["q_matrix"] = _q_matrix_string
+            kwargs["_q_matrix"] = _q_matrix_string
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
         if len(kwargs["innovation"]) == 4:
