@@ -53,9 +53,12 @@ class FilterStep(
     """``str``: Serialized json containing the q-matrix."""
 
     _sigma_x_res: Mapped[str] = Column(String)
-    """``str``: Serialized json containing the sigma x residual array"""  # TODO: Figure out a better description of what this is.
+    """``str``: Serialized json containing the sigma x residual array."""  # TODO: Figure out a better description of what this is.
     _sigma_y_res: Mapped[str] = Column(String)
-    """``str``: Serialized json containing the sigma y residual array"""  # TODO: Figure out a better description of what this is.
+    """``str``: Serialized json containing the sigma y residual array."""  # TODO: Figure out a better description of what this is.
+
+    _cross_cvr: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the cross covariance array."""
 
     nis = Column(Float)
     """``float``: Innovations Corresponding to Observations."""
@@ -72,6 +75,7 @@ class FilterStep(
         "_q_matrix",
         "_sigma_x_res",
         "_sigma_y_res",
+        "_cross_cvr",
     )
 
     @classmethod
@@ -95,6 +99,7 @@ class FilterStep(
         kwargs = serializeArrayKwarg("q_matrix", kwargs)
         kwargs = serializeArrayKwarg("sigma_x_res", kwargs)
         kwargs = serializeArrayKwarg("sigma_y_res", kwargs)
+        kwargs = serializeArrayKwarg("cross_cvr", kwargs)
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
         if len(kwargs["innovation"]) == 4:
