@@ -59,6 +59,8 @@ class FilterStep(
 
     _cross_cvr: Mapped[str] = Column(String)
     """``str``: Serialized json containing the cross covariance array."""
+    _innov_cvr: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the innovation covariance array."""
 
     nis = Column(Float)
     """``float``: Innovations Corresponding to Observations."""
@@ -76,6 +78,7 @@ class FilterStep(
         "_sigma_x_res",
         "_sigma_y_res",
         "_cross_cvr",
+        "_innov_cvr",
     )
 
     @classmethod
@@ -100,6 +103,7 @@ class FilterStep(
         kwargs = serializeArrayKwarg("sigma_x_res", kwargs)
         kwargs = serializeArrayKwarg("sigma_y_res", kwargs)
         kwargs = serializeArrayKwarg("cross_cvr", kwargs)
+        kwargs = serializeArrayKwarg("innov_cvr", kwargs)
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
         if len(kwargs["innovation"]) == 4:

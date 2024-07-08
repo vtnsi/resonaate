@@ -338,6 +338,7 @@ class EstimateAgent(Agent):
                 sigma_x_res=self.nominal_filter.getPredictionResult()["sigma_x_res"],
                 sigma_y_res=self.nominal_filter.getForecastResult()["sigma_y_res"],
                 cross_cvr=self.nominal_filter.getForecastResult()["cross_cvr"],
+                innov_cvr=self.nominal_filter.getForecastResult()["innov_cvr"],
             ),
         )
 
