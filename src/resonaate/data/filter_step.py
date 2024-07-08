@@ -138,3 +138,8 @@ class FilterStep(
     def sigma_y_res(self) -> np.ndarray:
         """``np.ndarray``: The sigma y residual array."""
         return stringToNdarray(self._sigma_y_res)
+
+    @property
+    def cross_cvr(self) -> np.ndarray:
+        """``np.ndarray``: The cross covrariance array."""
+        return stringToNdarray(self._cross_cvr)
