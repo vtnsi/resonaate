@@ -58,6 +58,30 @@ def stringToNdarray(json_string: str) -> np.ndarray:
     return np.array(obj)
 
 
+def serializeArrayKwarg(name: str, kwargs: dict) -> dict:
+    """Checks the kwargs if a specific name is present, then converts that parameter into a json string.
+
+    It will also add a '_" prefix to the kwarg to indicate that it is supposed to be a private attribute.
+    This is used primarily for handling ndarray to json string conversions within some db classes that
+    contain array-based values.
+
+    Args:
+        name (str): The name of the keyword argument you are modifying. If it is not found in kwargs,
+        this function will just return the original kwargs table.
+        kwargs (dict): The keyword arguments.
+
+    Returns:
+        dict: The modified keyword arguments.
+    """
+    if name in kwargs:
+        private_name: str = f"_{name}"
+        arr: np.ndarray = kwargs[name]
+        kwargs.pop(name)
+        arr_str: str = ndArrayToString(arr)
+        kwargs[private_name] = arr_str
+    return kwargs
+
+
 def getTypeString(class_instance):
     """Return the class type as a string without any base class information.
 

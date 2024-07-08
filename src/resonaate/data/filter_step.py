@@ -10,7 +10,7 @@ from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
-from ..common.utilities import ndArrayToString, stringToNdarray
+from ..common.utilities import serializeArrayKwarg, stringToNdarray
 from .table_base import Base, _DataMixin
 
 if TYPE_CHECKING:
@@ -52,6 +52,11 @@ class FilterStep(
     _q_matrix: Mapped[str] = Column(String)
     """``str``: Serialized json containing the q-matrix."""
 
+    _sigma_x_res: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the sigma x response array"""  # TODO: Figure out a better description of what this is.
+    _sigma_y_res: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the sigma y response array"""  # TODO: Figure out a better description of what this is.
+
     nis = Column(Float)
     """``float``: Innovations Corresponding to Observations."""
 
@@ -85,11 +90,7 @@ class FilterStep(
 
         # For any ndarray typed kwargs, serialize them into a json string.
 
-        if "q_matrix" in kwargs:
-            _q_matrix: np.ndarray = kwargs["q_matrix"]
-            kwargs.pop("q_matrix")
-            _q_matrix_string: str = ndArrayToString(_q_matrix)
-            kwargs["_q_matrix"] = _q_matrix_string
+        kwargs = serializeArrayKwarg("q_matrix", kwargs)
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
         if len(kwargs["innovation"]) == 4:
