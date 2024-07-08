@@ -155,5 +155,10 @@ class FilterStep(
 
     @property
     def innov_cvr(self) -> np.ndarray:
-        """``np.ndarray``: the innovation covariance array."""
+        """``np.ndarray``: The innovation covariance array."""
         return stringToNdarray(self._innov_cvr)
+
+    @property
+    def kalman_gain(self) -> np.ndarray:
+        """``np.ndarray``: The Kalman Gain array."""
+        return stringToNdarray(self._kalman_gain)
