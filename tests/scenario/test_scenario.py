@@ -10,6 +10,7 @@ from sqlalchemy.orm import Query
 # RESONAATE Imports
 from resonaate.agents.estimate_agent import EstimateAgent
 from resonaate.data.filter_step import FilterStep
+from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario import buildScenarioFromConfigFile
 from resonaate.scenario.scenario import Scenario
 
@@ -104,6 +105,8 @@ class TestScenarioFactory:
     def testFilterStepDB(self, datafiles: str):
         """Tests functionality of saving filter steps to the database.
 
+        THIS IS TOTALLY BROKEN RIGHT NOW.
+
         Args:
             datafiles (str): path to your data file.
         """
@@ -113,12 +116,14 @@ class TestScenarioFactory:
         )
         test_scenario: Scenario = buildScenarioFromConfigFile(
             init_filepath,
-            internal_db_path=None,
-            importer_db_path=None,
             start_workers=False,
         )
 
         # Propagate scenrio here so we're not playing with empty filter step arrays
+        target_jd: JulianDate = JulianDate(
+            float(test_scenario.current_julian_date + JulianDate(0.001)),
+        )  # TODO: This works, but make it work without type casting it to death.
+        test_scenario.propagateTo(target_jd)
 
         # Get all the filter steps associated with the scenario
         filter_steps: list[FilterStep] = []  # These are the initial filter steps pre-test
@@ -135,5 +140,7 @@ class TestScenarioFactory:
         filter_step_query = Query(FilterStep)
         db_filter_steps: list = test_scenario.database.getData(filter_step_query)
 
+        # assert len(filter_steps) > 0
+        # assert len(db_filter_steps) > 0
         for filter_step in filter_steps:  # Totally broken.
             assert filter_step in db_filter_steps

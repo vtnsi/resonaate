@@ -183,6 +183,111 @@ class TestFilterStep:
         assert isinstance(filt.q_matrix, ndarray)
         assert array_equal(filt.q_matrix, self.q_matrix)
 
+    def testSigmaXResProperty(self, epoch, target_agent):
+        """Test the sigma_x_res property.
+
+        Args:
+            epoch (class: `.Epoch`): current epoch at which filter information is taken
+            target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+        """
+        filt = FilterStep.recordFilterStep(
+            epoch=epoch,
+            target=target_agent,
+            innovation=self.innovation,
+            q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
+        )
+        assert isinstance(filt.sigma_x_res, ndarray)
+        assert array_equal(filt.sigma_x_res, self.sigma_x_res)
+
+    def testSigmaYResProperty(self, epoch, target_agent):
+        """Test the sigma_y_res property.
+
+        Args:
+            epoch (class: `.Epoch`): current epoch at which filter information is taken
+            target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+        """
+        filt = FilterStep.recordFilterStep(
+            epoch=epoch,
+            target=target_agent,
+            innovation=self.innovation,
+            q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
+        )
+        assert isinstance(filt.sigma_y_res, ndarray)
+        assert array_equal(filt.sigma_y_res, self.sigma_y_res)
+
+    def testCrossCvrProperty(self, epoch, target_agent):
+        """Test the cross_cvr property.
+
+        Args:
+            epoch (class: `.Epoch`): current epoch at which filter information is taken
+            target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+        """
+        filt = FilterStep.recordFilterStep(
+            epoch=epoch,
+            target=target_agent,
+            innovation=self.innovation,
+            q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
+        )
+        assert isinstance(filt.cross_cvr, ndarray)
+        assert array_equal(filt.cross_cvr, self.cross_cvr)
+
+    def testInnovCvrProperty(self, epoch, target_agent):
+        """Test the innov_cvr property.
+
+        Args:
+            epoch (class: `.Epoch`): current epoch at which filter information is taken
+            target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+        """
+        filt = FilterStep.recordFilterStep(
+            epoch=epoch,
+            target=target_agent,
+            innovation=self.innovation,
+            q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
+        )
+        assert isinstance(filt.innov_cvr, ndarray)
+        assert array_equal(filt.innov_cvr, self.innov_cvr)
+
+    def testKalmanGainProperty(self, epoch, target_agent):
+        """Test the kalman_gain property.
+
+        Args:
+            epoch (class: `.Epoch`): current epoch at which filter information is taken
+            target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
+        """
+        filt = FilterStep.recordFilterStep(
+            epoch=epoch,
+            target=target_agent,
+            innovation=self.innovation,
+            q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
+        )
+        assert isinstance(filt.kalman_gain, ndarray)
+        assert array_equal(filt.kalman_gain, self.kalman_gain)
+
     def testInnovationProperty(self, epoch, target_agent):
         """Test Innovation Property.
 
