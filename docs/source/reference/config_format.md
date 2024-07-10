@@ -313,6 +313,7 @@ This is a required field in `"estimation"` defining the nominal sequential filte
     "maneuver_detection":           ManeuverDetectionConfig,  # Optional
     "adaptive_estimation":          bool,                     # Optional
     "initial_orbit_determination":  bool,                     # Optional
+    "save_filter_steps":            bool,                     # Optional
     "parameters":                   dict,                     # Optional
 }
 ```
