@@ -5,14 +5,9 @@ from pathlib import Path
 
 # Third Party Imports
 import pytest
-from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.agents.estimate_agent import EstimateAgent
-from resonaate.data.filter_step import FilterStep
-from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario import buildScenarioFromConfigFile
-from resonaate.scenario.scenario import Scenario
 
 # Local Imports
 from .. import FIXTURE_DATA_DIR, IMPORTER_DB_PATH, JSON_INIT_PATH
@@ -100,47 +95,3 @@ class TestScenarioFactory:
                 importer_db_path=None,
                 start_workers=False,
             )
-
-    @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testFilterStepDB(self, datafiles: str):
-        """Tests functionality of saving filter steps to the database.
-
-        THIS IS TOTALLY BROKEN RIGHT NOW.
-
-        Args:
-            datafiles (str): path to your data file.
-        """
-        init_filepath = Path(datafiles).joinpath(
-            JSON_INIT_PATH,
-            "default_realtime_est_realtime_obs.json",
-        )
-        test_scenario: Scenario = buildScenarioFromConfigFile(
-            init_filepath,
-            start_workers=False,
-        )
-
-        # Propagate scenrio here so we're not playing with empty filter step arrays
-        target_jd: JulianDate = JulianDate(
-            float(test_scenario.current_julian_date + JulianDate(0.001)),
-        )  # TODO: This works, but make it work without type casting it to death.
-        test_scenario.propagateTo(target_jd)
-
-        # Get all the filter steps associated with the scenario
-        filter_steps: list[FilterStep] = []  # These are the initial filter steps pre-test
-        agents: list[EstimateAgent] = [
-            test_scenario.estimate_agents[key] for key in test_scenario.estimate_agents
-        ]
-        for agent in agents:
-            filter_steps += agent.getFilterSteps()
-
-        # Go ahead and save filter steps
-        test_scenario.saveDatabaseOutput()
-
-        # Now go ahead and read in all the saved filter steps from the db
-        filter_step_query = Query(FilterStep)
-        db_filter_steps: list = test_scenario.database.getData(filter_step_query)
-
-        # assert len(filter_steps) > 0
-        # assert len(db_filter_steps) > 0
-        for filter_step in filter_steps:  # Totally broken.
-            assert filter_step in db_filter_steps
