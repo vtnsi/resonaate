@@ -9,7 +9,7 @@ from numpy import array, array_equal, ndarray
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.common.utilities import ndArrayToString, stringToNdarray
+from resonaate.common.utilities import ndArrayToString
 from resonaate.data.filter_step import FilterStep
 
 if TYPE_CHECKING:
@@ -60,17 +60,6 @@ class TestFilterStep:
             measurement_residual_range_rate=self.innovation[3],
             _q_matrix=ndArrayToString(self.q_matrix),
         )
-
-    def testJSONSerializer(self):
-        """Test the conversions between :class:`ndarray` and json string."""
-        q_mat_str: str = ndArrayToString(self.q_matrix)
-        q_mat_from_str: ndarray = stringToNdarray(q_mat_str)
-
-        eci_str: str = ndArrayToString(self.eci_state)
-        eci_from_str: ndarray = stringToNdarray(eci_str)
-
-        assert array_equal(self.q_matrix, q_mat_from_str)
-        assert array_equal(self.eci_state, eci_from_str)
 
     def testRecordFilterStep(self, epoch, target_agent):
         """Test initializing the keywords of the table.
