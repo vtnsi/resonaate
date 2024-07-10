@@ -37,6 +37,10 @@ ______________________________________________________________________
 ### Added
 
 - Improved documentation for database schemas in `resonaate.data`.
+- Configuration option to save filter step information in `EstimationConfig`.
+- Additional columns to the `FilterStep` object.
+- `np.ndarray` to JSON string conversion utilities.
+- Ability to save `FilterStep` objects to the database.
 
 ### Changed
 
@@ -60,7 +64,9 @@ ______________________________________________________________________
 
 ### Test
 
-*for test suite specific improvements*
+- Added testing for `np.ndarray` to JSON string conversions.
+- Added testing for new `FilterStep` properties.
+- Modified existing testing for `EstimationConfig` to inlcude new configuration option.
 
 ### Development
 
