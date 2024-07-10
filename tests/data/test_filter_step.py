@@ -84,6 +84,11 @@ class TestFilterStep:
             innovation=self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
 
     def testReprAndDict(self, epoch, target_agent):
