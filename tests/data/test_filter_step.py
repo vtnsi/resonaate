@@ -34,10 +34,8 @@ class TestFilterStep:
     nis = 5.37607495178574
     innovation2 = array([-2.334817207660933e-05, -2.0436287793690333e-05])
 
-    eci_state = array([6900, 6900, 6900, -10.0, -2.03, 8.0])
     q_matrix = array([[1, 2, 3], [1, 2, 3], [4, 5, 6]])
 
-    eci_state_2 = array([6900, -6900, 6900, 10.0, -2.03, 8.0])
     q_matrix_2 = array([[0, 1, 0], [1, 1, 1], [2, 4, 2]])
 
     def testInit(self):
