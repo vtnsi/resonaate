@@ -104,6 +104,11 @@ class TestFilterStep:
             innovation=self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
         print(filt)
         filt.makeDictionary()
@@ -121,6 +126,11 @@ class TestFilterStep:
             innovation=self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
 
         filt2 = FilterStep.recordFilterStep(
@@ -129,6 +139,11 @@ class TestFilterStep:
             innovation=self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
 
         filt3 = FilterStep.recordFilterStep(
@@ -137,6 +152,11 @@ class TestFilterStep:
             innovation=self.innovation + self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix_2,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
         # Test equality and inequality
         assert filt1 == filt2
@@ -154,6 +174,11 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
         assert isinstance(filt.q_matrix, ndarray)
         assert array_equal(filt.q_matrix, self.q_matrix)
@@ -170,6 +195,11 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
         assert isinstance(filt.innovation, list)
         assert len(filt.innovation) == 4
@@ -186,6 +216,11 @@ class TestFilterStep:
             target=target_agent,
             innovation=self.innovation2,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
         assert isinstance(filt.innovation, list)
         assert len(filt.innovation) == 2
@@ -205,6 +240,11 @@ class TestFilterStep:
             innovation=self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
 
         # Test insert of object
@@ -224,6 +264,11 @@ class TestFilterStep:
             innovation=self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
         # Pre-insert required objects
         database.insertData(epoch)
@@ -248,6 +293,11 @@ class TestFilterStep:
             innovation=self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
         database.insertData(filt)
 
@@ -273,6 +323,11 @@ class TestFilterStep:
             innovation=self.innovation,
             nis=self.nis,
             q_matrix=self.q_matrix,
+            sigma_x_res=self.sigma_x_res,
+            sigma_y_res=self.sigma_y_res,
+            cross_cvr=self.cross_cvr,
+            innov_cvr=self.innov_cvr,
+            kalman_gain=self.kalman_gain,
         )
         database.insertData(filt)
 
