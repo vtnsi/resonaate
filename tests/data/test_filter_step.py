@@ -34,9 +34,16 @@ class TestFilterStep:
     nis = 5.37607495178574
     innovation2 = array([-2.334817207660933e-05, -2.0436287793690333e-05])
 
-    q_matrix = array([[1, 2, 3], [1, 2, 3], [4, 5, 6]])
-
+    q_matrix = array(
+        [[1, 2, 3], [1, 2, 3], [4, 5, 6]],
+    )  # TODO: This should test functionality just fine, but it might be a good idea to put realistic values at some point.
     q_matrix_2 = array([[0, 1, 0], [1, 1, 1], [2, 4, 2]])
+
+    sigma_x_res = array([[1, 4, 2, 1], [2, 4, 2, 1]])
+    sigma_y_res = array([[1, 4, 8, 8], [69, 4, 2, 0]])
+    cross_cvr = array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    innov_cvr = array([[69, 69, 69], [69, 69, 69], [69, 69, 69]])
+    kalman_gain = array([[3, 3, 3], [1, 1, 1], [5, 2, 6]])
 
     def testInit(self):
         """Test the init of FilterStep database table."""
@@ -57,6 +64,11 @@ class TestFilterStep:
             measurement_residual_range=self.innovation[2],
             measurement_residual_range_rate=self.innovation[3],
             _q_matrix=ndArrayToString(self.q_matrix),
+            _sigma_x_res=ndArrayToString(self.sigma_x_res),
+            _sigma_y_res=ndArrayToString(self.sigma_y_res),
+            _cross_cvr=ndArrayToString(self.cross_cvr),
+            _innov_cvr=ndArrayToString(self.innov_cvr),
+            _kalman_gain=ndArrayToString(self.kalman_gain),
         )
 
     def testRecordFilterStep(self, epoch, target_agent):
