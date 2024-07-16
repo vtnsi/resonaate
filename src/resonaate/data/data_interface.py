@@ -24,7 +24,7 @@ from .epoch import Epoch
 from .events import Event
 from .filter_step import FilterStep
 from .observation import MissedObservation, Observation
-from .table_base import Base
+from .table_base import Base, _Base
 from .task import Task
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ class DataInterface(metaclass=ABCMeta):
     This defines the common data model by which all RESONAATE DBs are assumed to adhere to.
     """
 
-    VALID_DATA_TYPES: Final[dict[str, Base]] = {
+    VALID_DATA_TYPES: Final[dict[str, _Base]] = {
         AgentModel.__tablename__: AgentModel,
         Epoch.__tablename__: Epoch,
         DetectedManeuver.__tablename__: DetectedManeuver,
@@ -53,7 +53,7 @@ class DataInterface(metaclass=ABCMeta):
 
     SQLITE_PREFIX = "sqlite://"
 
-    def __init__(self, db_path, drop_tables, logger, verbose_echo):
+    def __init__(self, db_path: str, drop_tables, logger: Logger, verbose_echo: bool) -> None:
         """Create SQLite database based on :attr:`.VALID_DATA_TYPES` .
 
         Args:
@@ -66,7 +66,7 @@ class DataInterface(metaclass=ABCMeta):
             verbose_echo (``bool``): Flag that if set ``True``, will tell the SQLAlchemy engine to
                 output the raw SQL statements it runs.
         """
-        self.logger = logger
+        self.logger: Logger = logger
         if self.logger is None:
             self.logger = Logger(
                 "resonaate",
@@ -111,7 +111,7 @@ class DataInterface(metaclass=ABCMeta):
         finally:
             current_session.close()
 
-    def resetData(self, tables=()):
+    def resetData(self, tables: tuple = ()) -> None:
         """Drop given tables of the database, then make sure all valid tables exist.
 
         Args:
@@ -128,7 +128,7 @@ class DataInterface(metaclass=ABCMeta):
 
         Base.metadata.create_all(self.engine, checkfirst=True)
 
-    def insertData(self, *args):
+    def insertData(self, *args) -> None:
         """Insert a new data object into the database.
 
         Positional argument(s) that is(are) already-constructed VALID_DATA_TYPES objects.
@@ -146,7 +146,7 @@ class DataInterface(metaclass=ABCMeta):
         else:
             raise ValueError("Cannot call `DataInterface.insertData()` without arguments.")
 
-    def getData(self, query, multi=True):
+    def getData(self, query: Query, multi=True):
         """Retrieve ephemeris object(s) that match the given Query object.
 
         Args:
@@ -184,7 +184,7 @@ class DataInterface(metaclass=ABCMeta):
 
         return retval
 
-    def deleteData(self, query):
+    def deleteData(self, query: Query) -> int:
         """Delete object(s) from DB table.
 
         Args:
@@ -204,7 +204,7 @@ class DataInterface(metaclass=ABCMeta):
                 session.delete(result)
             return len(session.deleted)
 
-    def bulkSave(self, data):
+    def bulkSave(self, data: list) -> int:
         """Use a low latency method to make large amounts of updates to the database.
 
         Warning:

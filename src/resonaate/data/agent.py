@@ -14,12 +14,11 @@ class AgentModel(Base, _DataMixin):
 
     __tablename__ = "agents"
 
-    ## NORAD Catalog Number or Simulation ID
     unique_id = Column(Integer, primary_key=True, unique=True, nullable=False, index=True)
+    """``int``: NORAD Catalog Number or Simulation ID."""
 
-    ## Describes satellite associated with NORAD number
-    # Corresponds to a valid Space Track "SATNAME" field.
     name = Column(String(128), nullable=False)
+    """``str``: Describes sattelite associated with NORAD number. Corresponds to a valid Space Track "SATNAME" field."""
 
     MUTABLE_COLUMN_NAMES = (
         "unique_id",

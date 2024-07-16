@@ -243,7 +243,7 @@ class Scenario(ParallelMixin):
             )
             raise ValueError(rounded_delta)
 
-    def saveDatabaseOutput(self) -> None:
+    def saveDatabaseOutput(self) -> None:  # noqa: C901
         """Save Truth, Estimate, and Observation data to the output database."""
         # Grab `TruthEphemeris` for targets & sensors
         if not self.database.getData(
@@ -293,6 +293,15 @@ class Scenario(ParallelMixin):
                     tasking
                     for tasking in tasking_engine.getCurrentTasking(self.clock.julian_date_epoch)
                 )
+
+        if self.estimation_config.sequential_filter.save_filter_steps:
+            # Obtain all filter steps and save them to the db.
+            agents: list[EstimateAgent] = [
+                self.estimate_agents[key] for key in self.estimate_agents
+            ]
+            for agent in agents:
+                agent_filters = agent.getFilterSteps()
+                output_data.extend(filter_step for filter_step in agent_filters)
 
         # Commit data to output DB
         self.database.bulkSave(output_data)

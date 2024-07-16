@@ -81,6 +81,9 @@ class SequentialFilterConfig(ConfigObject):
     initial_orbit_determination: bool = False
     """``bool``: Check if sequential filter should turn on initial orbit determination."""
 
+    save_filter_steps: bool = False
+    """``bool``: Check if you would like to enable saving filter steps to the database. Defaults to False."""
+
     parameters: dict = field(default_factory=dict)
     """``dict``: extra parameters for the filter algorithm."""
 
