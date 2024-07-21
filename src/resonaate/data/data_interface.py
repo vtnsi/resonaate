@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from typing import Final
 
 
-class DataInterface(metaclass=ABCMeta):
+class DataInterface(metaclass=ABCMeta):  # noqa: B024
     """Common data interface that is DB agnostic.
 
     This defines the common data model by which all RESONAATE DBs are assumed to adhere to.
