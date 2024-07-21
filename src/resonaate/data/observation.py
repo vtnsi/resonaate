@@ -158,7 +158,7 @@ class Observation(Base, _ObservationMixin):
         """:class:`.Measurement`: The measurement associated with the observation"""
 
     @classmethod
-    def fromMeasurement(  # noqa: PLR0913
+    def fromMeasurement(
         cls,
         epoch_jd: JulianDate | float,
         target_id: int,

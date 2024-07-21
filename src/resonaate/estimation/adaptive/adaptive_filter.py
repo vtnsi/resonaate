@@ -68,7 +68,7 @@ class AdaptiveFilter(SequentialFilter):
         num_models (``int``): number of models
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
