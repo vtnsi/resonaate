@@ -93,9 +93,6 @@ lint.extend-select = [
 # Don't auto-fix rules (can be overidden with --fix argument)
 fix = false
 
-# Avoid automatically removing unused imports in __init__.py files
-lint.ignore-init-module-imports = true
-
 # Line length to enforce
 line-length = 110
 
