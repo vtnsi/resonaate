@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from importlib import resources
 from typing import TYPE_CHECKING
+from urllib.request import urlretrieve
 
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
@@ -131,3 +132,13 @@ def _readEOPFile(
         )
 
     return formatted_data
+
+
+def updateEOPData() -> None:
+    """Updates the EOP data file defined in the :class:`BehavioralConfig` object."""
+    config = BehavioralConfig.getConfig()
+    url: str = config.eop.RemoteURL
+    eop_path: str = config.eop.DataPath
+
+    # Pull the eop data and save it.
+    urlretrieve(url, eop_path)  # noqa: S310
