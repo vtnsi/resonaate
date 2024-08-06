@@ -8,22 +8,17 @@ from __future__ import annotations
 
 # Standard Library Imports
 import datetime
+import os
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib import resources
-from typing import TYPE_CHECKING
+from pathlib import Path
 from urllib.request import urlretrieve
 
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
 from ...common.utilities import loadDatFile
 from .. import constants as const
-
-# Type Checking Imports
-if TYPE_CHECKING:
-    # Standard Library Imports
-    from pathlib import Path
-
 
 EOP_MODULE: str = "resonaate.physics.data.eop"
 """``str``: defines EOP data module location."""
@@ -138,7 +133,11 @@ def updateEOPData() -> None:
     """Updates the EOP data file defined in the :class:`BehavioralConfig` object."""
     config = BehavioralConfig.getConfig()
     url: str = config.eop.RemoteURL
-    eop_path: str = config.eop.DataPath
+    eop_name: str = "new_EOP.dat"
+
+    cur_path = Path(__file__)
+    parent_path = os.path.join(str(cur_path.parents[1]), "data/eop")
+    save_path = os.path.join(parent_path, eop_name)
 
     # Pull the eop data and save it.
-    urlretrieve(url, eop_path)  # noqa: S310
+    urlretrieve(url, save_path)  # noqa: S310
