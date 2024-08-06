@@ -9,9 +9,11 @@ from dataclasses import asdict
 import pytest
 
 # RESONAATE Imports
+from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.physics.transforms.eops import (
     EarthOrientationParameter,
     getEarthOrientationParameters,
+    updateEOPData,
 )
 
 # Local Imports
@@ -113,3 +115,16 @@ def testInvalidDate():
     eop_date = datetime.date(2050, 1, 24)
     with pytest.raises(KeyError):
         getEarthOrientationParameters(eop_date)
+
+
+def testUpdate() -> None:
+    """Test the updating of EOP data file."""
+    updateEOPData()
+    eop_file: str = BehavioralConfig.getConfig().eop.DataPath
+    eop_path = os.path.join("~/resonaate/physics/data/eop", eop_file)
+
+    with open(eop_path, "r") as f:  # noqa: UP015
+        data = f.read()
+        f.close()
+
+    assert len(data) > 0, "Unable to download EOP file!"
