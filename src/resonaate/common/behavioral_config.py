@@ -109,6 +109,11 @@ class BehavioralConfig:
             "SaveSpaceSensorsDirectory": "space_sensor_truth",
             "ParallelDebugMode": False,
         },
+        "eop": {
+            "DataPath": "EOPdata.dat",
+            "UpdateEOP": False,
+            "RemoteURL": "https://celestrak.org/spacedata/EOP-Last5Years.txt",
+        },
     }
 
     LOGGING_LEVEL_ITEMS: Final[dict[str, tuple[str, ...]]] = {"logging": ("Level",)}
@@ -122,6 +127,10 @@ class BehavioralConfig:
             "EstimateErrorInflationDirectory",
             "ThreeSigmaObsDirectory",
             "SaveSpaceSensorsDirectory",
+        ),
+        "eop": (
+            "DataPath",
+            "RemoteURL",
         ),
     }
 
@@ -143,6 +152,7 @@ class BehavioralConfig:
             "SaveSpaceSensors",
             "ParallelDebugMode",
         ),
+        "eop": ("UpdateEOP",),
     }
 
     LIST_ITEMS: Final[dict[str, tuple[str, ...]]] = {}
