@@ -129,15 +129,67 @@ def _readEOPFile(
     return formatted_data
 
 
-def updateEOPData() -> None:
-    """Updates the EOP data file defined in the :class:`BehavioralConfig` object."""
+def updateEOPData(overwrite: bool = False) -> None:
+    """Updates the EOP data file defined in the :class:`BehavioralConfig` object.
+
+    Args:
+        overwrite(``bool``, optional): Check to completely overwrite existing EOP data file. Seting to False will
+            instead append new EOP data to existing EOP data. Default is ``False``.
+    """
     config = BehavioralConfig.getConfig()
     url: str = config.eop.RemoteURL
-    eop_name: str = "new_EOP.dat"
+    eop_file: str = config.eop.DataPath
+    eop_temp_name: str = "new_EOP.dat"
 
-    cur_path = Path(__file__)
-    parent_path = os.path.join(str(cur_path.parents[1]), "data/eop")
-    save_path = os.path.join(parent_path, eop_name)
+    parent_path = os.path.join(
+        str(Path(__file__).parents[1]),
+        "data/eop",
+    )  # Path to the eop data dir
 
-    # Pull the eop data and save it.
-    urlretrieve(url, save_path)  # noqa: S310
+    eop_path = os.path.join(parent_path, eop_file)
+
+    save_path = os.path.join(
+        parent_path,
+        eop_temp_name,
+    )  # This is where the stuff grabbed from the url will live
+
+    save_name, header = urlretrieve(url, save_path)  # noqa: S310
+
+    with open(save_name) as f:
+        new_eop_data: str = f.read()
+        f.close()
+
+    lines = new_eop_data.split("\n")
+    new_eop_lines = []
+    for line in lines:
+        # Parse the first four characters and see if it's a valid year.
+        try:
+            year = int(line[0:4])  # noqa: F841
+            new_eop_lines.append(line)
+        except ValueError:  # noqa: PERF203
+            pass
+
+    # Delete the old file
+    os.remove(save_name)
+
+    # Save verified EOP content to the final destination.
+    if overwrite:
+        new_eop_content = "\n".join(line for line in new_eop_lines)
+        with open(eop_path, "w") as f:
+            f.write(new_eop_content)
+            f.close()
+    else:
+        # Open the old file and read through line by line. Remove duplicates.
+        with open(eop_path) as f:
+            old_eop_text = f.read()
+            f.close()
+        old_eop_lines = old_eop_text.split("\n")
+        new_eop_lines_first_16 = [line[0:16] for line in new_eop_lines]
+        new_lines_no_dup = [
+            line for line in old_eop_lines if (line[0:16] not in new_eop_lines_first_16)
+        ]
+        new_lines_no_dup += new_eop_lines
+        new_eop_content = "\n".join(line for line in new_lines_no_dup)
+        with open(eop_path, "w") as f:
+            f.write(new_eop_content)
+            f.close()
