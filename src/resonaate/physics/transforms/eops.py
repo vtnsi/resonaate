@@ -14,6 +14,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 # Local Imports
+from ...common.behavioral_config import BehavioralConfig
 from ...common.utilities import loadDatFile
 from .. import constants as const
 
@@ -25,10 +26,6 @@ if TYPE_CHECKING:
 
 EOP_MODULE: str = "resonaate.physics.data.eop"
 """``str``: defines EOP data module location."""
-
-
-DEFAULT_EOP_DATA: str = "EOPdata.dat"
-"""``str``: defines default EOP data file."""
 
 
 @dataclass(frozen=True)
@@ -70,10 +67,12 @@ def getEarthOrientationParameters(
     Args:
         eop_date (``datetime.date``): date at which to get EOP values
         filename (``str``, optional): path to EOP dat file. Default is ``None``, which results in
-            the physics/data/EOPdata.dat being used.
+            the default path in the Behavioral Config being used
 
     Note:
         This function is cached so repeated calls shouldn't need to re-read the file.
+        If enabled in the Behavioral Config, this function will also update the EOP data
+        file.
 
     See Also:
         Default values obtained from Celestrak.com
@@ -109,7 +108,8 @@ def _readEOPFile(
     """
     # Load raw data from file
     if filename is None:
-        res = resources.files(EOP_MODULE).joinpath(DEFAULT_EOP_DATA)
+        datafile: str = BehavioralConfig.getConfig().eop.DataPath
+        res = resources.files(EOP_MODULE).joinpath(datafile)
         with resources.as_file(res) as file_resource:
             raw_data = loadDatFile(file_resource)
     else:
