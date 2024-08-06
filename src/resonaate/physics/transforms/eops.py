@@ -189,6 +189,7 @@ def updateEOPData(overwrite: bool = False) -> None:
             line for line in old_eop_lines if (line[0:16] not in new_eop_lines_first_16)
         ]
         new_lines_no_dup += new_eop_lines
+        new_lines_no_dup = [line for line in new_lines_no_dup if (len(line) > 0)]
         new_eop_content = "\n".join(line for line in new_lines_no_dup)
         with open(eop_path, "w") as f:
             f.write(new_eop_content)
