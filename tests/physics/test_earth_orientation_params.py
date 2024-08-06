@@ -121,7 +121,9 @@ def testUpdate() -> None:
     """Test the updating of EOP data file."""
     updateEOPData()
     eop_file: str = BehavioralConfig.getConfig().eop.DataPath
-    eop_path = os.path.join("~/resonaate/physics/data/eop", eop_file)
+
+    # Navigate to the data path.
+    eop_path = os.path.join("src/resonaate/physics/data/eop/", eop_file)
 
     with open(eop_path, "r") as f:  # noqa: UP015
         data = f.read()
