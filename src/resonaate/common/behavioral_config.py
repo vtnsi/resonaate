@@ -112,6 +112,7 @@ class BehavioralConfig:
         "eop": {
             "DataPath": "EOPdata.dat",
             "UpdateEOP": False,
+            "Overwrite": False,
             "RemoteURL": "https://celestrak.org/spacedata/EOP-Last5Years.txt",
         },
     }
@@ -152,7 +153,10 @@ class BehavioralConfig:
             "SaveSpaceSensors",
             "ParallelDebugMode",
         ),
-        "eop": ("UpdateEOP",),
+        "eop": (
+            "UpdateEOP",
+            "Overwrite",
+        ),
     }
 
     LIST_ITEMS: Final[dict[str, tuple[str, ...]]] = {}
