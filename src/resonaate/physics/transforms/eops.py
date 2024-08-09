@@ -129,16 +129,20 @@ def _readEOPFile(
     return formatted_data
 
 
-def updateEOPData(overwrite: bool = False) -> None:
-    """Updates the EOP data file defined in the :class:`BehavioralConfig` object.
+def updateEOPData(filename: str | Path | None = None, overwrite: bool = False) -> None:
+    """Updates the EOP file from a remote url defined in the Behavioral Config.
 
     Args:
+        filename (``str``, optional): path to EOP dat file you would like to utilize. Default is ``None``, which results in
+            the updates the EOP file given in the behavioral config.
         overwrite(``bool``, optional): Check to completely overwrite existing EOP data file. Seting to False will
             instead append new EOP data to existing EOP data. Default is ``False``.
     """
     config = BehavioralConfig.getConfig()
     url: str = config.eop.RemoteURL
-    eop_file: str = config.eop.DataPath
+    eop_file: str | None = filename
+    if filename is None:
+        eop_file: str = config.eop.DataPath
     eop_temp_name: str = "new_EOP.dat"
 
     parent_path = os.path.join(
@@ -180,6 +184,7 @@ def updateEOPData(overwrite: bool = False) -> None:
             f.close()
     else:
         # Open the old file and read through line by line. Remove duplicates.
+        old_eop_text = ""
         with open(eop_path) as f:
             old_eop_text = f.read()
             f.close()
