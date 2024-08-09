@@ -36,6 +36,10 @@ ______________________________________________________________________
 
 ### Added
 
+- Behavioral Config option for your default EOP data file.
+- Ability to update a desired EOP data file with new EOPs from a remote URL.
+- Behavioral Config option to enable automatic updates of your configured EOP data file.
+- Behavioral Config option to switch between overwriting and appending existing EOP data files when updating.
 - Improved documentation for database schemas in `resonaate.data`.
 - Configuration option to save filter step information in `EstimationConfig`.
 - Additional columns to the `FilterStep` object.
@@ -52,7 +56,7 @@ ______________________________________________________________________
 
 ### Removed
 
-*for now removed features*
+- Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` variable.
 
 ### Fixed
 
@@ -64,6 +68,7 @@ ______________________________________________________________________
 
 ### Test
 
+- Added test to ensure proper functionality of the EOP update functionality.
 - Added testing for `np.ndarray` to JSON string conversions.
 - Added testing for new `FilterStep` properties.
 - Modified existing testing for `EstimationConfig` to inlcude new configuration option.
