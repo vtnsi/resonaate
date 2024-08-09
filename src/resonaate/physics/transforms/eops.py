@@ -185,10 +185,14 @@ def updateEOPData(filename: str | Path | None = None, overwrite: bool = False) -
     else:
         # Open the old file and read through line by line. Remove duplicates.
         old_eop_text = ""
-        with open(eop_path) as f:
-            old_eop_text = f.read()
-            f.close()
-        old_eop_lines = old_eop_text.split("\n")
+        old_eop_lines = []
+        try:
+            with open(eop_path) as f:
+                old_eop_text = f.read()
+                f.close()
+            old_eop_lines = old_eop_text.split("\n")
+        except FileNotFoundError:
+            pass
         new_eop_lines_first_16 = [line[0:16] for line in new_eop_lines]
         new_lines_no_dup = [
             line for line in old_eop_lines if (line[0:16] not in new_eop_lines_first_16)
