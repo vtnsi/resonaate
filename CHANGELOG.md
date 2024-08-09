@@ -56,7 +56,7 @@ ______________________________________________________________________
 
 ### Removed
 
-- Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` variable.
+- Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` constant.
 
 ### Fixed
 
