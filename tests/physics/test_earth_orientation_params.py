@@ -11,6 +11,7 @@ import pytest
 # RESONAATE Imports
 from resonaate.physics.transforms.eops import (
     EarthOrientationParameter,
+    _readEOPFile,
     clearEOPFile,
     getEarthOrientationParameters,
     updateEOPData,
@@ -122,7 +123,7 @@ def testUpdate() -> None:
     eop_file: str = "test_eops.dat"  # Use a custom file so we're not overwriting the default EOPs.
     updateEOPData(filename=eop_file)
 
-    eops = getEarthOrientationParameters(datetime.date(2018, 3, 15), filename=eop_file)
+    eops = _readEOPFile(filename=eop_file, in_module=True)
 
     assert len(eops) > 0, "Empty EOPs"
 

@@ -57,6 +57,7 @@ class EarthOrientationParameter:
 def getEarthOrientationParameters(
     eop_date: datetime.date,
     filename: str | Path | None = None,
+    in_module: bool = False,
 ) -> EarthOrientationParameter:
     """Return the :class:`.EarthOrientationParameter` based on the current calendar date.
 
@@ -64,6 +65,8 @@ def getEarthOrientationParameters(
         eop_date (``datetime.date``): date at which to get EOP values
         filename (``str``, optional): path to EOP dat file. Default is ``None``, which results in
             the default path in the Behavioral Config being used
+        in_module (``bool``, optional): Check if your EOP dat file is located within your resonaate
+            installs physics/data/eop/ dirrectory.
 
     Note:
         This function is cached so repeated calls shouldn't need to re-read the file.
@@ -77,7 +80,7 @@ def getEarthOrientationParameters(
         :class:`.EarthOrientationParameter`: corresponding EOP values
     """
     # Load EOPS into dictionary
-    eop_dict = _readEOPFile(filename=filename)
+    eop_dict = _readEOPFile(filename=filename, in_module=in_module)
 
     # Grab correct EOP set from dict
     return eop_dict[eop_date]
@@ -86,12 +89,15 @@ def getEarthOrientationParameters(
 @lru_cache(maxsize=5)
 def _readEOPFile(
     filename: str | Path | None = None,
+    in_module: bool = False,
 ) -> dict[datetime.date, EarthOrientationParameter]:
     """Read EOPs from a file and return them as a formatted ``dict``.
 
     Args:
         filename (``str``, optional): path to EOP dat file. Default is ``None``, which results in
             the physics/data/EOPdata.dat being used.
+        in_module (``bool``, optional): Check if your EOP dat file is located within your resonaate
+            installs physics/data/eop/ dirrectory.
 
     Note:
         This function is cached so repeated calls shouldn't need to re-read the file.
@@ -109,7 +115,13 @@ def _readEOPFile(
         with resources.as_file(res) as file_resource:
             raw_data = loadDatFile(file_resource)
     else:
-        raw_data = loadDatFile(filename)
+        file_resource = filename
+        if in_module:
+            res = resources.files(EOP_MODULE).joinpath(filename)
+            with resources.as_file(res) as file_resource:
+                raw_data = loadDatFile(file_resource)
+        else:
+            raw_data = loadDatFile(file_resource)
 
     # Create dictionary of EOPs
     formatted_data = {}
