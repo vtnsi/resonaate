@@ -8,7 +8,6 @@ from __future__ import annotations
 
 # Standard Library Imports
 import datetime
-import os
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib import resources
@@ -147,13 +146,10 @@ def clearEOPFile(filename: str | Path) -> None:
     Args:
         filename (str | Path): The name of your EOP data file that lives in physics/data/eops
     """
-    parent_path = os.path.join(
-        str(Path(__file__).parents[1]),
-        "data/eop",
-    )  # Path to the eop data dir
-    eop_path = os.path.join(parent_path, filename)
+    parent_path = (Path(__file__).parents[1]).joinpath("data/eop")
+    eop_path = parent_path.joinpath(filename)
 
-    os.remove(eop_path)
+    Path.unlink(eop_path)
 
 
 def updateEOPData(filename: str | Path | None = None, overwrite: bool = False) -> None:
@@ -172,17 +168,11 @@ def updateEOPData(filename: str | Path | None = None, overwrite: bool = False) -
         eop_file: str = config.eop.DataPath
     eop_temp_name: str = "new_EOP.dat"
 
-    parent_path = os.path.join(
-        str(Path(__file__).parents[1]),
-        "data/eop",
-    )  # Path to the eop data dir
+    parent_path = (Path(__file__).parents[1]).joinpath("data/eop")
 
-    eop_path = os.path.join(parent_path, eop_file)
+    eop_path = parent_path.joinpath(eop_file)
 
-    save_path = os.path.join(
-        parent_path,
-        eop_temp_name,
-    )  # This is where the stuff grabbed from the url will live
+    save_path = parent_path.joinpath(eop_temp_name)
 
     save_name, header = urlretrieve(url, save_path)  # noqa: S310
 
@@ -201,7 +191,7 @@ def updateEOPData(filename: str | Path | None = None, overwrite: bool = False) -
             pass
 
     # Delete the old file
-    os.remove(save_name)
+    Path.unlink(save_name)
 
     # Save verified EOP content to the final destination.
     if overwrite:
