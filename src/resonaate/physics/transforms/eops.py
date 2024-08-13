@@ -129,6 +129,21 @@ def _readEOPFile(
     return formatted_data
 
 
+def clearEOPFile(filename: str | Path) -> None:
+    """Removes an EOP file.
+
+    Args:
+        filename (str | Path): The name of your EOP data file that lives in physics/data/eops
+    """
+    parent_path = os.path.join(
+        str(Path(__file__).parents[1]),
+        "data/eop",
+    )  # Path to the eop data dir
+    eop_path = os.path.join(parent_path, filename)
+
+    os.remove(eop_path)
+
+
 def updateEOPData(filename: str | Path | None = None, overwrite: bool = False) -> None:
     """Updates the EOP file from a remote url defined in the Behavioral Config.
 
