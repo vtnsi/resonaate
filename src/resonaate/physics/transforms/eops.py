@@ -8,19 +8,23 @@ from __future__ import annotations
 
 # Standard Library Imports
 import datetime
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib import resources
 from pathlib import Path
-from urllib.request import urlretrieve
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
 from ...common.utilities import loadDatFile
 from .. import constants as const
 
-EOP_MODULE: str = "resonaate.physics.data.eop"
-"""``str``: defines EOP data module location."""
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -52,171 +56,193 @@ class EarthOrientationParameter:
     # source: str
 
 
-@lru_cache(maxsize=5)
-def getEarthOrientationParameters(
-    eop_date: datetime.date,
-    filename: str | Path | None = None,
-    in_module: bool = False,
-) -> EarthOrientationParameter:
-    """Return the :class:`.EarthOrientationParameter` based on the current calendar date.
-
-    Args:
-        eop_date (``datetime.date``): date at which to get EOP values
-        filename (``str``, optional): path to EOP dat file. Default is ``None``, which results in
-            the default path in the Behavioral Config being used
-        in_module (``bool``, optional): Check if your EOP dat file is located within your resonaate
-            installs physics/data/eop/ dirrectory.
-
-    Note:
-        This function is cached so repeated calls shouldn't need to re-read the file.
-        If enabled in the Behavioral Config, this function will also update the EOP data
-        file.
-
-    See Also:
-        Default values obtained from Celestrak.com
-
-    Returns:
-        :class:`.EarthOrientationParameter`: corresponding EOP values
-    """
-    # Load EOPS into dictionary
-    eop_dict = _readEOPFile(filename=filename, in_module=in_module)
-
-    # Grab correct EOP set from dict
-    return eop_dict[eop_date]
+class MissingEOP(Exception):
+    """Error thrown when an EOP can't be found for a specified date."""
 
 
-@lru_cache(maxsize=5)
-def _readEOPFile(
-    filename: str | Path | None = None,
-    in_module: bool = False,
-) -> dict[datetime.date, EarthOrientationParameter]:
-    """Read EOPs from a file and return them as a formatted ``dict``.
+class ImmutableEOPLoader(ABC):
+    """Abstract class defining how Earth Orientation Parameters should be loaded."""
 
-    Args:
-        filename (``str``, optional): path to EOP dat file. Default is ``None``, which results in
-            the physics/data/EOPdata.dat being used.
-        in_module (``bool``, optional): Check if your EOP dat file is located within your resonaate
-            installs physics/data/eop/ dirrectory.
+    def __init__(self, location: str):
+        """
+        Args:
+            location (str): Specifies where the EOP content to loaded is located.
+        """
+        self._location = location
+        self._eop_data: dict[datetime.date, EarthOrientationParameter] = {}
+        self._is_loaded = False
 
-    Note:
-        This function is cached so repeated calls shouldn't need to re-read the file.
+    def getEarthOrientationParameters(self, eop_date: datetime.date) -> EarthOrientationParameter:
+        """Return the :class:`.EarthOrientationParameter` for the specified `eop_date`.
 
-    See Also:
-        Default values obtained from Celestrak.com
+        Args:
+            eop_date (``datetime.date``): date at which to get EOP values.
 
-    Returns:
-        ``dict``: keys are ``datetime.date`` and values are :class:`.EarthOrientationParameter`
-    """
-    # Load raw data from file
-    if filename is None:
-        datafile: str = BehavioralConfig.getConfig().eop.DataPath
-        res = resources.files(EOP_MODULE).joinpath(datafile)
+        Returns:
+            :class:`.EarthOrientationParameter`: EOP values valid for specified `eop_date`.
+        """
+        if not self._is_loaded:
+            self.load()
+
+        eop = self._eop_data.get(eop_date)
+        if eop is None:
+            err = f"Could not retrieve EOP data for specified date: {eop_date}"
+            raise MissingEOP(err)
+        # else:
+        return eop
+
+    @abstractmethod
+    def load(self):
+        """Load the EOP content into local memory.
+
+        A concrete implementation of this method should set the :attr:`._is_loaded` to ``True``.
+        """
+        raise NotImplementedError()
+
+
+class MutableEOPLoader(ImmutableEOPLoader, ABC):
+    """Abstract class defining how Earth Orientation Parameters should be loaded and saved."""
+
+    @abstractmethod
+    def remove(self):
+        """Removes the file associated with this :class:`.EOPLoader`, if applicable.
+
+        A concrete implementation of this method should set the :attr:`._is_loaded` to ``False``.
+        """
+        raise NotImplementedError()
+
+
+class DotDatEOPLoader(ABC):
+    """Abstract interface defining how to properly load a '.dat' EOP data file."""
+
+    RAD2ARCSEC = const.RAD2SEC * const.SEC2ARCSEC
+    """float: Constant value used to convert radians to arc seconds."""
+
+    def _parseDatData(self, raw_data: list[list[float]]):
+        """Loads the specified `raw_data` into local memory.
+
+        Args:
+            raw_data (list[list[float]]): EOP data file contents parsed using
+                :meth:`.loadDatFile()`.
+        """
+        for eop in raw_data:
+            eop_date = datetime.date(int(eop[0]), int(eop[1]), int(eop[2]))
+            self._eop_data[eop_date] = EarthOrientationParameter(
+                date=eop_date,
+                x_p=eop[4] * const.ARCSEC2RAD,
+                y_p=eop[5] * const.ARCSEC2RAD,
+                d_delta_psi=eop[8] * const.ARCSEC2RAD,
+                d_delta_eps=eop[9] * const.ARCSEC2RAD,
+                delta_ut1=eop[6],
+                length_of_day=eop[7],
+                delta_atomic_time=int(eop[12]),
+            )
+        self._is_loaded = True
+
+    def _unparseDatData(self, eops: list[EarthOrientationParameter]) -> list[str]:
+        """Dumps the specified `eops` into a raw '.dat' data format.
+
+        Args:
+            eops (list[EarthOrientationParameter]): List of Earth orientation parameters to dump to
+                raw data format.
+
+        Returns:
+            list[str]: Raw '.dat' data format to potentially be saved to persistent memory.
+        """
+        raw_data = []
+        for eop in eops:
+            raw_data.append("{d} {d} {d} {d} {: f} {: f} {: f} {: f} {: f} {: f} {: f} {: f} {: f}".format(
+                eop.date.year,
+                eop.date.month,
+                eop.date.day,
+                0,  # mjd
+                eop.x_p * self.RAD2ARCSEC,
+                eop.y_p * self.RAD2ARCSEC,
+                eop.delta_ut1,
+                eop.length_of_day,
+                0.0,  # dX
+                0.0,  # dY
+                eop.d_delta_psi * self.RAD2ARCSEC,
+                eop.d_delta_eps * self.RAD2ARCSEC,
+                eop.delta_atomic_time
+            ))
+        return raw_data
+
+
+class ModuleDotDatEOPLoader(ImmutableEOPLoader, DotDatEOPLoader):
+    """Concrete class defining how EOPs should be loaded as a Python module resource."""
+
+    EOP_MODULE: str = "resonaate.physics.data.eop"
+    """``str``: defines EOP data module location."""
+
+    def load(self):
+        res = resources.files(self.EOP_MODULE).joinpath(self._location)
         with resources.as_file(res) as file_resource:
             raw_data = loadDatFile(file_resource)
-    else:
-        file_resource = filename
-        if in_module:
-            res = resources.files(EOP_MODULE).joinpath(filename)
-            with resources.as_file(res) as file_resource:
-                raw_data = loadDatFile(file_resource)
-        else:
-            raw_data = loadDatFile(file_resource)
-
-    # Create dictionary of EOPs
-    formatted_data = {}
-    for eop in raw_data:
-        eop_date = datetime.date(int(eop[0]), int(eop[1]), int(eop[2]))
-        formatted_data[eop_date] = EarthOrientationParameter(
-            date=eop_date,
-            x_p=eop[4] * const.ARCSEC2RAD,
-            y_p=eop[5] * const.ARCSEC2RAD,
-            d_delta_psi=eop[8] * const.ARCSEC2RAD,
-            d_delta_eps=eop[9] * const.ARCSEC2RAD,
-            delta_ut1=eop[6],
-            length_of_day=eop[7],
-            delta_atomic_time=int(eop[12]),
-        )
-
-    return formatted_data
+        self._parseDatData(raw_data)
 
 
-def clearEOPFile(filename: str | Path) -> None:
-    """Removes an EOP file.
+class LocalDotDatEOPLoader(MutableEOPLoader, DotDatEOPLoader):
+    """Concrete class defining how EOPs should be loaded as a local '.dat' file."""
 
-    Args:
-        filename (str | Path): The name of your EOP data file that lives in physics/data/eops
-    """
-    parent_path = (Path(__file__).parents[1]).joinpath("data/eop")
-    eop_path = parent_path.joinpath(filename)
+    def __init__(self, location: str):
+        """
+        Args:
+            location (str): Specifies where the EOP content to loaded is located.
+        """
+        super().__init__(location)
+        self._path = Path(self._location)
 
-    Path.unlink(eop_path)
+    def load(self):
+        """Load the EOP content into local memory.
+
+        A concrete implementation of this method should set the :attr:`._is_loaded` to ``True``.
+        """
+        raw_data = loadDatFile(self._path)
+        self._parseDatData(raw_data)
+
+    def remove(self):
+        """Removes the file associated with this :class:`.EOPLoader`, if applicable.
+
+        A concrete implementation of this method should set the :attr:`._is_loaded` to ``False``.
+        """
+        self._path.unlink(missing_ok=True)
+        self._is_loaded = False
 
 
-def updateEOPData(filename: str | Path | None = None, overwrite: bool = False) -> None:
-    """Updates the EOP file from a remote url defined in the Behavioral Config.
+class RemoteDotDatEOPLoader(ImmutableEOPLoader, DotDatEOPLoader):
+    """Concrete class defining how EOPs should be loaded from a remote '.dat' file."""
 
-    Args:
-        filename (``str``, optional): path to EOP dat file you would like to utilize. Default is ``None``, which results in
-            the updates the EOP file given in the behavioral config.
-        overwrite(``bool``, optional): Check to completely overwrite existing EOP data file. Seting to False will
-            instead append new EOP data to existing EOP data. Default is ``False``.
-    """
-    config = BehavioralConfig.getConfig()
-    url: str = config.eop.RemoteURL
-    eop_file: str | None = filename
-    if filename is None:
-        eop_file: str = config.eop.DataPath
-    eop_temp_name: str = "new_EOP.dat"
+    CACHE_LOCATION = Path("~/.resonaate/eop-cache/").expanduser()
 
-    parent_path = (Path(__file__).parents[1]).joinpath("data/eop")
+    def __init__(self, location: str):
+        super().__init__(location)
+        self._parsed_url = urlparse(self._location)
+        if not self._parsed_url.netloc:
+            err = f"Unable to parse URL: {self._location}"
+            raise ValueError(err)
 
-    eop_path = parent_path.joinpath(eop_file)
+        fs_safe_netloc = self._parsed_url.netloc.replace('.', '_')
+        self._cache_path = self.CACHE_LOCATION / fs_safe_netloc / self._parsed_url.path
 
-    save_path = parent_path.joinpath(eop_temp_name)
+    def load(self):
+        """Load the EOP content into local memory.
 
-    save_name, header = urlretrieve(url, save_path)  # noqa: S310
+        A concrete implementation of this method should set the :attr:`._is_loaded` to ``True``.
+        """
+        if not self._cache_path.exists():
+            self._cache_path.parent.mkdir(parents=True)
+            with urlopen(self._request) as remote_data:
+                download = remote_data.read()
+            self._cache_path.write_bytes(download)
 
-    with open(save_name) as f:
-        new_eop_data: str = f.read()
-        f.close()
+        raw_data = loadDatFile(self._cache_path)
+        self._parseDatData(raw_data)
 
-    lines = new_eop_data.split("\n")
-    new_eop_lines = []
-    for line in lines:
-        # Parse the first four characters and see if it's a valid year.
-        try:
-            year = int(line[0:4])  # noqa: F841
-            new_eop_lines.append(line)
-        except ValueError:  # noqa: PERF203
-            pass
+    def remove(self):
+        """Removes the file associated with this :class:`.EOPLoader`, if applicable.
 
-    # Delete the old file
-    Path.unlink(save_name)
-
-    # Save verified EOP content to the final destination.
-    if overwrite:
-        new_eop_content = "\n".join(line for line in new_eop_lines)
-        with open(eop_path, "w") as f:
-            f.write(new_eop_content)
-            f.close()
-    else:
-        # Open the old file and read through line by line. Remove duplicates.
-        old_eop_text = ""
-        old_eop_lines = []
-        try:
-            with open(eop_path) as f:
-                old_eop_text = f.read()
-                f.close()
-            old_eop_lines = old_eop_text.split("\n")
-        except FileNotFoundError:
-            pass
-        new_eop_lines_first_16 = [line[0:16] for line in new_eop_lines]
-        new_lines_no_dup = [
-            line for line in old_eop_lines if (line[0:16] not in new_eop_lines_first_16)
-        ]
-        new_lines_no_dup += new_eop_lines
-        new_lines_no_dup = [line for line in new_lines_no_dup if (len(line) > 0)]
-        new_eop_content = "\n".join(line for line in new_lines_no_dup)
-        with open(eop_path, "w") as f:
-            f.write(new_eop_content)
-            f.close()
+        A concrete implementation of this method should set the :attr:`._is_loaded` to ``False``.
+        """
+        self._cache_path.unlink(missing_ok=True)
+        self._is_loaded = False
