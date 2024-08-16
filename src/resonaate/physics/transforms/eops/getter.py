@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Standard Library Imports
 import datetime
 from collections import namedtuple
@@ -20,7 +22,7 @@ LoaderTag = namedtuple("LoaderTag", ("loader_name", "loader_location", ))
 """NamedTuple: Tag used to identify different :class:`.EOPLoader`s."""
 
 _LOADER_MAP: dict[str, EOPLoader] = {
-    "ModuleDotDatLoader": ModuleDotDatEOPLoader,
+    "ModuleDotDatEOPLoader": ModuleDotDatEOPLoader,
     "LocalDotDatEOPLoader": LocalDotDatEOPLoader,
     "RemoteDotDatEOPLoader": RemoteDotDatEOPLoader,
 }
