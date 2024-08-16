@@ -60,7 +60,11 @@ class MissingEOP(Exception):
     """Error thrown when an EOP can't be found for a specified date."""
 
 
-class ImmutableEOPLoader(ABC):
+def getEarthOrientationParameters(utc_date: datetime):
+    pass
+
+
+class EOPLoader(ABC):
     """Abstract class defining how Earth Orientation Parameters should be loaded."""
 
     def __init__(self, location: str):
@@ -100,19 +104,7 @@ class ImmutableEOPLoader(ABC):
         raise NotImplementedError()
 
 
-class MutableEOPLoader(ImmutableEOPLoader, ABC):
-    """Abstract class defining how Earth Orientation Parameters should be loaded and saved."""
-
-    @abstractmethod
-    def remove(self):
-        """Removes the file associated with this :class:`.EOPLoader`, if applicable.
-
-        A concrete implementation of this method should set the :attr:`._is_loaded` to ``False``.
-        """
-        raise NotImplementedError()
-
-
-class DotDatEOPLoader(ABC):
+class DotDatEOPLoader(EOPLoader, ABC):
     """Abstract interface defining how to properly load a '.dat' EOP data file."""
 
     RAD2ARCSEC = const.RAD2SEC * const.SEC2ARCSEC
@@ -169,7 +161,7 @@ class DotDatEOPLoader(ABC):
         return raw_data
 
 
-class ModuleDotDatEOPLoader(ImmutableEOPLoader, DotDatEOPLoader):
+class ModuleDotDatEOPLoader(DotDatEOPLoader):
     """Concrete class defining how EOPs should be loaded as a Python module resource."""
 
     EOP_MODULE: str = "resonaate.physics.data.eop"
@@ -182,7 +174,7 @@ class ModuleDotDatEOPLoader(ImmutableEOPLoader, DotDatEOPLoader):
         self._parseDatData(raw_data)
 
 
-class LocalDotDatEOPLoader(MutableEOPLoader, DotDatEOPLoader):
+class LocalDotDatEOPLoader(DotDatEOPLoader):
     """Concrete class defining how EOPs should be loaded as a local '.dat' file."""
 
     def __init__(self, location: str):
@@ -201,29 +193,33 @@ class LocalDotDatEOPLoader(MutableEOPLoader, DotDatEOPLoader):
         raw_data = loadDatFile(self._path)
         self._parseDatData(raw_data)
 
-    def remove(self):
-        """Removes the file associated with this :class:`.EOPLoader`, if applicable.
 
-        A concrete implementation of this method should set the :attr:`._is_loaded` to ``False``.
-        """
-        self._path.unlink(missing_ok=True)
-        self._is_loaded = False
-
-
-class RemoteDotDatEOPLoader(ImmutableEOPLoader, DotDatEOPLoader):
+class RemoteDotDatEOPLoader(DotDatEOPLoader):
     """Concrete class defining how EOPs should be loaded from a remote '.dat' file."""
 
     CACHE_LOCATION = Path("~/.resonaate/eop-cache/").expanduser()
+    """Path: Path to directory that remote files are cached in."""
 
-    def __init__(self, location: str):
+    def __init__(self, location: str, clear_cache: bool = False):
+        """
+        Args:
+            location (str): URL to remote EOP data file.
+            clear_cache (bool,optional): Flag indicating whether to clear the cached EOP data file
+                to force pulling data from the URL.
+        """
         super().__init__(location)
         self._parsed_url = urlparse(self._location)
         if not self._parsed_url.netloc:
             err = f"Unable to parse URL: {self._location}"
             raise ValueError(err)
 
-        fs_safe_netloc = self._parsed_url.netloc.replace('.', '_')
-        self._cache_path = self.CACHE_LOCATION / fs_safe_netloc / self._parsed_url.path
+        fs_safe_netloc = self._parsed_url.netloc.replace(".", "_")
+        fs_safe_url_path = self._parsed_url.path
+        if fs_safe_url_path.startswith("/"):
+            fs_safe_url_path = fs_safe_url_path[1:]
+        self._cache_path = self.CACHE_LOCATION / fs_safe_netloc / fs_safe_url_path
+        if clear_cache:
+            self._cache_path.unlink(missing_ok=True)
 
     def load(self):
         """Load the EOP content into local memory.
@@ -231,18 +227,16 @@ class RemoteDotDatEOPLoader(ImmutableEOPLoader, DotDatEOPLoader):
         A concrete implementation of this method should set the :attr:`._is_loaded` to ``True``.
         """
         if not self._cache_path.exists():
-            self._cache_path.parent.mkdir(parents=True)
-            with urlopen(self._request) as remote_data:
-                download = remote_data.read()
-            self._cache_path.write_bytes(download)
+            self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with urlopen(self._location) as remote_data:
+                with open(self._cache_path, "wb") as cache_file:
+                    for line in remote_data:
+                        try:
+                            parsed = [float(x) for x in line.split()]
+                        except ValueError:
+                            continue
+                        if parsed:
+                            cache_file.write(line)
 
         raw_data = loadDatFile(self._cache_path)
         self._parseDatData(raw_data)
-
-    def remove(self):
-        """Removes the file associated with this :class:`.EOPLoader`, if applicable.
-
-        A concrete implementation of this method should set the :attr:`._is_loaded` to ``False``.
-        """
-        self._cache_path.unlink(missing_ok=True)
-        self._is_loaded = False
