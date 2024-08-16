@@ -1,0 +1,69 @@
+# Standard Library Imports
+import datetime
+from collections import namedtuple
+from typing import TYPE_CHECKING
+
+# Local Imports
+from ....common.behavioral_config import BehavioralConfig
+from .loaders import LocalDotDatEOPLoader, ModuleDotDatEOPLoader, RemoteDotDatEOPLoader
+
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Optional
+
+    # Local Imports
+    from . import EarthOrientationParameter
+    from .loaders import EOPLoader
+
+
+LoaderTag = namedtuple("LoaderTag", ("loader_name", "loader_location", ))
+"""NamedTuple: Tag used to identify different :class:`.EOPLoader`s."""
+
+_LOADER_MAP: dict[str, EOPLoader] = {
+    "ModuleDotDatLoader": ModuleDotDatEOPLoader,
+    "LocalDotDatEOPLoader": LocalDotDatEOPLoader,
+    "RemoteDotDatEOPLoader": RemoteDotDatEOPLoader,
+}
+"""dict[str, EOPLoader]: Maps loader class names to loader class references."""
+
+_EOP_LOADERS: dict[LoaderTag, EOPLoader] = {}
+"""dict[LoaderTag, EOPLoader]: Stores configured loaders based on tag."""
+
+
+def getEarthOrientationParameters(eop_date: datetime.date, loader_name: Optional[str] = None, loader_location: Optional[str] = None) -> EarthOrientationParameter:
+    """Return the :class:`.EarthOrientationParameter` for the specified calendar date.
+
+    Args:
+        eop_date (``datetime.date``): Date at which to get EOP values.
+        loader_name (str, optional): Name of the concrete :class:`.EOPLoader` implementation to use.
+        loader_location (str, optional): Location that the specified :class:`.EOPLoader` will load
+            EOP data from.
+
+    See Also:
+        Default values obtained from Celestrak.com
+
+    Returns:
+        :class:`.EarthOrientationParameter`: EOP values for the specified calendar date.
+
+    Raises:
+        MissingEOP: If the configured EOP data does not have information for the specified calendar
+            date.
+    """
+    behave_config = BehavioralConfig.getConfig()
+    if loader_name is None:
+        loader_name = behave_config.eop.LoaderName
+
+    if loader_location is None:
+        loader_location = behave_config.eop.LoaderLocation
+
+    tag = LoaderTag(loader_name, loader_location)
+    loader = _EOP_LOADERS.get(tag)
+    if not loader:
+        try:
+            loader = _LOADER_MAP[loader_name](loader_location)
+        except KeyError:
+            err = f"Specified loader '{loader_name}' is undefined"
+            raise ValueError(err)
+        _EOP_LOADERS[tag] = loader
+
+    return loader.getEarthOrientationParameters(eop_date)

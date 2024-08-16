@@ -1,67 +1,17 @@
-"""Calculate Earth Orientation Parameters (EOPs).
-
-This module is for calculating values of EOPs for different dates. This was split out from the
-reductions.py module for later expansion/customization of how this works.
-"""
-
 from __future__ import annotations
 
 # Standard Library Imports
 import datetime
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from functools import lru_cache
 from importlib import resources
 from pathlib import Path
-from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
 # Local Imports
-from ...common.behavioral_config import BehavioralConfig
-from ...common.utilities import loadDatFile
-from .. import constants as const
-
-if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Optional
-
-
-@dataclass(frozen=True)
-class EarthOrientationParameter:
-    """Data class to define EOP-type data used internally in RESONAATE."""
-
-    # Defines the year, month, & date associated with the given data
-    date: datetime.date
-
-    # Polar motion angles (arcseconds)
-    x_p: float
-    y_p: float
-
-    # Nutation correction terms (arcseconds)
-    #   Enforce consistency with GCRF coordinates
-    d_delta_psi: float
-    d_delta_eps: float
-
-    # Difference between UTC and UT1 (seconds)
-    delta_ut1: float
-
-    # Instantaneous rate of change of UT1 w.r.t UTC (seconds)
-    length_of_day: float
-
-    # Difference in atomic time w.r.t UTC, via leap seconds (seconds)
-    delta_atomic_time: int
-
-    # Catalog the source of the EOP data
-    # source: str
-
-
-class MissingEOP(Exception):
-    """Error thrown when an EOP can't be found for a specified date."""
-
-
-def getEarthOrientationParameters(utc_date: datetime):
-    pass
+from ....common.utilities import loadDatFile
+from ... import constants as const
+from . import EarthOrientationParameter, MissingEOP
 
 
 class EOPLoader(ABC):

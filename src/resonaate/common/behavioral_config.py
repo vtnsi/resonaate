@@ -110,10 +110,8 @@ class BehavioralConfig:
             "ParallelDebugMode": False,
         },
         "eop": {
-            "DataPath": "EOPdata.dat",
-            "UpdateEOP": False,
-            "Overwrite": False,
-            "RemoteURL": "https://celestrak.org/spacedata/EOP-Last5Years.txt",
+            "LoaderName": "ModuleDotDatEOPLoader",
+            "LoaderLocation": "EOPdata.dat"
         },
     }
 
@@ -130,8 +128,8 @@ class BehavioralConfig:
             "SaveSpaceSensorsDirectory",
         ),
         "eop": (
-            "DataPath",
-            "RemoteURL",
+            "LoaderName",
+            "LoaderLocation",
         ),
     }
 
@@ -152,10 +150,6 @@ class BehavioralConfig:
             "ThreeSigmaObs",
             "SaveSpaceSensors",
             "ParallelDebugMode",
-        ),
-        "eop": (
-            "UpdateEOP",
-            "Overwrite",
         ),
     }
 
