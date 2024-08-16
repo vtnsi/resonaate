@@ -9,7 +9,11 @@ from dataclasses import asdict
 import pytest
 
 # RESONAATE Imports
-from resonaate.physics.transforms.eops import EarthOrientationParameter, RemoteDotDatEOPLoader
+from resonaate.physics.transforms.eops import (
+    EarthOrientationParameter,
+    MissingEOP,
+    getEarthOrientationParameters,
+)
 
 # Local Imports
 from .. import FIXTURE_DATA_DIR
@@ -70,50 +74,57 @@ def testEquality(eop_data: dict):
 
 def testRemoteData():
     """Test loading EOP data from remote dat file."""
-    loader = RemoteDotDatEOPLoader("https://celestrak.org/SpaceData/EOP-Last5Years.txt", clear_cache=True)
-    loader.load()
+    q_date = datetime.date(2024, 8, 16)
+    eops = getEarthOrientationParameters(
+        q_date,
+        loader_name="RemoteDotDatEOPLoader",
+        loader_location="https://celestrak.org/SpaceData/EOP-Last5Years.txt"
+    )
+
+    assert isinstance(eops, EarthOrientationParameter)
+    assert isinstance(eops.date, datetime.date)
+    assert  eops.date == q_date
 
 
-# @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-# def testCustomEOPFile(datafiles: str):
-#     """Test EOP reading from custom file."""
-#     eop_file = os.path.join(datafiles, "dat/eops.dat")
-#     eops = getEarthOrientationParameters(datetime.date(2015, 9, 30), filename=eop_file)
+@pytest.mark.datafiles(FIXTURE_DATA_DIR)
+def testCustomEOPFile(datafiles: str):
+    """Test EOP reading from custom file."""
+    eop_file = os.path.join(datafiles, "dat/eops.dat")
+    eops = getEarthOrientationParameters(
+        datetime.date(2015, 9, 30),
+        loader_name="LocalDotDatEOPLoader",
+        loader_location=eop_file,
+    )
 
-#     # Assert that we get the right values from the default EOP data
-#     assert isinstance(eops, EarthOrientationParameter)
-#     assert isinstance(eops.date, datetime.date)
-#     assert eops.delta_atomic_time == 36
-#     assert eops.length_of_day == 0.0019025
-#     assert eops.delta_ut1 == 0.2311442
-
-
-# def testDefaultEOPFile():
-#     """Test EOP reading from default file."""
-#     eops = getEarthOrientationParameters(datetime.date(2018, 3, 15))
-
-#     # Assert that we get the right values from the default EOP data
-#     assert isinstance(eops, EarthOrientationParameter)
-#     assert isinstance(eops.date, datetime.date)
-#     assert eops.delta_atomic_time == 37
-#     assert eops.length_of_day == 0.0009668
-#     assert eops.delta_ut1 == 0.1532194
+    # Assert that we get the right values from the default EOP data
+    assert isinstance(eops, EarthOrientationParameter)
+    assert isinstance(eops.date, datetime.date)
+    assert eops.delta_atomic_time == 36
+    assert eops.length_of_day == 0.0019025
+    assert eops.delta_ut1 == 0.2311442
 
 
-# def testInvalidDate():
-#     """Test catching bad datetime.date objects."""
-#     # EOP date that isn't valid type
-#     eop_date = [1900, 2, 1]
-#     with pytest.raises(TypeError):
-#         getEarthOrientationParameters(eop_date)
+def testDefaultEOPFile():
+    """Test EOP reading from default file."""
+    eops = getEarthOrientationParameters(datetime.date(2018, 3, 15))
 
-#     # valid date, but before our standard range of EOPs
-#     eop_date = datetime.date(1990, 1, 24)
-#     with pytest.raises(KeyError):
-#         getEarthOrientationParameters(eop_date)
+    # Assert that we get the right values from the default EOP data
+    assert isinstance(eops, EarthOrientationParameter)
+    assert isinstance(eops.date, datetime.date)
+    assert eops.delta_atomic_time == 37
+    assert eops.length_of_day == 0.0009668
+    assert eops.delta_ut1 == 0.1532194
 
-#     # valid date, but after range of EOPs
-#     eop_date = datetime.date(2050, 1, 24)
-#     with pytest.raises(KeyError):
-#         getEarthOrientationParameters(eop_date)
+
+def testInvalidDate():
+    """Test catching bad datetime.date objects."""
+    # valid date, but before our standard range of EOPs
+    eop_date = datetime.date(1990, 1, 24)
+    with pytest.raises(MissingEOP):
+        getEarthOrientationParameters(eop_date)
+
+    # valid date, but after range of EOPs
+    eop_date = datetime.date(2050, 1, 24)
+    with pytest.raises(MissingEOP):
+        getEarthOrientationParameters(eop_date)
 
