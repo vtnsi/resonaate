@@ -56,6 +56,38 @@ class EOPLoader(ABC):
         """
         raise NotImplementedError
 
+    def validEOP(self, eop_date: datetime.date) -> bool:
+        """Checks if the given date has an associated set of Earth Orientation Parameters.
+
+        Args:
+            eop_date (datetime.date): date to test if there is a valid EOP.
+
+        Returns:
+            bool: True, if there is a set of EOP's for the given date. False otherwise.
+        """
+        try:
+            self.getEarthOrientationParameters(eop_date)
+            return True
+        except MissingEOP:
+            return False
+        # David, I know abusing exception handling like this is horrible code. I pinky promise I'll make something nicer at some point.
+
+    def earliestEOPDate(self) -> datetime.date:
+        """Returns the earliest valid EOP date.
+
+        Returns:
+            datetime.date: Date corresponding to the earliest EOPs
+        """
+        return min(self._eop_data.keys())
+
+    def latestEOPDate(self) -> datetime.date:
+        """Returns the latest valid EOP date.
+
+        Returns:
+            datetime.date: Date corresponding the the latest EOPs.
+        """
+        return max(self._eop_data.keys())
+
 
 class DotDatEOPLoader(EOPLoader, ABC):
     """Abstract interface defining how to properly load a '.dat' EOP data file."""
