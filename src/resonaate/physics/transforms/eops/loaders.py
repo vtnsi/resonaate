@@ -1,3 +1,5 @@
+# noqa: D100
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -18,13 +20,14 @@ class EOPLoader(ABC):
     """Abstract class defining how Earth Orientation Parameters should be loaded."""
 
     def __init__(self, location: str):
-        """
+        """Initializes the laoder.
+
         Args:
-            location (str): Specifies where the EOP content to loaded is located.
+            location (str): Specifies where the EOP content to load is located.
         """
-        self._location = location
+        self._location: str = location
         self._eop_data: dict[datetime.date, EarthOrientationParameter] = {}
-        self._is_loaded = False
+        self._is_loaded: bool = False
 
     def getEarthOrientationParameters(self, eop_date: datetime.date) -> EarthOrientationParameter:
         """Return the :class:`.EarthOrientationParameter` for the specified `eop_date`.
@@ -51,7 +54,7 @@ class EOPLoader(ABC):
 
         A concrete implementation of this method should set the :attr:`._is_loaded` to ``True``.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class DotDatEOPLoader(EOPLoader, ABC):
@@ -93,21 +96,23 @@ class DotDatEOPLoader(EOPLoader, ABC):
         """
         raw_data = []
         for eop in eops:
-            raw_data.append("{d} {d} {d} {d} {: f} {: f} {: f} {: f} {: f} {: f} {: f} {: f} {: f}".format(
-                eop.date.year,
-                eop.date.month,
-                eop.date.day,
-                0,  # mjd
-                eop.x_p * self.RAD2ARCSEC,
-                eop.y_p * self.RAD2ARCSEC,
-                eop.delta_ut1,
-                eop.length_of_day,
-                0.0,  # dX
-                0.0,  # dY
-                eop.d_delta_psi * self.RAD2ARCSEC,
-                eop.d_delta_eps * self.RAD2ARCSEC,
-                eop.delta_atomic_time
-            ))
+            raw_data.append(  # noqa: PERF401
+                "{d} {d} {d} {d} {: f} {: f} {: f} {: f} {: f} {: f} {: f} {: f} {: f}".format(  # noqa: F524, F523
+                    eop.date.year,
+                    eop.date.month,
+                    eop.date.day,
+                    0,  # mjd
+                    eop.x_p * self.RAD2ARCSEC,
+                    eop.y_p * self.RAD2ARCSEC,
+                    eop.delta_ut1,
+                    eop.length_of_day,
+                    0.0,  # dX
+                    0.0,  # dY
+                    eop.d_delta_psi * self.RAD2ARCSEC,
+                    eop.d_delta_eps * self.RAD2ARCSEC,
+                    eop.delta_atomic_time,
+                ),
+            )
         return raw_data
 
 
@@ -117,7 +122,8 @@ class ModuleDotDatEOPLoader(DotDatEOPLoader):
     EOP_MODULE: str = "resonaate.physics.data.eop"
     """``str``: defines EOP data module location."""
 
-    def load(self):
+    def load(self) -> None:
+        """Loads the EOP resources."""
         res = resources.files(self.EOP_MODULE).joinpath(self._location)
         with resources.as_file(res) as file_resource:
             raw_data = loadDatFile(file_resource)
@@ -127,15 +133,16 @@ class ModuleDotDatEOPLoader(DotDatEOPLoader):
 class LocalDotDatEOPLoader(DotDatEOPLoader):
     """Concrete class defining how EOPs should be loaded as a local '.dat' file."""
 
-    def __init__(self, location: str):
-        """
+    def __init__(self, location: str) -> None:
+        """Initializes the loader.
+
         Args:
             location (str): Specifies where the EOP content to loaded is located.
         """
         super().__init__(location)
         self._path = Path(self._location)
 
-    def load(self):
+    def load(self) -> None:
         """Load the EOP content into local memory.
 
         A concrete implementation of this method should set the :attr:`._is_loaded` to ``True``.
@@ -150,8 +157,9 @@ class RemoteDotDatEOPLoader(DotDatEOPLoader):
     CACHE_LOCATION = Path("~/.resonaate/eop-cache/").expanduser()
     """Path: Path to directory that remote files are cached in."""
 
-    def __init__(self, location: str, clear_cache: bool = False):
-        """
+    def __init__(self, location: str, clear_cache: bool = False) -> None:
+        """Initializes the Loader.
+
         Args:
             location (str): URL to remote EOP data file.
             clear_cache (bool,optional): Flag indicating whether to clear the cached EOP data file
@@ -171,22 +179,24 @@ class RemoteDotDatEOPLoader(DotDatEOPLoader):
         if clear_cache:
             self._cache_path.unlink(missing_ok=True)
 
-    def load(self):
+    def load(self) -> None:
         """Load the EOP content into local memory.
 
         A concrete implementation of this method should set the :attr:`._is_loaded` to ``True``.
         """
         if not self._cache_path.exists():
             self._cache_path.parent.mkdir(parents=True, exist_ok=True)
-            with urlopen(self._location) as remote_data:
-                with open(self._cache_path, "wb") as cache_file:
-                    for line in remote_data:
-                        try:
-                            parsed = [float(x) for x in line.split()]
-                        except ValueError:
-                            continue
-                        if parsed:
-                            cache_file.write(line)
+            with (
+                urlopen(self._location) as remote_data,  # noqa: S310
+                open(self._cache_path, "wb") as cache_file,
+            ):
+                for line in remote_data:
+                    try:
+                        parsed = [float(x) for x in line.split()]
+                    except ValueError:
+                        continue
+                    if parsed:
+                        cache_file.write(line)
 
         raw_data = loadDatFile(self._cache_path)
         self._parseDatData(raw_data)
