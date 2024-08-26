@@ -74,13 +74,7 @@ def main() -> None:
     details on what command line options are available.
     """
     # Local Imports
-    from .common.behavioral_config import BehavioralConfig
     from .common.cli import getCommandLineParser
-    from .physics.transforms.eops import updateEOPData
-
-    # Automatically update any data if it's configured.
-    if BehavioralConfig.getConfig().eop.UpdateEOP:
-        updateEOPData(overwrite=BehavioralConfig.getConfig().eop.Overwrite)
 
     # Parse command line arguments and pass them to runResonaate
     parser = getCommandLineParser()
