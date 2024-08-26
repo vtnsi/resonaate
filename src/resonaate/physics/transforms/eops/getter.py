@@ -1,7 +1,8 @@
+"""EOP update functions."""
+
 from __future__ import annotations
 
 # Standard Library Imports
-import datetime
 from collections import namedtuple
 from typing import TYPE_CHECKING
 
@@ -11,14 +12,14 @@ from .loaders import LocalDotDatEOPLoader, ModuleDotDatEOPLoader, RemoteDotDatEO
 
 if TYPE_CHECKING:
     # Standard Library Imports
-    from typing import Optional
+    import datetime
 
     # Local Imports
     from . import EarthOrientationParameter
     from .loaders import EOPLoader
 
 
-LoaderTag = namedtuple("LoaderTag", ("loader_name", "loader_location", ))
+LoaderTag = namedtuple("LoaderTag", ("loader_name", "loader_location"))
 """NamedTuple: Tag used to identify different :class:`.EOPLoader`s."""
 
 _LOADER_MAP: dict[str, EOPLoader] = {
@@ -32,7 +33,11 @@ _EOP_LOADERS: dict[LoaderTag, EOPLoader] = {}
 """dict[LoaderTag, EOPLoader]: Stores configured loaders based on tag."""
 
 
-def getEarthOrientationParameters(eop_date: datetime.date, loader_name: Optional[str] = None, loader_location: Optional[str] = None) -> EarthOrientationParameter:
+def getEarthOrientationParameters(
+    eop_date: datetime.date,
+    loader_name: str | None = None,
+    loader_location: str | None = None,
+) -> EarthOrientationParameter:
     """Return the :class:`.EarthOrientationParameter` for the specified calendar date.
 
     Args:
@@ -65,7 +70,7 @@ def getEarthOrientationParameters(eop_date: datetime.date, loader_name: Optional
             loader = _LOADER_MAP[loader_name](loader_location)
         except KeyError:
             err = f"Specified loader '{loader_name}' is undefined"
-            raise ValueError(err)
+            raise ValueError from err
         _EOP_LOADERS[tag] = loader
 
     return loader.getEarthOrientationParameters(eop_date)

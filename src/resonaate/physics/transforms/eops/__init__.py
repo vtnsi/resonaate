@@ -1,3 +1,5 @@
+"""Earth orientation parameters package."""
+
 # Standard Library Imports
 import datetime
 from dataclasses import dataclass
@@ -18,13 +20,13 @@ class EarthOrientationParameter:
 
     d_delta_psi: float
     """float: Psi nutation correction term (arcseconds).
-    
+
     Enforces consistency with GCRF coordinates.
     """
 
     d_delta_eps: float
     """float: Epsilon nutation correction term (arc seconds).
-    
+
     Enforces consistency with GCRF coordinates.
     """
 
@@ -38,10 +40,10 @@ class EarthOrientationParameter:
     """int: Difference in atomic time w.r.t UTC, via leap seconds (seconds)"""
 
 
-class MissingEOP(Exception):
+class MissingEOP(Exception):  # noqa: N818
     """Error thrown when an EOP can't be found for a specified date."""
 
 
 # Local Imports
 # forward-facing API import
-from .getter import getEarthOrientationParameters
+from .getter import getEarthOrientationParameters  # noqa: F401

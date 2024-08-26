@@ -111,7 +111,7 @@ class BehavioralConfig:
         },
         "eop": {
             "LoaderName": "ModuleDotDatEOPLoader",
-            "LoaderLocation": "EOPdata.dat"
+            "LoaderLocation": "EOPdata.dat",
         },
     }
 

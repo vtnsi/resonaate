@@ -78,12 +78,12 @@ def testRemoteData():
     eops = getEarthOrientationParameters(
         q_date,
         loader_name="RemoteDotDatEOPLoader",
-        loader_location="https://celestrak.org/SpaceData/EOP-Last5Years.txt"
+        loader_location="https://celestrak.org/SpaceData/EOP-Last5Years.txt",
     )
 
     assert isinstance(eops, EarthOrientationParameter)
     assert isinstance(eops.date, datetime.date)
-    assert  eops.date == q_date
+    assert eops.date == q_date
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
@@ -127,4 +127,3 @@ def testInvalidDate():
     eop_date = datetime.date(2050, 1, 24)
     with pytest.raises(MissingEOP):
         getEarthOrientationParameters(eop_date)
-
