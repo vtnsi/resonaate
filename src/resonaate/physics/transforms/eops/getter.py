@@ -70,7 +70,7 @@ def getEarthOrientationParameters(
             loader = _LOADER_MAP[loader_name](loader_location)
         except KeyError:
             err = f"Specified loader '{loader_name}' is undefined"
-            raise ValueError from err
+            raise ValueError(err)  # noqa: B904
         _EOP_LOADERS[tag] = loader
 
     return loader.getEarthOrientationParameters(eop_date)
