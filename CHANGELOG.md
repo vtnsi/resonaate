@@ -36,10 +36,9 @@ ______________________________________________________________________
 
 ### Added
 
-- Behavioral Config option for your default EOP data file.
-- Ability to update a desired EOP data file with new EOPs from a remote URL.
-- Behavioral Config option to enable automatic updates of your configured EOP data file.
-- Behavioral Config option to switch between overwriting and appending existing EOP data files when updating.
+- Ability to update EOP data and select a custom source location.
+- Behavioral Config option for your default EOP data location.
+- Multiple loader objects for updating EOP data: `DotDatLoader`, `ModuleDotDatLoader`, `LocalDotDatLoader`, `RemoteDotDatLoader`.
 - Improved documentation for database schemas in `resonaate.data`.
 - Configuration option to save filter step information in `EstimationConfig`.
 - Additional columns to the `FilterStep` object.
