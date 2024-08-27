@@ -127,3 +127,11 @@ def testInvalidDate():
     eop_date = datetime.date(2050, 1, 24)
     with pytest.raises(MissingEOP):
         getEarthOrientationParameters(eop_date)
+
+
+def testInvalidLoader():
+    """Test catching an invalid loader name."""
+    loader_name: str = "MadeUpDotDatLoader"  # Invalid loader name
+    valid_date: datetime.date = datetime.date(2021, 4, 20)  # Valid date
+    with pytest.raises(ValueError):  # noqa: PT011
+        getEarthOrientationParameters(valid_date, loader_name=loader_name)
