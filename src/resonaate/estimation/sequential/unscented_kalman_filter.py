@@ -138,12 +138,6 @@ class UnscentedKalmanFilter(SequentialFilter):
             maneuver_detection,
             initial_orbit_determination,
             adaptive_estimation,
-            extra_parameters={
-                "alpha": alpha,
-                "beta": beta,
-                "kappa": kappa,
-                "resample": resample,
-            },
         )
 
         # Calculate scaling parameters lambda & gamma.
