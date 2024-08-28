@@ -89,21 +89,17 @@ def sequentialFilterFactory(
     Returns:
         :class:`.SequentialFilter`: constructed filter object
     """
-    # Create the base estimation filter for nominal operation
-    nominal_filter = _FILTER_MAP[config.name](
+    maneuver_detection = maneuverDetectionFactory(config.maneuver_detection)
+    return _FILTER_MAP[config.name].fromConfig(
+        config,
         tgt_id,
         time,
         est_x,
         est_p,
         dynamics,
         q_matrix,
-        maneuverDetectionFactory(config.maneuver_detection),
-        config.initial_orbit_determination,
-        config.adaptive_estimation,
-        **config.parameters,
+        maneuver_detection
     )
-
-    return nominal_filter
 
 
 def maneuverDetectionFactory(config: ManeuverDetectionConfig) -> ManeuverDetection:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import Union
+from typing import Annotated, Literal, Optional, Union
 
 # Third Party Imports
 from pydantic import BaseModel, ConfigDict, Field
@@ -39,11 +39,8 @@ class EstimationConfig(BaseModel):
     """:class:`.InitialOrbitDeterminationConfig`: initial orbit determination technique as nested item."""
 
 
-class SequentialFilterConfig(BaseModel):
+class SequentialFilterConfigBase(BaseModel):
     """Configuration section defining several sequential filter-based options."""
-
-    name: SequentialFilterLabel
-    """``str``: name of the sequential filter algorithm to use."""
 
     dynamics_model: DynamicsLabel = DynamicsLabel.SPECIAL_PERTURBATIONS
     """``str``: name of the dynamics to use in the filter."""
@@ -60,8 +57,55 @@ class SequentialFilterConfig(BaseModel):
     save_filter_steps: bool = False
     """``bool``: Check if you would like to enable saving filter steps to the database. Defaults to False."""
 
-    parameters: dict = Field(default_factory=dict)
-    """``dict``: extra parameters for the filter algorithm."""
+
+class UKFConfigBase(SequentialFilterConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    resample: bool = False
+    """``bool``: Flag indicating whether sigma points should be resampled.
+
+    See Also:
+        :class:`.resonaate.estimation.UnscentedKalmanFilter` constructor argument ``resample``.
+    """
+
+    alpha: float = Field(default=0.001, lt=1.0, gt=0.0)
+    """``float``: Sigma point spread.
+
+    See Also:
+        :class:`.resonaate.estimation.UnscentedKalmanFilter` constructor argument ``alpha``.
+    """
+
+    beta: float = 2.0
+    """``float``: Gaussian pdf parameter.
+
+    See Also:
+        :class:`.resonaate.estimation.UnscentedKalmanFilter` constructor argument ``beta``.
+    """
+
+    kappa: Optional[float] = None
+    """``float``: Scaling parameter defining knowledge of higher order moments.
+
+    See Also:
+        :class:`.resonaate.estimation.UnscentedKalmanFilter` constructor argument ``kappa``.
+    """
+
+
+class UKFConfig(UKFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.UKF] = SequentialFilterLabel.UKF
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+class UnscentedKalmanFilterConfig(UKFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.UNSCENTED_KALMAN_FILTER] = SequentialFilterLabel.UNSCENTED_KALMAN_FILTER
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+SequentialFilterConfig = Annotated[Union[UKFConfig, UnscentedKalmanFilterConfig], Field(..., discriminator="name")]
+"""Annotated[Union]: Discriminated union defining valid sequential filter configurations."""
 
 
 class ManeuverDetectionConfig(BaseModel):

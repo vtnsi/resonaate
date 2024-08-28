@@ -16,6 +16,7 @@ from scipy.linalg import norm
 from ...common.behavioral_config import BehavioralConfig
 from ...data import getDBConnection
 from ...data.queries import fetchTruthByJDEpoch
+from ...scenario.config.estimation_config import SequentialFilterConfig
 from ..debug_utils import checkThreeSigmaObs, logFilterStep
 
 if TYPE_CHECKING:
@@ -194,6 +195,36 @@ class SequentialFilter(ABC):
 
         # Set filter flags to empty
         self._flags = FilterFlag.NONE
+
+    @abstractmethod
+    @classmethod
+    def fromConfig(
+        cls,
+        config: SequentialFilterConfig,
+        tgt_id: int,
+        time: ScenarioTime,
+        est_x: ndarray,
+        est_p: ndarray,
+        dynamics: Dynamics,
+        q_matrix: ndarray,
+        maneuver_detection: ManeuverDetection,
+    ) -> SequentialFilter:
+        """Build a :class:`.SequentialFilter` object for target state estimation.
+
+        Args:
+            config (:class:`.SequentialFilterConfig`): describes the filter to be built
+            tgt_id (``int``): unique ID of the associated target agent
+            time (:class:`.ScenarioTime`): initial time of scenario
+            est_x (``ndarray``): 6x1, initial state estimate
+            est_p (``ndarray``): 6x6, initial error covariance matrix
+            dynamics (:class:`.Dynamics`): dynamics object to propagate estimate
+            q_matrix (``ndarray``): process noise covariance matrix
+            maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
+
+        Returns:
+            :class:`.SequentialFilter`: constructed filter object
+        """
+        raise NotImplementedError()
 
     @abstractmethod
     def predict(
