@@ -270,6 +270,7 @@ For additional information on the development of the RESONAATE Tool, see the fol
   - David Kusterer: <kdavid13@vt.edu>
   - Jon Kadan: <jkadan@vt.edu>
   - Cameron Harris: <camerondh@vt.edu>
+  - Monty Campbell: <mcampbell02@vt.edu>
 - Contributors
   - Connor Segal: <csegal@vt.edu>
   - Amit Bala: <agbala@vt.edu>

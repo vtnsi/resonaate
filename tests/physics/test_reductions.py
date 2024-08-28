@@ -13,7 +13,7 @@ from strmbrkr import KeyValueStore
 import resonaate.physics.constants as const
 from resonaate.physics.time.conversions import utc2TerrestrialTime
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
-from resonaate.physics.transforms.eops import EarthOrientationParameter
+from resonaate.physics.transforms.eops import EarthOrientationParameter, MissingEOP
 from resonaate.physics.transforms.reductions import (
     REDUCTION_KEY,
     REDUCTION_PARAMETER_LABELS,
@@ -172,12 +172,12 @@ def testInvalidJulianDate():
 
     # Less ridiculous date, but before range of EOPs
     calendar_date = datetime.datetime(2000, 1, 24, 7, 23, 56, 900000)
-    with pytest.raises(KeyError):
+    with pytest.raises(MissingEOP):
         updateReductionParameters(calendar_date)
 
     # Date past range of EOPs
     calendar_date = datetime.datetime(2050, 1, 24, 7, 23, 56, 900000)
-    with pytest.raises(KeyError):
+    with pytest.raises(MissingEOP):
         updateReductionParameters(calendar_date)
 
     with pytest.raises(TypeError):

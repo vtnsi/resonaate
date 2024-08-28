@@ -109,6 +109,10 @@ class BehavioralConfig:
             "SaveSpaceSensorsDirectory": "space_sensor_truth",
             "ParallelDebugMode": False,
         },
+        "eop": {
+            "LoaderName": "ModuleDotDatEOPLoader",
+            "LoaderLocation": "EOPdata.dat",
+        },
     }
 
     LOGGING_LEVEL_ITEMS: Final[dict[str, tuple[str, ...]]] = {"logging": ("Level",)}
@@ -122,6 +126,10 @@ class BehavioralConfig:
             "EstimateErrorInflationDirectory",
             "ThreeSigmaObsDirectory",
             "SaveSpaceSensorsDirectory",
+        ),
+        "eop": (
+            "LoaderName",
+            "LoaderLocation",
         ),
     }
 

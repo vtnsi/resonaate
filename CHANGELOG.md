@@ -36,6 +36,9 @@ ______________________________________________________________________
 
 ### Added
 
+- Ability to update EOP data and select a custom source location.
+- Behavioral Config option for your default EOP data location.
+- Multiple loader objects for updating EOP data: `DotDatLoader`, `ModuleDotDatLoader`, `LocalDotDatLoader`, `RemoteDotDatLoader`.
 - Improved documentation for database schemas in `resonaate.data`.
 - Configuration option to save filter step information in `EstimationConfig`.
 - Additional columns to the `FilterStep` object.
@@ -52,7 +55,7 @@ ______________________________________________________________________
 
 ### Removed
 
-*for now removed features*
+- Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` constant.
 
 ### Fixed
 
@@ -64,6 +67,7 @@ ______________________________________________________________________
 
 ### Test
 
+- Added test to ensure proper functionality of the EOP update functionality.
 - Added testing for `np.ndarray` to JSON string conversions.
 - Added testing for new `FilterStep` properties.
 - Modified existing testing for `EstimationConfig` to inlcude new configuration option.
