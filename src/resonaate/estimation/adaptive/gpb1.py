@@ -26,10 +26,10 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ...data.observation import Observation
+    from ...physics.orbit_determination import OrbitDeterminationFunction
     from ...physics.time.stardate import JulianDate, ScenarioTime
     from ...scenario.config.estimation_config import AdaptiveEstimationConfig
     from ..sequential.sequential_filter import SequentialFilter
-    from .initialization import Lambert
 
 
 class GeneralizedPseudoBayesian1(AdaptiveFilter):
@@ -44,7 +44,7 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
-        orbit_determination: Lambert,
+        orbit_determination: OrbitDeterminationFunction,
         stacking_method: Callable[[list[SequentialFilter], ndarray], tuple[ndarray, ndarray]],
         previous_obs_window: int,
         model_interval: float,
