@@ -4,6 +4,7 @@
 
 # Standard Library Imports
 from datetime import datetime
+from functools import cached_property
 from math import pi
 from typing import TYPE_CHECKING
 
@@ -13,7 +14,7 @@ from sgp4.earth_gravity import wgs72
 from sgp4.io import twoline2rv
 
 # Local Imports
-# from ...scenario.config.state_config import COEStateConfig, ECIStateConfig
+from ...scenario.config.state_config import COEStateConfig, ECIStateConfig
 from ..bodies.earth import Earth
 from ..maths import rot3
 from ..time.conversions import greenwichMeanTime
@@ -86,34 +87,34 @@ class _BaseTLE:
             self._line_1 = self._lines[1]
             self._line_2 = self._lines[2]
 
-    @property
+    @cached_property
     def name(self) -> str:
         """``str | None``: The name of the satellite. Returns '' if no title line is present in the TLE."""
         if not self._has_title_line:
             return ""
         return self._title_line
 
-    @property
+    @cached_property
     def catalogNumber(self) -> int:
         """``int``: The Sattelite Catalog Number."""
         return int(self._line_1[2:7])
 
-    @property
+    @cached_property
     def launchYear(self) -> int:
         """``int``: The last two digits of the launch year."""
         return int(self._line_1[9:11])
 
-    @property
+    @cached_property
     def launchNumber(self) -> int:
         """``int``: The launch number of that year."""
         return int(self._line_1[11:14])
 
-    @property
+    @cached_property
     def pieceOfLaunch(self) -> str:
         """``str``: Alphabetical launch piece (A for first item in launch, B for second, and so on...)."""
         return self._line_1[14:17]
 
-    @property
+    @cached_property
     def epoch(self) -> JulianDate:
         """``JulianDate``: The Epoch."""
         year: int = int(self._line_1[18:20])
@@ -129,50 +130,50 @@ class _BaseTLE:
 
         return JulianDate(epoch)
 
-    @property
+    @cached_property
     def inclination(self) -> float:
         """``float``: Inclination of the orbit in degrees. Note that this is the mean value, not the true COE."""
         return float(self._line_2[8:16])
 
-    @property
+    @cached_property
     def rightAscension(self) -> float:
         """``float``: Right ascension of the ascending node in degrees. Note that this is the mean value, not the true COE."""
         return float(self._line_2[17:25])
 
-    @property
+    @cached_property
     def eccentricity(self) -> float:
         """``float``: Orbit eccentricity. Note that this is the mean value, not the true COE."""
         return float(self._line_2[26:33]) / 10**7
 
-    @property
+    @cached_property
     def argumentOfPeriapsis(self) -> float:
         """``float``: Argument of periapsis in degrees. Note that this is the mean value, not the true COE."""
         return float(self._line_2[34:42])
 
-    @property
+    @cached_property
     def meanAnomolay(self) -> float:
         """``float``: Mean anomaly in degrees. Note that this is the mean value, not the true COE."""
         return float(self._line_2[43:51])
 
-    @property
+    @cached_property
     def trueAnomaly(self) -> float:
         """``float``: The true anomaly in degrees. Note that this is the mean value, not the true COE."""
         assert self.eccentricity < 1, "Only valid for eccentricities < 1."  # noqa: S101
         return meanAnom2TrueAnom(self.meanAnomolay)
 
-    @property
+    @cached_property
     def meanMotion(self) -> float:
         """``float``: Revolutions per day. Note that this is the mean value, not the true COE."""
         return float(self._line_2[52:63])
 
-    @property
+    @cached_property
     def semiMajorAxis(self) -> float:
         """``float``: Semi-major axis, in km. Note that this is the mean value, not the true COE."""
         p = 1 / self.meanMotion * 3600 * 24  # Convert to period in seconds
         n: float = 2 * pi / p  # Calculate mean motion in radians per unit time.
         return (G * M_earth / (n**2)) ** (1 / 3.0) / 1000  # Calculate the semi major axis
 
-    @property
+    @cached_property
     def revolutionNumberAtEpoch(self) -> int:
         """``int``: Number of completed orbits at the start epoch."""
         return int(self._line_2[63:68])
@@ -188,8 +189,9 @@ class InitStateLoader(_BaseTLE):
             data (str): 2 or 3 line TLE string.
         """
         super().__init__(data)
-        self.sgp4_obj: Satellite = twoline2rv(self._line_1, self._line_2, wgs72)
+        self._sgp4_obj: Satellite = twoline2rv(self._line_1, self._line_2, wgs72)
 
+    @cached_property
     def propagateInitECI(self) -> ndarray:
         """Propagates the TLE at time-step 0 using the sgp4 algorithm to compute the intial ECI state.
 
@@ -198,7 +200,7 @@ class InitStateLoader(_BaseTLE):
         """
         epoch: JulianDate = self.epoch
         updateReductionParameters(epoch)
-        pos_teme, vel_teme = self.sgp4_obj.propagate(*getCalendarDate(epoch))
+        pos_teme, vel_teme = self._sgp4_obj.propagate(*getCalendarDate(epoch))
         x_teme = asarray(pos_teme + vel_teme)
         x_ecef = teme2ecef(x_teme, epoch, getReductionParameters())
         init_eci = ecef2eci(x_ecef, julianDateToDatetime(epoch))
@@ -206,6 +208,7 @@ class InitStateLoader(_BaseTLE):
         vel = init_eci[3:6].tolist()
         return array(pos + vel)
 
+    @cached_property
     def propagateInitCOE(self) -> OrbitalElementTuple:
         """Propagates the TLE at time-step 0 using the sgp4 algorithm, and returns true classical orbital elements.
 
@@ -214,3 +217,35 @@ class InitStateLoader(_BaseTLE):
         """
         init_eci = self.propagateInitECI()
         return eci2coe(init_eci)
+
+    @cached_property
+    def initECIStateConfig(self) -> ECIStateConfig:
+        """Propagates the initial ECI state and builds a state config object.
+
+        Returns:
+            ECIStateConfig: Initial State Config object representing the initial ECI state.
+        """
+        eci = self.propagateInitECI().tolist()
+        return ECIStateConfig(
+            type="eci",
+            position=eci[0:3],
+            velocity=eci[3:6],
+        )
+
+    @cached_property
+    def initCOEStateConfig(self) -> COEStateConfig:
+        """Propagates the initial state of the object and builds a COEStateConfig.
+
+        Returns:
+            COEStateConfig: COEStateConfig containing truth orbital elements.
+        """
+        coe = self.propagateInitCOE()
+        return COEStateConfig(
+            type="coe",
+            semi_major_axis=coe[0],
+            eccentricity=coe[1],
+            inclination=coe[2],
+            true_anomaly=coe[5],
+            right_ascension=coe[3],
+            argument_periapsis=coe[4],
+        )
