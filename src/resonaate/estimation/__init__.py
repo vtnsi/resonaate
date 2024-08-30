@@ -119,7 +119,7 @@ def maneuverDetectionFactory(config: ManeuverDetectionConfig) -> ManeuverDetecti
         return None
 
     nis_class = _MANEUVER_DETECTION_MAP[config.name]
-    return nis_class(config.threshold, **config.parameters)
+    return nis_class.fromConfig(config)
 
 
 def adaptiveEstimationFactory(

@@ -130,17 +130,45 @@ SequentialFilterConfig = Annotated[Union[UKFConfig, UnscentedKalmanFilterConfig]
 """Annotated[Union]: Discriminated union defining valid sequential filter configurations."""
 
 
-class ManeuverDetectionConfig(BaseModel):
+class ManeuverDetectionConfigBase(BaseModel):
     """Configuration section defining maneuver detection options."""
-
-    name: ManeuverDetectionLabel
-    """``str``: maneuver detection technique to use."""
 
     threshold: float = Field(DEFAULT_MANEUVER_DETECTION_THRESHOLD, gt=0.0, lt=1.0)
     R"""``float``: lower tail value for :math:`\chi^2` maneuver detection threshold."""
 
-    parameters: dict = Field(default_factory=dict)
-    """``dict``: extra parameters for the maneuver detection technique."""
+
+class StandardNISConfig(ManeuverDetectionConfigBase):
+    """Configuration section defining configuration options for standard NIS maneuver detection."""
+    
+    name: Literal[ManeuverDetectionLabel.STANDARD_NIS] = ManeuverDetectionLabel.STANDARD_NIS
+    """``str``: maneuver detection technique to use."""
+
+
+class SlidingNISConfig(ManeuverDetectionConfigBase):
+    """Configuration section defining configuration options for sliding NIS maneuver detection."""
+    
+    name: Literal[ManeuverDetectionLabel.SLIDING_NIS] = ManeuverDetectionLabel.SLIDING_NIS
+    """``str``: maneuver detection technique to use."""
+
+    window_size: int = 4
+    """``int``: length of the sliding window used to "average" NIS over multiple timesteps."""
+
+
+class FadingMemoryNISConfig(ManeuverDetectionConfigBase):
+    """Configuration section defining configuration options for fading-memory NIS maneuver detection."""
+    
+    name: Literal[ManeuverDetectionLabel.FADING_MEMORY_NIS] = ManeuverDetectionLabel.FADING_MEMORY_NIS
+    """``str``: maneuver detection technique to use."""
+
+    delta: float = Field(default=0.8, gt=0.0, lt=1.0)
+    """``float``: scale by which previous NIS values are weighted"""
+
+
+ManeuverDetectionConfig = Annotated[
+    Union[StandardNISConfig, SlidingNISConfig, FadingMemoryNISConfig],
+    Field(..., discriminator="name")
+]
+"""Annotated[Union]: Discriminated union defining valid maneuver detection configurations."""
 
 
 class AdaptiveEstimationConfig(BaseModel):
