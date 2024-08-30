@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 from ..common.labels import AdaptiveEstimationLabel, ManeuverDetectionLabel, SequentialFilterLabel
 from .adaptive.adaptive_filter import AdaptiveFilter
 from .adaptive.gpb1 import GeneralizedPseudoBayesian1
-from .adaptive.initialization import VALID_LAMBERT_IOD_LABELS
 from .adaptive.smm import StaticMultipleModel
 from .initial_orbit_determination import LambertIOD
 from .maneuver_detection import FadingMemoryNis, ManeuverDetection, SlidingNis, StandardNis
@@ -175,7 +174,4 @@ def initialOrbitDeterminationFactory(
     if not config:
         return None
 
-    if config.name in VALID_LAMBERT_IOD_LABELS:
-        return LambertIOD.fromConfig(config, sat_num, julian_date_start)
-
-    raise ValueError(f"Invalid Initial Orbit Determination type: {config.name}")
+    return LambertIOD.fromConfig(config, sat_num, julian_date_start)
