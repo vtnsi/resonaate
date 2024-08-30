@@ -4,9 +4,11 @@ from __future__ import annotations
 
 # Standard Library Imports
 from typing import Annotated, Literal, Optional, Union
+from warnings import warn
 
 # Third Party Imports
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing_extensions import Self
 
 # Local Imports
 from ...common.labels import (
@@ -37,6 +39,26 @@ class EstimationConfig(BaseModel):
 
     initial_orbit_determination: Union[InitialOrbitDeterminationConfig, None] = None
     """:class:`.InitialOrbitDeterminationConfig`: initial orbit determination technique as nested item."""
+
+    @model_validator(mode="after")
+    def clarifyFlags(self) -> Self:
+        """Make sure flags are consistent with populated configurations."""
+        if self.sequential_filter.adaptive_estimation and self.sequential_filter.initial_orbit_determination:
+            raise ValueError("IOD & MMAE cannot both be used at the same time.")
+
+        if self.sequential_filter.adaptive_estimation:
+            if self.adaptive_filter is None:
+                raise ValueError("Adaptive estimation flag set but no configuration specified.")
+        else:
+            if self.adaptive_filter is not None:
+                warn("Adaptive estimation flag is OFF, specified configuration will be IGNORED!")
+        
+        if self.sequential_filter.initial_orbit_determination:
+            if self.initial_orbit_determination is None:
+                raise ValueError("IOD flag set but no configuration specified.")
+        else:
+            if self.initial_orbit_determination is not None:
+                warn("IOD flag is OFF, specified configuration will be IGNORED!")
 
 
 class SequentialFilterConfigBase(BaseModel):
