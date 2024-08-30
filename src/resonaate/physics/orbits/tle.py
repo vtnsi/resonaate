@@ -91,9 +91,9 @@ class _BaseTLE:
 
     @cached_property
     def name(self) -> str:
-        """``str | None``: The name of the satellite. Returns '' if no title line is present in the TLE."""
+        """``str | None``: The name of the satellite. Returns ``None`` if no title line is present in the TLE."""
         if not self._has_title_line:
-            return ""
+            return None
         return self._title_line
 
     @cached_property
