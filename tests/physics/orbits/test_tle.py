@@ -47,3 +47,17 @@ def testCatalogNumber(test_tle: str) -> None:
     loader = InitStateLoader(test_tle)
     assert type(loader.catalogNumber) is int
     assert loader.catalogNumber == 25544
+
+
+def testLaunchYear(test_tle: str) -> None:
+    """Tests and ensures the launch year is properly parsed."""
+    loader = InitStateLoader(test_tle)
+    assert type(loader.launchYear) is int
+    assert loader.launchYear == 98
+
+
+def testLaunchNumber(test_tle: str) -> None:
+    """Tests and ensures the launch number is properly parsed."""
+    loader = InitStateLoader(test_tle)
+    assert type(loader.launchNumber) is int
+    assert loader.launchNumber == 67
