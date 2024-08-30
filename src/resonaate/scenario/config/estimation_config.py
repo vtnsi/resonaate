@@ -171,7 +171,7 @@ ManeuverDetectionConfig = Annotated[
 """Annotated[Union]: Discriminated union defining valid maneuver detection configurations."""
 
 
-class AdaptiveEstimationConfig(BaseModel):
+class AdaptiveEstimationConfigBase(BaseModel):
     """Configuration section defining adaptive estimation options."""
 
     model_config = ConfigDict(
@@ -182,9 +182,6 @@ class AdaptiveEstimationConfig(BaseModel):
     The ``protected_namespaces`` attribute is set to an empty tuple to avoid a warning being thrown
     about :attr:`.model_interval`.
     """
-
-    name: AdaptiveEstimationLabel
-    """``str``: Name of adaptive estimation method to use."""
 
     orbit_determination: InitialOrbitDeterminationLabel = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
     """``str``: orbit determination technique used to initialize the adaptive filter."""
@@ -204,8 +201,29 @@ class AdaptiveEstimationConfig(BaseModel):
     prune_percentage: float = Field(DEFAULT_PRUNE_PERCENTAGE, gt=0.0, lt=1.0)
     """``float``: percent likelihood a model has to meet to trigger MMAE convergence."""
 
-    parameters: dict = Field(default_factory=dict)
-    """``dict``: extra parameters for the adaptive estimation technique."""
+
+class GPB1AdaptiveEstimationConfig(AdaptiveEstimationConfigBase):
+    """Configuration section defining Generalized Pseudo-Bayesian 1 adaptive estimation options."""
+
+    name: Literal[AdaptiveEstimationLabel.GPB1] = AdaptiveEstimationLabel.GPB1
+    """``str``: Name of adaptive estimation method to use."""
+
+    mix_ratio: float = 1.5
+    """``float``: ratio of diagonal to off-diagonals in transition probability matrix"""
+
+
+class SMMAdaptiveEstimationConfig(AdaptiveEstimationConfigBase):
+    """Configuration section defining static multiple model adaptive estimation options."""
+
+    name: Literal[AdaptiveEstimationLabel.SMM] = AdaptiveEstimationLabel.SMM
+    """``str``: Name of adaptive estimation method to use."""
+
+
+AdaptiveEstimationConfig = Annotated[
+    Union[GPB1AdaptiveEstimationConfig, SMMAdaptiveEstimationConfig],
+    Field(..., discriminator="name")
+]
+"""Annotated[Union]: Discriminated union defining valid adaptive estimation configurations."""
 
 
 class InitialOrbitDeterminationConfig(BaseModel):

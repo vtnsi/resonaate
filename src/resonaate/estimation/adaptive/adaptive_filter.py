@@ -162,7 +162,6 @@ class AdaptiveFilter(SequentialFilter):
             mmae_config.model_interval,
             mmae_config.prune_threshold,
             mmae_config.prune_percentage,
-            **mmae_config.parameters,
         )
 
     def initialize(
