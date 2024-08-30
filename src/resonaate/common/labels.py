@@ -213,6 +213,136 @@ class MetricTypeLabel(str, Enum):
     """``str``: uncertainty-based metric type."""
 
 
+class MetricLabel(str, Enum):
+    """Defines valid labels for reward metric instances."""
+
+    FISHER_INFO: str = "FisherInformation"
+    """``str``: :class:`.FisherInformation` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.FisherInformation`
+    """
+
+    SHANNON_INFO: str = "ShannonInformation"
+    """``str``: :class:`.ShannonInformation` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.ShannonInformation`
+    """
+
+    KL_DIVERGENCE: str = "KLDivergence"
+    """``str``: :class:`.KLDivergence` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.KLDivergence`
+    """
+
+    POS_COV_TRACE: str = "PositionCovarianceTrace"
+    """``str``: :class:`.PositionCovarianceTrace` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.PositionCovarianceTrace`
+    """
+
+    VEL_COV_TRACE: str = "VelocityCovarianceTrace"
+    """``str``: :class:`.VelocityCovarianceTrace` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.VelocityCovarianceTrace`
+    """
+
+    POS_COV_DET: str = "PositionCovarianceDeterminant"
+    """``str``: :class:`.PositionCovarianceDeterminant` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.PositionCovarianceDeterminant`
+    """
+
+    VEL_COV_DET: str = "VelocityCovarianceDeterminant"
+    """``str``: :class:`.VelocityCovarianceDeterminant` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.VelocityCovarianceDeterminant`
+    """
+
+    POS_MAX_EIGEN: str = "PositionMaxEigenValue"
+    """``str``: :class:`.PositionMaxEigenValue` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.PositionMaxEigenValue`
+    """
+
+    VEL_MAX_EIGEN: str = "VelocityMaxEigenValue"
+    """``str``: :class:`.VelocityMaxEigenValue` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.VelocityMaxEigenValue`
+    """
+
+    POS_COV_REDUC: str = "PositionCovarianceReduction"
+    """``str``: :class:`.PositionCovarianceReduction` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.PositionCovarianceReduction`
+    """
+
+    VEL_COV_REDUC: str = "VelocityCovarianceReduction"
+    """``str``: :class:`.VelocityCovarianceReduction` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.VelocityCovarianceReduction`
+    """
+
+    RANGE: str = "Range"
+    """``str``: :class:`.Range` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.Range`
+    """
+
+    SLEW_DIST_MIN: str = "SlewDistanceMinimization"
+    """``str``: :class:`.SlewDistanceMinimization` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.SlewDistanceMinimization`
+    """
+
+    SLEW_DIST_MAX: str = "SlewDistanceMaximization"
+    """``str``: :class:`.SlewDistanceMaximization` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.SlewDistanceMaximization`
+    """
+
+    SLEW_TIME_MIN: str = "SlewTimeMinimization"
+    """``str``: :class:`.SlewTimeMinimization` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.SlewTimeMinimization`
+    """
+
+    SLEW_TIME_MAX: str = "SlewTimeMaximization"
+    """``str``: :class:`.SlewTimeMaximization` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.SlewTimeMaximization`
+    """
+
+    TIME_SINCE_OBS: str = "TimeSinceObservation"
+    """``str``: :class:`.TimeSinceObservation` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.TimeSinceObservation`
+    """
+
+    LYAPUNOV_STABILITY: str = "LyapunovStability"
+    """``str``: :class:`.LyapunovStability` reward metric class.
+
+    See Also:
+        :class:`.resonaate.tasking.metrics.LyapunovStability`
+    """
+
+
 class GeopotentialModel(str, Enum):
     """Enumeration of geopotential models mapped to their corresponding filename."""
 

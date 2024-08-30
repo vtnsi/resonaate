@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
+from ..metrics import _METRIC_MAPPING
 from ..metrics.metric_base import Metric
 from .reward_base import Reward
 from .rewards import CombinedReward, CostConstrainedReward, SimpleSummationReward
@@ -37,7 +38,7 @@ def rewardsFactory(configuration: RewardConfig) -> Reward:
     """
     metrics_config = configuration.metrics
     metrics: list[Metric] = [
-        Metric.REGISTRY[metric.name](**metric.parameters) for metric in metrics_config
+        _METRIC_MAPPING[metric.name]() for metric in metrics_config
     ]
 
     return Reward.REGISTRY[configuration.name](metrics, **configuration.parameters)

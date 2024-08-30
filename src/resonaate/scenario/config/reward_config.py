@@ -6,26 +6,21 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
 
 # Local Imports
-from ...tasking.metrics import VALID_METRICS
+from ...common.labels import MetricLabel
 from ...tasking.rewards import VALID_REWARDS
 
 
 class MetricConfig(BaseModel):
-    """Define a metric function config."""
+    """Define a metric function config.
 
-    name: str
+    TODO:
+        _When_ there's a metric configuration that _actually_ requires specifying further
+        parameters beyond just it's name, this configuration class will need to become a
+        discriminated union that specifies and documents said parameters.
+    """
+
+    name: MetricLabel
     """``str``: Name of this metric function."""
-
-    @field_validator('name')
-    @classmethod
-    def name_must_be_valid(cls, v: str) -> str:
-        if v not in VALID_METRICS:
-            err = f"Metric '{v}' is not valid."
-            raise ValueError(err)
-        return v
-
-    parameters: dict = Field(default_factory=dict)
-    """``dict``: Parameters for the metric function."""
 
 
 class RewardConfig(BaseModel):
