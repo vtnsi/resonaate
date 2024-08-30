@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from sgp4.model import Satellite
 
 
+# TODO: Move references to these constants a place in RESONAATE where they actually live.
+
 G: float = 6.67430 * 10**-11
 """``float``: Gravitational constant in N*m^2*kg^-2."""
 
