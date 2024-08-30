@@ -64,7 +64,7 @@ def teme2ecef(x_teme: ndarray, julian_date_start: JulianDate, reduction: dict) -
 
 
 class _BaseTLE:
-    """Basic representation of TLE Information."""
+    """Basic representation of TLE Information and implementation of a TLE parser."""
 
     def __init__(self, data: str) -> None:
         """Initializes the object.
