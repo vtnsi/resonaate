@@ -176,7 +176,7 @@ class _BaseTLE:
         return int(self._line_2[63:68])
 
 
-class InitStateLoader(_BaseTLE):
+class TLELoader(_BaseTLE):
     """Contains behavior needed to build a resonaate initial state config from TLE data."""
 
     def __init__(self, data: str) -> None:

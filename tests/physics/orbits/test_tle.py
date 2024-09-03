@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 
 # RESONAATE Imports
-from resonaate.physics.orbits.tle import InitStateLoader
+from resonaate.physics.orbits.tle import TLELoader
 from resonaate.physics.time.stardate import JulianDate
 
 
@@ -24,56 +24,56 @@ def createTestEpoch() -> JulianDate:
 
 
 def testTLELoad(test_tle: str) -> None:
-    """Tests if InitStateLoader properly loads the tle."""
-    InitStateLoader(test_tle)
+    """Tests if TLELoader properly loads the tle."""
+    TLELoader(test_tle)
 
 
 def testInvalidTLELength(test_tle: str) -> None:
     """Sends a TLE of invalid length to the TLE loader. Should raise an assertion errror."""
     busted_tle = test_tle + "\nI AM BROKEN\nTHIS SHOULD BREAK"
     with pytest.raises(AssertionError):
-        InitStateLoader(busted_tle)
+        TLELoader(busted_tle)
 
 
 def testName(test_tle: str) -> None:
     """Tests the parsin of the satellite's name."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert loader.name == "ISS (ZARYA)"
 
 
 def testLoadNoName(test_tle: str) -> None:
-    """Tests to see if the InitStateLoader.name property returns ``None`` if no optional first line is given."""
+    """Tests to see if the TLELoader.name property returns ``None`` if no optional first line is given."""
     # Get rid of the first optional / name line in the test tle.
     lines: list[str] = test_tle.split("\n")
     no_name = f"{lines[1]}\n{lines[2]}"
-    loader = InitStateLoader(no_name)
+    loader = TLELoader(no_name)
     assert loader.name is None
 
 
 def testCatalogNumber(test_tle: str) -> None:
     """Tests and ensures that the catalog number is being loaded correctly."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert type(loader.catalogNumber) is int
     assert loader.catalogNumber == 25544
 
 
 def testLaunchYear(test_tle: str) -> None:
     """Tests and ensures the launch year is properly parsed."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert type(loader.launchYear) is int
     assert loader.launchYear == 98
 
 
 def testLaunchNumber(test_tle: str) -> None:
     """Tests and ensures the launch number is properly parsed."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert type(loader.launchNumber) is int
     assert loader.launchNumber == 67
 
 
 def testEpoch(test_tle: str, test_epoch: JulianDate) -> None:
     """Tests parsing of the Epoch."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert (
         loader.epoch == test_epoch
     ), f"Test Epoch = {float(test_epoch)}, Parsed Epoch = {float(loader.epoch)}"
@@ -81,35 +81,35 @@ def testEpoch(test_tle: str, test_epoch: JulianDate) -> None:
 
 def testInclination(test_tle: str) -> None:
     """Tests parsing the inclination."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert loader.inclination == 51.6416
 
 
 def testRaan(test_tle: str) -> None:
     """Tests parsing of the right ascension of the ascending node."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert loader.rightAscension == 247.4627
 
 
 def testEccentricity(test_tle: str) -> None:
     """Tests the parsing of the eccentricity."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert loader.eccentricity == 0.0006703
 
 
 def testArgumentOfPeriapsis(test_tle: str) -> None:
     """Tests parsing of the argument of periapsis."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert loader.argumentOfPeriapsis == 130.5360
 
 
 def testMeanAnomaly(test_tle: str) -> None:
     """Tests parsing of the mean anomaly."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert loader.meanAnomolay == 325.0288
 
 
 def testMeanMotion(test_tle: str) -> None:
     """Tests parsing of the mean motion."""
-    loader = InitStateLoader(test_tle)
+    loader = TLELoader(test_tle)
     assert loader.meanMotion == 15.72125391
