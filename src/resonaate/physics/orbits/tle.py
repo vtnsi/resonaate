@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 """Contains implementation of the TLE parser."""
 
 # Standard Library Imports
