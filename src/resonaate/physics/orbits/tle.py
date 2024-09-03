@@ -9,18 +9,15 @@ from math import pi
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, asarray, concatenate, cross, matmul, ndarray
+from numpy import array, asarray, ndarray
 from sgp4.earth_gravity import wgs72
 from sgp4.io import twoline2rv
 
 # Local Imports
 from ...scenario.config.state_config import COEStateConfig, ECIStateConfig
-from ..bodies.earth import Earth
-from ..maths import rot3
 from ..orbits.utils import getSmaFromMeanMotion
-from ..time.conversions import greenwichMeanTime
 from ..time.stardate import JulianDate, datetimeToJulianDate, getCalendarDate, julianDateToDatetime
-from ..transforms.methods import ecef2eci
+from ..transforms.methods import ecef2eci, teme2ecef
 from ..transforms.reductions import getReductionParameters, updateReductionParameters
 from .anomaly import meanAnom2TrueAnom
 from .conversions import OrbitalElementTuple, eci2coe
@@ -28,37 +25,6 @@ from .conversions import OrbitalElementTuple, eci2coe
 if TYPE_CHECKING:
     # Third Party Imports
     from sgp4.model import Satellite
-
-
-# TODO: Move references to these constants a place in RESONAATE where they actually live.
-
-G: float = 6.67430 * 10**-11
-"""``float``: Gravitational constant in N*m^2*kg^-2."""
-
-
-def teme2ecef(x_teme: ndarray, julian_date_start: JulianDate, reduction: dict) -> ndarray:
-    """Convert an SGP4 output state vector (TEME) into an ECEF state vector.
-
-    Args:
-        x_teme (``ndarray``): 6x1 TEME state vector (km; km/sec)
-        julian_date_start (``JulianDate``): start julian date
-        reduction (``dict``): Resonaate reduction parameters. Usually retrieved by calling ``resonaate.physics.transforms.reductions.getReductionParameters()``.
-
-    Returns:
-        ``ndarray``: 6x1 ECEF state vector (km; km/sec)
-    """
-    rot_pef_2_teme = rot3(-1.0 * greenwichMeanTime(julian_date_start))
-    rot_teme_2_pef = rot_pef_2_teme.T
-
-    r_pef = matmul(rot_teme_2_pef, x_teme[0:3])
-    r_ecef = matmul(reduction["rot_wt"], r_pef)
-
-    om_earth = array([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
-
-    v_pef = matmul(rot_teme_2_pef, x_teme[3:6]) - cross(om_earth, r_pef)
-    v_ecef = matmul(reduction["rot_wt"], v_pef)
-
-    return concatenate((r_ecef, v_ecef), axis=None)
 
 
 class _BaseTLE:
@@ -192,10 +158,10 @@ class TLELoader(_BaseTLE):
             ndarray: Initial 6-element ECI state vector.
         """
         epoch: JulianDate = self.epoch
-        updateReductionParameters(epoch)
+        updateReductionParameters(julianDateToDatetime(epoch))
         pos_teme, vel_teme = self._sgp4_obj.propagate(*getCalendarDate(epoch))
         x_teme = asarray(pos_teme + vel_teme)
-        x_ecef = teme2ecef(x_teme, epoch, getReductionParameters())
+        x_ecef = teme2ecef(x_teme, epoch, getReductionParameters(julianDateToDatetime(epoch)))
         init_eci = ecef2eci(x_ecef, julianDateToDatetime(epoch))
         pos = init_eci[0:3].tolist()
         vel = init_eci[3:6].tolist()
@@ -208,7 +174,7 @@ class TLELoader(_BaseTLE):
         Returns:
             OrbitalElementTuple: Tuple containing all elements in the following order: sma, ecc, inc, raan, argp, true_anom.
         """
-        init_eci = self.propagateInitECI()
+        init_eci = self.propagateInitECI
         return eci2coe(init_eci)
 
     @cached_property
@@ -218,7 +184,7 @@ class TLELoader(_BaseTLE):
         Returns:
             ECIStateConfig: Initial State Config object representing the initial ECI state.
         """
-        eci = self.propagateInitECI().tolist()
+        eci = self.propagateInitECI.tolist()
         return ECIStateConfig(
             type="eci",
             position=eci[0:3],
@@ -232,7 +198,7 @@ class TLELoader(_BaseTLE):
         Returns:
             COEStateConfig: COEStateConfig containing truth orbital elements.
         """
-        coe = self.propagateInitCOE()
+        coe = self.propagateInitCOE
         return COEStateConfig(
             type="coe",
             semi_major_axis=coe[0],
