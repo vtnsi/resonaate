@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+# Standard Library Imports
+from typing import Annotated, Literal, Union
+
 # Third Party Imports
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 # Local Imports
-from ...common.labels import MetricLabel
-from ...tasking.rewards import VALID_REWARDS
+from ...common.labels import MetricLabel, RewardLabel
 
 
 class MetricConfig(BaseModel):
@@ -23,22 +25,42 @@ class MetricConfig(BaseModel):
     """``str``: Name of this metric function."""
 
 
-class RewardConfig(BaseModel):
+class RewardConfigBase(BaseModel):
     """Configuration section defining several reward-based options."""
-
-    name: str
-    """``str``: Name of this reward function."""
-
-    @field_validator('name')
-    @classmethod
-    def name_must_be_valid(cls, v: str) -> str:
-        if v not in VALID_REWARDS:
-            err = f"Reward '{v}' is not valid."
-            raise ValueError(err)
-        return v
 
     metrics: list[MetricConfig]
     """``list``: :class:`.MetricConfig` objects for calculating the reward."""
 
-    parameters: dict = Field(default_factory=dict)
-    """``dict``: Parameters for the reward function."""
+
+class CostConstrainedRewardConfig(RewardConfigBase):
+    """Configuration section defining options for cost-constrained reward computation."""
+
+    name: Literal[RewardLabel.COST_CONSTRAINED] = RewardLabel.COST_CONSTRAINED
+    """``str``: Name of this reward function."""
+
+    delta: float = Field(default=0.85, gt=0.0, lt=0.0)
+    """``float``: ratio of information reward to sensor reward."""
+
+
+class SimpleSummationRewardConfig(RewardConfigBase):
+    """Configuration section defining options for simple summation reward computation."""
+
+    name: Literal[RewardLabel.SIMPLE_SUM] = RewardLabel.SIMPLE_SUM
+    """``str``: Name of this reward function."""
+
+
+class CombinedRewardConfig(RewardConfigBase):
+    """Configuration section defining options for combined reward computation."""
+
+    name: Literal[RewardLabel.COMBINED] = RewardLabel.COMBINED
+    """``str``: Name of this reward function."""
+
+    delta: float = Field(default=0.85, gt=0.0, lt=0.0)
+    """``float``: ratio of information reward to sensor reward."""
+
+
+RewardConfig = Annotated[
+    Union[CostConstrainedRewardConfig, SimpleSummationRewardConfig, CombinedRewardConfig],
+    Field(..., discriminator="name")
+]
+"""Annotated[Union]: Discriminated union defining valid reward computation configurations."""

@@ -207,6 +207,29 @@ class StationKeepingRoutine(str, Enum):
     """``str``: Station keeping routine to keep LEO orbit stable."""
 
 
+class RewardLabel(str, Enum):
+    """Defines valid labels for metric-based reward computation."""
+
+    COST_CONSTRAINED: str = "CostConstrainedReward"
+    """``str``: :class:`.CostConstrainedReward` reward computation class.
+
+    See Also:
+        :class:`.resonaate.tasking.rewards.CostConstrainedReward`"""
+
+    SIMPLE_SUM: str = "SimpleSummationReward"
+    """``str``: :class:`.SimpleSummationReward` reward computation class.
+
+    See Also:
+        :class:`.resonaate.tasking.rewards.SimpleSummationReward`"""
+
+    COMBINED: str = "CombinedReward"
+    """``str``: :class:`.CombinedReward` reward computation class.
+
+    See Also:
+        :class:`.resonaate.tasking.rewards.CombinedReward`
+    """
+
+
 class MetricTypeLabel(str, Enum):
     """Defines valid labels for decision metric types."""
 
