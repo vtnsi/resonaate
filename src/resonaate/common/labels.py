@@ -96,6 +96,22 @@ class DynamicsLabel(str, Enum):
     """str: special perturbations satellite propagation model."""
 
 
+class GeopotentialModel(str, Enum):
+    """Enumeration of geopotential models mapped to their corresponding filename."""
+
+    EGM2008 = "egm2008.txt"
+    """str: Filename corresponding to the Earth Gravitational Model 2008."""
+
+    EGM96 = "egm96.txt"
+    """str: Filename corresponding to the Earth Gravitational Model 1996."""
+
+    GGM03S = "GGM03S.txt"
+    """str: Filename corresponding to the GRACE Gravity Model 03."""
+
+    JGM3 = "jgm3.txt"
+    """str: Filename corresponding to the Joint Gravity Model 3."""
+
+
 class ManeuverDetectionLabel(str, Enum):
     """Defines valid labels for maneuver detection techniques."""
 
@@ -341,19 +357,3 @@ class MetricLabel(str, Enum):
     See Also:
         :class:`.resonaate.tasking.metrics.LyapunovStability`
     """
-
-
-class GeopotentialModel(str, Enum):
-    """Enumeration of geopotential models mapped to their corresponding filename."""
-
-    EGM2008 = "egm2008.txt"
-    """str: Filename corresponding to the Earth Gravitational Model 2008."""
-
-    EGM96 = "egm96.txt"
-    """str: Filename corresponding to the Earth Gravitational Model 1996."""
-
-    GGM03S = "GGM03S.txt"
-    """str: Filename corresponding to the GRACE Gravity Model 03."""
-
-    JGM3 = "jgm3.txt"
-    """str: Filename corresponding to the Joint Gravity Model 3."""
