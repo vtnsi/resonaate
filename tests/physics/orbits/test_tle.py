@@ -7,12 +7,20 @@ import pytest
 
 # RESONAATE Imports
 from resonaate.physics.orbits.tle import InitStateLoader
+from resonaate.physics.time.stardate import JulianDate
 
 
 @pytest.fixture(name="test_tle")
-def testTLE() -> str:
-    """Generates the test TLE string."""
-    return """ISS (ZARYA)\n1 25544U 98067A   08264.51782528 -.00002182  00000-0 -11606-4 0  2927\n2 25544  51.6416 247.4627 0006703 130.5360 325.0288 15.72125391563537"""  # Generic test TLE
+def createTestTLE() -> str:
+    """Returns the test TLE string."""
+    return """ISS (ZARYA)\n1 25544U 98067A   20264.51782528 -.00002182  00000-0 -11606-4 0  2927\n2 25544  51.6416 247.4627 0006703 130.5360 325.0288 15.72125391563537"""  # Generic test TLE
+
+
+@pytest.fixture(name="test_epoch")
+def createTestEpoch() -> JulianDate:
+    """Returns the test epoch. Note that this is hard coded and needs to be changed if the above test TLE changes."""
+    date: float = 2458849.5 + 264.51782528
+    return JulianDate(date)
 
 
 def testTLELoad(test_tle: str) -> None:
@@ -61,3 +69,47 @@ def testLaunchNumber(test_tle: str) -> None:
     loader = InitStateLoader(test_tle)
     assert type(loader.launchNumber) is int
     assert loader.launchNumber == 67
+
+
+def testEpoch(test_tle: str, test_epoch: JulianDate) -> None:
+    """Tests parsing of the Epoch."""
+    loader = InitStateLoader(test_tle)
+    assert (
+        loader.epoch == test_epoch
+    ), f"Test Epoch = {float(test_epoch)}, Parsed Epoch = {float(loader.epoch)}"
+
+
+def testInclination(test_tle: str) -> None:
+    """Tests parsing the inclination."""
+    loader = InitStateLoader(test_tle)
+    assert loader.inclination == 51.6416
+
+
+def testRaan(test_tle: str) -> None:
+    """Tests parsing of the right ascension of the ascending node."""
+    loader = InitStateLoader(test_tle)
+    assert loader.rightAscension == 247.4627
+
+
+def testEccentricity(test_tle: str) -> None:
+    """Tests the parsing of the eccentricity."""
+    loader = InitStateLoader(test_tle)
+    assert loader.eccentricity == 0.0006703
+
+
+def testArgumentOfPeriapsis(test_tle: str) -> None:
+    """Tests parsing of the argument of periapsis."""
+    loader = InitStateLoader(test_tle)
+    assert loader.argumentOfPeriapsis == 130.5360
+
+
+def testMeanAnomaly(test_tle: str) -> None:
+    """Tests parsing of the mean anomaly."""
+    loader = InitStateLoader(test_tle)
+    assert loader.meanAnomolay == 325.0288
+
+
+def testMeanMotion(test_tle: str) -> None:
+    """Tests parsing of the mean motion."""
+    loader = InitStateLoader(test_tle)
+    assert loader.meanMotion == 15.72125391

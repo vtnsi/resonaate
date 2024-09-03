@@ -112,14 +112,6 @@ class _BaseTLE:
         return int(self._line_1[11:14])
 
     @cached_property
-    def pieceOfLaunch(self) -> str:
-        """``str``: Alphabetical launch piece (A for first item in launch, B for second, and so on...)."""
-        info = self._line_1[14:17]
-        return [
-            character for character in info if character != " "
-        ]  # Want to ensure no whitespaces.
-
-    @cached_property
     def epoch(self) -> JulianDate:
         """``JulianDate``: The Epoch."""
         year: int = int(self._line_1[18:20])
