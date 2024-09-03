@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Third Party Imports
 import pytest
+from numpy import isclose
 
 # RESONAATE Imports
 from resonaate.physics.orbits.tle import TLELoader
@@ -120,6 +121,4 @@ def testSemiMajorAxis(test_tle: str) -> None:
     """Tests the parsing and computation of the semi major axis."""
     loader = TLELoader(test_tle)
     sma = loader.semiMajorAxis
-    assert (
-        abs((loader.meanMotion / getMeanMotion(sma)) - 1.0) <= 0.00001
-    )  # It's never gonna be exact because of how computers do math :D.
+    assert isclose(loader.meanMotion, getMeanMotion(sma))

@@ -28,6 +28,7 @@ from resonaate.physics.orbits.utils import (
     getPeriod,
     getRightAscension,
     getSemiMajorAxis,
+    getSmaFromMeanMotion,
     getTrueAnomaly,
     getTrueLongitude,
     getTrueLongitudePeriapsis,
@@ -107,6 +108,12 @@ def testGetEnergy(eci: ndarray, energy: float):
 def testGetMeanMotion():
     """Test calculating mean motion from SMA."""
     assert isclose(getMeanMotion(42164.1696), TWOPI / 86164.0905)
+
+
+def testGetSmaFromMeanMotion():
+    """Tests calculating the SMA from mean motion."""
+    m = getMeanMotion(42164.1696)
+    assert isclose(42164.1696, getSmaFromMeanMotion(m))
 
 
 def testGetPeriod():
