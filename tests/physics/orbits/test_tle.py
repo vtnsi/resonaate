@@ -7,6 +7,7 @@ import pytest
 
 # RESONAATE Imports
 from resonaate.physics.orbits.tle import TLELoader
+from resonaate.physics.orbits.utils import getMeanMotion
 from resonaate.physics.time.stardate import JulianDate
 
 
@@ -110,6 +111,15 @@ def testMeanAnomaly(test_tle: str) -> None:
 
 
 def testMeanMotion(test_tle: str) -> None:
-    """Tests parsing of the mean motion."""
+    """Tests parsing of the mean motion into radians per second."""
     loader = TLELoader(test_tle)
-    assert loader.meanMotion == 15.72125391
+    assert loader.meanMotion == 0.0011432818469647179
+
+
+def testSemiMajorAxis(test_tle: str) -> None:
+    """Tests the parsing and computation of the semi major axis."""
+    loader = TLELoader(test_tle)
+    sma = loader.semiMajorAxis
+    assert (
+        abs((loader.meanMotion / getMeanMotion(sma)) - 1.0) <= 0.00001
+    )  # It's never gonna be exact because of how computers do math :D.

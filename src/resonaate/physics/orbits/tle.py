@@ -17,6 +17,7 @@ from sgp4.io import twoline2rv
 from ...scenario.config.state_config import COEStateConfig, ECIStateConfig
 from ..bodies.earth import Earth
 from ..maths import rot3
+from ..orbits.utils import getSmaFromMeanMotion
 from ..time.conversions import greenwichMeanTime
 from ..time.stardate import JulianDate, datetimeToJulianDate, getCalendarDate, julianDateToDatetime
 from ..transforms.methods import ecef2eci
@@ -33,9 +34,6 @@ if TYPE_CHECKING:
 
 G: float = 6.67430 * 10**-11
 """``float``: Gravitational constant in N*m^2*kg^-2."""
-
-M_earth: float = 5.972 * 10**24
-"""``float``: Mass of the Earth in kg."""
 
 
 def teme2ecef(x_teme: ndarray, julian_date_start: JulianDate, reduction: dict) -> ndarray:
@@ -160,15 +158,13 @@ class _BaseTLE:
 
     @cached_property
     def meanMotion(self) -> float:
-        """``float``: Revolutions per day. Note that this is the mean value, not the true COE."""
-        return float(self._line_2[52:63])
+        """``float``: Radians / sec. Note that this is the mean value, not the true COE."""
+        return float(self._line_2[52:63]) * pi / 43200
 
     @cached_property
     def semiMajorAxis(self) -> float:
         """``float``: Semi-major axis, in km. Note that this is the mean value, not the true COE."""
-        p = 1 / self.meanMotion * 3600 * 24  # Convert to period in seconds
-        n: float = 2 * pi / p  # Calculate mean motion in radians per unit time.
-        return (G * M_earth / (n**2)) ** (1 / 3.0) / 1000  # Calculate the semi major axis
+        return getSmaFromMeanMotion(self.meanMotion)
 
     @cached_property
     def revolutionNumberAtEpoch(self) -> int:
