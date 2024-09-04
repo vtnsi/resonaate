@@ -207,6 +207,38 @@ class StationKeepingRoutine(str, Enum):
     """``str``: Station keeping routine to keep LEO orbit stable."""
 
 
+class DecisionLabel(str, Enum):
+    """Defines valid labels for decision making algorithms."""
+
+    MUNKRES: str = "MunkresDecision"
+    """``str``: :class:`.MunkresDecision` decision making algorithm.
+
+    See Also:
+        :class:`.resonaate.tasking.decisions.MunkresDecision`
+    """
+
+    MYOPIC_NAIVE_GREEDY: str = "MyopicNaiveGreedyDecision"
+    """``str``: :class:`.MyopicNaiveGreedyDecision` decision making algorithm.
+
+    See Also:
+        :class:`.resonaate.tasking.decisions.MyopicNaiveGreedyDecision`
+    """
+
+    RANDOM: str = "RandomDecision"
+    """``str``: :class:`.RandomDecision` decision making algorithm.
+
+    See Also:
+        :class:`.resonaate.tasking.decisions.RandomDecision`
+    """
+
+    ALL_VISIBLE: str = "AllVisibleDecision"
+    """``str``: :class:`.AllVisibleDecision` decision making algorithm.
+
+    See Also:
+        :class:`.resonaate.tasking.decisions.AllVisibleDecision`
+    """
+
+
 class RewardLabel(str, Enum):
     """Defines valid labels for metric-based reward computation."""
 
@@ -214,13 +246,15 @@ class RewardLabel(str, Enum):
     """``str``: :class:`.CostConstrainedReward` reward computation class.
 
     See Also:
-        :class:`.resonaate.tasking.rewards.CostConstrainedReward`"""
+        :class:`.resonaate.tasking.rewards.CostConstrainedReward`
+    """
 
     SIMPLE_SUM: str = "SimpleSummationReward"
     """``str``: :class:`.SimpleSummationReward` reward computation class.
 
     See Also:
-        :class:`.resonaate.tasking.rewards.SimpleSummationReward`"""
+        :class:`.resonaate.tasking.rewards.SimpleSummationReward`
+    """
 
     COMBINED: str = "CombinedReward"
     """``str``: :class:`.CombinedReward` reward computation class.

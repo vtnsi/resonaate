@@ -2,26 +2,54 @@
 
 from __future__ import annotations
 
+# Standard Library Imports
+from typing import Annotated, Literal, Optional, Union
+
 # Third Party Imports
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 # Local Imports
-from ...tasking.decisions import VALID_DECISIONS
+from ...common.labels import DecisionLabel
 
 
-class DecisionConfig(BaseModel):
-    """Configuration section defining several decision-based options."""
+class MunkresDecisionConfig(BaseModel):
+    """Configuration section defining parameters for the munkres decision making algorithm."""
 
-    name: str
-    """``str``: Name of this decision function."""
+    name: Literal[DecisionLabel.MUNKRES] = DecisionLabel.MUNKRES
+    """``str``: Name of this decision making algorithm."""
 
-    @field_validator('name')
-    @classmethod
-    def name_must_be_valid(cls, v: str) -> str:
-        if v not in VALID_DECISIONS:
-            err = f"Decision '{v}' is not valid."
-            raise ValueError(err)
-        return v
 
-    parameters: dict = Field(default_factory=dict)
-    """``dict``: Parameters for the decision function."""
+class MyopicNaiveGreedyDecisionConfig(BaseModel):
+    """Configuration section defining parameters for the myopic naive greedy decision making algorithm."""
+
+    name: Literal[DecisionLabel.MYOPIC_NAIVE_GREEDY] = DecisionLabel.MYOPIC_NAIVE_GREEDY
+    """``str``: Name of this decision making algorithm."""
+
+
+class RandomDecisionConfig(BaseModel):
+    """Configuration section defining parameters for the random decision making algorithm."""
+
+    name: Literal[DecisionLabel.RANDOM] = DecisionLabel.RANDOM
+    """``str``: Name of this decision making algorithm."""
+
+    seed: Optional[int] = None
+    """``int``: Seed for pseudo-random number generator."""
+
+
+class AllVisibleDecision(BaseModel):
+    """Configuration section defining parameters for the 'all visible' decision making algorithm."""
+
+    name: Literal[DecisionLabel.ALL_VISIBLE] = DecisionLabel.ALL_VISIBLE
+    """``str``: Name of this decision making algorithm."""
+
+
+DecisionConfig = Annotated[
+    Union[
+        MunkresDecisionConfig,
+        MyopicNaiveGreedyDecisionConfig,
+        RandomDecisionConfig,
+        AllVisibleDecision
+    ],
+    Field(..., discriminator="name")
+]
+"""Annotated[Union]: Discriminated union defining valid decision making configurations."""
