@@ -32,7 +32,7 @@ from .. import constants as const
 from ..bodies import Earth
 from ..maths import rot2, rot3, wrapAngle2Pi
 from ..time.conversions import greenwichMeanTime
-from ..time.stardate import JulianDate, julianDateToDatetime
+from ..time.stardate import JulianDate, datetimeToJulianDate, julianDateToDatetime
 from .reductions import getReductionParameters
 
 if TYPE_CHECKING:
@@ -778,17 +778,18 @@ def getSlantRangeVector(sensor_eci: ndarray, target_eci: ndarray, utc_date: date
     return ecef2sez(target_ecef - sensor_ecef, lla_state[0], lla_state[1])
 
 
-def teme2ecef(x_teme: ndarray, julian_date_start: JulianDate, reduction: dict) -> ndarray:
+def teme2ecef(x_teme: ndarray, utc_date: datetime, reduction: dict) -> ndarray:
     """Convert an SGP4 output state vector (TEME) into an ECEF state vector.
 
     Args:
         x_teme (``ndarray``): 6x1 TEME state vector (km; km/sec)
-        julian_date_start (``JulianDate``): start julian date
+        utc_date (``datetime``): Epoch corresponding to when the transformation takes place
         reduction (``dict``): Resonaate reduction parameters. Usually retrieved by calling ``resonaate.physics.transforms.reductions.getReductionParameters()``.
 
     Returns:
         ``ndarray``: 6x1 ECEF state vector (km; km/sec)
     """
+    julian_date_start = datetimeToJulianDate(utc_date)
     rot_pef_2_teme = rot3(-1.0 * greenwichMeanTime(julian_date_start))
     rot_teme_2_pef = rot_pef_2_teme.T
 
