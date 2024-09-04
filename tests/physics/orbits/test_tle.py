@@ -130,11 +130,11 @@ def testSGP4Propagation(test_tle: str) -> None:
     loader = TLELoader(test_tle)
 
     # TODO: Tests these properties against actual data. Right now all that's happening is making sure the code executes without errors.
-    eci = loader.initECIStateConfig
+    eci = loader.init_eci_config
     v = hypot(eci.velocity[0], eci.velocity[1], eci.velocity[2])
     r = hypot(eci.position[0], eci.position[1], eci.position[2])
 
-    coe = loader.initCOEStateConfig
+    coe = loader.init_coe_config
 
     # Compute the SMA from the eci elements and make sure it lines up with what's in the COE config.
     sma = getSemiMajorAxis(r, v)

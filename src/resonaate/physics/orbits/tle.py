@@ -149,40 +149,45 @@ class TLELoader(_BaseTLE):
         self._sgp4_obj: Satellite = twoline2rv(self._line_1, self._line_2, wgs72)
 
     @cached_property
-    def propagateInitECI(self) -> ndarray:
+    def init_eci(self) -> ndarray:
         """Propagates the TLE at time-step 0 using the sgp4 algorithm to compute the intial ECI state.
 
         Returns:
             ndarray: Initial 6-element ECI state vector.
         """
         epoch: JulianDate = self.epoch
-        updateReductionParameters(julianDateToDatetime(epoch))
+        utc_datetime = julianDateToDatetime(epoch)
+        updateReductionParameters(utc_datetime)
         pos_teme, vel_teme = self._sgp4_obj.propagate(*getCalendarDate(epoch))
         x_teme = asarray(pos_teme + vel_teme)
-        x_ecef = teme2ecef(x_teme, epoch, getReductionParameters(julianDateToDatetime(epoch)))
+        x_ecef = teme2ecef(
+            x_teme,
+            utc_datetime,
+            getReductionParameters(julianDateToDatetime(epoch)),
+        )
         init_eci = ecef2eci(x_ecef, julianDateToDatetime(epoch))
         pos = init_eci[0:3].tolist()
         vel = init_eci[3:6].tolist()
         return array(pos + vel)
 
     @cached_property
-    def propagateInitCOE(self) -> OrbitalElementTuple:
+    def init_coe(self) -> OrbitalElementTuple:
         """Propagates the TLE at time-step 0 using the sgp4 algorithm, and returns true classical orbital elements.
 
         Returns:
             OrbitalElementTuple: Tuple containing all elements in the following order: sma, ecc, inc, raan, argp, true_anom.
         """
-        init_eci = self.propagateInitECI
+        init_eci = self.init_eci
         return eci2coe(init_eci)
 
     @cached_property
-    def initECIStateConfig(self) -> ECIStateConfig:
+    def init_eci_config(self) -> ECIStateConfig:
         """Propagates the initial ECI state and builds a state config object.
 
         Returns:
             ECIStateConfig: Initial State Config object representing the initial ECI state.
         """
-        eci = self.propagateInitECI.tolist()
+        eci = self.init_eci.tolist()
         return ECIStateConfig(
             type="eci",
             position=eci[0:3],
@@ -190,13 +195,13 @@ class TLELoader(_BaseTLE):
         )
 
     @cached_property
-    def initCOEStateConfig(self) -> COEStateConfig:
+    def init_coe_config(self) -> COEStateConfig:
         """Propagates the initial state of the object and builds a COEStateConfig.
 
         Returns:
             COEStateConfig: COEStateConfig containing truth orbital elements.
         """
-        coe = self.propagateInitCOE
+        coe = self.init_coe
         return COEStateConfig(
             type="coe",
             semi_major_axis=coe[0],
