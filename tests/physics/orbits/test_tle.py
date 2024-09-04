@@ -53,25 +53,25 @@ def testLoadNoName(test_tle: str) -> None:
     assert loader.name is None
 
 
-def testCatalogNumber(test_tle: str) -> None:
+def testcatalog_number(test_tle: str) -> None:
     """Tests and ensures that the catalog number is being loaded correctly."""
     loader = TLELoader(test_tle)
-    assert type(loader.catalogNumber) is int
-    assert loader.catalogNumber == 25544
+    assert type(loader.catalog_number) is int
+    assert loader.catalog_number == 25544
 
 
-def testLaunchYear(test_tle: str) -> None:
+def testlaunch_year(test_tle: str) -> None:
     """Tests and ensures the launch year is properly parsed."""
     loader = TLELoader(test_tle)
-    assert type(loader.launchYear) is int
-    assert loader.launchYear == 98
+    assert type(loader.launch_year) is int
+    assert loader.launch_year == 98
 
 
-def testLaunchNumber(test_tle: str) -> None:
+def testlaunch_number(test_tle: str) -> None:
     """Tests and ensures the launch number is properly parsed."""
     loader = TLELoader(test_tle)
-    assert type(loader.launchNumber) is int
-    assert loader.launchNumber == 67
+    assert type(loader.launch_number) is int
+    assert loader.launch_number == 67
 
 
 def testEpoch(test_tle: str, test_epoch: JulianDate) -> None:
@@ -91,7 +91,7 @@ def testInclination(test_tle: str) -> None:
 def testRaan(test_tle: str) -> None:
     """Tests parsing of the right ascension of the ascending node."""
     loader = TLELoader(test_tle)
-    assert loader.rightAscension == 247.4627
+    assert loader.right_ascension == 247.4627
 
 
 def testEccentricity(test_tle: str) -> None:
@@ -100,29 +100,29 @@ def testEccentricity(test_tle: str) -> None:
     assert loader.eccentricity == 0.0006703
 
 
-def testArgumentOfPeriapsis(test_tle: str) -> None:
+def testargument_of_periapsis(test_tle: str) -> None:
     """Tests parsing of the argument of periapsis."""
     loader = TLELoader(test_tle)
-    assert loader.argumentOfPeriapsis == 130.5360
+    assert loader.argument_of_periapsis == 130.5360
 
 
 def testMeanAnomaly(test_tle: str) -> None:
     """Tests parsing of the mean anomaly."""
     loader = TLELoader(test_tle)
-    assert loader.meanAnomolay == 325.0288
+    assert loader.mean_anomaly == 325.0288
 
 
-def testMeanMotion(test_tle: str) -> None:
+def testmean_motion(test_tle: str) -> None:
     """Tests parsing of the mean motion into radians per second."""
     loader = TLELoader(test_tle)
-    assert loader.meanMotion == 0.0011432818469647179
+    assert loader.mean_motion == 0.0011432818469647179
 
 
-def testSemiMajorAxis(test_tle: str) -> None:
+def testsemi_major_axis(test_tle: str) -> None:
     """Tests the parsing and computation of the semi major axis."""
     loader = TLELoader(test_tle)
-    sma = loader.semiMajorAxis
-    assert isclose(loader.meanMotion, getMeanMotion(sma))
+    sma = loader.semi_major_axis
+    assert isclose(loader.mean_motion, getMeanMotion(sma))
 
 
 def testSGP4Propagation(test_tle: str) -> None:

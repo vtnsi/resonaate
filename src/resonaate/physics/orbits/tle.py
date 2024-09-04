@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from sgp4.model import Satellite
 
 
-class _BaseTLE:
+class TLELoader:
     """Basic representation of TLE Information and implementation of a TLE parser."""
 
     def __init__(self, data: str) -> None:
@@ -51,6 +51,8 @@ class _BaseTLE:
             self._line_1 = self._lines[1]
             self._line_2 = self._lines[2]
 
+        self._sgp4_obj: Satellite = twoline2rv(self._line_1, self._line_2, wgs72)
+
     @cached_property
     def name(self) -> str:
         """``str | None``: The name of the satellite. Returns ``None`` if no title line is present in the TLE."""
@@ -59,17 +61,17 @@ class _BaseTLE:
         return self._title_line
 
     @cached_property
-    def catalogNumber(self) -> int:
+    def catalog_number(self) -> int:
         """``int``: The Sattelite Catalog Number."""
         return int(self._line_1[2:7])
 
     @cached_property
-    def launchYear(self) -> int:
+    def launch_year(self) -> int:
         """``int``: The last two digits of the launch year."""
         return int(self._line_1[9:11])
 
     @cached_property
-    def launchNumber(self) -> int:
+    def launch_number(self) -> int:
         """``int``: The launch number of that year."""
         return int(self._line_1[11:14])
 
@@ -77,9 +79,9 @@ class _BaseTLE:
     def epoch(self) -> JulianDate:
         """``JulianDate``: The Epoch."""
         year: int = int(self._line_1[18:20])
-        if year > 50:
+        if year > 57:
             year += 1900
-        elif year <= 50:
+        elif year <= 57:
             year += 2000
         day: float = float(self._line_1[20:32])
 
@@ -95,7 +97,7 @@ class _BaseTLE:
         return float(self._line_2[8:16])
 
     @cached_property
-    def rightAscension(self) -> float:
+    def right_ascension(self) -> float:
         """``float``: Right ascension of the ascending node in degrees. Note that this is the mean value, not the true COE."""
         return float(self._line_2[17:25])
 
@@ -105,48 +107,35 @@ class _BaseTLE:
         return float(self._line_2[26:33]) / 10**7
 
     @cached_property
-    def argumentOfPeriapsis(self) -> float:
+    def argument_of_periapsis(self) -> float:
         """``float``: Argument of periapsis in degrees. Note that this is the mean value, not the true COE."""
         return float(self._line_2[34:42])
 
     @cached_property
-    def meanAnomolay(self) -> float:
+    def mean_anomaly(self) -> float:
         """``float``: Mean anomaly in degrees. Note that this is the mean value, not the true COE."""
         return float(self._line_2[43:51])
 
     @cached_property
-    def trueAnomaly(self) -> float:
+    def true_anomaly(self) -> float:
         """``float``: The true anomaly in degrees. Note that this is the mean value, not the true COE."""
         assert self.eccentricity < 1, "Only valid for eccentricities < 1."  # noqa: S101
-        return meanAnom2TrueAnom(self.meanAnomolay)
+        return meanAnom2TrueAnom(self.mean_anomaly)
 
     @cached_property
-    def meanMotion(self) -> float:
+    def mean_motion(self) -> float:
         """``float``: Radians / sec. Note that this is the mean value, not the true COE."""
         return float(self._line_2[52:63]) * pi / 43200
 
     @cached_property
-    def semiMajorAxis(self) -> float:
+    def semi_major_axis(self) -> float:
         """``float``: Semi-major axis, in km. Note that this is the mean value, not the true COE."""
-        return getSmaFromMeanMotion(self.meanMotion)
+        return getSmaFromMeanMotion(self.mean_motion)
 
     @cached_property
-    def revolutionNumberAtEpoch(self) -> int:
+    def revolution_number_at_epoch(self) -> int:
         """``int``: Number of completed orbits at the start epoch."""
         return int(self._line_2[63:68])
-
-
-class TLELoader(_BaseTLE):
-    """Contains behavior needed to build a resonaate initial state config from TLE data."""
-
-    def __init__(self, data: str) -> None:
-        """Initializes the object.
-
-        Args:
-            data (str): 2 or 3 line TLE string.
-        """
-        super().__init__(data)
-        self._sgp4_obj: Satellite = twoline2rv(self._line_1, self._line_2, wgs72)
 
     @cached_property
     def init_eci(self) -> ndarray:
