@@ -196,8 +196,8 @@ class SequentialFilter(ABC):
         # Set filter flags to empty
         self._flags = FilterFlag.NONE
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def fromConfig(
         cls,
         config: SequentialFilterConfig,

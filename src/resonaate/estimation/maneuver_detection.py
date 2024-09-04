@@ -36,8 +36,8 @@ class ManeuverDetection(metaclass=ABCMeta):
         self.threshold = threshold
         self.metric = None
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def fromConfig(cls, config: ManeuverDetectionConfig) -> ManeuverDetection:
         """Build a maneuver detection class based on specified `config`.
 
