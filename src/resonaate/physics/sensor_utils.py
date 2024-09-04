@@ -349,6 +349,9 @@ def calculateMinRadarRange(tx_frequency: float) -> float:
     return (SPEED_OF_LIGHT / tx_frequency / 2) * M2KM
 
 
+_mean_attr: str = "_mean"
+"""str: name of internal attribute for :attr:`.FrequencyBand.mean`."""
+
 class FrequencyBand(str, Enum):
     """Enumeration of supported radar frequency bands."""
 
@@ -364,14 +367,28 @@ class FrequencyBand(str, Enum):
     V = "V"
     W = "W"
 
-setattr(FrequencyBand.VHF, "mean", 165 * 1e6)
-setattr(FrequencyBand.UHF, "mean", 650 * 1e6)
-setattr(FrequencyBand.L, "mean", 1.5 * 1e9)
-setattr(FrequencyBand.S, "mean", 3.0 * 1e9)
-setattr(FrequencyBand.C, "mean", 6.0 * 1e9)
-setattr(FrequencyBand.X, "mean", 10.0 * 1e9)
-setattr(FrequencyBand.Ku, "mean", 15.0 * 1e9)
-setattr(FrequencyBand.K, "mean", 20.0 * 1e9)
-setattr(FrequencyBand.Ka, "mean", 30.0 * 1e9)
-setattr(FrequencyBand.V, "mean", 60.0 * 1e9)
-setattr(FrequencyBand.W, "mean", 15.0 * 1e9)
+    @property
+    def mean(self) -> float:
+        """float: Mean frequency of the enumerated band."""
+        return getattr(self, _mean_attr)
+
+    def setMean(self, mean: float):
+        """Set the mean frequency of this enumerated band.
+
+        Args:
+            mean (float): Mean frequency to set this band to.
+        """
+        setattr(self, _mean_attr, mean)
+    
+FrequencyBand.VHF.setMean(165 * 1e6)
+FrequencyBand.VHF.setMean(165 * 1e6)
+FrequencyBand.UHF.setMean(650 * 1e6)
+FrequencyBand.L.setMean(1.5 * 1e9)
+FrequencyBand.S.setMean(3.0 * 1e9)
+FrequencyBand.C.setMean(6.0 * 1e9)
+FrequencyBand.X.setMean(10.0 * 1e9)
+FrequencyBand.Ku.setMean(15.0 * 1e9)
+FrequencyBand.K.setMean(20.0 * 1e9)
+FrequencyBand.Ka.setMean(30.0 * 1e9)
+FrequencyBand.V.setMean(60.0 * 1e9)
+FrequencyBand.W.setMean(15.0 * 1e9)
