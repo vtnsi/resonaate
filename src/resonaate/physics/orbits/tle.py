@@ -16,7 +16,7 @@ from ...scenario.config.state_config import COEStateConfig, ECIStateConfig
 from ..orbits.utils import getSmaFromMeanMotion
 from ..time.stardate import JulianDate, datetimeToJulianDate, getCalendarDate, julianDateToDatetime
 from ..transforms.methods import ecef2eci, teme2ecef
-from ..transforms.reductions import getReductionParameters, updateReductionParameters
+from ..transforms.reductions import getReductionParameters
 from .anomaly import meanAnom2TrueAnom
 from .conversions import OrbitalElementTuple, eci2coe
 
@@ -146,15 +146,14 @@ class TLELoader:
         """
         epoch: JulianDate = self.epoch
         utc_datetime = julianDateToDatetime(epoch)
-        updateReductionParameters(utc_datetime)
         pos_teme, vel_teme = self._sgp4_obj.propagate(*getCalendarDate(epoch))
         x_teme = asarray(pos_teme + vel_teme)
         x_ecef = teme2ecef(
             x_teme,
             utc_datetime,
-            getReductionParameters(julianDateToDatetime(epoch)),
+            getReductionParameters(utc_datetime),
         )
-        init_eci = ecef2eci(x_ecef, julianDateToDatetime(epoch))
+        init_eci = ecef2eci(x_ecef, utc_datetime)
         pos = init_eci[0:3].tolist()
         vel = init_eci[3:6].tolist()
         return array(pos + vel)
