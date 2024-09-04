@@ -31,7 +31,8 @@ from scipy.linalg import norm
 from .. import constants as const
 from ..bodies import Earth
 from ..maths import rot2, rot3, wrapAngle2Pi
-from ..time.stardate import JulianDate, julianDateToDatetime
+from ..time.conversions import greenwichMeanTime
+from ..time.stardate import JulianDate, datetimeToJulianDate, julianDateToDatetime
 from .reductions import getReductionParameters
 
 if TYPE_CHECKING:
@@ -775,3 +776,29 @@ def getSlantRangeVector(sensor_eci: ndarray, target_eci: ndarray, utc_date: date
     target_ecef = eci2ecef(target_eci, utc_date)
     lla_state = ecef2lla(sensor_ecef)
     return ecef2sez(target_ecef - sensor_ecef, lla_state[0], lla_state[1])
+
+
+def teme2ecef(x_teme: ndarray, utc_date: datetime) -> ndarray:
+    """Convert an SGP4 output state vector (TEME) into an ECEF state vector.
+
+    Args:
+        x_teme (``ndarray``): 6x1 TEME state vector (km; km/sec)
+        utc_date (``datetime``): Epoch corresponding to when the transformation takes place
+
+    Returns:
+        ``ndarray``: 6x1 ECEF state vector (km; km/sec)
+    """
+    reduction = getReductionParameters(utc_date)
+    julian_date_start = datetimeToJulianDate(utc_date)
+    rot_pef_2_teme = rot3(-1.0 * greenwichMeanTime(julian_date_start))
+    rot_teme_2_pef = rot_pef_2_teme.T
+
+    r_pef = matmul(rot_teme_2_pef, x_teme[0:3])
+    r_ecef = matmul(reduction["rot_wt"], r_pef)
+
+    om_earth = array([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
+
+    v_pef = matmul(rot_teme_2_pef, x_teme[3:6]) - cross(om_earth, r_pef)
+    v_ecef = matmul(reduction["rot_wt"], v_pef)
+
+    return concatenate((r_ecef, v_ecef), axis=None)

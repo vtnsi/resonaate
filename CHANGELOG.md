@@ -36,6 +36,10 @@ ______________________________________________________________________
 
 ### Added
 
+- `TLELoader` object into `physics.orbits.tle`.
+- `teme2ecef` conversion function into `physics.transforms.methods`.
+- `getSmaFromMeanMotion` function into `physics.orbits.utils`.
+- TEME to ECEF conversion method
 - Ability to update EOP data and select a custom source location.
 - Behavioral Config option for your default EOP data location.
 - Multiple loader objects for updating EOP data: `DotDatLoader`, `ModuleDotDatLoader`, `LocalDotDatLoader`, `RemoteDotDatLoader`.
