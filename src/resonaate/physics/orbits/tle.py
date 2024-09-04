@@ -16,7 +16,6 @@ from ...scenario.config.state_config import COEStateConfig, ECIStateConfig
 from ..orbits.utils import getSmaFromMeanMotion
 from ..time.stardate import JulianDate, datetimeToJulianDate, getCalendarDate, julianDateToDatetime
 from ..transforms.methods import ecef2eci, teme2ecef
-from ..transforms.reductions import getReductionParameters
 from .anomaly import meanAnom2TrueAnom
 from .conversions import OrbitalElementTuple, eci2coe
 
@@ -151,7 +150,6 @@ class TLELoader:
         x_ecef = teme2ecef(
             x_teme,
             utc_datetime,
-            getReductionParameters(utc_datetime),
         )
         init_eci = ecef2eci(x_ecef, utc_datetime)
         pos = init_eci[0:3].tolist()
