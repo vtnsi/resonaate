@@ -14,6 +14,7 @@ from scipy.linalg import norm
 from typing_extensions import Self
 
 # Local Imports
+from ...common.labels import StateLabel
 from ...physics.bodies import Earth
 from ...physics.constants import DEG2RAD
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
@@ -22,7 +23,7 @@ from ...physics.transforms.methods import ecef2eci, lla2ecef
 # ruff: noqa: A003
 
 
-class StateConfig(BaseModel, ABC):
+class StateConfigBase(BaseModel, ABC):
     """Abstract base class defines methods that all ``StateConfig`` children classes should implement."""
 
     @abstractmethod
@@ -47,16 +48,20 @@ class StateConfig(BaseModel, ABC):
         raise NotImplementedError()
 
 
-class ECIStateConfig(BaseModel):
+Vector3 = Annotated[list[float], Field(..., min_length=3, max_length=3)]
+"""Annotated[type]: Type annotation describing a 3 element vector."""
+
+
+class ECIStateConfig(StateConfigBase):
     R"""Configuration defining an ECI state."""
 
-    type: Literal["eci"]
+    type: Literal[StateLabel.ECI] = StateLabel.ECI
     R"""``str``: type of state being defined."""
 
-    position: list[float]
+    position: Vector3
     R"""``list[float]``: initial 3x1 ECI position vector, km."""
 
-    velocity: list[float]
+    velocity: Vector3
     R"""``list[float]``: initial 3x1 ECI velocity vector, km/sec."""
 
     @model_validator(mode="after")
@@ -90,10 +95,10 @@ class ECIStateConfig(BaseModel):
         return norm(self.position) - Earth.radius
 
 
-class LLAStateConfig(BaseModel):
+class LLAStateConfig(StateConfigBase):
     R"""Configuration defining an lat-lon-alt state."""
 
-    type: Literal["lla"]
+    type: Literal[StateLabel.LLA] = StateLabel.LLA
     R"""``str``: type of state being defined."""
 
     latitude: float
@@ -131,14 +136,14 @@ class LLAStateConfig(BaseModel):
         return self.altitude
 
 
-class COEStateConfig(BaseModel):
+class COEStateConfig(StateConfigBase):
     R"""Configuration defining an COE state.
 
     See Also:
         :class:`.ClassicalElements` for more details on orbit definitions.
     """
 
-    type: Literal["coe"]
+    type: Literal[StateLabel.COE] = StateLabel.COE
     R"""``str``: type of state being defined."""
 
     semi_major_axis: float = Field(..., gt=Earth.radius)
@@ -233,10 +238,10 @@ class COEStateConfig(BaseModel):
         return self.semi_major_axis - Earth.radius
 
 
-class EQEStateConfig(BaseModel):
+class EQEStateConfig(StateConfigBase):
     R"""Configuration defining an EQE state."""
 
-    type: Literal["eqe"]
+    type: Literal[StateLabel.EQE] = StateLabel.EQE
     R"""``str``: type of state being defined."""
 
     semi_major_axis: float = Field(..., gt=Earth.radius)
@@ -285,4 +290,8 @@ class EQEStateConfig(BaseModel):
         return self.semi_major_axis - Earth.radius
 
 
-StateConfig = Annotated[Union[ECIStateConfig, LLAStateConfig, COEStateConfig,EQEStateConfig], Field(..., discriminator='type')]
+StateConfig = Annotated[
+    Union[ECIStateConfig, LLAStateConfig, COEStateConfig, EQEStateConfig],
+    Field(..., discriminator='type')
+]
+"""Annotated[Union]: Discriminated union defining valid state configurations."""
