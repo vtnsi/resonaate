@@ -10,7 +10,7 @@ from typing import Annotated, Literal, Union
 from pydantic import BaseModel, Field
 
 # Local Imports
-from ...common.labels import StationKeepingRoutine
+from ...common.labels import PlatformLabel, StationKeepingRoutine
 from ...physics.constants import SOLAR_PANEL_REFLECTIVITY
 from ...physics.orbits import ResidentStratification, _StratificationSpecification
 
@@ -55,7 +55,7 @@ class PlatformConfigBase(BaseModel, ABC):
 class SpacecraftConfig(PlatformConfigBase):
     R"""Configuration defining an agent that is a spacecraft platform."""
 
-    type: Literal["spacecraft"]
+    type: Literal[PlatformLabel.SPACECRAFT] = PlatformLabel.SPACECRAFT  # type: ignore
     R"""``str``: type of platform being defined."""
 
     station_keeping: StationKeepingConfig = Field(default_factory=StationKeepingConfig)
@@ -73,7 +73,7 @@ class SpacecraftConfig(PlatformConfigBase):
 class GroundFacilityConfig(PlatformConfigBase):
     R"""Configuration defining an agent that is a ground facility platform."""
 
-    type: Literal["ground_facility"]
+    type: Literal[PlatformLabel.GROUND_FACILITY] = PlatformLabel.GROUND_FACILITY  # type: ignore
     R"""``str``: type of platform being defined."""
     
     def isAltitudeValid(self, altitude: float) -> bool:
@@ -82,5 +82,6 @@ class GroundFacilityConfig(PlatformConfigBase):
 
 PlatformConfig = Annotated[
     Union[SpacecraftConfig, GroundFacilityConfig],
-    Field(..., discriminator='type')
+    Field(..., discriminator="type")
 ]
+"""Annotated[Union]: Discriminated union defining valid platform configurations."""
