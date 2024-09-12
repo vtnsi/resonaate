@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 Degree0to360 = Annotated[float, Field(..., ge=0.0, lt=360.0)]
 """Type annotation denoting a floating point number :math:`\in[0, 360)`"""
 
-Degree0to180 = Annotated[float, Field(..., ge=0.0, le=180)]
+Degree0to180 = Annotated[float, Field(..., gt=0.0, lt=180)]
 """Type annotation denoting a floating point number :math:`\in[0, 180]`"""
 
 DegreeNeg90to90 = Annotated[float, Field(..., ge=-90.0, lt=90)]
@@ -43,7 +43,7 @@ PosFloat = Annotated[float, Field(..., gt=0.0)]
 class ConicFieldOfViewConfig(BaseModel):
     R"""Configuration for the field of view of a sensor."""
 
-    fov_shape: Literal["conic"] = FoVLabel.CONIC
+    fov_shape: Literal[FoVLabel.CONIC] = FoVLabel.CONIC  # type: ignore
     R"""``str``: Type of Field of View being used."""
 
     cone_angle: Degree0to180 = DEFAULT_VIEWING_ANGLE
@@ -52,7 +52,7 @@ class ConicFieldOfViewConfig(BaseModel):
 
 class RectangularFieldOfViewConfig(BaseModel):
 
-    fov_shape: Literal["rectangular"] = FoVLabel.RECTANGULAR
+    fov_shape: Literal[FoVLabel.RECTANGULAR] = FoVLabel.RECTANGULAR  # type: ignore
     R"""``str``: Type of Field of View being used."""
 
     azimuth_angle: Degree0to180 = DEFAULT_VIEWING_ANGLE
