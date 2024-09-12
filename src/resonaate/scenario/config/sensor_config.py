@@ -11,7 +11,7 @@ from numpy import inf
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 # Local Imports
-from ...common.labels import FoVLabel
+from ...common.labels import FoVLabel, SensorLabel
 from ...physics.sensor_utils import FrequencyBand, calculateMinRadarRange
 from ...sensors.optical import OPTICAL_DETECTABLE_VISMAG
 from ...sensors.sensor_base import DEFAULT_VIEWING_ANGLE
@@ -30,7 +30,7 @@ Degree0to360 = Annotated[float, Field(..., ge=0.0, lt=360.0)]
 Degree0to180 = Annotated[float, Field(..., gt=0.0, lt=180)]
 """Type annotation denoting a floating point number :math:`\in[0, 180]`"""
 
-DegreeNeg90to90 = Annotated[float, Field(..., ge=-90.0, lt=90)]
+DegreeNeg90to90 = Annotated[float, Field(..., gt=-90.0, le=90)]
 """Type annotation denoting a floating point number :math:`\in[-90, 90)`"""
 
 NonNegFloat = Annotated[float, Field(..., ge=0.0)]
@@ -119,7 +119,7 @@ class SensorConfigBase(BaseModel, ABC):
 class OpticalConfig(SensorConfigBase):
     R"""Configuration object for a :class:`.Optical`."""
 
-    type: Literal["optical"]
+    type: Literal[SensorLabel.OPTICAL] = SensorLabel.OPTICAL  # type: ignore
     R"""``str``: type of sensor being defined."""
 
     detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG
@@ -138,7 +138,7 @@ class OpticalConfig(SensorConfigBase):
 class RadarConfig(SensorConfigBase):
     R"""Configuration object for a :class:`.Radar`."""
 
-    type: Literal["radar"]
+    type: Literal[SensorLabel.RADAR] = SensorLabel.RADAR  # type: ignore
     R"""``str``: type of sensor being defined."""
 
     tx_power: PosFloat
@@ -170,7 +170,7 @@ class RadarConfig(SensorConfigBase):
 class AdvRadarConfig(RadarConfig):
     R"""Configuration object for a :class:`.AdvRadar`."""
 
-    type: Literal["adv_radar"]
+    type: Literal[SensorLabel.ADV_RADAR] = SensorLabel.ADV_RADAR  # type: ignore
     R"""``str``: type of sensor being defined."""
 
 
