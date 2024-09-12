@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC, abstractmethod
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal, Optional, Union
 
 # Third Party Imports
 from pydantic import BaseModel, Field
@@ -26,13 +26,13 @@ class StationKeepingConfig(BaseModel):
 class PlatformConfigBase(BaseModel, ABC):
     R"""Configuration base class defining the platform of an agent."""
 
-    mass: Union[float, None] = None
+    mass: Optional[float] = None
     R"""``float``, optional: total mass, kg. Defaults to a value based on orbital regime."""
 
-    visual_cross_section: Union[float, None] = None
+    visual_cross_section: Optional[float] = None
     R"""``float``, optional: visual cross-sectional area, m^2. Defaults to a value based on orbital regime."""
 
-    reflectivity: float = SOLAR_PANEL_REFLECTIVITY
+    reflectivity: Optional[float] = SOLAR_PANEL_REFLECTIVITY
     R"""``float``, optional: constant reflectivity, unit-less. Defaults to :data:`.SOLAR_PANEL_REFLECTIVITY`."""
 
     @abstractmethod
