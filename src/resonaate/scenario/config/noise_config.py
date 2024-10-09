@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import Literal, Union
+from typing import ClassVar, Literal, Union
 
 # Third Party Imports
 from pydantic import BaseModel, Field, field_validator
@@ -22,19 +22,28 @@ TODO:
 class NoiseConfig(BaseModel):
     """Configuration section defining several noise-based options."""
 
-    init_position_std_km: float = Field(default=1e-3, gt=0.0)
+    DEFAULT_POS_STD: ClassVar[float] = 1e-3
+    """``float``: Default standard deviation of initial RSO position estimate (km)."""
+
+    init_position_std_km: float = Field(default=DEFAULT_POS_STD, gt=0.0)
     """``float``: Standard deviation of initial RSO position estimate (km)."""
 
-    init_velocity_std_km_p_sec: float = Field(default=1e-6, gt=0.0)
+    DEFAULT_VEL_STD: ClassVar[float] = 1e-6
+    """``float``: Default standard deviation of initial RSO velocity estimate (km/sec)."""
+
+    init_velocity_std_km_p_sec: float = Field(default=DEFAULT_VEL_STD, gt=0.0)
     """``float``: Standard deviation of initial RSO velocity estimate (km/sec)."""
 
     filter_noise_type: NoiseLabel = NoiseLabel.CONTINUOUS_WHITE_NOISE
     """``str``: String describing noise used in filter propagation."""
 
-    filter_noise_magnitude: float = Field(default=3e-14, gt=0.0)
+    DEFAULT_NOISE_MAG: ClassVar[float] = 3e-14
+    """``float``: Default 'variance' of noise added in filter propagation."""
+
+    filter_noise_magnitude: float = Field(default=DEFAULT_NOISE_MAG, gt=0.0)
     """``float``: 'Variance' of noise added in filter propagation."""
 
-    random_seed: Union[Literal["os"], int, None] = DEFAULT_RANDOM_SEED_VALUE
+    random_seed: Union[Literal["os"], int, None] = None
     """``str | int | None``: Pseudo-random number generator (PRNG) seed value.
 
     Setting this value to :attr:`.RNG_SEED_OS` will seed the PRNG with the OS's entropy.
@@ -42,15 +51,21 @@ class NoiseConfig(BaseModel):
 
     @field_validator('random_seed')
     @classmethod
-    def parse_os(cls, v) -> int | None:
-        """If :attr:`.random_seed` is set to 'os', default the parsed value to ``None``.
+    def validate_seed(cls, v) -> int | None:
+        """Parse :attr:`.random_seed` and validate its value.
         
         Args:
             v (str | int | None): Un-validated value of :attr:`.random_seed`.
 
         Returns:
-            int | None: Semi-validated value of :attr:`.random_seed`.
+            int | None: Valid value of :attr:`.random_seed`.
+
+        Raises:
+            AssertionError: If `v` is not a valid value.
         """
         if v == DEFAULT_RANDOM_SEED_VALUE:
-            v = None
+            return None
+
+        assert isinstance(v, int), f"Specified seed value not 'os' or valid integer: {v}"
+        assert 0 <= v < 2**32, f"Specified seed value outside valid range: {v}"
         return v
