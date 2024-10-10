@@ -88,7 +88,7 @@ GEO_TARGETS: list[dict] = [
             "k": 1.4027730893946884e-06,
             "p": 0.0,
             "q": 0.0,
-            "mean_longitude": 360.0,
+            "mean_longitude": 0.0,
         },
         "platform": {
             "type": "spacecraft",
@@ -344,7 +344,7 @@ SPACE_SENSORS: list[dict] = [
             "k": 1.4027730893946884e-06,
             "p": 0.0,
             "q": -0.0,
-            "mean_longitude": 360.0,
+            "mean_longitude": 0.0,
         },
         "sensor": {
             "covariance": [[9.80e-14, 0.0], [0.0, 9.80e-14]],
