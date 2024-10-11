@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Third Party Imports
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
 
 # Local Imports
@@ -25,10 +25,10 @@ class EngineConfig(BaseModel):
     decision: DecisionConfig
     """:class:`.DecisionConfig`: Decision configuration section for the defined engine."""
 
-    sensors: list[SensingAgentConfig]
+    sensors: list[SensingAgentConfig] = Field(..., min_length=1)
     """``list``: :class:`.SensingAgentConfig` objects that this engine can task."""
 
-    targets: list[AgentConfig]
+    targets: list[AgentConfig] = Field(..., min_length=1)
     """``list``: :class:`.AgentConfig` objects that this engine can be task against."""
 
     @model_validator(mode='after')

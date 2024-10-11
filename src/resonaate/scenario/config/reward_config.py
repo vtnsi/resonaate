@@ -28,7 +28,7 @@ class MetricConfig(BaseModel):
 class RewardConfigBase(BaseModel):
     """Configuration section defining several reward-based options."""
 
-    metrics: list[MetricConfig]
+    metrics: list[MetricConfig] = Field(..., min_length=1)
     """``list``: :class:`.MetricConfig` objects for calculating the reward."""
 
 
