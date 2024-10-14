@@ -60,6 +60,8 @@ class EstimationConfig(BaseModel):
             if self.initial_orbit_determination is not None:
                 warn("IOD flag is OFF, specified configuration will be IGNORED!")
 
+        return self
+
 
 class SequentialFilterConfigBase(BaseModel):
     """Configuration section defining several sequential filter-based options."""
