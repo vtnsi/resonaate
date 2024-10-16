@@ -79,7 +79,7 @@ class DataDependency:
 
 
 
-class EventConfigBase(BaseModel, ABC):
+class EventConfigBase(BaseModel, ABC, extra='allow'):
     """Abstract base class defining required fields of an event configuration object."""
 
     @classmethod
@@ -97,6 +97,7 @@ class EventConfigBase(BaseModel, ABC):
         if v != event_class.INTENDED_SCOPE.value:
             err = f"{event_class} must have scope set to {event_class.INTENDED_SCOPE}"
             raise ValueError(err)
+        return v
 
     scope_instance_id: int
     """``int``: unique identifier of instance that needs to handle this event."""
