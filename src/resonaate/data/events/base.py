@@ -20,7 +20,14 @@ from ..table_base import Base, _DataMixin
 
 # Type Checking Import
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Callable
+
+    # Third Party Imports
+    from numpy import ndarray
+
     # Local Imports
+    from ...dynamics.integration_events.scheduled_impulse import ScheduledImpulse
     from ...scenario.config.event_configs import EventConfig
 
 
@@ -81,13 +88,21 @@ class ThrustFrame(str, Enum):
     NTW = "ntw"
     """``str``: The event will be applied in the NTW frame."""
 
-# Set `impulse` attribute of instances of :class:`.ThrustFrame`.
-setattr(ThrustFrame.ECI, "impulse", ScheduledECIImpulse)
-setattr(ThrustFrame.NTW, "impulse", ScheduledNTWImpulse)
+    @property
+    def impulse(self, _mapping={
+        ECI: ScheduledECIImpulse,
+        NTW: ScheduledNTWImpulse,
+    }) -> ScheduledImpulse:
+        """ScheduledImpulse: Class associated with this :class:`.ThrustFrame`."""
+        return _mapping[self]
 
-# Set `thrust` attribute of instances of :class;`.ThrustFrame`.
-setattr(ThrustFrame.ECI, "thrust", eciBurn)
-setattr(ThrustFrame.NTW, "thrust", ntwBurn)
+    @property
+    def thrust(self, _mapping={
+        ECI: eciBurn,
+        NTW: ntwBurn,
+    }) -> Callable[[ndarray, ndarray], ndarray]:
+        """Callable: Burn method associated with this :class:`.ThrustFrame`."""
+        return _mapping[self]
 
 
 class Event(_DataMixin, Base):
