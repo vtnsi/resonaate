@@ -7,12 +7,12 @@ from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
+from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.data.events import SensorTimeBiasEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
-from resonaate.scenario.config.base import ConfigError, ConfigTypeError
 from resonaate.scenario.config.event_configs import SensorTimeBiasEventConfig
 
 
@@ -20,11 +20,11 @@ from resonaate.scenario.config.event_configs import SensorTimeBiasEventConfig
 def getTimeBias():
     """``dict``: config dictionary for time bias event."""
     return {
-        "scope": SensorTimeBiasEventConfig.EVENT_CLASS.INTENDED_SCOPE.value,
+        "scope": SensorTimeBiasEventConfig.getEventClass().INTENDED_SCOPE.value,
         "scope_instance_id": 300000,
         "start_time": datetime(2019, 2, 1, 15, 20),
         "end_time": datetime(2019, 2, 1, 20, 20),
-        "event_type": SensorTimeBiasEventConfig.EVENT_CLASS.EVENT_TYPE,
+        "event_type": SensorTimeBiasEventConfig.getEventClass().EVENT_TYPE,
         "applied_bias": 0.001,
     }
 
@@ -40,14 +40,14 @@ class TestSensorTimeBiasEventConfig:
         """Test :class:`.ScheduledImpulseEventConfig` constructor with bad ``scope`` argument."""
         bias_config = deepcopy(event_config_dict)
         bias_config["scope"] = "agent_propagation"
-        with pytest.raises(ConfigError):
+        with pytest.raises(ValidationError):
             SensorTimeBiasEventConfig(**bias_config)
 
     def testInitBadBiasType(self, event_config_dict):
         """Test :class:`.SensorTimeBiasEventConfig` constructor with bad ``applied_bias`` type."""
         bias_config = deepcopy(event_config_dict)
         bias_config["applied_bias"] = "bad value"
-        with pytest.raises(ConfigTypeError):
+        with pytest.raises(ValidationError):
             SensorTimeBiasEventConfig(**bias_config)
 
 

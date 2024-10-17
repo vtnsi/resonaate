@@ -8,13 +8,13 @@ from unittest.mock import MagicMock
 
 # Third Party Imports
 import pytest
+from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.common.labels import FoVLabel, SensorLabel
 from resonaate.data.data_interface import AgentModel
 from resonaate.data.events import SensorAdditionEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
-from resonaate.scenario.config.base import ConfigError
 from resonaate.scenario.config.event_configs import SensorAdditionEventConfig
 
 
@@ -133,7 +133,7 @@ class TestSensorAdditionEventConfig:
         sen_config["state"]["position"] = bad_eci
 
         event_config_dict["sensor_agent"] = sen_config
-        with pytest.raises(ConfigError):
+        with pytest.raises(ValidationError):
             _ = SensorAdditionEventConfig(**event_config_dict)
 
     def testDataDependency(self, optical_space_config: dict, event_config_dict: dict):

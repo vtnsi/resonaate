@@ -147,7 +147,7 @@ class TargetAdditionEvent(Event):
 
         station_keeping = ""
         if config.target_agent.platform.type == PlatformLabel.SPACECRAFT:
-            station_keeping = dumps(config.target_agent.platform.station_keeping.toJSON())
+            station_keeping = config.target_agent.platform.station_keeping.model_dump_json()
 
         return cls(
             scope=config.scope,
