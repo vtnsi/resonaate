@@ -4,10 +4,10 @@ from __future__ import annotations
 
 # Standard Library Imports
 import os.path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated, Union
 
 # Third Party Imports
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model
 
 # Local Imports
 from ...common.utilities import loadJSONFile
@@ -136,3 +136,20 @@ class ScenarioConfig(BaseModel):
             configuration["engines"].append(engine_config)
 
         return configuration
+
+
+def constructFromUnion(disc_union, cfg_dict: dict) -> BaseModel:
+    """Construct a concrete pydantic model from `disc_union` specified by `cfg_dict`.
+
+    Args:
+        disc_union: An Annotated Union type definition where the first argument is a Union of the
+            discriminated pydantic models and the second argument is the FieldInfo that contains
+            the discriminator information.
+        cfg_dict: Dictionary specifying attributes of the `disc_union` being constructed.
+
+    Returns:
+        BaseModel: Concrete pydantic model chosen from discriminated union described by `disc_union`.
+    """
+    Dummy = create_model(__model_name="Dummy", inner=disc_union)
+    dumdum = Dummy(inner=cfg_dict)
+    return dumdum.inner
