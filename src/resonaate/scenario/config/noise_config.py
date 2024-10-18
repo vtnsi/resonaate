@@ -67,5 +67,5 @@ class NoiseConfig(BaseModel):
             return None
 
         assert isinstance(v, int), f"Specified seed value not 'os' or valid integer: {v}"
-        assert 0 <= v < 2**32, f"Specified seed value outside valid range: {v}"
+        assert v >= 0, f"Invalid specified seed value: {v}"
         return v
