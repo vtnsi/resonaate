@@ -135,6 +135,7 @@ class SequentialFilter(ABC):
         maneuver_detection: ManeuverDetection | None,
         initial_orbit_determination: bool,
         adaptive_estimation: bool,
+        extra_parameters: dict[str, Any] | None = None,
     ):
         r"""Initialize a generic sequential filter class.
 
@@ -148,6 +149,8 @@ class SequentialFilter(ABC):
             maneuver_detection (:class:`.ManeuverDetection`): ManeuverDetection associated with the filter
             initial_orbit_determination (``bool``, optional): Indicator that IOD can be flagged by the filter
             adaptive_estimation (``bool``, optional): Indicator that adaptive estimation can be flagged by the filter
+            extra_parameters (``dict``, optional): extra arguments for derived classes, for allowing dynamic
+                creation from within this class
         """
         self._logger = logging.getLogger("resonaate")
 
@@ -164,6 +167,9 @@ class SequentialFilter(ABC):
         self.maneuver_metric: float | None = None
         self.maneuver_detected: bool = False
         self.maneuver_detection: ManeuverDetection = maneuver_detection
+
+        # Extra parameters for subclasses
+        self.extra_parameters: dict = extra_parameters
 
         # Main estimation products, used as outputs of the filter class
         self.est_x: ndarray = est_x
