@@ -39,7 +39,7 @@ SENSOR_CONFIG = {
             [0.0, 0.0, 0.0, 4.0000000000000015e-12],
         ],
         "slew_rate": 5.0,
-        "azimuth_range": [0.0, 360.0],
+        "azimuth_range": [0.0, 359.9999],
         "elevation_range": [5.0, 89.9999],
         "efficiency": 0.95,
         "aperture_diameter": 26.0,
@@ -71,7 +71,7 @@ def getConicFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
     dynamics = create_autospec(TwoBody, instance=True)
 
     conic_sensor_agent = SensingAgent.fromConfig(
-        SensingAgentConfig(**SENSOR_CONFIG),
+        SensingAgentConfig(**cfg),
         clock,
         dynamics,
         prop_cfg,
