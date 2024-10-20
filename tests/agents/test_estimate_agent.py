@@ -30,7 +30,7 @@ from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKal
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
 from resonaate.physics.transforms.methods import eci2ecef
 from resonaate.scenario.clock import ScenarioClock
-from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
+from resonaate.scenario.config.estimation_config import GPB1AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
 
 pytestmark = pytest.mark.usefixtures("database")
@@ -609,8 +609,7 @@ def testUpdateAttemptAdaptiveEstimation(
         initial_state=np.ones(6),
         initial_covariance=np.diagflat(np.ones(6)),
         _filter=nominal_filter,
-        adaptive_filter_config=AdaptiveEstimationConfig(
-            name="gpb1",
+        adaptive_filter_config=GPB1AdaptiveEstimationConfig(
             orbit_determination="lambert_universal",
             stacking_method="eci_stack",
             model_interval=600,
@@ -660,8 +659,7 @@ def testAttemptAdaptiveEstimation(
         initial_state=np.ones(6),
         initial_covariance=np.diagflat(np.ones(6)),
         _filter=mmae_filter,
-        adaptive_filter_config=AdaptiveEstimationConfig(
-            name="gpb1",
+        adaptive_filter_config=GPB1AdaptiveEstimationConfig(
             orbit_determination="lambert_universal",
             stacking_method="eci_stack",
             model_interval=600,
