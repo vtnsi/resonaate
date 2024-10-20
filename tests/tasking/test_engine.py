@@ -17,8 +17,8 @@ from resonaate.data.observation import MissedObservation, Observation
 from resonaate.job_handlers.task_execution import TaskExecutionJobHandler
 from resonaate.job_handlers.task_prediction import TaskPredictionJobHandler
 from resonaate.physics.time.stardate import JulianDate
-from resonaate.scenario.config.decision_config import DecisionConfig
-from resonaate.scenario.config.reward_config import RewardConfig
+from resonaate.scenario.config.decision_config import MunkresDecisionConfig
+from resonaate.scenario.config.reward_config import CostConstrainedRewardConfig
 from resonaate.sensors.sensor_base import Sensor
 from resonaate.tasking.decisions import decisionFactory
 from resonaate.tasking.engine.centralized_engine import CentralizedTaskingEngine
@@ -41,21 +41,19 @@ pytestmark = pytest.mark.usefixtures("database")
 @pytest.fixture(name="decision")
 def getDecision() -> Decision:
     """Returns a valid Decision object."""
-    decision_config = DecisionConfig(name="MunkresDecision", parameters={})
+    decision_config = MunkresDecisionConfig()
     return decisionFactory(decision_config)
 
 
 @pytest.fixture(name="reward")
 def getReward() -> Reward:
     """Returns a valid Reward object."""
-    reward_config = RewardConfig(
-        name="CostConstrainedReward",
+    reward_config = CostConstrainedRewardConfig(
         metrics=[
             {"name": "KLDivergence", "parameters": {}},
             {"name": "SlewDistanceMinimization", "parameters": {}},
             {"name": "LyapunovStability", "parameters": {}},
         ],
-        parameters={},
     )
     return rewardsFactory(reward_config)
 
