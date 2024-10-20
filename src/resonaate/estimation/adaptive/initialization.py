@@ -36,6 +36,6 @@ def lambertInitializationFactory(name: str) -> OrbitDeterminationFunction:
     if name.lower() in _LAMBERT_IOD_MAP:
         iod_class = _LAMBERT_IOD_MAP[name]
     else:
-        raise ValueError(name)
+        raise ValueError(f"Invalid Initial Orbit Determination type: {name}")
 
     return iod_class
