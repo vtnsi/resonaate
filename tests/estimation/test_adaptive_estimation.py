@@ -25,6 +25,7 @@ from resonaate.estimation.adaptive.smm import StaticMultipleModel
 from resonaate.estimation.maneuver_detection import StandardNis
 from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.time.stardate import JulianDate
+from resonaate.scenario.config import constructFromUnion
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
 from resonaate.sensors.advanced_radar import AdvRadar
 
@@ -290,7 +291,7 @@ class TestAdaptiveEstimation:
             "prune_percentage": 0.997,
             "parameters": {},
         }
-        config = AdaptiveEstimationConfig(**mmae_config)
+        config = constructFromUnion(AdaptiveEstimationConfig, mmae_config)
         _ = AdaptiveFilter.fromConfig(config, NOMINAL_FILTER, TIMESTEP)
 
     def testInitialize(
