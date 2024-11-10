@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 # Third Party Imports
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing_extensions import Self
 
 DEFAULT_TIME_STEP: int = 60
@@ -28,6 +28,13 @@ class TimeConfig(BaseModel):
 
     output_step_sec: int = Field(default=DEFAULT_TIME_STEP, gt=1)
     """``int``: time step used for outputting data. Defaults to 60 seconds."""
+
+    @field_validator("start_timestamp", "stop_timestamp")
+    @classmethod
+    def ignore_tzinfo(cls, val: datetime):
+        if val.tzinfo:
+            val = val.replace(tzinfo=None)
+        return val
 
     @model_validator(mode='after')
     def stop_after_start(self) -> Self:
