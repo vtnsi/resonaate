@@ -4,7 +4,6 @@ from __future__ import annotations
 
 # Standard Library Imports
 from enum import Enum
-from functools import partial
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -89,20 +88,20 @@ class ThrustFrame(str, Enum):
     """``str``: The event will be applied in the NTW frame."""
 
     @property
-    def impulse(self, _mapping={
+    def impulse(self, _mapping={  # noqa: PLR0206, B006
         ECI: ScheduledECIImpulse,
         NTW: ScheduledNTWImpulse,
     }) -> ScheduledImpulse:
         """ScheduledImpulse: Class associated with this :class:`.ThrustFrame`."""
-        return _mapping[self]
+        return _mapping[self.value]
 
     @property
-    def thrust(self, _mapping={
+    def thrust(self, _mapping={  # noqa: PLR0206, B006
         ECI: eciBurn,
         NTW: ntwBurn,
     }) -> Callable[[ndarray, ndarray], ndarray]:
         """Callable: Burn method associated with this :class:`.ThrustFrame`."""
-        return _mapping[self]
+        return _mapping[self.value]
 
 
 class Event(_DataMixin, Base):
