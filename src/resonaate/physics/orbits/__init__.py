@@ -56,7 +56,7 @@ class ResidentStratification:
         label="SURFACE",
         max_altitude=Earth.atmosphere,
         default_mass=10000.0,
-        default_vis_x=400.0
+        default_vis_x=400.0,
     )
     """_StratificationSpecification: Surface resident stratification.
 
@@ -71,7 +71,7 @@ class ResidentStratification:
         label="LEO",
         max_altitude=12000.0,
         default_mass=295.0,
-        default_vis_x=10.0
+        default_vis_x=10.0,
     )
     """_StratificationSpecification: Low Earth orbit resident stratification.
 
@@ -86,7 +86,7 @@ class ResidentStratification:
         label="MEO",
         max_altitude=30000.0,
         default_mass=2861.0,
-        default_vis_x=37.5
+        default_vis_x=37.5,
     )
     """_StratificationSpecification: Medium Earth orbit resident stratification.
 
@@ -101,7 +101,7 @@ class ResidentStratification:
         label="GEO",
         max_altitude=45000.0,
         default_mass=6200.0,
-        default_vis_x=90.0
+        default_vis_x=90.0,
     )
     """_StratificationSpecification: Geosynchronous Earth orbit resident stratification.
 
@@ -124,15 +124,15 @@ class ResidentStratification:
         """
         if altitude <= cls.SURFACE.max_altitude:
             return cls.SURFACE
-        elif altitude <= cls.LEO.max_altitude:
+        if altitude <= cls.LEO.max_altitude:
             return cls.LEO
-        elif altitude <= cls.MEO.max_altitude:
+        if altitude <= cls.MEO.max_altitude:
             return cls.MEO
-        elif altitude <= cls.GEO.max_altitude:
+        if altitude <= cls.GEO.max_altitude:
             return cls.GEO
-        else:
-            err = f"RSO altitude above GEO: {altitude}."
-            raise ValueError(err)
+        # else
+        err = f"RSO altitude above GEO: {altitude}."
+        raise ValueError(err)
 
 
 class InclinationError(Exception):

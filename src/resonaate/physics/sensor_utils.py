@@ -352,7 +352,7 @@ def calculateMinRadarRange(tx_frequency: float) -> float:
 class FrequencyBand(str, Enum):
     """Enumeration of supported radar frequency bands."""
 
-    VHF = "VHF" 
+    VHF = "VHF"
     UHF = "UHF"
     L = "L"
     S = "S"
@@ -365,7 +365,7 @@ class FrequencyBand(str, Enum):
     W = "W"
 
     @property
-    def mean(self, _mapping={
+    def mean(self, _mapping={  # noqa: PLR0206, B006
         VHF: 165 * 1e6,
         UHF: 650 * 1e6,
         L: 1.5 * 1e9,

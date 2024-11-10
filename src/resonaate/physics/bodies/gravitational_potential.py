@@ -13,13 +13,13 @@ from typing import TYPE_CHECKING
 from numpy import array, float64, sqrt, zeros
 from scipy.linalg import norm
 
-# Local Imports
-from ...common.labels import GeopotentialModel
-
 # Type Checking Imports
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
+
+    # Local Imports
+    from ...common.labels import GeopotentialModel
 
 
 GEOPOTENTIAL_MODULE: str = "resonaate.physics.data.geopotential"
