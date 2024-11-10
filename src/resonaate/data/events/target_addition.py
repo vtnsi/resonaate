@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from json import dumps, loads
+from json import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports

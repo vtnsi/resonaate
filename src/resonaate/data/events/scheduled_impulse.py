@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from enum import Enum
-from typing import TYPE_CHECKING, Tuple  # noqa: UP035
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array

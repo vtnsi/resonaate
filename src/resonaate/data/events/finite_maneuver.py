@@ -5,7 +5,7 @@ from __future__ import annotations
 # Standard Library Imports
 from enum import Enum
 from functools import partial
-from typing import TYPE_CHECKING, Tuple  # noqa: UP035
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy import Boolean, Column, Float, String
@@ -22,6 +22,9 @@ from .base import Event, EventScope
 
 # Type Checking Imports
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Callable
+
     # Local Imports
     from ...agents.agent_base import Agent
     from ...scenario.config.event_configs import ScheduledFiniteManeuverConfig
@@ -36,9 +39,13 @@ class ManeuverType(str, Enum):
     PLANE_CHANGE = "plane_change"
     """``str``: String designation of plane change maneuver."""
 
-# Set `thrust` attribute of instances of :class:`.ManeuverType`.
-setattr(ManeuverType.SPIRAL, "thrust", spiralThrust)
-setattr(ManeuverType.PLANE_CHANGE, "thrust", planeChangeThrust)
+    @property
+    def thrust(self, _mapping={  # noqa: PLR0206, B006
+        SPIRAL: spiralThrust,
+        PLANE_CHANGE: planeChangeThrust,
+    }) -> Callable:
+        """Callable: Maneuver method associated with this :class:`.ManeuverType`."""
+        return _mapping[self.value]
 
 
 class ScheduledFiniteManeuverEvent(Event):
