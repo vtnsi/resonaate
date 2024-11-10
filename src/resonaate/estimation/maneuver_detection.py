@@ -48,7 +48,7 @@ class ManeuverDetection(metaclass=ABCMeta):
         Returns:
             :class:`.ManeuverDetection`: Maneuver detection method build from specified `config`.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def __call__(self, *args: Any, test: TestType = oneSidedChiSquareTest, **kwargs: Any) -> bool:

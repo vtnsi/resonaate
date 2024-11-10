@@ -97,7 +97,7 @@ def sequentialFilterFactory(
         est_p,
         dynamics,
         q_matrix,
-        maneuver_detection
+        maneuver_detection,
     )
 
 
@@ -144,12 +144,11 @@ def adaptiveEstimationFactory(
     if config is None:
         raise ValueError("Adaptive estimation turned on by sequential filter, but no config given")
 
-    adaptive_filter = _ADAPTIVE_ESTIMATION_MAP[config.name].fromConfig(
+    return _ADAPTIVE_ESTIMATION_MAP[config.name].fromConfig(
         config,
         nominal_filter,
         time_step,
     )
-    return adaptive_filter
 
 
 def initialOrbitDeterminationFactory(

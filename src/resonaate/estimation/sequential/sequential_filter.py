@@ -16,7 +16,6 @@ from scipy.linalg import norm
 from ...common.behavioral_config import BehavioralConfig
 from ...data import getDBConnection
 from ...data.queries import fetchTruthByJDEpoch
-from ...scenario.config.estimation_config import SequentialFilterConfig
 from ..debug_utils import checkThreeSigmaObs, logFilterStep
 
 if TYPE_CHECKING:
@@ -31,6 +30,7 @@ if TYPE_CHECKING:
     from ...dynamics.dynamics_base import Dynamics
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.time.stardate import ScenarioTime
+    from ...scenario.config.estimation_config import SequentialFilterConfig
     from ..maneuver_detection import ManeuverDetection
 
 
@@ -204,7 +204,7 @@ class SequentialFilter(ABC):
 
     @classmethod
     @abstractmethod
-    def fromConfig(
+    def fromConfig(  # noqa: PLR0913
         cls,
         config: SequentialFilterConfig,
         tgt_id: int,
@@ -230,7 +230,7 @@ class SequentialFilter(ABC):
         Returns:
             :class:`.SequentialFilter`: constructed filter object
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def predict(

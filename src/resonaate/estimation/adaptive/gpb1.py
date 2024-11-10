@@ -110,7 +110,7 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
             mmae_config.model_interval,
             mmae_config.prune_threshold,
             mmae_config.prune_percentage,
-            mix_ratio=mmae_config.mix_ratio
+            mix_ratio=mmae_config.mix_ratio,
         )
 
     def initialize(self, observations: list[Observation], julian_date_start: JulianDate) -> bool:
