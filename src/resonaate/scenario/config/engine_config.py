@@ -12,6 +12,7 @@ from .agent_config import AgentConfig, SensingAgentConfig
 from .decision_config import DecisionConfig
 from .reward_config import RewardConfig
 
+# ruff: noqa: UP007
 
 class EngineConfig(BaseModel):
     """Defines the structure for an object defined in the 'engines' configuration section."""
@@ -31,8 +32,9 @@ class EngineConfig(BaseModel):
     targets: list[AgentConfig] = Field(..., min_length=1)
     """``list``: :class:`.AgentConfig` objects that this engine can be task against."""
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def all_viz_compatibility(self) -> Self:
+        """Ensure the ``AllVisibleDecision`` algorithm is only applied to advanced radar sensors."""
         # [NOTE]: Only Advanced Radar can used with an AllVisibleDecision type.
         if self.decision.name == "AllVisibleDecision":
             for sensor in self.sensors:

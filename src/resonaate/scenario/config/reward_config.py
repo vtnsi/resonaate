@@ -15,7 +15,7 @@ from ...common.labels import MetricLabel, RewardLabel
 class MetricConfig(BaseModel):
     """Define a metric function config.
 
-    TODO:
+    TODO:  # noqa: D405
         _When_ there's a metric configuration that _actually_ requires specifying further
         parameters beyond just it's name, this configuration class will need to become a
         discriminated union that specifies and documents said parameters.
@@ -61,6 +61,6 @@ class CombinedRewardConfig(RewardConfigBase):
 
 RewardConfig = Annotated[
     Union[CostConstrainedRewardConfig, SimpleSummationRewardConfig, CombinedRewardConfig],
-    Field(..., discriminator="name")
+    Field(..., discriminator="name"),
 ]
 """Annotated[Union]: Discriminated union defining valid reward computation configurations."""

@@ -12,8 +12,6 @@ from .platform_config import PlatformConfig
 from .sensor_config import SensorConfig
 from .state_config import StateConfig
 
-# ruff: noqa: A003
-
 
 class AgentConfig(BaseModel):
     R"""Configuration base class defining an agent."""
@@ -30,7 +28,7 @@ class AgentConfig(BaseModel):
     platform: PlatformConfig
     R""":class:`.PlatformConfig`: defines the behavior/dynamics of this agent."""
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_strat(self) -> Self:
         """Make sure platform and resident stratification match and then set any associated default values."""
         altitude = self.state.getAltitude()

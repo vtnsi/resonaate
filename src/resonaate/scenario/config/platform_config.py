@@ -14,7 +14,7 @@ from ...common.labels import PlatformLabel, StationKeepingRoutine
 from ...physics.constants import SOLAR_PANEL_REFLECTIVITY
 from ...physics.orbits import ResidentStratification, _StratificationSpecification
 
-# ruff: noqa: A003
+# ruff: noqa: UP007
 
 class StationKeepingConfig(BaseModel):
     R"""Configuration for station keeping routines."""
@@ -38,7 +38,7 @@ class PlatformConfigBase(BaseModel, ABC):
     @abstractmethod
     def isAltitudeValid(self, altitude: float) -> bool:
         """Return boolean indication of whether specified `altitude` is valid for this platform configuration."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def setStratDefaults(self, strat: _StratificationSpecification):
         """Set :attr:`.mass` and :attr:`.visual_cross_section` according to specified `strat`.
@@ -67,6 +67,14 @@ class SpacecraftConfig(PlatformConfigBase):
     """
 
     def isAltitudeValid(self, altitude: float) -> bool:
+        """Verify that the altitude is above the surface of the Earth.
+
+        Args:
+            altitude (float): The altitude of this platform (in KM).
+
+        Returns:
+            bool: Indication that the specified `altitude` is above the surface of the Earth.
+        """
         return altitude > ResidentStratification.SURFACE.max_altitude
 
 
@@ -75,13 +83,21 @@ class GroundFacilityConfig(PlatformConfigBase):
 
     type: Literal[PlatformLabel.GROUND_FACILITY] = PlatformLabel.GROUND_FACILITY  # type: ignore
     R"""``str``: type of platform being defined."""
-    
+
     def isAltitudeValid(self, altitude: float) -> bool:
+        """Verify that the altitude is on the surface of the Earth.
+
+        Args:
+            altitude (float): The altitude of this platform (in KM).
+
+        Returns:
+            bool: Indication that the specified `altitude` is on the surface of the Earth.
+        """
         return altitude <= ResidentStratification.SURFACE.max_altitude
 
 
 PlatformConfig = Annotated[
     Union[SpacecraftConfig, GroundFacilityConfig],
-    Field(..., discriminator="type")
+    Field(..., discriminator="type"),
 ]
 """Annotated[Union]: Discriminated union defining valid platform configurations."""

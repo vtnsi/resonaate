@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     # Third Party Imports
     from typing_extensions import Self
 
-# ruff: noqa: A003
+# ruff: noqa: W605, UP007
 
 
 Degree0to360 = Annotated[float, Field(..., ge=0.0, lt=360.0)]
@@ -51,6 +51,7 @@ class ConicFieldOfViewConfig(BaseModel):
 
 
 class RectangularFieldOfViewConfig(BaseModel):
+    """Configuration for the field of view of a sensor."""
 
     fov_shape: Literal[FoVLabel.RECTANGULAR] = FoVLabel.RECTANGULAR  # type: ignore
     R"""``str``: Type of Field of View being used."""
@@ -62,7 +63,10 @@ class RectangularFieldOfViewConfig(BaseModel):
     R"""``float``: vertical angular resolution for `rectangular` Field of View (degrees)."""
 
 
-FieldOfViewConfig = Annotated[Union[ConicFieldOfViewConfig, RectangularFieldOfViewConfig], Field(..., discriminator='fov_shape')]
+FieldOfViewConfig = Annotated[
+    Union[ConicFieldOfViewConfig, RectangularFieldOfViewConfig],
+    Field(..., discriminator="fov_shape"),
+]
 
 
 class SensorConfigBase(BaseModel, ABC):
@@ -125,7 +129,7 @@ class OpticalConfig(SensorConfigBase):
     detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG
     R"""``float``, optional: minimum detectable visual magnitude value, used for visibility constraints, unit-less. Defaults to :data:`.OPTICAL_DETECTABLE_VISMAG`."""
 
-    @field_validator('minimum_range')
+    @field_validator("minimum_range")
     @classmethod
     def default_min_range(cls, v):
         """Optical minimum range defaults to 0.0 km."""
@@ -150,7 +154,7 @@ class RadarConfig(SensorConfigBase):
     min_detectable_power: float = Field(..., gt=0.0)
     R"""``float``: The smallest received power that can be detected by the radar, W."""
 
-    @field_validator('tx_frequency')
+    @field_validator("tx_frequency")
     @classmethod
     def parse_band(cls, v) -> float:
         """If a frequency band is provided for `tx_frequency`, parse it to the appropriate floating point value."""
@@ -159,7 +163,7 @@ class RadarConfig(SensorConfigBase):
         # else
         return v
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def default_min_range(self) -> Self:
         """If minimum range was not provided, set it based on frequency."""
         if self.minimum_range is None:
@@ -174,4 +178,7 @@ class AdvRadarConfig(RadarConfig):
     R"""``str``: type of sensor being defined."""
 
 
-SensorConfig = Annotated[Union[OpticalConfig, RadarConfig, AdvRadarConfig], Field(..., discriminator='type')]
+SensorConfig = Annotated[
+    Union[OpticalConfig, RadarConfig, AdvRadarConfig],
+    Field(..., discriminator="type"),
+]

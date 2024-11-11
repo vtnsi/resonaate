@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING
 # Local Imports
 from ...common.labels import RewardLabel
 from ..metrics import _METRIC_MAPPING
-from ..metrics.metric_base import Metric
-from .reward_base import Reward
 from .rewards import CombinedReward, CostConstrainedReward, SimpleSummationReward
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Local Imports
     from ...scenario.config.reward_config import RewardConfig
+    from ..metrics.metric_base import Metric
+    from .reward_base import Reward
 
 
 _REWARD_MAPPING: dict[RewardLabel, Reward] = {

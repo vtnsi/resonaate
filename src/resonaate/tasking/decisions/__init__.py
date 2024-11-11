@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 # Local Imports
 from ...common.labels import DecisionLabel
-from .decision_base import Decision
 from .decisions import (
     AllVisibleDecision,
     MunkresDecision,
@@ -19,6 +18,7 @@ from .decisions import (
 if TYPE_CHECKING:
     # Local Imports
     from ...scenario.config.decision_config import DecisionConfig
+    from .decision_base import Decision
 
 
 _DECISION_MAPPING: dict[DecisionLabel, Decision] = {

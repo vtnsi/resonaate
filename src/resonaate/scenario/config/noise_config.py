@@ -43,17 +43,17 @@ class NoiseConfig(BaseModel):
     filter_noise_magnitude: float = Field(default=DEFAULT_NOISE_MAG, gt=0.0)
     """``float``: 'Variance' of noise added in filter propagation."""
 
-    random_seed: Union[Literal["os"], int, None] = None
+    random_seed: Union[Literal["os"], int, None] = None  # noqa: UP007
     """``str | int | None``: Pseudo-random number generator (PRNG) seed value.
 
     Setting this value to :attr:`.RNG_SEED_OS` will seed the PRNG with the OS's entropy.
     """
 
-    @field_validator('random_seed')
+    @field_validator("random_seed")
     @classmethod
     def validate_seed(cls, v) -> int | None:
         """Parse :attr:`.random_seed` and validate its value.
-        
+
         Args:
             v (str | int | None): Un-validated value of :attr:`.random_seed`.
 
@@ -66,6 +66,8 @@ class NoiseConfig(BaseModel):
         if v == DEFAULT_RANDOM_SEED_VALUE:
             return None
 
-        assert isinstance(v, int), f"Specified seed value not 'os' or valid integer: {v}"
-        assert v >= 0, f"Invalid specified seed value: {v}"
+        if not isinstance(v, int):
+            raise ValueError(f"Specified seed value not 'os' or valid integer: {v}")
+        if v < 0:
+            raise ValueError(f"Invalid specified seed value: {v}")
         return v

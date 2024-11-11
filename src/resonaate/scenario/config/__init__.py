@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 import os.path
-from typing import TYPE_CHECKING, Annotated, Union
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from pydantic import BaseModel, Field, create_model
@@ -150,6 +150,6 @@ def constructFromUnion(disc_union, cfg_dict: dict) -> BaseModel:
     Returns:
         BaseModel: Concrete pydantic model chosen from discriminated union described by `disc_union`.
     """
-    Dummy = create_model(__model_name="Dummy", inner=disc_union)
-    dumdum = Dummy(inner=cfg_dict)
+    dummy_model = create_model(__model_name="Dummy", inner=disc_union)
+    dumdum = dummy_model(inner=cfg_dict)
     return dumdum.inner

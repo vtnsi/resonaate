@@ -20,7 +20,7 @@ from ...physics.constants import DEG2RAD
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.transforms.methods import ecef2eci, lla2ecef
 
-# ruff: noqa: A003
+# ruff: noqa: UP007
 
 
 class StateConfigBase(BaseModel, ABC):
@@ -36,7 +36,7 @@ class StateConfigBase(BaseModel, ABC):
         Returns:
             ``ndarray``: 6x1 ECI state, [km; km/sec].
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def getAltitude(self) -> float:
@@ -45,7 +45,7 @@ class StateConfigBase(BaseModel, ABC):
         Returns:
             float: Altitude corresponding to this :class:`.StateConfig` (in km).
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 Vector3 = Annotated[list[float], Field(..., min_length=3, max_length=3)]
@@ -66,6 +66,7 @@ class ECIStateConfig(StateConfigBase):
 
     @model_validator(mode="after")
     def pos_outside_earth(self) -> Self:
+        """Validate that the specified position is outside the radius of the Earth."""
         if norm(self.position) <= Earth.radius:
             msg = f"Position magnitude must be greater than Earth's radius: {norm(self.position)}"
             raise ValueError(msg)
@@ -292,6 +293,6 @@ class EQEStateConfig(StateConfigBase):
 
 StateConfig = Annotated[
     Union[ECIStateConfig, LLAStateConfig, COEStateConfig, EQEStateConfig],
-    Field(..., discriminator='type')
+    Field(..., discriminator="type"),
 ]
 """Annotated[Union]: Discriminated union defining valid state configurations."""

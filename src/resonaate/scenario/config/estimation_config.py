@@ -20,6 +20,8 @@ from ...common.labels import (
     StackingLabel,
 )
 
+# ruff: noqa: UP007
+
 DEFAULT_MANEUVER_DETECTION_THRESHOLD: float = 0.05
 DEFAULT_PRUNE_PERCENTAGE: float = 0.997
 DEFAULT_PRUNE_THRESHOLD: float = 1e-20
@@ -49,16 +51,14 @@ class EstimationConfig(BaseModel):
         if self.sequential_filter.adaptive_estimation:
             if self.adaptive_filter is None:
                 raise ValueError("Adaptive estimation flag set but no configuration specified.")
-        else:
-            if self.adaptive_filter is not None:
-                warn("Adaptive estimation flag is OFF, specified configuration will be IGNORED!")
-        
+        elif self.adaptive_filter is not None:
+            warn("Adaptive estimation flag is OFF, specified configuration will be IGNORED!", stacklevel=2)
+
         if self.sequential_filter.initial_orbit_determination:
             if self.initial_orbit_determination is None:
                 raise ValueError("IOD flag set but no configuration specified.")
-        else:
-            if self.initial_orbit_determination is not None:
-                warn("IOD flag is OFF, specified configuration will be IGNORED!")
+        elif self.initial_orbit_determination is not None:
+            warn("IOD flag is OFF, specified configuration will be IGNORED!", stacklevel=2)
 
         return self
 
@@ -141,14 +141,14 @@ class ManeuverDetectionConfigBase(BaseModel):
 
 class StandardNISConfig(ManeuverDetectionConfigBase):
     """Configuration section defining configuration options for standard NIS maneuver detection."""
-    
+
     name: Literal[ManeuverDetectionLabel.STANDARD_NIS] = ManeuverDetectionLabel.STANDARD_NIS
     """``str``: maneuver detection technique to use."""
 
 
 class SlidingNISConfig(ManeuverDetectionConfigBase):
     """Configuration section defining configuration options for sliding NIS maneuver detection."""
-    
+
     name: Literal[ManeuverDetectionLabel.SLIDING_NIS] = ManeuverDetectionLabel.SLIDING_NIS
     """``str``: maneuver detection technique to use."""
 
@@ -158,7 +158,7 @@ class SlidingNISConfig(ManeuverDetectionConfigBase):
 
 class FadingMemoryNISConfig(ManeuverDetectionConfigBase):
     """Configuration section defining configuration options for fading-memory NIS maneuver detection."""
-    
+
     name: Literal[ManeuverDetectionLabel.FADING_MEMORY_NIS] = ManeuverDetectionLabel.FADING_MEMORY_NIS
     """``str``: maneuver detection technique to use."""
 
@@ -168,7 +168,7 @@ class FadingMemoryNISConfig(ManeuverDetectionConfigBase):
 
 ManeuverDetectionConfig = Annotated[
     Union[StandardNISConfig, SlidingNISConfig, FadingMemoryNISConfig],
-    Field(..., discriminator="name")
+    Field(..., discriminator="name"),
 ]
 """Annotated[Union]: Discriminated union defining valid maneuver detection configurations."""
 
@@ -177,7 +177,7 @@ class AdaptiveEstimationConfigBase(BaseModel):
     """Configuration section defining adaptive estimation options."""
 
     model_config = ConfigDict(
-        protected_namespaces=()
+        protected_namespaces=(),
     )
     """ConfigDict: Configuration management for ``pydantic.BaseModel`` class.
 
@@ -223,7 +223,7 @@ class SMMAdaptiveEstimationConfig(AdaptiveEstimationConfigBase):
 
 AdaptiveEstimationConfig = Annotated[
     Union[GPB1AdaptiveEstimationConfig, SMMAdaptiveEstimationConfig],
-    Field(..., discriminator="name")
+    Field(..., discriminator="name"),
 ]
 """Annotated[Union]: Discriminated union defining valid adaptive estimation configurations."""
 

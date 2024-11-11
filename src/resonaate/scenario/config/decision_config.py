@@ -32,7 +32,7 @@ class RandomDecisionConfig(BaseModel):
     name: Literal[DecisionLabel.RANDOM] = DecisionLabel.RANDOM  # type: ignore
     """``str``: Name of this decision making algorithm."""
 
-    seed: Optional[int] = None
+    seed: Optional[int] = None  # noqa: UP007
     """``int``: Seed for pseudo-random number generator."""
 
 
@@ -48,8 +48,8 @@ DecisionConfig = Annotated[
         MunkresDecisionConfig,
         MyopicNaiveGreedyDecisionConfig,
         RandomDecisionConfig,
-        AllVisibleDecision
+        AllVisibleDecision,
     ],
-    Field(..., discriminator="name")
+    Field(..., discriminator="name"),
 ]
 """Annotated[Union]: Discriminated union defining valid decision making configurations."""

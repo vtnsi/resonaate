@@ -8,9 +8,6 @@ from typing import TYPE_CHECKING
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import ClassVar
-
     # Third Party Imports
     from numpy import ndarray
 

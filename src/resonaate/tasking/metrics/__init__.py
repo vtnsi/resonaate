@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Local Imports
 from ...common.labels import MetricLabel
 from .information import FisherInformation, KLDivergence, ShannonInformation
-from .metric_base import Metric
 from .sensor import (
     SlewDistanceMaximization,
     SlewDistanceMinimization,
@@ -25,6 +27,11 @@ from .uncertainty import (
     VelocityCovarianceTrace,
     VelocityMaxEigenValue,
 )
+
+if TYPE_CHECKING:
+    # Local Imports
+    from .metric_base import Metric
+
 
 _METRIC_MAPPING: dict[MetricLabel, Metric] = {
     MetricLabel.FISHER_INFO: FisherInformation,

@@ -79,20 +79,22 @@ class DataDependency:
 
 
 
-class EventConfigBase(BaseModel, ABC, extra='allow'):
+class EventConfigBase(BaseModel, ABC, extra="allow"):
     """Abstract base class defining required fields of an event configuration object."""
 
     @classmethod
     @abstractmethod
     def getEventClass(cls) -> Event:
-        raise NotImplementedError()
+        """Return the :class:`.Event` class associated with this ``EventConfig``."""
+        raise NotImplementedError
 
     scope: EventScope
     """``str``: scope level at which this event needs to be handled."""
 
-    @field_validator('scope')
+    @field_validator("scope")
     @classmethod
     def check_scope(cls, v):
+        """Validate that the scope field matches the intended scope."""
         event_class = cls.getEventClass()
         if v != event_class.INTENDED_SCOPE.value:
             err = f"{event_class} must have scope set to {event_class.INTENDED_SCOPE}"
@@ -105,14 +107,14 @@ class EventConfigBase(BaseModel, ABC, extra='allow'):
     start_time: datetime
     """``str | datetime``: when this event needs to start being handled."""
 
-    end_time: Union[datetime, None]
+    end_time: Union[datetime, None]  # noqa: UP007
     """``str | datetime | None``: when this event is no longer active.
 
     If this attribute isn't set in the raw config, then it will default to using the value that
     :attr:`~.Event.start_time` is set to.
     """
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def default_end_time(self) -> Self:
         """If no end time is specified, set it to start time."""
         if self.end_time is None:
@@ -141,7 +143,7 @@ class ScheduledImpulseEventConfig(EventConfigBase):
     @classmethod
     def getEventClass(cls) -> Event:
         """:class:`.ScheduledImpulseEvent`: Type of :class:`.Event` this config object corresponds to."""
-        return ScheduledImpulseEvent    
+        return ScheduledImpulseEvent
 
     event_type: Literal["impulse"]
     """``str``: What type of event this config represents."""
@@ -365,10 +367,7 @@ EventConfig = Annotated[Union[
         TargetAdditionEventConfig,
         SensorAdditionEventConfig,
         AgentRemovalEventConfig,
-        SensorTimeBiasEventConfig
+        SensorTimeBiasEventConfig,
     ],
-    Field(..., discriminator='event_type')
+    Field(..., discriminator="event_type"),
 ]
-
-class TestModel(BaseModel):
-    config: EventConfig

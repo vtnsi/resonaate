@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 
 
 class ThirdBody(str, Enum):
+    """Enumeration of valid third bodies."""
+
     MOON = "moon"
     SUN = "sun"
     JUPITER = "jupiter"
