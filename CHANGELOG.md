@@ -48,10 +48,25 @@ ______________________________________________________________________
 - Additional columns to the `FilterStep` object.
 - `np.ndarray` to JSON string conversion utilities.
 - Ability to save `FilterStep` objects to the database.
+- `common.labels.GeopotentialModel` enum
+- `common.labels.StationKeepingRoutine` enum
+- `common.labels.DecisionLabel` enum
+- `common.labels.RewardLabel` enum
+- `common.labels.MetricLabel` enum
+- `physics.orbits.ResidentStratification` class to encapsulate orbit designation information/defaults
+- `scenario.config.state_config` orbital elements are now validated based on limits expressed in docstrings
+  - **WARNING**: *this could break existing input config files*, but I don't think it's enough of a change to warrant a version bump
 
 ### Changed
 
-*for changes in existing functionality*
+- replaced custom configuration code (i.e. `ConfigObject`, `ConfigObjectList`, and associated errors) with Pydantic models/validators
+- `TargetAgentConfig` now just known as `AgentConfig`
+- most `enum.Enum`s now inherit from `str` for easier Pydantic handling
+- `ScheduledImpulse` classes and burn methods are now mapped directly to `ThrustFrame` enum via the `impulse` and `thrust` properties respectively
+- added `ManeuverType` enum that maps maneuver types to thrust methods via `thrust` property
+- replaced `physics.sensor_utils.getFrequencyFromString()` with `.FrequencyBand` enum and `mean` property
+- `estimation` module factory method conventions rely more on config objects and mappings, rather than conditionals
+- `tasking` module factory method conventions rely more on config objects and mappings, rather than custom registries
 
 ### Deprecated
 
@@ -60,6 +75,7 @@ ______________________________________________________________________
 ### Removed
 
 - Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` constant.
+- orbit-dependent platform constants from `agents` module (see `physics.orbits.ResidentStratification` addition)
 
 ### Fixed
 
@@ -75,6 +91,7 @@ ______________________________________________________________________
 - Added testing for `np.ndarray` to JSON string conversions.
 - Added testing for new `FilterStep` properties.
 - Modified existing testing for `EstimationConfig` to inlcude new configuration option.
+- tests had to be updated to accommodate pydantic migration changes
 
 ### Development
 
