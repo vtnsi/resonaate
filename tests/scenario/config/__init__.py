@@ -70,7 +70,7 @@ GEO_TARGETS: list[dict] = [
             "eccentricity": 1.4027730893947686e-06,
             "inclination": 0.0,
             "right_ascension": 0.0,
-            "argument_periapsis": 360.0,
+            "argument_periapsis": 0.0,
             "true_anomaly": 0.0,
         },
         "platform": {

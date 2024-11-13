@@ -148,7 +148,7 @@ def testAdaptiveBadStacking(stacking_input):
 
 
 @pytest.mark.parametrize("gt0_field", ["model_interval", "observation_window"])
-@pytest.mark.parametrize("test_value", [1, 0])
+@pytest.mark.parametrize("test_value", [-1, 0])
 def testAdaptiveBadGT0Fields(gt0_field, test_value):
     """Validate that adaptive estimation config validation throws and error for bad field values."""
     with pytest.raises(ValidationError):
