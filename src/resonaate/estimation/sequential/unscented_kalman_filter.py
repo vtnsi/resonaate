@@ -171,7 +171,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         self.sigma_y_res = array([])
 
     @classmethod
-    def fromConfig(  # noqa: PLR0913
+    def fromConfig(
         cls,
         config: SequentialFilterConfig,
         tgt_id: int,

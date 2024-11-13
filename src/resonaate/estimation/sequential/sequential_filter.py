@@ -204,7 +204,7 @@ class SequentialFilter(ABC):
 
     @classmethod
     @abstractmethod
-    def fromConfig(  # noqa: PLR0913
+    def fromConfig(
         cls,
         config: SequentialFilterConfig,
         tgt_id: int,
