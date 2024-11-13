@@ -1,5 +1,7 @@
 """Defines state config types for describing agent's location and velocity."""
 
+# ruff: noqa: UP007, TCH003
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -19,8 +21,6 @@ from ...physics.bodies import Earth
 from ...physics.constants import DEG2RAD
 from ...physics.orbits.elements import ClassicalElements, EquinoctialElements
 from ...physics.transforms.methods import ecef2eci, lla2ecef
-
-# ruff: noqa: UP007
 
 
 class StateConfigBase(BaseModel, ABC):

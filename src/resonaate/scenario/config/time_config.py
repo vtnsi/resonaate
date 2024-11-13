@@ -1,5 +1,7 @@
 """Submodule defining the 'time' configuration section."""
 
+# ruff: noqa: TCH003
+
 from __future__ import annotations
 
 # Standard Library Imports

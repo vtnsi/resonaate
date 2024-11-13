@@ -1,5 +1,7 @@
 """Submodule defining the objects listed in the 'engines' configuration section."""
 
+# ruff: noqa: UP007, TCH001
+
 from __future__ import annotations
 
 # Third Party Imports
@@ -12,7 +14,6 @@ from .agent_config import AgentConfig, SensingAgentConfig
 from .decision_config import DecisionConfig
 from .reward_config import RewardConfig
 
-# ruff: noqa: UP007
 
 class EngineConfig(BaseModel):
     """Defines the structure for an object defined in the 'engines' configuration section."""

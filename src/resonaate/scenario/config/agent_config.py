@@ -1,5 +1,7 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
 
+# ruff: noqa: TCH001
+
 from __future__ import annotations
 
 # Third Party Imports

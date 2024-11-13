@@ -1,5 +1,7 @@
 """Submodule defining the 'event' configuration objects."""
 
+# ruff: noqa: TCH001, TCH003
+
 from __future__ import annotations
 
 # Standard Library Imports
