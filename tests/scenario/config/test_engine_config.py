@@ -97,7 +97,7 @@ def testMetricConfigs(metric_label: MetricLabel):
     MetricConfigValidator.validate_python(getMetricDict(metric_label))
 
 
-@pytest.mark.parametrize("metric_input", ("not a metric", 123, None))
+@pytest.mark.parametrize("metric_input", ["not a metric", 123, None])
 def testBadMetricInput(metric_input):
     """Validate that various bad metric inputs throw a validation error."""
     with pytest.raises(ValidationError):
@@ -119,7 +119,7 @@ def testRewardConfig(reward_label, metrics_configs):
     RewardConfigValidator.validate_python(reward_config_dict)
 
 
-@pytest.mark.parametrize("reward_input", ("not a reward", 123, None))
+@pytest.mark.parametrize("reward_input", ["not a reward", 123, None])
 def testBadRewardInput(reward_cfg_dict: dict, reward_input):
     """Validate that various bad reward inputs throw a validation error."""
     reward_cfg_dict["name"] = reward_input
@@ -140,7 +140,7 @@ def testDecisionConfigs(decision_label: DecisionLabel):
     DecisionConfigValidator.validate_python(getDecisionDict(decision_label))
 
 
-@pytest.mark.parametrize("decision_input", ("not a decision", 123, None))
+@pytest.mark.parametrize("decision_input", ["not a decision", 123, None])
 def testBadDecisionInput(decision_input):
     """Validate that various bad decision inputs throw a validation error."""
     with pytest.raises(ValidationError):

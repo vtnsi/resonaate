@@ -87,7 +87,7 @@ def getManeuverDetectionDict(
 def getSeqFilterDict(
         name: SequentialFilterLabel = SequentialFilterLabel.UKF,
         dynamics_model: DynamicsLabel = DynamicsLabel.SPECIAL_PERTURBATIONS,
-        maneuver_detection: Optional[ManeuverDetectionConfig] = None,
+        maneuver_detection: Optional[ManeuverDetectionConfig] = None,  # noqa: UP007
         adaptive_estimation: bool = False,
         initial_orbit_determination: bool = False,
 ) -> dict:
@@ -107,14 +107,14 @@ def testCreateIODConfig(iod_label: InitialOrbitDeterminationLabel):
     _ = InitialOrbitDeterminationConfig(**getIODConfigDict(name=iod_label))
 
 
-@pytest.mark.parametrize("iod_input", ("not iod", 123, None))
+@pytest.mark.parametrize("iod_input", ["not iod", 123, None])
 def testIODConfigBadInput(iod_input):
     """Validate that IOD config validation throws an error on invalid IOD labels."""
     with pytest.raises(ValidationError):
         _ = InitialOrbitDeterminationConfig(**getIODConfigDict(name=iod_input))
 
 
-@pytest.mark.parametrize("spacing", (0, -1))
+@pytest.mark.parametrize("spacing", [0, -1])
 def testIODConfigBadSpacing(spacing):
     """Validate that IOD config validation throws an error on invalid observation spacing."""
     with pytest.raises(ValidationError):
@@ -129,7 +129,7 @@ def testAdaptiveCreate(adaptive_label):
     )
 
 
-@pytest.mark.parametrize("iod_input", ("not iod", 123, None))
+@pytest.mark.parametrize("iod_input", ["not iod", 123, None])
 def testAdaptiveBadIOD(iod_input):
     """Validate that adaptive estimation config validation throws an error on invalid IOD labels."""
     with pytest.raises(ValidationError):
@@ -138,7 +138,7 @@ def testAdaptiveBadIOD(iod_input):
         )
 
 
-@pytest.mark.parametrize("stacking_input", ("not stack", 123, None))
+@pytest.mark.parametrize("stacking_input", ["not stack", 123, None])
 def testAdaptiveBadStacking(stacking_input):
     """Validate that adaptive estimation config validation throws an error on invalid stacking labels."""
     with pytest.raises(ValidationError):
@@ -147,8 +147,8 @@ def testAdaptiveBadStacking(stacking_input):
         )
 
 
-@pytest.mark.parametrize("gt0_field", ("model_interval", "observation_window"))
-@pytest.mark.parametrize("test_value", (-1, 0))
+@pytest.mark.parametrize("gt0_field", ["model_interval", "observation_window"])
+@pytest.mark.parametrize("test_value", [1, 0])
 def testAdaptiveBadGT0Fields(gt0_field, test_value):
     """Validate that adaptive estimation config validation throws and error for bad field values."""
     with pytest.raises(ValidationError):
@@ -157,8 +157,8 @@ def testAdaptiveBadGT0Fields(gt0_field, test_value):
         )
 
 
-@pytest.mark.parametrize("ratio_field", ("prune_threshold", "prune_percentage"))
-@pytest.mark.parametrize("test_value", (-1, 0, 1))
+@pytest.mark.parametrize("ratio_field", ["prune_threshold", "prune_percentage"])
+@pytest.mark.parametrize("test_value", [-1, 0, 1])
 def testAdaptiveBadRatioFields(ratio_field, test_value):
     """Validate that adaptive estimation config validation throws and error for bad field values."""
     with pytest.raises(ValidationError):
@@ -175,7 +175,7 @@ def testManeuverDetectCreate(detection_name: ManeuverDetectionLabel):
     )
 
 
-@pytest.mark.parametrize("detection_input", ("not detection", 123, None))
+@pytest.mark.parametrize("detection_input", ["not detection", 123, None])
 def testManeuverDetectBadName(detection_input):
     """Validate that maneuver detection config validation throws an error on invalid detection labels."""
     with pytest.raises(ValidationError):
@@ -184,7 +184,7 @@ def testManeuverDetectBadName(detection_input):
         )
 
 
-@pytest.mark.parametrize("threshold", (-1, 0, 1))
+@pytest.mark.parametrize("threshold", [-1, 0, 1])
 def testManeuverDetectBadThreshold(threshold):
     """Validate that maneuver detection config validation throws and error for bad threshold."""
     with pytest.raises(ValidationError):
@@ -201,7 +201,7 @@ def testSeqFilterCreate(filter_name: SequentialFilterLabel):
     )
 
 
-@pytest.mark.parametrize("filter_input", ("not a filter", 123, None))
+@pytest.mark.parametrize("filter_input", ["not a filter", 123, None])
 def testSeqFilterBadName(filter_input):
     """Validate that sequential filter config validation throws an error on invalid filter labels."""
     with pytest.raises(ValidationError):

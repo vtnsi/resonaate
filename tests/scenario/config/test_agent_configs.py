@@ -12,7 +12,7 @@ from . import EARTH_SENSORS, GEO_TARGETS, LEO_TARGETS, SPACE_SENSORS
 
 
 @pytest.mark.parametrize("tgt_dict", GEO_TARGETS + LEO_TARGETS)
-def testValidConfig(tgt_dict):
+def testValidAgentConfig(tgt_dict):
     """Test basic construction of TargetAgentConfig & optional attributes."""
     tgt_cfg_obj = AgentConfig(**tgt_dict)
     assert tgt_cfg_obj.id == tgt_dict["id"]
@@ -26,7 +26,7 @@ def testValidConfig(tgt_dict):
 
 
 @pytest.mark.parametrize("sen_dict", EARTH_SENSORS + SPACE_SENSORS)
-def testValidConfig(sen_dict):
+def testValidSensingAgentConfig(sen_dict):
     """Test basic construction of TestSensorConfig & optional attributes."""
     sen_cfg_obj = SensingAgentConfig(**sen_dict)
     assert sen_cfg_obj.id == sen_dict["id"]

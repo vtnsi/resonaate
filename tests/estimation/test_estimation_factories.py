@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-# Standard Library Imports
-
 # Third Party Imports
 import numpy as np
 import pytest
@@ -92,7 +90,7 @@ def testManeuverDetectionFactory(detection_method):
     assert isinstance(maneuver_detection, ManeuverDetection)
 
 
-@pytest.mark.parametrize("_input", [dict(), None])
+@pytest.mark.parametrize("_input", [{}, None])
 def testManeuverDetectionFactorySparse(_input):
     """Validate that :meth:`.maneuverDetectionFactory()` returns None in appropriate circumstances."""
     assert maneuverDetectionFactory(_input) is None

@@ -64,7 +64,7 @@ class Reward(metaclass=ABCMeta):
             self._metric_class_indices[metric.__class__] = metrics.index(metric)
 
     @classmethod
-    def fromConfig(cls, metrics: list[Metric], config: RewardConfig) -> Reward:
+    def fromConfig(cls, metrics: list[Metric], config: RewardConfig) -> Reward:  # noqa: ARG003
         """Construct a reward method class from the specified `config`.
 
         Args:

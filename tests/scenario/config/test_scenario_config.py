@@ -54,7 +54,7 @@ def testInvalidConfigFile(datafiles: str):
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-@pytest.mark.parametrize("remove", ("time", "estimation", "engines"))
+@pytest.mark.parametrize("remove", ["time", "estimation", "engines"])
 def testRequiredSection(datafiles: str, remove: str):
     """Test removing each required sections in config."""
     test_init_file = Path(str(datafiles)) / JSON_INIT_PATH / "test_init.json"
@@ -67,7 +67,7 @@ def testRequiredSection(datafiles: str, remove: str):
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-@pytest.mark.parametrize("remove", ("noise", "propagation", "geopotential", "perturbations", "observation", "events"))
+@pytest.mark.parametrize("remove", ["noise", "propagation", "geopotential", "perturbations", "observation", "events"])
 def testOptionalSection(datafiles: str, remove: str):
     """Test removing each optional sections in config."""
     test_init_file = Path(str(datafiles)) / JSON_INIT_PATH / "test_init.json"

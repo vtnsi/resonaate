@@ -19,15 +19,15 @@ def testPropagationConfigCreate(prop_model: DynamicsLabel, integrate_method: Int
     )
 
 
-@pytest.mark.parametrize("prop_input", ("not a prop", 123))
+@pytest.mark.parametrize("prop_input", ["not a prop", 123])
 def testPropagationConfigBadProp(prop_input):
     """Validate that propagation validation throws an error if the propagation model is invalid."""
     with pytest.raises(ValidationError):
         _ = PropagationConfig(propagation_model=prop_input)
 
 
-@pytest.mark.parametrize("integrate_input", ("not a method", 123))
-def testPropagationConfigBadProp(integrate_input):
+@pytest.mark.parametrize("integrate_input", ["not a method", 123])
+def testPropagationConfigBadIntegrator(integrate_input):
     """Validate that propagation validation throws an error if the integrator method is invalid."""
     with pytest.raises(ValidationError):
-        _ = PropagationConfig(propagation_model=integrate_input)
+        _ = PropagationConfig(integration_method=integrate_input)

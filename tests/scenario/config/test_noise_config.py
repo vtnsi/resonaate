@@ -50,7 +50,7 @@ def testCreateNoiseConfig(noise_cfg_dict: dict):
     assert noise_cfg.random_seed is None
 
 
-@pytest.mark.parametrize("seed", ("bad", 300.2, -20))
+@pytest.mark.parametrize("seed", ["bad", 300.2, -20])
 def testBadRandomSeed(seed: Any):
     """Test bad input random_seed values to NoiseConfig."""
     # Random seed must either be an int, the string literal "os", or None

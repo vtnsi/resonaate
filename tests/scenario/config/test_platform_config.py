@@ -48,10 +48,11 @@ class PlatformWrapper(BaseModel):
 @pytest.mark.parametrize("refl", [None, 0.1])
 def testPlatformConfigValid(
     platform_type: str,
-    mass: Optional[float],
-    vcs: Optional[float],
-    refl: Optional[float],
+    mass: Optional[float],  # noqa: UP007
+    vcs: Optional[float],  # noqa: UP007
+    refl: Optional[float],  # noqa: UP007
 ):
+    """Test valid platform configurations."""
     cfg = PlatformWrapper(
         platform_config={
             "type": platform_type,

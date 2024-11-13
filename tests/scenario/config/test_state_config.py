@@ -113,7 +113,7 @@ def testCOEStandard(coe_cfg_dict: dict, test_utc: datetime):
     assert eci_state.shape == (6,)
 
 
-def testCOETrueLong(coe_tl_per_dict: dict, test_utc: datetime):
+def testCOETrueLongPer(coe_tl_per_dict: dict, test_utc: datetime):
     """Test a COE config with a 'true_longitude_periapsis' element."""
     cfg = COEStateConfig(**coe_tl_per_dict)
     assert cfg
@@ -134,7 +134,7 @@ def testCOEArgLat(coe_arg_lat_dict: dict, test_utc: datetime):
 
 
 def testCOETrueLong(coe_true_long_dict: dict, test_utc: datetime):
-    """Test a COE config with a 'argument_latitude' element."""
+    """Test a COE config with a 'true_longitude' element."""
     cfg = COEStateConfig(**coe_true_long_dict)
     assert cfg
     assert cfg.type == StateLabel.COE
@@ -149,7 +149,7 @@ def testCOEBadCombo(coe_cfg_dict: dict):
     del coe_cfg_dict["argument_periapsis"]
     del coe_cfg_dict["right_ascension"]
     with pytest.raises(ValidationError):
-        cfg = COEStateConfig(**coe_cfg_dict)
+        _ = COEStateConfig(**coe_cfg_dict)
 
 
 def testCOEBadSMA(coe_cfg_dict: dict):

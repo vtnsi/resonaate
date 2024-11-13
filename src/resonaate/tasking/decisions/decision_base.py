@@ -19,7 +19,7 @@ class Decision(metaclass=ABCMeta):
     """Abstract base class to encapsulate behavior of general decision methods."""
 
     @classmethod
-    def fromConfig(cls, config: DecisionConfig) -> Decision:
+    def fromConfig(cls, config: DecisionConfig) -> Decision:  # noqa: ARG003
         """Construct the decision-making class specified by `config`.
 
         Args:

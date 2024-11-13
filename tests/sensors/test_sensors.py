@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 import numpy as np
@@ -20,6 +21,10 @@ from resonaate.sensors import FieldOfView, sensorFactory
 from resonaate.sensors.advanced_radar import AdvRadar
 from resonaate.sensors.optical import Optical
 from resonaate.sensors.radar import Radar
+
+if TYPE_CHECKING:
+    # RESONAATE Imports
+    from resonaate.scenario.config.sensor_config import FieldOfViewConfig
 
 
 @pytest.fixture(name="fov_conic")
