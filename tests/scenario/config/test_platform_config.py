@@ -58,7 +58,7 @@ def testPlatformConfigValid(
             "mass": mass,
             "visual_cross_section": vcs,
             "reflectivity": refl,
-        }
+        },
     )
     if platform_type == PlatformLabel.SPACECRAFT:
         assert isinstance(cfg.platform_config, SpacecraftConfig)
@@ -73,5 +73,5 @@ def testCreationBadType(platform_type: str):
         _ = PlatformWrapper(
             platform_config={
                 "type": platform_type,
-            }
+            },
         )

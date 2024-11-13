@@ -13,7 +13,7 @@ import pytest
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.common.exceptions import ShapeError
-from resonaate.common.labels import Explanation, FoVLabel
+from resonaate.common.labels import Explanation
 from resonaate.data.observation import MissedObservation, Observation
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG

@@ -42,7 +42,7 @@ def testBadModel():
     """Test bad input for :attr:`.GeopotentialConfig.model`."""
     with pytest.raises(ValidationError):
         GeopotentialConfig(
-            model="bad"
+            model="bad",
         )
 
 
@@ -50,7 +50,7 @@ def testNegativeDegree():
     """Test negative input for :attr:`.GeopotentialConfig.degree`."""
     with pytest.raises(ValidationError):
         GeopotentialConfig(
-            degree=-1
+            degree=-1,
         )
 
 
@@ -58,7 +58,7 @@ def testTooLargeDegree():
     """Test input that's too large for :attr:`.GeopotentialConfig.degree`."""
     with pytest.raises(ValidationError):
         GeopotentialConfig(
-            degree=1000
+            degree=1000,
         )
 
 
@@ -66,7 +66,7 @@ def testNegativeOrder():
     """Test negative input for :attr:`.GeopotentialConfig.order`."""
     with pytest.raises(ValidationError):
         GeopotentialConfig(
-            order=-1
+            order=-1,
         )
 
 
@@ -74,5 +74,5 @@ def testTooLargeOrder():
     """Test input that's too large for :attr:`.GeopotentialConfig.order`."""
     with pytest.raises(ValidationError):
         GeopotentialConfig(
-            order=1000
+            order=1000,
         )

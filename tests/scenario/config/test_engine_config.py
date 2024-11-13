@@ -17,14 +17,13 @@ from resonaate.scenario.config.reward_config import (
     RewardConfig,
     RewardLabel,
 )
-from resonaate.scenario.config.sensor_config import SensorConfig
 
 # Local Imports
 from . import EARTH_SENSORS, LEO_TARGETS
 
 if TYPE_CHECKING:
     # RESONAATE Imports
-    from resonaate.scenario.config.agent_config import SensingAgentConfig, TargetAgentConfig
+    pass
 
 
 VALID_REWARD_CONFIGS: tuple[RewardConfig] = RewardConfig.__args__[0].__args__
@@ -64,8 +63,8 @@ def getRewardConfig() -> dict:
         "name": RewardLabel.SIMPLE_SUM,
         "metrics": [
             getMetricDict(MetricLabel.SHANNON_INFO),
-            getMetricDict(MetricLabel.TIME_SINCE_OBS)
-        ]
+            getMetricDict(MetricLabel.TIME_SINCE_OBS),
+        ],
     }
 
 
@@ -88,7 +87,7 @@ def getEngineConfig(reward_cfg_dict: dict, decision_cfg_dict: dict) -> dict:
         "reward": reward_cfg_dict,
         "decision": decision_cfg_dict,
         "sensors": EARTH_SENSORS,
-        "targets": LEO_TARGETS
+        "targets": LEO_TARGETS,
     }
 
 
@@ -109,13 +108,13 @@ def testBadMetricInput(metric_input):
 @pytest.mark.parametrize(
     "metrics_configs",
     combinations(list(MetricLabel), 2),
-    indirect=True
+    indirect=True,
 )
 def testRewardConfig(reward_label, metrics_configs):
     """Validate that many combinations of metrics within reward configurations are valid."""
     reward_config_dict = {
         "name": reward_label.value,
-        "metrics": metrics_configs
+        "metrics": metrics_configs,
     }
     RewardConfigValidator.validate_python(reward_config_dict)
 

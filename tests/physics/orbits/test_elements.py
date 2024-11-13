@@ -11,7 +11,7 @@ from resonaate.physics.orbits import EccentricityError, InclinationError, isEcce
 from resonaate.physics.orbits.elements import ClassicalElements, EquinoctialElements
 from resonaate.physics.orbits.utils import getEccentricityFromEQE, getInclinationFromEQE
 from resonaate.scenario.config import constructFromUnion
-from resonaate.scenario.config.state_config import ECIStateConfig, EQEStateConfig, StateConfig
+from resonaate.scenario.config.state_config import StateConfig
 
 # Local Imports
 from . import ANOM, ARGP, ECC, INC, LEO, RAAN, SMA, H, K, P, Q

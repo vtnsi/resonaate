@@ -8,8 +8,7 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
-from resonaate.common.labels import SensorLabel, StateLabel
-from resonaate.scenario.config import constructFromUnion
+from resonaate.common.labels import SensorLabel
 from resonaate.scenario.config.agent_config import SensingAgentConfig
 from resonaate.scenario.config.platform_config import GroundFacilityConfig
 from resonaate.scenario.config.sensor_config import (
@@ -47,11 +46,7 @@ def getPlatformConfig(state_cfg: StateConfig) -> GroundFacilityConfig:
 @pytest.fixture(name="state_cfg")
 def getStateConfig() -> StateConfig:
     """Create state config."""
-    return LLAStateConfig(**{
-        "latitude": 20.0,
-        "longitude": -40.0,
-        "altitude": 0.5,
-    },)
+    return LLAStateConfig(latitude=20.0, longitude=-40.0, altitude=0.5)
 
 
 @pytest.fixture(name="radar_agent_cfg")

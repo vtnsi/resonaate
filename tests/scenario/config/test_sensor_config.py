@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from copy import deepcopy
 
 # Third Party Imports
 import pytest
@@ -33,8 +32,8 @@ def testFieldOfViewConfigConic():
     cone_cfg = FovWrapper(
         fov_config={
             "fov_shape": FoVLabel.CONIC,
-            "cone_angle": DEFAULT_VIEWING_ANGLE
-        }
+            "cone_angle": DEFAULT_VIEWING_ANGLE,
+        },
     )
     assert isinstance(cone_cfg.fov_config, ConicFieldOfViewConfig)
     assert cone_cfg.fov_config.cone_angle == DEFAULT_VIEWING_ANGLE
@@ -42,7 +41,7 @@ def testFieldOfViewConfigConic():
     cone_cfg = FovWrapper(
         fov_config={
             "fov_shape": FoVLabel.CONIC,
-        }
+        },
     )
     assert isinstance(cone_cfg.fov_config, ConicFieldOfViewConfig)
     assert cone_cfg.fov_config.cone_angle == DEFAULT_VIEWING_ANGLE
@@ -55,7 +54,7 @@ def testFieldOfViewConfigRect():
             "fov_shape": FoVLabel.RECTANGULAR,
             "azimuth_angle": DEFAULT_VIEWING_ANGLE,
             "elevation_angle": DEFAULT_VIEWING_ANGLE,
-        }
+        },
     )
     assert isinstance(rect_cfg.fov_config, RectangularFieldOfViewConfig)
     assert rect_cfg.fov_config.azimuth_angle == DEFAULT_VIEWING_ANGLE
@@ -64,7 +63,7 @@ def testFieldOfViewConfigRect():
     rect_cfg = FovWrapper(
         fov_config={
             "fov_shape": FoVLabel.RECTANGULAR,
-        }
+        },
     )
     assert isinstance(rect_cfg.fov_config, RectangularFieldOfViewConfig)
     assert rect_cfg.fov_config.azimuth_angle == DEFAULT_VIEWING_ANGLE
@@ -77,7 +76,7 @@ def testBadInputsFieldOfViewConfig():
         _ = FovWrapper(
             fov_config={
                 "fov_shape": "invalid",
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -85,7 +84,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "conic",
                 "cone_angle": 0.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -93,7 +92,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "conic",
                 "cone_angle": 180.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -101,7 +100,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "conic",
                 "cone_angle": -1.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -109,7 +108,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "conic",
                 "cone_angle": 181.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -117,7 +116,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "rectangular",
                 "azimuth_angle": 0.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -125,7 +124,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "rectangular",
                 "azimuth_angle": 180.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -133,7 +132,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "rectangular",
                 "azimuth_angle": -1.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -141,7 +140,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "rectangular",
                 "azimuth_angle": 181.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -149,7 +148,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "rectangular",
                 "elevation_angle": 0.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -157,7 +156,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "rectangular",
                 "elevation_angle": 180.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -165,7 +164,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "rectangular",
                 "elevation_angle": -1.0,
-            }
+            },
         )
 
     with pytest.raises(ValidationError):
@@ -173,7 +172,7 @@ def testBadInputsFieldOfViewConfig():
             fov_config={
                 "fov_shape": "rectangular",
                 "elevation_angle": 181.0,
-            }
+            },
         )
 
 

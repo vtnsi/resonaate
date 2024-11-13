@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from copy import deepcopy
 
 # Third Party Imports
 import numpy as np
 import pytest
-from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.estimation import (

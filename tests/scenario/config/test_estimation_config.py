@@ -43,12 +43,12 @@ SequentialFilterConfigValidator = TypeAdapter(SequentialFilterConfig)
 
 def getIODConfigDict(
         name: InitialOrbitDeterminationLabel = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL,
-        minimum_observation_spacing: int = DEFAULT_IOD_OBSERVATION_SPACING
+        minimum_observation_spacing: int = DEFAULT_IOD_OBSERVATION_SPACING,
 ) -> dict:
     """Return an IOD configuration dictionary based on the specified arguments."""
     return {
         "name": name,
-        "minimum_observation_spacing": minimum_observation_spacing
+        "minimum_observation_spacing": minimum_observation_spacing,
     }
 
 
@@ -59,7 +59,7 @@ def getAdaptiveConfigDict(
         model_interval: int = DEFAULT_MODEL_TIME_INTERVAL,
         observation_window: int = DEFAULT_MODEL_TIME_INTERVAL,
         prune_threshold: float = DEFAULT_PRUNE_THRESHOLD,
-        prune_percentage: float = DEFAULT_PRUNE_PERCENTAGE
+        prune_percentage: float = DEFAULT_PRUNE_PERCENTAGE,
 ) -> dict:
     """Return an adaptive estimation configuration dictionary based on the specified arguments."""
     return {
@@ -69,18 +69,18 @@ def getAdaptiveConfigDict(
         "model_interval": model_interval,
         "observation_window": observation_window,
         "prune_threshold": prune_threshold,
-        "prune_percentage": prune_percentage
+        "prune_percentage": prune_percentage,
     }
 
 
 def getManeuverDetectionDict(
         name: ManeuverDetectionLabel = ManeuverDetectionLabel.STANDARD_NIS,
-        threshold: float = DEFAULT_MANEUVER_DETECTION_THRESHOLD
+        threshold: float = DEFAULT_MANEUVER_DETECTION_THRESHOLD,
 ) -> dict:
     """Return a maneuver detection configuration dictionary based on the specified arguments."""
     return {
         "name": name,
-        "threshold": threshold
+        "threshold": threshold,
     }
 
 
@@ -89,7 +89,7 @@ def getSeqFilterDict(
         dynamics_model: DynamicsLabel = DynamicsLabel.SPECIAL_PERTURBATIONS,
         maneuver_detection: Optional[ManeuverDetectionConfig] = None,
         adaptive_estimation: bool = False,
-        initial_orbit_determination: bool = False
+        initial_orbit_determination: bool = False,
 ) -> dict:
     """Return a sequential filter configuration dictionary based on the specified arguments."""
     return {
@@ -97,7 +97,7 @@ def getSeqFilterDict(
         "dynamics_model": dynamics_model,
         "maneuver_detection": maneuver_detection,
         "adaptive_estimation": adaptive_estimation,
-        "initial_orbit_determination": initial_orbit_determination
+        "initial_orbit_determination": initial_orbit_determination,
     }
 
 
@@ -125,7 +125,7 @@ def testIODConfigBadSpacing(spacing):
 def testAdaptiveCreate(adaptive_label):
     """Validate that all adaptive estimation labels have a valid configuration."""
     _ = AdaptiveEstimationConfigValidator.validate_python(
-        getAdaptiveConfigDict(name=adaptive_label)
+        getAdaptiveConfigDict(name=adaptive_label),
     )
 
 
@@ -134,7 +134,7 @@ def testAdaptiveBadIOD(iod_input):
     """Validate that adaptive estimation config validation throws an error on invalid IOD labels."""
     with pytest.raises(ValidationError):
         _ = AdaptiveEstimationConfigValidator.validate_python(
-            getAdaptiveConfigDict(orbit_determination=iod_input)
+            getAdaptiveConfigDict(orbit_determination=iod_input),
         )
 
 
@@ -143,7 +143,7 @@ def testAdaptiveBadStacking(stacking_input):
     """Validate that adaptive estimation config validation throws an error on invalid stacking labels."""
     with pytest.raises(ValidationError):
         _ = AdaptiveEstimationConfigValidator.validate_python(
-            getAdaptiveConfigDict(stacking_method=stacking_input)
+            getAdaptiveConfigDict(stacking_method=stacking_input),
         )
 
 
@@ -153,7 +153,7 @@ def testAdaptiveBadGT0Fields(gt0_field, test_value):
     """Validate that adaptive estimation config validation throws and error for bad field values."""
     with pytest.raises(ValidationError):
         _ = AdaptiveEstimationConfigValidator.validate_python(
-            getAdaptiveConfigDict(**{gt0_field: test_value})
+            getAdaptiveConfigDict(**{gt0_field: test_value}),
         )
 
 
@@ -163,7 +163,7 @@ def testAdaptiveBadRatioFields(ratio_field, test_value):
     """Validate that adaptive estimation config validation throws and error for bad field values."""
     with pytest.raises(ValidationError):
         _ = AdaptiveEstimationConfigValidator.validate_python(
-            getAdaptiveConfigDict(**{ratio_field: test_value})
+            getAdaptiveConfigDict(**{ratio_field: test_value}),
         )
 
 
@@ -171,7 +171,7 @@ def testAdaptiveBadRatioFields(ratio_field, test_value):
 def testManeuverDetectCreate(detection_name: ManeuverDetectionLabel):
     """Validate that all maneuver detection labels have a valid configuration."""
     ManeuverDetectionConfigValidator.validate_python(
-        getManeuverDetectionDict(name=detection_name)
+        getManeuverDetectionDict(name=detection_name),
     )
 
 
@@ -180,7 +180,7 @@ def testManeuverDetectBadName(detection_input):
     """Validate that maneuver detection config validation throws an error on invalid detection labels."""
     with pytest.raises(ValidationError):
         _ = ManeuverDetectionConfigValidator.validate_python(
-            getManeuverDetectionDict(name=detection_input)
+            getManeuverDetectionDict(name=detection_input),
         )
 
 
@@ -189,7 +189,7 @@ def testManeuverDetectBadThreshold(threshold):
     """Validate that maneuver detection config validation throws and error for bad threshold."""
     with pytest.raises(ValidationError):
         _ = ManeuverDetectionConfigValidator.validate_python(
-            getManeuverDetectionDict(threshold=threshold)
+            getManeuverDetectionDict(threshold=threshold),
         )
 
 
@@ -197,7 +197,7 @@ def testManeuverDetectBadThreshold(threshold):
 def testSeqFilterCreate(filter_name: SequentialFilterLabel):
     """Validate that all sequential filter labels have a valid configuration."""
     SequentialFilterConfigValidator.validate_python(
-        getSeqFilterDict(name=filter_name)
+        getSeqFilterDict(name=filter_name),
     )
 
 
@@ -206,14 +206,14 @@ def testSeqFilterBadName(filter_input):
     """Validate that sequential filter config validation throws an error on invalid filter labels."""
     with pytest.raises(ValidationError):
         _ = SequentialFilterConfigValidator.validate_python(
-            getSeqFilterDict(name=filter_input)
+            getSeqFilterDict(name=filter_input),
         )
 
 
 def testEstimationConfigCreate():
     """Validate that a default estimation config validates properly."""
     cfg_dict = {
-        "sequential_filter": getSeqFilterDict()
+        "sequential_filter": getSeqFilterDict(),
     }
     _ = EstimationConfig(**cfg_dict)
 
@@ -223,8 +223,8 @@ def testEstimationAdaptMutex():
     cfg_dict = {
         "sequential_filter": getSeqFilterDict(
             adaptive_estimation=True,
-            initial_orbit_determination=True
-        )
+            initial_orbit_determination=True,
+        ),
     }
     with pytest.raises(ValidationError):
         _ = EstimationConfig(**cfg_dict)
@@ -235,7 +235,7 @@ def testEstimationAdaptMissing():
     cfg_dict = {
         "sequential_filter": getSeqFilterDict(
             adaptive_estimation=True,
-        )
+        ),
     }
     with pytest.raises(ValidationError):
         _ = EstimationConfig(**cfg_dict)
@@ -245,7 +245,7 @@ def testEstimationAdaptConfigOff():
     """Validate that estimation config validation throws a warning when adaptive estimation is off but a config is provided."""
     cfg_dict = {
         "sequential_filter": getSeqFilterDict(),
-        "adaptive_filter": getAdaptiveConfigDict()
+        "adaptive_filter": getAdaptiveConfigDict(),
     }
     with pytest.warns(UserWarning):
         _ = EstimationConfig(**cfg_dict)
@@ -256,7 +256,7 @@ def testEstimationIODMissing():
     cfg_dict = {
         "sequential_filter": getSeqFilterDict(
             initial_orbit_determination=True,
-        )
+        ),
     }
     with pytest.raises(ValidationError):
         _ = EstimationConfig(**cfg_dict)
@@ -266,7 +266,7 @@ def testEstimationIODConfigOff():
     """Validate that estimation config validation throws a warning when IOD is off but a config is provided."""
     cfg_dict = {
         "sequential_filter": getSeqFilterDict(),
-        "initial_orbit_determination": getIODConfigDict()
+        "initial_orbit_determination": getIODConfigDict(),
     }
     with pytest.warns(UserWarning):
         _ = EstimationConfig(**cfg_dict)

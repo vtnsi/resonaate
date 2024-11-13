@@ -15,7 +15,7 @@ def testPropagationConfigCreate(prop_model: DynamicsLabel, integrate_method: Int
     """Validate that propagation configuration passes validation with all possible dynamics models and integrator methods."""
     assert PropagationConfig(
         propagation_model=prop_model,
-        integration_method=integrate_method
+        integration_method=integrate_method,
     )
 
 
