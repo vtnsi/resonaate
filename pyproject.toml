@@ -26,7 +26,6 @@ dev = [
     # Type Checking
     "mypy==1.11.1",
     "types-sqlalchemy==1.4.53.38",
-    "typing_extensions==4.12.2; python_version < '3.10'",
     # Formatters
     "black==24.8.0",
     "isort[colors]==5.13.2",
