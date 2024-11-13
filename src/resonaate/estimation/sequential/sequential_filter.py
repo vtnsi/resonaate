@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from ...dynamics.dynamics_base import Dynamics
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.time.stardate import ScenarioTime
+    from ...scenario.config.estimation_config import SequentialFilterConfig
     from ..maneuver_detection import ManeuverDetection
 
 
@@ -200,6 +201,36 @@ class SequentialFilter(ABC):
 
         # Set filter flags to empty
         self._flags = FilterFlag.NONE
+
+    @classmethod
+    @abstractmethod
+    def fromConfig(
+        cls,
+        config: SequentialFilterConfig,
+        tgt_id: int,
+        time: ScenarioTime,
+        est_x: ndarray,
+        est_p: ndarray,
+        dynamics: Dynamics,
+        q_matrix: ndarray,
+        maneuver_detection: ManeuverDetection,
+    ) -> SequentialFilter:
+        """Build a :class:`.SequentialFilter` object for target state estimation.
+
+        Args:
+            config (:class:`.SequentialFilterConfig`): describes the filter to be built
+            tgt_id (``int``): unique ID of the associated target agent
+            time (:class:`.ScenarioTime`): initial time of scenario
+            est_x (``ndarray``): 6x1, initial state estimate
+            est_p (``ndarray``): 6x6, initial error covariance matrix
+            dynamics (:class:`.Dynamics`): dynamics object to propagate estimate
+            q_matrix (``ndarray``): process noise covariance matrix
+            maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
+
+        Returns:
+            :class:`.SequentialFilter`: constructed filter object
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def predict(

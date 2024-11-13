@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import TYPE_CHECKING, Tuple  # noqa: UP035
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array
@@ -11,12 +11,8 @@ from sqlalchemy import Boolean, Column, Float, String
 from sqlalchemy.ext.declarative import declared_attr
 
 # Local Imports
-from ...dynamics.integration_events.scheduled_impulse import (
-    ScheduledECIImpulse,
-    ScheduledNTWImpulse,
-)
 from ...physics.time.stardate import JulianDate, datetimeToJulianDate
-from .base import Event, EventScope
+from .base import Event, EventScope, ThrustFrame
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -33,18 +29,6 @@ class ScheduledImpulseEvent(Event):
 
     INTENDED_SCOPE: EventScope = EventScope.AGENT_PROPAGATION
     """:class:`.EventScope`: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
-
-    THRUST_FRAME_ECI: str = "eci"
-    """``str``: Configuration string used to delineate using the ECI frame to apply this impulse."""
-
-    THRUST_FRAME_NTW: str = "ntw"
-    """``str``: Configuration string used to delineate using the NTW frame to apply this impulse."""
-
-    # [NOTE]: Old-style generic type hints builtins (Tuple vs tuple) required until we either:
-    #   1) Move to SQLAlchemy >= 2.0
-    #   2) Move to Python >= 3.10
-    VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)  # noqa: UP006
-    """``tuple``: Valid values for :attr:`~.ScheduledImpulseEvent.thrust_frame`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
@@ -86,22 +70,12 @@ class ScheduledImpulseEvent(Event):
         start_sim_time = start_jd.convertToScenarioTime(scope_instance.julian_date_start)
 
         burn_vector = array([self.thrust_vec_0, self.thrust_vec_1, self.thrust_vec_2])
-        impulse = None
-        if str(self.thrust_frame).lower() == self.THRUST_FRAME_ECI:
-            impulse = ScheduledECIImpulse(
-                start_sim_time,
-                burn_vector,
-                scope_instance.simulation_id,
-            )
-        elif str(self.thrust_frame).lower() == self.THRUST_FRAME_NTW:
-            impulse = ScheduledNTWImpulse(
-                start_sim_time,
-                burn_vector,
-                scope_instance.simulation_id,
-            )
-        else:
-            err = f"{self.thrust_frame} is not a valid coordinate frame."
-            raise ValueError(err)
+        frame = ThrustFrame(self.thrust_frame)  # raises ValueError if frame isn't valid
+        impulse = frame.impulse(
+            start_sim_time,
+            burn_vector,
+            scope_instance.simulation_id,
+        )
 
         scope_instance.appendPropagateEvent(impulse)
 

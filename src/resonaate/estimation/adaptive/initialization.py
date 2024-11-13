@@ -21,9 +21,6 @@ _LAMBERT_IOD_MAP: dict[str, OrbitDeterminationFunction] = {
     InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL: lambertUniversal,
 }
 
-VALID_LAMBERT_IOD_LABELS: tuple[str] = tuple(_LAMBERT_IOD_MAP.keys())
-"""``tuple[str]``: Valid entries for :py:data:`'orbit_determination'` key in iod configuration."""
-
 
 def lambertInitializationFactory(name: str) -> OrbitDeterminationFunction:
     """Build a lambert class for use in initial orbit determination.
@@ -36,9 +33,9 @@ def lambertInitializationFactory(name: str) -> OrbitDeterminationFunction:
     """
     if not name:
         return None
-    if name.lower() in VALID_LAMBERT_IOD_LABELS:
+    if name.lower() in _LAMBERT_IOD_MAP:
         iod_class = _LAMBERT_IOD_MAP[name]
     else:
-        raise ValueError(name)
+        raise ValueError(f"Invalid Initial Orbit Determination type: {name}")
 
     return iod_class

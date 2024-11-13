@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from .decision_base import Decision
+from ...common.labels import DecisionLabel
 from .decisions import (
     AllVisibleDecision,
     MunkresDecision,
@@ -18,17 +18,16 @@ from .decisions import (
 if TYPE_CHECKING:
     # Local Imports
     from ...scenario.config.decision_config import DecisionConfig
+    from .decision_base import Decision
 
 
-# Register each reward class to global registry
-Decision.register(MunkresDecision)
-Decision.register(MyopicNaiveGreedyDecision)
-Decision.register(RandomDecision)
-Decision.register(AllVisibleDecision)
-
-
-VALID_DECISIONS: list[str] = list(Decision.REGISTRY.keys())
-"""``list``: List of valid decision labels."""
+_DECISION_MAPPING: dict[DecisionLabel, Decision] = {
+    DecisionLabel.MUNKRES: MunkresDecision,
+    DecisionLabel.MYOPIC_NAIVE_GREEDY: MyopicNaiveGreedyDecision,
+    DecisionLabel.RANDOM: RandomDecision,
+    DecisionLabel.ALL_VISIBLE: AllVisibleDecision,
+}
+"""dict[DecisionLabel, Decision]: Maps enumerated decision label to corresponding class."""
 
 
 def decisionFactory(configuration: DecisionConfig) -> Decision:
@@ -40,4 +39,4 @@ def decisionFactory(configuration: DecisionConfig) -> Decision:
     Returns:
         :class:`.Decision`: constructed decision object.
     """
-    return Decision.REGISTRY.get(configuration.name)(**configuration.parameters)
+    return _DECISION_MAPPING[configuration.name].fromConfig(configuration)

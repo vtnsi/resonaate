@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ...agents.estimate_agent import EstimateAgent
     from ...agents.sensing_agent import SensingAgent
+    from ...scenario.config.reward_config import RewardConfig
 
 
 class Reward(metaclass=ABCMeta):
@@ -63,23 +64,18 @@ class Reward(metaclass=ABCMeta):
             self._metric_class_indices[metric.__class__] = metrics.index(metric)
 
     @classmethod
-    def register(cls, reward: Reward) -> None:
-        """Register an implemented reward class in the global registry.
+    def fromConfig(cls, metrics: list[Metric], config: RewardConfig) -> Reward:  # noqa: ARG003
+        """Construct a reward method class from the specified `config`.
 
         Args:
-            reward (:class:`.Reward`): reward object to register
+            metrics (list[:class:`.Metric`]): List of :class:`.Metric` objects to be used in this
+                reward computation.
+            config (:class:`.RewardConfig`): Configuration section defining the reward method to be used.
 
-        Raises:
-            TypeError: raised if not providing a valid :class:`.Reward` sub-class
+        Returns:
+            (:class:`.Reward`): reward class to be used
         """
-        if not issubclass(reward, Reward):
-            raise TypeError(type(reward))
-        cls.REGISTRY[reward.__name__] = reward
-
-    @property
-    def is_registered(self) -> bool:
-        """bool: return if an implemented reward class is registered."""
-        return self.__class__.__name__ in self.REGISTRY
+        return cls(metrics)
 
     def calculateMetrics(
         self,

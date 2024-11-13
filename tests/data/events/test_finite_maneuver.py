@@ -7,12 +7,12 @@ from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
+from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.data.events import EventScope, ScheduledFiniteManeuverEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
-from resonaate.scenario.config.base import ConfigError, ConfigValueError
 from resonaate.scenario.config.event_configs import ScheduledFiniteManeuverConfig
 
 
@@ -45,14 +45,14 @@ class TestFiniteManeuverEventConfig:
         expected_err = f"{event} must have scope set to {scope}"
         maneuver_config = deepcopy(event_config_dict)
         maneuver_config["scope"] = EventScope.SCENARIO_STEP.value
-        with pytest.raises(ConfigError, match=expected_err):
+        with pytest.raises(ValidationError, match=expected_err):
             ScheduledFiniteManeuverConfig(**maneuver_config)
 
     def testInitManeuverThrustType(self, event_config_dict):
         """Test :class:`.ScheduledFiniteThrustEventConfig` constructor with bad ``maneuver_type`` type."""
         maneuver_config = deepcopy(event_config_dict)
         maneuver_config["maneuver_type"] = True
-        with pytest.raises(ConfigValueError):
+        with pytest.raises(ValidationError):
             ScheduledFiniteManeuverConfig(**maneuver_config)
 
 
@@ -112,6 +112,6 @@ class TestFiniteThrustEvent:
             maneuver_type="bad",
             planned=True,
         )
-        expected_err = f"{maneuver_event.maneuver_type} is not a valid thrust type."
+        expected_err = f"'{maneuver_event.maneuver_type}' is not a valid ManeuverType"
         with pytest.raises(ValueError, match=expected_err):
             maneuver_event.handleEvent(mocked_target)

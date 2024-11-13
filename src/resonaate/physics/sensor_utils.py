@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from enum import Enum
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -348,25 +349,34 @@ def calculateMinRadarRange(tx_frequency: float) -> float:
     return (SPEED_OF_LIGHT / tx_frequency / 2) * M2KM
 
 
-def getFrequencyFromString(frequency_string: str):
-    r"""Return the frequency of the given band.
+class FrequencyBand(str, Enum):
+    """Enumeration of supported radar frequency bands."""
 
-    Args:
-        frequency_string (``str``): frequency band string
+    VHF = "VHF"
+    UHF = "UHF"
+    L = "L"
+    S = "S"
+    C = "C"
+    X = "X"
+    Ku = "Ku"
+    K = "K"
+    Ka = "Ka"
+    V = "V"
+    W = "W"
 
-    Returns:
-        ``float``: median frequency (Hz)
-    """
-    return {
-        "VHF": 165.0 * 1e6,
-        "UHF": 650.0 * 1e6,
-        "L": 1.5 * 1e9,
-        "S": 3.0 * 1e9,
-        "C": 6.0 * 1e9,
-        "X": 10.0 * 1e9,
-        "Ku": 15.0 * 1e9,
-        "K": 20.0 * 1e9,
-        "Ka": 30.0 * 1e9,
-        "V": 60.0 * 1e9,
-        "W": 15.0 * 1e9,
-    }[frequency_string]
+    @property
+    def mean(self, _mapping={  # noqa: PLR0206, B006
+        VHF: 165 * 1e6,
+        UHF: 650 * 1e6,
+        L: 1.5 * 1e9,
+        S: 3.0 * 1e9,
+        C: 6.0 * 1e9,
+        X: 10.0 * 1e9,
+        Ku: 15.0 * 1e9,
+        K: 20.0 * 1e9,
+        Ka: 30.0 * 1e9,
+        V: 60.0 * 1e9,
+        W: 15.0 * 1e9,
+    }) -> float:
+        """float: Mean frequency of the enumerated band."""
+        return _mapping[self]

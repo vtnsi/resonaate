@@ -291,7 +291,7 @@ class SensorAdditionEvent(Event):
 
         station_keeping = ""
         if sensor_agent.platform.type == PlatformLabel.SPACECRAFT:
-            station_keeping = dumps(sensor_agent.platform.station_keeping.toJSON())
+            station_keeping = sensor_agent.platform.station_keeping.model_dump_json()
 
         custom_kwargs = {}
         if sensor.type in (SensorLabel.RADAR, SensorLabel.ADV_RADAR):

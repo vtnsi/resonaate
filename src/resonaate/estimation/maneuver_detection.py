@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
+    # Local Imports
+    from ..scenario.config.estimation_config import ManeuverDetectionConfig
+
 TestType = Callable[[float, float, float, Union[float, None]], bool]
 
 
@@ -32,6 +35,20 @@ class ManeuverDetection(metaclass=ABCMeta):
         """
         self.threshold = threshold
         self.metric = None
+
+    @classmethod
+    @abstractmethod
+    def fromConfig(cls, config: ManeuverDetectionConfig) -> ManeuverDetection:
+        """Build a maneuver detection class based on specified `config`.
+
+        Args:
+            config (:class:`.ManeuverDetectionConfig`): Configuration to build maneuver detection
+                method from.
+
+        Returns:
+            :class:`.ManeuverDetection`: Maneuver detection method build from specified `config`.
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def __call__(self, *args: Any, test: TestType = oneSidedChiSquareTest, **kwargs: Any) -> bool:
@@ -71,6 +88,19 @@ class StandardNis(ManeuverDetection):
     References:
         :cite:t:`bar-shalom_2001_estimation`, Section 11.2.2, Eqn 11.2.2-1 & 11.2.2-2
     """
+
+    @classmethod
+    def fromConfig(cls, config: ManeuverDetectionConfig) -> ManeuverDetection:
+        """Build a maneuver detection class based on specified `config`.
+
+        Args:
+            config (:class:`.ManeuverDetectionConfig`): Configuration to build maneuver detection
+                method from.
+
+        Returns:
+            :class:`.ManeuverDetection`: Maneuver detection method build from specified `config`.
+        """
+        return cls(config.threshold)
 
     def __call__(
         self,
@@ -138,6 +168,19 @@ class SlidingNis(StandardNis):
         self.window_size = window_size
         self.nis_list = deque(maxlen=window_size)
         self.dim_list = deque(maxlen=window_size)
+
+    @classmethod
+    def fromConfig(cls, config: ManeuverDetectionConfig) -> ManeuverDetection:
+        """Build a maneuver detection class based on specified `config`.
+
+        Args:
+            config (:class:`.ManeuverDetectionConfig`): Configuration to build maneuver detection
+                method from.
+
+        Returns:
+            :class:`.ManeuverDetection`: Maneuver detection method build from specified `config`.
+        """
+        return cls(config.threshold, window_size=config.window_size)
 
     def __call__(
         self,
@@ -210,6 +253,19 @@ class FadingMemoryNis(StandardNis):
         # Help track time-varying observation dim
         self.total_dim = 0
         self.total = 0
+
+    @classmethod
+    def fromConfig(cls, config: ManeuverDetectionConfig) -> ManeuverDetection:
+        """Build a maneuver detection class based on specified `config`.
+
+        Args:
+            config (:class:`.ManeuverDetectionConfig`): Configuration to build maneuver detection
+                method from.
+
+        Returns:
+            :class:`.ManeuverDetection`: Maneuver detection method build from specified `config`.
+        """
+        return cls(config.threshold, delta=config.delta)
 
     def __call__(
         self,

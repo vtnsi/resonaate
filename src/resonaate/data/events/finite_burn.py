@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from functools import partial
-from typing import TYPE_CHECKING, Tuple  # noqa: UP035
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array
@@ -12,9 +12,9 @@ from sqlalchemy import Boolean, Column, Float, String
 from sqlalchemy.ext.declarative import declared_attr
 
 # Local Imports
-from ...dynamics.integration_events.finite_thrust import ScheduledFiniteBurn, eciBurn, ntwBurn
+from ...dynamics.integration_events.finite_thrust import ScheduledFiniteBurn
 from ...physics.time.stardate import JulianDate, datetimeToJulianDate
-from .base import Event, EventScope
+from .base import Event, EventScope, ThrustFrame
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -31,18 +31,6 @@ class ScheduledFiniteBurnEvent(Event):
 
     INTENDED_SCOPE: EventScope = EventScope.AGENT_PROPAGATION
     """`EventScope`: Scope where :class:`.ScheduledImpulseEvent` objects should be handled."""
-
-    THRUST_FRAME_ECI: str = "eci"
-    """``str``: Configuration string used to delineate using the ECI frame to apply this burn."""
-
-    THRUST_FRAME_NTW: str = "ntw"
-    """``str``: Configuration string used to delineate using the NTW frame to apply this burn."""
-
-    # [NOTE]: Old-style generic type hints builtins (Tuple vs tuple) required until we either:
-    #   1) Move to SQLAlchemy >= 2.0
-    #   2) Move to Python >= 3.10
-    VALID_THRUST_FRAMES: Tuple[str] = (THRUST_FRAME_ECI, THRUST_FRAME_NTW)  # noqa: UP006
-    """``tuple``: Valid values for :attr:`~.ScheduledFiniteBurnEvent.thrust_frame`."""
 
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
@@ -86,14 +74,8 @@ class ScheduledFiniteBurnEvent(Event):
         end_sim_time = end_jd.convertToScenarioTime(scope_instance.julian_date_start)
 
         acc_vector = array([self.acc_vec_0, self.acc_vec_1, self.acc_vec_2])
-        finite_burn = None
-        if str(self.thrust_frame).lower() == self.THRUST_FRAME_ECI:
-            thrust_func = partial(eciBurn, acc_vector=acc_vector)
-        elif str(self.thrust_frame).lower() == self.THRUST_FRAME_NTW:
-            thrust_func = partial(ntwBurn, acc_vector=acc_vector)
-        else:
-            err = f"{self.thrust_frame} is not a valid coordinate frame."
-            raise ValueError(err)
+        thrust_frame = ThrustFrame(self.thrust_frame)  # raises ValueError if frame isn't valid
+        thrust_func = partial(thrust_frame.thrust, acc_vector=acc_vector)
         finite_burn = ScheduledFiniteBurn(
             start_sim_time,
             end_sim_time,

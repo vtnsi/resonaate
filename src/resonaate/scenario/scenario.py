@@ -32,7 +32,7 @@ from ..job_handlers.estimate_prediction import EstimatePredictionJobHandler
 from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
-from .config.agent_config import SensingAgentConfig, TargetAgentConfig
+from .config.agent_config import AgentConfig, SensingAgentConfig
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -402,11 +402,11 @@ class Scenario(ParallelMixin):
         self.logger.debug(msg)
 
     @singledispatchmethod
-    def addTarget(self, target_spec: TargetAgentConfig | dict, tasking_engine_id: int) -> None:
+    def addTarget(self, target_spec: AgentConfig | dict, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
-            target_spec (:class:`.TargetAgentConfig` | ``dict``): Specification of target being added.
+            target_spec (:class:`.AgentConfig` | ``dict``): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
         err = f"Can't handle target specification of type {type(target_spec)}"
@@ -420,15 +420,15 @@ class Scenario(ParallelMixin):
             target_spec (``dict``): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
-        target_conf = TargetAgentConfig(**target_spec)
+        target_conf = AgentConfig(**target_spec)
         self._addTargetConf(target_conf, tasking_engine_id)
 
     @addTarget.register
-    def _addTargetConf(self, target_spec: TargetAgentConfig, tasking_engine_id: int) -> None:
+    def _addTargetConf(self, target_spec: AgentConfig, tasking_engine_id: int) -> None:
         """Add a target to this :class:`.Scenario`.
 
         Args:
-            target_spec (:class:`.TargetAgentConfig`): Specification of target being added.
+            target_spec (:class:`.AgentConfig`): Specification of target being added.
             tasking_engine_id (``int``): Unique identifier to add the specified target to.
         """
         if target_spec.id in self.target_agents:

@@ -144,7 +144,7 @@ Each of those files would then have the following format:
 ```
 
 Where the {class}`.RewardConfig` and {class}`.DecisionConfig` are defined in {ref}`ref-cfg-subsubsec-reward-object` and {ref}`ref-cfg-subsubsec-decision-object`, respectively.
-Also, `"target_file"` and `"sensor_file"` refer to JSON files defining the sets of {class}`.TargetAgentConfig` and {class}`.SensingAgentConfig`, respectively.
+Also, `"target_file"` and `"sensor_file"` refer to JSON files defining the sets of {class}`.AgentConfig` and {class}`.SensingAgentConfig`, respectively.
 More detail on {class}`AgentConfig` classes the are provided in the {ref}`ref-cfg-subsec-agent-object` section.
 These file path definitions are defined relative to the main configuration file (parent of this file).
 
@@ -165,7 +165,7 @@ If using {func}`.buildScenarioFromConfigDict()` instead, the `"targets"` & `"sen
 {
     "reward": {...},
     "decision": {...},
-    "targets": [TargetAgentConfig, ...],
+    "targets": [AgentConfig, ...],
     "sensors": [SensingAgentConfig, ...],
 }
 ```
@@ -182,12 +182,12 @@ The corresponding target set configuration file will have the following format:
 
 ```python
 [
-    TargetAgentConfig,  # Req: object(s) defining target agents
+    AgentConfig,  # Req: object(s) defining target agents
     ...,
 ]
 ```
 
-where {class}`.TargetAgentConfig` is a target object as defined in {ref}`ref-cfg-subsubsec-target-agent-object`.
+where {class}`.AgentConfig` is a target object as defined in {ref}`ref-cfg-subsec-agent-object`.
 
 (ref-cfg-subsec-sensor-file)=
 
@@ -708,45 +708,11 @@ The agent's initial state is defined by a `StateConfig` object and its platform 
 ]
 ```
 
-There are two types of `AgentConfig` objects: `TargetAgentConfig` and `SensingAgentConfig`.
-
-(ref-cfg-subsubsec-target-agent-object)=
-
-#### TargetAgentConfig
-
-The `TargetAgentConfig` class has the same attributes as the `AgentConfig` base class.
-
-```{rubric} Python Definition
-```
-
-```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.agent_config
-
-.. autoclass:: TargetAgentConfig
-   :members:
-   :noindex:
-```
-
-```{rubric} JSON Definition
-```
-
-```python
-[
-    {
-        "id": int,                  # Required
-        "name": str,                # Required
-        "state": StateConfig,       # Required
-        "platform": PlatformConfig, # Required
-    },
-    ...
-]
-```
-
 (ref-cfg-subsubsec-sensing-agent-object)=
 
 #### SensingAgentConfig
 
-However, the `SensingAgentConfig` adds a `SensorConfig` field for defining the contained sensor object which is defined in {ref}`ref-cfg-subsec-sensor-object`.
+The `SensingAgentConfig` adds a `SensorConfig` field for defining the contained sensor object which is defined in {ref}`ref-cfg-subsec-sensor-object`.
 
 ```{rubric} Python Definition
 ```

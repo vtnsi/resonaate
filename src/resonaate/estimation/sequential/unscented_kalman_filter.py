@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.measurements import IsAngle
     from ...physics.time.stardate import ScenarioTime
+    from ...scenario.config.estimation_config import SequentialFilterConfig
     from ..maneuver_detection import ManeuverDetection
 
 
@@ -168,6 +169,49 @@ class UnscentedKalmanFilter(SequentialFilter):
         self.sigma_points = array([])
         self.sigma_x_res = array([])
         self.sigma_y_res = array([])
+
+    @classmethod
+    def fromConfig(
+        cls,
+        config: SequentialFilterConfig,
+        tgt_id: int,
+        time: ScenarioTime,
+        est_x: ndarray,
+        est_p: ndarray,
+        dynamics: Dynamics,
+        q_matrix: ndarray,
+        maneuver_detection: ManeuverDetection,
+    ) -> SequentialFilter:
+        """Build a :class:`.SequentialFilter` object for target state estimation.
+
+        Args:
+            config (:class:`.SequentialFilterConfig`): describes the filter to be built
+            tgt_id (``int``): unique ID of the associated target agent
+            time (:class:`.ScenarioTime`): initial time of scenario
+            est_x (``ndarray``): 6x1, initial state estimate
+            est_p (``ndarray``): 6x6, initial error covariance matrix
+            dynamics (:class:`.Dynamics`): dynamics object to propagate estimate
+            q_matrix (``ndarray``): process noise covariance matrix
+            maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
+
+        Returns:
+            :class:`.SequentialFilter`: constructed filter object
+        """
+        return cls(
+            tgt_id,
+            time,
+            est_x,
+            est_p,
+            dynamics,
+            q_matrix,
+            maneuver_detection=maneuver_detection,
+            initial_orbit_determination=config.initial_orbit_determination,
+            adaptive_estimation=config.adaptive_estimation,
+            resample=config.resample,
+            alpha=config.alpha,
+            beta=config.beta,
+            kappa=config.kappa,
+        )
 
     @property
     def num_sigmas(self):

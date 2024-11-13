@@ -18,13 +18,16 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
+    # Local Imports
+    from ...common.labels import GeopotentialModel
+
 
 GEOPOTENTIAL_MODULE: str = "resonaate.physics.data.geopotential"
 """``str``: defines geopotential data module location."""
 
 
 @lru_cache(maxsize=5)
-def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
+def loadGeopotentialCoefficients(gravity_model: GeopotentialModel) -> tuple[ndarray, ndarray]:
     r"""Read the gravity model file & save the geopotential coefficients.
 
     This assumes that the coefficients are normalized according to Eq 8-22 in Vallado:
@@ -38,12 +41,12 @@ def loadGeopotentialCoefficients(model_file: str) -> tuple[ndarray, ndarray]:
         :cite:t:`vallado_2013_astro`, Eqn 8-22, Pg 546
 
     Args:
-        model_file (``str``): filename of the geopotential model.
+        gravity_model (:class:`.GeopotentialModel`): Enum instance of the geopotential model.
 
     Returns:
         ``tuple``: ``ndarray`` defining the un-normalized cosine & sine geopotential coefficients.
     """
-    res = resources.files(GEOPOTENTIAL_MODULE).joinpath(model_file)
+    res = resources.files(GEOPOTENTIAL_MODULE).joinpath(gravity_model.value)
     with resources.as_file(res) as grv_filepath, open(grv_filepath, encoding="utf-8") as csv_file:
         cos_terms = zeros((181, 181))
         sin_terms = zeros((181, 181))

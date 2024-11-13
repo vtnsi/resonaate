@@ -13,12 +13,12 @@ import pytest
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.common.exceptions import ShapeError
-from resonaate.common.labels import Explanation, FoVLabel
+from resonaate.common.labels import Explanation
 from resonaate.data.observation import MissedObservation, Observation
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
-from resonaate.scenario.config.sensor_config import FieldOfViewConfig
+from resonaate.scenario.config.sensor_config import ConicFieldOfViewConfig
 from resonaate.sensors.field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from resonaate.sensors.radar import Radar
 from resonaate.sensors.sensor_base import Sensor
@@ -225,7 +225,7 @@ def _dummySlantRange(
 def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: SensingAgent):
     """Checks whether list of targets is in the FOV of the sensor."""
     sensor = Sensor(**base_sensor_args)
-    conic_fov_config = FieldOfViewConfig(fov_shape=FoVLabel.CONIC, cone_angle=np.pi * RAD2DEG - 1)
+    conic_fov_config = ConicFieldOfViewConfig(cone_angle=np.pi * RAD2DEG - 1)
     sensor.field_of_view = FieldOfView.fromConfig(conic_fov_config)
     # Requires self.host.ecef_state to be set
     sensor.host = mocked_sensing_agent

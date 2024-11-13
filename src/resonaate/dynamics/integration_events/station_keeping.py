@@ -19,12 +19,6 @@ from ..special_perturbations import _getRotationMatrix
 from .discrete_state_change_event import DiscreteStateChangeEvent
 from .event_stack import EventRecord, EventStack
 
-VALID_STATION_KEEPING_ROUTINES: tuple[str] = (
-    "GEO NS",
-    "GEO EW",
-    "LEO",
-)
-
 
 class StationKeepingError(Exception):
     """Error with station-keeping algorithm."""

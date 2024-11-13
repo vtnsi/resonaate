@@ -14,6 +14,8 @@ from ...physics import constants as const
 from ...physics.maths import fpe_equals
 from ...physics.statistics import oneSidedChiSquareTest
 from .adaptive_filter import AdaptiveFilter
+from .initialization import lambertInitializationFactory
+from .mmae_stacking_utils import stackingFactory
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -24,9 +26,10 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ...data.observation import Observation
+    from ...physics.orbit_determination import OrbitDeterminationFunction
     from ...physics.time.stardate import JulianDate, ScenarioTime
+    from ...scenario.config.estimation_config import AdaptiveEstimationConfig
     from ..sequential.sequential_filter import SequentialFilter
-    from .initialization import Lambert
 
 
 class GeneralizedPseudoBayesian1(AdaptiveFilter):
@@ -41,7 +44,7 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         self,
         nominal_filter: SequentialFilter,
         timestep: ScenarioTime,
-        orbit_determination: Lambert,
+        orbit_determination: OrbitDeterminationFunction,
         stacking_method: Callable[[list[SequentialFilter], ndarray], tuple[ndarray, ndarray]],
         previous_obs_window: int,
         model_interval: float,
@@ -79,6 +82,36 @@ class GeneralizedPseudoBayesian1(AdaptiveFilter):
         )
         # ratio of diagonal to off-diagonals in transition probability matrix
         self.mix_ratio = mix_ratio
+
+    @classmethod
+    def fromConfig(
+        cls,
+        mmae_config: AdaptiveEstimationConfig,
+        nominal_filter: SequentialFilter,
+        timestep: ScenarioTime,
+    ) -> AdaptiveFilter:
+        """Create adaptive estimation filter from a config object.
+
+        Args:
+            mmae_config (:class:`.AdaptiveEstimationConfig`): MMAE method associated with the filter
+            nominal_filter (:class:`.SequentialFilter`): filter at the time MMAE initializes
+            timestep (:class:`.ScenarioTime`): timestep of the scenario, for properly propagating models to current
+                time
+
+        Returns:
+            class:`.AdaptiveEstimationConfig`: constructed adaptive estimation object
+        """
+        return cls(
+            nominal_filter,
+            timestep,
+            lambertInitializationFactory(mmae_config.orbit_determination),
+            stackingFactory(mmae_config.stacking_method),
+            mmae_config.observation_window,
+            mmae_config.model_interval,
+            mmae_config.prune_threshold,
+            mmae_config.prune_percentage,
+            mix_ratio=mmae_config.mix_ratio,
+        )
 
     def initialize(self, observations: list[Observation], julian_date_start: JulianDate) -> bool:
         """Initialize GPB1 models.

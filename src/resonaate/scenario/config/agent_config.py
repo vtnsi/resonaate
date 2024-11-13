@@ -1,27 +1,22 @@
 """Module that defines the objects stored in the 'targets' and 'sensors' configuration sections."""
 
+# ruff: noqa: TCH001
+
 from __future__ import annotations
 
-# Standard Library Imports
-from dataclasses import dataclass
-from typing import ClassVar
+# Third Party Imports
+from pydantic import BaseModel, model_validator
+from typing_extensions import Self
 
 # Local Imports
-from .base import ConfigObject
+from ...physics.orbits import ResidentStratification
 from .platform_config import PlatformConfig
 from .sensor_config import SensorConfig
 from .state_config import StateConfig
 
-# ruff: noqa: A003
 
-
-@dataclass
-class AgentConfig(ConfigObject):
+class AgentConfig(BaseModel):
     R"""Configuration base class defining an agent."""
-
-    # Config label class variable - not used by "dataclass"
-    CONFIG_LABEL: ClassVar[str] = "agent"
-    R"""``str``: Key where settings are stored in the configuration dictionary."""
 
     id: int
     R"""``int``: unique ID of the agent."""
@@ -29,44 +24,27 @@ class AgentConfig(ConfigObject):
     name: str
     R"""``str``: name of the agent."""
 
-    state: StateConfig | dict
+    state: StateConfig
     R""":class:`.StateConfig`: defines the location/dynamics of this agent."""
 
-    platform: PlatformConfig | dict
+    platform: PlatformConfig
     R""":class:`.PlatformConfig`: defines the behavior/dynamics of this agent."""
 
-    def __post_init__(self):
-        R"""Runs after the dataclass is initialized."""
-        if isinstance(self.state, dict):
-            self.state = StateConfig.fromDict(self.state)
+    @model_validator(mode="after")
+    def validate_strat(self) -> Self:
+        """Make sure platform and resident stratification match and then set any associated default values."""
+        altitude = self.state.getAltitude()
+        if not self.platform.isAltitudeValid(altitude):
+            err = f"Invalid altitude of {altitude} km specified for platform {self.platform.type}"
+            raise ValueError(err)
+        strat = ResidentStratification.getStratification(altitude)
+        self.platform.setStratDefaults(strat)
 
-        if isinstance(self.platform, dict):
-            self.platform = PlatformConfig.fromDict(self.platform, state=self.state)
-
-
-@dataclass
-class TargetAgentConfig(AgentConfig):
-    R"""Configuration object for a target."""
-
-    # Config label class variable - not used by "dataclass"
-    CONFIG_LABEL: ClassVar[str] = "target_agent"
-    R"""``str``: Key where settings are stored in the configuration dictionary."""
+        return self
 
 
-@dataclass
 class SensingAgentConfig(AgentConfig):
     R"""Configuration object for a :class:`.SensingAgent`."""
 
-    # Config label class variable - not used by "dataclass"
-    CONFIG_LABEL: ClassVar[str] = "sensing_agent"
-    R"""``str``: Key where settings are stored in the configuration dictionary."""
-
-    sensor: SensorConfig | dict
+    sensor: SensorConfig
     R""":class:`.SensorConfig`: defines the sensor object of this sensing agent."""
-
-    def __post_init__(self):
-        R"""Runs after the dataclass is initialized."""
-        super().__post_init__()
-
-        if isinstance(self.sensor, dict):
-            self.sensor = SensorConfig.fromDict(self.sensor)

@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-# Standard Library Imports
-from copy import deepcopy
-
 # Third Party Imports
 import numpy as np
 import pytest
 
 # RESONAATE Imports
 from resonaate.estimation import (
-    VALID_ADAPTIVE_ESTIMATION_LABELS,
-    VALID_FILTER_LABELS,
-    VALID_MANEUVER_DETECTION_LABELS,
     AdaptiveFilter,
     ManeuverDetection,
     SequentialFilter,
@@ -19,38 +13,24 @@ from resonaate.estimation import (
     maneuverDetectionFactory,
     sequentialFilterFactory,
 )
-from resonaate.scenario.config.base import ConfigValueError
+from resonaate.scenario.config import constructFromUnion
 from resonaate.scenario.config.estimation_config import (
     AdaptiveEstimationConfig,
+    AdaptiveEstimationLabel,
     ManeuverDetectionConfig,
+    ManeuverDetectionLabel,
     SequentialFilterConfig,
+    SequentialFilterLabel,
+    StandardNISConfig,
+    UKFConfig,
 )
 
-MANEUVER_DETECTION_CONFIG = {
-    "threshold": 0.01,
-    "parameters": {},
-}
-
-
-ESTIMATION_CONFIG = {
-    "sequential_filter": {
-        "name": "unscented_kalman_filter",
-        "parameters": {},
-        "dynamics_model": "special_perturbations",
-        "maneuver_detection": None,
-        "adaptive_estimation": False,
-    },
-    "adaptive_filter": {
-        "name": "smm",
-        "orbit_determination": "lambert_universal",
-        "model_interval": 60,
-        "stacking_method": "eci_stack",
-        "observation_window": 1,
-        "prune_threshold": 1e-10,
-        "prune_percentage": 0.995,
-    },
-}
-
+# Local Imports
+from ..scenario.config.test_estimation_config import (
+    getAdaptiveConfigDict,
+    getManeuverDetectionDict,
+    getSeqFilterDict,
+)
 
 TGT_ID = 10000
 INITIAL_TIME = 0.0
@@ -60,19 +40,12 @@ EST_P = np.eye(6) * 30
 Q_MATRIX = np.eye(6) * 50
 
 
-@pytest.mark.parametrize("sequential_filter_type", VALID_FILTER_LABELS)
+@pytest.mark.parametrize("sequential_filter_type", list(SequentialFilterLabel))
 def testSequentialFilterFactory(sequential_filter_type, dynamics):
     """Tests dynamically creating filter objects."""
-    # Create config dict
-    config = deepcopy(ESTIMATION_CONFIG["sequential_filter"])
-    config["name"] = sequential_filter_type
-    if sequential_filter_type == "ukf":
-        config["parameters"] = {
-            "alpha": 0.01,
-            "beta": 2,
-        }
-    # Create config object
-    estimation_config = SequentialFilterConfig(**config)
+    # Create config
+    config = getSeqFilterDict(name=sequential_filter_type)
+    estimation_config = constructFromUnion(SequentialFilterConfig, config)
     # Call factory function
     filter_obj = sequentialFilterFactory(
         estimation_config,
@@ -86,35 +59,12 @@ def testSequentialFilterFactory(sequential_filter_type, dynamics):
     assert isinstance(filter_obj, SequentialFilter)
 
 
-def testSequentialFilterFactoryError(dynamics):
-    """Tests catching errors for bad filter types."""
-    config = deepcopy(ESTIMATION_CONFIG["sequential_filter"])
-    config["name"] = "ukf"
-    # Create config object
-    estimation_config = SequentialFilterConfig(**config)
-    estimation_config.name = "invalid_name"
-    # Call factory function
-    error_msg = f"Invalid filter type: {estimation_config.name}"
-    with pytest.raises(ValueError, match=error_msg):
-        _ = sequentialFilterFactory(
-            estimation_config,
-            TGT_ID,
-            INITIAL_TIME,
-            EST_X,
-            EST_P,
-            dynamics,
-            Q_MATRIX,
-        )
-
-
 def testSequentialFilterFactoryDupManeuverHandlingError(dynamics):
     """Tests catching errors for setting MMAE and IOD for a single filter."""
-    config = deepcopy(ESTIMATION_CONFIG["sequential_filter"])
-    config["name"] = "ukf"
-    config["adaptive_estimation"] = True
-    config["initial_orbit_determination"] = True
-    # Create config object
-    estimation_config = SequentialFilterConfig(**config)
+    # Mutate bad config
+    estimation_config = UKFConfig()
+    estimation_config.adaptive_estimation = True
+    estimation_config.initial_orbit_determination = True
     # Call factory function
     error_msg = "IOD & MMAE cannot be used at the same time"
     with pytest.raises(ValueError, match=error_msg):
@@ -129,54 +79,30 @@ def testSequentialFilterFactoryDupManeuverHandlingError(dynamics):
         )
 
 
-@pytest.mark.parametrize("detection_method", VALID_MANEUVER_DETECTION_LABELS)
+@pytest.mark.parametrize("detection_method", list(ManeuverDetectionLabel))
 def testManeuverDetectionFactory(detection_method):
     """Tests dynamically creating filter objects."""
-    # Create config dict
-    config = deepcopy(MANEUVER_DETECTION_CONFIG)
-    config["name"] = detection_method
-    # Create config object
-    maneuver_det_config = ManeuverDetectionConfig(**config)
+    # Create config
+    config = getManeuverDetectionDict(name=detection_method)
+    maneuver_det_config = constructFromUnion(ManeuverDetectionConfig, config)
     # Call factory function
     maneuver_detection = maneuverDetectionFactory(maneuver_det_config)
     assert isinstance(maneuver_detection, ManeuverDetection)
 
-    config["name"] = None
-    with pytest.raises(ConfigValueError):
-        ManeuverDetectionConfig(**config)
 
-    with pytest.raises(ConfigValueError):
-        ManeuverDetectionConfig({})
-
-    maneuver_detection = maneuverDetectionFactory({})
-    assert maneuver_detection is None
-
-    maneuver_detection = maneuverDetectionFactory(None)
-    assert maneuver_detection is None
-
-    config["name"] = "standard_nis"
-    # Create config object
-    maneuver_det_config = ManeuverDetectionConfig(**config)
-    maneuver_det_config.name = "invalid_name"
-    # Call factory function
-    error_msg = f"Invalid maneuver detection type: {maneuver_det_config.name}"
-    with pytest.raises(ValueError, match=error_msg):
-        _ = maneuverDetectionFactory(maneuver_det_config)
+@pytest.mark.parametrize("_input", [{}, None])
+def testManeuverDetectionFactorySparse(_input):
+    """Validate that :meth:`.maneuverDetectionFactory()` returns None in appropriate circumstances."""
+    assert maneuverDetectionFactory(_input) is None
 
 
-@pytest.mark.parametrize("adaptive_filter_type", VALID_ADAPTIVE_ESTIMATION_LABELS)
+@pytest.mark.parametrize("adaptive_filter_type", list(AdaptiveEstimationLabel))
 def testAdaptiveFilterFactory(adaptive_filter_type, dynamics):
     """Tests dynamically creating adaptive filter objects."""
-    # Create config dict
-    config = deepcopy(ESTIMATION_CONFIG["adaptive_filter"])
-    config["name"] = adaptive_filter_type
-    # Create config object
-    estimation_config = AdaptiveEstimationConfig(**config)
+    config = getAdaptiveConfigDict(name=adaptive_filter_type)
+    estimation_config = constructFromUnion(AdaptiveEstimationConfig, config)
 
-    config2 = deepcopy(ESTIMATION_CONFIG["sequential_filter"])
-    config2["name"] = "ukf"
-    sequential_config = SequentialFilterConfig(**config2)
-
+    sequential_config = UKFConfig()
     sequential_filter = sequentialFilterFactory(
         sequential_config,
         TGT_ID,
@@ -187,11 +113,7 @@ def testAdaptiveFilterFactory(adaptive_filter_type, dynamics):
         Q_MATRIX,
     )
 
-    config3 = deepcopy(MANEUVER_DETECTION_CONFIG)
-    config3["name"] = "standard_nis"
-    # Create config object
-    maneuver_det_config = ManeuverDetectionConfig(**config3)
-    # Call factory function
+    maneuver_det_config = StandardNISConfig()
     maneuver_detection = maneuverDetectionFactory(maneuver_det_config)
 
     sequential_filter.maneuver_detection = maneuver_detection
@@ -200,11 +122,3 @@ def testAdaptiveFilterFactory(adaptive_filter_type, dynamics):
     # Call factory function
     filter_obj = adaptiveEstimationFactory(estimation_config, sequential_filter, time_step=300)
     assert isinstance(filter_obj, AdaptiveFilter)
-
-    # Create config object
-    estimation_config = AdaptiveEstimationConfig(**config)
-    estimation_config.name = "invalid_name"
-    # Call factory function
-    error_msg = f"Invalid adaptive estimation type: {estimation_config.name}"
-    with pytest.raises(ValueError, match=error_msg):
-        _ = adaptiveEstimationFactory(estimation_config, sequential_filter, time_step=300)

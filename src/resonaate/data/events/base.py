@@ -10,15 +10,27 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, Float, Integer, String
 
 # Local Imports
+from ...dynamics.integration_events.finite_thrust import eciBurn, ntwBurn
+from ...dynamics.integration_events.scheduled_impulse import (
+    ScheduledECIImpulse,
+    ScheduledNTWImpulse,
+)
 from ..table_base import Base, _DataMixin
 
 # Type Checking Import
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Callable
+
+    # Third Party Imports
+    from numpy import ndarray
+
     # Local Imports
+    from ...dynamics.integration_events.scheduled_impulse import ScheduledImpulse
     from ...scenario.config.event_configs import EventConfig
 
 
-class EventScope(Enum):
+class EventScope(str, Enum):
     """Enumerated possible values of the :attr:`.Event.scope` attribute."""
 
     AGENT_PROPAGATION: str = "agent_propagation"
@@ -64,6 +76,32 @@ class EventScope(Enum):
     Note:
         Each step of this process is marked with a comment tag: ``[parallel-time-bias-event-handling]``.
     """
+
+
+class ThrustFrame(str, Enum):
+    """Valid descriptors for thrust vector frames."""
+
+    ECI = "eci"
+    """``str``: The event will be applied in the ECI frame."""
+
+    NTW = "ntw"
+    """``str``: The event will be applied in the NTW frame."""
+
+    @property
+    def impulse(self, _mapping={  # noqa: PLR0206, B006
+        ECI: ScheduledECIImpulse,
+        NTW: ScheduledNTWImpulse,
+    }) -> ScheduledImpulse:
+        """ScheduledImpulse: Class associated with this :class:`.ThrustFrame`."""
+        return _mapping[self.value]
+
+    @property
+    def thrust(self, _mapping={  # noqa: PLR0206, B006
+        ECI: eciBurn,
+        NTW: ntwBurn,
+    }) -> Callable[[ndarray, ndarray], ndarray]:
+        """Callable: Burn method associated with this :class:`.ThrustFrame`."""
+        return _mapping[self.value]
 
 
 class Event(_DataMixin, Base):

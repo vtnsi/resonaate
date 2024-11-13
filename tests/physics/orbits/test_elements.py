@@ -3,13 +3,15 @@ from __future__ import annotations
 # Third Party Imports
 import pytest
 from numpy import cos, deg2rad, sin, tan
+from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.common.labels import StateLabel
 from resonaate.physics.orbits import EccentricityError, InclinationError, isEccentric, isInclined
 from resonaate.physics.orbits.elements import ClassicalElements, EquinoctialElements
 from resonaate.physics.orbits.utils import getEccentricityFromEQE, getInclinationFromEQE
-from resonaate.scenario.config.state_config import ConfigError, ECIStateConfig, EQEStateConfig
+from resonaate.scenario.config import constructFromUnion
+from resonaate.scenario.config.state_config import StateConfig
 
 # Local Imports
 from . import ANOM, ARGP, ECC, INC, LEO, RAAN, SMA, H, K, P, Q
@@ -166,13 +168,13 @@ def testCOEFromConfig(monkeypatch: pytest.MonkeyPatch, config: dict[str, float])
     """Test valid combos of COEs in a config format."""
     # Nominal
     config["type"] = StateLabel.COE
-    _ = ClassicalElements.fromConfig(ECIStateConfig.fromDict(config))
+    _ = ClassicalElements.fromConfig(constructFromUnion(StateConfig, config))
 
     # Missing required field
     with monkeypatch.context() as m_patch:
         m_patch.delitem(config, "eccentricity")
-        with pytest.raises(TypeError):
-            ClassicalElements.fromConfig(ECIStateConfig.fromDict(config))
+        with pytest.raises(ValidationError):
+            ClassicalElements.fromConfig(constructFromUnion(StateConfig, config))
 
 
 def testCOEFromConfigBadCOESet(monkeypatch: pytest.MonkeyPatch):
@@ -190,14 +192,14 @@ def testCOEFromConfigBadCOESet(monkeypatch: pytest.MonkeyPatch):
         cir_eq_config = COE_CONFIGS[3]
         cir_eq_config["type"] = StateLabel.COE
         m_patch.delitem(cir_eq_config, "true_longitude")
-        with pytest.raises(ConfigError):
-            ClassicalElements.fromConfig(ECIStateConfig.fromDict(ecc_inc_config))
-        with pytest.raises(ConfigError):
-            ClassicalElements.fromConfig(ECIStateConfig.fromDict(ecc_eq_config))
-        with pytest.raises(ConfigError):
-            ClassicalElements.fromConfig(ECIStateConfig.fromDict(cir_inc_config))
-        with pytest.raises(ConfigError):
-            ClassicalElements.fromConfig(ECIStateConfig.fromDict(cir_eq_config))
+        with pytest.raises(ValidationError):
+            ClassicalElements.fromConfig(constructFromUnion(StateConfig, ecc_inc_config))
+        with pytest.raises(ValidationError):
+            ClassicalElements.fromConfig(constructFromUnion(StateConfig, ecc_eq_config))
+        with pytest.raises(ValidationError):
+            ClassicalElements.fromConfig(constructFromUnion(StateConfig, cir_inc_config))
+        with pytest.raises(ValidationError):
+            ClassicalElements.fromConfig(constructFromUnion(StateConfig, cir_eq_config))
 
 
 @pytest.mark.parametrize("config", EQE_CONFIGS)
@@ -205,19 +207,19 @@ def testEQEFromConfig(monkeypatch: pytest.MonkeyPatch, config: dict[str, float])
     """Test valid combos of EQEs in a config format."""
     # Nominal
     config["type"] = StateLabel.EQE
-    _ = EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))
+    _ = EquinoctialElements.fromConfig(constructFromUnion(StateConfig, config))
 
     # Missing optional retro
     with monkeypatch.context() as m_patch:
         m_patch.setitem(config, "retrograde", True)
-        _ = EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))
+        _ = EquinoctialElements.fromConfig(constructFromUnion(StateConfig, config))
 
     with monkeypatch.context() as m_patch:
         m_patch.delitem(config, "retrograde")
-        _ = EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))
+        _ = EquinoctialElements.fromConfig(constructFromUnion(StateConfig, config))
 
     # Missing required field
     with monkeypatch.context() as m_patch:
         m_patch.delitem(config, "h")
-        with pytest.raises(TypeError):
-            EquinoctialElements.fromConfig(EQEStateConfig.fromDict(config))
+        with pytest.raises(ValidationError):
+            EquinoctialElements.fromConfig(constructFromUnion(StateConfig, config))

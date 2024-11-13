@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..data.resonaate_database import ResonaateDatabase
     from ..tasking.engine.engine_base import TaskingEngine
-    from .config import EngineConfig, ScenarioConfig, SensingAgentConfig, TargetAgentConfig
+    from .config import AgentConfig, EngineConfig, ScenarioConfig, SensingAgentConfig
 
 
 class ScenarioBuilder:
@@ -64,7 +64,7 @@ class ScenarioBuilder:
         # Instantiate clock based on config's start time and class variables
         self.clock = ScenarioClock.fromConfig(self.config.time)
 
-        self.validated_target_configs: dict[int, TargetAgentConfig] = {}
+        self.validated_target_configs: dict[int, AgentConfig] = {}
         self.validated_sensor_configs: dict[int, SensingAgentConfig] = {}
 
         self.tasking_engines = self._initTaskingEngines(importer_db_path=importer_db_path)
@@ -277,7 +277,7 @@ class ScenarioBuilder:
             :exc:`.DuplicateTargetError`: If the `new_target` and `existing_target` states don't match.
         """
         engine_targets: list[int] = []
-        target_agent: TargetAgentConfig
+        target_agent: AgentConfig
         for target_agent in engine_config.targets:
             existing_target = self.validated_target_configs.get(target_agent.id)
             if existing_target and existing_target.state != target_agent.state:
