@@ -2,7 +2,6 @@ from __future__ import annotations
 
 # Standard Library Imports
 import datetime
-from pickle import loads
 
 # Third Party Imports
 import numpy as np
@@ -16,19 +15,10 @@ from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
 from resonaate.physics.transforms.eops import EarthOrientationParameter, MissingEOP
 from resonaate.physics.transforms.reductions import (
     REDUCTION_KEY,
-    REDUCTION_PARAMETER_LABELS,
     _updateFK5Parameters,
     getReductionParameters,
     updateReductionParameters,
 )
-
-
-def _reductionsCheck(reductions: dict, other_reductions: dict) -> None:
-    for key, val in reductions.items():
-        if isinstance(val, np.ndarray):
-            assert np.array_equal(val, other_reductions[key])
-        else:
-            assert val == other_reductions[key]
 
 
 def testGetReductionParameters() -> None:
@@ -38,33 +28,29 @@ def testGetReductionParameters() -> None:
     # Test no KVS started
     new_utc = utc - datetime.timedelta(days=2)
     reductions = getReductionParameters(new_utc)
-    assert reductions["datetime"] == new_utc.isoformat()
-    kvs_reductions = loads(KeyValueStore.getValue(REDUCTION_KEY))
-    direct_reductions = dict(
-        zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=new_utc)),
-    )
-    _reductionsCheck(reductions, kvs_reductions)
-    _reductionsCheck(reductions, direct_reductions)
+    assert reductions.date_time == new_utc
+    kvs_reductions = KeyValueStore.getValue(REDUCTION_KEY)
+    direct_reductions = _updateFK5Parameters(utc_date=new_utc)
+    assert reductions == kvs_reductions
+    assert reductions == direct_reductions
 
     # Insert EOPs and test base case
     new_utc = utc - datetime.timedelta(days=1)
     updateReductionParameters(new_utc)
     reductions = getReductionParameters(new_utc)
-    assert reductions["datetime"] == new_utc.isoformat()
-    kvs_reductions = loads(KeyValueStore.getValue(REDUCTION_KEY))
-    direct_reductions = dict(
-        zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=new_utc)),
-    )
-    _reductionsCheck(reductions, kvs_reductions)
-    _reductionsCheck(reductions, direct_reductions)
+    assert reductions.date_time == new_utc
+    kvs_reductions = KeyValueStore.getValue(REDUCTION_KEY)
+    direct_reductions = _updateFK5Parameters(utc_date=new_utc)
+    assert reductions == kvs_reductions
+    assert reductions == direct_reductions
 
     # Test when UTC of current EOPs in KVS doesn't match requested
     reductions = getReductionParameters(utc)
-    assert reductions["datetime"] == utc.isoformat()
-    kvs_reductions = loads(KeyValueStore.getValue(REDUCTION_KEY))
-    direct_reductions = dict(zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=utc)))
-    _reductionsCheck(reductions, kvs_reductions)
-    _reductionsCheck(reductions, direct_reductions)
+    assert reductions.date_time == utc
+    kvs_reductions = KeyValueStore.getValue(REDUCTION_KEY)
+    direct_reductions = _updateFK5Parameters(utc_date=utc)
+    assert reductions == kvs_reductions
+    assert reductions == direct_reductions
 
 
 def testFK5ReductionAlgorithm():
@@ -133,9 +119,9 @@ def testFK5ReductionAlgorithm():
     # (rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt, eops, gast, eq_equinox)
     updateReductionParameters(calendar_date, eops=eops)
     params = getReductionParameters(calendar_date)
-    rot_wt = params["rot_wt"]
-    rot_rnp = params["rot_rnp"]
-    rot_np = params["rot_pn"].T
+    rot_wt = params.rot_wt
+    rot_rnp = params.rot_rnp
+    rot_np = params.rot_pn.T
 
     # Implement the full rotation from terrestrial (ITRF) to celestial (GCRF)
     full_mat = np.matmul(rot_wt, rot_rnp)
@@ -152,8 +138,8 @@ def testValidJulianDate():
     calendar_date = datetime.datetime(2018, 3, 15, 12, 55, 33, 780000)
     # (rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt, eops, gast, eq_equinox)
     params = getReductionParameters(calendar_date)
-    rot_w = params["rot_w"]
-    rot_pn = params["rot_pn"]
+    rot_w = params.rot_w
+    rot_pn = params.rot_pn
 
     # Assert that we get 3x3 numpy arrays back
     assert isinstance(rot_pn, np.ndarray)

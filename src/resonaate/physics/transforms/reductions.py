@@ -7,11 +7,12 @@ to/from ECI (GCRF). However, this module may later hold multiple forms of this r
 from __future__ import annotations
 
 # Standard Library Imports
+from dataclasses import dataclass
 from datetime import datetime
-from pickle import dumps, loads
+from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import asarray, cos, dot, fmod, matmul, sin
+from numpy import array_equal, asarray, cos, dot, fmod, matmul, sin
 from strmbrkr import KeyValueStore
 
 # Local Imports
@@ -21,18 +22,56 @@ from ..time.conversions import dayOfYear, greenwichApparentTime, utc2Terrestrial
 from .eops import getEarthOrientationParameters
 from .nutation import get1980NutationSeries
 
-REDUCTION_PARAMETER_LABELS = (
-    "rot_pn",
-    "rot_pnr",
-    "rot_rnp",
-    "rot_w",
-    "rot_wt",
-    "lod",
-    "eq_equinox",
-    "dut1",
-    "datetime",
-)
-"""list: List of keys used to construct reduction parameter dictionary."""
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
+
+
+@dataclass
+class ReductionParams:
+    """A set of FK5 transformation data."""
+
+    rot_pn: ndarray
+    """FIXME: rotation from TOD to J2000 frame (Precession, Nutation rotation matrix)"""
+
+    rot_pnr: ndarray
+    """FIXME: rotation from TOD to J2000 frame (Precession, Nutation rotation matrix)"""
+
+    rot_rnp: ndarray
+    """Transpose of :attr:`.rot_pnr`."""
+
+    rot_w: type
+    """Complete polar motion matrix form."""
+
+    rot_wt: ndarray
+    """Transpose of :attr:`.rot_w`."""
+
+    lod: float
+    """Instantaneous rate of change of UT1 w.r.t UTC (seconds)."""
+
+    eq_equinox: float
+    """Equation of Equinoxes"""
+
+    dut1: float
+    """Difference between UTC and UT1 (seconds)."""
+
+    date_time: datetime
+    """The ``datetime`` object that these reduction parameters are valid for."""
+
+    def __eq__(self, value: ReductionParams) -> bool:
+        """Define equality conditions between two instances of :class:`.ReductionParams`."""
+        return all([
+            array_equal(self.rot_pn, value.rot_pn),
+            array_equal(self.rot_pnr, value.rot_pnr),
+            array_equal(self.rot_rnp, value.rot_rnp),
+            array_equal(self.rot_w, value.rot_w),
+            array_equal(self.rot_wt, value.rot_wt),
+            self.lod == value.lod,
+            self.eq_equinox == value.eq_equinox,
+            self.dut1 == value.dut1,
+            self.date_time == value.date_time,
+        ])
+
 
 REDUCTION_KEY = "reduction_params"
 """str: Key used to identify the reduction parameters in the key value store."""
@@ -47,40 +86,38 @@ def updateReductionParameters(utc_date: datetime, eops=None):
             use rather than lookup, useful for tests
     """
     params = _updateFK5Parameters(utc_date, eops=eops)
-    KeyValueStore.setValue(REDUCTION_KEY, dumps(dict(zip(REDUCTION_PARAMETER_LABELS, params))))
+    KeyValueStore.setValue(REDUCTION_KEY, params)
 
 
-def getReductionParameters(utc_date: datetime) -> dict:
+def getReductionParameters(utc_date: datetime) -> ReductionParams:
     """Retrieve current set of reduction parameters from the key value store.
 
     Args:
         utc_date (:class:`datetime`): UTC date to calculate the transformation for
 
     Returns:
-        dict: Dictionary of reduction parameters.
+        ReductionParams: Populated reduction parameters dataclass.
     """
-    if (serial_obj := KeyValueStore.getValue(REDUCTION_KEY)) is None:
+    params = KeyValueStore.getValue(REDUCTION_KEY)
+    if params is None:
         # parameters haven't been set
-        param_dict = dict(zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date)))
-        KeyValueStore.setValue(REDUCTION_KEY, dumps(param_dict))
-    else:
-        param_dict = loads(serial_obj)
+        params = _updateFK5Parameters(utc_date)
+        KeyValueStore.setValue(REDUCTION_KEY, params)
 
-    if param_dict["datetime"] != utc_date.isoformat():
+    if params.date_time != utc_date:
         # parameters are set to wrong julian date
-        param_dict = dict(zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date)))
-        KeyValueStore.setValue(REDUCTION_KEY, dumps(param_dict))
+        params = _updateFK5Parameters(utc_date)
+        KeyValueStore.setValue(REDUCTION_KEY, params)
 
-    return param_dict
+    return params
 
 
-def _updateFK5Parameters(utc_date: datetime, eops=None):
+def _updateFK5Parameters(utc_date: datetime, eops=None) -> ReductionParams:
     """Retrieve set of transformation parameters required for FK5 transformation.
 
-    Determine the needed nutation parameters to successfully transform between
-        'inertial' frames using the theory from the IAU-76 Reduction. These
-        equations and constants are heavily derived from David Vallado's
-        original code for his book and website.
+    Determine the needed nutation parameters to successfully transform between 'inertial' frames
+    using the theory from the IAU-76 Reduction. These equations and constants are heavily derived
+    from David Vallado's original code for his book and website.
 
     References:
         :cite:t:`vallado_2013_astro`, Section 3.7
@@ -124,7 +161,6 @@ def _updateFK5Parameters(utc_date: datetime, eops=None):
 
     # Complete polar motion matrix form
     rot_w = asarray([[c_x, 0, -s_x], [s_x * s_y, c_y, c_x * s_y], [s_x * c_y, -s_y, c_x * c_y]])
-    rot_wt = rot_w.T
 
     # Get seconds in UT1 & find days since Jan. 1, 0:0:0.0 (Fractional days minus 1)
     elapsed_days = (
@@ -156,18 +192,17 @@ def _updateFK5Parameters(utc_date: datetime, eops=None):
     rot_mod2eci = matmul(rot3(zeta), matmul(rot2(-1.0 * theta), rot3(z_p)))
     rot_pn = matmul(rot_mod2eci, rot_tod2mod)
     rot_pnr = matmul(rot_pn, rot_pef2tod)
-    rot_rnp = rot_pnr.T
 
-    return (
-        rot_pn,
-        rot_pnr,
-        rot_rnp,
-        rot_w,
-        rot_wt,
-        eops.length_of_day,
-        eq_equinox,
-        eops.delta_ut1,
-        utc_date.isoformat(),
+    return ReductionParams(
+        rot_pn=rot_pn,
+        rot_pnr=rot_pnr,
+        rot_rnp=rot_pnr.T,
+        rot_w=rot_w,
+        rot_wt=rot_w.T,
+        lod=eops.length_of_day,
+        eq_equinox=eq_equinox,
+        dut1=eops.delta_ut1,
+        date_time=utc_date,
     )
 
 
