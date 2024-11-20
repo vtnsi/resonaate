@@ -8,18 +8,24 @@ from __future__ import annotations
 
 # Standard Library Imports
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
+from enum import Enum
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array_equal, asarray, cos, dot, fmod, matmul, sin
 from strmbrkr import KeyValueStore
+from strmbrkr.key_value_store.cache_transactions import (
+    CacheMiss,
+    UninitializedCache,
+    ValueAlreadySet,
+)
 
 # Local Imports
 from .. import constants as const
 from ..maths import rot1, rot2, rot3
 from ..time.conversions import dayOfYear, greenwichApparentTime, utc2TerrestrialTime
-from .eops import getEarthOrientationParameters
+from .eops import EarthOrientationParameter, getEarthOrientationParameters
 from .nutation import get1980NutationSeries
 
 if TYPE_CHECKING:
@@ -27,21 +33,51 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
 
+class FK5Cache(str, Enum):
+
+    POLAR_MOTION: str = "fk5_polar_motion"
+    """str: Cache for :class:`.PolarMotion` objects.
+
+    Cache values stored here should be valid for 24 hours (based on EOPs).
+    """
+
+    PREC_NUT: str = "fk5_prec_nut"
+    """str: Cache for :class:`.PrecessionNutation` objects.
+
+    Cache values stored here should be valid for ... XXX
+    """
+
+
 @dataclass
 class ReductionParams:
     """A set of FK5 transformation data."""
 
     rot_pn: ndarray
-    """FIXME: rotation from TOD to J2000 frame (Precession, Nutation rotation matrix)"""
+    """Rotation matrix to go from TOD -> MOD -> ECI.
+
+    TOD -> MOD [N]: Nutation matrix of nutation (IAU 1980 model).
+    MOD -> ECI [P]: Precession matrix from from J2000 (IAU 1976 model).
+    """
 
     rot_pnr: ndarray
-    """FIXME: rotation from TOD to J2000 frame (Precession, Nutation rotation matrix)"""
+    """Rotation matrix to go from PEF -> TOD -> MOD -> ECI.
+
+    PEF -> TOD [R]: Rotation matrix of Greenwich Apparent Sidereal Time (IAU res 1982).
+    TOD -> MOD [N]: Nutation matrix of nutation (IAU 1980 model).
+    MOD -> ECI [P]: Precession matrix from from J2000 (IAU 1976 model).
+    """
 
     rot_rnp: ndarray
-    """Transpose of :attr:`.rot_pnr`."""
+    """Rotation matrix to go from ECI -> MOD -> TOD -> PEF.
+
+    Transpose of :attr:`.rot_pnr`, see for more details.
+    """
 
     rot_w: type
-    """Complete polar motion matrix form."""
+    """Complete polar motion matrix form.
+    
+    ECEF -> PEF [W]: Corrects for polar motion based on empirical EOP data.
+    """
 
     rot_wt: ndarray
     """Transpose of :attr:`.rot_w`."""
@@ -72,97 +108,102 @@ class ReductionParams:
             self.date_time == value.date_time,
         ])
 
+    @classmethod
+    def build(cls, utc_date: datetime, eops: EarthOrientationParameter = None) -> ReductionParams:
+        """Factory method populating reduction parameters based on specified `date_time`.
 
-REDUCTION_KEY = "reduction_params"
-"""str: Key used to identify the reduction parameters in the key value store."""
+        Args:
+            utc_date (``datetime``): Date and time to populate reduction parameters for (in UTC).
+            eops (:class:`.EarthOrientationParameter`, optional): Specific EOPs to use rather
+                than lookup; useful for tests.
+
+        Returns:
+            :class:`.ReductionParams`: Populated reduction parameters based on specified `date_time`.
+        """
+        if not eops:
+            eops = getEarthOrientationParameters(utc_date.date())
+
+        try:
+            polar_motion = KeyValueStore.cacheGrab(
+                FK5Cache.POLAR_MOTION,
+                utc_date.date().isoformat()
+            )
+        except (CacheMiss, UninitializedCache) as err:
+            if isinstance(err, UninitializedCache):
+                try:
+                    KeyValueStore.initCache(FK5Cache.POLAR_MOTION)
+                except ValueAlreadySet:
+                    # multiprocess race condition
+                    pass
+
+            polar_motion = PolarMotion(eops.x_p, eops.y_p)
+            KeyValueStore.cachePut(
+                FK5Cache.POLAR_MOTION,
+                utc_date.date().isoformat(),
+                polar_motion
+            )
+        
+        dt_trunc_min = datetime(
+            year=utc_date.year,
+            month=utc_date.month,
+            day=utc_date.day,
+            hour=utc_date.hour,
+            minute=utc_date.minute,
+        )
+        try:
+            prec_nut = KeyValueStore.cacheGrab(
+                FK5Cache.PREC_NUT,
+                dt_trunc_min.isoformat()
+            )
+        except (CacheMiss, UninitializedCache) as err:
+            if isinstance(err, UninitializedCache):
+                try:
+                    KeyValueStore.initCache(FK5Cache.PREC_NUT)
+                except ValueAlreadySet:
+                    # multiprocess race condition
+                    pass
+
+            prec_nut = PrecessionNutation(
+                (dt_trunc_min + timedelta(seconds=30)),
+                eops.delta_atomic_time,
+                eops.d_delta_psi,
+                eops.d_delta_eps
+            )
+            KeyValueStore.cachePut(
+                FK5Cache.PREC_NUT,
+                dt_trunc_min.isoformat(),
+                prec_nut
+            )
+
+        rot_pef2tod = getRotR(utc_date, eops.delta_ut1, prec_nut.eq_equinox)
+        rot_pnr = matmul(prec_nut.rot_pn, rot_pef2tod)
+
+        return cls(
+            rot_pn=prec_nut.rot_pn,
+            rot_pnr=rot_pnr,
+            rot_rnp=rot_pnr.T,
+            rot_w=polar_motion.rot_w,
+            rot_wt=polar_motion.rot_w.T,
+            lod=eops.length_of_day,
+            eq_equinox=prec_nut.eq_equinox,
+            dut1=eops.delta_ut1,
+            date_time=utc_date
+        )
 
 
-def updateReductionParameters(utc_date: datetime, eops=None):
-    """Update the current set of FK5 data.
+def getRotR(utc_date: datetime, delta_ut1: float, eq_equinox:float) -> ndarray:
+    """Rotation matrix to go from Pseudo-Earth Fixed (PEF) to True Of Date (TOD) inertial frame.
 
     Args:
-        utc_date (:class:`datetime`): UTC date to calculate the transformation for
-        eops (:class:`.EarthOrientationParameter`, optional): Defaults to None. Specific EOPs to
-            use rather than lookup, useful for tests
-    """
-    params = _updateFK5Parameters(utc_date, eops=eops)
-    KeyValueStore.setValue(REDUCTION_KEY, params)
-
-
-def getReductionParameters(utc_date: datetime) -> ReductionParams:
-    """Retrieve current set of reduction parameters from the key value store.
-
-    Args:
-        utc_date (:class:`datetime`): UTC date to calculate the transformation for
+        utc_date (datetime): Date and time to generate the rotation matrix for (in UTC).
+        delta_ut1 (float): Difference between UTC and UT1 (seconds).
+        eq_equinox (float): Equation of Equinoxes.
 
     Returns:
-        ReductionParams: Populated reduction parameters dataclass.
+        ndarray: Rotation matrix to go from Pseudo-Earth Fixed (PEF) to True Of Date (TOD) inertial
+            frame.
     """
-    params = KeyValueStore.getValue(REDUCTION_KEY)
-    if params is None:
-        # parameters haven't been set
-        params = _updateFK5Parameters(utc_date)
-        KeyValueStore.setValue(REDUCTION_KEY, params)
-
-    if params.date_time != utc_date:
-        # parameters are set to wrong julian date
-        params = _updateFK5Parameters(utc_date)
-        KeyValueStore.setValue(REDUCTION_KEY, params)
-
-    return params
-
-
-def _updateFK5Parameters(utc_date: datetime, eops=None) -> ReductionParams:
-    """Retrieve set of transformation parameters required for FK5 transformation.
-
-    Determine the needed nutation parameters to successfully transform between 'inertial' frames
-    using the theory from the IAU-76 Reduction. These equations and constants are heavily derived
-    from David Vallado's original code for his book and website.
-
-    References:
-        :cite:t:`vallado_2013_astro`, Section 3.7
-
-    Args:
-        utc_date (:class:`datetime`): UTC date to calculate the transformation for
-        eops (:class:`.EarthOrientationParameter`, optional): Defaults to None. Specific EOPs to
-            use rather than lookup, useful for tests
-    """
-    if not isinstance(utc_date, datetime):
-        raise TypeError("_updateFK5Parameters() requires a `datetime` input type")
-
-    # Convert year and epoch to mdhms form. Time always in UTC
     seconds = utc_date.second + utc_date.microsecond / 1e6
-
-    # Read EOPs & get terrestrial time, in Julian centuries
-    if eops is None:
-        eops = getEarthOrientationParameters(utc_date.date())
-    _, ttt = utc2TerrestrialTime(
-        utc_date.year,
-        utc_date.month,
-        utc_date.day,
-        utc_date.hour,
-        utc_date.minute,
-        seconds,
-        eops.delta_atomic_time,
-    )
-
-    # Get nutation params. Use all 106 terms, and 2 extra terms in the Eq. of Equinoxes. IAU-76/FK5 Reduction.
-    # [NOTE] EOP corrections not added when converting to mean J2000 according to Vallado
-    #           They are added here because we are rotating to GCRF instead
-    delta_psi, true_eps, mean_eps, eq_equinox = _getNutationParameters(
-        ttt,
-        eops.d_delta_psi,
-        eops.d_delta_eps,
-    )
-
-    # Polar motion - Vallado 4th Ed. Eq 3-77 (full) & Eq 3-78 (simplified)
-    c_x, s_x = cos(eops.x_p), sin(eops.x_p)
-    c_y, s_y = cos(eops.y_p), sin(eops.y_p)
-
-    # Complete polar motion matrix form
-    rot_w = asarray([[c_x, 0, -s_x], [s_x * s_y, c_y, c_x * s_y], [s_x * c_y, -s_y, c_x * c_y]])
-
-    # Get seconds in UT1 & find days since Jan. 1, 0:0:0.0 (Fractional days minus 1)
     elapsed_days = (
         dayOfYear(
             utc_date.year,
@@ -170,7 +211,7 @@ def _updateFK5Parameters(utc_date: datetime, eops=None) -> ReductionParams:
             utc_date.day,
             utc_date.hour,
             utc_date.minute,
-            seconds + eops.delta_ut1,
+            seconds + delta_ut1,
         )
         - 1
     )
@@ -181,29 +222,89 @@ def _updateFK5Parameters(utc_date: datetime, eops=None) -> ReductionParams:
         eq_equinox,
     )
 
-    # Get precession angles. Vallado 4th Ed. Eq 3-88
-    zeta = (2306.2181 * ttt + 0.30188 * ttt**2 + 0.017998 * ttt**3) * const.ARCSEC2RAD
-    theta = (2004.3109 * ttt - 0.42665 * ttt**2 - 0.041833 * ttt**3) * const.ARCSEC2RAD
-    z_p = (2306.2181 * ttt + 1.09468 * ttt**2 + 0.018203 * ttt**3) * const.ARCSEC2RAD
+    return rot3(-1.0 * greenwich_apparent_sidereal_time)
 
-    # Get rotation from TOD to J2000 frame (Precession, Nutation rotation matrix)
-    rot_pef2tod = rot3(-1.0 * greenwich_apparent_sidereal_time)
-    rot_tod2mod = matmul(rot1(-1.0 * mean_eps), matmul(rot3(delta_psi), rot1(true_eps)))
-    rot_mod2eci = matmul(rot3(zeta), matmul(rot2(-1.0 * theta), rot3(z_p)))
-    rot_pn = matmul(rot_mod2eci, rot_tod2mod)
-    rot_pnr = matmul(rot_pn, rot_pef2tod)
 
-    return ReductionParams(
-        rot_pn=rot_pn,
-        rot_pnr=rot_pnr,
-        rot_rnp=rot_pnr.T,
-        rot_w=rot_w,
-        rot_wt=rot_w.T,
-        lod=eops.length_of_day,
-        eq_equinox=eq_equinox,
-        dut1=eops.delta_ut1,
-        date_time=utc_date,
-    )
+class PolarMotion:
+    """Object encapsulating values associated with the polar motion of the Earth.
+
+    Attributes:
+        rot_w (ndarray): Rotation matrix to go from ECEF to Pseudo-Earth Fixed (PEF).
+    """
+
+    def __init__(self, x_p: float, y_p: float):
+        """Construct rotation matrix based on specified `x_p` and `y_p`.
+
+        Args:
+            x_p (float): Polar motion x coordinate (radians).
+            y_p (float): Polar motion y coordinate (radians).
+        """
+        # Polar motion - Vallado 4th Ed. Eq 3-77 (full) & Eq 3-78 (simplified)
+        c_x, s_x = cos(x_p), sin(x_p)
+        c_y, s_y = cos(y_p), sin(y_p)
+
+        # Complete polar motion matrix form
+        self.rot_w = asarray([
+            [c_x      ,  0  , -s_x      ],
+            [s_x * s_y,  c_y,  c_x * s_y],
+            [s_x * c_y, -s_y,  c_x * c_y]
+        ])
+
+
+class PrecessionNutation:
+    """Object encapsulating values associated with the precession and nutation of the Earth.
+
+    Attributes:
+        zeta (float): Precession angle zeta.
+        theta (float): Precession angle theta.
+        z_p (float): Precession angle "z_p".
+        delta_psi (float): Delta psi nutation parameter.
+        true_eps (float): True obliquity of the ecliptic.
+        mean_eps (float): Mean obliquity of the ecliptic.
+        eq_equinox (float): Equation of the Equinoxes.
+        rot_tod2mod (ndarray): Rotation matrix to go from True Of Date (TOD) to Mean Of Date
+            (MOD). (A.k.a. matrix [N]).
+        rot_mod2eci (ndarray): Rotation matrix to go from MOD to ECI. (A.k.a. matrix [P]).
+        rot_pn (ndarray): Rotation matrix to go from TOD to ECI (a.k.a matrix [P][N]).
+    """
+
+    def __init__(self, utc_date: datetime, delta_atomic_time: float, d_delta_psi: float, d_delta_eps: float):
+        """Calculate precession and nutation based on current time and corrections.
+
+        Args:
+            utc_date (datetime): Date and time to calculate precession and nutation for (in UTC).
+            delta_atomic_time (float): Difference in atomic time w.r.t UTC, via leap seconds.
+            d_delta_psi (float): EOP correction to psi nutation parameter.
+            d_delta_eps (float): EOP correction to epsilon nutation parameter.
+        """
+        # get terrestrial time, in Julian centuries
+        seconds = utc_date.second + utc_date.microsecond / 1e6
+        _, ttt = utc2TerrestrialTime(
+            utc_date.year,
+            utc_date.month,
+            utc_date.day,
+            utc_date.hour,
+            utc_date.minute,
+            seconds,
+            delta_atomic_time,
+        )
+        # Get precession angles. Vallado 4th Ed. Eq 3-88
+        self.zeta = (2306.2181 * ttt + 0.30188 * ttt**2 + 0.017998 * ttt**3) * const.ARCSEC2RAD
+        self.theta = (2004.3109 * ttt - 0.42665 * ttt**2 - 0.041833 * ttt**3) * const.ARCSEC2RAD
+        self.z_p = (2306.2181 * ttt + 1.09468 * ttt**2 + 0.018203 * ttt**3) * const.ARCSEC2RAD
+
+        # Get nutation params. Use all 106 terms, and 2 extra terms in the Eq. of Equinoxes. IAU-76/FK5 Reduction.
+        # [NOTE] EOP corrections not added when converting to mean J2000 according to Vallado
+        #           They are added here because we are rotating to GCRF instead
+        self.delta_psi, self.true_eps, self.mean_eps, self.eq_equinox = _getNutationParameters(
+            ttt,
+            d_delta_psi,
+            d_delta_eps,
+        )
+
+        self.rot_tod2mod = matmul(rot1(-1.0 * self.mean_eps), matmul(rot3(self.delta_psi), rot1(self.true_eps)))
+        self.rot_mod2eci = matmul(rot3(self.zeta), matmul(rot2(-1.0 * self.theta), rot3(self.z_p)))
+        self.rot_pn = matmul(self.rot_mod2eci, self.rot_tod2mod)
 
 
 def _getNutationParameters(ttt, dd_psi, dd_eps, num=2):
