@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 from ..data import getDBConnection
 from ..data.epoch import Epoch
 from ..physics.time.stardate import ScenarioTime, datetimeToJulianDate
-from ..physics.transforms.reductions import updateReductionParameters
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -59,9 +58,6 @@ class ScenarioClock:
         self.time = ScenarioTime(0)
         self.logger = logging.getLogger("resonaate")
 
-        # EOP params & third body positions updated
-        updateReductionParameters(start_date)
-
         epochs = []
         sim_time_iter = ScenarioTime(0)
         while sim_time_iter <= self.time_span:
@@ -90,12 +86,6 @@ class ScenarioClock:
             self.time += self.dt_step
         else:
             self.time += ScenarioTime(dt)
-
-        # EOP params & third body positions updated
-        # [NOTE]: This assumes that the reduction params & third body positions will always be aligned with
-        #           the main simulation time step. If we implement smoothing/multi-step prediction, then we
-        #           will have to revisit this implementation. This will likely just change to DB insert/queries
-        updateReductionParameters(self.datetime_epoch)
 
     @classmethod
     def fromConfig(cls, config: TimeConfig) -> ScenarioClock:
