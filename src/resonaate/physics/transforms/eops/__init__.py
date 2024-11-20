@@ -46,4 +46,4 @@ class MissingEOP(Exception):  # noqa: N818
 
 # Local Imports
 # forward-facing API import
-from .getter import getEarthOrientationParameters  # noqa: F401
+from .getter import getEarthOrientationParameters, setEarthOrientationParameters  # noqa: F401

@@ -88,6 +88,15 @@ class EOPLoader(ABC):
         """
         return max(self._eop_data.keys())
 
+    def setEOPData(self, eop_date: datetime.date, eops: EarthOrientationParameter):
+        """Set specific EOP data for the specified `eop_date`.
+
+        Args:
+            eop_date (datetime.date): Date to set EOP data for.
+            eops (EarthOrientationParameter): The EOP data specified for `eop_date`.
+        """
+        self._eop_data[eop_date] = eops
+
 
 class DotDatEOPLoader(EOPLoader, ABC):
     """Abstract interface defining how to properly load a '.dat' EOP data file."""
