@@ -120,6 +120,10 @@ class ReductionParams:
         Returns:
             :class:`.ReductionParams`: Populated reduction parameters based on specified `date_time`.
         """
+        if not isinstance(utc_date, datetime):
+            err = f"Building reduction parameters expects datetime, not {type(utc_date)}"
+            raise TypeError(err)
+
         if not eops:
             eops = getEarthOrientationParameters(utc_date.date())
 

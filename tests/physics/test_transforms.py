@@ -38,7 +38,6 @@ from resonaate.physics.transforms.methods import (
     sez2eci,
     spherical2cartesian,
 )
-from resonaate.physics.transforms.reductions import ReductionParams, updateReductionParameters
 
 
 class TestECI:

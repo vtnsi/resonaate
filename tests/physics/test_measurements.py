@@ -30,9 +30,11 @@ from resonaate.physics.measurements import (
     getRange,
     getRangeRate,
 )
-from resonaate.physics.transforms.eops import EarthOrientationParameter
+from resonaate.physics.transforms.eops import (
+    EarthOrientationParameter,
+    setEarthOrientationParameters,
+)
 from resonaate.physics.transforms.methods import ecef2eci, getSlantRangeVector, lla2ecef, sez2eci
-from resonaate.physics.transforms.reductions import updateReductionParameters
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -75,7 +77,7 @@ EOP: EarthOrientationParameter = EarthOrientationParameter(
 @pytest.fixture(name="sez_state")
 def convertToSEZ() -> ndarray:
     """Fixture to get properly converted SEZ observation vector."""
-    updateReductionParameters(CALENDAR_DATE, eops=EOP)
+    setEarthOrientationParameters(CALENDAR_DATE, EOP)
     return getSlantRangeVector(ecef2eci(lla2ecef(LLA), CALENDAR_DATE), ECI, CALENDAR_DATE)
 
 
