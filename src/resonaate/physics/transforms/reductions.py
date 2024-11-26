@@ -33,21 +33,6 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
 
-class FK5Cache(str, Enum):
-
-    POLAR_MOTION: str = "fk5_polar_motion"
-    """str: Cache for :class:`.PolarMotion` objects.
-
-    Cache values stored here should be valid for 24 hours (based on EOPs).
-    """
-
-    PREC_NUT: str = "fk5_prec_nut"
-    """str: Cache for :class:`.PrecessionNutation` objects.
-
-    Cache values stored here should be valid for ... XXX
-    """
-
-
 @dataclass
 class ReductionParams:
     """A set of FK5 transformation data."""
@@ -127,58 +112,13 @@ class ReductionParams:
         if not eops:
             eops = getEarthOrientationParameters(utc_date.date())
 
-        try:
-            polar_motion = KeyValueStore.cacheGrab(
-                FK5Cache.POLAR_MOTION,
-                utc_date.date().isoformat()
-            )
-        except (CacheMiss, UninitializedCache) as err:
-            if isinstance(err, UninitializedCache):
-                try:
-                    KeyValueStore.initCache(FK5Cache.POLAR_MOTION)
-                except ValueAlreadySet:
-                    # multiprocess race condition
-                    pass
-
-            polar_motion = PolarMotion(eops.x_p, eops.y_p)
-            KeyValueStore.cachePut(
-                FK5Cache.POLAR_MOTION,
-                utc_date.date().isoformat(),
-                polar_motion
-            )
-        
-        dt_trunc_min = datetime(
-            year=utc_date.year,
-            month=utc_date.month,
-            day=utc_date.day,
-            hour=utc_date.hour,
-            minute=utc_date.minute,
+        polar_motion = PolarMotion(eops.x_p, eops.y_p)
+        prec_nut = PrecessionNutation(
+            utc_date,
+            eops.delta_atomic_time,
+            eops.d_delta_psi,
+            eops.d_delta_eps
         )
-        try:
-            prec_nut = KeyValueStore.cacheGrab(
-                FK5Cache.PREC_NUT,
-                dt_trunc_min.isoformat()
-            )
-        except (CacheMiss, UninitializedCache) as err:
-            if isinstance(err, UninitializedCache):
-                try:
-                    KeyValueStore.initCache(FK5Cache.PREC_NUT)
-                except ValueAlreadySet:
-                    # multiprocess race condition
-                    pass
-
-            prec_nut = PrecessionNutation(
-                (dt_trunc_min + timedelta(seconds=30)),
-                eops.delta_atomic_time,
-                eops.d_delta_psi,
-                eops.d_delta_eps
-            )
-            KeyValueStore.cachePut(
-                FK5Cache.PREC_NUT,
-                dt_trunc_min.isoformat(),
-                prec_nut
-            )
-
         rot_pef2tod = getRotR(utc_date, eops.delta_ut1, prec_nut.eq_equinox)
         rot_pnr = matmul(prec_nut.rot_pn, rot_pef2tod)
 
@@ -384,3 +324,114 @@ def _getNutationParameters(ttt, dd_psi, dd_eps, num=2):
         eq_equinox += equinox_c1 * sin(corrected[4]) + equinox_c2 * sin(2.0 * corrected[4])
 
     return delta_psi, true_eps, mean_eps, eq_equinox
+
+
+class FK5Cache(str, Enum):
+
+    POLAR_MOTION: str = "fk5_polar_motion"
+    """str: Cache for :class:`.PolarMotion` objects.
+
+    Cache values stored here should be valid for 24 hours (based on EOPs).
+    """
+
+    PREC_NUT: str = "fk5_prec_nut"
+    """str: Cache for :class:`.PrecessionNutation` objects.
+
+    Cache values stored here should be valid for ... XXX
+    """
+
+
+@dataclass
+class CachedReductionParams(ReductionParams):
+    """A set of FK5 transformation data that relies on the :class:`.KeyValueStore` cache."""
+
+    @classmethod
+    def build(cls, utc_date: datetime, eops: EarthOrientationParameter = None) -> ReductionParams:
+        """Factory method populating reduction parameters based on specified `date_time`.
+
+        This method relies on caching parameters in the :class:`.KeyValueStore` for different time
+        spans. After extensive analysis, it was found that this methodology is on the order of 8x
+        _slower_ than just calculating the FK5 parameters. Therefore, this methodology should not
+        be used unless the supporting caching tech is vastly improved.
+
+        Args:
+            utc_date (``datetime``): Date and time to populate reduction parameters for (in UTC).
+            eops (:class:`.EarthOrientationParameter`, optional): Specific EOPs to use rather
+                than lookup; useful for tests.
+
+        Returns:
+            :class:`.ReductionParams`: Populated reduction parameters based on specified `date_time`.
+        """
+        if not isinstance(utc_date, datetime):
+            err = f"Building reduction parameters expects datetime, not {type(utc_date)}"
+            raise TypeError(err)
+
+        if not eops:
+            eops = getEarthOrientationParameters(utc_date.date())
+
+        try:
+            polar_motion = KeyValueStore.cacheGrab(
+                FK5Cache.POLAR_MOTION,
+                utc_date.date().isoformat()
+            )
+        except (CacheMiss, UninitializedCache) as err:
+            if isinstance(err, UninitializedCache):
+                try:
+                    KeyValueStore.initCache(FK5Cache.POLAR_MOTION)
+                except ValueAlreadySet:
+                    # multiprocess race condition
+                    pass
+
+            polar_motion = PolarMotion(eops.x_p, eops.y_p)
+            KeyValueStore.cachePut(
+                FK5Cache.POLAR_MOTION,
+                utc_date.date().isoformat(),
+                polar_motion
+            )
+        
+        dt_trunc_min = datetime(
+            year=utc_date.year,
+            month=utc_date.month,
+            day=utc_date.day,
+            hour=utc_date.hour,
+            minute=utc_date.minute,
+        )
+        try:
+            prec_nut = KeyValueStore.cacheGrab(
+                FK5Cache.PREC_NUT,
+                dt_trunc_min.isoformat()
+            )
+        except (CacheMiss, UninitializedCache) as err:
+            if isinstance(err, UninitializedCache):
+                try:
+                    KeyValueStore.initCache(FK5Cache.PREC_NUT)
+                except ValueAlreadySet:
+                    # multiprocess race condition
+                    pass
+
+            prec_nut = PrecessionNutation(
+                (dt_trunc_min + timedelta(seconds=30)),
+                eops.delta_atomic_time,
+                eops.d_delta_psi,
+                eops.d_delta_eps
+            )
+            KeyValueStore.cachePut(
+                FK5Cache.PREC_NUT,
+                dt_trunc_min.isoformat(),
+                prec_nut
+            )
+
+        rot_pef2tod = getRotR(utc_date, eops.delta_ut1, prec_nut.eq_equinox)
+        rot_pnr = matmul(prec_nut.rot_pn, rot_pef2tod)
+
+        return cls(
+            rot_pn=prec_nut.rot_pn,
+            rot_pnr=rot_pnr,
+            rot_rnp=rot_pnr.T,
+            rot_w=polar_motion.rot_w,
+            rot_wt=polar_motion.rot_w.T,
+            lod=eops.length_of_day,
+            eq_equinox=prec_nut.eq_equinox,
+            dut1=eops.delta_ut1,
+            date_time=utc_date
+        )
