@@ -1,5 +1,58 @@
 # Third Party Imports
+from strmbrkr.key_value_store import KeyValueStore
 from strmbrkr.key_value_store.transaction import Transaction
+
+# Local Imports
+from .agent_base import Agent
+
+
+class AgentCache:
+    """Encapsulates a named agent cache."""
+
+    def __init__(self, cache_name: str):
+        """Instantiate an :class:`.AgentCache`.
+
+        Args:
+            cache_name (str): Name of agent cache.
+        """
+        self.cache_name = cache_name
+
+    def updateCache(self, agent_dict: dict[int, Agent]):
+        """Update this :class:`.AgentCache` with updated :class:`.Agent` states.
+
+        Args:
+            agent_dict (dict[int, Agent]): Dictionary of :class:`.Agent` objects where keys are
+                unique identifiers.
+        """
+        KeyValueStore.setValue(self.cache_name, agent_dict)
+    
+    def getAgent(self, agent_id: int) -> Agent:
+        """Retrieve an :class:`.Agent` from this :class:`.AgentClass`.
+
+        Args:
+            agent_id (int): Unique identifier of :class:`.Agent` being retrieved.
+
+        Returns:
+            Agent: The cached :class:`.Agent` specified by `agent_id`.
+
+        Raises:
+            RuntimeError: If the specified :class:`.Agent` has not been cached.
+        """
+        trans = NestedGet([self.cache_name, agent_id])
+        return KeyValueStore.submitTransaction(trans)
+
+
+class AgentCaches:
+    """Collection of :class:`.AgentCache` objects."""
+
+    targets = AgentCache("target_agents")
+    """AgentCache: Cache of :class:`.TargetAgent` objects."""
+
+    sensors = AgentCache("sensor_agents")
+    """AgentCache: Cache of :class:`.SensingAgent` objects."""
+
+    estimates = AgentCache("estimate_agents")
+    """AgentCache: Cache of :class:`.EstimateAgent` objects."""
 
 
 class NestedGet(Transaction):
