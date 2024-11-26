@@ -41,6 +41,15 @@ class AgentCache:
         trans = NestedGet([self.cache_name, agent_id])
         return KeyValueStore.submitTransaction(trans)
 
+    def getCache(self) -> dict[int, Agent]:
+        """Retrieve the contents of the entire cache.
+
+        Returns:
+            dict[int, Agent]: Dictionary of :class:`.Agent` objects where keys are unique
+                identifiers.
+        """
+        return KeyValueStore.getValue(self.cache_name)
+
 
 class AgentCaches:
     """Collection of :class:`.AgentCache` objects."""

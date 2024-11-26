@@ -205,9 +205,6 @@ class TaskingEngine(metaclass=ABCMeta):
 
         return missed_observations
 
-    def _fetchSensorAgents(self) -> dict[int, SensingAgent]:
-        return loads(KeyValueStore.getValue("sensor_agents"))
-
     @abstractmethod
     def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
