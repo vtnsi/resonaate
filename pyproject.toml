@@ -24,7 +24,7 @@ dev = [
     # Linting
     "ruff==0.5.7",
     # Type Checking
-    "mypy==1.11.1",
+    "mypy==1.11.2",
     "types-sqlalchemy==1.4.53.38",
     # Formatters
     "black==24.8.0",
