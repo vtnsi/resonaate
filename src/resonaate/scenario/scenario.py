@@ -334,9 +334,10 @@ class Scenario(ParallelMixin):
             datetime_epoch=self.clock.datetime_epoch,
         )
 
-        AgentCaches.targets.updateCache(self.target_agents)
-        AgentCaches.sensors.updateCache(self.sensor_agents)
         if not self.scenario_config.propagation.truth_simulation_only:
+            AgentCaches.targets.updateCache(self.target_agents)
+            AgentCaches.sensors.updateCache(self.sensor_agents)
+
             self._estimate_prediction_handler.executeJobs(
                 prior_julian_date=prior_jd,
                 julian_date=self.clock.julian_date_epoch,
