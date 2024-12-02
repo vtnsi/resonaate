@@ -56,6 +56,7 @@ ______________________________________________________________________
 - `physics.orbits.ResidentStratification` class to encapsulate orbit designation information/defaults
 - `scenario.config.state_config` orbital elements are now validated based on limits expressed in docstrings
   - **WARNING**: *this could break existing input config files*, but I don't think it's enough of a change to warrant a version bump
+- option for multi-level caching of reduction parameters
 
 ### Changed
 
@@ -67,6 +68,7 @@ ______________________________________________________________________
 - replaced `physics.sensor_utils.getFrequencyFromString()` with `.FrequencyBand` enum and `mean` property
 - `estimation` module factory method conventions rely more on config objects and mappings, rather than conditionals
 - `tasking` module factory method conventions rely more on config objects and mappings, rather than custom registries
+- refactored reduction parameters (see `pysics.transforms.reductions.ReductionParams`)
 
 ### Deprecated
 
@@ -76,6 +78,7 @@ ______________________________________________________________________
 
 - Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` constant.
 - orbit-dependent platform constants from `agents` module (see `physics.orbits.ResidentStratification` addition)
+- reduction parameters are no longer cached due to performance of `strmbrkr` kvs
 
 ### Fixed
 
