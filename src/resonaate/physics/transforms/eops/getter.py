@@ -100,7 +100,7 @@ def setEarthOrientationParameters(
 
     Args:
         eop_date (datetime.date): Date to set EOP data for.
-        eops (EarthOrientationParameter): The EOP data specified for `eop_date`.
+        eop_data (EarthOrientationParameter): The EOP data specified for `eop_date`.
         loader_name (str, optional): Name of the concrete :class:`.EOPLoader` implementation to use.
         loader_location (str, optional): Location that the specified :class:`.EOPLoader` will load
             EOP data from.

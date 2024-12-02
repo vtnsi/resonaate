@@ -7,6 +7,7 @@ to/from ECI (GCRF). However, this module may later hold multiple forms of this r
 from __future__ import annotations
 
 # Standard Library Imports
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
@@ -60,7 +61,7 @@ class ReductionParams:
 
     rot_w: type
     """Complete polar motion matrix form.
-    
+
     ECEF -> PEF [W]: Corrects for polar motion based on empirical EOP data.
     """
 
@@ -117,7 +118,7 @@ class ReductionParams:
             utc_date,
             eops.delta_atomic_time,
             eops.d_delta_psi,
-            eops.d_delta_eps
+            eops.d_delta_eps,
         )
         rot_pef2tod = getRotR(utc_date, eops.delta_ut1, prec_nut.eq_equinox)
         rot_pnr = matmul(prec_nut.rot_pn, rot_pef2tod)
@@ -131,7 +132,7 @@ class ReductionParams:
             lod=eops.length_of_day,
             eq_equinox=prec_nut.eq_equinox,
             dut1=eops.delta_ut1,
-            date_time=utc_date
+            date_time=utc_date,
         )
 
 
@@ -191,7 +192,7 @@ class PolarMotion:
         self.rot_w = asarray([
             [c_x      ,  0  , -s_x      ],
             [s_x * s_y,  c_y,  c_x * s_y],
-            [s_x * c_y, -s_y,  c_x * c_y]
+            [s_x * c_y, -s_y,  c_x * c_y],
         ])
 
 
@@ -327,6 +328,7 @@ def _getNutationParameters(ttt, dd_psi, dd_eps, num=2):
 
 
 class FK5Cache(str, Enum):
+    """Enumerated constants for names of FK5 caches."""
 
     POLAR_MOTION: str = "fk5_polar_motion"
     """str: Cache for :class:`.PolarMotion` objects.
@@ -372,23 +374,20 @@ class CachedReductionParams(ReductionParams):
         try:
             polar_motion = KeyValueStore.cacheGrab(
                 FK5Cache.POLAR_MOTION,
-                utc_date.date().isoformat()
+                utc_date.date().isoformat(),
             )
         except (CacheMiss, UninitializedCache) as err:
             if isinstance(err, UninitializedCache):
-                try:
+                with suppress(ValueAlreadySet):  # multiprocess race condition
                     KeyValueStore.initCache(FK5Cache.POLAR_MOTION)
-                except ValueAlreadySet:
-                    # multiprocess race condition
-                    pass
 
             polar_motion = PolarMotion(eops.x_p, eops.y_p)
             KeyValueStore.cachePut(
                 FK5Cache.POLAR_MOTION,
                 utc_date.date().isoformat(),
-                polar_motion
+                polar_motion,
             )
-        
+
         dt_trunc_min = datetime(
             year=utc_date.year,
             month=utc_date.month,
@@ -399,26 +398,23 @@ class CachedReductionParams(ReductionParams):
         try:
             prec_nut = KeyValueStore.cacheGrab(
                 FK5Cache.PREC_NUT,
-                dt_trunc_min.isoformat()
+                dt_trunc_min.isoformat(),
             )
         except (CacheMiss, UninitializedCache) as err:
             if isinstance(err, UninitializedCache):
-                try:
+                with suppress(ValueAlreadySet):  # multiprocess race condition
                     KeyValueStore.initCache(FK5Cache.PREC_NUT)
-                except ValueAlreadySet:
-                    # multiprocess race condition
-                    pass
 
             prec_nut = PrecessionNutation(
                 (dt_trunc_min + timedelta(seconds=30)),
                 eops.delta_atomic_time,
                 eops.d_delta_psi,
-                eops.d_delta_eps
+                eops.d_delta_eps,
             )
             KeyValueStore.cachePut(
                 FK5Cache.PREC_NUT,
                 dt_trunc_min.isoformat(),
-                prec_nut
+                prec_nut,
             )
 
         rot_pef2tod = getRotR(utc_date, eops.delta_ut1, prec_nut.eq_equinox)
@@ -433,5 +429,5 @@ class CachedReductionParams(ReductionParams):
             lod=eops.length_of_day,
             eq_equinox=prec_nut.eq_equinox,
             dut1=eops.delta_ut1,
-            date_time=utc_date
+            date_time=utc_date,
         )

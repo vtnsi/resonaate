@@ -33,7 +33,6 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ..physics.time.stardate import ScenarioTime
-    from ..physics.transforms.reductions import ReductionParams
     from ..scenario.config.geopotential_config import GeopotentialConfig
     from ..scenario.config.perturbations_config import PerturbationsConfig
 
