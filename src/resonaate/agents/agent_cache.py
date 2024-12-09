@@ -1,3 +1,4 @@
+"""Defines how :class:`.Agent` objects are cached in the key value store."""
 # Third Party Imports
 from strmbrkr.key_value_store import KeyValueStore
 from strmbrkr.key_value_store.transaction import Transaction
@@ -25,7 +26,7 @@ class AgentCache:
                 unique identifiers.
         """
         KeyValueStore.setValue(self.cache_name, agent_dict)
-    
+
     def getAgent(self, agent_id: int) -> Agent:
         """Retrieve an :class:`.Agent` from this :class:`.AgentClass`.
 
@@ -91,22 +92,22 @@ class NestedGet(Transaction):
         Raises:
             RuntimeError: If specified nested value does not exist in the key value store.
         """
+        def levelInfo(depth: int):
+            """Return string representation of nested keys being accessed."""
+            level_info = "kvs"
+            for it in range(depth):
+                level_info += f"[{self.request_payload[it]}]"
+            return level_info
         level = key_value_store
         for depth, _key in enumerate(self.request_payload):
-            def levelInfo():
-                level_info = "kvs"
-                for it in range(depth):
-                    level_info += f"[{self.request_payload[it]}]"
-                return level_info
-
             try:
                 level = level.get(_key)
             except AttributeError:
-                err = f"'{levelInfo()}' raised an AttributeError: '{_key}'"
+                err = f"'{levelInfo(depth)}' raised an AttributeError: '{_key}'"
                 self.error = RuntimeError(err)
                 return
             if level is None:
-                err = f"'{levelInfo()}' raised KeyError: '{_key}'"
+                err = f"'{levelInfo(depth)}' raised KeyError: '{_key}'"
                 self.error = RuntimeError(err)
                 return
         self.response_payload = level
