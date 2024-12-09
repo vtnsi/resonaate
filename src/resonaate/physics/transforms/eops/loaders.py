@@ -94,8 +94,17 @@ class EOPLoader(ABC):
         Args:
             eop_date (datetime.date): Date to set EOP data for.
             eops (EarthOrientationParameter): The EOP data specified for `eop_date`.
+
+        Raises:
+            TypeError: If `eop_date` is not a valid type.
         """
-        self._eop_data[eop_date] = eops
+        if isinstance(eop_date, datetime.datetime):
+            self._eop_data[eop_date.date()] = eops
+        elif isinstance(eop_date, datetime.date):
+            self._eop_data[eop_date] = eops
+        else:
+            err = f"Unexpected 'eop_date' type: {type(eop_date)}"
+            raise TypeError(err)
 
 
 class DotDatEOPLoader(EOPLoader, ABC):
