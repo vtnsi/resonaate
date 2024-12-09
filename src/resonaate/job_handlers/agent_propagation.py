@@ -26,7 +26,7 @@ from ..data.events import EventScope, getRelevantEvents
 from ..data.importer_database import ImporterDatabase
 from ..estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from ..physics.time.stardate import JulianDate, ScenarioTime, julianDateToDatetime
-from ..physics.transforms.reductions import getReductionParameters
+from ..physics.transforms.reductions import ReductionParams
 from .base import CallbackRegistration, JobHandler
 
 if TYPE_CHECKING:
@@ -240,7 +240,7 @@ class AgentPropagationRegistration(CallbackRegistration):
         new_time = kwargs["new_time"]
         self.registrant.prunePropagateEvents()
         _datetime = julianDateToDatetime(self.registrant.julian_date_epoch)
-        reductions = getReductionParameters(_datetime)
+        reductions = ReductionParams.build(_datetime)
         for item in self.registrant.station_keeping:
             item.reductions = reductions
 

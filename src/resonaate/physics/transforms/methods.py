@@ -33,7 +33,7 @@ from ..bodies import Earth
 from ..maths import rot2, rot3, wrapAngle2Pi
 from ..time.conversions import greenwichMeanTime
 from ..time.stardate import JulianDate, datetimeToJulianDate, julianDateToDatetime
-from .reductions import getReductionParameters
+from .reductions import ReductionParams
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -61,15 +61,15 @@ def eci2ecef(x_eci: ndarray, utc_date: datetime) -> ndarray:
     Returns:
         (``np.ndarray``): 6x1 ECEF state vector, (km; km/sec)
     """
-    reduction = getReductionParameters(utc_date)
-    r_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[:3]))
+    reduction = ReductionParams.build(utc_date)
+    r_ecef = matmul(reduction.rot_wt, matmul(reduction.rot_rnp, x_eci[:3]))
     om_earth = array(
-        [0, 0, Earth.spin_rate * (1 - reduction["lod"] / const.DAYS2SEC)],
+        [0, 0, Earth.spin_rate * (1 - reduction.lod / const.DAYS2SEC)],
         dtype=float,
     )
-    vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], r_ecef)
+    vel_pef: ndarray[float, float, float] = matmul(reduction.rot_w, r_ecef)
     v_correction = cross(om_earth, vel_pef)
-    v_ecef = matmul(reduction["rot_wt"], matmul(reduction["rot_rnp"], x_eci[3:]) - v_correction)
+    v_ecef = matmul(reduction.rot_wt, matmul(reduction.rot_rnp, x_eci[3:]) - v_correction)
 
     return concatenate((r_ecef, v_ecef), axis=0)
 
@@ -87,15 +87,15 @@ def ecef2eci(x_ecef: ndarray, utc_date: datetime) -> ndarray:
     Returns:
         (``np.ndarray``): 6x1 ECI state vector, (km; km/sec)
     """
-    reduction = getReductionParameters(utc_date)
-    r_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[:3]))
+    reduction = ReductionParams.build(utc_date)
+    r_eci = matmul(reduction.rot_pnr, matmul(reduction.rot_w, x_ecef[:3]))
     om_earth = array(
-        [0, 0, Earth.spin_rate * (1 - reduction["lod"] / const.DAYS2SEC)],
+        [0, 0, Earth.spin_rate * (1 - reduction.lod / const.DAYS2SEC)],
         dtype=float,
     )
-    vel_pef: ndarray[float, float, float] = matmul(reduction["rot_w"], x_ecef[:3])
+    vel_pef: ndarray[float, float, float] = matmul(reduction.rot_w, x_ecef[:3])
     v_correction = cross(om_earth, vel_pef)
-    v_eci = matmul(reduction["rot_pnr"], matmul(reduction["rot_w"], x_ecef[3:]) + v_correction)
+    v_eci = matmul(reduction.rot_pnr, matmul(reduction.rot_w, x_ecef[3:]) + v_correction)
 
     return concatenate((r_eci, v_eci), axis=0)
 
@@ -788,17 +788,17 @@ def teme2ecef(x_teme: ndarray, utc_date: datetime) -> ndarray:
     Returns:
         ``ndarray``: 6x1 ECEF state vector (km; km/sec)
     """
-    reduction = getReductionParameters(utc_date)
+    reduction = ReductionParams.build(utc_date)
     julian_date_start = datetimeToJulianDate(utc_date)
     rot_pef_2_teme = rot3(-1.0 * greenwichMeanTime(julian_date_start))
     rot_teme_2_pef = rot_pef_2_teme.T
 
     r_pef = matmul(rot_teme_2_pef, x_teme[0:3])
-    r_ecef = matmul(reduction["rot_wt"], r_pef)
+    r_ecef = matmul(reduction.rot_wt, r_pef)
 
-    om_earth = array([0, 0, Earth.spin_rate * (1 - reduction["lod"] / 86400.0)])
+    om_earth = array([0, 0, Earth.spin_rate * (1 - reduction.lod / 86400.0)])
 
     v_pef = matmul(rot_teme_2_pef, x_teme[3:6]) - cross(om_earth, r_pef)
-    v_ecef = matmul(reduction["rot_wt"], v_pef)
+    v_ecef = matmul(reduction.rot_wt, v_pef)
 
     return concatenate((r_ecef, v_ecef), axis=None)

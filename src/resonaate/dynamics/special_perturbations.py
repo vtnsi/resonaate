@@ -24,7 +24,7 @@ from ..physics.maths import rot3
 from ..physics.sensor_utils import calculateSunVizFraction
 from ..physics.time.conversions import dayOfYear, greenwichApparentTime
 from ..physics.time.stardate import JulianDate, julianDateToDatetime
-from ..physics.transforms.reductions import getReductionParameters
+from ..physics.transforms.reductions import ReductionParams
 from .celestial import Celestial, checkEarthCollision
 
 if TYPE_CHECKING:
@@ -97,7 +97,7 @@ class SpecialPerturbations(Celestial):
         # Calculate the ECI - ECEF transformation for the integration time
         julian_date = JulianDate(self.init_julian_date + time / 86400)
         _datetime = julianDateToDatetime(julian_date)
-        ecef_2_eci = _getRotationMatrix(julian_date, getReductionParameters(_datetime))
+        ecef_2_eci = _getRotationMatrix(julian_date, ReductionParams.build(_datetime))
 
         # Get third body positions
         positions = {body: body.getPosition(julian_date) for body in self.third_bodies}
@@ -196,7 +196,7 @@ class SpecialPerturbations(Celestial):
         return a_srp * calculateSunVizFraction(sat_position, sun_eci_position) / 1000.0
 
 
-def _getRotationMatrix(julian_date: JulianDate, reduction: dict) -> ndarray:
+def _getRotationMatrix(julian_date: JulianDate, reduction: ReductionParams) -> ndarray:
     """Determine the current ECEF -> ECI rotation matrix.
 
     References:
@@ -204,21 +204,21 @@ def _getRotationMatrix(julian_date: JulianDate, reduction: dict) -> ndarray:
 
     Args:
         julian_date (:class:`.JulianDate`): Julian date of the current rotation
-        reduction (``dict``): FK5 reductions dictionary
+        reduction (:class:`.ReductionParameters`): FK5 reductions parameters
 
     Returns:
         ``ndarray``: 3x3 rotation matrix
     """
     # Convert year and epoch to mdhms form. Time always in UTC
     year, month, day, hours, minutes, seconds = julian_date.calendar_date
-    elapsed_days = dayOfYear(year, month, day, hours, minutes, seconds + reduction["dut1"]) - 1
+    elapsed_days = dayOfYear(year, month, day, hours, minutes, seconds + reduction.dut1) - 1
     greenwich_apparent_sidereal_time = greenwichApparentTime(
         year,
         elapsed_days,
-        reduction["eq_equinox"],
+        reduction.eq_equinox,
     )
     return multi_dot(
-        [reduction["rot_pn"], rot3(-1.0 * greenwich_apparent_sidereal_time), reduction["rot_w"]],
+        [reduction.rot_pn, rot3(-1.0 * greenwich_apparent_sidereal_time), reduction.rot_w],
     )
 
 

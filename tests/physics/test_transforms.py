@@ -13,7 +13,10 @@ from resonaate.physics.maths import rot1, rot3
 from resonaate.physics.orbits.elements import ClassicalElements
 from resonaate.physics.orbits.utils import getFlightPathAngle
 from resonaate.physics.time.stardate import JulianDate
-from resonaate.physics.transforms.eops import EarthOrientationParameter
+from resonaate.physics.transforms.eops import (
+    EarthOrientationParameter,
+    setEarthOrientationParameters,
+)
 from resonaate.physics.transforms.methods import (
     cartesian2spherical,
     ecef2eci,
@@ -35,7 +38,6 @@ from resonaate.physics.transforms.methods import (
     sez2eci,
     spherical2cartesian,
 )
-from resonaate.physics.transforms.reductions import updateReductionParameters
 
 
 class TestECI:
@@ -81,7 +83,7 @@ class TestECI:
             dat,
         )
         # Actually update with our test values
-        updateReductionParameters(self.calendar_date, eops=self.eops)
+        setEarthOrientationParameters(self.eops.date, self.eops)
 
     def testEci2Ecef(self):
         """Test conversion from ECI (inertial) to ECEF (fixed)."""
@@ -236,6 +238,7 @@ class TestLLA:
             0.0025598,
             29,
         )
+        setEarthOrientationParameters(datetime.date(1995, 5, 20), self.eops)
 
     @pytest.mark.parametrize("ecef", LLA_EDGE_CASES)
     def testLLAEdgeCases(self, ecef):
@@ -330,7 +333,7 @@ class TestRaDecRazelSEZ:
             0.0021743,
             28,
         )
-        updateReductionParameters(self.calendar_date, eops=self.eops)
+        setEarthOrientationParameters(self.eops.date, self.eops)
 
     def testAzEl2RaDec(
         self,

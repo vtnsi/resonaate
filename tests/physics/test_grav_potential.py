@@ -21,7 +21,7 @@ from resonaate.physics.bodies.gravitational_potential import (
 )
 from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.physics.transforms.methods import eci2ecef
-from resonaate.physics.transforms.reductions import getReductionParameters
+from resonaate.physics.transforms.reductions import ReductionParams
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -85,7 +85,7 @@ def testNonsphericalAcceleration():
     # Full acceleration values
     eci_accel = array([2.383405021e-03, -7.611372878e-03, -4.087216625e-03])
     ecef_state = eci2ecef(eci_state, _datetime)
-    ecef2eci = _getRotationMatrix(jd, getReductionParameters(_datetime))
+    ecef2eci = _getRotationMatrix(jd, ReductionParams.build(_datetime))
 
     c_nm, s_nm = loadGeopotentialCoefficients(GeopotentialModel("egm96.txt"))
 

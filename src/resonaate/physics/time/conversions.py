@@ -47,7 +47,7 @@ def greenwichApparentTime(year, elapsed_days, eq_equinox):
 
     Args:
         year (int): Current year
-        elapsed_days (int): current number of elapsed days since January 1st
+        elapsed_days (float): current number of elapsed days and day fraction since January 1st
         eq_equinox (float): equation of the equinoxes
 
     Returns:

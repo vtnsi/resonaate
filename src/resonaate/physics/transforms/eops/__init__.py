@@ -13,19 +13,19 @@ class EarthOrientationParameter:
     """datetime.date: Defines the year, month, & date associated with the given data."""
 
     x_p: float
-    """float: Polar motion x coordinate (arcseconds)."""
+    """float: Polar motion x coordinate (radians)."""
 
     y_p: float
-    """float: Polar motion y coordinate (arcseconds)."""
+    """float: Polar motion y coordinate (radians)."""
 
     d_delta_psi: float
-    """float: Psi nutation correction term (arcseconds).
+    """float: Psi nutation correction term (radians).
 
     Enforces consistency with GCRF coordinates.
     """
 
     d_delta_eps: float
-    """float: Epsilon nutation correction term (arc seconds).
+    """float: Epsilon nutation correction term (radians).
 
     Enforces consistency with GCRF coordinates.
     """
@@ -46,4 +46,4 @@ class MissingEOP(Exception):  # noqa: N818
 
 # Local Imports
 # forward-facing API import
-from .getter import getEarthOrientationParameters  # noqa: F401
+from .getter import getEarthOrientationParameters, setEarthOrientationParameters  # noqa: F401
