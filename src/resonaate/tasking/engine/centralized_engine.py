@@ -189,9 +189,11 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         # [NOTE]: Measurement metadata isn't saved to the DB. This attaches the correct Measurement metadata to
         #   imported Observations so they can be processed
+        loaded_obs = []
         for observation in imported_observations:
             sensor_agent = AgentCaches.sensors.getAgent(observation.sensor_id)
-            self._createLoadedObs(observation, sensor_agent.sensors)
+            loaded_obs.append(self._createLoadedObs(observation, sensor_agent.sensors))
+        return loaded_obs
 
     def _createLoadedObs(self, observation: Observation, sensor: Sensor) -> Observation:
         observation.measurement = sensor.measurement
