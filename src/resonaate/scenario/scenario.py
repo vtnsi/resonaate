@@ -7,15 +7,15 @@ from collections import defaultdict
 from copy import deepcopy
 from functools import singledispatchmethod
 from multiprocessing import cpu_count
-from pickle import dumps
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import around, seterr
 from sqlalchemy.orm import Query
-from strmbrkr import KeyValueStore, WorkerManager
+from strmbrkr import WorkerManager
 
 # Local Imports
+from ..agents.agent_cache import AgentCaches
 from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
@@ -334,16 +334,17 @@ class Scenario(ParallelMixin):
             datetime_epoch=self.clock.datetime_epoch,
         )
 
-        KeyValueStore.setValue("target_agents", dumps(self.target_agents))
-        KeyValueStore.setValue("sensor_agents", dumps(self.sensor_agents))
         if not self.scenario_config.propagation.truth_simulation_only:
+            AgentCaches.targets.updateCache(self.target_agents)
+            AgentCaches.sensors.updateCache(self.sensor_agents)
+
             self._estimate_prediction_handler.executeJobs(
                 prior_julian_date=prior_jd,
                 julian_date=self.clock.julian_date_epoch,
                 epoch_time=self.clock.time,
             )
 
-            KeyValueStore.setValue("estimate_agents", dumps(self.estimate_agents))
+            AgentCaches.estimates.updateCache(self.estimate_agents)
             # Handle Sensor Time Bias Events
             # [NOTE][parallel-time-bias-event-handling] Step one: query for events and "handle" them.
             sensor_tasking_events = defaultdict(list)

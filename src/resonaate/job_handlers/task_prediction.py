@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import zeros
-from strmbrkr import Job, KeyValueStore
+from strmbrkr import Job
 
 # Local Imports
+from ..agents.agent_cache import AgentCaches
 from ..tasking.predictions import predictObservation
 from .base import CallbackRegistration, JobHandler
 
@@ -40,16 +40,14 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
         :``"reward_matrix"``: (``ndarray``): numeric reward array for each sensor.
         :``"estimate_id"``: (``int``): ID of the :class:`.EstimateAgent` to calculate metrics for.
     """
-    sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
-    estimate_agents = loads(KeyValueStore.getValue("estimate_agents"))
-    estimate = estimate_agents[estimate_id]
+    estimate = AgentCaches.estimates.getAgent(estimate_id)
 
     # Ensure the visibility and metric matrices are the same scale as in the tasking engine
     visibility = zeros(len(sensor_list), dtype=bool)
     metric_matrix = zeros((len(sensor_list), len(reward.metrics)), dtype=float)
 
     for sensor_index, sensor_id in enumerate(sensor_list):
-        sensor_agent = sensor_agents[sensor_id]
+        sensor_agent = AgentCaches.sensors.getAgent(sensor_id)
 
         # Attempt predicted observations, in order to perform sensor tasking
         # Only calculate metrics if the estimate is observable

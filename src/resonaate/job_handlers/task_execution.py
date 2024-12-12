@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-# Standard Library Imports
-from pickle import loads
-
 # Third Party Imports
 from numpy import array, where
-from strmbrkr import Job, KeyValueStore
+from strmbrkr import Job
 
 # Local Imports
+from ..agents.agent_cache import AgentCaches
 from .base import CallbackRegistration, JobHandler
 
 
@@ -31,12 +29,10 @@ def asyncExecuteTasking(tasked_sensor_ids: list[int], target_id: int) -> dict:
         :``"missed_observations"``: (``list``): list of :class:`.MissedObservation` objects of :class:`.Target_agent`
         :``"sensor_info_list"``: (``list``): list of dict containing updates to sensing_agent.sensors
     """
-    sensor_agents = loads(KeyValueStore.getValue("sensor_agents"))
-    target_agents = loads(KeyValueStore.getValue("target_agents"))
-    estimate_agent = loads(KeyValueStore.getValue("estimate_agents"))[target_id]
+    target_agents = AgentCaches.targets.getCache()
+    primary_tgt = target_agents[target_id]
 
     # Remove Primary Target from Target list
-    primary_tgt = target_agents[target_id]
     del target_agents[target_id]
     background_targets = list(target_agents.values())
 
@@ -44,8 +40,9 @@ def asyncExecuteTasking(tasked_sensor_ids: list[int], target_id: int) -> dict:
     unsuccessful_obs = []
     sensor_info_list = []
     if len(tasked_sensor_ids) > 0:
+        estimate_agent = AgentCaches.estimates.getAgent(target_id)
         for sensor_id in tasked_sensor_ids:
-            sensing_agent = sensor_agents[sensor_id]
+            sensing_agent = AgentCaches.sensors.getAgent(sensor_id)
             (
                 made_obs,
                 missed_obs,

@@ -10,6 +10,7 @@ from numpy import zeros
 from sqlalchemy.orm import Query
 
 # Local Imports
+from ...agents.agent_cache import AgentCaches
 from ...data.epoch import Epoch
 from ...data.events import EventScope, handleRelevantEvents
 from ...data.observation import Observation
@@ -188,11 +189,11 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         # [NOTE]: Measurement metadata isn't saved to the DB. This attaches the correct Measurement metadata to
         #   imported Observations so they can be processed
-        sensor_agents = self._fetchSensorAgents()
-        return [
-            self._createLoadedObs(observation, sensor_agents[observation.sensor_id].sensors)
-            for observation in imported_observations
-        ]
+        loaded_obs = []
+        for observation in imported_observations:
+            sensor_agent = AgentCaches.sensors.getAgent(observation.sensor_id)
+            loaded_obs.append(self._createLoadedObs(observation, sensor_agent.sensors))
+        return loaded_obs
 
     def _createLoadedObs(self, observation: Observation, sensor: Sensor) -> Observation:
         observation.measurement = sensor.measurement

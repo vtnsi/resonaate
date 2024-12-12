@@ -5,7 +5,6 @@ from __future__ import annotations
 # Standard Library Imports
 import json
 import os.path
-import pickle
 from collections import defaultdict
 from enum import Flag
 from typing import TYPE_CHECKING
@@ -13,9 +12,10 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 from numpy import ndarray
 from sqlalchemy.orm import Query
-from strmbrkr import Job, KeyValueStore
+from strmbrkr import Job
 
 # Local Imports
+from ..agents.agent_cache import AgentCaches
 from ..common.behavioral_config import BehavioralConfig
 from ..common.exceptions import AgentProcessingError, MissingEphemerisError
 from ..common.utilities import getTypeString
@@ -150,7 +150,7 @@ class PropagationJobHandler(JobHandler):
             msg = f"Job hang: {file_name}"
             self.logger.error(msg)
 
-    def _getProblemAgentInformation(self, job, registrant):  # noqa: C901
+    def _getProblemAgentInformation(self, job, registrant):
         """Parse data from a bad :class:`.Job` & :class:`~.agent_base.Agent` pair.
 
         Args:
@@ -172,12 +172,10 @@ class PropagationJobHandler(JobHandler):
                 },
             )
         if getTypeString(registrant) == "EstimateAgent":
-            target_agents = pickle.loads(KeyValueStore.getValue("target_agents"))
-            tgt_agent = None
-            for tgt_id, target in target_agents.items():
-                if tgt_id == registrant.simulation_id:
-                    tgt_agent = target
-                    break
+            try:
+                tgt_agent = AgentCaches.targets.getAgent(registrant.simulation_id)
+            except RuntimeError:
+                tgt_agent = None
 
             data.update(registrant.nominal_filter.getPredictionResult())
             data.update(

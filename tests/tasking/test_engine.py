@@ -443,7 +443,6 @@ def testLoadImportedObservation(
         centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
     """
     mocked_importer_db.getData = MagicMock()
-    centralized_tasking_engine._fetchSensorAgents = MagicMock()
     centralized_tasking_engine._importer_db = mocked_importer_db
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     # Create mock observations
@@ -471,21 +470,19 @@ def testLoadImportedObservation(
     obs_2.sensor_id = sensing_agent_2_id
     obs_2.makeDictionary = MagicMock()
 
+    patcher = patch("resonaate.tasking.engine.centralized_engine.AgentCaches", autospec=True)
+    mocked_agent_caches = patcher.start()
+    mocked_agent_caches.sensors.getAgent = MagicMock()
+    mocked_agent_caches.sensors.getAgent.side_effect = getMockedSensingAgentObject
+
     # Test observations that aren't from duplicate sensors
     mocked_importer_db.getData.return_value = [obs_1, obs_2]
-    sensing_agent_1 = getMockedSensingAgentObject(sensing_agent_1_id)
-    sensing_agent_2 = getMockedSensingAgentObject(sensing_agent_2_id)
-    centralized_tasking_engine._fetchSensorAgents.return_value = {
-        sensing_agent_1_id: sensing_agent_1,
-        sensing_agent_2_id: sensing_agent_2,
-    }
     imported_obs = centralized_tasking_engine.loadImportedObservations(datetime_epoch)
 
     # Assert mock calls
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_not_called()
     mocked_importer_db.getData.assert_called_once()
-    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
         assert isinstance(imported_ob, Observation)
 
@@ -493,7 +490,6 @@ def testLoadImportedObservation(
     mocked_importer_db.getData.reset_mock()
     obs_1.makeDictionary.reset_mock()
     obs_2.makeDictionary.reset_mock()
-    centralized_tasking_engine._fetchSensorAgents.reset_mock()
 
     # Test observations that are from duplicate sensors
     obs_2.pos_x_km = 7000
@@ -509,7 +505,6 @@ def testLoadImportedObservation(
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_called_once()
     mocked_importer_db.getData.assert_called_once()
-    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
         assert isinstance(imported_ob, Observation)
 
@@ -517,7 +512,6 @@ def testLoadImportedObservation(
     mocked_importer_db.getData.reset_mock()
     obs_1.makeDictionary.reset_mock()
     obs_2.makeDictionary.reset_mock()
-    centralized_tasking_engine._fetchSensorAgents.reset_mock()
 
     # Test no imported observations
     mocked_importer_db.getData.return_value = []
@@ -525,9 +519,10 @@ def testLoadImportedObservation(
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_not_called()
     mocked_importer_db.getData.assert_called_once()
-    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
         assert isinstance(imported_ob, Observation)
+
+    patcher.stop()
 
 
 @patch.multiple(TaskingEngine, __abstractmethods__=set())

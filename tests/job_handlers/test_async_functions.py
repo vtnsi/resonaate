@@ -9,8 +9,6 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
-import resonaate.estimation.sequential.unscented_kalman_filter
-import resonaate.job_handlers.task_prediction
 from resonaate.common.labels import MetricTypeLabel
 from resonaate.data.observation import Observation
 from resonaate.job_handlers.task_prediction import asyncCalculateReward
@@ -20,11 +18,8 @@ from resonaate.tasking.rewards import SimpleSummationReward
 # Type Checking Imports
 if TYPE_CHECKING:
     # Standard Library Imports
-    from collections.abc import Callable
-    from typing import Any
 
     # RESONAATE Imports
-    from resonaate.agents.agent_base import Agent
     from resonaate.agents.estimate_agent import EstimateAgent
     from resonaate.agents.sensing_agent import SensingAgent
 
@@ -49,32 +44,26 @@ def getMetricList(stub_metric_class: Metric):
 
 
 def testAsyncCalculateReward(
-    monkeypatch: pytest.MonkeyPatch,
     estimate_agent: EstimateAgent,
     sensor_agent: SensingAgent,
     metric_list: list[Metric],
-    mocked_kvs_get_func: Callable[[str], dict[int, Agent]],
-    mocked_pickle_loads_func: Callable[[Any], object],
 ):
     """Test asyncCalculateReward().
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Patch variable
         estimate_agent (EstimateAgent): Mock Estimate Agent
         sensor_agent (SensingAgent): Mock Sensor Agent
         metric_list (list[Metric]): list of metric objects
-        mocked_kvs_get_func (Callable): mocked version of KVS.getValue() that returns agent dict
-        mocked_pickle_loads_func (Callable): mocked version of pickle.loads() that bypasses any serialization
     """
     sensor_agent.simulation_id = 11111
     reward_class = SimpleSummationReward(metric_list)
 
-    monkeypatch.setattr(
-        resonaate.job_handlers.task_prediction.KeyValueStore,
-        "getValue",
-        mocked_kvs_get_func,
-    )
-    monkeypatch.setattr(resonaate.job_handlers.task_prediction, "loads", mocked_pickle_loads_func)
+    patcher = patch("resonaate.job_handlers.task_prediction.AgentCaches", autospec=True)
+    mocked_agent_caches = patcher.start()
+    mocked_agent_caches.sensors.getAgent = MagicMock()
+    mocked_agent_caches.sensors.getAgent.return_value = sensor_agent
+    mocked_agent_caches.estimates.getAgent = MagicMock()
+    mocked_agent_caches.estimates.getAgent.return_value = estimate_agent
 
     base_reward = 10.0
     # Predicted Observation

@@ -69,6 +69,7 @@ ______________________________________________________________________
 - `estimation` module factory method conventions rely more on config objects and mappings, rather than conditionals
 - `tasking` module factory method conventions rely more on config objects and mappings, rather than custom registries
 - refactored reduction parameters (see `pysics.transforms.reductions.ReductionParams`)
+- agent caching methodology now available via `agents.agent_cache` module
 
 ### Deprecated
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 # Standard Library Imports
 import json
 import os
-import pickle
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -14,9 +13,9 @@ import numpy as np
 from scipy.linalg import cholesky, inv, norm
 from scipy.spatial.distance import mahalanobis
 from sqlalchemy.orm import Query
-from strmbrkr import KeyValueStore
 
 # Local Imports
+from ..agents.agent_cache import AgentCaches
 from ..common.behavioral_config import BehavioralConfig
 from ..common.utilities import getTypeString
 from ..data import getDBConnection
@@ -69,8 +68,6 @@ def checkThreeSigmaObs(current_obs: Observation, sigma: int = 3) -> list:
     Returns:
         list: _description_ #TODO: add documentation on what exactly this thing returns
     """
-    target_agents = pickle.loads(KeyValueStore.getValue("target_agents"))
-    sensor_agents = pickle.loads(KeyValueStore.getValue("sensor_agents"))
     shared_interface = getDBConnection()
     filenames = []
     for observation in current_obs:
@@ -81,7 +78,7 @@ def checkThreeSigmaObs(current_obs: Observation, sigma: int = 3) -> list:
         ephem = shared_interface.getData(query, multi=False)
 
         # Calculate SEZ vector from ephemeris state
-        sensor_agent = sensor_agents[observation.unique_id]
+        sensor_agent = AgentCaches.sensors.getAgent(observation.unique_id)
         ob_ephem = eci2ecef(np.asarray(ephem.eci), julianDateToDatetime(observation.julian_date))
         ephem_minus_sensor_ecef = ob_ephem - sensor_agent.ecef_state
         ephem_sez = ecef2sez(
@@ -135,7 +132,7 @@ def checkThreeSigmaObs(current_obs: Observation, sigma: int = 3) -> list:
         noise_limit = norm(sigma * sensor_agent.sensors._sqrt_noise_covar)  # noqa: SLF001
 
         if sez_diff > 1e-8 or dist > sigma or meas_diff > noise_limit:
-            target = target_agents[observation.target_id]
+            target = AgentCaches.targets.getAgent(observation.target_id)
 
             # Base debug info
             description = {
@@ -236,7 +233,6 @@ def logFilterStep(
         filter_obj,
         observations,
         truth_state,
-        pickle.loads(KeyValueStore.getValue("sensor_agents")),
     )
 
     # Write information to output file
@@ -252,7 +248,6 @@ def createFilterDebugDict(
     filter_obj: SequentialFilter,
     observations: list,
     truth_state: np.ndarray,
-    sensor_agents: dict,
 ) -> dict:
     """Create the dictionary used to log filter step information.
 
@@ -260,7 +255,6 @@ def createFilterDebugDict(
         filter_obj (:class:`.SequentialFilter`): filter object which is being logged
         observations (list): :class:`.Observation` objects associated with this filter step
         truth_state (numpy.ndarray): 6x1 ECI state vector of the estimate's truth dynamics
-        sensor_agents (dict): collection of :class:`.SensingAgent` objects in the simulation
 
     Returns:
         dict: complete dictionary with relevant filter step information
@@ -276,7 +270,7 @@ def createFilterDebugDict(
 
     # Update debugging information from valid observation
     for item, observation in enumerate(observations):
-        sensor_agent = sensor_agents[observation.unique_id]
+        sensor_agent = AgentCaches.sensors.getAgent(observation.unique_id)
         description[f"observation_{item}"] = observation.makeDictionary()
         description[f"facility_{item}"] = sensor_agent.getCurrentEphemeris().makeDictionary()
         description[f"facility_{item}"].update(
