@@ -12,6 +12,7 @@ from numpy import mean, ndarray
 
 # RESONAATE Imports
 from resonaate.physics.transforms.methods import ecef2lla, eci2ecef
+from resonaate.physics.transforms.reductions import ReductionParams
 from resonaate.scenario import buildScenarioFromConfigFile
 
 if TYPE_CHECKING:
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
     # RESONAATE Imports
     from resonaate.agents.target_agent import TargetAgent
     from resonaate.dynamics import Dynamics
+    from resonaate.dynamics.integration_events import ScheduledEventType
+    from resonaate.dynamics.integration_events.station_keeping import StationKeeper
     from resonaate.physics.time.stardate import ScenarioTime
 
 
@@ -33,6 +36,8 @@ class PropagateSubmission:
     init_time: float
     final_time: float
     init_eci: ndarray
+    station_keeping: Optional[list[StationKeeper]] = None
+    scheduled_events: Optional[list[ScheduledEventType]] = None
 
 
 @dataclass
@@ -52,7 +57,9 @@ def asyncPropagate(submission: PropagateSubmission):
     new_eci = dyna.propagate(
         submission.init_time,
         submission.final_time,
-        submission.init_eci
+        submission.init_eci,
+        station_keeping=submission.station_keeping,
+        scheduled_events=submission.scheduled_events,
     )
     new_dt = submission.init_dt + timedelta(seconds=submission.final_time - submission.init_time)
     new_ecef = eci2ecef(new_eci, new_dt)
@@ -83,6 +90,12 @@ class RayPropagator:
         for target in self._targets.values():
             assert target.datetime_epoch == step_start
             assert target.dt_step == dt_step
+
+            target.prunePropagateEvents()
+            reductions = ReductionParams.build(step_start)
+            for item in target.station_keeping:
+                item.reductions = reductions
+
             self._unfinished_tasks.append(
                 asyncPropagate.remote(
                     PropagateSubmission(
@@ -91,7 +104,9 @@ class RayPropagator:
                         init_dt=target.datetime_epoch,
                         init_time=target.time,
                         final_time=target.time + target.dt_step,
-                        init_eci=target.eci_state
+                        init_eci=target.eci_state,
+                        station_keeping=target.station_keeping,
+                        scheduled_events=target.propagate_event_queue,
                     )
                 )
             )
