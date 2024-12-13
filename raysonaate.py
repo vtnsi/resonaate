@@ -15,9 +15,13 @@ from resonaate.physics.transforms.methods import ecef2lla, eci2ecef
 from resonaate.scenario import buildScenarioFromConfigFile
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Optional
+
     # RESONAATE Imports
     from resonaate.agents.target_agent import TargetAgent
     from resonaate.dynamics import Dynamics
+    from resonaate.physics.time.stardate import ScenarioTime
 
 
 @dataclass
@@ -62,46 +66,56 @@ def asyncPropagate(submission: PropagateSubmission):
         final_lla=new_lla
     )
 
-STEP = 300
+class RayPropagator:
+
+    def __init__(self, targets: dict[int, TargetAgent]):
+        """TODO"""
+        self._targets = targets
+        self._remote_dyna_map: dict[int, Dynamics] = {}
+        """values are technically ray remote object refs"""
+        for sim_id, target in self._targets.items():
+            self._remote_dyna_map[sim_id] = ray.put(target.dynamics)
+        
+        self._unfinished_tasks = []
+
+    def propagateStep(self, step_start: datetime, dt_step: ScenarioTime):
+        """TODO"""
+        for target in self._targets.values():
+            assert target.datetime_epoch == step_start
+            assert target.dt_step == dt_step
+            self._unfinished_tasks.append(
+                asyncPropagate.remote(
+                    PropagateSubmission(
+                        agent_id=target.simulation_id,
+                        dynamics=self._remote_dyna_map[target.simulation_id],
+                        init_dt=target.datetime_epoch,
+                        init_time=target.time,
+                        final_time=target.time + target.dt_step,
+                        init_eci=target.eci_state
+                    )
+                )
+            )
+
+        while self._unfinished_tasks:
+            finished_tasks, self._unfinished_tasks = ray.wait(self._unfinished_tasks)
+            result: PropagateResult = ray.get(finished_tasks[0])
+            self._targets[result.agent_id].rayUpdate(result)
+
 
 def rayPropagation():
     ray.init()
     scenario = buildScenarioFromConfigFile("configs/json/main_init.json", start_workers=False)
 
-    remote_dyna_map = {}
-    for sim_id, target in scenario.target_agents.items():
-        remote_dyna_map[sim_id] = ray.put(target.dynamics)
+    ray_prop = RayPropagator(scenario.target_agents)
 
     times = []
     for it in range(12):
         start = time()
-        rayPropStep(scenario, remote_dyna_map)
+        ray_prop.propagateStep(scenario.clock.datetime_epoch, scenario.clock.dt_step)
+        scenario.clock.ticToc()
         times.append(time() - start)
-        print(f"{STEP}s step took {times[it]}")
+        print(f"{scenario.clock.dt_step}s step took {times[it]}")
     print(f"Mean step duration: {mean(times)}")
-
-
-def rayPropStep(scenario, remote_dyna_map):
-    unfinished_tasks = []
-    for target in scenario.target_agents.values():
-        target: TargetAgent
-        unfinished_tasks.append(
-            asyncPropagate.remote(
-                PropagateSubmission(
-                    agent_id=target.simulation_id,
-                    dynamics=remote_dyna_map[target.simulation_id],
-                    init_dt=target.datetime_epoch,
-                    init_time=target.time,
-                    final_time=target.time + STEP,
-                    init_eci=target.eci_state
-                )
-            )
-        )
-
-    while unfinished_tasks:
-        finished_tasks, unfinished_tasks = ray.wait(unfinished_tasks)
-        result: PropagateResult = ray.get(finished_tasks[0])
-        scenario.target_agents[result.agent_id].rayUpdate(result)
 
 
 def sanityCheck():
@@ -109,7 +123,7 @@ def sanityCheck():
 
     print(f"{datetime.now().isoformat()} - Starting serial...")
     for target in scenario.target_agents.values():
-        new_time = target.time + STEP
+        new_time = target.time + scenario.clock.dt_step
         new_state = target.dynamics.propagate(target.time, new_time, target.eci_state)
         target.time = new_time
         target.eci_state = new_state
