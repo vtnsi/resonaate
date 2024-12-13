@@ -46,7 +46,8 @@ class PropagateResult:
 def asyncPropagate(submissions: list[PropagateSubmission]):
     results = []
     for submission in submissions:
-        new_eci = submission.dynamics.propagate(
+        dyna = ray.get(submission.dynamics)
+        new_eci = dyna.propagate(
             submission.init_time,
             submission.final_time,
             submission.init_eci
@@ -73,16 +74,20 @@ def rayPropagation():
     ray.init()
     scenario = buildScenarioFromConfigFile("configs/json/main_init.json", start_workers=False)
 
+    remote_dyna_map = {}
+    for sim_id, target in scenario.target_agents.items():
+        remote_dyna_map[sim_id] = ray.put(target.dynamics)
+
     times = []
     for it in range(12):
         start = time()
-        rayPropStep(scenario)
+        rayPropStep(scenario, remote_dyna_map)
         times.append(time() - start)
         print(f"{STEP}s step took {times[it]}")
     print(f"Mean step duration: {mean(times)}")
 
 
-def rayPropStep(scenario):
+def rayPropStep(scenario, remote_dyna_map):
     unfinished_tasks = []
     submit_buffer = []
     for target in scenario.target_agents.values():
@@ -90,7 +95,7 @@ def rayPropStep(scenario):
         submit_buffer.append(
             PropagateSubmission(
                 agent_id=target.simulation_id,
-                dynamics=target.dynamics,
+                dynamics=remote_dyna_map[target.simulation_id],
                 init_dt=target.datetime_epoch,
                 init_time=target.time,
                 final_time=target.time + STEP,
