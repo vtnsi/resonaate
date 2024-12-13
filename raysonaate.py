@@ -43,30 +43,24 @@ class PropagateResult:
 
 
 @ray.remote
-def asyncPropagate(submissions: list[PropagateSubmission]):
-    results = []
-    for submission in submissions:
-        dyna = ray.get(submission.dynamics)
-        new_eci = dyna.propagate(
-            submission.init_time,
-            submission.final_time,
-            submission.init_eci
-        )
-        new_dt = submission.init_dt + timedelta(seconds=submission.final_time - submission.init_time)
-        new_ecef = eci2ecef(new_eci, new_dt)
-        new_lla = ecef2lla(new_ecef)
-        results.append(PropagateResult(
-            agent_id=submission.agent_id,
-            final_time=submission.final_time,
-            prev_state=submission.init_eci,
-            final_eci=new_eci,
-            final_ecef=new_ecef,
-            final_lla=new_lla
-        ))
-    return results
-
-SUBMIT_SIZE = 30
-"""Number of RSOs to include in a propagation submission."""
+def asyncPropagate(submission: PropagateSubmission):
+    dyna = ray.get(submission.dynamics)
+    new_eci = dyna.propagate(
+        submission.init_time,
+        submission.final_time,
+        submission.init_eci
+    )
+    new_dt = submission.init_dt + timedelta(seconds=submission.final_time - submission.init_time)
+    new_ecef = eci2ecef(new_eci, new_dt)
+    new_lla = ecef2lla(new_ecef)
+    return PropagateResult(
+        agent_id=submission.agent_id,
+        final_time=submission.final_time,
+        prev_state=submission.init_eci,
+        final_eci=new_eci,
+        final_ecef=new_ecef,
+        final_lla=new_lla
+    )
 
 STEP = 300
 
@@ -89,35 +83,25 @@ def rayPropagation():
 
 def rayPropStep(scenario, remote_dyna_map):
     unfinished_tasks = []
-    submit_buffer = []
     for target in scenario.target_agents.values():
         target: TargetAgent
-        submit_buffer.append(
-            PropagateSubmission(
-                agent_id=target.simulation_id,
-                dynamics=remote_dyna_map[target.simulation_id],
-                init_dt=target.datetime_epoch,
-                init_time=target.time,
-                final_time=target.time + STEP,
-                init_eci=target.eci_state
-            )
-        )
-        if len(submit_buffer) == SUBMIT_SIZE:
-            unfinished_tasks.append(
-                asyncPropagate.remote(submit_buffer)
-            )
-            submit_buffer = []
-    if submit_buffer:
         unfinished_tasks.append(
-            asyncPropagate.remote(submit_buffer)
+            asyncPropagate.remote(
+                PropagateSubmission(
+                    agent_id=target.simulation_id,
+                    dynamics=remote_dyna_map[target.simulation_id],
+                    init_dt=target.datetime_epoch,
+                    init_time=target.time,
+                    final_time=target.time + STEP,
+                    init_eci=target.eci_state
+                )
+            )
         )
-        del submit_buffer
 
     while unfinished_tasks:
         finished_tasks, unfinished_tasks = ray.wait(unfinished_tasks)
-        results: list[PropagateResult] = ray.get(finished_tasks[0])
-        for result in results:
-            scenario.target_agents[result.agent_id].rayUpdate(result)
+        result: PropagateResult = ray.get(finished_tasks[0])
+        scenario.target_agents[result.agent_id].rayUpdate(result)
 
 
 def sanityCheck():
