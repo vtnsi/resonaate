@@ -51,7 +51,7 @@ def asyncPropagate(submission: PropagateSubmission):
 
 STEP = 300
 
-def main():
+def rayPropagation():
     ray.init()
     scenario = buildScenarioFromConfigFile("configs/json/main_init.json", start_workers=False)
 
@@ -85,5 +85,17 @@ def main():
     print(f"{datetime.now().isoformat()} - Done!")
 
 
+def sanityCheck():
+    scenario = buildScenarioFromConfigFile("configs/json/main_init.json", start_workers=False)
+
+    print(f"{datetime.now().isoformat()} - Starting serial...")
+    for target in scenario.target_agents.values():
+        new_time = target.time + STEP
+        new_state = target.dynamics.propagate(target.time, new_time, target.eci_state)
+        target.time = new_time
+        target.eci_state = new_state
+    print(f"{datetime.now().isoformat()} - Done!")
+
+
 if __name__ == "__main__":
-    main()
+    sanityCheck()
