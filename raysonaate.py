@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -17,45 +18,70 @@ if TYPE_CHECKING:
     from resonaate.dynamics import Dynamics
 
 
+@dataclass
+class PropagateSubmission:
+
+    agent_id: int
+    dynamics: Dynamics
+    init_time: float
+    final_time: float
+    init_state: ndarray
+
+
+@dataclass
+class PropagateResult:
+
+    agent_id: int
+    final_time: float
+    final_state: ndarray
+
+
 @ray.remote
-class RayTargetAgent:
+def asyncPropagate(submission: PropagateSubmission):
+    new_state = submission.dynamics.propagate(
+        submission.init_time,
+        submission.final_time,
+        submission.init_state
+    )
+    return PropagateResult(
+        submission.agent_id,
+        submission.final_time,
+        new_state
+    )
 
-    def __init__(self, target_agent: TargetAgent):
-        self._target_agent = target_agent
-
-    def propagate(self, step: float):
-        new_time = self._target_agent.time + step
-        new_state = self._target_agent.dynamics.propagate(
-            self._target_agent.time,
-            new_time,
-            self._target_agent.eci_state
-        )
-        self._target_agent.time = new_time
-        self._target_agent.eci_state = new_state
-        return new_state
-
+STEP = 300
 
 def main():
-    ray.init(num_cpus=6)
+    ray.init()
     scenario = buildScenarioFromConfigFile("configs/json/main_init.json", start_workers=False)
 
-    print("Initializing actors...")
-    actors = []
-    for target in scenario.target_agents.values():
-        actors.append(
-            RayTargetAgent.remote(target)
-        )
-
     print(f"{datetime.now().isoformat()} - Queuing actor propagation...")
-    state_promises = []
-    for actor in actors:
-        state_promises.append(
-            actor.propagate.remote(300)
+    unfinished_tasks = []
+    for target in scenario.target_agents.values():
+        submission = PropagateSubmission(
+            target.simulation_id,
+            target.dynamics,
+            target.time,
+            target.time + STEP,
+            target.eci_state
         )
+        unfinished_tasks.append(
+            asyncPropagate.remote(submission)
+        )
+    
+    init_task_count = len(unfinished_tasks)
+    print_seg_size = int(init_task_count / 4)
+    completed_task_count = 0
+    while unfinished_tasks:
+        finished_tasks, unfinished_tasks = ray.wait(unfinished_tasks)
+        result: PropagateResult = ray.get(finished_tasks[0])
+        scenario.target_agents[result.agent_id].time = result.final_time
+        scenario.target_agents[result.agent_id].eci_state = result.final_state
 
-    print("Retrieving new states...")
-    for promise in state_promises:
-        ray.get(promise)
+        completed_task_count += 1
+        if completed_task_count % print_seg_size == 0:
+            print(f"Progress: {completed_task_count:03d} / {init_task_count:03d}")
+
     print(f"{datetime.now().isoformat()} - Done!")
 
 
