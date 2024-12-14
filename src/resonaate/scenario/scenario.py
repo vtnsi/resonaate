@@ -32,6 +32,7 @@ from ..job_handlers.estimate_prediction import EstimatePredictionJobHandler
 from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
+from ..raysonaate.agent_propagation import AgentPropagator
 from .config.agent_config import AgentConfig, SensingAgentConfig
 
 # Type Checking Imports
@@ -182,15 +183,13 @@ class Scenario(ParallelMixin):
         self.database = getDBConnection()
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents
-        self._agent_propagation_handler = AgentPropagationJobHandler(
-            importer_db_path=importer_db_path,
-        )
+        self._agent_propagator = AgentPropagator()
 
         for target_agent in self.target_agents.values():
-            self._agent_propagation_handler.registerCallback(target_agent)
+            self._agent_propagator.registerAgent(target_agent)
 
         for sensor_agent in self.sensor_agents.values():
-            self._agent_propagation_handler.registerCallback(sensor_agent)
+            self._agent_propagator.registerAgent(sensor_agent)
 
         # Initialize estimate-related job queues, assign callback for all estimate agents
         self._estimate_update_handler = EstimateUpdateJobHandler()
@@ -327,12 +326,7 @@ class Scenario(ParallelMixin):
         self.current_julian_date = self.clock.julian_date_epoch
 
         # Propagate truth model & predict estimate forward in time.
-        self._agent_propagation_handler.executeJobs(
-            prior_julian_date=prior_jd,
-            julian_date=self.clock.julian_date_epoch,
-            epoch_time=self.clock.time,
-            datetime_epoch=self.clock.datetime_epoch,
-        )
+        self._agent_propagator.propagateStep(prior_datetime, self.clock.dt_step)
 
         if not self.scenario_config.propagation.truth_simulation_only:
             AgentCaches.targets.updateCache(self.target_agents)
@@ -475,7 +469,7 @@ class Scenario(ParallelMixin):
         self._estimate_agents[target_spec.id] = estimate_agent
 
         self._tasking_engines[tasking_engine_id].addTarget(target_agent.simulation_id)
-        self._agent_propagation_handler.registerCallback(target_agent)
+        # [TODO] self._agent_propagation_handler.registerCallback(target_agent)
         self._estimate_prediction_handler.registerCallback(estimate_agent)
 
     def removeTarget(self, agent_id: int, tasking_engine_id: int) -> None:
@@ -489,7 +483,7 @@ class Scenario(ParallelMixin):
             err = f"Target '{agent_id} doesn't exist in this scenario."
             raise AgentRemovalError(err)
 
-        self._agent_propagation_handler.deregisterCallback(agent_id)
+        # [TODO] self._agent_propagation_handler.deregisterCallback(agent_id)
         del self.target_agents[agent_id]
         self._estimate_prediction_handler.deregisterCallback(agent_id)
         del self._estimate_agents[agent_id]
@@ -546,7 +540,7 @@ class Scenario(ParallelMixin):
         self._sensor_agents[sensing_agent.simulation_id] = sensing_agent
 
         self._tasking_engines[tasking_engine_id].addSensor(sensing_agent.simulation_id)
-        self._agent_propagation_handler.registerCallback(sensing_agent)
+        # [TODO] self._agent_propagation_handler.registerCallback(sensing_agent)
 
     def removeSensor(self, agent_id: int, tasking_engine_id: int) -> None:
         """Remove a sensor from this :class:`.Scenario`.
@@ -600,6 +594,5 @@ class Scenario(ParallelMixin):
         for engine in self._tasking_engines.values():
             engine.shutdown()
 
-        self._agent_propagation_handler.shutdown()
         self._estimate_prediction_handler.shutdown()
         self._estimate_update_handler.shutdown()
