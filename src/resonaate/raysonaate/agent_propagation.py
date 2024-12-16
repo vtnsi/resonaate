@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 import ray
 
-# RESONAATE Imports
-from resonaate.physics.transforms.methods import ecef2lla, eci2ecef
-from resonaate.physics.transforms.reductions import ReductionParams
+# Local Imports
+from ..physics.transforms.methods import ecef2lla, eci2ecef
+from ..physics.transforms.reductions import ReductionParams
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -19,13 +19,13 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
-    # RESONAATE Imports
-    from resonaate.agents.sensing_agent import SensingAgent
-    from resonaate.agents.target_agent import TargetAgent
-    from resonaate.dynamics import Dynamics
-    from resonaate.dynamics.integration_events import ScheduledEventType
-    from resonaate.dynamics.integration_events.station_keeping import StationKeeper
-    from resonaate.physics.time.stardate import ScenarioTime
+    # Local Imports
+    from ..agents.sensing_agent import SensingAgent
+    from ..agents.target_agent import TargetAgent
+    from ..dynamics import Dynamics
+    from ..dynamics.integration_events import ScheduledEventType
+    from ..dynamics.integration_events.station_keeping import StationKeeper
+    from ..physics.time.stardate import ScenarioTime
 
 
 @dataclass
@@ -118,6 +118,7 @@ class AgentPropagator:
         self._agents: dict[int, Union[TargetAgent, SensingAgent]] = {}
         self._remote_dyna_map: dict[int, Dynamics] = {}  # values are technically ray remote object refs
         self._unfinished_tasks = []
+        self._result_map = {}
 
     def registerAgent(self, agent: Union[TargetAgent, SensingAgent]):
         """
@@ -150,22 +151,22 @@ class AgentPropagator:
             for item in target.station_keeping:
                 item.reductions = reductions
 
-            self._unfinished_tasks.append(
-                asyncPropagate.remote(
-                    PropagateSubmission(
-                        agent_id=target.simulation_id,
-                        dynamics=self._remote_dyna_map[target.simulation_id],
-                        init_dt=target.datetime_epoch,
-                        init_time=target.time,
-                        final_time=target.time + target.dt_step,
-                        init_eci=target.eci_state,
-                        station_keeping=target.station_keeping,
-                        scheduled_events=target.propagate_event_queue,
-                    )
+            obj_ref = asyncPropagate.remote(
+                PropagateSubmission(
+                    agent_id=target.simulation_id,
+                    dynamics=self._remote_dyna_map[target.simulation_id],
+                    init_dt=target.datetime_epoch,
+                    init_time=target.time,
+                    final_time=target.time + target.dt_step,
+                    init_eci=target.eci_state,
+                    station_keeping=target.station_keeping,
+                    scheduled_events=target.propagate_event_queue,
                 )
             )
+            self._unfinished_tasks.append(obj_ref)
+            self._result_map[obj_ref] = target
 
         while self._unfinished_tasks:
             finished_tasks, self._unfinished_tasks = ray.wait(self._unfinished_tasks)
             result: PropagateResult = ray.get(finished_tasks[0])
-            self._agents[result.agent_id].rayUpdate(result)
+            self._result_map[finished_tasks[0]].rayUpdate(result)
