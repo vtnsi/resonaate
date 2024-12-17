@@ -480,7 +480,7 @@ class Scenario(ParallelMixin):
 
         self._tasking_engines[tasking_engine_id].addTarget(target_agent.simulation_id)
         # [TODO] self._agent_propagation_handler.registerCallback(target_agent)
-        self._estimate_prediction_handler.registerCallback(estimate_agent)
+        # [TODO] self._estimate_prediction_handler.registerCallback(estimate_agent)
 
     def removeTarget(self, agent_id: int, tasking_engine_id: int) -> None:
         """Remove a target from this :class:`.Scenario`.
@@ -495,7 +495,7 @@ class Scenario(ParallelMixin):
 
         # [TODO] self._agent_propagation_handler.deregisterCallback(agent_id)
         del self.target_agents[agent_id]
-        self._estimate_prediction_handler.deregisterCallback(agent_id)
+        # [TODO] self._estimate_prediction_handler.deregisterCallback(agent_id)
         del self._estimate_agents[agent_id]
         self._tasking_engines[tasking_engine_id].removeTarget(agent_id)
 
@@ -604,5 +604,4 @@ class Scenario(ParallelMixin):
         for engine in self._tasking_engines.values():
             engine.shutdown()
 
-        self._estimate_prediction_handler.shutdown()
         self._estimate_update_handler.shutdown()
