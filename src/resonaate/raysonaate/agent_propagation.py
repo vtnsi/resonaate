@@ -11,6 +11,7 @@ import ray
 # Local Imports
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..physics.transforms.reductions import ReductionParams
+from . import JobExecutor, Registration
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -110,63 +111,59 @@ def asyncPropagate(submission: PropagateSubmission) -> PropagateResult:
         final_lla=new_lla
     )
 
-class AgentPropagator:
-    """Class encapsulating process for propagating Agents using ray parallelization."""
 
-    def __init__(self):
-        """Initialize internal properties."""
-        self._agents: dict[int, Union[TargetAgent, SensingAgent]] = {}
-        self._remote_dyna_map: dict[int, Dynamics] = {}  # values are technically ray remote object refs
-        self._unfinished_tasks = []
-        self._result_map = {}
+class PropagateRegistration(Registration):
+    """Encapsulates a propagation step into a :class:`.Registration`."""
+
+    def __init__(self, registrant: Union[TargetAgent, SensingAgent]):
+        """Initialize a :class:`.PropagateRegistration`.
+
+        This initialization has a side effect of putting the `registrant`'s :class:`.Dynamics`
+        class on `ray`'s remote object store because the object is relatively static and this will
+        reduce the amount of times that it will need to be serialized.
+        """
+        super().__init__(registrant)
+        self._remote_dyna_ref = ray.put(registrant.dynamics)
+
+    def generateSubmission(self) -> PropagateSubmission:
+        """Generate a :class:`.PropagateSubmission` for the :attr:`._registrant`'s current time step."""
+        self._registrant.prunePropagateEvents()
+        reductions = ReductionParams.build(self._registrant.datetime_epoch)
+        for item in self._registrant.station_keeping:
+            item.reductions = reductions
+
+        return PropagateSubmission(
+            agent_id=self._registrant.simulation_id,
+            dynamics=self._remote_dyna_ref,
+            init_dt=self._registrant.datetime_epoch,
+            init_time=self._registrant.time,
+            final_time=self._registrant.time + self._registrant.dt_step,
+            init_eci=self._registrant.eci_state,
+            station_keeping=self._registrant.station_keeping,
+            scheduled_events=self._registrant.propagate_event_queue,
+        )
+
+    def processResults(self, results: PropagateResult):
+        """Update the :attr:`._registrant`'s state with the new propagation results."""
+        self._registrant.time = results.final_time
+        self._registrant._previous_state = results.prev_state
+        self._registrant._truth_state = results.final_eci
+        self._registrant._ecef_state = results.final_ecef
+        self._registrant._lla_state = results.final_lla
+
+
+class PropagateExecutor(JobExecutor):
+    """Creates, executes, and processes the results of propagation jobs."""
+
+    @classmethod
+    def getRemoteFunc(cls):
+        """Pointer to :meth:`.asyncPropagate` function executed on remote worker."""
+        return asyncPropagate
 
     def registerAgent(self, agent: Union[TargetAgent, SensingAgent]):
-        """
-        Args:
-            agent:
-        """
-        self._agents[agent.simulation_id] = agent
-        self._remote_dyna_map[agent.simulation_id] = ray.put(agent.dynamics)
-
-    def propagateStep(self, step_start: datetime, dt_step: ScenarioTime):
-        """Propagate all tracked agents from `step_start` to `step_start` + `dt_step`.
+        """Convenience method for registering a :class:`.TargetAgent` or :class:`.SensingAgent`.
 
         Args:
-            step_start: When this propagation step starts.
-            dt_step: How long this propagation step is.
-
-        Raises:
-            ValueError: if `step_start` or `dt_step` don't align with tracked agents.
+            agent: Agent to create a :class:`.PropagateRegistration` from.
         """
-        for target in self._agents.values():
-            if target.datetime_epoch != step_start:
-                err = f"Target epoch {target.datetime_epoch} not aligned with arg {step_start}"
-                raise ValueError(err)
-            if target.dt_step != dt_step:
-                err = f"Target dt_step {target.dt_step} not aligned with arg {dt_step}"
-                raise ValueError(err)
-
-            target.prunePropagateEvents()
-            reductions = ReductionParams.build(step_start)
-            for item in target.station_keeping:
-                item.reductions = reductions
-
-            obj_ref = asyncPropagate.remote(
-                PropagateSubmission(
-                    agent_id=target.simulation_id,
-                    dynamics=self._remote_dyna_map[target.simulation_id],
-                    init_dt=target.datetime_epoch,
-                    init_time=target.time,
-                    final_time=target.time + target.dt_step,
-                    init_eci=target.eci_state,
-                    station_keeping=target.station_keeping,
-                    scheduled_events=target.propagate_event_queue,
-                )
-            )
-            self._unfinished_tasks.append(obj_ref)
-            self._result_map[obj_ref] = target
-
-        while self._unfinished_tasks:
-            finished_tasks, self._unfinished_tasks = ray.wait(self._unfinished_tasks)
-            result: PropagateResult = ray.get(finished_tasks[0])
-            self._result_map[finished_tasks[0]].rayUpdate(result)
+        self.register(PropagateRegistration(agent))

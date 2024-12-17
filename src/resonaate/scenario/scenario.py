@@ -32,7 +32,7 @@ from ..job_handlers.estimate_prediction import EstimatePredictionJobHandler
 from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
-from ..raysonaate.agent_propagation import AgentPropagator
+from ..raysonaate.agent_propagation import PropagateExecutor
 from .config.agent_config import AgentConfig, SensingAgentConfig
 
 # Type Checking Imports
@@ -183,7 +183,7 @@ class Scenario(ParallelMixin):
         self.database = getDBConnection()
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents
-        self._agent_propagator = AgentPropagator()
+        self._agent_propagator = PropagateExecutor()
 
         for target_agent in self.target_agents.values():
             self._agent_propagator.registerAgent(target_agent)
@@ -326,7 +326,7 @@ class Scenario(ParallelMixin):
         self.current_julian_date = self.clock.julian_date_epoch
 
         # Propagate truth model & predict estimate forward in time.
-        self._agent_propagator.propagateStep(prior_datetime, self.clock.dt_step)
+        self._agent_propagator.execute()
 
         if not self.scenario_config.propagation.truth_simulation_only:
             AgentCaches.targets.updateCache(self.target_agents)
