@@ -33,6 +33,7 @@ from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..raysonaate.agent_propagation import PropagateExecutor
+from ..raysonaate.estimate_prediction import EstPredictExecutor
 from .config.agent_config import AgentConfig, SensingAgentConfig
 
 # Type Checking Imports
@@ -195,9 +196,9 @@ class Scenario(ParallelMixin):
         self._estimate_update_handler = EstimateUpdateJobHandler()
         self._estimate_update_handler.registerCallback(self)
 
-        self._estimate_prediction_handler = EstimatePredictionJobHandler()
+        self._estimate_predictor = EstPredictExecutor()
         for estimate_agent in self.estimate_agents.values():
-            self._estimate_prediction_handler.registerCallback(estimate_agent)
+            self._estimate_predictor.registerAgent(estimate_agent)
 
         # Save initial states to database
         self.saveDatabaseOutput()
@@ -345,11 +346,7 @@ class Scenario(ParallelMixin):
             AgentCaches.targets.updateCache(self.target_agents)
             AgentCaches.sensors.updateCache(self.sensor_agents)
 
-            self._estimate_prediction_handler.executeJobs(
-                prior_julian_date=prior_jd,
-                julian_date=self.clock.julian_date_epoch,
-                epoch_time=self.clock.time,
-            )
+            self._estimate_predictor.execute()
 
             AgentCaches.estimates.updateCache(self.estimate_agents)
             # Handle Sensor Time Bias Events
