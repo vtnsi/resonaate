@@ -46,8 +46,9 @@ def asyncCalculateReward(estimate_id: int, reward: Reward, sensor_list: list[int
     visibility = zeros(len(sensor_list), dtype=bool)
     metric_matrix = zeros((len(sensor_list), len(reward.metrics)), dtype=float)
 
+    sensors = AgentCaches.sensors.getCache()
     for sensor_index, sensor_id in enumerate(sensor_list):
-        sensor_agent = AgentCaches.sensors.getAgent(sensor_id)
+        sensor_agent = sensors[sensor_id]
 
         # Attempt predicted observations, in order to perform sensor tasking
         # Only calculate metrics if the estimate is observable
