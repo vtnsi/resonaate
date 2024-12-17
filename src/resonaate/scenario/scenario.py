@@ -10,6 +10,7 @@ from multiprocessing import cpu_count
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+import ray
 from numpy import around, seterr
 from sqlalchemy.orm import Query
 from strmbrkr import WorkerManager
@@ -121,6 +122,7 @@ class Scenario(ParallelMixin):
                 "Simulation is running in debug mode. Worker jobs can block indefinitely.",
             )
 
+        ray.init(num_cpus=10)
         self.worker_mgr = None
         if start_workers:
             ## Worker manager class instance.
