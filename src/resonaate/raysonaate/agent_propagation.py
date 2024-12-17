@@ -39,9 +39,6 @@ class PropagateSubmission:
     dynamics: Dynamics
     """Dynamics object to propagate."""
 
-    init_dt: datetime
-    """Datetime representation of time that propagation is starting from."""
-
     init_time: ScenarioTime
     """:class:`.ScenarioTime` representation of time that propagation is starting from."""
 
@@ -74,12 +71,6 @@ class PropagateResult:
     final_eci: ndarray
     """6x1 state vector of object after propagation in the ECI frame."""
 
-    final_ecef: ndarray
-    """6x1 state vector of object after propagation in the ECEF frame."""
-
-    final_lla: ndarray
-    """3x1 position vector of object after propagation in lat, lon, & alt."""
-
 
 @ray.remote
 def asyncPropagate(submission: PropagateSubmission) -> PropagateResult:
@@ -99,16 +90,11 @@ def asyncPropagate(submission: PropagateSubmission) -> PropagateResult:
         station_keeping=submission.station_keeping,
         scheduled_events=submission.scheduled_events,
     )
-    new_dt = submission.init_dt + timedelta(seconds=submission.final_time - submission.init_time)
-    new_ecef = eci2ecef(new_eci, new_dt)
-    new_lla = ecef2lla(new_ecef)
     return PropagateResult(
         agent_id=submission.agent_id,
         final_time=submission.final_time,
         prev_state=submission.init_eci,
         final_eci=new_eci,
-        final_ecef=new_ecef,
-        final_lla=new_lla
     )
 
 
@@ -135,7 +121,6 @@ class PropagateRegistration(Registration):
         return PropagateSubmission(
             agent_id=self._registrant.simulation_id,
             dynamics=self._remote_dyna_ref,
-            init_dt=self._registrant.datetime_epoch,
             init_time=self._registrant.time,
             final_time=self._registrant.time + self._registrant.dt_step,
             init_eci=self._registrant.eci_state,
@@ -146,10 +131,7 @@ class PropagateRegistration(Registration):
     def processResults(self, results: PropagateResult):
         """Update the :attr:`._registrant`'s state with the new propagation results."""
         self._registrant.time = results.final_time
-        self._registrant._previous_state = results.prev_state
-        self._registrant._truth_state = results.final_eci
-        self._registrant._ecef_state = results.final_ecef
-        self._registrant._lla_state = results.final_lla
+        self._registrant.eci_state = results.final_eci
 
 
 class PropagateExecutor(JobExecutor):

@@ -637,8 +637,8 @@ class EstimateAgent(Agent):
             new_state (``ndarray``): 6x1 ECI state vector
         """
         self._state_estimate = new_state
-        self._ecef_state = eci2ecef(new_state, self.datetime_epoch)
-        self._lla_state = ecef2lla(self._ecef_state)
+        self._ecef_state = None
+        self._lla_state = None
 
     @property
     def nominal_filter(self) -> SequentialFilter:
