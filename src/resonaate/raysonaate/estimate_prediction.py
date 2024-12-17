@@ -56,6 +56,12 @@ class EstPredictResult:
     pred_p: ndarray
     """Predicted covariance at `time`."""
 
+    sigma_points: ndarray
+    """Sigma points used to generate prediction results."""
+
+    sigma_x_res: ndarray
+    """Prediction residuals ... ?"""
+
 
 @ray.remote
 def asyncPredict(submission: EstPredictSubmission) -> EstPredictResult:
@@ -74,6 +80,8 @@ def asyncPredict(submission: EstPredictSubmission) -> EstPredictResult:
         est_p=submission.seq_filter.est_p,
         pred_x=submission.seq_filter.pred_x,
         pred_p=submission.seq_filter.pred_p,
+        sigma_points=submission.seq_filter.sigma_points,
+        sigma_x_res=submission.seq_filter.sigma_x_res,
     )
 
 
@@ -101,6 +109,8 @@ class EstPredictRegistration(Registration):
         self._registrant.nominal_filter.est_p = results.est_p
         self._registrant.nominal_filter.pred_x = results.pred_x
         self._registrant.nominal_filter.pred_p = results.pred_p
+        self._registrant.nominal_filter.sigma_points = results.sigma_points
+        self._registrant.nominal_filter.sigma_x_res = results.sigma_x_res
 
         self._registrant.time = results.time
         self._registrant.state_estimate = results.pred_x
