@@ -318,6 +318,19 @@ class Scenario(ParallelMixin):
             next_jd,
             self.logger,
         )
+
+        # [NOTE][parallel-maneuver-event-handling] Step one: query for events and "handle" them.
+        relevant_events = getRelevantEvents(
+            self.database,
+            EventScope.AGENT_PROPAGATION,
+            prior_jd,
+            next_jd,
+        )
+        for event in relevant_events:
+            event.handleEvent(self.target_agents[event.scope_instance_id])
+            if event.planned:
+                event.handleEvent(self.estimate_agents[event.scope_instance_id])
+
         # Call to update the entire model
         self.logger.debug("TicToc")
         # Tic clock forward, push epoch to DB
