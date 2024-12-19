@@ -6,16 +6,19 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import ray
+from numpy import zeros
 
 # Local Imports
-from ..agents.agent_cache import AgentCaches
 from ..tasking.predictions import predictObservation
+from . import JobExecutor, Registration
+from .agent_store import getEstimateStore, getSensorStore
 
 if TYPE_CHECKING:
     # Third Party Imports
-    from numpy import ndarray, zeros
+    from numpy import ndarray
 
     # Local Imports
+    from ..tasking.engine.engine_base import TaskingEngine
     from ..tasking.rewards import Reward
 
 
@@ -61,14 +64,16 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
     Returns:
         Result of reward calculation.
     """
-    estimate = AgentCaches.estimates.getAgent(submission.estimate_id)
+    estimate_store = getEstimateStore()
+    estimate = ray.get(estimate_store.getAgent.remote(submission.estimate_id))
 
     # Ensure the visibility and metric matrices are the same scale as in the tasking engine
     visibility = zeros(len(submission.sensor_list), dtype=bool)
     metric_matrix = zeros((len(submission.sensor_list), len(submission.reward.metrics)), dtype=float)
 
+    sensor_store = getSensorStore()
     for sensor_index, sensor_id in enumerate(submission.sensor_list):
-        sensor_agent = AgentCaches.sensors.getAgent(sensor_id)
+        sensor_agent = ray.get(sensor_store.getAgent.remote(sensor_id))
 
         # Attempt predicted observations, in order to perform sensor tasking
         # Only calculate metrics if the estimate is observable
@@ -83,3 +88,39 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
         visibility=visibility,
         metric_matrix=metric_matrix
     )
+
+
+class TaskingRewardRegistration(Registration):
+
+    def __init__(self, registrant: TaskingEngine, estimate_id: int):
+        """Initialize a :class:`.TaskingRewardRegistration`.
+
+        Args:
+            registrant: The :class:`.TaskingEngine` requesting this segment of the reward be
+                calculated.
+            estimate_id: The unique identifier of the :class:`.EstimateAgent` the tasking reward
+                will be calculated for.
+        """
+        super().__init__(registrant)
+        self._estimate_id = estimate_id
+    
+    def generateSubmission(self) -> RewardCalcSubmission:
+        """Generate a :class:`.RewardCalcSubmission` specifying the reward being calculated."""
+        return RewardCalcSubmission(
+            estimate_id=self._estimate_id,
+            reward=self._registrant.reward,
+            sensor_list=self._registrant.sensor_list
+        )
+
+    def processResults(self, results: RewardCalcResult):
+        """Update the :attr:`._registrant`'s visibility and metric matrices."""
+        row = self._registrant.target_list.index(results.estimate_id)
+        self._registrant.visibility_matrix[row] = results.visibility
+        self._registrant.metric_matrix[row] = results.metric_matrix
+
+
+class TaskingRewardExecutor(JobExecutor):
+
+    @classmethod
+    def getRemoteFunc(cls):
+        return asyncCalculateReward

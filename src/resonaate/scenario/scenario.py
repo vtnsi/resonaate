@@ -34,6 +34,7 @@ from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..raysonaate.agent_propagation import PropagateExecutor
+from ..raysonaate.agent_store import getEstimateStore, getSensorStore, getTargetStore
 from ..raysonaate.estimate_prediction import EstPredictExecutor
 from .config.agent_config import AgentConfig, SensingAgentConfig
 
@@ -190,13 +191,19 @@ class Scenario(ParallelMixin):
 
         for target_agent in self.target_agents.values():
             self._agent_propagator.registerAgent(target_agent)
+        self._target_store = getTargetStore()
+        self._target_store.setAgents.remote(self.target_agents)
 
         for sensor_agent in self.sensor_agents.values():
             self._agent_propagator.registerAgent(sensor_agent)
+        self._sensor_store = getSensorStore()
+        self._sensor_store.setAgents.remote(self.sensor_agents)
 
         # Initialize estimate-related job queues, assign callback for all estimate agents
         self._estimate_update_handler = EstimateUpdateJobHandler()
         self._estimate_update_handler.registerCallback(self)
+        self._estimate_store = getEstimateStore()
+        self._estimate_store.setAgents.remote(self.estimate_agents)
 
         self._estimate_predictor = EstPredictExecutor()
         for estimate_agent in self.estimate_agents.values():
@@ -345,12 +352,12 @@ class Scenario(ParallelMixin):
         self._agent_propagator.execute()
 
         if not self.scenario_config.propagation.truth_simulation_only:
-            AgentCaches.targets.updateCache(self.target_agents)
-            AgentCaches.sensors.updateCache(self.sensor_agents)
-
             self._estimate_predictor.execute()
 
-            AgentCaches.estimates.updateCache(self.estimate_agents)
+            self._target_store.setAgents.remote(self.target_agents)
+            self._sensor_store.setAgents.remote(self.sensor_agents)
+            self._estimate_store.setAgents.remote(self.estimate_agents)
+
             # Handle Sensor Time Bias Events
             # [NOTE][parallel-time-bias-event-handling] Step one: query for events and "handle" them.
             sensor_tasking_events = defaultdict(list)

@@ -19,6 +19,10 @@ from ...job_handlers.base import ParallelMixin
 from ...job_handlers.task_execution import TaskExecutionJobHandler
 from ...job_handlers.task_prediction import TaskPredictionJobHandler
 from ...physics.time.stardate import datetimeToJulianDate
+from ...raysonaate.tasking_reward_generation import (
+    TaskingRewardExecutor,
+    TaskingRewardRegistration,
+)
 from .engine_base import TaskingEngine
 
 # Type Checking Imports
@@ -74,8 +78,12 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self._realtime_obs = realtime_obs
         """``bool``: whether tasking engine should task observations in realtime (during the simulation)."""
 
-        self._predict_handler = TaskPredictionJobHandler()
-        self._predict_handler.registerCallback(self)
+        self._reward_executor = TaskingRewardExecutor()
+        for _id in self.target_list:
+            self._reward_executor.register(
+                TaskingRewardRegistration(self, _id)
+            )
+
         self._execute_handler = TaskExecutionJobHandler()
         self._execute_handler.registerCallback(self)
 
@@ -102,7 +110,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         # Only task if we say so.... :P
         if self._realtime_obs:
-            self._predict_handler.executeJobs()
+            self._reward_executor.execute()
             handleRelevantEvents(
                 self,
                 self._database,
@@ -221,5 +229,4 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
     def shutdown(self) -> None:
         """Perform cleanup operations for shutting down parallel processes/threads."""
-        self._predict_handler.shutdown()
         self._execute_handler.shutdown()
