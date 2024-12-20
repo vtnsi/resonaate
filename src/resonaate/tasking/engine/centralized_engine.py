@@ -19,6 +19,7 @@ from ...job_handlers.base import ParallelMixin
 from ...job_handlers.task_execution import TaskExecutionJobHandler
 from ...job_handlers.task_prediction import TaskPredictionJobHandler
 from ...physics.time.stardate import datetimeToJulianDate
+from ...raysonaate.tasking_execution import TaskExecutionExecutor, TaskExecutionRegistration
 from ...raysonaate.tasking_reward_generation import (
     TaskingRewardExecutor,
     TaskingRewardRegistration,
@@ -78,14 +79,15 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self._realtime_obs = realtime_obs
         """``bool``: whether tasking engine should task observations in realtime (during the simulation)."""
 
-        self._reward_executor = TaskingRewardExecutor()
+        self._reward_executor = TaskingRewardExecutor()            
+        self._task_exec_executor = TaskExecutionExecutor(self)
         for _id in self.target_list:
             self._reward_executor.register(
                 TaskingRewardRegistration(self, _id)
             )
-
-        self._execute_handler = TaskExecutionJobHandler()
-        self._execute_handler.registerCallback(self)
+            self._task_exec_executor.register(
+                TaskExecutionRegistration(self, _id)
+            )
 
     def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
@@ -122,7 +124,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             )
             self.calculateRewards()
             self.generateTasking()
-            self._execute_handler.executeJobs(decision_matrix=self.decision_matrix)
+            self._task_exec_executor.execute()
 
         # Load imported observations
         if self._importer_db:
