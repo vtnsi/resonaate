@@ -5,6 +5,7 @@ from __future__ import annotations
 # Standard Library Imports
 from collections import defaultdict
 from copy import deepcopy
+from datetime import datetime
 from functools import singledispatchmethod
 from multiprocessing import cpu_count
 from typing import TYPE_CHECKING
@@ -16,7 +17,6 @@ from sqlalchemy.orm import Query
 from strmbrkr import WorkerManager
 
 # Local Imports
-from ..agents.agent_cache import AgentCaches
 from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
@@ -27,14 +27,11 @@ from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..dynamics import dynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
-from ..job_handlers.agent_propagation import AgentPropagationJobHandler
 from ..job_handlers.base import ParallelMixin
-from ..job_handlers.estimate_prediction import EstimatePredictionJobHandler
 from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..raysonaate.agent_propagation import PropagateExecutor
-from ..raysonaate.agent_store import getEstimateStore, getSensorStore, getTargetStore
 from ..raysonaate.estimate_prediction import EstPredictExecutor
 from .config.agent_config import AgentConfig, SensingAgentConfig
 
@@ -188,26 +185,23 @@ class Scenario(ParallelMixin):
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents
         self._agent_propagator = PropagateExecutor()
-
         for target_agent in self.target_agents.values():
             self._agent_propagator.registerAgent(target_agent)
-        self._target_store = getTargetStore()
-        self._target_store.setAgents.remote(self.target_agents)
 
         for sensor_agent in self.sensor_agents.values():
             self._agent_propagator.registerAgent(sensor_agent)
-        self._sensor_store = getSensorStore()
-        self._sensor_store.setAgents.remote(self.sensor_agents)
 
         # Initialize estimate-related job queues, assign callback for all estimate agents
         self._estimate_update_handler = EstimateUpdateJobHandler()
         self._estimate_update_handler.registerCallback(self)
-        self._estimate_store = getEstimateStore()
-        self._estimate_store.setAgents.remote(self.estimate_agents)
 
         self._estimate_predictor = EstPredictExecutor()
         for estimate_agent in self.estimate_agents.values():
             self._estimate_predictor.registerAgent(estimate_agent)
+
+        self._target_store = {}
+        self._sensor_store = {}
+        self._estimate_store = {}
 
         # Save initial states to database
         self.saveDatabaseOutput()
@@ -352,11 +346,8 @@ class Scenario(ParallelMixin):
         self._agent_propagator.execute()
 
         if not self.scenario_config.propagation.truth_simulation_only:
+            self.logger.debug("Predict estimates...")
             self._estimate_predictor.execute()
-
-            self._target_store.setAgents.remote(self.target_agents)
-            self._sensor_store.setAgents.remote(self.sensor_agents)
-            self._estimate_store.setAgents.remote(self.estimate_agents)
 
             # Handle Sensor Time Bias Events
             # [NOTE][parallel-time-bias-event-handling] Step one: query for events and "handle" them.
@@ -376,10 +367,19 @@ class Scenario(ParallelMixin):
             for sensor_id in self.sensor_agents:
                 self.sensor_agents[sensor_id].pruneTimeBiasEvents()
 
+            self.logger.debug("Put agent updates...")
+            for target_id, target in self.target_agents.items():
+                self._target_store[target_id] = ray.put(target)
+            for sensor_id, sensor in self.sensor_agents.items():
+                self._sensor_store[sensor_id] = ray.put(sensor)
+            for estimate_id, estimate in self.estimate_agents.items():
+                self._estimate_store[estimate_id] = ray.put(estimate)
+
             # assess life; quit job; buy motorcycle
             self.logger.debug("Assess")
             obs_dict = defaultdict(list)
             for tasking_engine in self._tasking_engines.values():
+                tasking_engine.setHandles(self._target_store, self._sensor_store, self._estimate_store)
                 tasking_engine.assess(prior_datetime, self.clock.datetime_epoch)
 
                 # Update sensor boresight, and last time that it made an observation
@@ -389,9 +389,16 @@ class Scenario(ParallelMixin):
                     )
                 for observation in tasking_engine.observations:
                     obs_dict[observation.target_id].append(observation)
+                
+                tasking_engine.resetHandles()
+
+            self._target_store = {}
+            self._sensor_store = {}
+            self._estimate_store = {}
 
             # Estimate and covariance are stored as the updated state estimate and covariance
             # If there are no observations, there is no update information and the predicted state
+            self.logger.debug("Updating estimate agents...")
             self._estimate_update_handler.executeJobs(observations=obs_dict)
 
         # Flush events from event stack
@@ -614,3 +621,5 @@ class Scenario(ParallelMixin):
             engine.shutdown()
 
         self._estimate_update_handler.shutdown()
+        right_now = datetime.now().isoformat().replace(":", "-").replace(".", "-")
+        ray.timeline(f"timeline_{right_now}.json")

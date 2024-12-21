@@ -10,14 +10,15 @@ from numpy import array, where
 
 # Local Imports
 from . import JobExecutor, Registration
-from .agent_store import getEstimateStore, getSensorStore, getTargetStore
 
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
     # Local Imports
+    from ..agents.estimate_agent import EstimateAgent
     from ..agents.sensing_agent import SensingAgent
+    from ..agents.target_agent import TargetAgent
     from ..data.observation import MissedObservation, Observation
     from ..tasking.engine.engine_base import TaskingEngine
 
@@ -25,14 +26,14 @@ if TYPE_CHECKING:
 @dataclass
 class TaskExecutionSubmission:
 
-    sensor_list: ndarray
-    """array of sensor unique identifiers"""
+    estimate_handle: EstimateAgent
+    """Remote handle to :class:`.EstimateAgent` being tasked."""
 
-    decision_row: ndarray
-    """Decision matrix row corresponding to the :class:`.TargetAgent` being observed."""
+    target_handles: dict[int, TargetAgent]
+    """Dictionary of remote handles to all :class:`.TargetAgent`s."""
 
-    target_id: int
-    """Unique identifier of the :class:`.TargetAgent` being observed."""
+    sensor_handle_list: list[SensingAgent]
+    """List of remote handles to :class:`.SensingAgent`s tasked to observe the target."""
 
 
 @dataclass
@@ -61,32 +62,19 @@ def asyncExecuteTasking(submission: TaskExecutionSubmission) -> dict:
     Returns:
         Results of task execution.
     """
-    tasked_sensor_indices = where(submission.decision_row)  #[0]
-    if len(tasked_sensor_indices) < 1:
-        return TaskExecutionResult(
-            target_id=submission.target_id,
-            observations=[],
-            missed_observations=[],
-            sensor_info_list=[],
-        )
-    tasked_sensor_ids = submission.sensor_list[tasked_sensor_indices]
+    estimate_agent = ray.get(submission.estimate_handle)
 
-    target_store = getTargetStore()
-    target_agents = ray.get(target_store.getAllAgents.remote())
-    primary_tgt = target_agents[submission.target_id]
+    primary_tgt_handle = submission.target_handles[estimate_agent.simulation_id]
+    del submission.target_handles[estimate_agent.simulation_id]
 
-    # Remove Primary Target from Target list
-    del target_agents[submission.target_id]
-    background_targets = list(target_agents.values())
+    primary_tgt = ray.get(primary_tgt_handle)
+    background_targets = ray.get(list(submission.target_handles.values()))
+    tasked_sensors = ray.get(submission.sensor_handle_list)
 
     successful_obs = []
     unsuccessful_obs = []
     sensor_info_list = []
-    estimate_store = getEstimateStore()
-    sensor_store = getSensorStore()
-    estimate_agent = ray.get(estimate_store.getAgent.remote(submission.target_id))
-    for sensor_id in tasked_sensor_ids:
-        sensing_agent: SensingAgent = ray.get(sensor_store.getAgent.remote(sensor_id))
+    for sensing_agent in tasked_sensors:
         (
             made_obs,
             missed_obs,
@@ -101,14 +89,14 @@ def asyncExecuteTasking(submission: TaskExecutionSubmission) -> dict:
         unsuccessful_obs.extend(missed_obs)
         sensor_info_list.append(
             {
-                "sensor_id": sensor_id,
+                "sensor_id": sensing_agent.simulation_id,
                 "boresight": boresight,
                 "time_last_tasked": time_last_tasked,
             },
         )
 
     return TaskExecutionResult(
-        target_id=submission.target_id,
+        target_id=primary_tgt.simulation_id,
         observations=successful_obs,
         missed_observations=unsuccessful_obs,
         sensor_info_list=sensor_info_list,
@@ -121,12 +109,8 @@ class TaskExecutionRegistration(Registration):
         super().__init__(registrant)
         self._target_id = target_id
 
-    def generateSubmission(self, sensor_list: ndarray, decision_row: ndarray):
-        return TaskExecutionSubmission(
-            sensor_list=sensor_list,
-            decision_row=decision_row,
-            target_id=self._target_id
-        )
+    def generateSubmission(self):
+        raise Exception("Don't actually call this.")
 
     def processResults(self, results: TaskExecutionResult):
         self._registrant.saveObservations(results.observations)
@@ -148,13 +132,19 @@ class TaskExecutionExecutor(JobExecutor):
         sensor_num_array = array(self._tasking_engine.sensor_list)
         for registration in self._registrations:
             target_index = self._tasking_engine.target_indices[registration._target_id]
-            submission = registration.generateSubmission(
-                sensor_list=sensor_num_array,
-                decision_row=self._tasking_engine.decision_matrix[target_index],
-            )
-            remote_ref = self.getRemoteFunc().remote(submission)
-            self._unfinished_jobs.append(remote_ref)
-            self._result_reg_mapping[remote_ref] = registration
+            tasked_sensor_indices = where(self._tasking_engine.decision_matrix[target_index, :])[0]
+
+            if len(tasked_sensor_indices) > 0:
+                tasked_sensor_ids = sensor_num_array[tasked_sensor_indices]
+                submission = TaskExecutionSubmission(
+                    self._tasking_engine._estimate_store[registration._target_id],
+                    self._tasking_engine._target_store,
+                    [self._tasking_engine._sensor_store[sensor_id] for sensor_id in tasked_sensor_ids]
+                )
+
+                remote_ref = self.getRemoteFunc().remote(submission)
+                self._unfinished_jobs.append(remote_ref)
+                self._result_reg_mapping[remote_ref] = registration
 
         while self._unfinished_jobs:
             finished_jobs, self._unfinished_jobs = ray.wait(self._unfinished_jobs)

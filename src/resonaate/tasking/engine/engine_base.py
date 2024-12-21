@@ -119,6 +119,18 @@ class TaskingEngine(metaclass=ABCMeta):
         if importer_db_path:
             self._importer_db = ImporterDatabase(db_path=importer_db_path)
 
+        self.resetHandles()
+
+    def resetHandles(self):
+        self._target_store = {}
+        self._sensor_store = {}
+        self._estimate_store = {}
+
+    def setHandles(self, target_store: dict, sensor_store: dict, estimate_store: dict):
+        self._target_store = target_store
+        self._sensor_store = sensor_store
+        self._estimate_store = estimate_store
+
     def addTarget(self, target_id: int) -> None:
         """Add a target to this :class:`.TaskingEngine`.
 

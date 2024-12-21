@@ -11,13 +11,14 @@ from numpy import zeros
 # Local Imports
 from ..tasking.predictions import predictObservation
 from . import JobExecutor, Registration
-from .agent_store import getEstimateStore, getSensorStore
 
 if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
     # Local Imports
+    from ..agents.estimate_agent import EstimateAgent
+    from ..agents.sensing_agent import SensingAgent
     from ..tasking.engine.engine_base import TaskingEngine
     from ..tasking.rewards import Reward
 
@@ -25,14 +26,14 @@ if TYPE_CHECKING:
 @dataclass
 class RewardCalcSubmission:
 
-    estimate_id: int
-    """Unique identifier of the :class:`.EstimateAgent` to calculate reward for."""
+    estimate_handle: EstimateAgent
+    """Remote handle of the :class;`.EstimateAgent` to calculate reward for."""
 
     reward: Reward
     """Function used to calculate a sensor/estimate pair's reward."""
 
-    sensor_list: list[int]
-    """Unique identifiers of the sensors task-able by the calling tasking engine."""
+    sensor_handle_list: list[SensingAgent]
+    """List of remote handles of the :class:`.SensingAgent`s task-able by the calling engine."""
 
 
 @dataclass
@@ -64,17 +65,14 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
     Returns:
         Result of reward calculation.
     """
-    estimate_store = getEstimateStore()
-    estimate = ray.get(estimate_store.getAgent.remote(submission.estimate_id))
+    estimate: EstimateAgent = ray.get(submission.estimate_handle)
 
     # Ensure the visibility and metric matrices are the same scale as in the tasking engine
-    visibility = zeros(len(submission.sensor_list), dtype=bool)
-    metric_matrix = zeros((len(submission.sensor_list), len(submission.reward.metrics)), dtype=float)
+    visibility = zeros(len(submission.sensor_handle_list), dtype=bool)
+    metric_matrix = zeros((len(submission.sensor_handle_list), len(submission.reward.metrics)), dtype=float)
 
-    sensor_store = getSensorStore()
-    for sensor_index, sensor_id in enumerate(submission.sensor_list):
-        sensor_agent = ray.get(sensor_store.getAgent.remote(sensor_id))
-
+    sensor_list = ray.get(submission.sensor_handle_list)
+    for sensor_index, sensor_agent in enumerate(sensor_list):
         # Attempt predicted observations, in order to perform sensor tasking
         # Only calculate metrics if the estimate is observable
         if predicted_observation := predictObservation(sensor_agent, estimate):
@@ -84,7 +82,7 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
             metric_matrix[sensor_index] = submission.reward.calculateMetrics(estimate, sensor_agent)
 
     return RewardCalcResult(
-        estimate_id=submission.estimate_id,
+        estimate_id=estimate.simulation_id,
         visibility=visibility,
         metric_matrix=metric_matrix
     )
@@ -106,11 +104,7 @@ class TaskingRewardRegistration(Registration):
     
     def generateSubmission(self) -> RewardCalcSubmission:
         """Generate a :class:`.RewardCalcSubmission` specifying the reward being calculated."""
-        return RewardCalcSubmission(
-            estimate_id=self._estimate_id,
-            reward=self._registrant.reward,
-            sensor_list=self._registrant.sensor_list
-        )
+        raise Exception("Don't actually call this.")
 
     def processResults(self, results: RewardCalcResult):
         """Update the :attr:`._registrant`'s visibility and metric matrices."""
@@ -121,6 +115,28 @@ class TaskingRewardRegistration(Registration):
 
 class TaskingRewardExecutor(JobExecutor):
 
+    def __init__(self, tasking_engine: TaskingEngine):
+        super().__init__()
+        self._tasking_engine = tasking_engine
+
     @classmethod
     def getRemoteFunc(cls):
         return asyncCalculateReward
+
+    def execute(self):
+        sensor_handle_list = [self._tasking_engine._sensor_store[sensor_id] for sensor_id in self._tasking_engine.sensor_list]
+        for registration in self._registrations:
+            submission = RewardCalcSubmission(
+                self._tasking_engine._estimate_store[registration._estimate_id],
+                reward=self._tasking_engine.reward,
+                sensor_handle_list=sensor_handle_list,
+            )
+
+            remote_ref = self.getRemoteFunc().remote(submission)
+            self._unfinished_jobs.append(remote_ref)
+            self._result_reg_mapping[remote_ref] = registration
+
+        while self._unfinished_jobs:
+            finished_jobs, self._unfinished_jobs = ray.wait(self._unfinished_jobs)
+            result = ray.get(finished_jobs[0])
+            self._result_reg_mapping[finished_jobs[0]].processResults(result)

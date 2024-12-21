@@ -79,7 +79,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self._realtime_obs = realtime_obs
         """``bool``: whether tasking engine should task observations in realtime (during the simulation)."""
 
-        self._reward_executor = TaskingRewardExecutor()            
+        self._reward_executor = TaskingRewardExecutor(self)            
         self._task_exec_executor = TaskExecutionExecutor(self)
         for _id in self.target_list:
             self._reward_executor.register(
@@ -112,6 +112,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         # Only task if we say so.... :P
         if self._realtime_obs:
+            self.logger.debug("Generating tasking rewards...")
             self._reward_executor.execute()
             handleRelevantEvents(
                 self,
@@ -124,6 +125,7 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             )
             self.calculateRewards()
             self.generateTasking()
+            self.logger.debug("Executing tasking strategy...")
             self._task_exec_executor.execute()
 
         # Load imported observations
@@ -231,4 +233,4 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
     def shutdown(self) -> None:
         """Perform cleanup operations for shutting down parallel processes/threads."""
-        self._execute_handler.shutdown()
+        pass
