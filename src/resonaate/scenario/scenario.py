@@ -33,6 +33,7 @@ from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..raysonaate.agent_propagation import PropagateExecutor
 from ..raysonaate.estimate_prediction import EstPredictExecutor
+from ..raysonaate.estimate_update import EstUpdateExecutor
 from .config.agent_config import AgentConfig, SensingAgentConfig
 
 # Type Checking Imports
@@ -191,13 +192,11 @@ class Scenario(ParallelMixin):
         for sensor_agent in self.sensor_agents.values():
             self._agent_propagator.registerAgent(sensor_agent)
 
-        # Initialize estimate-related job queues, assign callback for all estimate agents
-        self._estimate_update_handler = EstimateUpdateJobHandler()
-        self._estimate_update_handler.registerCallback(self)
-
+        self._estimate_updater = EstUpdateExecutor()
         self._estimate_predictor = EstPredictExecutor()
         for estimate_agent in self.estimate_agents.values():
             self._estimate_predictor.registerAgent(estimate_agent)
+            self._estimate_updater.registerAgent(estimate_agent)
 
         self._target_store = {}
         self._sensor_store = {}
@@ -392,14 +391,14 @@ class Scenario(ParallelMixin):
                 
                 tasking_engine.resetHandles()
 
-            self._target_store = {}
-            self._sensor_store = {}
-            self._estimate_store = {}
-
             # Estimate and covariance are stored as the updated state estimate and covariance
             # If there are no observations, there is no update information and the predicted state
             self.logger.debug("Updating estimate agents...")
-            self._estimate_update_handler.executeJobs(observations=obs_dict)
+            self._estimate_updater.execute(self._estimate_store, obs_dict)
+
+            self._target_store = {}
+            self._sensor_store = {}
+            self._estimate_store = {}
 
         # Flush events from event stack
         EventStack.logAndFlushEvents()
@@ -620,6 +619,5 @@ class Scenario(ParallelMixin):
         for engine in self._tasking_engines.values():
             engine.shutdown()
 
-        self._estimate_update_handler.shutdown()
         right_now = datetime.now().isoformat().replace(":", "-").replace(".", "-")
         ray.timeline(f"timeline_{right_now}.json")
