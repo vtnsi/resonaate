@@ -44,7 +44,6 @@ class TestScenarioFactory:
             init_filepath,
             internal_db_path=None,
             importer_db_path=None,
-            start_workers=False,
         )
 
     @pytest.mark.usefixtures("custom_database")
@@ -60,7 +59,6 @@ class TestScenarioFactory:
             init_file_path,
             internal_db_path=None,
             importer_db_path=db_path if "import" in init_file else None,
-            start_workers=False,
         )
 
     @pytest.mark.parametrize("init_file", INVALID_JSON_CONFIGS)
@@ -76,7 +74,6 @@ class TestScenarioFactory:
                 init_file_path,
                 internal_db_path=None,
                 importer_db_path=None,
-                start_workers=False,
             )
 
     @pytest.mark.parametrize("init_file", EMPTY_JSON_ENGINE_CONFIGS)
@@ -93,5 +90,4 @@ class TestScenarioFactory:
                 init_file_path,
                 internal_db_path=None,
                 importer_db_path=None,
-                start_workers=False,
             )

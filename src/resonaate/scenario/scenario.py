@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 import ray
 from numpy import around, seterr
 from sqlalchemy.orm import Query
-from strmbrkr import WorkerManager
 
 # Local Imports
 from ..agents.estimate_agent import EstimateAgent
@@ -28,7 +27,6 @@ from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..dynamics import dynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
 from ..job_handlers.base import ParallelMixin
-from ..job_handlers.estimate_update import EstimateUpdateJobHandler
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..raysonaate.agent_propagation import PropagateExecutor
@@ -74,7 +72,6 @@ class Scenario(ParallelMixin):
         tasking_engines: dict[int, TaskingEngine],
         importer_db_path: str | None = None,
         logger: Logger | None = None,
-        start_workers: bool = True,
     ):
         """Instantiate a Scenario object.
 
@@ -89,8 +86,6 @@ class Scenario(ParallelMixin):
                 data. Defaults to ``None``.
             logger (:class:`.Logger`, optional):pPreviously instantiated :class:`.Logger` instance to be used.
                 Defaults to `None`, resulting in the class instantiating its own :class:`.Logger`.
-            start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
-                spin up its own :class:`.WorkerManager` instance or not. Defaults to ``True``.
         """
         # Save scenario configuration
         self.scenario_config = config
@@ -116,27 +111,7 @@ class Scenario(ParallelMixin):
                 path=BehavioralConfig.getConfig().logging.OutputLocation,
             )
 
-        if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
-            self.logger.warning(
-                "Simulation is running in debug mode. Worker jobs can block indefinitely.",
-            )
-
-        ray.init(num_cpus=10)
-        self.worker_mgr = None
-        if start_workers:
-            ## Worker manager class instance.
-            if (proc_count := BehavioralConfig.getConfig().parallel.WorkerCount) is None:
-                proc_count = cpu_count()
-
-            watchdog_terminate_after = WorkerManager.DEFAULT_WATCHDOG_TERMINATE_AFTER
-            if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
-                watchdog_terminate_after = None
-
-            self.worker_mgr = WorkerManager(
-                proc_count=proc_count,
-                watchdog_terminate_after=watchdog_terminate_after,
-            )
-            self.worker_mgr.startWorkers()
+        ray.init(num_cpus=BehavioralConfig.getConfig().parallel.WorkerCount)
 
         # Log some basic information about propagation for this simulation
         pos_std = self.scenario_config.noise.init_position_std_km
@@ -613,9 +588,6 @@ class Scenario(ParallelMixin):
 
     def shutdown(self) -> None:
         """Make sure workers are shut down nicely."""
-        if self.worker_mgr:
-            self.worker_mgr.stopWorkers()
-
         for engine in self._tasking_engines.values():
             engine.shutdown()
 
