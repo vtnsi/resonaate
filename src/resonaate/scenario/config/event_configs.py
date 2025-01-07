@@ -109,7 +109,7 @@ class EventConfigBase(BaseModel, ABC, extra="allow"):
     start_time: datetime
     """``str | datetime``: when this event needs to start being handled."""
 
-    end_time: Union[datetime, None]  # noqa: UP007
+    end_time: Union[datetime, None] = None  # noqa: UP007
     """``str | datetime | None``: when this event is no longer active.
 
     If this attribute isn't set in the raw config, then it will default to using the value that
