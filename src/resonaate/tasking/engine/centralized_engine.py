@@ -15,9 +15,6 @@ from ...data.epoch import Epoch
 from ...data.events import EventScope, handleRelevantEvents
 from ...data.observation import Observation
 from ...data.task import Task
-from ...job_handlers.base import ParallelMixin
-from ...job_handlers.task_execution import TaskExecutionJobHandler
-from ...job_handlers.task_prediction import TaskPredictionJobHandler
 from ...physics.time.stardate import datetimeToJulianDate
 from ...raysonaate.tasking_execution import TaskExecutionExecutor, TaskExecutionRegistration
 from ...raysonaate.tasking_reward_generation import (
@@ -38,7 +35,7 @@ if TYPE_CHECKING:
     from ..rewards import Reward
 
 
-class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
+class CentralizedTaskingEngine(TaskingEngine):
     """Centralized implementation of a tasking engine.
 
     This class provides methods for centralized network tasking processes. In a centralized
@@ -230,7 +227,3 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
                     reward=self.reward_matrix[tgt_ind, sen_ind],
                     decision=self.decision_matrix[tgt_ind, sen_ind],
                 )
-
-    def shutdown(self) -> None:
-        """Perform cleanup operations for shutting down parallel processes/threads."""
-        pass

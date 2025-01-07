@@ -248,11 +248,6 @@ class TaskingEngine(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def shutdown(self) -> None:
-        """Perform cleanup operations for shutting down parallel processes/threads."""
-        raise NotImplementedError
-
     def _sortTargets(self) -> None:
         """Sort target list & index mapping, for use after adding/removing target(s)."""
         self.target_list.sort()

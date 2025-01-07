@@ -26,7 +26,6 @@ from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..dynamics import dynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
-from ..job_handlers.base import ParallelMixin
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..raysonaate.agent_propagation import PropagateExecutor
@@ -54,7 +53,7 @@ class AgentRemovalError(Exception):
     """Agent with the ID doesn't exist in the simulation."""
 
 
-class Scenario(ParallelMixin):
+class Scenario:
     """Simulation scenario class for managing .
 
     The Scenario class is the main simulation object that contains the major simulation pieces. It
@@ -587,9 +586,6 @@ class Scenario(ParallelMixin):
         return self._estimate_agents
 
     def shutdown(self) -> None:
-        """Make sure workers are shut down nicely."""
-        for engine in self._tasking_engines.values():
-            engine.shutdown()
-
+        """Record `ray` profiling timeline for performance analysis."""
         right_now = datetime.now().isoformat().replace(":", "-").replace(".", "-")
         ray.timeline(f"timeline_{right_now}.json")
