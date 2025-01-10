@@ -589,3 +589,4 @@ class Scenario:
         """Record `ray` profiling timeline for performance analysis."""
         right_now = datetime.now().isoformat().replace(":", "-").replace(".", "-")
         ray.timeline(f"timeline_{right_now}.json")
+        ray.shutdown()
