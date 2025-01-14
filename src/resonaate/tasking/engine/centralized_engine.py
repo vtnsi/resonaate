@@ -6,11 +6,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
+import ray
 from numpy import zeros
 from sqlalchemy.orm import Query
 
 # Local Imports
-from ...agents.agent_cache import AgentCaches
 from ...data.epoch import Epoch
 from ...data.events import EventScope, handleRelevantEvents
 from ...data.observation import Observation
@@ -200,7 +200,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         #   imported Observations so they can be processed
         loaded_obs = []
         for observation in imported_observations:
-            sensor_agent = AgentCaches.sensors.getAgent(observation.sensor_id)
+            sensor_agent = ray.get(self._sensor_store[observation.sensor_id])
             loaded_obs.append(self._createLoadedObs(observation, sensor_agent.sensors))
         return loaded_obs
 
