@@ -15,7 +15,6 @@ from scipy.spatial.distance import mahalanobis
 from sqlalchemy.orm import Query
 
 # Local Imports
-from ..agents.agent_cache import AgentCaches
 from ..common.behavioral_config import BehavioralConfig
 from ..common.utilities import getTypeString
 from ..data import getDBConnection
