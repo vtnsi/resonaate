@@ -29,6 +29,7 @@ install:
 	@echo "================="
 	@echo "Developer Install"
 	@echo "================="
+	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 	pip install -e ".[dev,test,doc]"
 	pre-commit install
 	@echo ""

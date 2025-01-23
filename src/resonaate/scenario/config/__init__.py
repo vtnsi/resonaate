@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-__all__ = [
+__all__ = [  # noqa: RUF022, RUF100
     "ScenarioConfig",
     "ConfigObject",
     "ConfigObjectList",
@@ -150,6 +150,6 @@ def constructFromUnion(disc_union, cfg_dict: dict) -> BaseModel:
     Returns:
         BaseModel: Concrete pydantic model chosen from discriminated union described by `disc_union`.
     """
-    dummy_model = create_model(__model_name="Dummy", inner=disc_union)
+    dummy_model = create_model("Dummy", inner=disc_union)
     dumdum = dummy_model(inner=cfg_dict)
     return dumdum.inner

@@ -14,7 +14,7 @@ dependencies = [
     "matplotlib>=3.3",
     "strmbrkr>=1.4.1",
     "sgp4==2.23",
-    "pydantic==2.7.1",
+    "pydantic==2.10.5",
 ]
 requires-python = ">=3.9"
 
