@@ -7,7 +7,6 @@ from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
 from functools import singledispatchmethod
-from multiprocessing import cpu_count
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -109,8 +108,6 @@ class Scenario:
                 "resonaate",
                 path=BehavioralConfig.getConfig().logging.OutputLocation,
             )
-
-        ray.init(num_cpus=BehavioralConfig.getConfig().parallel.WorkerCount)
 
         # Log some basic information about propagation for this simulation
         pos_std = self.scenario_config.noise.init_position_std_km
@@ -352,7 +349,9 @@ class Scenario:
             self.logger.debug("Assess")
             obs_dict = defaultdict(list)
             for tasking_engine in self._tasking_engines.values():
-                tasking_engine.setHandles(self._target_store, self._sensor_store, self._estimate_store)
+                tasking_engine.setHandles(
+                    self._target_store, self._sensor_store, self._estimate_store
+                )
                 tasking_engine.assess(prior_datetime, self.clock.datetime_epoch)
 
                 # Update sensor boresight, and last time that it made an observation
@@ -362,7 +361,7 @@ class Scenario:
                     )
                 for observation in tasking_engine.observations:
                     obs_dict[observation.target_id].append(observation)
-                
+
                 tasking_engine.resetHandles()
 
             # Estimate and covariance are stored as the updated state estimate and covariance

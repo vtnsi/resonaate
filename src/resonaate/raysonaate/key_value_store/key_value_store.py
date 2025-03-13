@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from .transaction import Transaction
 
 
-@ray.actor
+@ray.remote
 class _KVSActor:
     """Encapsulates the server for the key value store."""
 
@@ -38,7 +38,8 @@ class _KVSActor:
         Args:
             transaction: The transaction to be executed.
         """
-        return transaction.transact(self._key_value_store)
+        transaction.transact(self._key_value_store)
+        return transaction
 
 
 class _Client:
@@ -71,7 +72,8 @@ class _Client:
         Returns:
             Any: The :class:`.Transaction` after being processed by the :class:`._KVSActor`.
         """
-        result = self._handle.executeTransaction.remote(transaction)
+        task_handle = self._handle.executeTransaction.remote(transaction)
+        result = ray.get(task_handle)
         return result.getResponse()
 
 
@@ -93,7 +95,6 @@ class KeyValueStore:
         if _client is None:
             _client = _Client()
             cls._client_map[curr_pid] = _client
-            cls._checkServer()
         return _client
 
     @classmethod

@@ -3,6 +3,9 @@
 # [NOTE][avoid-circular-import]: Import inside of functions to avoid circular imports
 from __future__ import annotations
 
+# Third Party Imports
+import ray
+
 
 def buildScenarioFromConfigFile(
     config_file_path,
@@ -58,6 +61,7 @@ def buildScenarioFromConfigDict(
             data. Defaults to ``None``.
     """
     # Local Imports
+    from ..common.behavioral_config import BehavioralConfig
     from ..data import createDatabasePath, setDBPath
     from .config import ScenarioConfig
     from .scenario import Scenario
@@ -65,6 +69,7 @@ def buildScenarioFromConfigDict(
 
     # [NOTE][force-db-path]: Only call to `setDBPath()`. Subsequent calls will cause an error to
     #   be thrown!
+    ray.init(num_cpus=BehavioralConfig.getConfig().parallel.WorkerCount)
     database_path = createDatabasePath(internal_db_path, importer=False)
     setDBPath(path=database_path)
 
