@@ -15,14 +15,15 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array_equal, asarray, cos, dot, fmod, matmul, sin
-from strmbrkr import KeyValueStore
-from strmbrkr.key_value_store.cache_transactions import (
+
+# Local Imports
+# Package Imports
+from ...raysonaate.key_value_store import KeyValueStore
+from ...raysonaate.key_value_store.cache_transactions import (
     CacheMiss,
     UninitializedCache,
     ValueAlreadySet,
 )
-
-# Local Imports
 from .. import constants as const
 from ..maths import rot1, rot2, rot3
 from ..time.conversions import dayOfYear, greenwichApparentTime, utc2TerrestrialTime
@@ -82,17 +83,19 @@ class ReductionParams:
 
     def __eq__(self, value: ReductionParams) -> bool:
         """Define equality conditions between two instances of :class:`.ReductionParams`."""
-        return all([
-            array_equal(self.rot_pn, value.rot_pn),
-            array_equal(self.rot_pnr, value.rot_pnr),
-            array_equal(self.rot_rnp, value.rot_rnp),
-            array_equal(self.rot_w, value.rot_w),
-            array_equal(self.rot_wt, value.rot_wt),
-            self.lod == value.lod,
-            self.eq_equinox == value.eq_equinox,
-            self.dut1 == value.dut1,
-            self.date_time == value.date_time,
-        ])
+        return all(
+            [
+                array_equal(self.rot_pn, value.rot_pn),
+                array_equal(self.rot_pnr, value.rot_pnr),
+                array_equal(self.rot_rnp, value.rot_rnp),
+                array_equal(self.rot_w, value.rot_w),
+                array_equal(self.rot_wt, value.rot_wt),
+                self.lod == value.lod,
+                self.eq_equinox == value.eq_equinox,
+                self.dut1 == value.dut1,
+                self.date_time == value.date_time,
+            ]
+        )
 
     @classmethod
     def build(cls, utc_date: datetime, eops: EarthOrientationParameter = None) -> ReductionParams:
@@ -136,7 +139,7 @@ class ReductionParams:
         )
 
 
-def getRotR(utc_date: datetime, delta_ut1: float, eq_equinox:float) -> ndarray:
+def getRotR(utc_date: datetime, delta_ut1: float, eq_equinox: float) -> ndarray:
     """Rotation matrix to go from Pseudo-Earth Fixed (PEF) to True Of Date (TOD) inertial frame.
 
     Args:
@@ -189,11 +192,13 @@ class PolarMotion:
         c_y, s_y = cos(y_p), sin(y_p)
 
         # Complete polar motion matrix form
-        self.rot_w = asarray([
-            [c_x      ,  0  , -s_x      ],
-            [s_x * s_y,  c_y,  c_x * s_y],
-            [s_x * c_y, -s_y,  c_x * c_y],
-        ])
+        self.rot_w = asarray(
+            [
+                [c_x, 0, -s_x],
+                [s_x * s_y, c_y, c_x * s_y],
+                [s_x * c_y, -s_y, c_x * c_y],
+            ]
+        )
 
 
 class PrecessionNutation:
@@ -213,7 +218,9 @@ class PrecessionNutation:
         rot_pn (ndarray): Rotation matrix to go from TOD to ECI (a.k.a matrix [P][N]).
     """
 
-    def __init__(self, utc_date: datetime, delta_atomic_time: float, d_delta_psi: float, d_delta_eps: float):
+    def __init__(
+        self, utc_date: datetime, delta_atomic_time: float, d_delta_psi: float, d_delta_eps: float
+    ):
         """Calculate precession and nutation based on current time and corrections.
 
         Args:
@@ -247,7 +254,9 @@ class PrecessionNutation:
             d_delta_eps,
         )
 
-        self.rot_tod2mod = matmul(rot1(-1.0 * self.mean_eps), matmul(rot3(self.delta_psi), rot1(self.true_eps)))
+        self.rot_tod2mod = matmul(
+            rot1(-1.0 * self.mean_eps), matmul(rot3(self.delta_psi), rot1(self.true_eps))
+        )
         self.rot_mod2eci = matmul(rot3(self.zeta), matmul(rot2(-1.0 * self.theta), rot3(self.z_p)))
         self.rot_pn = matmul(self.rot_mod2eci, self.rot_tod2mod)
 
