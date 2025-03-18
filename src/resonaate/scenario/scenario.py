@@ -321,7 +321,6 @@ class Scenario:
 
             # Handle Sensor Time Bias Events
             # [NOTE][parallel-time-bias-event-handling] Step one: query for events and "handle" them.
-            sensor_tasking_events = defaultdict(list)
             relevant_events = getRelevantEvents(
                 self.database,
                 EventScope.OBSERVATION_GENERATION,
@@ -329,10 +328,7 @@ class Scenario:
                 self.clock.julian_date_epoch,
             )
             for event in relevant_events:
-                sensor_tasking_events[event.scope_instance_id].append(event)
-            for sensor_id, sensor_events in sensor_tasking_events.items():
-                for event in sensor_events:
-                    event.handleEvent(self.sensor_agents[sensor_id])
+                event.handleEvent(self.sensor_agents[event.scope_instance_id])
             # Check to prune time bias events
             for sensor_id in self.sensor_agents:
                 self.sensor_agents[sensor_id].pruneTimeBiasEvents()
