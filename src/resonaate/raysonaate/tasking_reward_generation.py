@@ -25,9 +25,10 @@ if TYPE_CHECKING:
 
 @dataclass
 class RewardCalcSubmission:
+    """Encapsulate arguments for `asyncCalculateReward`."""
 
     estimate_handle: EstimateAgent
-    """Remote handle of the :class;`.EstimateAgent` to calculate reward for."""
+    """Remote handle of the :class:`.EstimateAgent` to calculate reward for."""
 
     reward: Reward
     """Function used to calculate a sensor/estimate pair's reward."""
@@ -38,6 +39,7 @@ class RewardCalcSubmission:
 
 @dataclass
 class RewardCalcResult:
+    """Encapsulate attributes of return value from `asyncCalculateReward`."""
 
     estimate_id: int
     """Unique identifier of the :class:`.EstimateAgent` that rewards were calculated for."""
@@ -69,7 +71,10 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
 
     # Ensure the visibility and metric matrices are the same scale as in the tasking engine
     visibility = zeros(len(submission.sensor_handle_list), dtype=bool)
-    metric_matrix = zeros((len(submission.sensor_handle_list), len(submission.reward.metrics)), dtype=float)
+    metric_matrix = zeros(
+        (len(submission.sensor_handle_list), len(submission.reward.metrics)),
+        dtype=float,
+    )
 
     sensor_list = ray.get(submission.sensor_handle_list)
     for sensor_index, sensor_agent in enumerate(sensor_list):
@@ -79,16 +84,17 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
             visibility[sensor_index] = True
-            metric_matrix[sensor_index] = submission.reward.calculateMetrics(estimate, sensor_agent)
+            metric_matrix[sensor_index] = submission.reward.calculateMetrics(
+                estimate, sensor_agent
+            )
 
     return RewardCalcResult(
-        estimate_id=estimate.simulation_id,
-        visibility=visibility,
-        metric_matrix=metric_matrix
+        estimate_id=estimate.simulation_id, visibility=visibility, metric_matrix=metric_matrix
     )
 
 
 class TaskingRewardRegistration(Registration):
+    """Encapsulates a tasking reward generation step into a :class:`.Registration`."""
 
     def __init__(self, registrant: TaskingEngine, estimate_id: int):
         """Initialize a :class:`.TaskingRewardRegistration`.
@@ -101,7 +107,7 @@ class TaskingRewardRegistration(Registration):
         """
         super().__init__(registrant)
         self._estimate_id = estimate_id
-    
+
     def generateSubmission(self) -> RewardCalcSubmission:
         """Generate a :class:`.RewardCalcSubmission` specifying the reward being calculated."""
         raise Exception("Don't actually call this.")
@@ -114,17 +120,24 @@ class TaskingRewardRegistration(Registration):
 
 
 class TaskingRewardExecutor(JobExecutor):
+    """Creates, executes, and processes the results of tasking reward generation jobs."""
 
     def __init__(self, tasking_engine: TaskingEngine):
+        """Initialize a :class:`.TaskingRewardExecutor`."""
         super().__init__()
         self._tasking_engine = tasking_engine
 
     @classmethod
     def getRemoteFunc(cls):
+        """Pointer to :meth:`.asyncCalculateReward` function executed on remote worker."""
         return asyncCalculateReward
 
     def execute(self):
-        sensor_handle_list = [self._tasking_engine._sensor_store[sensor_id] for sensor_id in self._tasking_engine.sensor_list]
+        """Assemble, delegate, and process the results of tasking reward generation jobs."""
+        sensor_handle_list = [
+            self._tasking_engine._sensor_store[sensor_id]
+            for sensor_id in self._tasking_engine.sensor_list
+        ]
         for registration in self._registrations:
             submission = RewardCalcSubmission(
                 self._tasking_engine._estimate_store[registration._estimate_id],
