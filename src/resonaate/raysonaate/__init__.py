@@ -1,4 +1,3 @@
-
 # Standard Library Imports
 from abc import ABC, abstractmethod
 
@@ -63,3 +62,7 @@ class JobExecutor(ABC):
             finished_jobs, self._unfinished_jobs = ray.wait(self._unfinished_jobs)
             result = ray.get(finished_jobs[0])
             self._result_reg_mapping[finished_jobs[0]].processResults(result)
+
+    def clearRegistry(self):
+        """Remove all active registrations from the registry."""
+        self._registrations = []

@@ -76,15 +76,10 @@ class CentralizedTaskingEngine(TaskingEngine):
         self._realtime_obs = realtime_obs
         """``bool``: whether tasking engine should task observations in realtime (during the simulation)."""
 
-        self._reward_executor = TaskingRewardExecutor(self)            
+        self._reward_executor = TaskingRewardExecutor()
         self._task_exec_executor = TaskExecutionExecutor(self)
         for _id in self.target_list:
-            self._reward_executor.register(
-                TaskingRewardRegistration(self, _id)
-            )
-            self._task_exec_executor.register(
-                TaskExecutionRegistration(self, _id)
-            )
+            self._task_exec_executor.register(TaskExecutionRegistration(self, _id))
 
     def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
@@ -110,7 +105,18 @@ class CentralizedTaskingEngine(TaskingEngine):
         # Only task if we say so.... :P
         if self._realtime_obs:
             self.logger.debug("Generating tasking rewards...")
+            sensor_handle_list = [self._sensor_store[sensor_id] for sensor_id in self.sensor_list]
+            for _id in self.target_list:
+                self._reward_executor.register(
+                    TaskingRewardRegistration(
+                        self,
+                        self._estimate_store[_id],
+                        self.reward,
+                        sensor_handle_list,
+                    ),
+                )
             self._reward_executor.execute()
+            self._reward_executor.clearRegistry()
             handleRelevantEvents(
                 self,
                 self._database,

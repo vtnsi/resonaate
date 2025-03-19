@@ -96,21 +96,36 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
 class TaskingRewardRegistration(Registration):
     """Encapsulates a tasking reward generation step into a :class:`.Registration`."""
 
-    def __init__(self, registrant: TaskingEngine, estimate_id: int):
+    def __init__(
+        self,
+        registrant: TaskingEngine,
+        estimate_handle: EstimateAgent,
+        reward: Reward,
+        sensor_handle_list: list[SensingAgent],
+    ):
         """Initialize a :class:`.TaskingRewardRegistration`.
 
         Args:
             registrant: The :class:`.TaskingEngine` requesting this segment of the reward be
                 calculated.
-            estimate_id: The unique identifier of the :class:`.EstimateAgent` the tasking reward
-                will be calculated for.
+            estimate_handle: Remote `ray` handle to the :class:`.EstimateAgent` object whos tasking
+                reward is being calculated.
+            reward: Reward function that remote worker will use to calculate the tasking reward.
+            sensor_handle_list: List of remote `ray` handles to :class:`.SensingAgent`s that could
+                possibly observe the specified :class:`.EstimateAgent`.
         """
         super().__init__(registrant)
-        self._estimate_id = estimate_id
+        self._estimate_handle = estimate_handle
+        self._reward = reward
+        self._sensor_handle_list = sensor_handle_list
 
     def generateSubmission(self) -> RewardCalcSubmission:
         """Generate a :class:`.RewardCalcSubmission` specifying the reward being calculated."""
-        raise Exception("Don't actually call this.")
+        return RewardCalcSubmission(
+            self._estimate_handle,
+            self._reward,
+            self._sensor_handle_list,
+        )
 
     def processResults(self, results: RewardCalcResult):
         """Update the :attr:`._registrant`'s visibility and metric matrices."""
@@ -122,34 +137,7 @@ class TaskingRewardRegistration(Registration):
 class TaskingRewardExecutor(JobExecutor):
     """Creates, executes, and processes the results of tasking reward generation jobs."""
 
-    def __init__(self, tasking_engine: TaskingEngine):
-        """Initialize a :class:`.TaskingRewardExecutor`."""
-        super().__init__()
-        self._tasking_engine = tasking_engine
-
     @classmethod
     def getRemoteFunc(cls):
         """Pointer to :meth:`.asyncCalculateReward` function executed on remote worker."""
         return asyncCalculateReward
-
-    def execute(self):
-        """Assemble, delegate, and process the results of tasking reward generation jobs."""
-        sensor_handle_list = [
-            self._tasking_engine._sensor_store[sensor_id]
-            for sensor_id in self._tasking_engine.sensor_list
-        ]
-        for registration in self._registrations:
-            submission = RewardCalcSubmission(
-                self._tasking_engine._estimate_store[registration._estimate_id],
-                reward=self._tasking_engine.reward,
-                sensor_handle_list=sensor_handle_list,
-            )
-
-            remote_ref = self.getRemoteFunc().remote(submission)
-            self._unfinished_jobs.append(remote_ref)
-            self._result_reg_mapping[remote_ref] = registration
-
-        while self._unfinished_jobs:
-            finished_jobs, self._unfinished_jobs = ray.wait(self._unfinished_jobs)
-            result = ray.get(finished_jobs[0])
-            self._result_reg_mapping[finished_jobs[0]].processResults(result)
