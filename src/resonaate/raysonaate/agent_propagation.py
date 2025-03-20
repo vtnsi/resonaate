@@ -48,10 +48,10 @@ class PropagateSubmission:
     init_eci: ndarray
     """6x1 state vector of object at :attr:`.init_time`."""
 
-    station_keeping: Optional[list[StationKeeper]] = None
+    station_keeping: list[StationKeeper] | None = None
     """Collection of :class:`.StationKeeper` objects that affect propagation."""
 
-    scheduled_events: Optional[list[ScheduledEventType]] = None
+    scheduled_events: list[ScheduledEventType] | None = None
     """Collection of :class:`.ScheduledEventType` objects that affect propagation."""
 
 
@@ -82,8 +82,7 @@ def asyncPropagate(submission: PropagateSubmission) -> PropagateResult:
     Returns:
         Result of propagation.
     """
-    dyna = ray.get(submission.dynamics)
-    new_eci = dyna.propagate(
+    new_eci = submission.dynamics.propagate(
         submission.init_time,
         submission.final_time,
         submission.init_eci,
@@ -101,16 +100,6 @@ def asyncPropagate(submission: PropagateSubmission) -> PropagateResult:
 class PropagateRegistration(Registration):
     """Encapsulates a propagation step into a :class:`.Registration`."""
 
-    def __init__(self, registrant: Union[TargetAgent, SensingAgent]):
-        """Initialize a :class:`.PropagateRegistration`.
-
-        This initialization has a side effect of putting the `registrant`'s :class:`.Dynamics`
-        class on `ray`'s remote object store because the object is relatively static and this will
-        reduce the amount of times that it will need to be serialized.
-        """
-        super().__init__(registrant)
-        self._remote_dyna_ref = ray.put(registrant.dynamics)
-
     def generateSubmission(self) -> PropagateSubmission:
         """Generate a :class:`.PropagateSubmission` for the :attr:`._registrant`'s current time step."""
         self._registrant.prunePropagateEvents()
@@ -120,7 +109,7 @@ class PropagateRegistration(Registration):
 
         return PropagateSubmission(
             agent_id=self._registrant.simulation_id,
-            dynamics=self._remote_dyna_ref,
+            dynamics=self._registrant.dynamics,
             init_time=self._registrant.time,
             final_time=self._registrant.time + self._registrant.dt_step,
             init_eci=self._registrant.eci_state,
@@ -141,11 +130,3 @@ class PropagateExecutor(JobExecutor):
     def getRemoteFunc(cls):
         """Pointer to :meth:`.asyncPropagate` function executed on remote worker."""
         return asyncPropagate
-
-    def registerAgent(self, agent: Union[TargetAgent, SensingAgent]):
-        """Convenience method for registering a :class:`.TargetAgent` or :class:`.SensingAgent`.
-
-        Args:
-            agent: Agent to create a :class:`.PropagateRegistration` from.
-        """
-        self.register(PropagateRegistration(agent))

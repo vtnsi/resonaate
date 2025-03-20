@@ -27,8 +27,8 @@ from ..dynamics import dynamicsFactory
 from ..dynamics.integration_events.event_stack import EventStack
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
-from ..raysonaate.agent_propagation import PropagateExecutor
-from ..raysonaate.estimate_prediction import EstPredictExecutor
+from ..raysonaate.agent_propagation import PropagateExecutor, PropagateRegistration
+from ..raysonaate.estimate_prediction import EstPredictExecutor, EstPredictRegistration
 from ..raysonaate.estimate_update import EstUpdateExecutor
 from .config.agent_config import AgentConfig, SensingAgentConfig
 
@@ -157,11 +157,6 @@ class Scenario:
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents
         self._agent_propagator = PropagateExecutor()
-        for target_agent in self.target_agents.values():
-            self._agent_propagator.registerAgent(target_agent)
-
-        for sensor_agent in self.sensor_agents.values():
-            self._agent_propagator.registerAgent(sensor_agent)
 
         self._estimate_updater = EstUpdateExecutor()
         self._estimate_predictor = EstPredictExecutor()
@@ -313,7 +308,11 @@ class Scenario:
         self.current_julian_date = self.clock.julian_date_epoch
 
         # Propagate truth model & predict estimate forward in time.
-        self._agent_propagator.execute()
+        for target_agent in self.target_agents.values():
+            self._agent_propagator.enqueueJob(PropagateRegistration(target_agent))
+        for sensor_agent in self.sensor_agents.values():
+            self._agent_propagator.enqueueJob(PropagateRegistration(sensor_agent))
+        self._agent_propagator.join()
 
         if not self.scenario_config.propagation.truth_simulation_only:
             self.logger.debug("Predict estimates...")
