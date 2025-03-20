@@ -467,8 +467,6 @@ class Scenario:
         self._estimate_agents[target_spec.id] = estimate_agent
 
         self._tasking_engines[tasking_engine_id].addTarget(target_agent.simulation_id)
-        # [TODO] self._agent_propagation_handler.registerCallback(target_agent)
-        # [TODO] self._estimate_prediction_handler.registerCallback(estimate_agent)
 
     def removeTarget(self, agent_id: int, tasking_engine_id: int) -> None:
         """Remove a target from this :class:`.Scenario`.
@@ -481,9 +479,7 @@ class Scenario:
             err = f"Target '{agent_id} doesn't exist in this scenario."
             raise AgentRemovalError(err)
 
-        # [TODO] self._agent_propagation_handler.deregisterCallback(agent_id)
         del self.target_agents[agent_id]
-        # [TODO] self._estimate_prediction_handler.deregisterCallback(agent_id)
         del self._estimate_agents[agent_id]
         self._tasking_engines[tasking_engine_id].removeTarget(agent_id)
 
@@ -538,7 +534,6 @@ class Scenario:
         self._sensor_agents[sensing_agent.simulation_id] = sensing_agent
 
         self._tasking_engines[tasking_engine_id].addSensor(sensing_agent.simulation_id)
-        # [TODO] self._agent_propagation_handler.registerCallback(sensing_agent)
 
     def removeSensor(self, agent_id: int, tasking_engine_id: int) -> None:
         """Remove a sensor from this :class:`.Scenario`.
