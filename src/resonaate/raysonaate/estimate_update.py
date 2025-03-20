@@ -69,18 +69,18 @@ def asyncUpdateEstimate(submission: EstUpdateSubmission) -> EstUpdateResult:
 class EstUpdateRegistration(Registration):
     """Encapsulates an updates step into a :class:`.Registration`."""
 
-    def __init__(self, registrant: EstimateAgent):
+    def __init__(self, registrant: EstimateAgent, handle, observations):
         """Initialize a :class:`.EstUpdateRegistration`."""
         super().__init__(registrant)
+        self._handle = handle
+        self._observations = observations
 
-    @property
-    def sim_id(self) -> int:
-        return self._registrant.simulation_id
+    def generateSubmission(self) -> EstUpdateSubmission:
+        """Generate a :class:`.EstUpdateSubmission` specifying how to update the estimate."""
+        return EstUpdateSubmission(self._handle, self._observations)
 
-    def generateSubmission(self):
-        raise Exception("Don't actually call this.")
-    
     def processResults(self, results):
+        """Update the :class:`.EstimateAgent`'s filter and flags."""
         # [NOTE]: Reset the filter. Likely faster to do this each time, than check and
         #   convert, and then partially reset?
         self._registrant._resetFilter(results.updated_filter)
@@ -94,38 +94,9 @@ class EstUpdateRegistration(Registration):
 
 
 class EstUpdateExecutor(JobExecutor):
-
-    def registerAgent(self, agent: EstimateAgent):
-        """Convenience method for registering a :class:`.EstimateAgent`.
-
-        Args:
-            agent: Agent to create a :class:`.EstUpdateRegistration` from.
-        """
-        self.register(EstUpdateRegistration(agent))
+    """Creates, executes, and processes the results of estimate update jobs."""
 
     @classmethod
     def getRemoteFunc(cls):
+        """Pointer to :meth:`.asyncCalculateReward` function executed on remote worker."""
         return asyncUpdateEstimate
-
-    def execute(self, estimate_store: dict, obs_dict: dict[int, list[Observation]]):
-        """
-        Args:
-            estimate_store: Dictionary mapping remote :class:`.EstimateAgent` handles to
-                simulation IDs.
-            obs_dict: Dictionary mapping successful observations to simulation
-                :class:`.EstimateAgent` simulations IDs.
-        """
-        for registration in self._registrations:
-            submission = EstUpdateSubmission(
-                estimate_store[registration.sim_id],
-                obs_dict.get(registration.sim_id, list())
-            )
-            remote_ref = self.getRemoteFunc().remote(submission)
-            self._unfinished_jobs.append(remote_ref)
-            self._result_reg_mapping[remote_ref] = registration
-
-        while self._unfinished_jobs:
-            finished_jobs, self._unfinished_jobs = ray.wait(self._unfinished_jobs)
-            result = ray.get(finished_jobs[0])
-            self._result_reg_mapping[finished_jobs[0]].processResults(result)
-

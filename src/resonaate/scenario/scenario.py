@@ -29,7 +29,7 @@ from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..raysonaate.agent_propagation import PropagateExecutor, PropagateRegistration
 from ..raysonaate.estimate_prediction import EstPredictExecutor, EstPredictRegistration
-from ..raysonaate.estimate_update import EstUpdateExecutor
+from ..raysonaate.estimate_update import EstUpdateExecutor, EstUpdateRegistration
 from .config.agent_config import AgentConfig, SensingAgentConfig
 
 # Type Checking Imports
@@ -160,9 +160,6 @@ class Scenario:
 
         self._estimate_updater = EstUpdateExecutor()
         self._estimate_predictor = EstPredictExecutor()
-        for estimate_agent in self.estimate_agents.values():
-            self._estimate_predictor.registerAgent(estimate_agent)
-            self._estimate_updater.registerAgent(estimate_agent)
 
         self._target_store = {}
         self._sensor_store = {}
@@ -316,7 +313,9 @@ class Scenario:
 
         if not self.scenario_config.propagation.truth_simulation_only:
             self.logger.debug("Predict estimates...")
-            self._estimate_predictor.execute()
+            for estimate_agent in self.estimate_agents.values():
+                self._estimate_predictor.enqueueJob(EstPredictRegistration(estimate_agent))
+            self._estimate_predictor.join()
 
             # Handle Sensor Time Bias Events
             # [NOTE][parallel-time-bias-event-handling] Step one: query for events and "handle" them.
@@ -328,14 +327,12 @@ class Scenario:
             )
             for event in relevant_events:
                 event.handleEvent(self.sensor_agents[event.scope_instance_id])
-            # Check to prune time bias events
-            for sensor_id in self.sensor_agents:
-                self.sensor_agents[sensor_id].pruneTimeBiasEvents()
 
             self.logger.debug("Put agent updates...")
             for target_id, target in self.target_agents.items():
                 self._target_store[target_id] = ray.put(target)
             for sensor_id, sensor in self.sensor_agents.items():
+                sensor.pruneTimeBiasEvents()
                 self._sensor_store[sensor_id] = ray.put(sensor)
             for estimate_id, estimate in self.estimate_agents.items():
                 self._estimate_store[estimate_id] = ray.put(estimate)
@@ -362,7 +359,15 @@ class Scenario:
             # Estimate and covariance are stored as the updated state estimate and covariance
             # If there are no observations, there is no update information and the predicted state
             self.logger.debug("Updating estimate agents...")
-            self._estimate_updater.execute(self._estimate_store, obs_dict)
+            for estimate_agent in self.estimate_agents.values():
+                self._estimate_updater.enqueueJob(
+                    EstUpdateRegistration(
+                        estimate_agent,
+                        self._estimate_store[estimate_agent.simulation_id],
+                        obs_dict[estimate_agent.simulation_id],
+                    ),
+                )
+            self._estimate_updater.join()
 
             self._target_store = {}
             self._sensor_store = {}

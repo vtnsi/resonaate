@@ -8,18 +8,12 @@ from typing import TYPE_CHECKING
 import ray
 
 # Local Imports
-from ..estimation.results import SeqFilterPredictResult
 from . import JobExecutor, Registration
 
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Optional
-
-    # Third Party Imports
-    from numpy import ndarray
-
     # Local Imports
     from ..agents.estimate_agent import EstimateAgent
+    from ..estimation.results import SeqFilterPredictResult
     from ..estimation.sequential.sequential_filter import SequentialFilter
     from ..physics.time.stardate import ScenarioTime
 
@@ -34,7 +28,7 @@ class EstPredictSubmission:
     time: ScenarioTime
     """Time during the scenario to predict to."""
 
-    scheduled_events: Optional[list] = None
+    scheduled_events: list | None = None
     """List of event objects that an estimate could predict...?"""
 
 
@@ -54,10 +48,6 @@ def asyncPredict(submission: EstPredictSubmission) -> SeqFilterPredictResult:
 
 class EstPredictRegistration(Registration):
     """Encapsulates a prediction step into a :class:`.Registration`."""
-
-    def __init__(self, registrant: EstimateAgent):
-        """Initialize a :class:`.EstPredictRegistration`."""
-        super().__init__(registrant)
 
     def generateSubmission(self) -> EstPredictSubmission:
         """Generate a :class:`.EstPredictSubmission` for the :attr:`._registrant`'s current time step."""
@@ -85,11 +75,3 @@ class EstPredictExecutor(JobExecutor):
     def getRemoteFunc(cls):
         """Pointer to :meth:`.asyncPredict` function executed on remote worker."""
         return asyncPredict
-
-    def registerAgent(self, agent: EstimateAgent):
-        """Convenience method for registering a :class:`.EstimateAgent`.
-
-        Args:
-            agent: Agent to create a :class:`.EstPredictRegistration` from.
-        """
-        self.register(EstPredictRegistration(agent))
