@@ -244,7 +244,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         """
         self.nominal_filter.update(observations)
         self._update(observations)
-        self._finalizeUpdate(observations)
+        self._finalizeUpdate(len(observations) > 0)
 
     def getCurrentEphemeris(self) -> EstimateEphemeris:
         """Returns the EstimateAgent's current ephemeris information.
@@ -299,7 +299,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         if self.adaptive_filter_config:
             self._handleMMAE(observations)
 
-    def _finalizeUpdate(self, observations: list[Observation]) -> None:
+    def _finalizeUpdate(self, observed: bool) -> None:
         """Finalize the update step by saving specific attributes.
 
         Note:
@@ -307,12 +307,12 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             must perform these operations after the update portion finishes.
 
         Args:
-            observations (list): :class:`.Observation` objects of this agent for this time step.
+            observed: Flag indicating whether the target tracked by this update was observed.
         """
         self.state_estimate = self.nominal_filter.est_x
         self.error_covariance = self.nominal_filter.est_p
 
-        if not observations:
+        if not observed:
             return
 
         self.last_observed_at = self.julian_date_epoch

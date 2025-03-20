@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class EstUpdateSubmission:
-    """Encapsulate arguments for `asyncUpdateEstimate`."""
+    """Encapsulate arguments for :meth:`.asyncUpdateEstimate`."""
 
     estimate_agent: EstimateAgent
     """Remote handle to the :class:`.EstimateAgent` being updated."""
@@ -32,13 +32,13 @@ class EstUpdateSubmission:
 
 @dataclass
 class EstUpdateResult:
-    """Encapsulate ..."""
+    """Encapsulate return value of :meth:`.asyncUpdateEstimate`."""
 
     estimate_id: int
     """Unique ID of the :class:`.EstimateAgent` that was updated."""
 
-    observations: list[Observation]  # XXX: is this necessary?
-    """Successful :class:`.Observation`s made of this agent during the time step."""
+    observed: bool
+    """Flag indicating whether the target tracked by this update was observed."""
 
     updated_filter: SequentialFilter | AdaptiveFilter
     """The agent's associated filter object that is updated with new values."""
@@ -59,7 +59,7 @@ def asyncUpdateEstimate(submission: EstUpdateSubmission) -> EstUpdateResult:
 
     return EstUpdateResult(
         estimate_id=estimate_agent.simulation_id,
-        observations=submission.successful_obs,
+        observed=len(submission.successful_obs) > 0,
         iod_start_time=estimate_agent.iod_start_time,
         updated_filter=estimate_agent.nominal_filter,
         detected_maneuvers=estimate_agent._detected_maneuvers,
@@ -79,12 +79,12 @@ class EstUpdateRegistration(Registration):
         """Generate a :class:`.EstUpdateSubmission` specifying how to update the estimate."""
         return EstUpdateSubmission(self._handle, self._observations)
 
-    def processResults(self, results):
+    def processResults(self, results: EstUpdateResult):
         """Update the :class:`.EstimateAgent`'s filter and flags."""
         # [NOTE]: Reset the filter. Likely faster to do this each time, than check and
         #   convert, and then partially reset?
         self._registrant._resetFilter(results.updated_filter)
-        self._registrant._finalizeUpdate(results.observations)
+        self._registrant._finalizeUpdate(results.observed)
 
         # [FIXME]: This feels hacky. May need to formalize MMAE/IOD conops in sub-classes?
         self._registrant.iod_start_time = results.iod_start_time
