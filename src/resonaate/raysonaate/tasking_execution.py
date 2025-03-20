@@ -6,14 +6,12 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import ray
-from numpy import array, where
 
 # Local Imports
 from . import JobExecutor, Registration
 
 if TYPE_CHECKING:
     # Third Party Imports
-    from numpy import ndarray
 
     # Local Imports
     from ..agents.estimate_agent import EstimateAgent
@@ -25,6 +23,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class TaskExecutionSubmission:
+    """Encapsulate arguments for `asyncExecuteTasking`."""
 
     estimate_handle: EstimateAgent
     """Remote handle to :class:`.EstimateAgent` being tasked."""
@@ -38,6 +37,7 @@ class TaskExecutionSubmission:
 
 @dataclass
 class TaskExecutionResult:
+    """Encapsulate attributes of return value from `asyncExecuteTasking`."""
 
     target_id: int
     """Unique identifier of the :class:`.TargetAgent` being observed."""
@@ -104,51 +104,50 @@ def asyncExecuteTasking(submission: TaskExecutionSubmission) -> dict:
 
 
 class TaskExecutionRegistration(Registration):
+    """Encapsulates a tasking execution step into a :class:`.Registration`."""
 
-    def __init__(self, registrant: TaskingEngine, target_id: int):
+    def __init__(
+        self,
+        registrant: TaskingEngine,
+        estimate_handle: EstimateAgent,
+        target_store: dict[int, TargetAgent],
+        tasked_sensor_handles: list[SensingAgent],
+    ):
+        """Initialize a :class:`.TaskExecutionRegistration`.
+
+        Args:
+            registrant: The :class:`.TaskingEngine` requesting this tasking be executed.
+            estimate_handle: Remote `ray` handle to the :class:`.EstimateAgent` object this tasking
+                is executing on.
+            target_store: A mapping of target IDs to their remote `ray` handles to
+                :class:`.TargetAgent`s.
+            tasked_sensor_handles: List of remote `ray` handles to :class:`.SensingAgent`s that
+                have been tasked to observe the specified :class:`.EstimateAgent`.
+        """
         super().__init__(registrant)
-        self._target_id = target_id
+        self._estimate_handle = estimate_handle
+        self._target_store = target_store
+        self._tasked_sensor_handles = tasked_sensor_handles
 
-    def generateSubmission(self):
-        raise Exception("Don't actually call this.")
+    def generateSubmission(self) -> TaskExecutionSubmission:
+        """Generate a :class:`.TaskExecutionSubmission` specifying the tasking being executed."""
+        return TaskExecutionSubmission(
+            self._estimate_handle,
+            self._target_store,
+            self._tasked_sensor_handles,
+        )
 
     def processResults(self, results: TaskExecutionResult):
+        """Queue resultant observations to be saved to the database and record sensor changes."""
         self._registrant.saveObservations(results.observations)
         self._registrant.saveMissedObservations(results.missed_observations)
         self._registrant.updateFromAsyncTaskExecution(results.sensor_info_list)
 
 
 class TaskExecutionExecutor(JobExecutor):
-
-    def __init__(self, tasking_engine: TaskingEngine):
-        super().__init__()
-        self._tasking_engine = tasking_engine
+    """Creates, executes, and processes the results of tasking reward generation jobs."""
 
     @classmethod
     def getRemoteFunc(cls):
+        """Pointer to :meth:`.asyncExecuteTasking` function executed on remote worker."""
         return asyncExecuteTasking
-    
-    def execute(self):
-        sensor_num_array = array(self._tasking_engine.sensor_list)
-        for registration in self._registrations:
-            target_index = self._tasking_engine.target_indices[registration._target_id]
-            tasked_sensor_indices = where(self._tasking_engine.decision_matrix[target_index, :])[0]
-
-            if len(tasked_sensor_indices) > 0:
-                tasked_sensor_ids = sensor_num_array[tasked_sensor_indices]
-                submission = TaskExecutionSubmission(
-                    self._tasking_engine._estimate_store[registration._target_id],
-                    self._tasking_engine._target_store,
-                    [self._tasking_engine._sensor_store[sensor_id] for sensor_id in tasked_sensor_ids]
-                )
-
-                remote_ref = self.getRemoteFunc().remote(submission)
-                self._unfinished_jobs.append(remote_ref)
-                self._result_reg_mapping[remote_ref] = registration
-
-        while self._unfinished_jobs:
-            finished_jobs, self._unfinished_jobs = ray.wait(self._unfinished_jobs)
-            result = ray.get(finished_jobs[0])
-            self._result_reg_mapping[finished_jobs[0]].processResults(result)
-
-    

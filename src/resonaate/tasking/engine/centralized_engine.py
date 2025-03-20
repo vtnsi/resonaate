@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import ray
-from numpy import zeros
+from numpy import array, where, zeros
 from sqlalchemy.orm import Query
 
 # Local Imports
@@ -77,9 +77,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         """``bool``: whether tasking engine should task observations in realtime (during the simulation)."""
 
         self._reward_executor = TaskingRewardExecutor()
-        self._task_exec_executor = TaskExecutionExecutor(self)
-        for _id in self.target_list:
-            self._task_exec_executor.register(TaskExecutionRegistration(self, _id))
+        self._task_exec_executor = TaskExecutionExecutor()
 
     def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
@@ -117,6 +115,7 @@ class CentralizedTaskingEngine(TaskingEngine):
                 )
             self._reward_executor.execute()
             self._reward_executor.clearRegistry()
+
             handleRelevantEvents(
                 self,
                 self._database,
@@ -128,8 +127,23 @@ class CentralizedTaskingEngine(TaskingEngine):
             )
             self.calculateRewards()
             self.generateTasking()
+
             self.logger.debug("Executing tasking strategy...")
+            sensor_num_array = array(self.sensor_list)
+            for target_id, target_index in self.target_indices.items():
+                tasked_sensor_indices = where(self.decision_matrix[target_index, :])[0]
+                if len(tasked_sensor_indices) > 0:
+                    tasked_sensor_ids = sensor_num_array[tasked_sensor_indices]
+                    self._task_exec_executor.register(
+                        TaskExecutionRegistration(
+                            self,
+                            self._estimate_store[target_id],
+                            self._target_store,
+                            [self._sensor_store[sensor_id] for sensor_id in tasked_sensor_ids],
+                        ),
+                    )
             self._task_exec_executor.execute()
+            self._task_exec_executor.clearRegistry()
 
         # Load imported observations
         if self._importer_db:
