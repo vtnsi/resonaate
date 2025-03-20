@@ -105,7 +105,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             self.logger.debug("Generating tasking rewards...")
             sensor_handle_list = [self._sensor_store[sensor_id] for sensor_id in self.sensor_list]
             for _id in self.target_list:
-                self._reward_executor.register(
+                self._reward_executor.enqueueJob(
                     TaskingRewardRegistration(
                         self,
                         self._estimate_store[_id],
@@ -113,8 +113,7 @@ class CentralizedTaskingEngine(TaskingEngine):
                         sensor_handle_list,
                     ),
                 )
-            self._reward_executor.execute()
-            self._reward_executor.clearRegistry()
+            self._reward_executor.join()
 
             handleRelevantEvents(
                 self,
@@ -134,7 +133,7 @@ class CentralizedTaskingEngine(TaskingEngine):
                 tasked_sensor_indices = where(self.decision_matrix[target_index, :])[0]
                 if len(tasked_sensor_indices) > 0:
                     tasked_sensor_ids = sensor_num_array[tasked_sensor_indices]
-                    self._task_exec_executor.register(
+                    self._task_exec_executor.enqueueJob(
                         TaskExecutionRegistration(
                             self,
                             self._estimate_store[target_id],
@@ -142,8 +141,7 @@ class CentralizedTaskingEngine(TaskingEngine):
                             [self._sensor_store[sensor_id] for sensor_id in tasked_sensor_ids],
                         ),
                     )
-            self._task_exec_executor.execute()
-            self._task_exec_executor.clearRegistry()
+            self._task_exec_executor.join()
 
         # Load imported observations
         if self._importer_db:

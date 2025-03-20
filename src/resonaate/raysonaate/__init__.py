@@ -42,6 +42,25 @@ class JobExecutor(ABC):
         """Pointer to function being executed on remote worker."""
         raise NotImplementedError
 
+    def enqueueJob(self, registration: Registration):
+        """Delegate a specified registration of work to be processed remotely.
+
+        Args:
+            registration: Registration encapsulating the unit of work to be executed.
+        """
+        submission = registration.generateSubmission()
+        remote_ref = self.getRemoteFunc().remote(submission)
+        self._unfinished_jobs.append(remote_ref)
+        self._result_reg_mapping[remote_ref] = registration
+
+    def join(self):
+        """Wait for all enqueued jobs to complete and be processed."""
+        while self._unfinished_jobs:
+            finished_jobs, self._unfinished_jobs = ray.wait(self._unfinished_jobs)
+            result = ray.get(finished_jobs[0])
+            self._result_reg_mapping[finished_jobs[0]].processResults(result)
+            del self._result_reg_mapping[finished_jobs[0]]
+
     def register(self, registration: Registration):
         """Register a unit of work that needs to be done during the 'execute' step.
 
