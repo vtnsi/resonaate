@@ -282,8 +282,8 @@ def testPredictionResult(ukf: UnscentedKalmanFilter):
     ]
 
     result = ukf.getPredictionResult()
-    assert array_equal(result["sigma_points"], UKF_SIGMA_POINTS)
-    assert array_equal(result["sigma_x_res"], UKF_SIGMA_X_RES)
+    assert array_equal(result.sigma_points, UKF_SIGMA_POINTS)
+    assert array_equal(result.sigma_x_res, UKF_SIGMA_X_RES)
     for key in expected_keys:
         assert key in result
 
@@ -307,8 +307,8 @@ def testForecastResult(ukf: UnscentedKalmanFilter):
     ]
 
     result = ukf.getForecastResult()
-    assert array_equal(result["sigma_points"], UKF_SIGMA_POINTS)
-    assert array_equal(result["sigma_y_res"], UKF_SIGMA_Y_RES)
+    assert array_equal(result.sigma_points, UKF_SIGMA_POINTS)
+    assert array_equal(result.sigma_y_res, UKF_SIGMA_Y_RES)
     for key in expected_keys:
         assert key in result
 
