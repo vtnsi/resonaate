@@ -4,17 +4,16 @@ from __future__ import annotations
 import logging
 import shutil
 import sys
-from multiprocessing import cpu_count
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
-from strmbrkr import KeyValueStore, WorkerManager
 
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.data import clearDBPath, getDBConnection, setDBPath
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
+from resonaate.raysonaate.key_value_store import KeyValueStore
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
 
@@ -92,15 +91,6 @@ def _createKeyValueStore():
     return
 
 
-@pytest.fixture(name="worker_manager", scope="session", autouse=True)
-def createWorkerManager() -> WorkerManager:
-    """Create a valid WorkerManager."""
-    worker_manager = WorkerManager(proc_count=cpu_count())
-    worker_manager.startWorkers()
-    yield worker_manager
-    worker_manager.stopWorkers(no_wait=True)
-
-
 @pytest.fixture(name="teardown_kvs", autouse=True)
 def _teardownKeyValueStore():
     """Make sure that :class:`.KeyValueStore.Server` is flushed after each test, but not shutdown."""
@@ -119,10 +109,6 @@ def _customDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
     with monkeypatch.context() as m:
         m.setattr("resonaate.data.createDatabasePath", patchCreateDatabasePath)
         yield
-
-    database = getDBConnection()
-    database.resetData(database.VALID_DATA_TYPES)
-    clearDBPath()
 
 
 @pytest.fixture(name="database")
