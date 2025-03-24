@@ -69,7 +69,8 @@ def buildScenarioFromConfigDict(
 
     # [NOTE][force-db-path]: Only call to `setDBPath()`. Subsequent calls will cause an error to
     #   be thrown!
-    ray.init(num_cpus=BehavioralConfig.getConfig().parallel.WorkerCount)
+    if not ray.is_initialized():
+        ray.init(num_cpus=BehavioralConfig.getConfig().parallel.WorkerCount)
     database_path = createDatabasePath(internal_db_path, importer=False)
     setDBPath(path=database_path)
 
