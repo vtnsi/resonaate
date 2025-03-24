@@ -582,7 +582,7 @@ class TestAdaptiveEstimation:
         """Test getting prediction results."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         result = adaptive_filter.getPredictionResult()
-        assert len(result["models"]) == 3
+        assert len(result.models) == 3
 
     def testGetForecastResults(self, adaptive_filter: AdaptiveFilter):
         """Test getting forecast results."""
