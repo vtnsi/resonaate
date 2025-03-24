@@ -216,14 +216,12 @@ class CentralizedTaskingEngine(TaskingEngine):
 
         # [NOTE]: Measurement metadata isn't saved to the DB. This attaches the correct Measurement metadata to
         #   imported Observations so they can be processed
-        loaded_obs = []
-        for observation in imported_observations:
-            sensor_agent = ray.get(self._sensor_store[observation.sensor_id])
-            loaded_obs.append(self._createLoadedObs(observation, sensor_agent.sensors))
-        return loaded_obs
+        return [self._attachObsMetadata(ob) for ob in imported_observations]
 
-    def _createLoadedObs(self, observation: Observation, sensor: Sensor) -> Observation:
-        observation.measurement = sensor.measurement
+    def _attachObsMetadata(self, observation: Observation) -> Observation:
+        """Attach measurement metadata to `observation` since it's not stored with the :class:`.Observation`."""
+        sensor_agent = ray.get(self._sensor_store[observation.sensor_id])
+        observation.measurement = sensor_agent.measurement
         return observation
 
     def getCurrentTasking(self, julian_date: JulianDate) -> Task:
