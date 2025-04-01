@@ -26,7 +26,7 @@ from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKal
 from resonaate.physics.time.stardate import ScenarioTime
 from resonaate.physics.transforms.methods import eci2ecef
 from resonaate.scenario.clock import ScenarioClock
-from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
+from resonaate.scenario.config.estimation_config import GPB1AdaptiveEstimationConfig
 
 # pylint: disable=protected-access
 pytestmark = pytest.mark.usefixtures("database")
@@ -346,7 +346,6 @@ def testGestFilterSteps(estimate_agent: EstimateAgent, observations: Observation
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
         observations (:class:`.Observation`): Observation tuple fixture
     """
-
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
     estimate_agent.nominal_filter.forecast(observations)
     estimate_agent.update(observations)
@@ -365,8 +364,7 @@ def testUpdateNoManeuverDetected(estimate_agent: EstimateAgent, observations: Ob
         observations (:class:`.Observation`): Observation tuple fixture
     """
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    estimate_agent.nominal_filter.maneuver_detected = MagicMock()
-    estimate_agent.nominal_filter.maneuver_detected.return_value = False
+    estimate_agent.nominal_filter.checkManeuverDetection = MagicMock()
 
     # Update with a maneuver detection
     estimate_agent.update(observations)
@@ -467,7 +465,7 @@ def testUpdateAttemptAdaptiveEstimation(
         initial_state=np.ones(6),
         initial_covariance=np.diagflat(np.ones(6)),
         _filter=nominal_filter,
-        adaptive_filter_config=AdaptiveEstimationConfig(
+        adaptive_filter_config=GPB1AdaptiveEstimationConfig(
             name="gpb1",
             orbit_determination="lambert_universal",
             stacking_method="eci_stack",
@@ -517,7 +515,7 @@ def testAttemptAdaptiveEstimation(
         initial_state=np.ones(6),
         initial_covariance=np.diagflat(np.ones(6)),
         _filter=mmae_filter,
-        adaptive_filter_config=AdaptiveEstimationConfig(
+        adaptive_filter_config=GPB1AdaptiveEstimationConfig(
             name="gpb1",
             orbit_determination="lambert_universal",
             stacking_method="eci_stack",
@@ -580,6 +578,7 @@ def testHandleIODSuccess(iod_estimate_agent: EstimateAgent, observations: list[O
     Args:
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
     """
+    iod_estimate_agent._handleManeuverDetection(observations)
     iod_estimate_agent._handleIOD(observations)
 
     assert iod_estimate_agent.iod_start_time == iod_estimate_agent.time
@@ -634,6 +633,7 @@ def testAttemptInitialOrbitDeterminationFail(
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
         observations (:class:`.Observation`): Observation tuple fixture
     """
+    iod_estimate_agent._handleManeuverDetection(observations)
     iod_estimate_agent._handleIOD(observations)
     assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
 
@@ -655,6 +655,7 @@ def testAttemptInitialOrbitDeterminationBadTime(
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
         observations (:class:`.Observation`): Observation tuple fixture
     """
+    iod_estimate_agent._handleManeuverDetection(observations)
     iod_estimate_agent._handleIOD(observations)
     assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
 
@@ -677,6 +678,7 @@ def testAttemptInitialOrbitDeterminationSuccess(
         observations (:class:`.Observation`): Observation tuple fixture
         monkeypatch (``:class:`.MonkeyPatch``): patch of function
     """
+    iod_estimate_agent._handleManeuverDetection(observations)
     iod_estimate_agent._handleIOD(observations)
     assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
 
@@ -694,64 +696,6 @@ def testAttemptInitialOrbitDeterminationSuccess(
         determineNewEstimateStateGood,
     )
     success, iod_state = iod_estimate_agent._attemptInitialOrbitDetermination(observations)
-
-    assert success is True
-    assert isinstance(iod_state, np.ndarray)
-
-
-def testAttemptInitialOrbitDeterminationFailLogging(
-    iod_estimate_agent: EstimateAgent,
-    observations: list[Observation],
-):
-    """Test _attemptInitialOrbitDetermination with no success and logging on.
-
-    Args:
-        iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
-        observations (:class:`.Observation`): Observation tuple fixture
-    """
-    iod_estimate_agent._handleIOD(observations)
-    assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
-
-    # Test unsuccessful IOD
-    iod_estimate_agent.time = ScenarioTime(300.0)
-    fail, iod_state = iod_estimate_agent._attemptInitialOrbitDetermination(observations, True)
-
-    assert fail is False
-    assert iod_state is None
-
-
-@pytest.mark.usefixtures("database")
-def testAttemptInitialOrbitDeterminationSuccessLogging(
-    iod_estimate_agent: EstimateAgent,
-    observations: list[Observation],
-    monkeypatch: pytest.MonkeyPatch,
-):
-    """Test _attemptInitialOrbitDetermination with success.
-
-    Args:
-        iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
-        observations (:class:`.Observation`): Observation tuple fixture
-        monkeypatch (``:class:`.MonkeyPatch``): patch of function
-    """
-    iod_estimate_agent._handleIOD(observations)
-    assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
-
-    iod_estimate_agent.time = ScenarioTime(300.0)
-
-    # Patch IOD logic
-    def determineNewEstimateStateGood(self, observations, detection_time, current_time):
-        return IODSolution(
-            state_vector=iod_estimate_agent.state_estimate, convergence=True, message=None
-        )
-
-    monkeypatch.setattr(
-        resonaate.estimation.initial_orbit_determination.LambertIOD,
-        "determineNewEstimateState",
-        determineNewEstimateStateGood,
-    )
-    success, iod_state = iod_estimate_agent._attemptInitialOrbitDetermination(
-        observations=observations, logging=True
-    )
 
     assert success is True
     assert isinstance(iod_state, np.ndarray)
