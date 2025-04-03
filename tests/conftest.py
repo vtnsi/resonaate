@@ -12,8 +12,10 @@ import pytest
 # RESONAATE Imports
 from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.data import clearDBPath, getDBConnection, setDBPath
+from resonaate.data.db_connection import DBConnectionError
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
 from resonaate.raysonaate.key_value_store import KeyValueStore
+from resonaate.raysonaate.key_value_store.flush_transaction import FlushTransaction
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
 
@@ -83,19 +85,12 @@ def getTestLoggerObject() -> Logger:
     return logger
 
 
-@pytest.fixture(name="create_kvs", autouse=True, scope="session")
-def _createKeyValueStore():
-    """Make sure that :class:`.KeyValueStore.Server` is created only once per test session."""
-    _ = KeyValueStore.getClient()
-
-    return
-
-
-@pytest.fixture(name="teardown_kvs", autouse=True)
-def _teardownKeyValueStore():
+@pytest.fixture(name="key_value_store", autouse=True)
+def generateKeyValueStore():
     """Make sure that :class:`.KeyValueStore.Server` is flushed after each test, but not shutdown."""
+    ref = KeyValueStore.getClient()
     yield
-    KeyValueStore.flush()
+    ref.submitTransaction(FlushTransaction())
 
 
 @pytest.fixture(name="custom_database")
@@ -109,6 +104,13 @@ def _customDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
     with monkeypatch.context() as m:
         m.setattr("resonaate.data.createDatabasePath", patchCreateDatabasePath)
         yield
+
+    try:
+        db = getDBConnection()
+    except DBConnectionError:
+        pass
+    else:
+        db.resetData(tuple(db.VALID_DATA_TYPES.keys()))
 
 
 @pytest.fixture(name="database")

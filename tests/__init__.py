@@ -72,8 +72,6 @@ def propagateScenario(
 
     assert isclose(app.clock.julian_date_epoch, target_julian_date)
 
-    app.shutdown()
-
     return app
 
 
