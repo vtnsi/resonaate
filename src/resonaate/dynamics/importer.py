@@ -26,10 +26,12 @@ class EphemerisImporter:
 
         Args:
             importer_db_path: Path to the importer database containing ephemeris data
+
+        Raises:
+            ValueError: If `importer_db_path` is not a valid importer database URL.
         """
         self._logger = getLogger("resonaate")
-        if importer_db_path:
-            self._importer_db = ImporterDatabase(importer_db_path, logger=self._logger)
+        self._importer_db = ImporterDatabase(importer_db_path, logger=self._logger)
         self._registrants: dict[int, Agent] = {}
 
     def registerAgent(self, agent: Agent):
