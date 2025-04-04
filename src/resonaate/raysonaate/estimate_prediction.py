@@ -1,3 +1,5 @@
+"""Module implementing distributed estimate prediction processing."""
+
 from __future__ import annotations
 
 # Standard Library Imports

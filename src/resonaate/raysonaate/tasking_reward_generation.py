@@ -1,3 +1,5 @@
+"""Module implementing distributed reward generation processing."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -85,11 +87,14 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
             estimate.nominal_filter.forecast([predicted_observation])
             visibility[sensor_index] = True
             metric_matrix[sensor_index] = submission.reward.calculateMetrics(
-                estimate, sensor_agent
+                estimate,
+                sensor_agent,
             )
 
     return RewardCalcResult(
-        estimate_id=estimate.simulation_id, visibility=visibility, metric_matrix=metric_matrix
+        estimate_id=estimate.simulation_id,
+        visibility=visibility,
+        metric_matrix=metric_matrix,
     )
 
 

@@ -1,3 +1,5 @@
+"""Module defining common infrastructure code for distributing processes via Ray."""
+
 # Standard Library Imports
 from abc import ABC, abstractmethod
 

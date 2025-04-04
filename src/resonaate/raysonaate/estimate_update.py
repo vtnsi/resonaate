@@ -1,3 +1,5 @@
+"""Module implementing distributed estimate update processing."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -55,14 +57,14 @@ def asyncUpdateEstimate(submission: EstUpdateSubmission) -> EstUpdateResult:
     """Update the state estimate for the specified :class:`.EstimateAgent`."""
     estimate_agent = ray.get(submission.estimate_agent)
     estimate_agent.nominal_filter.update(submission.successful_obs)
-    estimate_agent._update(submission.successful_obs)
+    estimate_agent._update(submission.successful_obs)  # noqa: SLF001
 
     return EstUpdateResult(
         estimate_id=estimate_agent.simulation_id,
         observed=len(submission.successful_obs) > 0,
         iod_start_time=estimate_agent.iod_start_time,
         updated_filter=estimate_agent.nominal_filter,
-        detected_maneuvers=estimate_agent._detected_maneuvers,
+        detected_maneuvers=estimate_agent._detected_maneuvers,  # noqa: SLF001
     )
 
 
@@ -81,16 +83,14 @@ class EstUpdateRegistration(Registration):
 
     def processResults(self, results: EstUpdateResult):
         """Update the :class:`.EstimateAgent`'s filter and flags."""
-        # [NOTE]: Reset the filter. Likely faster to do this each time, than check and
-        #   convert, and then partially reset?
-        self._registrant._resetFilter(results.updated_filter)
-        self._registrant._finalizeUpdate(results.observed)
+        self._registrant._resetFilter(results.updated_filter)  # noqa: SLF001
+        self._registrant._finalizeUpdate(results.observed)  # noqa: SLF001
 
         # [FIXME]: This feels hacky. May need to formalize MMAE/IOD conops in sub-classes?
         self._registrant.iod_start_time = results.iod_start_time
 
         if results.detected_maneuvers:
-            self._registrant._detected_maneuvers = results.detected_maneuvers
+            self._registrant._detected_maneuvers = results.detected_maneuvers  # noqa: SLF001
 
 
 class EstUpdateExecutor(JobExecutor):

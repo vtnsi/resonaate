@@ -1,28 +1,23 @@
+"""Module implementing distributed propagation processing."""
+
 from __future__ import annotations
 
 # Standard Library Imports
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 import ray
 
 # Local Imports
-from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..physics.transforms.reductions import ReductionParams
 from . import JobExecutor, Registration
 
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import Optional, Union
-
     # Third Party Imports
     from numpy import ndarray
 
     # Local Imports
-    from ..agents.sensing_agent import SensingAgent
-    from ..agents.target_agent import TargetAgent
     from ..dynamics import Dynamics
     from ..dynamics.integration_events import ScheduledEventType
     from ..dynamics.integration_events.station_keeping import StationKeeper
