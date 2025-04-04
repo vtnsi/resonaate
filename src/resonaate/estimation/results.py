@@ -1,44 +1,46 @@
 """Module describing different result objects produced by various filters."""
+
 from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC
 from dataclasses import dataclass, fields
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
-# Third Party Imports
-from numpy import ndarray
+if TYPE_CHECKING:
+    # Third Party Imports
+    from numpy import ndarray
 
-# Local Imports
-from ..physics.time.stardate import ScenarioTime
+    # Local Imports
+    from ..physics.time.stardate import ScenarioTime
 
 
-class FilterResult(ABC):
+class FilterResult(ABC):  # noqa: B024
     """Abstract base class describing functionality common across all filter results."""
 
     @classmethod
-    def fromFilter(cls, filter):
+    def fromFilter(cls, _filter):
         """Convenience method to collect relevant data from specified `filter`.
-        
+
         Args:
-            filter: Filter object to collect data from.
+            _filter: Filter object to collect data from.
 
         Returns:
             An instance of this :class:`.FilterResult`.
         """
         _dict = {}
         for field in fields(cls):
-            _dict[field.name] = getattr(filter, field.name)
+            _dict[field.name] = getattr(_filter, field.name)
         return cls(**_dict)
 
-    def apply(self, filter):
+    def apply(self, _filter):
         """Apply the results contained in this :class:`.FilterResult` to the specified `filter`.
 
         Args:
-            filter: Filter object to apply this :class:`.FilterResult` to.
+            _filter: Filter object to apply this :class:`.FilterResult` to.
         """
         for field in fields(self):
-            setattr(filter, field.name, getattr(self, field.name))
+            setattr(_filter, field.name, getattr(self, field.name))
 
 
 @dataclass
@@ -49,7 +51,7 @@ class SeqFilterPredictResult(FilterResult):
     :class:`.SequentialFilter`.
     """
 
-    time: Union[ScenarioTime, float]
+    time: Union[ScenarioTime, float]  # noqa: UP007
     """float | ScenarioTime: Current timestep of the simulation (:math:`k`)."""
 
     est_x: ndarray
@@ -115,7 +117,7 @@ class SeqFilterUpdateResult(SeqFilterForecastResult):
     source: str  # TODO: this should probably reference an enum
     """Indication of whether observation(s) were used during an update."""
 
-    maneuver_metric: Union[float, None]
+    maneuver_metric: Union[float, None]  # noqa: UP007
     """Result of the hypothesis testing function used to determine whether a maneuver occurred or not."""
 
     maneuver_detected: bool
