@@ -7,10 +7,23 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import argwhere, array, ceil, concatenate, delete, dot, hstack, linspace, ones, outer
+from numpy import (
+    argwhere,
+    array,
+    ceil,
+    concatenate,
+    delete,
+    dot,
+    hstack,
+    linspace,
+    ones,
+    outer,
+    union1d,
+    vstack,
+    zeros,
+)
 from numpy import round as np_round
 from numpy import sum as np_sum
-from numpy import union1d, vstack, zeros
 from scipy.linalg import norm
 
 # Local Imports
@@ -28,7 +41,6 @@ from .mmae_stacking_utils import stackingFactory
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Callable
-    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
