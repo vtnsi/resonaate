@@ -338,7 +338,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
                 method=getTypeString(self.nominal_filter.maneuver_detection),
                 metric=self.nominal_filter.maneuver_metric,
                 threshold=self.nominal_filter.maneuver_detection.threshold,
-            )
+            ),
         )
 
     def _saveFilterStep(self) -> None:
@@ -349,7 +349,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
                 target_id=self.simulation_id,
                 innovation=self.nominal_filter.innovation,
                 nis=self.nominal_filter.nis,
-            )
+            ),
         )
 
     def _resetFilter(self, new_filter: SequentialFilter) -> None:
@@ -523,7 +523,8 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             self._resetFilter(adaptive_filter)
 
     def _attemptInitialOrbitDetermination(
-        self, observations: list[Observation]
+        self,
+        observations: list[Observation],
     ) -> tuple[bool, ndarray | None]:
         """Try to solve initial orbit determination on this RSO.
 
@@ -547,14 +548,16 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
 
         if self.iod_start_time > self.time:
             raise ValueError(
-                f"IOD beginning in the future: {self.iod_start_time} relative to current scenario time: {self.time}"
+                f"IOD beginning in the future: {self.iod_start_time} relative to current scenario time: {self.time}",
             )
 
         msg = f"Attempting IOD for RSO {self.simulation_id} at time {self.datetime_epoch}"
         self._logger.info(msg)
 
         iod_solution = self.initial_orbit_determination.determineNewEstimateState(
-            observations, self.iod_start_time, self.time
+            observations,
+            self.iod_start_time,
+            self.time,
         )
         if iod_solution.convergence:
             msg = f"IOD successful for RSO {self.simulation_id} at time {self.datetime_epoch}"
