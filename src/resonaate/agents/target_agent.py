@@ -158,13 +158,6 @@ class TargetAgent(Agent):
             self.julian_date_start,
         )
 
-    def rayUpdate(self, result):
-        self.time = result.final_time
-        self._previous_state = result.prev_state
-        self._truth_state = result.final_eci
-        self._ecef_state = result.final_ecef
-        self._lla_state = result.final_lla
-
     @property
     def eci_state(self) -> ndarray:
         """``ndarray``: Returns the 6x1 ECI current state vector."""
