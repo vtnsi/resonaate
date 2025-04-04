@@ -94,7 +94,7 @@ class ReductionParams:
                 self.eq_equinox == value.eq_equinox,
                 self.dut1 == value.dut1,
                 self.date_time == value.date_time,
-            ]
+            ],
         )
 
     @classmethod
@@ -197,7 +197,7 @@ class PolarMotion:
                 [c_x, 0, -s_x],
                 [s_x * s_y, c_y, c_x * s_y],
                 [s_x * c_y, -s_y, c_x * c_y],
-            ]
+            ],
         )
 
 
@@ -219,7 +219,11 @@ class PrecessionNutation:
     """
 
     def __init__(
-        self, utc_date: datetime, delta_atomic_time: float, d_delta_psi: float, d_delta_eps: float
+        self,
+        utc_date: datetime,
+        delta_atomic_time: float,
+        d_delta_psi: float,
+        d_delta_eps: float,
     ):
         """Calculate precession and nutation based on current time and corrections.
 
@@ -255,7 +259,8 @@ class PrecessionNutation:
         )
 
         self.rot_tod2mod = matmul(
-            rot1(-1.0 * self.mean_eps), matmul(rot3(self.delta_psi), rot1(self.true_eps))
+            rot1(-1.0 * self.mean_eps),
+            matmul(rot3(self.delta_psi), rot1(self.true_eps)),
         )
         self.rot_mod2eci = matmul(rot3(self.zeta), matmul(rot2(-1.0 * self.theta), rot3(self.z_p)))
         self.rot_pn = matmul(self.rot_mod2eci, self.rot_tod2mod)
