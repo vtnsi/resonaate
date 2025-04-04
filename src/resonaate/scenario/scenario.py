@@ -24,6 +24,7 @@ from ..data import getDBConnection
 from ..data.epoch import Epoch
 from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..dynamics import dynamicsFactory
+from ..dynamics.importer import EphemerisImporter
 from ..dynamics.integration_events.event_stack import EventStack
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
@@ -153,6 +154,12 @@ class Scenario:
 
         # Init database info
         self._importer_db_path = importer_db_path
+        self._ephem_importer = None
+        if not (
+            config.propagation.target_realtime_propagation
+            and config.propagation.sensor_realtime_propagation
+        ):
+            self._ephem_importer = EphemerisImporter(self._importer_db_path)
         self.database = getDBConnection()
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents
@@ -306,9 +313,25 @@ class Scenario:
 
         # Propagate truth model & predict estimate forward in time.
         for target_agent in self.target_agents.values():
-            self._agent_propagator.enqueueJob(PropagateRegistration(target_agent))
+            if target_agent.realtime:
+                self._agent_propagator.enqueueJob(PropagateRegistration(target_agent))
+            elif self._ephem_importer is not None:
+                self._ephem_importer.registerAgent(target_agent)
+            else:
+                err = f"Agent {target_agent.simulation_id} configured for imported ephemeris, but no importer database was provided."
+                self.logger.error(err)
+                raise RuntimeError(err)
         for sensor_agent in self.sensor_agents.values():
-            self._agent_propagator.enqueueJob(PropagateRegistration(sensor_agent))
+            if sensor_agent.realtime:
+                self._agent_propagator.enqueueJob(PropagateRegistration(sensor_agent))
+            elif self._ephem_importer is not None:
+                self._ephem_importer.registerAgent(sensor_agent)
+            else:
+                err = f"Agent {sensor_agent.simulation_id} configured for imported ephemeris, but no importer database was provided."
+                self.logger.error(err)
+                raise RuntimeError(err)
+        if self._ephem_importer is not None:
+            self._ephem_importer.importEphemerides(self.clock.datetime_epoch)
         self._agent_propagator.join()
 
         if not self.scenario_config.propagation.truth_simulation_only:
