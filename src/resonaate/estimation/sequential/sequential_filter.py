@@ -16,7 +16,6 @@ from scipy.linalg import norm
 from ...common.behavioral_config import BehavioralConfig
 from ...data import getDBConnection
 from ...data.queries import fetchTruthByJDEpoch
-from ..debug_utils import logFilterStep
 from ..results import (
     FilterResult,
     SeqFilterForecastResult,
@@ -355,8 +354,9 @@ class SequentialFilter(ABC):
 
             # If error increase is larger than desired log the debug information
             if est_error > pred_error + tol_km:
-                file_name = logFilterStep(self, observations, truth)
-                msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
+                msg = (
+                    f"EstimateAgent error inflation occurred: {self.target_id} at {self.time} sec",
+                )
                 self._logger.warning(msg)
 
     @property

@@ -15,7 +15,6 @@ from scipy.spatial.distance import mahalanobis
 
 # Local Imports
 from ..common.behavioral_config import BehavioralConfig
-from ..common.utilities import getTypeString
 from ..physics.maths import nearestPD
 from ..physics.measurements import getAzimuth, getElevation, getRange, getRangeRate
 from ..physics.transforms.methods import ecef2sez
@@ -25,7 +24,6 @@ if TYPE_CHECKING:
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from ..data.observation import Observation
-    from ..estimation.sequential.sequential_filter import SequentialFilter
 
 
 def debugToJSONFile(base_filename: str, debug_dir: str, json_dict: dict) -> str:
@@ -202,103 +200,3 @@ def findNearestPositiveDefiniteMatrix(covariance: np.ndarray) -> np.ndarray:
     )
 
     return cholesky_p
-
-
-def logFilterStep(
-    filter_obj: SequentialFilter,
-    observations: list,
-    truth_state: np.ndarray,
-) -> str:
-    """Log information from a complete filter step for debugging purposes.
-
-    This occurs at the end of the :meth:`.SequentialFilter.update` logic.
-
-    Args:
-        filter_obj (:class:`.SequentialFilter`): filter object which is being logged
-        observations (list): :class:`.Observation` objects associated with this filter step
-        truth_state (numpy.ndarray): 6x1 ECI state vector of the estimate's truth dynamics
-
-    Returns:
-        str: filename where the filter step information was logged
-    """
-    # Add data to filter description
-    filter_description = createFilterDebugDict(
-        filter_obj,
-        observations,
-        truth_state,
-    )
-
-    # Write information to output file
-    filename = f"err-inflation_{float(filter_obj.time)}_{filter_obj.target_id}"
-    return debugToJSONFile(
-        filename,
-        BehavioralConfig.getConfig().debugging.EstimateErrorInflationDirectory,
-        filter_description,
-    )
-
-
-def createFilterDebugDict(
-    filter_obj: SequentialFilter,
-    observations: list,
-    truth_state: np.ndarray,
-) -> dict:
-    """Create the dictionary used to log filter step information.
-
-    Args:
-        filter_obj (:class:`.SequentialFilter`): filter object which is being logged
-        observations (list): :class:`.Observation` objects associated with this filter step
-        truth_state (numpy.ndarray): 6x1 ECI state vector of the estimate's truth dynamics
-
-    Returns:
-        dict: complete dictionary with relevant filter step information
-    """
-    # Save truth ECI state & filter constants
-    description = {
-        "truth_eci": truth_state.tolist(),
-        "q_matrix": filter_obj.q_matrix.tolist(),
-    }
-    if getTypeString(filter_obj) == "UnscentedKalmanFilter":
-        description.update(filter_obj.parameters)
-        description["gamma"] = filter_obj.gamma
-
-    # Update debugging information from valid observation
-    for item, observation in enumerate(observations):
-        sensor_agent = AgentCaches.sensors.getAgent(observation.unique_id)
-        description[f"observation_{item}"] = observation.makeDictionary()
-        description[f"facility_{item}"] = sensor_agent.getCurrentEphemeris().makeDictionary()
-        description[f"facility_{item}"].update(
-            {
-                "lla_state": sensor_agent.lla_state.tolist(),
-                "ecef_state": sensor_agent.ecef_state.tolist(),
-                "time": sensor_agent.time,
-            },
-        )
-
-    # Update information from the prediction step data
-    prediction_result = filter_obj.getPredictionResult()
-    description["time"] = prediction_result["time"]
-    description["predicted_state"] = prediction_result["pred_x"].tolist()
-    description["predicted_covar"] = prediction_result["pred_p"].tolist()
-    description["predicted_error"] = np.absolute(norm(truth_state - prediction_result["pred_x"]))
-    description["sigma_points"] = prediction_result["sigma_points"].tolist()
-    description["sigma_x_res"] = prediction_result["sigma_x_res"].tolist()  # todo
-
-    # Update information from the forecast step data
-    forecast_result = filter_obj.getForecastResult()
-    description["is_angular"] = forecast_result["is_angular"].tolist()
-    description["est_y"] = forecast_result["est_y"].tolist()
-    description["sigma_y_res"] = forecast_result["sigma_y_res"].tolist()  # todo
-    description["r_matrix"] = forecast_result["r_matrix"].tolist()
-    description["cross_cvr"] = forecast_result["cross_cvr"].tolist()  # todo
-    description["innov_cvr"] = forecast_result["innov_cvr"].tolist()  # todo
-    description["kalman_gain"] = forecast_result["kalman_gain"].tolist()  # todo
-    description["covar_after"] = forecast_result["est_p"].tolist()
-
-    # Update information from the update step data
-    update_result = filter_obj.getUpdateResult()
-    description["estimate_after"] = update_result["est_x"].tolist()
-    description["error_after"] = np.absolute(norm(truth_state - update_result["est_x"]))
-    description["innovation"] = update_result["innovation"].tolist()
-    description["nis"] = update_result["nis"].tolist()
-
-    return description
