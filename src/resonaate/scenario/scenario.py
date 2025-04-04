@@ -26,6 +26,7 @@ from ..data.events import EventScope, getRelevantEvents, handleRelevantEvents
 from ..dynamics import dynamicsFactory
 from ..dynamics.importer import EphemerisImporter
 from ..dynamics.integration_events.event_stack import EventStack
+from ..estimation.debug_utils import checkThreeSigmaObservation
 from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..raysonaate.agent_propagation import PropagateExecutor, PropagateRegistration
@@ -375,6 +376,16 @@ class Scenario:
                         tasking_engine.sensor_changes[sensor_change],
                     )
                 for observation in tasking_engine.observations:
+                    if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
+                        debug_output = checkThreeSigmaObservation(
+                            self.sensor_agents[observation.sensor_id],
+                            self.target_agents[observation.target_id],
+                            observation,
+                        )
+                        if debug_output:
+                            msg = f"Collected bad observation: {debug_output}"
+                            self.logger.warning(msg)
+
                     obs_dict[observation.target_id].append(observation)
 
                 tasking_engine.resetHandles()

@@ -16,7 +16,7 @@ from scipy.linalg import norm
 from ...common.behavioral_config import BehavioralConfig
 from ...data import getDBConnection
 from ...data.queries import fetchTruthByJDEpoch
-from ..debug_utils import checkThreeSigmaObs, logFilterStep
+from ..debug_utils import logFilterStep
 from ..results import (
     FilterResult,
     SeqFilterForecastResult,
@@ -358,12 +358,6 @@ class SequentialFilter(ABC):
                 file_name = logFilterStep(self, observations, truth)
                 msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
                 self._logger.warning(msg)
-
-        if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
-            filenames = checkThreeSigmaObs(observations, sigma=3)
-            msg = "Made bad observation, debugging info:\n\t"
-            for filename in filenames:
-                self._logger.warning(msg + f"{filename}")
 
     @property
     def logger(self):
