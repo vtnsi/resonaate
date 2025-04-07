@@ -1,14 +1,16 @@
+"""Module defining the abstract :class:`.Transaction` base class."""
+
 # Standard Library Imports
 from abc import ABC, abstractmethod
 from typing import Any
 
 
 def abbreviateStr(
-        long_str: str,
-        abbr_len: int = 32,
-        repl_str: str = " ... ",
-        tail_len: int = 2
-    ) -> str:
+    long_str: str,
+    abbr_len: int = 32,
+    repl_str: str = " ... ",
+    tail_len: int = 2,
+) -> str:
     """Abbreviate a string.
 
     Args:
@@ -35,9 +37,6 @@ def abbreviateStr(
 class Transaction(ABC):
     """Represents a single unit of work "transaction" with the :class:`.KeyValueStore`."""
 
-    SERVER_SHUTDOWN_KEY = "__SERVER_SHUTDOWN__"
-    """str: Key used to flag the :class:`.KeyValueStore.Server`."""
-
     def __init__(self, key: str, request_payload: Any = None):
         """Initialize a :class:`.Transaction` instance.
 
@@ -46,19 +45,9 @@ class Transaction(ABC):
             request_payload (Any, optional): User-specified value used in resultant transaction.
         """
         self.key = key
-        if self.key == self.SERVER_SHUTDOWN_KEY and not self._allowShutdown():
-            raise ValueError("This Transaction is not allowed to shut down the server.")
         self.request_payload = request_payload
         self.response_payload = None
         self.error = None
-
-    def _allowShutdown(self):
-        """Return a boolean indication of whether this :class:`.Transaction` subclass is allowed to shut down the :class:`.KeyValueStore.Server`.
-
-        Returns:
-            bool: Indication of whether this :class:`.Transaction` subclass is allowed to shut down the :class:`.KeyValueStore.Server`
-        """
-        return False
 
     @abstractmethod
     def transact(self, key_value_store: dict):
@@ -67,11 +56,11 @@ class Transaction(ABC):
         Args:
             key_value_store (dict): Key value store to execute the encapsulated transaction on.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def getResponse(self):
         """Returns the response payload of this executed transaction.
-        
+
         Returns:
             Any: Response payload of this executed transaction.
 
@@ -84,8 +73,11 @@ class Transaction(ABC):
 
     def __repr__(self):
         """Return a human readable string representation of this :class:`.Transaction`."""
-        return f"{self.__class__.__name__}(" + \
-            f"key={self.key}, " + \
-            f"request_payload={abbreviateStr(repr(self.request_payload))}, " + \
-            f"response_payload={abbreviateStr(repr(self.response_payload))}, " + \
-            f"error={self.error})"
+        return (
+            f"{self.__class__.__name__}("
+            f"key={self.key}, "
+            f"request_payload={abbreviateStr(repr(self.request_payload))}, "
+            f"response_payload={abbreviateStr(repr(self.response_payload))}, "
+            f"error={self.error}"
+            ")"
+        )

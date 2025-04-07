@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from os import getpid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 # Third Party Imports
 import ray
@@ -30,7 +30,7 @@ class _KVSActor:
 
     def __init__(self):
         """Initialize the server infrastructure."""
-        self._key_value_store = dict()
+        self._key_value_store = {}
 
     def executeTransaction(self, transaction: Transaction):
         """Execute the transaction encapsulated by `transaction`.
@@ -80,7 +80,7 @@ class _Client:
 class KeyValueStore:
     """Client and server operations for a process-safe key-value store."""
 
-    _client_map = {}
+    _client_map: ClassVar = {}
     """dict: Keys are process IDs and values are :class:`._Client` instances to use in the corresponding processes."""
 
     @classmethod
