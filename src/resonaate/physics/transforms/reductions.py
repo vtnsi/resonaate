@@ -20,9 +20,9 @@ from numpy import array_equal, asarray, cos, dot, fmod, matmul, sin
 # Package Imports
 from ...raysonaate.key_value_store import KeyValueStore
 from ...raysonaate.key_value_store.cache_transactions import (
-    CacheMiss,
-    UninitializedCache,
-    ValueAlreadySet,
+    CacheMissError,
+    UninitializedCacheError,
+    ValueAlreadySetError,
 )
 from .. import constants as const
 from ..maths import rot1, rot2, rot3
@@ -390,9 +390,9 @@ class CachedReductionParams(ReductionParams):
                 FK5Cache.POLAR_MOTION,
                 utc_date.date().isoformat(),
             )
-        except (CacheMiss, UninitializedCache) as err:
-            if isinstance(err, UninitializedCache):
-                with suppress(ValueAlreadySet):  # multiprocess race condition
+        except (CacheMissError, UninitializedCacheError) as err:
+            if isinstance(err, UninitializedCacheError):
+                with suppress(ValueAlreadySetError):  # multiprocess race condition
                     KeyValueStore.initCache(FK5Cache.POLAR_MOTION)
 
             polar_motion = PolarMotion(eops.x_p, eops.y_p)
@@ -414,9 +414,9 @@ class CachedReductionParams(ReductionParams):
                 FK5Cache.PREC_NUT,
                 dt_trunc_min.isoformat(),
             )
-        except (CacheMiss, UninitializedCache) as err:
-            if isinstance(err, UninitializedCache):
-                with suppress(ValueAlreadySet):  # multiprocess race condition
+        except (CacheMissError, UninitializedCacheError) as err:
+            if isinstance(err, UninitializedCacheError):
+                with suppress(ValueAlreadySetError):  # multiprocess race condition
                     KeyValueStore.initCache(FK5Cache.PREC_NUT)
 
             prec_nut = PrecessionNutation(
