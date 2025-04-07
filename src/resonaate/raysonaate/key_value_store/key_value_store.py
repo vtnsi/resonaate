@@ -226,9 +226,13 @@ class KeyValueStore:
         return cls.submitTransaction(CacheGrab(cache_name, record_name))
 
     @classmethod
-    def dump(cls):
-        """Dump the key value store's contents to a file."""
-        return cls.submitTransaction(DumpTransaction())
+    def dump(cls, dump_filename: str | None = None):
+        """Dump the key value store's contents to a file.
+
+        Args:
+            dump_filename: Path to file to dump key value store contents to.
+        """
+        return cls.submitTransaction(DumpTransaction(dump_filename=dump_filename))
 
     @classmethod
     def flush(cls):
