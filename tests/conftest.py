@@ -14,8 +14,8 @@ from resonaate.common.behavioral_config import BehavioralConfig
 from resonaate.data import clearDBPath, getDBConnection, setDBPath
 from resonaate.data.db_connection import DBConnectionError
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
-from resonaate.raysonaate.key_value_store import KeyValueStore
-from resonaate.raysonaate.key_value_store.flush_transaction import FlushTransaction
+from resonaate.parallel.key_value_store import KeyValueStore
+from resonaate.parallel.key_value_store.flush_transaction import FlushTransaction
 from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
 

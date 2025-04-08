@@ -8,7 +8,7 @@ from collections import defaultdict
 from json import dumps, loads
 
 # Local Imports
-from ...raysonaate.key_value_store import KeyValueStore
+from ...parallel.key_value_store import KeyValueStore
 
 
 class EventRecord:

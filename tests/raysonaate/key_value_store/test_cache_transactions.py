@@ -4,7 +4,7 @@
 import pytest
 
 # RESONAATE Imports
-from resonaate.raysonaate.key_value_store.cache_transactions import (
+from resonaate.parallel.key_value_store.cache_transactions import (
     Cache,
     CacheGrab,
     CacheMissError,

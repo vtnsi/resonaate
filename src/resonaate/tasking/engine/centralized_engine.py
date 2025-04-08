@@ -15,12 +15,9 @@ from ...data.epoch import Epoch
 from ...data.events import EventScope, handleRelevantEvents
 from ...data.observation import Observation
 from ...data.task import Task
+from ...parallel.tasking_execution import TaskExecutionExecutor, TaskExecutionRegistration
+from ...parallel.tasking_reward_generation import TaskingRewardExecutor, TaskingRewardRegistration
 from ...physics.time.stardate import datetimeToJulianDate
-from ...raysonaate.tasking_execution import TaskExecutionExecutor, TaskExecutionRegistration
-from ...raysonaate.tasking_reward_generation import (
-    TaskingRewardExecutor,
-    TaskingRewardRegistration,
-)
 from .engine_base import TaskingEngine
 
 # Type Checking Imports

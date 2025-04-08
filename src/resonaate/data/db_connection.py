@@ -6,8 +6,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ..raysonaate.key_value_store import KeyValueStore
-from ..raysonaate.key_value_store.transaction import Transaction
+from ..parallel.key_value_store import KeyValueStore
+from ..parallel.key_value_store.transaction import Transaction
 
 if TYPE_CHECKING:
     # Standard Library Imports

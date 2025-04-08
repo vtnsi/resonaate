@@ -18,8 +18,8 @@ from numpy import array_equal, asarray, cos, dot, fmod, matmul, sin
 
 # Local Imports
 # Package Imports
-from ...raysonaate.key_value_store import KeyValueStore
-from ...raysonaate.key_value_store.cache_transactions import (
+from ...parallel.key_value_store import KeyValueStore
+from ...parallel.key_value_store.cache_transactions import (
     CacheMissError,
     UninitializedCacheError,
     ValueAlreadySetError,

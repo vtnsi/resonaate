@@ -1,6 +1,6 @@
 # RESONAATE Imports
-from resonaate.raysonaate.key_value_store.append_transaction import AppendTransaction
-from resonaate.raysonaate.key_value_store.pop_transaction import PopTransaction
+from resonaate.parallel.key_value_store.append_transaction import AppendTransaction
+from resonaate.parallel.key_value_store.pop_transaction import PopTransaction
 
 
 def testAppendTransaction():

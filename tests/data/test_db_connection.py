@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 import pytest
 
+# RESONAATE Imports
 from resonaate.data.db_connection import (
     DB_PATH_KEY,
     DBConnectionError,
@@ -16,9 +17,7 @@ from resonaate.data.db_connection import (
     setDBPath,
 )
 from resonaate.data.resonaate_database import ResonaateDatabase
-
-# RESONAATE Imports
-from resonaate.raysonaate.key_value_store import KeyValueStore
+from resonaate.parallel.key_value_store import KeyValueStore
 
 # Local Imports
 from .. import FIXTURE_DATA_DIR, SHARED_DB_PATH

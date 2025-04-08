@@ -1,6 +1,6 @@
 # RESONAATE Imports
-from resonaate.raysonaate.key_value_store.get_transaction import GetTransaction
-from resonaate.raysonaate.key_value_store.set_transaction import SetTransaction
+from resonaate.parallel.key_value_store.get_transaction import GetTransaction
+from resonaate.parallel.key_value_store.set_transaction import SetTransaction
 
 
 def testSetTransaction():

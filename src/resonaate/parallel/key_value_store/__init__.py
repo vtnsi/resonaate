@@ -1,4 +1,4 @@
-"""Top level imports for the `raysonaate.key_value_store` module."""
+"""Top level imports for the `parallel.key_value_store` module."""
 
 # Local Imports
 from .key_value_store import KeyValueStore
