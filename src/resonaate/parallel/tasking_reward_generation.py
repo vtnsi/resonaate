@@ -36,7 +36,7 @@ class RewardCalcSubmission:
     """Function used to calculate a sensor/estimate pair's reward."""
 
     sensor_handle_list: list[SensingAgent]
-    """List of remote handles of the :class:`.SensingAgent`s task-able by the calling engine."""
+    """List of remote handles of the :class:`.SensingAgent`'s task-able by the calling engine."""
 
 
 @dataclass
@@ -116,7 +116,7 @@ class TaskingRewardRegistration(Registration):
             estimate_handle: Remote `ray` handle to the :class:`.EstimateAgent` object whos tasking
                 reward is being calculated.
             reward: Reward function that remote worker will use to calculate the tasking reward.
-            sensor_handle_list: List of remote `ray` handles to :class:`.SensingAgent`s that could
+            sensor_handle_list: List of remote `ray` handles to :class:`.SensingAgent`'s that could
                 possibly observe the specified :class:`.EstimateAgent`.
         """
         super().__init__(registrant)

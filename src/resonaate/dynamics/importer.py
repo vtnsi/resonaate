@@ -16,7 +16,7 @@ from ..data.importer_database import ImporterDatabase
 
 
 class EphemerisImporter:
-    """Class that encapsulates importing ephemeris for :class:`.Agent`s."""
+    """Class that encapsulates importing ephemeris for :class:`.Agent`'s."""
 
     def __init__(
         self,

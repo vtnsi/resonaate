@@ -31,10 +31,10 @@ class TaskExecutionSubmission:
     """Remote handle to :class:`.EstimateAgent` being tasked."""
 
     target_handles: dict[int, TargetAgent]
-    """Dictionary of remote handles to all :class:`.TargetAgent`s."""
+    """Dictionary of remote handles to all :class:`.TargetAgent`'s."""
 
     sensor_handle_list: list[SensingAgent]
-    """List of remote handles to :class:`.SensingAgent`s tasked to observe the target."""
+    """List of remote handles to :class:`.SensingAgent`'s tasked to observe the target."""
 
 
 @dataclass
@@ -51,7 +51,7 @@ class TaskExecutionResult:
     """List of missed observation objects."""
 
     sensor_info_list: list[dict]
-    """list of dict containing updates to :class:`.SensingAgent`s that were tasked."""
+    """list of dict containing updates to :class:`.SensingAgent`'s that were tasked."""
 
 
 @ray.remote
@@ -122,8 +122,8 @@ class TaskExecutionRegistration(Registration):
             estimate_handle: Remote `ray` handle to the :class:`.EstimateAgent` object this tasking
                 is executing on.
             target_store: A mapping of target IDs to their remote `ray` handles to
-                :class:`.TargetAgent`s.
-            tasked_sensor_handles: List of remote `ray` handles to :class:`.SensingAgent`s that
+                :class:`.TargetAgent`'s.
+            tasked_sensor_handles: List of remote `ray` handles to :class:`.SensingAgent`'s that
                 have been tasked to observe the specified :class:`.EstimateAgent`.
         """
         super().__init__(registrant)
