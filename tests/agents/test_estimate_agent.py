@@ -51,7 +51,7 @@ def getTestEstimateAgent(
                 -5.76471671e00,
                 -1.46542677e00,
                 -4.75396773e00,
-            ]
+            ],
         ),
         np.diagflat([1.0, 2.0, 1.0, 1, 1, 1]),
         nominal_filter,
@@ -88,7 +88,8 @@ def testEstimateAgentGoodInit(nominal_filter: UnscentedKalmanFilter, mocked_cloc
 
 
 def testEstimateAgentBadCovarianceInit(
-    nominal_filter: UnscentedKalmanFilter, mocked_clock: ScenarioClock
+    nominal_filter: UnscentedKalmanFilter,
+    mocked_clock: ScenarioClock,
 ):
     """Test EstimateAgent with bad covariance shape.
 
@@ -115,7 +116,8 @@ def testEstimateAgentBadCovarianceInit(
 
 
 def testEstimateAgentBadSeedInit(
-    nominal_filter: UnscentedKalmanFilter, mocked_clock: ScenarioClock
+    nominal_filter: UnscentedKalmanFilter,
+    mocked_clock: ScenarioClock,
 ):
     """Test EstimateAgent with bad seed shape.
 
@@ -554,6 +556,7 @@ def testHandleIODReturn(estimate_agent: EstimateAgent, observations: list[Observ
 
     Args:
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
+        observations: Observations fixture
     """
     estimate_agent._handleIOD(observations)
 
@@ -565,6 +568,7 @@ def testHandleIODContinue(iod_estimate_agent: EstimateAgent, observations: list[
 
     Args:
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
+        observations: Observations fixture
     """
     iod_estimate_agent.nominal_filter.maneuver_detected = False
     iod_estimate_agent._handleIOD(observations)
@@ -577,6 +581,7 @@ def testHandleIODSuccess(iod_estimate_agent: EstimateAgent, observations: list[O
 
     Args:
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
+        observations: Observations fixture
     """
     iod_estimate_agent._handleManeuverDetection(observations)
     iod_estimate_agent._handleIOD(observations)
@@ -599,7 +604,8 @@ def testHandleIODNoSuccess(iod_estimate_agent: EstimateAgent, observations: list
 
 
 def testNoAttemptInitialOrbitDetermination(
-    estimate_agent: EstimateAgent, observations: list[Observation]
+    estimate_agent: EstimateAgent,
+    observations: list[Observation],
 ):
     """Test _attemptInitialOrbitDetermination returns if no IOD set.
 
@@ -687,7 +693,9 @@ def testAttemptInitialOrbitDeterminationSuccess(
     # Patch IOD logic
     def determineNewEstimateStateGood(self, observations, detection_time, current_time):
         return IODSolution(
-            state_vector=iod_estimate_agent.state_estimate, convergence=True, message=None
+            state_vector=iod_estimate_agent.state_estimate,
+            convergence=True,
+            message=None,
         )
 
     monkeypatch.setattr(
@@ -744,7 +752,8 @@ def testProperties(estimate_agent: EstimateAgent):
     assert np.allclose(estimate_agent.ecef_state, estimate_agent._ecef_state)
     assert np.allclose(estimate_agent.lla_state, estimate_agent._lla_state)
     assert np.allclose(
-        estimate_agent.process_noise_covariance, estimate_agent.nominal_filter.q_matrix
+        estimate_agent.process_noise_covariance,
+        estimate_agent.nominal_filter.q_matrix,
     )
     assert np.allclose(estimate_agent.initial_covariance, estimate_agent._initial_covariance)
     assert np.allclose(estimate_agent.error_covariance, estimate_agent._error_covariance)
@@ -769,5 +778,6 @@ def testSetters(estimate_agent: EstimateAgent):
     estimate_agent.state_estimate = new_state
 
     assert np.allclose(
-        estimate_agent.ecef_state, eci2ecef(new_state, estimate_agent.datetime_epoch)
+        estimate_agent.ecef_state,
+        eci2ecef(new_state, estimate_agent.datetime_epoch),
     )

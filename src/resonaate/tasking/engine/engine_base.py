@@ -122,11 +122,22 @@ class TaskingEngine(metaclass=ABCMeta):
         self.resetHandles()
 
     def resetHandles(self):
+        """Clear object store agent handles."""
         self._target_store = {}
         self._sensor_store = {}
         self._estimate_store = {}
 
     def setHandles(self, target_store: dict, sensor_store: dict, estimate_store: dict):
+        """Set the object store agent handles.
+
+        Args:
+            target_store: Dictionary mapping target identifiers to the relevant object store agent
+                handle.
+            sensor_store: Dictionary mapping sensor identifiers to the relevant object store agent
+                handle.
+            estimate_store: Dictionary mapping estimate identifiers to the relevant object store
+                agent handle.
+        """
         self._target_store = target_store
         self._sensor_store = sensor_store
         self._estimate_store = estimate_store

@@ -86,7 +86,7 @@ def getTestLoggerObject() -> Logger:
 
 
 @pytest.fixture(name="key_value_store", autouse=True)
-def generateKeyValueStore():
+def _generateKeyValueStore():
     """Make sure that :class:`.KeyValueStore.Server` is flushed after each test, but not shutdown."""
     ref = KeyValueStore.getClient()
     yield

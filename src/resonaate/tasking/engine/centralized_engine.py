@@ -30,7 +30,6 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ...physics.time.stardate import JulianDate
-    from ...sensors.sensor_base import Sensor
     from ..decisions import Decision
     from ..rewards import Reward
 

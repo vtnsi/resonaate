@@ -62,7 +62,7 @@ class Scenario:
     This class serves as a "public" API for running RESONAATE simulations.
     """
 
-    def __init__(  # noqa: PLR0913, C901
+    def __init__(
         self,
         config: ScenarioConfig,
         clock: ScenarioClock,
@@ -279,7 +279,7 @@ class Scenario:
         # Commit data to output DB
         self.database.bulkSave(output_data)
 
-    def stepForward(self) -> None:
+    def stepForward(self) -> None:  # noqa: C901, PLR0912
         """Propagate the simulation forward by a single timestep."""
         prior_jd = self.current_julian_date
         prior_datetime = self.clock.datetime_epoch
@@ -366,7 +366,9 @@ class Scenario:
             obs_dict = defaultdict(list)
             for tasking_engine in self._tasking_engines.values():
                 tasking_engine.setHandles(
-                    self._target_store, self._sensor_store, self._estimate_store
+                    self._target_store,
+                    self._sensor_store,
+                    self._estimate_store,
                 )
                 tasking_engine.assess(prior_datetime, self.clock.datetime_epoch)
 
