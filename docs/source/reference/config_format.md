@@ -1158,7 +1158,7 @@ Defines type and parameters of `"field_of_view"` field.
 ```
 
 ```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.agent_configs
+.. currentmodule:: resonaate.scenario.config.sensor_config
 
 .. autoclass:: FieldOfViewConfig
    :members:
