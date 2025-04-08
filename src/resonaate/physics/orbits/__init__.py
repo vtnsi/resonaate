@@ -63,7 +63,7 @@ class ResidentStratification:
     Attributes:
         label (str): Name of surface resident stratification.
         max_altitude (float): Maximum valid altitude to be considered on surface of Earth (in km).
-        default_mass (float): Default mass of non-spacecraft (kg)  #.  :cite:t:`LEO_RSO_2022_stats`
+        default_mass (float): Default mass of non-spacecraft (kg).
         default_vis_x (float): Default visual cross section of 20m by 20m building (m^2).
     """
 
@@ -78,8 +78,11 @@ class ResidentStratification:
     Attributes:
         label (str): Name associated with low Earth orbit.
         max_altitude (float): Maximum valid altitude to be considered within LEO regime (in km).
-        default_mass (float): Default mass of LEO RSO (kg)  #.  :cite:t:`LEO_RSO_2022_stats`
-        default_vis_x (float): Default visual cross section of LEO RSO (m^2)  #.  :cite:t:`LEO_RSO_2022_stats`
+        default_mass (float): Default mass of LEO RSO (kg)
+        default_vis_x (float): Default visual cross section of LEO RSO (m^2)
+
+    References:
+        :cite:t:`LEO_RSO_2022_stats`
     """
 
     MEO = _StratificationSpecification(
@@ -93,8 +96,11 @@ class ResidentStratification:
     Attributes:
         label (str): Name associated with medium Earth orbit.
         max_altitude (float): Maximum valid altitude to be considered within MEO regime (in km).
-        default_mass (float): Default mass of MEO RSO (kg)  #.  :cite:t:`MEO_RSO_2022_stats`
-        default_vis_x (float): Default visual cross section of MEO RSO (m^2)  #.  :cite:t:`steigenberger_MEO_RSO_2022_stats
+        default_mass (float): Default mass of MEO RSO (kg)
+        default_vis_x (float): Default visual cross section of MEO RSO (m^2)
+
+    References:
+        :cite:t:`steigenberger_MEO_RSO_2022_stats`
     """
 
     GEO = _StratificationSpecification(
@@ -108,8 +114,11 @@ class ResidentStratification:
     Attributes:
         label (str): Name associated with Geosynchronous Earth orbit.
         max_altitude (float): Maximum valid altitude to be considered within GEO regime (in km).
-        default_mass (float): Default mass of GEO RSO (kg)  #.  :cite:t:`GEO_RSO_2022_stats`
-        default_vis_x (float): Default visual cross section of GEO RSO (m^2)  #.  :cite:t:`GEO_RSO_2022_stats
+        default_mass (float): Default mass of GEO RSO (kg)
+        default_vis_x (float): Default visual cross section of GEO RSO (m^2)
+
+    References:
+        :cite:t:`GEO_RSO_2022_stats`
     """
 
     @classmethod
