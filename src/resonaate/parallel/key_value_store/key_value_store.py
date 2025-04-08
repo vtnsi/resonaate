@@ -168,7 +168,7 @@ class KeyValueStore:
         Raises:
             TypeError: Raised if there is the value currently stored at `key`, but it is not a mutable sequence.
         """
-        return cls.submitTransaction(PopTransaction(key, request_payload=index))
+        return cls.submitTransaction(PopTransaction(key, index=index))
 
     @classmethod
     def initCache(cls, cache_name: str, clear_existing: bool = False, max_size: int = 128) -> dict:
