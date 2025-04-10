@@ -149,6 +149,7 @@ html_static_path = ["_static"]
 # Remove "Built with..."
 html_show_sphinx = False
 
+suppress_warnings = ["ref.python"]
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
