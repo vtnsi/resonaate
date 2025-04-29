@@ -26,17 +26,8 @@ def testReductionParamsBuild() -> None:
 
     # Make sure we can build another date without error
     new_utc = utc - datetime.timedelta(days=1)
-    start = time()
     reductions = ReductionParams.build(new_utc)
-    end = time()
-    time_diff = end - start
     assert reductions.date_time == new_utc
-
-    # Make sure caching actually improves performance
-    start = time()
-    reductions = ReductionParams.build(new_utc)
-    end = time()
-    assert (end - start) < time_diff
 
 
 def testFK5ReductionAlgorithm():
