@@ -69,7 +69,19 @@ ______________________________________________________________________
 - `estimation` module factory method conventions rely more on config objects and mappings, rather than conditionals
 - `tasking` module factory method conventions rely more on config objects and mappings, rather than custom registries
 - refactored reduction parameters (see `pysics.transforms.reductions.ReductionParams`)
-- agent caching methodology now available via `agents.agent_cache` module
+- iteratively store `Agent`s as Ray remote objects to replace centralized `Agent` caching
+  - ~~agent caching methodology now available via `agents.agent_cache` module~~
+- incorporate `EstimateAgent` rework to remove duplicate 'update' definitions and calls
+  - implement formal `Result` hierarchy for `Filter` results
+  - reimplement `strmbrkr` `KeyValueStore` using a Ray Actor
+- refactor 'importer' paradigm into its own `dynamics` module
+- refactor `checkThreeSigmaObs()` -> `checkThreeSigmaObservation()` to reduce dependency on old agent cache implementation
+- replace `job_handlers` classes with Ray implementations that abstract away a lot of the old `Job` passing boilerplate code
+  - This resulted in lots of changes to...
+    - `Scenario` (in particular `::stepForward()`)
+    - `CentralizedEngine` (in particular `::assess()`)
+  - ...to update how parallel processing is called
+- refactor `CentralizedEngine._createLoadedObs()` -> `::_attachObsMetadata()`
 
 ### Deprecated
 
@@ -80,6 +92,7 @@ ______________________________________________________________________
 - Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` constant.
 - orbit-dependent platform constants from `agents` module (see `physics.orbits.ResidentStratification` addition)
 - reduction parameters are no longer cached due to performance of `strmbrkr` kvs
+- remove `createFilterDebugDict()` and `logFilterStep()` debug methods since we save `FilterStep` objects to the database now
 
 ### Fixed
 
@@ -99,7 +112,7 @@ ______________________________________________________________________
 
 ### Development
 
-*for improving developer tools & environment*
+- suppress `sphinx` duplicate cross reference warning
 
 ### CI
 
