@@ -1,8 +1,8 @@
 {
   "time": {
     "start_timestamp": "2021-03-30T16:00:00.000Z",
-    "physics_step_sec": 600,
-    "output_step_sec": 600,
+    "physics_step_sec": 300,
+    "output_step_sec": 300,
     "stop_timestamp": "2021-03-31T00:00:00.000Z"
   },
   "noise": {
@@ -56,7 +56,7 @@
     {
       "scope": "agent_propagation",
       "scope_instance_id": 20001,
-      "start_time": "2021-03-30T18:00:00.000Z",
+      "start_time": "2021-03-30T18:00:01.000Z",
       "event_type": "impulse",
       "thrust_vector": [0.0, 5.0e-3, 0.0],
       "thrust_frame": "ntw"

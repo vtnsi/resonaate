@@ -163,7 +163,6 @@ scenario = buildScenarioFromConfigFile(
     init_file,  # Initialization file/scenario config
     db_path,  # Path to `ResonaateDatabase` file
     internal_db_path=None,  # No imported data
-    start_workers=True,  # Starts `WorkerManager` instance
 )
 
 # Determine final time as a Julian date

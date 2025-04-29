@@ -3,12 +3,14 @@
 # [NOTE][avoid-circular-import]: Import inside of functions to avoid circular imports
 from __future__ import annotations
 
+# Third Party Imports
+import ray
+
 
 def buildScenarioFromConfigFile(
     config_file_path,
     internal_db_path=None,
     importer_db_path=None,
-    start_workers=True,
 ):
     """Instantiate a :class:`.Scenario` based on the specified `config_file_path`.
 
@@ -23,8 +25,6 @@ def buildScenarioFromConfigFile(
             to ``None``.
         importer_db_path (``str``, optional): path to external importer database for pre-canned
             data. Defaults to ``None``.
-        start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
-            spin up its own :class:`.WorkerManager` instance or not.
     """
     # Local Imports
     from ..data import createDatabasePath
@@ -39,7 +39,6 @@ def buildScenarioFromConfigFile(
         ScenarioConfig.parseConfigFile(config_file_path),
         internal_db_path=internal_db_path,
         importer_db_path=importer_database_path,
-        start_workers=start_workers,
     )
 
 
@@ -47,7 +46,6 @@ def buildScenarioFromConfigDict(
     config_dict,
     internal_db_path=None,
     importer_db_path=None,
-    start_workers=True,
 ):
     """Instantiate a :class:`.Scenario` based on the specified `config_dict`.
 
@@ -61,10 +59,9 @@ def buildScenarioFromConfigDict(
         internal_db_path (``str``, optional): path to RESONAATE internal database object. Defaults
         importer_db_path (``str``, optional): path to external importer database for pre-canned
             data. Defaults to ``None``.
-        start_workers (``bool``, optional): Flag indicating whether this :class:`.Scenario` should
-            spin up its own :class:`.WorkerManager` instance or not.
     """
     # Local Imports
+    from ..common.behavioral_config import BehavioralConfig
     from ..data import createDatabasePath, setDBPath
     from .config import ScenarioConfig
     from .scenario import Scenario
@@ -72,6 +69,8 @@ def buildScenarioFromConfigDict(
 
     # [NOTE][force-db-path]: Only call to `setDBPath()`. Subsequent calls will cause an error to
     #   be thrown!
+    if not ray.is_initialized():
+        ray.init(num_cpus=BehavioralConfig.getConfig().parallel.WorkerCount)
     database_path = createDatabasePath(internal_db_path, importer=False)
     setDBPath(path=database_path)
 
@@ -87,5 +86,4 @@ def buildScenarioFromConfigDict(
         builder.tasking_engines,
         importer_db_path=importer_db_path,
         logger=builder.logger,
-        start_workers=start_workers,
     )

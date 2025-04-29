@@ -61,7 +61,6 @@ def propagateScenario(
         init_file,
         internal_db_path=shared_db_path,
         importer_db_path=importer_db_path,
-        start_workers=False,
     )
 
     # Determine target Julian date based on elapsed time
@@ -72,8 +71,6 @@ def propagateScenario(
     app.propagateTo(target_julian_date)
 
     assert isclose(app.clock.julian_date_epoch, target_julian_date)
-
-    app.shutdown()
 
     return app
 

@@ -16,7 +16,12 @@ from scipy.linalg import norm
 from ...common.behavioral_config import BehavioralConfig
 from ...data import getDBConnection
 from ...data.queries import fetchTruthByJDEpoch
-from ..debug_utils import checkThreeSigmaObs, logFilterStep
+from ..results import (
+    FilterResult,
+    SeqFilterForecastResult,
+    SeqFilterPredictResult,
+    SeqFilterUpdateResult,
+)
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -285,63 +290,37 @@ class SequentialFilter(ABC):
         ):
             self.flags |= FilterFlag.INITIAL_ORBIT_DETERMINATION_START
 
-    def getPredictionResult(self) -> dict[str, Any]:
+    def getPredictionResult(self) -> SeqFilterPredictResult:
         """Compile result message for a predict step.
 
         Returns:
-            ``dict``: message with predict information
+            Filter results from the 'predict' step.
         """
-        return {
-            "time": self.time,
-            "est_x": self.est_x,
-            "est_p": self.est_p,
-            "pred_x": self.pred_x,
-            "pred_p": self.pred_p,
-        }
+        return SeqFilterPredictResult.fromFilter(self)
 
-    def getForecastResult(self) -> dict[str, Any]:
+    def getForecastResult(self) -> SeqFilterForecastResult:
         """Compile result message for a forecast step.
 
         Returns:
-            ``dict``: message with forecast information
+            Filter results from the 'forecast' step.
         """
-        return {
-            "is_angular": self.is_angular,
-            "mean_pred_y": self.mean_pred_y,
-            "r_matrix": self.r_matrix,
-            "cross_cvr": self.cross_cvr,
-            "innov_cvr": self.innov_cvr,
-            "kalman_gain": self.kalman_gain,
-            "est_p": self.est_p,
-        }
+        return SeqFilterForecastResult.fromFilter(self)
 
-    def getUpdateResult(self) -> dict[str, Any]:
+    def getUpdateResult(self) -> SeqFilterUpdateResult:
         """Compile result message for an update step.
 
         Returns:
-            ``dict``: message with update information
+            Filter results from the 'update' step.
         """
-        result = self.getForecastResult()
-        result.update(
-            {
-                "est_x": self.est_x,
-                "innovation": self.innovation,
-                "nis": self.nis,
-                "source": self.source,
-                "maneuver_metric": self.maneuver_metric,
-                "maneuver_detected": self.maneuver_detected,
-            },
-        )
-        return result
+        return SeqFilterUpdateResult.fromFilter(self)
 
-    def updateFromAsyncResult(self, async_result: dict[str, Any]):
-        """Set the corresponding values of this filter based on a filter async job result.
+    def applyFilterResult(self, filter_result: FilterResult):
+        """Set the corresponding values of this filter based on a filter step result.
 
         Args:
-            async_result (``dict``): updated attributes of a filter after an async job.
+            filter_result: updated attributes of a filter after an step was processed.
         """
-        for key, value in async_result.items():
-            setattr(self, key, value)
+        filter_result.apply(self)
 
     def propagate(
         self,
@@ -375,15 +354,10 @@ class SequentialFilter(ABC):
 
             # If error increase is larger than desired log the debug information
             if est_error > pred_error + tol_km:
-                file_name = logFilterStep(self, observations, truth)
-                msg = f"EstimateAgent error inflation occurred:\n\t{file_name}"
+                msg = (
+                    f"EstimateAgent error inflation occurred: {self.target_id} at {self.time} sec",
+                )
                 self._logger.warning(msg)
-
-        if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
-            filenames = checkThreeSigmaObs(observations, sigma=3)
-            msg = "Made bad observation, debugging info:\n\t"
-            for filename in filenames:
-                self._logger.warning(msg + f"{filename}")
 
     @property
     def logger(self):

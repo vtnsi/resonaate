@@ -145,7 +145,6 @@ from resonaate.scenario import buildScenarioFromConfigFile
 # Build the Scenario from the JSON init.
 scenario = buildScenarioFromConfigFile(
     init_file,  # Initialization file/scenario config
-    start_workers=True,  # Starts `WorkerManager` instance
 )
 
 # Determine final time as a Julian date

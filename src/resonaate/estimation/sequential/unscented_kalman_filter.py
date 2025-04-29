@@ -17,12 +17,12 @@ from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ...physics.statistics import chiSquareQuadraticForm
 from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ..debug_utils import findNearestPositiveDefiniteMatrix
+from ..results import UKFForecastResult, UKFPredictResult, UKFUpdateResult
 from .sequential_filter import FilterFlag, SequentialFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Callable
-    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
@@ -500,32 +500,26 @@ class UnscentedKalmanFilter(SequentialFilter):
 
         return meas_mean
 
-    def getPredictionResult(self) -> dict[str, Any]:
-        r"""Compile result message for a predict step.
+    def getPredictionResult(self) -> UKFPredictResult:
+        """Compile result message for a predict step.
 
         Returns:
-            ``dict``: message with predict information
+            Filter results from the 'predict' step.
         """
-        result = super().getPredictionResult()
-        result.update(
-            {
-                "sigma_points": self.sigma_points,
-                "sigma_x_res": self.sigma_x_res,
-            },
-        )
-        return result
+        return UKFPredictResult.fromFilter(self)
 
-    def getForecastResult(self) -> dict[str, Any]:
-        r"""Compile result message for a forecast step.
+    def getForecastResult(self) -> UKFForecastResult:
+        """Compile result message for a forecast step.
 
         Returns:
-            ``dict``: message with forecast information
+            Filter results from the 'forecast' step.
         """
-        result = super().getForecastResult()
-        result.update(
-            {
-                "sigma_points": self.sigma_points,
-                "sigma_y_res": self.sigma_y_res,
-            },
-        )
-        return result
+        return UKFForecastResult.fromFilter(self)
+
+    def getUpdateResult(self) -> UKFUpdateResult:
+        """Compile result message for an update step.
+
+        Returns:
+            Filter results from the 'update' step.
+        """
+        return UKFUpdateResult.fromFilter(self)

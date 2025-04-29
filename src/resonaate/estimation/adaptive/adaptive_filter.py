@@ -7,10 +7,23 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import argwhere, array, ceil, concatenate, delete, dot, hstack, linspace, ones, outer
+from numpy import (
+    argwhere,
+    array,
+    ceil,
+    concatenate,
+    delete,
+    dot,
+    hstack,
+    linspace,
+    ones,
+    outer,
+    union1d,
+    vstack,
+    zeros,
+)
 from numpy import round as np_round
 from numpy import sum as np_sum
-from numpy import union1d, vstack, zeros
 from scipy.linalg import norm
 
 # Local Imports
@@ -20,6 +33,7 @@ from ...dynamics.celestial import EarthCollisionError
 from ...physics.orbit_determination.lambert import determineTransferDirection
 from ...physics.time.stardate import JulianDate, ScenarioTime
 from ...physics.transforms.methods import radarObs2eciPosition
+from ..results import AdaptiveForecastResult, AdaptivePredictResult, AdaptiveUpdateResult
 from ..sequential.sequential_filter import FilterFlag, SequentialFilter
 from .initialization import lambertInitializationFactory
 from .mmae_stacking_utils import stackingFactory
@@ -27,7 +41,6 @@ from .mmae_stacking_utils import stackingFactory
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Callable
-    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
@@ -700,42 +713,29 @@ class AdaptiveFilter(SequentialFilter):
 
         return maneuvers
 
-    def getPredictionResult(self) -> dict[str, Any]:
+    def getPredictionResult(self) -> AdaptivePredictResult:
         """Compile result message for a predict step.
 
         Returns:
-            ``dict``: message with predict information
+            Filter results from the 'predict' step.
         """
-        result = super().getPredictionResult()
-        result.update({"models": self.models, "model_weights": self.model_weights})
-        return result
+        return AdaptivePredictResult.fromFilter(self)
 
-    def getForecastResult(self) -> dict[str, Any]:
+    def getForecastResult(self) -> AdaptiveForecastResult:
         """Compile result message for a forecast step.
 
         Returns:
-            ``dict``: message with forecast information
+            Filter results from the 'forecast' step.
         """
-        result = super().getForecastResult()
-        result.update({"models": self.models, "model_weights": self.model_weights})
-        return result
+        return AdaptiveForecastResult.fromFilter(self)
 
-    def getUpdateResult(self) -> dict[str, Any]:
+    def getUpdateResult(self) -> AdaptiveUpdateResult:
         """Compile result message for an update step.
 
         Returns:
-            ``dict``: message with update information
+            Filter results from the 'update' step.
         """
-        result = super().getUpdateResult()
-        result.update(
-            {
-                "models": self.models,
-                "model_weights": self.model_weights,
-                "mean_pred_y": self.mean_pred_y,
-                "true_y": self.true_y,
-            },
-        )
-        return result
+        return AdaptiveUpdateResult.fromFilter(self)
 
     def _resumeSequentialFiltering(self):
         """The adaptive filter has converged, so create a nominal filter from the converged model."""

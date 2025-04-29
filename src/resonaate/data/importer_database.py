@@ -44,8 +44,9 @@ class ImporterDatabase(DataInterface):
         """
         # Force users to define db location
         if not db_path:
-            resonaateLogError("Importer database requires a valid url path")
-            raise ValueError(db_path)
+            err = f"Importer database requires a valid url path: {db_path}"
+            resonaateLogError(err)
+            raise ValueError(err)
 
         # Instantiate the data interface object
         super().__init__(db_path, drop_tables, logger, verbose_echo)

@@ -149,6 +149,7 @@ html_static_path = ["_static"]
 # Remove "Built with..."
 html_show_sphinx = False
 
+suppress_warnings = ["ref.python"]
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -238,6 +239,8 @@ autodoc_default_options = {
     "show-inheritance": True,
     "member-order": "groupwise",
 }
+
+autodoc_pydantic_model_show_json = False
 
 # -- Options for todo extension ----------------------------------------------
 

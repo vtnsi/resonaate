@@ -119,6 +119,29 @@ class TaskingEngine(metaclass=ABCMeta):
         if importer_db_path:
             self._importer_db = ImporterDatabase(db_path=importer_db_path)
 
+        self.resetHandles()
+
+    def resetHandles(self):
+        """Clear object store agent handles."""
+        self._target_store = {}
+        self._sensor_store = {}
+        self._estimate_store = {}
+
+    def setHandles(self, target_store: dict, sensor_store: dict, estimate_store: dict):
+        """Set the object store agent handles.
+
+        Args:
+            target_store: Dictionary mapping target identifiers to the relevant object store agent
+                handle.
+            sensor_store: Dictionary mapping sensor identifiers to the relevant object store agent
+                handle.
+            estimate_store: Dictionary mapping estimate identifiers to the relevant object store
+                agent handle.
+        """
+        self._target_store = target_store
+        self._sensor_store = sensor_store
+        self._estimate_store = estimate_store
+
     def addTarget(self, target_id: int) -> None:
         """Add a target to this :class:`.TaskingEngine`.
 
@@ -234,11 +257,6 @@ class TaskingEngine(metaclass=ABCMeta):
         Yields:
             :class:`.Task`: tasking DB object for each target/sensor pair
         """
-        raise NotImplementedError
-
-    @abstractmethod
-    def shutdown(self) -> None:
-        """Perform cleanup operations for shutting down parallel processes/threads."""
         raise NotImplementedError
 
     def _sortTargets(self) -> None:

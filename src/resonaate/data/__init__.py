@@ -6,11 +6,11 @@ This module holds common functions and attributes used in many data modules.
 from __future__ import annotations
 
 # Standard Library Imports
-from datetime import datetime
 from os import getcwd, makedirs
 from os.path import abspath, dirname, exists, join, normpath
 
 # Local Imports
+from ..common import timeStampPath
 from ..common.logger import resonaateLogError
 from .agent import AgentModel
 from .db_connection import clearDBPath, getDBConnection, setDBPath
@@ -61,10 +61,10 @@ def createDatabasePath(path, importer=False):
                 makedirs(directory)
 
     else:
-        right_now = datetime.now().isoformat().replace(":", "-").replace(".", "-")
         directory = abspath(join(getcwd(), "db"))
         if not exists(directory):
             makedirs(directory)
-        db_path = f"sqlite:///{directory}/resonaate_{right_now}.sqlite3"
+        db_path = f"sqlite:///{directory}/resonaate_{'{}'}.sqlite3"
+        timeStampPath(db_path)
 
     return db_path

@@ -582,19 +582,19 @@ class TestAdaptiveEstimation:
         """Test getting prediction results."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         result = adaptive_filter.getPredictionResult()
-        assert len(result["models"]) == 3
+        assert len(result.models) == 3
 
     def testGetForecastResults(self, adaptive_filter: AdaptiveFilter):
         """Test getting forecast results."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         result = adaptive_filter.getForecastResult()
-        assert len(result["models"]) == 3
+        assert len(result.models) == 3
 
     def testGetUpdateResults(self, adaptive_filter: AdaptiveFilter):
         """Test getting update results."""
         adaptive_filter.models = adaptive_filter._createModels(HYPOTHESIS_STATES)
         result = adaptive_filter.getUpdateResult()
-        assert len(result["true_y"]) == 2
+        assert len(result.true_y) == 2
 
     def testResumeSequentialFiltering(self, adaptive_filter: AdaptiveFilter):
         """Test re-initializing nominal filter after MMAE ends."""

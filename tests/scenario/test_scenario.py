@@ -44,7 +44,6 @@ class TestScenarioFactory:
             init_filepath,
             internal_db_path=None,
             importer_db_path=None,
-            start_workers=False,
         )
 
     @pytest.mark.usefixtures("custom_database")
@@ -60,7 +59,6 @@ class TestScenarioFactory:
             init_file_path,
             internal_db_path=None,
             importer_db_path=db_path if "import" in init_file else None,
-            start_workers=False,
         )
 
     @pytest.mark.parametrize("init_file", INVALID_JSON_CONFIGS)
@@ -76,7 +74,6 @@ class TestScenarioFactory:
                 init_file_path,
                 internal_db_path=None,
                 importer_db_path=None,
-                start_workers=False,
             )
 
     @pytest.mark.parametrize("init_file", EMPTY_JSON_ENGINE_CONFIGS)
@@ -87,11 +84,11 @@ class TestScenarioFactory:
         init_file_path = init_dir.joinpath(init_file)
 
         # Check for empty target and sensor configs
-        error_msg = r"Empty JSON file: \/.*?\.json+"
-        with pytest.raises(IOError, match=error_msg):
+        with pytest.raises(IOError, match="Empty JSON file:") as io_err:
             buildScenarioFromConfigFile(
                 init_file_path,
                 internal_db_path=None,
                 importer_db_path=None,
-                start_workers=False,
             )
+        err_msg: str = io_err.value.args[0]
+        assert err_msg.endswith(".json")

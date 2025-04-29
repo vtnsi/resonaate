@@ -1,4 +1,4 @@
-"""EOP update functions."""
+"""Module defining how to retrieve EOP values from various sources."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 LoaderTag = namedtuple("LoaderTag", ("loader_name", "loader_location"))
-"""NamedTuple: Tag used to identify different :class:`.EOPLoader`s."""
+"""NamedTuple: Tag used to identify different :class:`.EOPLoader`'s."""
 
 _LOADER_MAP: dict[str, EOPLoader] = {
     "ModuleDotDatEOPLoader": ModuleDotDatEOPLoader,
@@ -91,10 +91,10 @@ def getEarthOrientationParameters(
 
 
 def setEarthOrientationParameters(
-        eop_date: datetime.date,
-        eop_data: EarthOrientationParameter,
-        loader_name: str | None = None,
-        loader_location: str | None = None,
+    eop_date: datetime.date,
+    eop_data: EarthOrientationParameter,
+    loader_name: str | None = None,
+    loader_location: str | None = None,
 ):
     """Set specific EOP data for the specified `eop_date`.
 

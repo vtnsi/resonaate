@@ -1,4 +1,4 @@
-# noqa: D100
+"""Module defining the infrastructure used to retrieve EOP values from various sources."""
 
 from __future__ import annotations
 
