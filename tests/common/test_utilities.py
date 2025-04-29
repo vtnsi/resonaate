@@ -57,9 +57,10 @@ def testLoadJSONFile(datafiles: str):
     # Valid JSON file
     utils.loadJSONFile(os.path.join(datafiles, "json/config/engines/test_engine.json"))
     # Empty JSON file
-    error_msg = r"Empty JSON file: \/.*?\.json+"
-    with pytest.raises(IOError, match=error_msg):
+    with pytest.raises(IOError, match="Empty JSON file:") as io_exc_info:
         utils.loadJSONFile(os.path.join(datafiles, "json/empty.json"))
+    err_msg: str = io_exc_info.value.args[0]
+    assert err_msg.endswith(".json")
     # Non-existant JSON file
     with pytest.raises(FileNotFoundError):
         utils.loadJSONFile(os.path.join(datafiles, "json/nonexistant.json"))
@@ -74,16 +75,18 @@ def testLoadDatFile(datafiles: str):
     # Valid dat file
     utils.loadDatFile(os.path.join(datafiles, "dat/nut80.dat"))
     # Empty dat file
-    error_msg = r"Empty DAT file: \/.*?\.dat+"
-    with pytest.raises(IOError, match=error_msg):
+    with pytest.raises(IOError, match="Empty DAT file:") as io_exc_info:
         utils.loadDatFile(os.path.join(datafiles, "dat/empty.dat"))
+    err_msg: str = io_exc_info.value.args[0]
+    assert err_msg.endswith(".dat")
     # Non-existant dat file
     with pytest.raises(FileNotFoundError):
         utils.loadDatFile(os.path.join(datafiles, "dat/nonexistant.dat"))
     # Invalid dat file
-    error_msg = r"Parsing error reading DAT file: \/.*?\.dat+"
-    with pytest.raises(ValueError, match=error_msg):
+    with pytest.raises(ValueError, match="Parsing error reading DAT file:") as io_exc_info:
         utils.loadDatFile(os.path.join(datafiles, "dat/invalid.dat"), delim=",")
+    err_msg: str = io_exc_info.value.args[0]
+    assert err_msg.endswith(".dat")
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)

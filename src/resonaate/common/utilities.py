@@ -5,13 +5,13 @@ from __future__ import annotations
 # Standard Library Imports
 import json
 import os
-from datetime import datetime
 from json import JSONEncoder
 
 # Third Party Imports
 import numpy as np
 
 # Local Imports
+from . import timeStampPath
 from .behavioral_config import BehavioralConfig
 from .logger import resonaateLogError
 
@@ -195,8 +195,10 @@ def saveMatrix(name, matrix, path=None):
         os.makedirs(path)
 
     # Create timestamped filename
-    now = datetime.utcnow()
-    file_name = os.path.join(os.path.realpath(path), f"{name}_{now.isoformat()}.json")
+    file_name = os.path.join(
+        os.path.realpath(path),
+        timeStampPath(f"{name}_{'{}'}.json"),
+    )
     # Save to file, convert to list if `numpy.ndarray`
     with open(file_name, "w", encoding="utf-8") as out_file:
         if isinstance(matrix, list):

@@ -5,7 +5,6 @@ from __future__ import annotations
 # Standard Library Imports
 from collections import defaultdict
 from copy import deepcopy
-from datetime import datetime
 from functools import singledispatchmethod
 from typing import TYPE_CHECKING
 
@@ -18,6 +17,7 @@ from sqlalchemy.orm import Query
 from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
+from ..common import timeStampPath
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
 from ..data import getDBConnection
@@ -617,6 +617,5 @@ class Scenario:
 
     def shutdown(self) -> None:
         """Record `ray` profiling timeline for performance analysis."""
-        right_now = datetime.now().isoformat().replace(":", "-").replace(".", "-")
-        ray.timeline(f"timeline_{right_now}.json")
+        ray.timeline(timeStampPath("timeline_{}.json"))
         ray.shutdown()
