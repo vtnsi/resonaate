@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 # Third Party Imports
+import numpy as np
 from numpy import (
     amin,
     arccos,
@@ -501,3 +502,22 @@ def residuals(vec1: ndarray, vec2: ndarray, angular: ndarray) -> ndarray:
         raise ShapeError(msg)
     # [NOTE]: Works for any angular value, because [-pi/2, pi/2] domains will never have diff > pi.
     return array([residual(a, b, ang) for a, b, ang in zip(vec1, vec2, angular)])
+
+
+def vecWrapAngleNeg(angles: ndarray) -> ndarray:
+    r"""Force angle into range of :math:`(-\pi, \pi]`."""
+    return (angles + const.PI) % const.TWOPI - const.PI
+
+
+def vecWrapAngle2Pi(angles: ndarray) -> ndarray:
+    r"""Force angle into range of :math:`[0, 2\pi)`."""
+    return np.where(angles < 0, const.TWOPI + angles, angles)
+
+
+def vecResiduals(vec1: ndarray, vec2: ndarray, angular: ndarray) -> ndarray:
+    """Find vector residuals, taking into account which entries are angular."""
+    return np.where(
+        angular,
+        vecWrapAngleNeg(vecWrapAngle2Pi(vec1) - vecWrapAngle2Pi(vec2)),
+        vec1 - vec2,
+    )

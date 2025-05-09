@@ -7,13 +7,12 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import numpy as np
+from scipy.linalg import block_diag
 
 # Local Imports
-# from ...physics.maths import angularMean, residuals
-# from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
-# from ...physics.statistics import chiSquareQuadraticForm
-# from ...physics.time.stardate import JulianDate, julianDateToDatetime
-# from ..debug_utils import findNearestPositiveDefiniteMatrix
+from ...physics.maths import angularMean, vecResiduals
+from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
+from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ..results import GPFForecastResult, GPFPredictResult, GPFUpdateResult
 from .particle_filter import FilterFlag, ParticleFilter
 
@@ -25,8 +24,7 @@ if TYPE_CHECKING:
     from ...data.observation import Observation
     from ...dynamics.dynamics_base import Dynamics
     from ...dynamics.integration_events import ScheduledEventType
-
-    # from ...physics.measurements import IsAngle
+    from ...physics.measurements import IsAngle
     from ...physics.time.stardate import ScenarioTime
     from ...scenario.config.estimation_config import ParticleFilterConfig
     from ..maneuver_detection import ManeuverDetection
@@ -134,13 +132,17 @@ class GeneticParticleFilter(ParticleFilter):
         )
 
         self.population_size = population_size
-        self.population = np.zeros((est_x.shape[0], population_size), dtype=est_x.dtype)
+        self.population = np.random.multivariate_normal(
+            mean=est_x,
+            cov=est_p,
+            size=population_size,
+        ).T
         self.scores = np.ones((self.population_size,)) / self.population_size
 
         self.num_purge = num_purge
         self.num_keep = num_keep
         self.num_mutate = num_mutate
-        self.num_cross = self.population_size - num_keep
+        self.num_cross = (self.population_size - num_keep - num_purge) // 2
 
         self.mutation_strength = (
             np.array(mutation_strength) if mutation_strength is not None else np.ones_like(est_x)
@@ -230,28 +232,13 @@ class GeneticParticleFilter(ParticleFilter):
         # Reset filter flags
         self._flags = FilterFlag.NONE
 
-        fitness_scores = np.zeros((self.population_size,))
-        for obs in observations:
-            # TODO: handle supporting angular residuals
-            # angular_measurements = np.concatenate(
-            #     [obs.measurement.angular_values for ob in observations],
-            #     axis=0,
-            # )
-            # is_angular = np.array(
-            #     [a in VALID_ANGULAR_MEASUREMENTS for a in angular_measurements],
-            #     dtype=bool,
-            # )
-            # res = residuals(self.population, obs.measurement_states, obs.measurement.angular_values in VALID_ANGULAR_MEASUREMENTS)
-            res = self.population - obs.measurement_states
-            fitness_scores += np.apply_along_axis(
-                lambda x: x.T @ obs.r_matrix @ x,  # noqa: B023
-                1,
-                res,
-            )
-        self.scores = fitness_scores / len(observations)
-
-        # Normalize scores so we can perform a weighted sample
-        self.scores /= np.linalg.norm(self.scores)
+        mean, res = self.calculateMeasurementMatrix(observations)
+        r_matrix = block_diag(*[ob.r_matrix for ob in observations])
+        self.scores = np.apply_along_axis(
+            lambda x: x.T @ r_matrix @ x,
+            0,
+            res,
+        )
 
     def update(self, observations: list[Observation]):
         r"""Update the state estimate with observations.
@@ -278,29 +265,152 @@ class GeneticParticleFilter(ParticleFilter):
         self.est_x = np.average(self.population, axis=1, weights=self.scores)
         self.est_p = np.cov(self.population, aweights=self.scores)
 
+    def _calcMeasurementSigmaPoints(self, observations: list[Observation]) -> ndarray:
+        r"""Calculate the measurement sigma points by passing sigma points into the measurement function.
+
+        This properly handles disparate measurement types being combined on a single timestep by stacking
+        them together into a single measurement with an uncorrelated measurement noise covariance constructed
+        as a block diagonal of the individual measurement noise covariances.
+
+        Args:
+            observations (list): :class:`.Observation` objects associated with the UKF step
+
+        Returns:
+            ``ndarray``: :math:`M\times S` properly configured measurement sigma point set, where
+            :math:`M` is the compiled measurement space, and :math:`S` is the number of sigma points.
+        """
+        obs_vector_list = []
+        for sigma_idx in range(self.population_size):
+            obs_states = []
+            for observation in observations:
+                utc_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
+                sigma_measurement = observation.measurement.calculateMeasurement(
+                    observation.sensor_eci,
+                    self.population[:, sigma_idx],
+                    utc_datetime,
+                    noisy=False,
+                )
+                obs_states.append(list(sigma_measurement.values()))
+
+            # Add stacked observations to the list
+            stacked_obs_state = np.concatenate(obs_states, axis=0)
+            stacked_obs_state.shape = (stacked_obs_state.size, 1)
+            obs_vector_list.append(stacked_obs_state)
+
+        # Concatenate stacked obs into MxS
+        return np.concatenate(obs_vector_list, axis=1)
+
+    def calculateMeasurementMatrix(
+        self,
+        observations: list[Observation],
+    ) -> tuple[ndarray, ndarray]:
+        r"""Calculate the stacked observation/measurement matrix for a set of observations.
+
+        The UKF doesn't use an :math:`H` Matrix. Instead, the differences between the predicted state or
+        observations, and the associated sigma values are calculated. These are used to
+        determine the cross and innovations covariances.
+
+        Args:
+            observations (list): :class:`.Observation` objects associated with the UKF step
+        """
+        # Create observations for each sigma point
+        sigma_obs = self._calcMeasurementSigmaPoints(observations)
+
+        # Convert to 1-D list of IsAngle values for the combined observation state
+        angular_measurements = np.concatenate(
+            [ob.measurement.angular_values for ob in observations],
+            axis=0,
+        )
+
+        # Mx1 array of whether each corresponding measurement was angular or not
+        self.is_angular = np.array(
+            [a in VALID_ANGULAR_MEASUREMENTS for a in angular_measurements],
+            dtype=bool,
+        )
+
+        # Save mean predicted measurement vector
+        mean_pred = self.calcMeasurementMean(sigma_obs, angular_measurements)
+
+        # Determine the difference between the sigma pt observations and the mean observation
+        point_residuals = vecResiduals(
+            sigma_obs,
+            mean_pred[..., np.newaxis],
+            self.is_angular[..., np.newaxis],
+        )
+        # point_residuals = np.zeros(sigma_obs.shape)
+        # for item in range(sigma_obs.shape[1]):
+        #     point_residuals[:, item] = residuals(
+        #         sigma_obs[:, item],
+        #         mean_pred,
+        #         self.is_angular,
+        #     )
+
+        return mean_pred, point_residuals
+
+    def calcMeasurementMean(
+        self,
+        measurement_sigma_pts: ndarray,
+        is_angular: list[IsAngle],
+    ) -> ndarray:
+        r"""Determine the mean of the predicted measurements.
+
+        This is done generically which allows for measurements to be ordered in any fashion, but
+        requires an associated boolean vector to flag for angle measurements. This special
+        treatment is required because angles are nonlinear (modular), so calculating the mean is
+        not a linear operation.
+
+        Angular mean:
+
+        .. math::
+
+            \bar{\theta} = \arctan \left( \frac{\sum^{N}_{i=1}\sin{\theta_{i}}}{\sum^{N}_{i=1}\cos{\theta_{i}}} \right)
+
+        Normal mean:
+
+        .. math::
+
+            \bar{x} = \frac{1}{N}\sum^{N}_{i=1}{x_i}
+
+        Args:
+            measurement_sigma_pts (ndarray): :math:`M\times S` array of predicted measurements, where
+                :math:`M` is the compiled measurement space, and :math:`S` is the number of sigma points.
+            is_angular (list): :class:`.IsAngle` objects corresponding to type of angular measurement.
+
+        Returns:
+            ``ndarray``: :math:`M\times 1` predicted measurement mean
+        """
+        meas_mean = np.zeros((measurement_sigma_pts.shape[0],))
+        for idx, (meas, angular) in enumerate(zip(measurement_sigma_pts, is_angular)):
+            if angular in VALID_ANGULAR_MEASUREMENTS:
+                low, high = VALID_ANGLE_MAP[angular]
+                mean = angularMean(meas, weights=self.scores, low=low, high=high)
+            else:
+                mean = meas.dot(self.scores)
+
+            meas_mean[idx] = mean
+
+        return meas_mean
+
     def resample(self):
         """Perform the genetic update step to resample filter particles."""
         # Step 0. Sort the population members by their scores
         fitness = np.argsort(self.scores).flatten()
 
-        # Step 1. Identify the bottom performers
-        # bottom_performers = fitness[: self.num_purge]
-
-        # Step 2. Identify pairs for crossover
+        # Step 1. Identify pairs for crossover
         pairs = np.random.choice(
             fitness[self.num_purge :],
             size=(self.num_cross, 2),
             replace=False,
         )
         new_members = self.crossover(pairs)
-        new_member_scores = self.scores[pairs.ravel()].reshape(-1, 2).mean(axis=0)
+        new_member_scores = self.scores[pairs.ravel()].reshape(-1, 2).mean(axis=1)
 
-        # Step 3. Update the population with the new members
-        self.population[fitness[: self.num_cross], :] = new_members
+        # Step 2. Update the population with the new members
+        self.population[:, fitness[: self.num_cross]] = new_members
         self.scores[fitness[: self.num_cross]] = new_member_scores
-        self.scores /= np.linalg.norm(self.scores)
+        # self.scores /= np.linalg.norm(self.scores)
 
-        # Step 4. Identify members for mutation, preserving the top performers.
+        # Step 3. Identify members for mutation, preserving the top performers.
         #         This is where spread/novelty comes from in our filter
         mutation_indices = np.random.choice(
             fitness[: -self.num_keep],
@@ -333,7 +443,7 @@ class GeneticParticleFilter(ParticleFilter):
         Args:
             indices (ndarray): :math:`S\times1` vector of member indices
         """
-        mutations = self.mutation_strength * np.random.standard_normal(
+        mutations = self.mutation_strength[..., np.newaxis] * np.random.standard_normal(
             (self.population.shape[0], len(indices)),
         )
         self.population[:, indices] += mutations
