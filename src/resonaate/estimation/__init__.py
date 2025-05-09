@@ -9,12 +9,19 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ..common.labels import AdaptiveEstimationLabel, ManeuverDetectionLabel, SequentialFilterLabel
+from ..common.labels import (
+    AdaptiveEstimationLabel,
+    ManeuverDetectionLabel,
+    ParticleFilterLabel,
+    SequentialFilterLabel,
+)
 from .adaptive.adaptive_filter import AdaptiveFilter
 from .adaptive.gpb1 import GeneralizedPseudoBayesian1
 from .adaptive.smm import StaticMultipleModel
 from .initial_orbit_determination import LambertIOD
 from .maneuver_detection import FadingMemoryNis, ManeuverDetection, SlidingNis, StandardNis
+from .particle.genetic_particle_filter import GeneticParticleFilter
+from .particle.particle_filter import ParticleFilter
 from .sequential.sequential_filter import SequentialFilter
 from .sequential.unscented_kalman_filter import UnscentedKalmanFilter
 
@@ -30,6 +37,7 @@ if TYPE_CHECKING:
         AdaptiveEstimationConfig,
         InitialOrbitDeterminationConfig,
         ManeuverDetectionConfig,
+        ParticleFilterConfig,
         SequentialFilterConfig,
     )
     from .initial_orbit_determination import InitialOrbitDetermination
@@ -42,26 +50,33 @@ __all__ = [
 VALID_ESTIMATE_SOURCES: tuple[str] = (
     SequentialFilter.INTERNAL_PROPAGATION_SOURCE,
     SequentialFilter.INTERNAL_OBSERVATION_SOURCE,
+    ParticleFilter.INTERNAL_PROPAGATION_SOURCE,
+    ParticleFilter.INTERNAL_OBSERVATION_SOURCE,
 )
 """``tuple[str]``: Valid entries for :py:attr:`SequentialFilter.source` of filter measurement updates & estimates."""
 
 
-_MANEUVER_DETECTION_MAP: dict[str, ManeuverDetection] = {
+_MANEUVER_DETECTION_MAP: dict[str, type[ManeuverDetection]] = {
     ManeuverDetectionLabel.STANDARD_NIS: StandardNis,
     ManeuverDetectionLabel.SLIDING_NIS: SlidingNis,
     ManeuverDetectionLabel.FADING_MEMORY_NIS: FadingMemoryNis,
 }
 
 
-_ADAPTIVE_ESTIMATION_MAP: dict[str, AdaptiveFilter] = {
+_ADAPTIVE_ESTIMATION_MAP: dict[str, type[AdaptiveFilter]] = {
     AdaptiveEstimationLabel.GPB1: GeneralizedPseudoBayesian1,
     AdaptiveEstimationLabel.SMM: StaticMultipleModel,
 }
 
 
-_FILTER_MAP: dict[str, SequentialFilter] = {
+_SEQUENTIAL_FILTER_MAP: dict[str, type[SequentialFilter]] = {
     SequentialFilterLabel.UKF: UnscentedKalmanFilter,
     SequentialFilterLabel.UNSCENTED_KALMAN_FILTER: UnscentedKalmanFilter,
+}
+
+_PARTICLE_FILTER_MAP: dict[str, type[ParticleFilter]] = {
+    ParticleFilterLabel.GPF: GeneticParticleFilter,
+    ParticleFilterLabel.GENETIC_PARTICLE_FILTER: GeneticParticleFilter,
 }
 
 
@@ -89,7 +104,43 @@ def sequentialFilterFactory(
         :class:`.SequentialFilter`: constructed filter object
     """
     maneuver_detection = maneuverDetectionFactory(config.maneuver_detection)
-    return _FILTER_MAP[config.name].fromConfig(
+    return _SEQUENTIAL_FILTER_MAP[config.name].fromConfig(
+        config,
+        tgt_id,
+        time,
+        est_x,
+        est_p,
+        dynamics,
+        q_matrix,
+        maneuver_detection,
+    )
+
+
+def particleFilterFactory(
+    config: ParticleFilterConfig,
+    tgt_id: int,
+    time: ScenarioTime,
+    est_x: ndarray,
+    est_p: ndarray,
+    dynamics: Dynamics,
+    q_matrix: ndarray,
+) -> ParticleFilter:
+    """Build a :class:`.ParticleFilter` object for target state estimation.
+
+    Args:
+        config (:class:`.ParticleFilterConfig`): describes the filter to be built
+        tgt_id (``int``): unique ID of the associated target agent
+        time (:class:`.ScenarioTime`): initial time of scenario
+        est_x (``ndarray``): 6x1, initial state estimate
+        est_p (``ndarray``): 6x6, initial error covariance matrix
+        dynamics (:class:`.Dynamics`): dynamics object to propagate estimate
+        q_matrix (``ndarray``): process noise covariance matrix
+
+    Returns:
+        :class:`.ParticleFilter`: constructed filter object
+    """
+    maneuver_detection = maneuverDetectionFactory(config.maneuver_detection)
+    return _PARTICLE_FILTER_MAP[config.name].fromConfig(
         config,
         tgt_id,
         time,

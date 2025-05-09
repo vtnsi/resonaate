@@ -191,3 +191,102 @@ class AdaptiveUpdateResult(SeqFilterUpdateResult, AdaptiveForecastResult):
 
     true_y: ndarray
     """TODO: something to do with the measurement used during the 'update' step"""
+
+
+# ------------------
+# PARTICLE FILTER
+# ------------------
+@dataclass
+class ParticleFilterPredictResult(FilterResult):
+    """Object encapsulating data from a 'predict' step of a particle filter.
+
+    More detailed descriptions of attributes can be found in the primary docstring of
+    :class:`.SequentialFilter`.
+    """
+
+    time: Union[ScenarioTime, float]  # noqa: UP007
+    """float | ScenarioTime: Current timestep of the simulation (:math:`k`)."""
+
+    est_x: ndarray
+    """State estimate (:math:`N\times 1`) before 'predict' step."""
+
+    est_p: ndarray
+    """State covariance (:math:`N\times N`) before 'predict' step."""
+
+    pred_x: ndarray
+    """Predicted state estimate (:math:`N\times 1`) after 'predict' step."""
+
+    pred_p: ndarray
+    """Predicted state covariance (:math:`N\times N`) after 'predict' step."""
+
+
+@dataclass
+class ParticleFilterForecastResult(FilterResult):
+    """Object encapsulating data from a 'forecast' step of a sequential filter.
+
+    More detailed descriptions of attributes can be found in the primary docstring of
+    :class:`.SequentialFilter`.
+    """
+
+    num_particles: int
+    """Number of particles used during forecasting"""
+
+
+@dataclass
+class ParticleFilterUpdateResult(ParticleFilterForecastResult):
+    """Object encapsulating data from an 'update' step of a particle filter.
+
+    More detailed descriptions of attributes can be found in the primary docstring of
+    :class:`.ParticleFilter`.
+    """
+
+    est_x: ndarray
+    """:math:`N\times 1` estimated (**posteriori**) state estimate at :math:`k+1`."""
+
+    source: str  # TODO: this should probably reference an enum
+    """Indication of whether observation(s) were used during an update."""
+
+    maneuver_metric: Union[float, None]  # noqa: UP007
+    """Result of the hypothesis testing function used to determine whether a maneuver occurred or not."""
+
+    maneuver_detected: bool
+    """Boolean indication of whether a maneuver occurred or not."""
+
+
+@dataclass
+class GPFPredictResult(ParticleFilterPredictResult):
+    """Object encapsulating data from a 'predict' step of a genetic particle filter.
+
+    More detailed descriptions of attributes can be found in the primary docstring of
+    :class:`.GeneticParticleFilter`.
+    """
+
+    sigma_points: ndarray
+    """:math:`S` sigma point :math:`N\times 1` vectors combined into single matrix."""
+
+    sigma_x_res: ndarray
+    """:math:`N\times S` state sigma point residuals."""
+
+
+@dataclass
+class GPFForecastResult(ParticleFilterForecastResult):
+    """Object encapsulating data from a 'forecast' step of a genetic particle filter.
+
+    More detailed descriptions of attributes can be found in the primary docstring of
+    :class:`.GeneticParticleFilter`.
+    """
+
+    sigma_points: ndarray
+    """:math:`S` sigma point :math:`N\times 1` vectors combined into single matrix."""
+
+    sigma_y_res: ndarray
+    """:math:`M\times S` measurement sigma point residuals."""
+
+
+@dataclass
+class GPFUpdateResult(ParticleFilterUpdateResult, GPFForecastResult):
+    """Object encapsulating data from an 'update' step of a genetic particle filter.
+
+    More detailed descriptions of attributes can be found in the primary docstring of
+    :class:`.GeneticParticleFilter`.
+    """
