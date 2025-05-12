@@ -9,6 +9,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
+# RESONAATE Imports
+from resonaate.estimation.particle.particle_filter import ParticleFilter
+from resonaate.estimation.sequential.sequential_filter import SequentialFilter
+
 # Local Imports
 from ..common.utilities import serializeArrayKwarg, stringToNdarray
 from .table_base import Base, _DataMixin
@@ -49,6 +53,39 @@ class FilterStep(
     """``float``: Measurement residual corresponding to change in range per unit time (i.e. speed the spacecraft is moving towards or away from observer), measured in km/sec.
     Size is adjustable based on sensor type (i.e. radar or optical)."""
 
+    MUTABLE_COLUMN_NAMES = (
+        "julian_date",
+        "epoch",
+        "target_id",
+        "measurement_residual_azimuth",
+        "measurement_residual_elevation",
+        "measurement_residual_range",
+        "measurement_residual_range_rate",
+    )
+
+    @classmethod
+    def recordFilterStep(cls, **kwargs):
+        """Construct an :class:`._DataMixin` object using a different format of keyword arguments.
+
+        A keyword is provided either in a 4x1 size or a 2x1 size and if 4x1, range and range-rate
+        components are written.
+
+        Any kwargs of type :class:`np.ndarray` should be passed in as their original array type.
+        This method handles the json serialization and stores them in the database as a string.
+        """
+        if "filter" in kwargs:
+            del kwargs["filter"]
+        return cls(**kwargs)
+
+
+class SequentialFilterStep(FilterStep):
+    """Outputs valuable information from the Unscented Kalman Filter from each filter observation."""
+
+    __tablename__ = "sequential_filter_step"
+
+    id = Column(None, ForeignKey("filterstep.id"), primary_key=True)
+    """``int``: Contains all of the id numbers for each filter observation."""
+
     _q_matrix: Mapped[str] = Column(String)
     """``str``: Serialized json containing the q-matrix."""
 
@@ -69,13 +106,7 @@ class FilterStep(
     """``float``: Innovations Corresponding to Observations."""
 
     MUTABLE_COLUMN_NAMES = (
-        "julian_date",
-        "epoch",
-        "target_id",
-        "measurement_residual_azimuth",
-        "measurement_residual_elevation",
-        "measurement_residual_range",
-        "measurement_residual_range_rate",
+        *FilterStep.MUTABLE_COLUMN_NAMES,
         "nis",
         "_q_matrix",
         "_sigma_x_res",
@@ -95,27 +126,33 @@ class FilterStep(
         Any kwargs of type :class:`np.ndarray` should be passed in as their original array type.
         This method handles the json serialization and stores them in the database as a string.
         """
+        nominal_filter: SequentialFilter = kwargs.pop("filter", None)
+        if nominal_filter is None:
+            raise ValueError("A filter must be passed to the filter step recorder")
+
         # Parse measurement residual array into separate columns
-        kwargs["measurement_residual_azimuth"] = kwargs["innovation"][0]
-        kwargs["measurement_residual_elevation"] = kwargs["innovation"][1]
+        kwargs["measurement_residual_azimuth"] = nominal_filter.innovation[0]
+        kwargs["measurement_residual_elevation"] = nominal_filter.innovation[1]
+        # Defining kwargs values based on size of innovations array i.e. what type of sensor
+        # TODO: Find a better solution that *actually* uses the sensor type
+        if len(nominal_filter.innovation) == 4:
+            kwargs["measurement_residual_range"] = nominal_filter.innovation[2]
+            kwargs["measurement_residual_range_rate"] = nominal_filter.innovation[3]
 
         # Handle serializing the various array elements into strings
-
         # For any ndarray typed kwargs, serialize them into a json string.
-
+        kwargs |= {
+            "q_matrix": nominal_filter.q_matrix,
+            "cross_cvr": nominal_filter.cross_cvr,
+            "innov_cvr": nominal_filter.innov_cvr,
+            "kalman_gain": nominal_filter.kalman_gain,
+        }
         kwargs = serializeArrayKwarg("q_matrix", kwargs)
         kwargs = serializeArrayKwarg("sigma_x_res", kwargs)
         kwargs = serializeArrayKwarg("sigma_y_res", kwargs)
         kwargs = serializeArrayKwarg("cross_cvr", kwargs)
         kwargs = serializeArrayKwarg("innov_cvr", kwargs)
         kwargs = serializeArrayKwarg("kalman_gain", kwargs)
-
-        # Defining kwargs values based on size of innovations array i.e. what type of sensor
-        if len(kwargs["innovation"]) == 4:
-            kwargs["measurement_residual_range"] = kwargs["innovation"][2]
-            kwargs["measurement_residual_range_rate"] = kwargs["innovation"][3]
-
-        del kwargs["innovation"]
 
         return cls(**kwargs)
 
@@ -162,3 +199,103 @@ class FilterStep(
     def kalman_gain(self) -> np.ndarray:
         """``np.ndarray``: The Kalman Gain array."""
         return stringToNdarray(self._kalman_gain)
+
+
+class ParticleFilterStep(FilterStep):
+    """Outputs valuable information from the Unscented Kalman Filter from each filter observation."""
+
+    __tablename__ = "particle_filter_step"
+
+    id = Column(None, ForeignKey("filterstep.id"), primary_key=True)
+    """``int``: Contains all of the id numbers for each filter observation."""
+
+    _particles: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the filer's particles."""
+
+    _scores: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the scores for each particle."""
+
+    _particle_residuals: Mapped[str] = Column(String)
+    """``str``: Serialized json containing the measurement residuals for each particle."""
+
+    MUTABLE_COLUMN_NAMES = (
+        *FilterStep.MUTABLE_COLUMN_NAMES,
+        "_particles",
+        "_scores",
+        "_particle_residuals",
+    )
+
+    @classmethod
+    def recordFilterStep(cls, **kwargs):
+        """Construct an :class:`._DataMixin` object using a different format of keyword arguments.
+
+        A keyword is provided either in a 4x1 size or a 2x1 size and if 4x1, range and range-rate
+        components are written.
+
+        Any kwargs of type :class:`np.ndarray` should be passed in as their original array type.
+        This method handles the json serialization and stores them in the database as a string.
+        """
+        nominal_filter = kwargs.pop("filter", None)
+        if nominal_filter is None:
+            raise ValueError("A filter must be passed to the filter step recorder")
+
+        # Parse measurement residual array into separate columns
+        kwargs["measurement_residual_azimuth"] = nominal_filter.pop_res.mean(axis=1)[0].item()
+        kwargs["measurement_residual_elevation"] = nominal_filter.pop_res.mean(axis=1)[1].item()
+
+        # Defining kwargs values based on size of innovations array i.e. what type of sensor
+        if nominal_filter.pop_res.shape[0] == 4:
+            kwargs["measurement_residual_range"] = nominal_filter.pop_res.mean(axis=1)[2].item()
+            kwargs["measurement_residual_range_rate"] = nominal_filter.pop_res.mean(axis=1)[
+                3
+            ].item()
+
+        # Handle serializing the various array elements into strings
+        # For any ndarray typed kwargs, serialize them into a json string.
+        kwargs |= {
+            "particles": nominal_filter.population,
+            "scores": nominal_filter.scores,
+            "particle_residuals": nominal_filter.pop_res,
+        }
+        kwargs = serializeArrayKwarg("particles", kwargs)
+        kwargs = serializeArrayKwarg("scores", kwargs)
+        kwargs = serializeArrayKwarg("particle_residuals", kwargs)
+
+        # print(kwargs)
+
+        return cls(**kwargs)
+
+    @property
+    def innovation(self) -> list:
+        """``list``: List containing available components of [measurement_residual_1,...,measurement_residual_n]."""
+        # Define size returned based on sensor type (radar or optical)
+        if self.measurement_residual_range:
+            return [
+                self.measurement_residual_azimuth,
+                self.measurement_residual_elevation,
+                self.measurement_residual_range,
+                self.measurement_residual_range_rate,
+            ]
+
+        return [self.measurement_residual_azimuth, self.measurement_residual_elevation]
+
+    @property
+    def particles(self) -> np.ndarray:
+        """``np.ndarray``: The particles comprising the filter's population."""
+        return stringToNdarray(self._particles)
+
+    @property
+    def scores(self) -> np.ndarray:
+        """``np.ndarray``: The scores of each particle."""
+        return stringToNdarray(self._scores)
+
+    @property
+    def particle_residuals(self) -> np.ndarray:
+        """``np.ndarray``: The particle residuals array."""
+        return stringToNdarray(self._particle_residuals)
+
+
+filter_map: dict[type[SequentialFilter] | type[ParticleFilter], type[FilterStep]] = {
+    SequentialFilter: SequentialFilterStep,
+    ParticleFilter: ParticleFilterStep,
+}

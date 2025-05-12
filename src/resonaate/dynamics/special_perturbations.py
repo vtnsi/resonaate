@@ -71,7 +71,12 @@ class SpecialPerturbations(Celestial):
         self.sat_ratio = sat_ratio
         self.use_gr = perturbations.general_relativity
 
-    def _differentialEquation(self, time: ScenarioTime, state: ndarray) -> ndarray:
+    def _differentialEquation(
+        self,
+        time: ScenarioTime,
+        state: ndarray,
+        check_collision: bool = True,
+    ) -> ndarray:
         """Calculate the first time derivative of the state for numerical integration.
 
         Uses Cowell's formulation.
@@ -85,6 +90,7 @@ class SpecialPerturbations(Celestial):
         Args:
             time (:class:`.ScenarioTime`): the current time of integration, (seconds)
             state (``ndarray``): (6 * K, ) current state vector in integration, (km, km/sec)
+            check_collision (``bool``): whether to error on collision with the primary body
 
         Returns:
             ``ndarray``: (6 * K, ) derivative of the state vector, (km/sec; km/sec^2)
@@ -114,8 +120,9 @@ class SpecialPerturbations(Celestial):
             # Determine the velocity vectors in J2000 frame
             v_eci = state[jj + half :: step]
 
-            # Check if an RSO crashed into the Earth
-            checkEarthCollision(norm(r_eci))
+            if check_collision:
+                # Check if an RSO crashed into the Earth
+                checkEarthCollision(norm(r_eci))
 
             # Get ECEF position
             r_ecef = matmul(ecef_2_eci.T, r_eci)

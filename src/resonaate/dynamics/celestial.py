@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from functools import partial
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -16,7 +17,7 @@ from scipy.integrate import solve_ivp
 from ..common.labels import IntegratorLabel
 from ..common.logger import resonaateLogError, resonaateLogWarning
 from ..physics.bodies import Earth
-from .dynamics_base import Dynamics
+from .dynamics_base import Dynamics, DynamicsErrorFlag
 from .integration_events.finite_thrust import ScheduledFiniteThrust
 
 # Type Checking Imports
@@ -142,6 +143,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         initial_state: ndarray,
         station_keeping: list[StationKeeper] | None = None,
         scheduled_events: list[ScheduledEventType] | None = None,
+        error_flags: DynamicsErrorFlag = DynamicsErrorFlag.COLLISION,
     ) -> ndarray:
         r"""Numerically integrate the state vector forward to the final time.
 
@@ -154,6 +156,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             scheduled_events (``list``, optional): scheduled events to apply during propagation which
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
+            error_flags (:class:`.DynamicsErrorFlag`): flags marking which errors will halt propagation
 
         Note:
             :math:`K` refers to the number of parallel integrations being performed
@@ -177,9 +180,10 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         )
 
         # Continue integration until we reach final_time
+        check_collision = bool(DynamicsErrorFlag.COLLISION & error_flags)
         while initial_time < final_time:
             solution = solve_ivp(
-                self._differentialEquation,
+                partial(self._differentialEquation, check_collision=check_collision),
                 (initial_time, final_time),
                 initial_state.ravel(),
                 method=self._method,

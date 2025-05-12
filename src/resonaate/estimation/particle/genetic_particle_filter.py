@@ -9,6 +9,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.linalg import block_diag
 
+# RESONAATE Imports
+from resonaate.dynamics.dynamics_base import DynamicsErrorFlag
+
 # Local Imports
 from ...physics.maths import angularMean, vecResiduals
 from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
@@ -137,7 +140,9 @@ class GeneticParticleFilter(ParticleFilter):
             cov=est_p,
             size=population_size,
         ).T
-        self.scores = np.ones((self.population_size,)) / self.population_size
+        self.scores = np.ones((self.population_size,))
+
+        self.pop_res = np.array([])
 
         self.num_purge = num_purge
         self.num_keep = num_keep
@@ -145,7 +150,9 @@ class GeneticParticleFilter(ParticleFilter):
         self.num_cross = (self.population_size - num_keep - num_purge) // 2
 
         self.mutation_strength = (
-            np.array(mutation_strength) if mutation_strength is not None else np.ones_like(est_x)
+            np.array(mutation_strength)
+            if mutation_strength is not None
+            else np.ones((self.x_dim,))
         )
 
     @classmethod
@@ -214,6 +221,7 @@ class GeneticParticleFilter(ParticleFilter):
             final_time,
             self.population,
             scheduled_events=scheduled_events,
+            error_flags=DynamicsErrorFlag(0),
         )
 
         # STEP 2: Calculate the predicted state and covariance at t(k) (P(k + 1|k))
@@ -239,6 +247,7 @@ class GeneticParticleFilter(ParticleFilter):
             0,
             res,
         )
+        self.scores = np.nan_to_num(self.scores)
 
     def update(self, observations: list[Observation]):
         r"""Update the state estimate with observations.
@@ -332,20 +341,13 @@ class GeneticParticleFilter(ParticleFilter):
         mean_pred = self.calcMeasurementMean(sigma_obs, angular_measurements)
 
         # Determine the difference between the sigma pt observations and the mean observation
-        point_residuals = vecResiduals(
+        self.pop_res = vecResiduals(
             sigma_obs,
             mean_pred[..., np.newaxis],
             self.is_angular[..., np.newaxis],
         )
-        # point_residuals = np.zeros(sigma_obs.shape)
-        # for item in range(sigma_obs.shape[1]):
-        #     point_residuals[:, item] = residuals(
-        #         sigma_obs[:, item],
-        #         mean_pred,
-        #         self.is_angular,
-        #     )
 
-        return mean_pred, point_residuals
+        return mean_pred, self.pop_res
 
     def calcMeasurementMean(
         self,
@@ -406,8 +408,12 @@ class GeneticParticleFilter(ParticleFilter):
         new_member_scores = self.scores[pairs.ravel()].reshape(-1, 2).mean(axis=1)
 
         # Step 2. Update the population with the new members
-        self.population[:, fitness[: self.num_cross]] = new_members
-        self.scores[fitness[: self.num_cross]] = new_member_scores
+        pop = self.population.copy()
+        pop[:, fitness[: self.num_cross]] = new_members
+        self.population = pop
+        scores = self.scores.copy()
+        scores[fitness[: self.num_cross]] = new_member_scores
+        self.scores = scores
         # self.scores /= np.linalg.norm(self.scores)
 
         # Step 3. Identify members for mutation, preserving the top performers.
@@ -446,7 +452,9 @@ class GeneticParticleFilter(ParticleFilter):
         mutations = self.mutation_strength[..., np.newaxis] * np.random.standard_normal(
             (self.population.shape[0], len(indices)),
         )
-        self.population[:, indices] += mutations
+        pop = self.population.copy()
+        pop[:, indices] += mutations
+        self.population = pop
 
     def getPredictionResult(self) -> GPFPredictResult:
         """Compile result message for a predict step.

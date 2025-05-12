@@ -22,7 +22,7 @@ from .detected_maneuver import DetectedManeuver
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .epoch import Epoch
 from .events import Event
-from .filter_step import FilterStep
+from .filter_step import filter_map
 from .observation import MissedObservation, Observation
 from .table_base import Base, _Base
 from .task import Task
@@ -44,12 +44,11 @@ class DataInterface(metaclass=ABCMeta):  # noqa: B024
         DetectedManeuver.__tablename__: DetectedManeuver,
         EstimateEphemeris.__tablename__: EstimateEphemeris,
         Event.__tablename__: Event,
-        FilterStep.__tablename__: FilterStep,
         MissedObservation.__tablename__: MissedObservation,
         Observation.__tablename__: Observation,
         Task.__tablename__: Task,
         TruthEphemeris.__tablename__: TruthEphemeris,
-    }
+    } | {T.__tablename__: T for T in filter_map.values()}
 
     SQLITE_PREFIX = "sqlite://"
 

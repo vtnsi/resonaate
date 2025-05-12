@@ -17,23 +17,25 @@ from .db_connection import clearDBPath, getDBConnection, setDBPath
 from .detected_maneuver import DetectedManeuver
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .epoch import Epoch
-from .filter_step import FilterStep
+from .filter_step import FilterStep, ParticleFilterStep, SequentialFilterStep
 from .observation import Observation
 from .task import Task
 
 __all__ = [
+    "AgentModel",
+    "DetectedManeuver",
+    "Epoch",
+    "EstimateEphemeris",
+    "FilterStep",
+    "Observation",
+    "ParticleFilterStep",
+    "SequentialFilterStep",
+    "Task",
+    "TruthEphemeris",
     "clearDBPath",
     "createDatabasePath",
     "getDBConnection",
     "setDBPath",
-    "AgentModel",
-    "DetectedManeuver",
-    "EstimateEphemeris",
-    "TruthEphemeris",
-    "Epoch",
-    "FilterStep",
-    "Observation",
-    "Task",
 ]
 
 

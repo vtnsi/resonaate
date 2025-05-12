@@ -261,10 +261,10 @@ class GPFPredictResult(ParticleFilterPredictResult):
     :class:`.GeneticParticleFilter`.
     """
 
-    sigma_points: ndarray
+    population: ndarray
     """:math:`S` sigma point :math:`N\times 1` vectors combined into single matrix."""
 
-    sigma_x_res: ndarray
+    pop_res: ndarray
     """:math:`N\times S` state sigma point residuals."""
 
 
@@ -276,10 +276,10 @@ class GPFForecastResult(ParticleFilterForecastResult):
     :class:`.GeneticParticleFilter`.
     """
 
-    sigma_points: ndarray
+    population: ndarray
     """:math:`S` sigma point :math:`N\times 1` vectors combined into single matrix."""
 
-    sigma_y_res: ndarray
+    pop_res: ndarray
     """:math:`M\times S` measurement sigma point residuals."""
 
 
