@@ -128,25 +128,38 @@ class SequentialFilterStep(FilterStep):
         """
         nominal_filter: SequentialFilter = kwargs.pop("filter", None)
         if nominal_filter is None:
-            raise ValueError("A filter must be passed to the filter step recorder")
+            innovation = kwargs.pop("innovation", None)
+            if innovation is None:
+                raise ValueError(
+                    "You must either pass a filter or an innovation to the SequentialFilterStep recorder",
+                )
 
-        # Parse measurement residual array into separate columns
-        kwargs["measurement_residual_azimuth"] = nominal_filter.innovation[0]
-        kwargs["measurement_residual_elevation"] = nominal_filter.innovation[1]
-        # Defining kwargs values based on size of innovations array i.e. what type of sensor
-        # TODO: Find a better solution that *actually* uses the sensor type
-        if len(nominal_filter.innovation) == 4:
-            kwargs["measurement_residual_range"] = nominal_filter.innovation[2]
-            kwargs["measurement_residual_range_rate"] = nominal_filter.innovation[3]
+            # Parse measurement residual array into separate columns
+            kwargs["measurement_residual_azimuth"] = innovation[0]
+            kwargs["measurement_residual_elevation"] = innovation[1]
+            # Defining kwargs values based on size of innovations array i.e. what type of sensor
+            # TODO: Find a better solution that *actually* uses the sensor type
+            if len(innovation) > 2:
+                kwargs["measurement_residual_range"] = innovation[2]
+                kwargs["measurement_residual_range_rate"] = innovation[3]
+        else:
+            # Parse measurement residual array into separate columns
+            kwargs["measurement_residual_azimuth"] = nominal_filter.innovation[0]
+            kwargs["measurement_residual_elevation"] = nominal_filter.innovation[1]
+            # Defining kwargs values based on size of innovations array i.e. what type of sensor
+            # TODO: Find a better solution that *actually* uses the sensor type
+            if len(nominal_filter.innovation) == 4:
+                kwargs["measurement_residual_range"] = nominal_filter.innovation[2]
+                kwargs["measurement_residual_range_rate"] = nominal_filter.innovation[3]
 
-        # Handle serializing the various array elements into strings
-        # For any ndarray typed kwargs, serialize them into a json string.
-        kwargs |= {
-            "q_matrix": nominal_filter.q_matrix,
-            "cross_cvr": nominal_filter.cross_cvr,
-            "innov_cvr": nominal_filter.innov_cvr,
-            "kalman_gain": nominal_filter.kalman_gain,
-        }
+            # Handle serializing the various array elements into strings
+            # For any ndarray typed kwargs, serialize them into a json string.
+            kwargs |= {
+                "q_matrix": nominal_filter.q_matrix,
+                "cross_cvr": nominal_filter.cross_cvr,
+                "innov_cvr": nominal_filter.innov_cvr,
+                "kalman_gain": nominal_filter.kalman_gain,
+            }
         kwargs = serializeArrayKwarg("q_matrix", kwargs)
         kwargs = serializeArrayKwarg("sigma_x_res", kwargs)
         kwargs = serializeArrayKwarg("sigma_y_res", kwargs)

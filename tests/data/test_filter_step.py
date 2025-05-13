@@ -10,7 +10,7 @@ from sqlalchemy.orm import Query
 
 # RESONAATE Imports
 from resonaate.common.utilities import ndArrayToString
-from resonaate.data.filter_step import FilterStep
+from resonaate.data.filter_step import SequentialFilterStep
 
 if TYPE_CHECKING:
     # Third Party Imports
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class TestFilterStep:
-    """Test class for :class:`.FilterStep` database table class."""
+    """Test class for :class:`.SequentialFilterStep` database table class."""
 
     innovation = array(
         [
@@ -47,7 +47,7 @@ class TestFilterStep:
 
     def testInit(self):
         """Test the init of FilterStep database table."""
-        _ = FilterStep()
+        _ = SequentialFilterStep()
 
     def testInitKwargs(self, epoch, target_agent):
         """Test initializing the keywords of the truth ephemeris table.
@@ -56,7 +56,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        _ = FilterStep(
+        _ = SequentialFilterStep(
             epoch=epoch,
             target=target_agent,
             measurement_residual_azimuth=self.innovation[0],
@@ -71,14 +71,14 @@ class TestFilterStep:
             _kalman_gain=ndArrayToString(self.kalman_gain),
         )
 
-    def testRecordFilterStep(self, epoch, target_agent):
+    def testRecordSequentialFilterStep(self, epoch, target_agent):
         """Test initializing the keywords of the table.
 
         Args:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information taken at each call
         """
-        _ = FilterStep.recordFilterStep(
+        _ = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -98,7 +98,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             julian_date=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -120,7 +120,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt1 = FilterStep.recordFilterStep(
+        filt1 = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -133,7 +133,7 @@ class TestFilterStep:
             kalman_gain=self.kalman_gain,
         )
 
-        filt2 = FilterStep.recordFilterStep(
+        filt2 = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -146,7 +146,7 @@ class TestFilterStep:
             kalman_gain=self.kalman_gain,
         )
 
-        filt3 = FilterStep.recordFilterStep(
+        filt3 = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation + self.innovation,
@@ -169,7 +169,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -190,7 +190,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -211,7 +211,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -232,7 +232,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -253,7 +253,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -274,7 +274,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -295,7 +295,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -316,7 +316,7 @@ class TestFilterStep:
             epoch (class: `.Epoch`): current epoch at which filter information is taken
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation2,
@@ -338,7 +338,7 @@ class TestFilterStep:
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
             database (:class:`.ResonaateDatabase`): shared instance of database
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             julian_date=epoch.julian_date,
             target_id=target_agent.unique_id,
@@ -363,7 +363,7 @@ class TestFilterStep:
             target_agent (class: `.TargetAgent`):  Target Agent information recorded at each call
             database (:class:`.ResonaateDatabase`): shared instance of database
         """
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             julian_date=epoch.julian_date,
             target_id=target_agent.unique_id,
             innovation=self.innovation,
@@ -392,7 +392,7 @@ class TestFilterStep:
         """
         julian_date = epoch.julian_date
         target_id = target_agent.unique_id
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -406,7 +406,7 @@ class TestFilterStep:
         )
         database.insertData(filt)
 
-        new_filt = database.getData(Query(FilterStep), multi=False)
+        new_filt = database.getData(Query(SequentialFilterStep), multi=False)
         # Test lazy-loading behavior for relationship() attributes
         assert new_filt.epoch.julian_date == julian_date
         assert new_filt.target.unique_id == target_id
@@ -422,7 +422,7 @@ class TestFilterStep:
         epoch_copy = deepcopy(epoch)
         target_copy = deepcopy(target_agent)
 
-        filt = FilterStep.recordFilterStep(
+        filt = SequentialFilterStep.recordFilterStep(
             epoch=epoch,
             target=target_agent,
             innovation=self.innovation,
@@ -437,9 +437,9 @@ class TestFilterStep:
         database.insertData(filt)
 
         # Test querying by Target
-        query = Query(FilterStep).filter(FilterStep.target == target_copy)
+        query = Query(SequentialFilterStep).filter(SequentialFilterStep.target == target_copy)
         new_filt = database.getData(query, multi=False)
         assert new_filt.target == target_copy
 
         # Test querying by epoch
-        query = Query(FilterStep).filter(FilterStep.epoch == epoch_copy)
+        query = Query(SequentialFilterStep).filter(SequentialFilterStep.epoch == epoch_copy)
