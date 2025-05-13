@@ -26,7 +26,7 @@ class FilterStep(
     Base,
     _DataMixin,
 ):
-    """Outputs valuable information from the Unscented Kalman Filter from each filter observation."""
+    """Base class to ouptut valuable information for a given Filter from each filter observation."""
 
     __tablename__ = "filterstep"
     id: Mapped[int] = Column(Integer, primary_key=True)
@@ -215,7 +215,7 @@ class SequentialFilterStep(FilterStep):
 
 
 class ParticleFilterStep(FilterStep):
-    """Outputs valuable information from the Unscented Kalman Filter from each filter observation."""
+    """Outputs valuable information from the Particle Filter from each filter observation."""
 
     __tablename__ = "particle_filter_step"
 

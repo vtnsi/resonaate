@@ -61,8 +61,7 @@ class ParticleFilter(ABC):
     The terminology used here refers to the **a** **priori** state estimate and error
     covariance as :attr:`.pred_x` and :attr:`.pred_p`, respectively, and the **a**
     **posteriori** state estimate and error covariance as :attr:`.est_x` and :attr:`.est_p`,
-    respectively. For a more formalized definition of these terms and their rigorous
-    derivations, see :cite:p:`bar-shalom_2001_estimation` or :cite:p:`crassidis_2012_optest`.
+    respectively.
 
     .. rubric:: Notation
 
@@ -83,9 +82,6 @@ class ParticleFilter(ABC):
         pred_p (``ndarray``): :math:`N\times N` predicted (**priori**) error covariance at :math:`k+1`.
         est_x (``ndarray``): :math:`N\times 1` estimated (**posteriori**) state estimate at :math:`k+1`.
         est_p (``ndarray``): :math:`N\times 1` estimated (**posteriori**) error covariance at :math:`k+1`.
-        nis (``float``): normalized innovations squared values. Defines a chi-squared distributed
-            sequence with :math:`M` degrees of freedom. This allows for simple checking of filter
-            consistency and modeling errors.
         source (``str``): Variable determining whether observations were used during an update
             step. Acceptable values:
 

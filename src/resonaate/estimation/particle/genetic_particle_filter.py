@@ -47,8 +47,7 @@ class GeneticParticleFilter(ParticleFilter):
     The terminology used here refers to the **a** **priori** state estimate and error
     covariance as :attr:`.pred_x` and :attr:`.pred_p`, respectively, and the **a**
     **posteriori** state estimate and error covariance as :attr:`.est_x` and :attr:`.est_p`,
-    respectively. For a more formalized definition of these terms and their rigorous
-    derivations, see :cite:p:`bar-shalom_2001_estimation` or :cite:p:`crassidis_2012_optest`.
+    respectively.
 
     .. rubric:: Notation
 
@@ -59,7 +58,7 @@ class GeneticParticleFilter(ParticleFilter):
     - :math:`M` is defined as the number of dimensions of the measurement, :math:`y`, which can vary with time.
     - :math:`k` is defined as the current timestep of the simulation
     - :math:`k+1` is defined as the future timestep at which the filter is predicting/estimating
-    - :math:`S` is defined as the number of sigma points generated.
+    - :math:`S` is defined as the number of particle points generated.
 
     See Also:
         :class:`.ParticleFilter` for definition of common class attributes
