@@ -152,6 +152,8 @@ class SequentialFilterStep(FilterStep):
                 kwargs["measurement_residual_range"] = nominal_filter.innovation[2]
                 kwargs["measurement_residual_range_rate"] = nominal_filter.innovation[3]
 
+            kwargs["nis"] = nominal_filter.nis.item()
+
             # Handle serializing the various array elements into strings
             # For any ndarray typed kwargs, serialize them into a json string.
             kwargs |= {
