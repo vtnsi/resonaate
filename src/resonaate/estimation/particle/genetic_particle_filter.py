@@ -247,7 +247,7 @@ class GeneticParticleFilter(ParticleFilter):
             0,
             res,
         )
-        self.scores = np.nan_to_num(self.scores)
+        self.scores = np.nan_to_num(self.scores, nan=1e-12)
 
     def update(self, observations: list[Observation]):
         r"""Update the state estimate with observations.

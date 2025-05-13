@@ -3,7 +3,7 @@
     "start_timestamp": "2021-03-30T16:00:00.000Z",
     "physics_step_sec": 300,
     "output_step_sec": 300,
-    "stop_timestamp": "2021-03-30T17:00:00.000Z"
+    "stop_timestamp": "2021-03-30T19:00:00.000Z"
   },
   "noise": {
     "init_position_std_km": 1e-3,
@@ -40,7 +40,7 @@
         "num_keep": 20,
         "num_purge": 30,
         "num_mutate": 120,
-        "mutation_strength": [10, 10, 10, 0.5, 0.5, 0.5]
+        "mutation_strength": [1, 1, 1, 0.05, 0.05, 0.05]
       },
       "dynamics_model": "special_perturbations",
       "maneuver_detection": null,
