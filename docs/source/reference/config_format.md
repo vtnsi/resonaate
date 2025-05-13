@@ -282,7 +282,8 @@ This is a required field defining estimation techniques used to track the target
 
 ```python
 "estimation": {
-    "sequential_filter": SequentialFilterConfig,  # Required
+    "sequential_filter": SequentialFilterConfig,  # Optional
+    "particle_filter": ParticleFilterConfig,  # Optional
     "adaptive_filter": AdaptiveEstimationConfig,  # Optional
     "initial_orbit_determination": InitialOrbitDeterminationConfig,  # Optional
 }
@@ -290,7 +291,8 @@ This is a required field defining estimation techniques used to track the target
 
 ##### SequentialFilterConfig
 
-This is a required field in `"estimation"` defining the nominal sequential filter algorithm that tracks the targets during the simulation.
+This is an optional field in `"estimation"` defining the nominal sequential filter algorithm that tracks the targets during the simulation.
+One of either `"sequential_filter"` or `"particle_filter"` must be set.
 
 ```{rubric} Python Definition
 ```
@@ -307,7 +309,38 @@ This is a required field in `"estimation"` defining the nominal sequential filte
 ```
 
 ```python
-"estimation": {
+"sequential_filter": {
+    "name":                         str,                      # Required
+    "dynamics_model":               str,                      # Optional
+    "maneuver_detection":           ManeuverDetectionConfig,  # Optional
+    "adaptive_estimation":          bool,                     # Optional
+    "initial_orbit_determination":  bool,                     # Optional
+    "save_filter_steps":            bool,                     # Optional
+    "parameters":                   dict,                     # Optional
+}
+```
+
+##### ParticleFilterConfig
+
+This is an optional field in `"estimation"` defining the nominal particle filter algorithm that tracks the targets during the simulation.
+One of either `"sequential_filter"` or `"particle_filter"` must be set.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.estimation_config
+
+.. autoclass:: ParticleFilterConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"particle_filter": {
     "name":                         str,                      # Required
     "dynamics_model":               str,                      # Optional
     "maneuver_detection":           ManeuverDetectionConfig,  # Optional
