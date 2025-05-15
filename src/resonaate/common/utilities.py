@@ -11,7 +11,7 @@ from json import JSONEncoder
 import numpy as np
 
 # Local Imports
-from . import timeStampPath
+from . import pathSafeTime
 from .behavioral_config import BehavioralConfig
 from .logger import resonaateLogError
 
@@ -197,7 +197,7 @@ def saveMatrix(name, matrix, path=None):
     # Create timestamped filename
     file_name = os.path.join(
         os.path.realpath(path),
-        timeStampPath(f"{name}_{'{}'}.json"),
+        f"{name}_{pathSafeTime()}.json",
     )
     # Save to file, convert to list if `numpy.ndarray`
     with open(file_name, "w", encoding="utf-8") as out_file:
