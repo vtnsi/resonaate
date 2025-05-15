@@ -10,7 +10,7 @@ from os import makedirs
 from os.path import exists, join
 
 # Local Imports
-from . import timeStampPath
+from . import pathSafeTime
 from .behavioral_config import BehavioralConfig
 
 
@@ -51,8 +51,7 @@ class Logger:
                     makedirs(path)
 
                 # Set the timestamp for the file name, and construct the entire filename
-                log_name = f"{name}_{'{}'}.log"
-                timeStampPath(log_name)
+                log_name = f"{name}_{pathSafeTime()}.log"
                 self.filename = join(path, log_name)
 
                 # Create the file handler based on the file name
