@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-# Standard Library Imports
-from typing import TYPE_CHECKING
-
 # Third Party Imports
+import numpy as np
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
@@ -16,10 +14,6 @@ from resonaate.estimation.sequential.sequential_filter import SequentialFilter
 # Local Imports
 from ..common.utilities import serializeArrayKwarg, stringToNdarray
 from .table_base import Base, _DataMixin
-
-if TYPE_CHECKING:
-    # Third Party Imports
-    import numpy as np
 
 
 class FilterStep(
@@ -254,16 +248,21 @@ class ParticleFilterStep(FilterStep):
         if nominal_filter is None:
             raise ValueError("A filter must be passed to the filter step recorder")
 
+        # When the filter hasn't had an update cycle, the residuals are empty, so lets check for that
+        pop_res = (
+            nominal_filter.pop_res.mean(axis=-1)
+            if len(nominal_filter.pop_res.shape) > 1
+            else np.zeros((4,))
+        )
+
         # Parse measurement residual array into separate columns
-        kwargs["measurement_residual_azimuth"] = nominal_filter.pop_res.mean(axis=1)[0].item()
-        kwargs["measurement_residual_elevation"] = nominal_filter.pop_res.mean(axis=1)[1].item()
+        kwargs["measurement_residual_azimuth"] = pop_res[0].item()
+        kwargs["measurement_residual_elevation"] = pop_res[1].item()
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
         if nominal_filter.pop_res.shape[0] == 4:
-            kwargs["measurement_residual_range"] = nominal_filter.pop_res.mean(axis=1)[2].item()
-            kwargs["measurement_residual_range_rate"] = nominal_filter.pop_res.mean(axis=1)[
-                3
-            ].item()
+            kwargs["measurement_residual_range"] = pop_res[2].item()
+            kwargs["measurement_residual_range_rate"] = pop_res[3].item()
 
         # Handle serializing the various array elements into strings
         # For any ndarray typed kwargs, serialize them into a json string.
