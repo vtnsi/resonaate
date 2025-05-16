@@ -249,27 +249,27 @@ class ParticleFilterStep(FilterStep):
             raise ValueError("A filter must be passed to the filter step recorder")
 
         # When the filter hasn't had an update cycle, the residuals are empty, so lets check for that
-        pop_res = (
-            nominal_filter.pop_res.mean(axis=-1)
-            if len(nominal_filter.pop_res.shape) > 1
+        residuals = (
+            nominal_filter.particle_residuals.mean(axis=-1)
+            if len(nominal_filter.particle_residuals.shape) > 1
             else np.zeros((4,))
         )
 
         # Parse measurement residual array into separate columns
-        kwargs["measurement_residual_azimuth"] = pop_res[0].item()
-        kwargs["measurement_residual_elevation"] = pop_res[1].item()
+        kwargs["measurement_residual_azimuth"] = residuals[0].item()
+        kwargs["measurement_residual_elevation"] = residuals[1].item()
 
         # Defining kwargs values based on size of innovations array i.e. what type of sensor
-        if nominal_filter.pop_res.shape[0] == 4:
-            kwargs["measurement_residual_range"] = pop_res[2].item()
-            kwargs["measurement_residual_range_rate"] = pop_res[3].item()
+        if residuals.shape[0] == 4:
+            kwargs["measurement_residual_range"] = residuals[2].item()
+            kwargs["measurement_residual_range_rate"] = residuals[3].item()
 
         # Handle serializing the various array elements into strings
         # For any ndarray typed kwargs, serialize them into a json string.
         kwargs |= {
             "particles": nominal_filter.population,
             "scores": nominal_filter.scores,
-            "particle_residuals": nominal_filter.pop_res,
+            "particle_residuals": nominal_filter.particle_residuals,
         }
         kwargs = serializeArrayKwarg("particles", kwargs)
         kwargs = serializeArrayKwarg("scores", kwargs)

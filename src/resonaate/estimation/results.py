@@ -264,8 +264,8 @@ class GPFPredictResult(ParticleFilterPredictResult):
     population: ndarray
     """:math:`S` sigma point :math:`N\times 1` vectors combined into single matrix."""
 
-    pop_res: ndarray
-    """:math:`N\times S` state sigma point residuals."""
+    particle_residuals: ndarray
+    """:math:`M\times S` particle residuals."""
 
 
 @dataclass
@@ -279,8 +279,8 @@ class GPFForecastResult(ParticleFilterForecastResult):
     population: ndarray
     """:math:`S` sigma point :math:`N\times 1` vectors combined into single matrix."""
 
-    pop_res: ndarray
-    """:math:`M\times S` measurement sigma point residuals."""
+    particle_residuals: ndarray
+    """:math:`M\times S` particle residuals."""
 
 
 @dataclass

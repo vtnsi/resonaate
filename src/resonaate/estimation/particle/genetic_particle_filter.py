@@ -68,6 +68,7 @@ class GeneticParticleFilter(ParticleFilter):
         population_size (``int``): The number of particles comprising the population.
         population (``ndarray``): A :math:`NxS` matrix where each column is a state vector.
         scores (``ndarray``): A :math:`Sx1` normalized vector of scores for each estimate.
+        particle_residuals (``ndarray``): A :math:`MxS` array of particle residuals.
 
         num_purge (``int``): The number of bottom-performing particles to remove.
         num_keep (``int``): The number of top-performing particles to preserve.
@@ -142,7 +143,7 @@ class GeneticParticleFilter(ParticleFilter):
         ).T
         self.scores = np.ones((self.population_size,)) / self.population_size
 
-        self.pop_res = np.array([])
+        self.particle_residuals = np.array([])
 
         self.num_purge = num_purge
         self.num_keep = num_keep
@@ -238,6 +239,8 @@ class GeneticParticleFilter(ParticleFilter):
         # TODO: is it necessary to insert the results back into place? probably?
         # self.population = np.stack(states).T
 
+        # TODO: Compare performance against propagating locally
+        # ISSUE: There's a problem with propagation and converting the time?
         # self.population = self.dynamics.propagate(
         #     self.time,
         #     final_time,
@@ -246,7 +249,8 @@ class GeneticParticleFilter(ParticleFilter):
         #     error_flags=DynamicsErrorFlag(0),
         # )
 
-        # STEP 1.1: Check Earth collisions and downweight any particles that collide, as well as constrain them to the surface
+        # STEP 1.1: Check Earth collisions and downweight any particles that
+        #           collide, as well as constrain them to the surface
         r_norm_sq = np.einsum("ij->j", self.population[:3, :] ** 2)
         if np.any(r_norm_sq > Earth.radius**2):
             self.scores = np.where(
@@ -276,7 +280,7 @@ class GeneticParticleFilter(ParticleFilter):
         # Reset filter flags
         self._flags = FilterFlag.NONE
 
-        _, res = self.calculateMeasurementMatrix(observations)
+        _, res = self.calculateResidualsFromObservations(observations)
         r_matrix = block_diag(*[ob.r_matrix for ob in observations])
         new_scores = np.apply_along_axis(
             lambda v: np.exp(-0.5 * (v[..., np.newaxis].T @ r_matrix @ v[..., np.newaxis]).item()),
@@ -326,18 +330,17 @@ class GeneticParticleFilter(ParticleFilter):
             np.cov(self.population, aweights=self.scores * self.population_size),
         )
 
-    def calculateMeasurementMatrix(
+    def calculateResidualsFromObservations(
         self,
         observations: list[Observation],
     ) -> tuple[ndarray, ndarray]:
         r"""Calculate the stacked observation/measurement matrix for a set of observations.
 
-        The UKF doesn't use an :math:`H` Matrix. Instead, the differences between the predicted state or
-        observations, and the associated sigma values are calculated. These are used to
-        determine the cross and innovations covariances.
+        Convert the population members into the measurement space, then calculate residuals
+        against the true measurement.
 
         Args:
-            observations (list): :class:`.Observation` objects associated with the UKF step
+            observations (list): :class:`.Observation` objects associated with the update step
         """
         # Create observations for each sigma point
         population_obs = np.concatenate(
@@ -377,13 +380,13 @@ class GeneticParticleFilter(ParticleFilter):
         true_y = np.concatenate([o.measurement_states for o in observations], axis=0)
 
         # Determine the difference between the sigma pt observations and the mean observation
-        self.pop_res = vecResiduals(
+        self.particle_residuals = vecResiduals(
             population_obs,
             true_y[..., np.newaxis],
             self.is_angular[..., np.newaxis],
         )
 
-        return true_y, self.pop_res
+        return true_y, self.particle_residuals
 
     def resample(self):
         """Perform the genetic update step to resample filter particles."""
