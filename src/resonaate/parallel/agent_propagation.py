@@ -9,6 +9,9 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 import ray
 
+# RESONAATE Imports
+from resonaate.dynamics.dynamics_base import DynamicsErrorFlag
+
 # Local Imports
 from ..physics.transforms.reductions import ReductionParams
 from . import JobExecutor, Registration
@@ -49,6 +52,9 @@ class PropagateSubmission:
     scheduled_events: list[ScheduledEventType] | None = None
     """Collection of :class:`.ScheduledEventType` objects that affect propagation."""
 
+    error_flags: DynamicsErrorFlag = DynamicsErrorFlag.COLLISION
+    """Indicate what should halt propagation and error out."""
+
 
 @dataclass
 class PropagateResult:
@@ -83,6 +89,7 @@ def asyncPropagate(submission: PropagateSubmission) -> PropagateResult:
         submission.init_eci,
         station_keeping=submission.station_keeping,
         scheduled_events=submission.scheduled_events,
+        error_flags=submission.error_flags,
     )
     return PropagateResult(
         agent_id=submission.agent_id,

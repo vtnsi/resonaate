@@ -3,7 +3,7 @@
     "start_timestamp": "2021-03-30T16:00:00.000Z",
     "physics_step_sec": 300,
     "output_step_sec": 300,
-    "stop_timestamp": "2021-03-30T19:00:00.000Z"
+    "stop_timestamp": "2021-04-15T16:00:00.000Z"
   },
   "noise": {
     "init_position_std_km": 1e-3,
@@ -12,23 +12,24 @@
     "filter_noise_magnitude": 3.0e-14,
     "random_seed": "os"
   },
-  "propagation": {
-    "propagation_model": "special_perturbations",
-    "integration_method": "RK45",
-    "station_keeping": true,
-    "target_realtime_propagation": true,
-    "sensor_realtime_propagation": true
-  },
   "observation": {
     "background": true
   },
+  "propagation": {
+    "propagation_model": "special_perturbations",
+    "integration_method": "RK45",
+    "station_keeping": false,
+    "target_realtime_propagation": true,
+    "sensor_realtime_propagation": true,
+    "truth_simulation_only": false
+  },
   "geopotential": {
     "model": "egm96.txt",
-    "degree": 2,
-    "order": 0
+    "degree": 4,
+    "order": 4
   },
   "perturbations": {
-    "third_bodies": ["moon"],
+    "third_bodies": ["sun", "moon"],
     "solar_radiation_pressure": false,
     "general_relativity": false
   },
@@ -38,9 +39,9 @@
       "parameters": {
         "population_size": 200,
         "num_keep": 20,
-        "num_purge": 30,
+        "num_purge": 100,
         "num_mutate": 120,
-        "mutation_strength": [1, 1, 1, 0.05, 0.05, 0.05]
+        "mutation_strength": [0.5, 0.5, 0.5, 0.005, 0.005, 0.005]
       },
       "dynamics_model": "special_perturbations",
       "maneuver_detection": null,

@@ -7,14 +7,15 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import numpy as np
+import ray
 from scipy.linalg import block_diag
 
-# RESONAATE Imports
-from resonaate.dynamics.dynamics_base import DynamicsErrorFlag
-
 # Local Imports
-from ...physics.maths import angularMean, vecResiduals
-from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
+from ...dynamics.dynamics_base import DynamicsErrorFlag
+from ...parallel.agent_propagation import PropagateSubmission, asyncPropagate
+from ...physics.bodies.earth import Earth
+from ...physics.maths import vecResiduals
+from ...physics.measurements import VALID_ANGULAR_MEASUREMENTS
 from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ..results import GPFForecastResult, GPFPredictResult, GPFUpdateResult
 from .particle_filter import FilterFlag, ParticleFilter
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
     from ...data.observation import Observation
     from ...dynamics.dynamics_base import Dynamics
     from ...dynamics.integration_events import ScheduledEventType
-    from ...physics.measurements import IsAngle
+    from ...parallel.agent_propagation import PropagateResult
     from ...physics.time.stardate import ScenarioTime
     from ...scenario.config.estimation_config import ParticleFilterConfig
     from ..maneuver_detection import ManeuverDetection
@@ -139,7 +140,7 @@ class GeneticParticleFilter(ParticleFilter):
             cov=est_p,
             size=population_size,
         ).T
-        self.scores = np.ones((self.population_size,))
+        self.scores = np.ones((self.population_size,)) / self.population_size
 
         self.pop_res = np.array([])
 
@@ -215,17 +216,52 @@ class GeneticParticleFilter(ParticleFilter):
         self._flags = FilterFlag.NONE
 
         # STEP 1: Propagate the population through their dynamics to t(k) (X(k + 1|k))
-        self.population = self.dynamics.propagate(
-            self.time,
-            final_time,
-            self.population,
-            scheduled_events=scheduled_events,
-            error_flags=DynamicsErrorFlag(0),
-        )
+        submissions = [
+            PropagateSubmission(
+                agent_id=i,
+                dynamics=self.dynamics,
+                init_time=self.time,
+                final_time=final_time,
+                init_eci=self.population[:, i].flatten(),
+                scheduled_events=scheduled_events,
+                error_flags=DynamicsErrorFlag(0),
+            )
+            for i in range(self.population_size)
+        ]
+        results: list[PropagateResult] = ray.get(list(map(asyncPropagate.remote, submissions)))
+        idx = np.array([r.agent_id for r in results])
+        states = np.stack([r.final_eci for r in results]).T
+        states[:, idx] = states
+        self.population = states
+
+        # TODO: is it necessary to insert the results back into place? probably?
+        # self.population = np.stack(states).T
+
+        # self.population = self.dynamics.propagate(
+        #     self.time,
+        #     final_time,
+        #     self.population,
+        #     scheduled_events=scheduled_events,
+        #     error_flags=DynamicsErrorFlag(0),
+        # )
+
+        # STEP 1.1: Check Earth collisions and downweight any particles that collide, as well as constrain them to the surface
+        r_norm_sq = np.einsum("ij->j", self.population[:3, :] ** 2)
+        if np.any(r_norm_sq > Earth.radius**2):
+            self.scores = np.where(
+                r_norm_sq > Earth.radius**2,
+                self.scores,
+                np.zeros_like(self.scores),
+            )
+            units = self.population[:3] / np.linalg.norm(self.population[:3], axis=0)
+            self.population = np.where(
+                r_norm_sq > Earth.radius**2,
+                self.population,
+                np.concatenate([units * Earth.radius, np.zeros_like(units)], axis=0),
+            )
 
         # STEP 2: Calculate the predicted state and covariance at t(k) (P(k + 1|k))
-        self.pred_x = np.average(self.population, axis=1, weights=self.scores)
-        self.pred_p = np.cov(self.population, aweights=self.scores)
+        self.pred_x, self.pred_p = self._find_gaussian_params()
 
         # STEP 3: Update the time step
         self.time = final_time
@@ -239,14 +275,20 @@ class GeneticParticleFilter(ParticleFilter):
         # Reset filter flags
         self._flags = FilterFlag.NONE
 
-        mean, res = self.calculateMeasurementMatrix(observations)
+        _, res = self.calculateMeasurementMatrix(observations)
         r_matrix = block_diag(*[ob.r_matrix for ob in observations])
-        self.scores = np.apply_along_axis(
-            lambda x: x.T @ r_matrix @ x,
+        new_scores = np.apply_along_axis(
+            lambda v: np.exp(-0.5 * (v[..., np.newaxis].T @ r_matrix @ v[..., np.newaxis]).item()),
             0,
             res,
         )
-        self.scores = np.nan_to_num(self.scores, nan=1e-12)
+
+        # Set the population scores to the new evaluated scores, but mask out 0 scores
+        self.scores = new_scores * (self.scores > 1e-12).astype(self.scores.dtype)
+        if np.sum(self.scores) == 0.0:
+            self.scores = np.ones_like(self.scores) / len(self.scores)
+        else:
+            self.scores /= np.sum(self.scores)
 
     def update(self, observations: list[Observation]):
         r"""Update the state estimate with observations.
@@ -270,8 +312,18 @@ class GeneticParticleFilter(ParticleFilter):
 
             self._debugChecks(observations)
 
-        self.est_x = np.average(self.population, axis=1, weights=self.scores)
-        self.est_p = np.cov(self.population, aweights=self.scores)
+        self.est_x, self.est_p = self._find_gaussian_params()
+
+    def _find_gaussian_params(self) -> tuple[ndarray, ndarray]:
+        r"""Returns the mean vector and covariance matrix for a gaussian fit to the population.
+
+        Returns:
+            ``tuple[ndarray, ndarray]``: the mean vector and covariance matrix respectively.
+        """
+        return (
+            np.average(self.population, axis=1, weights=self.scores),
+            np.cov(self.population, aweights=self.scores * self.population_size),
+        )
 
     def _calcMeasurementSigmaPoints(self, observations: list[Observation]) -> ndarray:
         r"""Calculate the measurement sigma points by passing sigma points into the measurement function.
@@ -322,7 +374,7 @@ class GeneticParticleFilter(ParticleFilter):
             observations (list): :class:`.Observation` objects associated with the UKF step
         """
         # Create observations for each sigma point
-        sigma_obs = self._calcMeasurementSigmaPoints(observations)
+        population_obs = self._calcMeasurementSigmaPoints(observations)
 
         # Convert to 1-D list of IsAngle values for the combined observation state
         angular_measurements = np.concatenate(
@@ -336,61 +388,16 @@ class GeneticParticleFilter(ParticleFilter):
             dtype=bool,
         )
 
-        # Save mean predicted measurement vector
-        mean_pred = self.calcMeasurementMean(sigma_obs, angular_measurements)
+        true_y = np.concatenate([o.measurement_states for o in observations], axis=0)
 
         # Determine the difference between the sigma pt observations and the mean observation
         self.pop_res = vecResiduals(
-            sigma_obs,
-            mean_pred[..., np.newaxis],
+            population_obs,
+            true_y[..., np.newaxis],
             self.is_angular[..., np.newaxis],
         )
 
-        return mean_pred, self.pop_res
-
-    def calcMeasurementMean(
-        self,
-        measurement_sigma_pts: ndarray,
-        is_angular: list[IsAngle],
-    ) -> ndarray:
-        r"""Determine the mean of the predicted measurements.
-
-        This is done generically which allows for measurements to be ordered in any fashion, but
-        requires an associated boolean vector to flag for angle measurements. This special
-        treatment is required because angles are nonlinear (modular), so calculating the mean is
-        not a linear operation.
-
-        Angular mean:
-
-        .. math::
-
-            \bar{\theta} = \arctan \left( \frac{\sum^{N}_{i=1}\sin{\theta_{i}}}{\sum^{N}_{i=1}\cos{\theta_{i}}} \right)
-
-        Normal mean:
-
-        .. math::
-
-            \bar{x} = \frac{1}{N}\sum^{N}_{i=1}{x_i}
-
-        Args:
-            measurement_sigma_pts (ndarray): :math:`M\times S` array of predicted measurements, where
-                :math:`M` is the compiled measurement space, and :math:`S` is the number of sigma points.
-            is_angular (list): :class:`.IsAngle` objects corresponding to type of angular measurement.
-
-        Returns:
-            ``ndarray``: :math:`M\times 1` predicted measurement mean
-        """
-        meas_mean = np.zeros((measurement_sigma_pts.shape[0],))
-        for idx, (meas, angular) in enumerate(zip(measurement_sigma_pts, is_angular)):
-            if angular in VALID_ANGULAR_MEASUREMENTS:
-                low, high = VALID_ANGLE_MAP[angular]
-                mean = angularMean(meas, weights=self.scores, low=low, high=high)
-            else:
-                mean = meas.dot(self.scores)
-
-            meas_mean[idx] = mean
-
-        return meas_mean
+        return true_y, self.pop_res
 
     def resample(self):
         """Perform the genetic update step to resample filter particles."""
@@ -401,7 +408,8 @@ class GeneticParticleFilter(ParticleFilter):
         pairs = np.random.choice(
             fitness[self.num_purge :],
             size=(self.num_cross, 2),
-            replace=False,
+            replace=True,  # TODO: Add configuration option
+            p=self.scores[self.num_purge :] / self.scores[self.num_purge :].sum(),
         )
         new_members = self.crossover(pairs)
         new_member_scores = self.scores[pairs.ravel()].reshape(-1, 2).mean(axis=1)
@@ -412,8 +420,12 @@ class GeneticParticleFilter(ParticleFilter):
         self.population = pop
         scores = self.scores.copy()
         scores[fitness[: self.num_cross]] = new_member_scores
+
+        if np.sum(scores) == 0.0:
+            scores = np.ones_like(scores) / len(scores)
+        else:
+            scores /= np.sum(scores)
         self.scores = scores
-        # self.scores /= np.linalg.norm(self.scores)
 
         # Step 3. Identify members for mutation, preserving the top performers.
         #         This is where spread/novelty comes from in our filter
@@ -421,6 +433,7 @@ class GeneticParticleFilter(ParticleFilter):
             fitness[: -self.num_keep],
             size=self.num_mutate,
             replace=False,
+            p=self.scores[: -self.num_keep] / self.scores[: -self.num_keep].sum(),
         )
         self.mutate(mutation_indices)
 
