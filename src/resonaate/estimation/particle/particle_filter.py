@@ -168,6 +168,8 @@ class ParticleFilter(ABC):
         # Set filter flags to empty
         self._flags = FilterFlag.NONE
 
+        self.station_keeping = None
+
     @classmethod
     @abstractmethod
     def fromConfig(

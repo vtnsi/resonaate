@@ -138,6 +138,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
                 self._filter_step = filter_map[SequentialFilter]
             else:
                 self._filter_step = filter_map[ParticleFilter]
+                self._filter.station_keeping = self.station_keeping
         else:
             self._logger.error("Invalid input type for _filter param")
             raise TypeError(type(_filter))

@@ -223,6 +223,7 @@ class GeneticParticleFilter(ParticleFilter):
                 init_time=self.time,
                 final_time=final_time,
                 init_eci=self.population[:, i].flatten(),
+                station_keeping=self.station_keeping,
                 scheduled_events=scheduled_events,
                 error_flags=DynamicsErrorFlag(0),
             )
@@ -325,41 +326,6 @@ class GeneticParticleFilter(ParticleFilter):
             np.cov(self.population, aweights=self.scores * self.population_size),
         )
 
-    def _calcMeasurementSigmaPoints(self, observations: list[Observation]) -> ndarray:
-        r"""Calculate the measurement sigma points by passing sigma points into the measurement function.
-
-        This properly handles disparate measurement types being combined on a single timestep by stacking
-        them together into a single measurement with an uncorrelated measurement noise covariance constructed
-        as a block diagonal of the individual measurement noise covariances.
-
-        Args:
-            observations (list): :class:`.Observation` objects associated with the UKF step
-
-        Returns:
-            ``ndarray``: :math:`M\times S` properly configured measurement sigma point set, where
-            :math:`M` is the compiled measurement space, and :math:`S` is the number of sigma points.
-        """
-        obs_vector_list = []
-        for sigma_idx in range(self.population_size):
-            obs_states = []
-            for observation in observations:
-                utc_datetime = julianDateToDatetime(JulianDate(observation.julian_date))
-                sigma_measurement = observation.measurement.calculateMeasurement(
-                    observation.sensor_eci,
-                    self.population[:, sigma_idx],
-                    utc_datetime,
-                    noisy=False,
-                )
-                obs_states.append(list(sigma_measurement.values()))
-
-            # Add stacked observations to the list
-            stacked_obs_state = np.concatenate(obs_states, axis=0)
-            stacked_obs_state.shape = (stacked_obs_state.size, 1)
-            obs_vector_list.append(stacked_obs_state)
-
-        # Concatenate stacked obs into MxS
-        return np.concatenate(obs_vector_list, axis=1)
-
     def calculateMeasurementMatrix(
         self,
         observations: list[Observation],
@@ -374,7 +340,27 @@ class GeneticParticleFilter(ParticleFilter):
             observations (list): :class:`.Observation` objects associated with the UKF step
         """
         # Create observations for each sigma point
-        population_obs = self._calcMeasurementSigmaPoints(observations)
+        population_obs = np.concatenate(
+            [
+                np.apply_along_axis(
+                    lambda v: list(
+                        obs.measurement.calculateMeasurement(  # noqa: B023
+                            obs.sensor_eci,  # noqa: B023
+                            v,
+                            dt,  # noqa: B023
+                            noisy=False,
+                        ).values(),
+                    ),
+                    0,
+                    self.population,
+                )
+                for dt, obs in map(  # noqa: C417
+                    lambda o: (julianDateToDatetime(JulianDate(o.julian_date)), o),
+                    observations,
+                )
+            ],
+            axis=1,
+        )
 
         # Convert to 1-D list of IsAngle values for the combined observation state
         angular_measurements = np.concatenate(
