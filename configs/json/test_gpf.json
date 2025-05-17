@@ -18,18 +18,18 @@
   "propagation": {
     "propagation_model": "special_perturbations",
     "integration_method": "RK45",
-    "station_keeping": false,
+    "station_keeping": true,
     "target_realtime_propagation": true,
     "sensor_realtime_propagation": true,
     "truth_simulation_only": false
   },
   "geopotential": {
     "model": "egm96.txt",
-    "degree": 2,
-    "order": 0
+    "degree": 4,
+    "order": 4
   },
   "perturbations": {
-    "third_bodies": ["moon"],
+    "third_bodies": ["sun", "moon"],
     "solar_radiation_pressure": false,
     "general_relativity": false
   },
