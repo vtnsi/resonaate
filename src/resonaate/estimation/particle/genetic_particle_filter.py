@@ -7,12 +7,14 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 import numpy as np
-import ray
+
+# import ray
 from scipy.linalg import block_diag
 
 # Local Imports
 from ...dynamics.dynamics_base import DynamicsErrorFlag
-from ...parallel.agent_propagation import PropagateSubmission, asyncPropagate
+
+# from ...parallel.agent_propagation import PropagateSubmission, asyncPropagate
 from ...physics.bodies.earth import Earth
 from ...physics.maths import vecResiduals
 from ...physics.measurements import VALID_ANGULAR_MEASUREMENTS
@@ -28,7 +30,8 @@ if TYPE_CHECKING:
     from ...data.observation import Observation
     from ...dynamics.dynamics_base import Dynamics
     from ...dynamics.integration_events import ScheduledEventType
-    from ...parallel.agent_propagation import PropagateResult
+
+    # from ...parallel.agent_propagation import PropagateResult
     from ...physics.time.stardate import ScenarioTime
     from ...scenario.config.estimation_config import ParticleFilterConfig
     from ..maneuver_detection import ManeuverDetection
@@ -217,37 +220,48 @@ class GeneticParticleFilter(ParticleFilter):
         self._flags = FilterFlag.NONE
 
         # STEP 1: Propagate the population through their dynamics to t(k) (X(k + 1|k))
-        submissions = [
-            PropagateSubmission(
-                agent_id=i,
-                dynamics=self.dynamics,
-                init_time=self.time,
-                final_time=final_time,
-                init_eci=self.population[:, i].flatten(),
-                station_keeping=self.station_keeping,
-                scheduled_events=scheduled_events,
-                error_flags=DynamicsErrorFlag(0),
-            )
-            for i in range(self.population_size)
-        ]
-        results: list[PropagateResult] = ray.get(list(map(asyncPropagate.remote, submissions)))
-        idx = np.array([r.agent_id for r in results])
-        states = np.stack([r.final_eci for r in results]).T
-        states[:, idx] = states
-        self.population = states
+        # submissions = [
+        #     PropagateSubmission(
+        #         agent_id=i,
+        #         dynamics=self.dynamics,
+        #         init_time=self.time,
+        #         final_time=final_time,
+        #         init_eci=self.population[:, i].flatten(),
+        #         station_keeping=self.station_keeping,
+        #         scheduled_events=scheduled_events,
+        #         error_flags=DynamicsErrorFlag(0),
+        #     )
+        #     for i in range(self.population_size)
+        # ]
+        # results: list[PropagateResult] = ray.get(list(map(asyncPropagate.remote, submissions)))
+        # idx = np.array([r.agent_id for r in results])
+        # states = np.stack([r.final_eci for r in results]).T
+        # states[:, idx] = states
+        # self.population = states
 
         # TODO: is it necessary to insert the results back into place? probably?
         # self.population = np.stack(states).T
 
         # TODO: Compare performance against propagating locally
-        # ISSUE: There's a problem with propagation and converting the time?
-        # self.population = self.dynamics.propagate(
-        #     self.time,
+        # t = self.time
+        # states = np.stack([self.dynamics.propagate(
+        #     t,
         #     final_time,
-        #     self.population,
+        #     self.population[:,i].flatten(),
+        #     station_keeping=self.station_keeping,
         #     scheduled_events=scheduled_events,
         #     error_flags=DynamicsErrorFlag(0),
-        # )
+        # ) for i in range(self.population_size)])
+        # self.population = states.T
+
+        states = self.dynamics.propagateBulk(
+            [self.time, final_time],
+            self.population,
+            station_keeping=self.station_keeping,
+            scheduled_events=scheduled_events,
+            error_flags=DynamicsErrorFlag(0),
+        )[..., -1]
+        self.population = states
 
         # STEP 1.1: Check Earth collisions and downweight any particles that
         #           collide, as well as constrain them to the surface
@@ -362,7 +376,7 @@ class GeneticParticleFilter(ParticleFilter):
                     observations,
                 )
             ],
-            axis=1,
+            axis=0,
         )
 
         # Convert to 1-D list of IsAngle values for the combined observation state
@@ -393,6 +407,13 @@ class GeneticParticleFilter(ParticleFilter):
         # Step 0. Sort the population members by their scores
         fitness = np.argsort(self.scores).flatten()
 
+        pop = self.population.copy()
+        pop[:, : self.num_keep] = pop[:, -self.num_keep :].copy()
+        scores = self.scores.copy()
+        scores[: self.num_keep] = scores[-self.num_keep :].copy()
+        self.population = pop
+        self.scores = scores
+
         # Step 1. Identify pairs for crossover
         pairs = np.random.choice(
             fitness[self.num_purge :],
@@ -419,11 +440,13 @@ class GeneticParticleFilter(ParticleFilter):
         # Step 3. Identify members for mutation, preserving the top performers.
         #         This is where spread/novelty comes from in our filter
         mutation_indices = np.random.choice(
-            fitness[: -self.num_keep],
-            size=self.num_mutate,
+            fitness[self.num_keep : -self.num_keep],
+            size=self.num_mutate - self.num_keep,
             replace=False,
-            p=self.scores[: -self.num_keep] / self.scores[: -self.num_keep].sum(),
+            p=self.scores[self.num_keep : -self.num_keep]
+            / self.scores[self.num_keep : -self.num_keep].sum(),
         )
+        mutation_indices = np.concatenate([mutation_indices, fitness[: self.num_keep]]).flatten()
         self.mutate(mutation_indices)
 
     def crossover(self, pairs: ndarray) -> ndarray:

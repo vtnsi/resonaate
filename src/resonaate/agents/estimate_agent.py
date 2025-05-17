@@ -229,6 +229,8 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
                 dynamics,
                 filter_noise,
             )
+        else:
+            raise ValueError("No filter type has been defined")
 
         return cls(
             tgt_cfg.id,

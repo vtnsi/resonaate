@@ -18,31 +18,29 @@
   "propagation": {
     "propagation_model": "special_perturbations",
     "integration_method": "RK45",
-    "station_keeping": true,
+    "station_keeping": false,
     "target_realtime_propagation": true,
     "sensor_realtime_propagation": true,
     "truth_simulation_only": false
   },
   "geopotential": {
     "model": "egm96.txt",
-    "degree": 4,
-    "order": 4
+    "degree": 2,
+    "order": 0
   },
   "perturbations": {
-    "third_bodies": ["sun", "moon"],
+    "third_bodies": ["moon"],
     "solar_radiation_pressure": false,
     "general_relativity": false
   },
   "estimation": {
     "particle_filter": {
       "name": "genetic_particle_filter",
-      "parameters": {
-        "population_size": 200,
-        "num_keep": 20,
-        "num_purge": 100,
-        "num_mutate": 120,
-        "mutation_strength": [0.05, 0.05, 0.05, 0.001, 0.001, 0.001]
-      },
+      "population_size": 200,
+      "num_keep": 80,
+      "num_purge": 80,
+      "num_mutate": 120,
+      "mutation_strength": [0.005, 0.005, 0.005, 0.0001, 0.0001, 0.0001],
       "dynamics_model": "special_perturbations",
       "maneuver_detection": null,
       "save_filter_steps": true
