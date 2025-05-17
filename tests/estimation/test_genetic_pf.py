@@ -29,7 +29,6 @@ from .ukf_support import (
     UKF_MEAN_COV,
     UKF_PRED_P,
     UKF_SIGMA_POINTS,
-    UKF_TRUE_Y,
 )
 
 
@@ -37,8 +36,8 @@ from .ukf_support import (
 # Define pytest fixtures
 # -----------------------------------------------------------------------------
 @pytest.fixture(name="gpf")
-def createUKF() -> GeneticParticleFilter:
-    """Construct a valid UKF object."""
+def createGPF() -> GeneticParticleFilter:
+    """Construct a valid GPF object."""
     return GeneticParticleFilter(
         tgt_id=10001,
         time=ScenarioTime(0.0),
@@ -78,12 +77,16 @@ def createOpticalObservation() -> Observation:
         R_MATRIX_OPTICAL,
     )
 
-    obs: Observation = MagicMock(spec=Observation)
-    obs.measurement = optical_measurement
-    obs.sensor_eci = GROUND_SENSOR_ECI
-    obs.r_matrix = optical_measurement.r_matrix
-    obs.dim = 2
-    return obs
+    return Observation.fromMeasurement(
+        epoch_jd=2459304.443715,
+        target_id=42,
+        tgt_eci_state=UKF_EST_X,
+        sensor_id=1,
+        sensor_eci=GROUND_SENSOR_ECI,
+        sensor_type="optical",
+        measurement=optical_measurement,
+        noisy=True,
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -138,8 +141,6 @@ def testUpdate(
     optical_obs: Observation,
 ):
     """Test update() method with observations."""
-    # mocked_residuals.return_value = UKF_MEAS_MEAN
-    optical_obs.measurement_states = UKF_TRUE_Y
     gpf.forecast = MagicMock()
     gpf.checkManeuverDetection = MagicMock()
     gpf._debugChecks = MagicMock()
