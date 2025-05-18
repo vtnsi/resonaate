@@ -60,6 +60,9 @@ ______________________________________________________________________
 - `estimation.particle.particle_filter` Support for particle filters with relevant labels and configuration objects
 - `estimation.particle.genetic_particle_filter` An initial, simple particle filter implementation with relevant labels and configuration objects
 - `dynamics.dynamics_base.DynamicsErrorFlag` enum for controlling certain propagation errors
+- `physics.maths.vecResiduals` a numpy vectorized residual calculation
+- `physics.maths.vecWrapAngle2Pi` a numpy vectorized angle wrapping funciton
+- `physics.maths.vecWrapAngleNeg` a numpy vectorized angle wrapping funciton
 
 ### Changed
 
@@ -85,6 +88,8 @@ ______________________________________________________________________
     - `CentralizedEngine` (in particular `::assess()`)
   - ...to update how parallel processing is called
 - refactor `CentralizedEngine._createLoadedObs()` -> `::_attachObsMetadata()`
+- fixed the bulk propagator in `dynamics.celestial.Celestial.propagateBulk`
+- dynamics now accept flags for certain stop conditions
 
 ### Deprecated
 
