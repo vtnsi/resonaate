@@ -10,7 +10,7 @@ from os import getcwd, makedirs
 from os.path import abspath, dirname, exists, join, normpath
 
 # Local Imports
-from ..common import timeStampPath
+from ..common import pathSafeTime
 from ..common.logger import resonaateLogError
 from .agent import AgentModel
 from .db_connection import clearDBPath, getDBConnection, setDBPath
@@ -66,7 +66,6 @@ def createDatabasePath(path, importer=False):
         directory = abspath(join(getcwd(), "db"))
         if not exists(directory):
             makedirs(directory)
-        db_path = f"sqlite:///{directory}/resonaate_{'{}'}.sqlite3"
-        timeStampPath(db_path)
+        db_path = f"sqlite:///{directory}/resonaate_{pathSafeTime()}.sqlite3"
 
     return db_path

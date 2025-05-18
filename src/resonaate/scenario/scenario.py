@@ -17,7 +17,7 @@ from sqlalchemy.orm import Query
 from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
-from ..common import timeStampPath
+from ..common import pathSafeTime
 from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
 from ..data import getDBConnection
@@ -615,5 +615,5 @@ class Scenario:
 
     def shutdown(self) -> None:
         """Record `ray` profiling timeline for performance analysis."""
-        ray.timeline(timeStampPath("timeline_{}.json"))
+        ray.timeline(f"timeline_{pathSafeTime()}.json")
         ray.shutdown()
