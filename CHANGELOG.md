@@ -57,6 +57,9 @@ ______________________________________________________________________
 - `scenario.config.state_config` orbital elements are now validated based on limits expressed in docstrings
   - **WARNING**: *this could break existing input config files*, but I don't think it's enough of a change to warrant a version bump
 - option for multi-level caching of reduction parameters
+- `estimation.particle.particle_filter` Support for particle filters with relevant labels and configuration objects
+- `estimation.particle.genetic_particle_filter` An initial, simple particle filter implementation with relevant labels and configuration objects
+- `dynamics.dynamics_base.DynamicsErrorFlag` enum for controlling certain propagation errors
 
 ### Changed
 
@@ -118,7 +121,7 @@ ______________________________________________________________________
 
 *related to the continuous integration system*
 
-## \[4.0.0\]\[v4.0.0\] - 2024-05-08
+## [4.0.0][v4.0.0] - 2024-05-08
 
 ### Added
 
@@ -281,7 +284,7 @@ ______________________________________________________________________
 - updated EOP data included within RESONAATE (see commit 1ec535b7a)
 - moved measurement functions (like `getAzimuth()`) to `physics.measurement_utils` module
 - added `utc_date` parameter to `updateReductionParameters()` (see #49 and !80)
-- added `utc_date` parameter to `getReductionParameters()`  (see #49 and !80)
+- added `utc_date` parameter to `getReductionParameters()` (see #49 and !80)
 - `getReductionParameters()` caches results and re-calculate if `utc_date` doesn't exist or doesn't match the value in the KVS (see #49 and !80)
 - added `utc_date` parameter to coordinate frame transformations which use reductions directly or indirectly (see #49 and !80)
 - `determineTransferDirection()` checks orbital period instead of true anomaly, so only a position vector is needed (see #170 and !153)
