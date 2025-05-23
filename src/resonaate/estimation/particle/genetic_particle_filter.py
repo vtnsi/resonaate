@@ -153,10 +153,12 @@ class GeneticParticleFilter(ParticleFilter):
         self.num_mutate = num_mutate
         self.num_cross = (self.population_size - num_keep - num_purge) // 2
 
-        self.mutation_strength = (
-            np.array(mutation_strength)
-            if mutation_strength is not None
-            else np.ones((self.x_dim,))
+        self.mutation_strength = np.array(
+            (
+                mutation_strength
+                if mutation_strength is not None
+                else [0.005, 0.005, 0.005, 0.0001, 0.0001, 0.0001]
+            ),
         )
 
     @classmethod
