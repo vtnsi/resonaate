@@ -10,7 +10,6 @@ import pytest
 
 # RESONAATE Imports
 import resonaate.common.utilities as utils
-from resonaate.common.behavioral_config import BehavioralConfig
 
 # Local Imports
 from .. import FIXTURE_DATA_DIR
@@ -117,23 +116,3 @@ def testMatrixSaving(datafiles: str):
     print("invalid")
     with pytest.raises(TypeError):
         utils.saveMatrix("invalid", ((0, 1), (2, 3)), path=datafiles)
-
-
-@pytest.mark.no_debug()
-def testGetTimeout():
-    """Ensure proper timeout values are calculated."""
-    # Test debuggin mode
-    default = BehavioralConfig.getConfig().debugging.ParallelDebugMode
-    BehavioralConfig.getConfig().debugging.ParallelDebugMode = True
-    assert utils.getTimeout(0) is None
-    assert utils.getTimeout(10) is None
-    assert utils.getTimeout(1000) is None
-    assert utils.getTimeout(10, multiplier=1) is None
-    # Reset debug config value
-    BehavioralConfig.getConfig().debugging.ParallelDebugMode = default
-
-    # Various combinations of valid values
-    assert utils.getTimeout(0) == 0
-    assert utils.getTimeout(1) == 5
-    assert utils.getTimeout(3) == 15
-    assert utils.getTimeout(3, multiplier=1) == 3

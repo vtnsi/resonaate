@@ -12,7 +12,6 @@ import numpy as np
 
 # Local Imports
 from . import pathSafeTime
-from .behavioral_config import BehavioralConfig
 from .logger import resonaateLogError
 
 
@@ -212,22 +211,6 @@ def saveMatrix(name, matrix, path=None):
             raise TypeError(type(matrix))
 
     return file_name
-
-
-def getTimeout(num_jobs, multiplier=5):
-    """Determine the total job timeout length.
-
-    Args:
-        num_jobs (``int``): total number of jobs submitted to worker queue.
-        multiplier (``int``, optional): multiplies the timeout length. Defaults to 5.
-
-    Returns:
-        ``None | int``: either ``None`` for blocking behavior, or timeout length in seconds
-    """
-    if BehavioralConfig.getConfig().debugging.ParallelDebugMode:
-        return None
-
-    return multiplier * num_jobs
 
 
 def checkTypes(_locals, _types):
