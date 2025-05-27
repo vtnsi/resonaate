@@ -40,7 +40,6 @@ CORRECT_DEFAULTS = OrderedDict(
         },
         "parallel": {"WorkerCount": None},
         "debugging": {
-            "ParallelDebugMode": False,
             "OutputDirectory": "debugging",
             "NearestPD": False,
             "NearestPDDirectory": "cholesky_failure",

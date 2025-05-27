@@ -107,7 +107,6 @@ class BehavioralConfig:
             "ThreeSigmaObsDirectory": "three_sigma_obs",
             "SaveSpaceSensors": False,
             "SaveSpaceSensorsDirectory": "space_sensor_truth",
-            "ParallelDebugMode": False,
         },
         "eop": {
             "LoaderName": "ModuleDotDatEOPLoader",
@@ -149,7 +148,6 @@ class BehavioralConfig:
             "EstimateErrorInflation",
             "ThreeSigmaObs",
             "SaveSpaceSensors",
-            "ParallelDebugMode",
         ),
     }
 

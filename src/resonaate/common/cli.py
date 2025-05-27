@@ -55,14 +55,6 @@ def getCommandLineParser():
         help="Time in hours to simulate. DEFAULT: 1/2 hour",
     )
 
-    parser.add_argument(
-        "--debug",
-        dest="debug_mode",
-        action="store_true",
-        default=False,
-        help="Turns on parallel debug mode",
-    )
-
     db_group.add_argument(
         "-d",
         "--db-path",

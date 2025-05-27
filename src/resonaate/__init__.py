@@ -14,7 +14,6 @@ def runResonaate(
     sim_time_hours: float = 3,
     internal_db_path: str | None = None,
     importer_db_path: str | None = None,
-    debug_mode: bool = False,
 ) -> None:
     """Run a RESONAATE :class:`~.Scenario`.
 
@@ -34,12 +33,8 @@ def runResonaate(
     from datetime import timedelta
 
     # Local Imports
-    from .common.behavioral_config import BehavioralConfig
     from .physics.time.conversions import getTargetJulianDate
     from .scenario import buildScenarioFromConfigFile
-
-    if debug_mode:
-        BehavioralConfig.getConfig().debugging.ParallelDebugMode = True
 
     # Build the Scenario application from the JSON init
     app = buildScenarioFromConfigFile(
@@ -85,5 +80,4 @@ def main() -> None:
         sim_time_hours=cli_args.sim_time_hours,
         internal_db_path=cli_args.db_path,
         importer_db_path=cli_args.importer_db_path,
-        debug_mode=cli_args.debug_mode,
     )
