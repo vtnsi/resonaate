@@ -320,37 +320,6 @@ One of either `"sequential_filter"` or `"particle_filter"` must be set.
 }
 ```
 
-##### ParticleFilterConfig
-
-This is an optional field in `"estimation"` defining the nominal particle filter algorithm that tracks the targets during the simulation.
-One of either `"sequential_filter"` or `"particle_filter"` must be set.
-
-```{rubric} Python Definition
-```
-
-```{eval-rst}
-.. currentmodule:: resonaate.scenario.config.estimation_config
-
-.. autoclass:: ParticleFilterConfig
-   :members:
-   :noindex:
-```
-
-```{rubric} JSON Definition
-```
-
-```python
-"particle_filter": {
-    "name":                         str,                      # Required
-    "dynamics_model":               str,                      # Optional
-    "maneuver_detection":           ManeuverDetectionConfig,  # Optional
-    "adaptive_estimation":          bool,                     # Optional
-    "initial_orbit_determination":  bool,                     # Optional
-    "save_filter_steps":            bool,                     # Optional
-    "parameters":                   dict,                     # Optional
-}
-```
-
 ###### ManeuverDetectionConfig
 
 This is an optional field in `"sequential_filter"` defining the maneuver detection technique that tests for maneuvers during the estimation algorithm.
