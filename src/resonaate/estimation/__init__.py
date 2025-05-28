@@ -17,7 +17,7 @@ from .initial_orbit_determination import LambertIOD
 from .kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from .maneuver_detection import FadingMemoryNis, ManeuverDetection, SlidingNis, StandardNis
 from .particle.genetic_particle_filter import GeneticParticleFilter
-from .sequential_filter import EstimateSource
+from .sequential_filter import EstimateSource, SequentialFilter
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -34,11 +34,11 @@ if TYPE_CHECKING:
         SequentialFilterConfig,
     )
     from .initial_orbit_determination import InitialOrbitDetermination
-    from .sequential_filter import SequentialFilter
 
 
 __all__ = [
     "AdaptiveFilter",
+    "SequentialFilter",
 ]
 
 VALID_ESTIMATE_SOURCES: tuple[str, str] = (

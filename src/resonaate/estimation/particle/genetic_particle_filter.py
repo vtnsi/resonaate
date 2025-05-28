@@ -196,6 +196,8 @@ class GeneticParticleFilter(ParticleFilter):
         est_p: ndarray,
         dynamics: Dynamics,
         maneuver_detection: ManeuverDetection,
+        *args,  # noqa: ARG003
+        **kwargs,  # noqa: ARG003
     ) -> ParticleFilter:
         """Build a :class:`.ParticleFilter` object for target state estimation.
 
@@ -207,6 +209,8 @@ class GeneticParticleFilter(ParticleFilter):
             est_p (``ndarray``): 6x6, initial error covariance matrix
             dynamics (:class:`.Dynamics`): dynamics object to propagate estimate
             maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
+            args (``list[Unknown]``): a list of other arguments; may be used by subclasses
+            kwargs (``dict[str, Unknown]``): a dictionary of other arguments; may be used by subclasses
 
         Returns:
             :class:`.ParticleFilter`: constructed filter object
