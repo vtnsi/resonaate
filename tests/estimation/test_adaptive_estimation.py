@@ -22,8 +22,8 @@ from resonaate.estimation.adaptive.gpb1 import GeneralizedPseudoBayesian1
 from resonaate.estimation.adaptive.initialization import lambertInitializationFactory
 from resonaate.estimation.adaptive.mmae_stacking_utils import stackingFactory
 from resonaate.estimation.adaptive.smm import StaticMultipleModel
+from resonaate.estimation.kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.estimation.maneuver_detection import StandardNis
-from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.time.stardate import JulianDate
 from resonaate.scenario.config import constructFromUnion
 from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig

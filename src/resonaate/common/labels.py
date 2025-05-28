@@ -144,10 +144,6 @@ class SequentialFilterLabel(str, Enum):
     UNSCENTED_KALMAN_FILTER: str = "unscented_kalman_filter"
     """``str``: unscented Kalman filter algorithm."""
 
-
-class ParticleFilterLabel(str, Enum):
-    """Defines valid labels for particle filter types."""
-
     GPF: str = "gpf"
     """``str``: genetic particle filter algorithm."""
 

@@ -17,11 +17,10 @@ from resonaate.data.filter_step import FilterStep, filter_map
 from resonaate.estimation import (
     adaptiveEstimationFactory,
     initialOrbitDeterminationFactory,
-    particleFilterFactory,
     sequentialFilterFactory,
 )
 from resonaate.estimation.particle.particle_filter import ParticleFilter
-from resonaate.estimation.sequential.sequential_filter import FilterFlag, SequentialFilter
+from resonaate.estimation.sequential_filter import FilterFlag, SequentialFilter
 from resonaate.physics.noise import initialEstimateNoise, noiseCovarianceFactory
 from resonaate.physics.transforms.methods import ecef2lla, eci2ecef
 
@@ -64,7 +63,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         clock: ScenarioClock,
         initial_state: ndarray,
         initial_covariance: ndarray,
-        _filter: SequentialFilter | ParticleFilter,
+        _filter: SequentialFilter,
         adaptive_filter_config: AdaptiveEstimationConfig,
         initial_orbit_determination_config: InitialOrbitDeterminationConfig,
         visual_cross_section: float | int,
@@ -130,18 +129,14 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self._lla_state = ecef2lla(self._ecef_state)
 
         # Set the EstimateAgent's filter & set itself to the filter's host
-        if isinstance(_filter, (SequentialFilter, ParticleFilter)):
-            self._filter = _filter
+        self._filter = _filter
 
-            # TODO: Handle this more gracefully
-            if isinstance(_filter, SequentialFilter):
-                self._filter_step = filter_map[SequentialFilter]
-            else:
-                self._filter_step = filter_map[ParticleFilter]
-                self._filter.station_keeping = self.station_keeping
-        else:
-            self._logger.error("Invalid input type for _filter param")
-            raise TypeError(type(_filter))
+        self._filter_step = None
+        for k, v in filter_map.items():
+            if isinstance(_filter, k):
+                self._filter_step = v
+        if self._filter_step is None:
+            raise TypeError(f"Could not find a matching filter step for {type(_filter)}")
 
         # Attribute to track the adaptive_filter config of this object
         self.adaptive_filter_config = adaptive_filter_config
@@ -209,28 +204,15 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         )
 
         nominal_filter = None
-        if estimation_cfg.sequential_filter is not None:
-            nominal_filter = sequentialFilterFactory(
-                estimation_cfg.sequential_filter,
-                tgt_cfg.id,
-                clock.time,
-                init_x,
-                init_p,
-                dynamics,
-                filter_noise,
-            )
-        elif estimation_cfg.particle_filter is not None:
-            nominal_filter = particleFilterFactory(
-                estimation_cfg.particle_filter,
-                tgt_cfg.id,
-                clock.time,
-                init_x,
-                init_p,
-                dynamics,
-                filter_noise,
-            )
-        else:
-            raise ValueError("No filter type has been defined")
+        nominal_filter = sequentialFilterFactory(
+            estimation_cfg.sequential_filter,
+            tgt_cfg.id,
+            clock.time,
+            init_x,
+            init_p,
+            dynamics,
+            filter_noise,
+        )
 
         return cls(
             tgt_cfg.id,

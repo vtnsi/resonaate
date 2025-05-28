@@ -57,7 +57,6 @@ class TestParticleFilterStep:
             est_x=self.est_x,
             est_p=self.est_p,
             dynamics=None,
-            q_matrix=self.q_matrix,
             population_size=5,
         )
         filt.population = self.particles

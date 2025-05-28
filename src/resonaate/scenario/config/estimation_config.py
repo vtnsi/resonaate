@@ -16,7 +16,6 @@ from ...common.labels import (
     DynamicsLabel,
     InitialOrbitDeterminationLabel,
     ManeuverDetectionLabel,
-    ParticleFilterLabel,
     SequentialFilterLabel,
     StackingLabel,
 )
@@ -34,11 +33,8 @@ DEFAULT_IOD_OBSERVATION_SPACING: int = 60
 class EstimationConfig(BaseModel):
     """Configuration section defining several estimation-based options."""
 
-    sequential_filter: Union[SequentialFilterConfig, None] = None
+    sequential_filter: SequentialFilterConfig
     """:class:`.SequentialFilterConfig`: sequential technique as nested item."""
-
-    particle_filter: Union[ParticleFilterConfig, None] = None
-    """:class:`.ParticleFilterConfig`: particle technique as nested item."""
 
     adaptive_filter: Union[AdaptiveEstimationConfig, None] = None
     """:class:`.AdaptiveEstimationConfig`: adaptive estimation technique as nested item."""
@@ -46,48 +42,31 @@ class EstimationConfig(BaseModel):
     initial_orbit_determination: Union[InitialOrbitDeterminationConfig, None] = None
     """:class:`.InitialOrbitDeterminationConfig`: initial orbit determination technique as nested item."""
 
-    filter: Union[SequentialFilterConfig, ParticleFilterConfig, None] = None
-    """set dynamically to be the configuration for whichever filter is chosen between sequential/particle"""
-
-    def model_post_init(self, __context):
-        """Runs after dataclass initialization.
-
-        For now, it mainly just sets the filter types to either ``None`` or their config.
-        """
-        if self.sequential_filter is not None:
-            self.filter = self.sequential_filter
-        elif self.particle_filter is not None:
-            self.filter = self.particle_filter
-
     @model_validator(mode="after")
     def clarifyFlags(self) -> Self:
         """Make sure flags are consistent with populated configurations."""
-        if self.sequential_filter is not None:
-            if (
-                self.sequential_filter.adaptive_estimation
-                and self.sequential_filter.initial_orbit_determination
-            ):
-                raise ValueError("IOD & MMAE cannot both be used at the same time.")
+        if (
+            self.sequential_filter.adaptive_estimation
+            and self.sequential_filter.initial_orbit_determination
+        ):
+            raise ValueError("IOD & MMAE cannot both be used at the same time.")
 
-            if self.sequential_filter.adaptive_estimation:
-                if self.adaptive_filter is None:
-                    raise ValueError(
-                        "Adaptive estimation flag set but no configuration specified.",
-                    )
-            elif self.adaptive_filter is not None:
-                warn(
-                    "Adaptive estimation flag is OFF, specified configuration will be IGNORED!",
-                    stacklevel=2,
+        if self.sequential_filter.adaptive_estimation:
+            if self.adaptive_filter is None:
+                raise ValueError(
+                    "Adaptive estimation flag set but no configuration specified.",
                 )
+        elif self.adaptive_filter is not None:
+            warn(
+                "Adaptive estimation flag is OFF, specified configuration will be IGNORED!",
+                stacklevel=2,
+            )
 
-            if self.sequential_filter.initial_orbit_determination:
-                if self.initial_orbit_determination is None:
-                    raise ValueError("IOD flag set but no configuration specified.")
-            elif self.initial_orbit_determination is not None:
-                warn("IOD flag is OFF, specified configuration will be IGNORED!", stacklevel=2)
-
-        elif self.particle_filter is None:
-            raise ValueError("At least one filter type must be specified")
+        if self.sequential_filter.initial_orbit_determination:
+            if self.initial_orbit_determination is None:
+                raise ValueError("IOD flag set but no configuration specified.")
+        elif self.initial_orbit_determination is not None:
+            warn("IOD flag is OFF, specified configuration will be IGNORED!", stacklevel=2)
 
         return self
 
@@ -159,8 +138,63 @@ class UnscentedKalmanFilterConfig(UKFConfigBase):
     """``str``: name of the sequential filter algorithm to use."""
 
 
+class GPFConfigBase(SequentialFilterConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    population_size: int = 100
+    """``int``: Determines the population size to evolve over time
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``population``.
+    """
+
+    num_purge: int = 10
+    """``int``: The number of bottom performers to remove
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_purge``
+    """
+
+    num_keep: int = 10
+    """``int``: The number of top performers to keep
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_keep``
+    """
+
+    num_mutate: int = 50
+    """``int``: The number of population members to mutate, excluding the top performers
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_mutate``
+    """
+
+    mutation_strength: Union[list[float], None] = None
+    """``list[float]``: The strength of mutations for each state vector entry
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``mutation_strength``
+    """
+
+
+class GPFConfig(GPFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.GPF] = SequentialFilterLabel.GPF
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+class GeneticParticleFilterConfig(GPFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.GENETIC_PARTICLE_FILTER] = (
+        SequentialFilterLabel.GENETIC_PARTICLE_FILTER
+    )
+    """``str``: name of the sequential filter algorithm to use."""
+
+
 SequentialFilterConfig = Annotated[
-    Union[UKFConfig, UnscentedKalmanFilterConfig],
+    Union[UKFConfig, UnscentedKalmanFilterConfig, GPFConfig, GeneticParticleFilterConfig],
     Field(..., discriminator="name"),
 ]
 """Annotated[Union]: Discriminated union defining valid sequential filter configurations."""
@@ -274,84 +308,3 @@ class InitialOrbitDeterminationConfig(BaseModel):
 
     minimum_observation_spacing: int = Field(DEFAULT_IOD_OBSERVATION_SPACING, gt=0)
     """``int``: Minimum amount of seconds allowed between each observation used for IOD."""
-
-
-class ParticleFilterConfigBase(BaseModel):
-    """Configuration section defining several sequential filter-based options."""
-
-    dynamics_model: DynamicsLabel = DynamicsLabel.SPECIAL_PERTURBATIONS
-    """``str``: name of the dynamics to use in the filter."""
-
-    maneuver_detection: Union[ManeuverDetectionConfig, None] = None
-    """:class:`.ManeuverDetectionConfig`: maneuver detection technique."""
-
-    adaptive_estimation: bool = False
-    """``bool``: Check if sequential filter should turn on adaptive estimation."""
-
-    initial_orbit_determination: bool = False
-    """``bool``: Check if sequential filter should turn on initial orbit determination."""
-
-    save_filter_steps: bool = False
-    """``bool``: Check if you would like to enable saving filter steps to the database. Defaults to False."""
-
-
-class GPFConfigBase(ParticleFilterConfigBase):
-    """Configuration section defining parameters for an Unscented Kalman Filter."""
-
-    population_size: int = 100
-    """``int``: Determines the population size to evolve over time
-
-    See Also:
-        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``population``.
-    """
-
-    num_purge: int = 10
-    """``int``: The number of bottom performers to remove
-
-    See Also:
-        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_purge``
-    """
-
-    num_keep: int = 10
-    """``int``: The number of top performers to keep
-
-    See Also:
-        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_keep``
-    """
-
-    num_mutate: int = 50
-    """``int``: The number of population members to mutate, excluding the top performers
-
-    See Also:
-        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_mutate``
-    """
-
-    mutation_strength: Union[list[float], None] = None
-    """``list[float]``: The strength of mutations for each state vector entry
-
-    See Also:
-        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``mutation_strength``
-    """
-
-
-class GPFConfig(GPFConfigBase):
-    """Configuration section defining parameters for an Unscented Kalman Filter."""
-
-    name: Literal[ParticleFilterLabel.GPF] = ParticleFilterLabel.GPF
-    """``str``: name of the sequential filter algorithm to use."""
-
-
-class GeneticParticleFilterConfig(GPFConfigBase):
-    """Configuration section defining parameters for an Unscented Kalman Filter."""
-
-    name: Literal[ParticleFilterLabel.GENETIC_PARTICLE_FILTER] = (
-        ParticleFilterLabel.GENETIC_PARTICLE_FILTER
-    )
-    """``str``: name of the sequential filter algorithm to use."""
-
-
-ParticleFilterConfig = Annotated[
-    Union[GPFConfig, GeneticParticleFilterConfig],
-    Field(..., discriminator="name"),
-]
-"""Annotated[Union]: Discriminated union defining valid particle filter configurations."""

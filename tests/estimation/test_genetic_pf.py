@@ -13,13 +13,13 @@ from resonaate.data.observation import Observation
 from resonaate.dynamics import two_body
 from resonaate.estimation import GeneticParticleFilter
 from resonaate.estimation.particle.particle_filter import FilterFlag
+from resonaate.estimation.sequential_filter import EstimateSource
 from resonaate.physics.measurements import Measurement
 from resonaate.physics.time.stardate import ScenarioTime
 
 # Local Imports
 from .ukf_support import (
     GROUND_SENSOR_ECI,
-    Q_MATRIX,
     R_MATRIX_OPTICAL,
     R_MATRIX_RADAR,
     SPACECRAFT_SENSOR_ECI,
@@ -44,7 +44,6 @@ def createGPF() -> GeneticParticleFilter:
         est_x=UKF_MEAN,
         est_p=UKF_MEAN_COV,
         dynamics=two_body.TwoBody(),
-        q_matrix=Q_MATRIX,
         maneuver_detection=False,
         initial_orbit_determination=False,
         adaptive_estimation=False,
@@ -126,7 +125,7 @@ def testUpdateNoObservations(gpf: GeneticParticleFilter):
     gpf.forecast = MagicMock()
 
     gpf.update([])
-    assert gpf.source == gpf.INTERNAL_PROPAGATION_SOURCE
+    assert gpf.source == EstimateSource.INTERNAL_PROPAGATION
     assert allclose(gpf.est_x, UKF_SIGMA_POINTS[:, 0], rtol=1e-4, atol=1e-7)
     assert allclose(gpf.est_p, UKF_PRED_P, rtol=1e-4, atol=1e-6)
     gpf.forecast.assert_not_called()

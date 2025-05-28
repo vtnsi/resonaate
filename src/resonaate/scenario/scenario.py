@@ -129,7 +129,7 @@ class Scenario:
             f"Spacecraft truth dynamics model: {config.propagation.propagation_model}",
         )
         self.logger.info(
-            f"Spacecraft filter dynamics model: {config.estimation.filter.dynamics_model}",
+            f"Spacecraft filter dynamics model: {config.estimation.sequential_filter.dynamics_model}",
         )
         self.logger.info(f"Numerical integration method: {config.propagation.integration_method}")
         self.logger.info(f"Earth gravity model: {config.geopotential.model}")
@@ -267,7 +267,7 @@ class Scenario:
                     for tasking in tasking_engine.getCurrentTasking(self.clock.julian_date_epoch)
                 )
 
-        if self.estimation_config.filter.save_filter_steps:
+        if self.estimation_config.sequential_filter.save_filter_steps:
             # Obtain all filter steps and save them to the db.
             agents: list[EstimateAgent] = [
                 self.estimate_agents[key] for key in self.estimate_agents
@@ -473,7 +473,9 @@ class Scenario:
         )
 
         est_prop_cfg = deepcopy(self.scenario_config.propagation)
-        est_prop_cfg.propagation_model = self.scenario_config.estimation.filter.dynamics_model
+        est_prop_cfg.propagation_model = (
+            self.scenario_config.estimation.sequential_filter.dynamics_model
+        )
         filter_dynamics = dynamicsFactory(
             target_spec,
             est_prop_cfg,

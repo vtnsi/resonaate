@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 import numpy as np
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
 # RESONAATE Imports
+from resonaate.estimation.kalman.kalman_filter import KalmanFilter
 from resonaate.estimation.particle.particle_filter import ParticleFilter
-from resonaate.estimation.sequential.sequential_filter import SequentialFilter
 
 # Local Imports
 from ..common.utilities import serializeArrayKwarg, stringToNdarray
 from .table_base import Base, _DataMixin
+
+if TYPE_CHECKING:
+    # RESONAATE Imports
+    from resonaate.estimation.sequential_filter import SequentialFilter
 
 
 class FilterStep(
@@ -310,6 +317,6 @@ class ParticleFilterStep(FilterStep):
 
 
 filter_map: dict[type[SequentialFilter] | type[ParticleFilter], type[FilterStep]] = {
-    SequentialFilter: SequentialFilterStep,
     ParticleFilter: ParticleFilterStep,
+    KalmanFilter: SequentialFilterStep,
 }

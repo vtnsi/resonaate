@@ -5,7 +5,7 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod
-from enum import Flag, auto
+from enum import Enum, Flag, auto
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -13,10 +13,10 @@ from numpy import array, fabs
 from scipy.linalg import norm
 
 # Local Imports
-from ...common.behavioral_config import BehavioralConfig
-from ...data import getDBConnection
-from ...data.queries import fetchTruthByJDEpoch
-from ..results import (
+from ..common.behavioral_config import BehavioralConfig
+from ..data import getDBConnection
+from ..data.queries import fetchTruthByJDEpoch
+from .results import (
     FilterResult,
     SeqFilterForecastResult,
     SeqFilterPredictResult,
@@ -31,12 +31,12 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     # Local Imports
-    from ...data.observation import Observation
-    from ...dynamics.dynamics_base import Dynamics
-    from ...dynamics.integration_events import ScheduledEventType
-    from ...physics.time.stardate import ScenarioTime
-    from ...scenario.config.estimation_config import SequentialFilterConfig
-    from ..maneuver_detection import ManeuverDetection
+    from ..data.observation import Observation
+    from ..dynamics.dynamics_base import Dynamics
+    from ..dynamics.integration_events import ScheduledEventType
+    from ..physics.time.stardate import ScenarioTime
+    from ..scenario.config.estimation_config import SequentialFilterConfig
+    from .maneuver_detection import ManeuverDetection
 
 
 class FilterFlag(Flag):
@@ -47,6 +47,19 @@ class FilterFlag(Flag):
     ADAPTIVE_ESTIMATION_START = auto()
     ADAPTIVE_ESTIMATION_CLOSE = auto()
     INITIAL_ORBIT_DETERMINATION_START = auto()
+
+
+class EstimateSource(str, Enum):
+    """Estimate source definitions."""
+
+    INITIALIZATION = "Initialization"
+    """``str``: An estimate source due to internal filter initialization."""
+
+    INTERNAL_PROPAGATION = "Propagation"
+    """``str``: An estimate source due to internal filter propagation."""
+
+    INTERNAL_OBSERVATION = "Observation"
+    """``str``: An estimate source due to internal filter measurement update."""
 
 
 class SequentialFilter(ABC):
@@ -77,10 +90,7 @@ class SequentialFilter(ABC):
     Attributes:
         dynamics (:class:`.Dynamics`): dynamics model that propagates the estimate forward in time.
         x_dim (``int``): the dimension size of the state estimate.
-        q_matrix (``ndarray``): :math:`N\times N` process noise covariance matrix. Defines the dynamics
-            model uncertainty assumed by the filter.
         pred_x (``ndarray``): :math:`N\times 1` predicted (**priori**) state estimate at :math:`k+1`.
-        pred_p (``ndarray``): :math:`N\times N` predicted (**priori**) error covariance at :math:`k+1`.
         est_x (``ndarray``): :math:`N\times 1` estimated (**posteriori**) state estimate at :math:`k+1`.
         est_p (``ndarray``): :math:`N\times 1` estimated (**posteriori**) error covariance at :math:`k+1`.
         nis (``float``): normalized innovations squared values. Defines a chi-squared distributed
@@ -92,21 +102,10 @@ class SequentialFilter(ABC):
             1. :py:data:`'Propagation'` = no observations were used.
             2. :py:data:`'Observation'` = at least one observation was used.
 
-        r_matrix (``ndarray``): :math:`M\times M` measurement error covariance matrix at :math:`k+1`. Most
-            literature assumes that this is defined as constant/unchanging matrix, but this
-            work allows it to change with varying numbers of sensors. This allows for disparate
-            observations from many different types of sensors to contribute information, which is
-            more flexible/realistic. This is done by concatenating individual measurement noise
-            matrices of the observing sensors on every timestep, which means the size, :math:`M`, varies
-            with time.
         innov_cvr (``ndarray``): :math:`M\times M` innovation (aka measurement prediction) covariance
             matrix. Defines the "accuracy" of the measurements.
         cross_cvr (``ndarray``): :math:`N\times M` cross covariance matrix. Defines the covariance
             between the state and measurement.
-        kalman_gain (``ndarray``): :math:`N\times M` Kalman gain matrix. Defines the relative importance
-            of the state prediction variance vs. innovation variance.
-        mean_pred_y (``ndarray``): :math:`M\times 1` predicted mean measurement vector. Defines mean
-            value of the predicted measurement(s) based on the predicted state estimate.
         innovation (``ndarray``): :math:`M\times 1` innovation (aka measurement residual) vector. Defines
             the residual error between the true measurement and the mean predicted measurement.
         is_angular (``ndarray``): :math:`M\times 1` integer vector describing which measurements are angles.
@@ -123,12 +122,6 @@ class SequentialFilter(ABC):
         #. :cite:t:`crassidis_2012_optest`
     """
 
-    INTERNAL_PROPAGATION_SOURCE = "Propagation"
-    """``str``: Constant string for an estimate source due to internal filter propagation."""
-
-    INTERNAL_OBSERVATION_SOURCE = "Observation"
-    """``str``: Constant string for an estimate source due to internal filter measurement update."""
-
     def __init__(  # noqa: PLR0913
         self,
         tgt_id: int,
@@ -136,7 +129,6 @@ class SequentialFilter(ABC):
         est_x: ndarray,
         est_p: ndarray,
         dynamics: Dynamics,
-        q_matrix: ndarray,
         maneuver_detection: ManeuverDetection | None,
         initial_orbit_determination: bool,
         adaptive_estimation: bool,
@@ -150,14 +142,13 @@ class SequentialFilter(ABC):
             est_x (``ndarray``): :math:`N\times 1` initial state estimate
             est_p (``ndarray``): :math:`N\times N` initial covariance
             dynamics (:class:`.Dynamics`): dynamics object associated with the filter's target
-            q_matrix (``ndarray``): dynamics error covariance matrix
             maneuver_detection (:class:`.ManeuverDetection`): ManeuverDetection associated with the filter
             initial_orbit_determination (``bool``, optional): Indicator that IOD can be flagged by the filter
             adaptive_estimation (``bool``, optional): Indicator that adaptive estimation can be flagged by the filter
             extra_parameters (``dict``, optional): extra arguments for derived classes, for allowing dynamic
                 creation from within this class
         """
-        self._logger = logging.getLogger("resonaate")
+        self.logger = logging.getLogger(f"resonaate.est.{self.__class__.__name__}.{tgt_id}")
 
         # Define the filter's scope/behavior
         self.dynamics: Dynamics = dynamics
@@ -165,8 +156,7 @@ class SequentialFilter(ABC):
         self.time: ScenarioTime = time
 
         # Initialize key variables used in filter process
-        self.x_dim: int = len(q_matrix)
-        self.q_matrix: ndarray = q_matrix
+        self.x_dim: int = len(est_x)
 
         # Maneuver detection attributes
         self.maneuver_metric: float | None = None
@@ -174,14 +164,12 @@ class SequentialFilter(ABC):
         self.maneuver_detection: ManeuverDetection = maneuver_detection
 
         # Extra parameters for subclasses
-        self.extra_parameters: dict = extra_parameters
+        self.extra_parameters: dict[str, Any] | None = extra_parameters
 
         # Main estimation products, used as outputs of the filter class
         self.est_x: ndarray = est_x
-        self.est_p: ndarray = est_p
         self.pred_x = array([])
-        self.pred_p = array([])
-        self.source: str | None = "Initialization"
+        self.source: EstimateSource = EstimateSource.INITIALIZATION
 
         # Check that IOD and MMAE are both not set.
         if initial_orbit_determination and adaptive_estimation:
@@ -197,10 +185,6 @@ class SequentialFilter(ABC):
         # Intermediate values, used for checking statistical consistency & simplifying equations
         self.nis = array([])
         self.r_matrix = array([])
-        self.innov_cvr = array([])
-        self.cross_cvr = array([])
-        self.kalman_gain = array([])
-        self.mean_pred_y = array([])
         self.innovation = array([])
         self.is_angular = array([])
 
@@ -217,8 +201,9 @@ class SequentialFilter(ABC):
         est_x: ndarray,
         est_p: ndarray,
         dynamics: Dynamics,
-        q_matrix: ndarray,
         maneuver_detection: ManeuverDetection,
+        *args,
+        **kwargs,
     ) -> SequentialFilter:
         """Build a :class:`.SequentialFilter` object for target state estimation.
 
@@ -229,8 +214,9 @@ class SequentialFilter(ABC):
             est_x (``ndarray``): 6x1, initial state estimate
             est_p (``ndarray``): 6x6, initial error covariance matrix
             dynamics (:class:`.Dynamics`): dynamics object to propagate estimate
-            q_matrix (``ndarray``): process noise covariance matrix
             maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
+            args (``list[Unknown]``): a list of other arguments; may be used by subclasses
+            kwargs (``dict[str, Unknown]``): a dictionary of other arguments; may be used by subclasses
 
         Returns:
             :class:`.SequentialFilter`: constructed filter object
@@ -326,7 +312,7 @@ class SequentialFilter(ABC):
         self,
         final_time: ScenarioTime,
         scheduled_events: list[ScheduledEventType] | None = None,
-    ) -> tuple[ndarray, ndarray]:
+    ):
         r"""Enable a filter to propagate the state forward in time like a :class:`.Dynamics` object.
 
         Args:
@@ -334,13 +320,8 @@ class SequentialFilter(ABC):
             scheduled_events (``list``, optional): scheduled events to apply during propagation which
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
-
-        Returns:
-            - :math:`N\times 1` propagated state vector
-            - :math:`N\times N` propagated covariance matrix
         """
-        self.predict(final_time, scheduled_events=scheduled_events)
-        return self.pred_x, self.pred_p
+        raise NotImplementedError
 
     def _debugChecks(self, observations: list[Observation]):
         """Debugging checks if flags are set to do so."""
@@ -357,12 +338,7 @@ class SequentialFilter(ABC):
                 msg = (
                     f"EstimateAgent error inflation occurred: {self.target_id} at {self.time} sec",
                 )
-                self._logger.warning(msg)
-
-    @property
-    def logger(self):
-        """Returns the logger."""
-        return self._logger
+                self.logger.warning(msg)
 
     @property
     def flags(self):

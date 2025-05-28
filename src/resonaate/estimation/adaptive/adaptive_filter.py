@@ -7,23 +7,10 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import (
-    argwhere,
-    array,
-    ceil,
-    concatenate,
-    delete,
-    dot,
-    hstack,
-    linspace,
-    ones,
-    outer,
-    union1d,
-    vstack,
-    zeros,
-)
+from numpy import argwhere, array, ceil, concatenate, delete, dot, hstack, linspace, ones, outer
 from numpy import round as np_round
 from numpy import sum as np_sum
+from numpy import union1d, vstack, zeros
 from scipy.linalg import norm
 
 # Local Imports
@@ -33,8 +20,9 @@ from ...dynamics.celestial import EarthCollisionError
 from ...physics.orbit_determination.lambert import determineTransferDirection
 from ...physics.time.stardate import JulianDate, ScenarioTime
 from ...physics.transforms.methods import radarObs2eciPosition
+from ..kalman.kalman_filter import KalmanFilter
 from ..results import AdaptiveForecastResult, AdaptivePredictResult, AdaptiveUpdateResult
-from ..sequential.sequential_filter import FilterFlag, SequentialFilter
+from ..sequential_filter import FilterFlag
 from .initialization import lambertInitializationFactory
 from .mmae_stacking_utils import stackingFactory
 
@@ -53,14 +41,14 @@ if TYPE_CHECKING:
     from ...scenario.config.estimation_config import AdaptiveEstimationConfig
 
 
-class AdaptiveFilter(SequentialFilter):
+class AdaptiveFilter(KalmanFilter):
     r"""Describes necessary equations for state estimation using multiple model adaptive estimation.
 
     The Adaptive Filter Interface provides a standard method for integrating any adaptive
     estimation algorithm into a Scenario.
 
     See Also:
-        :class:`.SequentialFilter` for definition of common class attributes
+        :class:`.KalmanFilter` for definition of common class attributes
 
     Attributes:
         orbit_determination (``callable``): :func:`.OrbitDeterminationFunction` function by which
@@ -75,7 +63,7 @@ class AdaptiveFilter(SequentialFilter):
         prune_percentage (``float``): if a model's likelihood is above this value, the MMAE filter is assumed to have
             "converged" to this model.
         mode_probability (``ndarray``): mode probability vector
-        models (``list``): :class:`.SequentialFilter` objects representing each model
+        models (``list``): :class:`.KalmanFilter` objects representing each model
         model_likelihood (``ndarray``): likelihood of each model
         model_weights (``ndarray``): model weighting factors
         num_models (``int``): number of models
@@ -83,10 +71,10 @@ class AdaptiveFilter(SequentialFilter):
 
     def __init__(
         self,
-        nominal_filter: SequentialFilter,
+        nominal_filter: KalmanFilter,
         timestep: ScenarioTime,
         orbit_determination: OrbitDeterminationFunction,
-        stacking_method: Callable[[list[SequentialFilter], ndarray], tuple[ndarray, ndarray]],
+        stacking_method: Callable[[list[KalmanFilter], ndarray], tuple[ndarray, ndarray]],
         previous_obs_window: int,
         model_interval: float,
         prune_threshold: float,
@@ -142,7 +130,7 @@ class AdaptiveFilter(SequentialFilter):
 
         # MMAE uninitialized attributes
         self.mode_probabilities: ndarray = array([])
-        self.models: list[SequentialFilter] = []
+        self.models: list[KalmanFilter] = []
         self.model_likelihoods: ndarray = array([])
         self.model_weights: ndarray = array([])
         self.num_models: int = 0
@@ -152,7 +140,7 @@ class AdaptiveFilter(SequentialFilter):
     def fromConfig(
         cls,
         mmae_config: AdaptiveEstimationConfig,
-        nominal_filter: SequentialFilter,
+        nominal_filter: KalmanFilter,
         timestep: ScenarioTime,
     ) -> AdaptiveFilter:
         """Create adaptive estimation filter from a config object.
@@ -496,7 +484,7 @@ class AdaptiveFilter(SequentialFilter):
 
         return hypothesis_states
 
-    def _createModels(self, hypothesis_states: ndarray) -> list[SequentialFilter]:
+    def _createModels(self, hypothesis_states: ndarray) -> list[KalmanFilter]:
         """Create All multiple models.
 
         Args:
@@ -505,7 +493,7 @@ class AdaptiveFilter(SequentialFilter):
         Returns:
             ``list``: :class:`.SequentialFilter` objects representing each model
         """
-        models: list[SequentialFilter] = []
+        models: list[KalmanFilter] = []
         for hypothesis_state in hypothesis_states:
             new_filter = self._filter_class(
                 self.target_id,

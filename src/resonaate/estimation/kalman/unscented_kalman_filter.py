@@ -10,6 +10,9 @@ from numpy import array, concatenate, diagflat, full, ones, sqrt, zeros
 from numpy.linalg import LinAlgError, cholesky, inv
 from scipy.linalg import block_diag
 
+# RESONAATE Imports
+from resonaate.estimation.sequential_filter import EstimateSource
+
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
 from ...physics.maths import angularMean, residuals
@@ -18,7 +21,8 @@ from ...physics.statistics import chiSquareQuadraticForm
 from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ..debug_utils import findNearestPositiveDefiniteMatrix
 from ..results import UKFForecastResult, UKFPredictResult, UKFUpdateResult
-from .sequential_filter import FilterFlag, SequentialFilter
+from ..sequential_filter import FilterFlag, SequentialFilter
+from .kalman_filter import KalmanFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -37,7 +41,7 @@ if TYPE_CHECKING:
     from ..maneuver_detection import ManeuverDetection
 
 
-class UnscentedKalmanFilter(SequentialFilter):
+class UnscentedKalmanFilter(KalmanFilter):
     r"""Describes necessary equations for state estimation using the Unscented Transform.
 
     The UKF class provides the framework and functionality for a basic Unscented Kalman filter,
@@ -228,7 +232,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         except LinAlgError:
             if BehavioralConfig.getConfig().debugging.NearestPD:
                 msg = f"`nearestPD()` function was used on RSO {self.target_id}"
-                self._logger.warning(msg)
+                self.logger.warning(msg)
                 sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
             else:
                 raise
@@ -319,7 +323,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             observations (list): :class:`.Observation` objects associated with the UKF step
         """
         if not observations:
-            self.source = self.INTERNAL_PROPAGATION_SOURCE
+            self.source = EstimateSource.INTERNAL_PROPAGATION
 
             # Save the 0th sigma point because it is the non-sampled propagated state. This means that
             #   we don't inject any noise into the state estimate when no measurements occur.
@@ -329,7 +333,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             #   covariance is stored as the updated error covariance
             self.est_p = self.pred_p
         else:
-            self.source = self.INTERNAL_OBSERVATION_SOURCE
+            self.source = EstimateSource.INTERNAL_OBSERVATION
 
             # Performs covariance portion of the update step
             self.forecast(observations)

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..agents.estimate_agent import EstimateAgent
     from ..estimation.results import SeqFilterPredictResult
-    from ..estimation.sequential.sequential_filter import SequentialFilter
+    from ..estimation.sequential_filter import SequentialFilter
     from ..physics.time.stardate import ScenarioTime
 
 

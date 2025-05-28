@@ -34,7 +34,7 @@
     "general_relativity": false
   },
   "estimation": {
-    "particle_filter": {
+    "sequential_filter": {
       "name": "genetic_particle_filter",
       "population_size": 200,
       "num_keep": 80,

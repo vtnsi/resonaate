@@ -156,7 +156,7 @@ class ScenarioBuilder:
         """
         # Copy propagation model from regular dynamics
         est_prop_cfg = deepcopy(self.config.propagation)
-        est_prop_cfg.propagation_model = self.config.estimation.filter.dynamics_model
+        est_prop_cfg.propagation_model = self.config.estimation.sequential_filter.dynamics_model
 
         estimate_agents: dict[int, EstimateAgent] = {}
         for target_config in self.validated_target_configs.values():

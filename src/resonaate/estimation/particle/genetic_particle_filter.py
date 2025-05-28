@@ -11,6 +11,9 @@ import numpy as np
 # import ray
 from scipy.linalg import block_diag
 
+# RESONAATE Imports
+from resonaate.physics.statistics import chiSquareQuadraticForm
+
 # Local Imports
 from ...dynamics.dynamics_base import DynamicsErrorFlag
 
@@ -20,6 +23,7 @@ from ...physics.maths import vecResiduals
 from ...physics.measurements import VALID_ANGULAR_MEASUREMENTS
 from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ..results import GPFForecastResult, GPFPredictResult, GPFUpdateResult
+from ..sequential_filter import EstimateSource
 from .particle_filter import FilterFlag, ParticleFilter
 
 if TYPE_CHECKING:
@@ -91,7 +95,6 @@ class GeneticParticleFilter(ParticleFilter):
         est_x: ndarray,
         est_p: ndarray,
         dynamics: Dynamics,
-        q_matrix: ndarray,
         maneuver_detection: ManeuverDetection | None = None,
         initial_orbit_determination: bool = False,
         adaptive_estimation: bool = False,
@@ -125,7 +128,6 @@ class GeneticParticleFilter(ParticleFilter):
             est_x,
             est_p,
             dynamics,
-            q_matrix,
             maneuver_detection,
             initial_orbit_determination,
             adaptive_estimation,
@@ -161,6 +163,29 @@ class GeneticParticleFilter(ParticleFilter):
             ),
         )
 
+    @property
+    def particles(self) -> ndarray:
+        """The filter's particles representing its population."""
+        return self.population
+
+    @property
+    def est_p(self) -> ndarray:
+        """Gaussian approximation of the estimation covariance matrix."""
+        return np.cov(self.population, aweights=self.scores * self.population_size)
+
+    @est_p.setter
+    def est_p(self, _):
+        pass
+
+    @property
+    def pred_p(self) -> ndarray:
+        """Gaussian approximation of the prediction covariance matrix."""
+        return np.cov(self.population, aweights=self.scores * self.population_size)
+
+    @pred_p.setter
+    def pred_p(self, _):
+        pass
+
     @classmethod
     def fromConfig(
         cls,
@@ -170,7 +195,6 @@ class GeneticParticleFilter(ParticleFilter):
         est_x: ndarray,
         est_p: ndarray,
         dynamics: Dynamics,
-        q_matrix: ndarray,
         maneuver_detection: ManeuverDetection,
     ) -> ParticleFilter:
         """Build a :class:`.ParticleFilter` object for target state estimation.
@@ -182,7 +206,6 @@ class GeneticParticleFilter(ParticleFilter):
             est_x (``ndarray``): 6x1, initial state estimate
             est_p (``ndarray``): 6x6, initial error covariance matrix
             dynamics (:class:`.Dynamics`): dynamics object to propagate estimate
-            q_matrix (``ndarray``): process noise covariance matrix
             maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
 
         Returns:
@@ -194,7 +217,6 @@ class GeneticParticleFilter(ParticleFilter):
             est_x,
             est_p,
             dynamics,
-            q_matrix,
             maneuver_detection=maneuver_detection,
             initial_orbit_determination=config.initial_orbit_determination,
             adaptive_estimation=config.adaptive_estimation,
@@ -281,8 +303,8 @@ class GeneticParticleFilter(ParticleFilter):
                 np.concatenate([units * Earth.radius, np.zeros_like(units)], axis=0),
             )
 
-        # STEP 2: Calculate the predicted state and covariance at t(k) (P(k + 1|k))
-        self.pred_x, self.pred_p = self._find_gaussian_params()
+        # STEP 2: Calculate the predicted state
+        self.pred_x = np.average(self.population, axis=1, weights=self.scores)
 
         # STEP 3: Update the time step
         self.time = final_time
@@ -297,9 +319,11 @@ class GeneticParticleFilter(ParticleFilter):
         self._flags = FilterFlag.NONE
 
         _, res = self.calculateResidualsFromObservations(observations)
-        r_matrix = block_diag(*[ob.r_matrix for ob in observations])
+        self.r_matrix = block_diag(*[ob.r_matrix for ob in observations])
         new_scores = np.apply_along_axis(
-            lambda v: np.exp(-0.5 * (v[..., np.newaxis].T @ r_matrix @ v[..., np.newaxis]).item()),
+            lambda v: np.exp(
+                -0.5 * (v[..., np.newaxis].T @ self.r_matrix @ v[..., np.newaxis]).item(),
+            ),
             0,
             res,
         )
@@ -318,12 +342,24 @@ class GeneticParticleFilter(ParticleFilter):
             observations (list): :class:`.Observation` objects associated with the GPF step
         """
         if not observations:
-            self.source = self.INTERNAL_PROPAGATION_SOURCE
+            self.source = EstimateSource.INTERNAL_PROPAGATION
         else:
-            self.source = self.INTERNAL_OBSERVATION_SOURCE
+            self.source = EstimateSource.INTERNAL_OBSERVATION
 
             # Performs covariance portion of the update step
             self.forecast(observations)
+
+            if self.particle_residuals:
+                self.innovation = np.average(
+                    self.particle_residuals,
+                    axis=-1,
+                    weights=self.scores * self.population_size,
+                )
+                self.nis = chiSquareQuadraticForm(
+                    self.innovation,
+                    self.innovation @ np.eye(len(self.innovation)) @ self.innovation.T
+                    + self.r_matrix,
+                )
 
             # Resample the points
             self.resample()
@@ -333,18 +369,7 @@ class GeneticParticleFilter(ParticleFilter):
 
             self._debugChecks(observations)
 
-        self.est_x, self.est_p = self._find_gaussian_params()
-
-    def _find_gaussian_params(self) -> tuple[ndarray, ndarray]:
-        r"""Returns the mean vector and covariance matrix for a gaussian fit to the population.
-
-        Returns:
-            ``tuple[ndarray, ndarray]``: the mean vector and covariance matrix respectively.
-        """
-        return (
-            np.average(self.population, axis=1, weights=self.scores),
-            np.cov(self.population, aweights=self.scores * self.population_size),
-        )
+        self.est_x = np.average(self.population, axis=1, weights=self.scores)
 
     def calculateResidualsFromObservations(
         self,
