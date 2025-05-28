@@ -353,7 +353,7 @@ class GeneticParticleFilter(ParticleFilter):
             # Performs covariance portion of the update step
             self.forecast(observations)
 
-            if self.particle_residuals:
+            if self.particle_residuals.size > 0:
                 self.innovation = np.average(
                     self.particle_residuals,
                     axis=-1,
