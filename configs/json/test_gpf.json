@@ -1,0 +1,52 @@
+{
+  "time": {
+    "start_timestamp": "2021-03-30T16:00:00.000Z",
+    "physics_step_sec": 300,
+    "output_step_sec": 300,
+    "stop_timestamp": "2021-04-15T16:00:00.000Z"
+  },
+  "noise": {
+    "init_position_std_km": 1e-3,
+    "init_velocity_std_km_p_sec": 1e-6,
+    "filter_noise_type": "continuous_white_noise",
+    "filter_noise_magnitude": 3.0e-14,
+    "random_seed": "os"
+  },
+  "observation": {
+    "background": true
+  },
+  "propagation": {
+    "propagation_model": "special_perturbations",
+    "integration_method": "RK45",
+    "station_keeping": true,
+    "target_realtime_propagation": true,
+    "sensor_realtime_propagation": true,
+    "truth_simulation_only": false
+  },
+  "geopotential": {
+    "model": "egm96.txt",
+    "degree": 4,
+    "order": 4
+  },
+  "perturbations": {
+    "third_bodies": ["sun", "moon"],
+    "solar_radiation_pressure": false,
+    "general_relativity": false
+  },
+  "estimation": {
+    "sequential_filter": {
+      "name": "genetic_particle_filter",
+      "population_size": 200,
+      "num_keep": 80,
+      "num_purge": 80,
+      "num_mutate": 120,
+      "mutation_strength": [0.005, 0.005, 0.005, 0.0001, 0.0001, 0.0001],
+      "dynamics_model": "special_perturbations",
+      "maneuver_detection": null,
+      "save_filter_steps": true
+    },
+    "adaptive_filter": null
+  },
+  "engines_files": ["engines/summation_ssn.json"],
+  "events": []
+}

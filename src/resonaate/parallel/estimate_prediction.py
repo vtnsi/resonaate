@@ -9,6 +9,9 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 import ray
 
+# RESONAATE Imports
+from resonaate.estimation.particle.particle_filter import ParticleFilter
+
 # Local Imports
 from . import JobExecutor, Registration
 
@@ -16,7 +19,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..agents.estimate_agent import EstimateAgent
     from ..estimation.results import SeqFilterPredictResult
-    from ..estimation.sequential.sequential_filter import SequentialFilter
+    from ..estimation.sequential_filter import SequentialFilter
     from ..physics.time.stardate import ScenarioTime
 
 
@@ -68,6 +71,9 @@ class EstPredictRegistration(Registration):
         self._registrant.time = results.time
         self._registrant.state_estimate = results.pred_x
         self._registrant.error_covariance = results.pred_p
+
+        if isinstance(self._registrant.nominal_filter, ParticleFilter):
+            self._registrant._saveFilterStep()  # noqa: SLF001
 
 
 class EstPredictExecutor(JobExecutor):

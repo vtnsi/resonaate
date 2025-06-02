@@ -45,14 +45,22 @@ class EstimationConfig(BaseModel):
     @model_validator(mode="after")
     def clarifyFlags(self) -> Self:
         """Make sure flags are consistent with populated configurations."""
-        if self.sequential_filter.adaptive_estimation and self.sequential_filter.initial_orbit_determination:
+        if (
+            self.sequential_filter.adaptive_estimation
+            and self.sequential_filter.initial_orbit_determination
+        ):
             raise ValueError("IOD & MMAE cannot both be used at the same time.")
 
         if self.sequential_filter.adaptive_estimation:
             if self.adaptive_filter is None:
-                raise ValueError("Adaptive estimation flag set but no configuration specified.")
+                raise ValueError(
+                    "Adaptive estimation flag set but no configuration specified.",
+                )
         elif self.adaptive_filter is not None:
-            warn("Adaptive estimation flag is OFF, specified configuration will be IGNORED!", stacklevel=2)
+            warn(
+                "Adaptive estimation flag is OFF, specified configuration will be IGNORED!",
+                stacklevel=2,
+            )
 
         if self.sequential_filter.initial_orbit_determination:
             if self.initial_orbit_determination is None:
@@ -124,11 +132,71 @@ class UKFConfig(UKFConfigBase):
 class UnscentedKalmanFilterConfig(UKFConfigBase):
     """Configuration section defining parameters for an Unscented Kalman Filter."""
 
-    name: Literal[SequentialFilterLabel.UNSCENTED_KALMAN_FILTER] = SequentialFilterLabel.UNSCENTED_KALMAN_FILTER
+    name: Literal[SequentialFilterLabel.UNSCENTED_KALMAN_FILTER] = (
+        SequentialFilterLabel.UNSCENTED_KALMAN_FILTER
+    )
     """``str``: name of the sequential filter algorithm to use."""
 
 
-SequentialFilterConfig = Annotated[Union[UKFConfig, UnscentedKalmanFilterConfig], Field(..., discriminator="name")]
+class GPFConfigBase(SequentialFilterConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    population_size: int = 100
+    """``int``: Determines the population size to evolve over time
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``population``.
+    """
+
+    num_purge: int = 10
+    """``int``: The number of bottom performers to remove
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_purge``
+    """
+
+    num_keep: int = 10
+    """``int``: The number of top performers to keep
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_keep``
+    """
+
+    num_mutate: int = 50
+    """``int``: The number of population members to mutate, excluding the top performers
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_mutate``
+    """
+
+    mutation_strength: Union[list[float], None] = None
+    """``list[float]``: The strength of mutations for each state vector entry
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``mutation_strength``
+    """
+
+
+class GPFConfig(GPFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.GPF] = SequentialFilterLabel.GPF
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+class GeneticParticleFilterConfig(GPFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.GENETIC_PARTICLE_FILTER] = (
+        SequentialFilterLabel.GENETIC_PARTICLE_FILTER
+    )
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+SequentialFilterConfig = Annotated[
+    Union[UKFConfig, UnscentedKalmanFilterConfig, GPFConfig, GeneticParticleFilterConfig],
+    Field(..., discriminator="name"),
+]
 """Annotated[Union]: Discriminated union defining valid sequential filter configurations."""
 
 
@@ -159,7 +227,9 @@ class SlidingNISConfig(ManeuverDetectionConfigBase):
 class FadingMemoryNISConfig(ManeuverDetectionConfigBase):
     """Configuration section defining configuration options for fading-memory NIS maneuver detection."""
 
-    name: Literal[ManeuverDetectionLabel.FADING_MEMORY_NIS] = ManeuverDetectionLabel.FADING_MEMORY_NIS
+    name: Literal[ManeuverDetectionLabel.FADING_MEMORY_NIS] = (
+        ManeuverDetectionLabel.FADING_MEMORY_NIS
+    )
     """``str``: maneuver detection technique to use."""
 
     delta: float = Field(default=0.8, gt=0.0, lt=1.0)
@@ -185,7 +255,9 @@ class AdaptiveEstimationConfigBase(BaseModel):
     about :attr:`.model_interval`.
     """
 
-    orbit_determination: InitialOrbitDeterminationLabel = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
+    orbit_determination: InitialOrbitDeterminationLabel = (
+        InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
+    )
     """``str``: orbit determination technique used to initialize the adaptive filter."""
 
     stacking_method: StackingLabel = StackingLabel.ECI_STACKING

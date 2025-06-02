@@ -13,13 +13,14 @@ from resonaate.common.exceptions import ShapeError
 from resonaate.common.utilities import getTypeString
 from resonaate.data.detected_maneuver import DetectedManeuver
 from resonaate.data.ephemeris import EstimateEphemeris
-from resonaate.data.filter_step import FilterStep
+from resonaate.data.filter_step import FilterStep, filter_map
 from resonaate.estimation import (
     adaptiveEstimationFactory,
     initialOrbitDeterminationFactory,
     sequentialFilterFactory,
 )
-from resonaate.estimation.sequential.sequential_filter import FilterFlag, SequentialFilter
+from resonaate.estimation.particle.particle_filter import ParticleFilter
+from resonaate.estimation.sequential_filter import FilterFlag, SequentialFilter
 from resonaate.physics.noise import initialEstimateNoise, noiseCovarianceFactory
 from resonaate.physics.transforms.methods import ecef2lla, eci2ecef
 
@@ -128,11 +129,14 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         self._lla_state = ecef2lla(self._ecef_state)
 
         # Set the EstimateAgent's filter & set itself to the filter's host
-        if isinstance(_filter, SequentialFilter):
-            self._filter = _filter
-        else:
-            self._logger.error("Invalid input type for _filter param")
-            raise TypeError(type(_filter))
+        self._filter = _filter
+
+        self._filter_step = None
+        for k, v in filter_map.items():
+            if isinstance(_filter, k):
+                self._filter_step = v
+        if self._filter_step is None:
+            raise TypeError(f"Could not find a matching filter step for {type(_filter)}")
 
         # Attribute to track the adaptive_filter config of this object
         self.adaptive_filter_config = adaptive_filter_config
@@ -199,6 +203,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
             noise_cfg.filter_noise_magnitude,
         )
 
+        nominal_filter = None
         nominal_filter = sequentialFilterFactory(
             estimation_cfg.sequential_filter,
             tgt_cfg.id,
@@ -344,11 +349,13 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
     def _saveFilterStep(self) -> None:
         """Save :class:`.FilterStep` events to insert into the DB later."""
         self._filter_info.append(
-            FilterStep.recordFilterStep(
+            # FilterStep.recordFilterStep(
+            self._filter_step.recordFilterStep(
                 julian_date=self.julian_date_epoch,
                 target_id=self.simulation_id,
-                innovation=self.nominal_filter.innovation,
-                nis=self.nominal_filter.nis,
+                filter=self.nominal_filter,
+                # innovation=self.nominal_filter.innovation,
+                # nis=self.nominal_filter.nis,
             ),
         )
 
@@ -361,7 +368,7 @@ class EstimateAgent(Agent):  # pylint: disable=too-many-public-methods
         Raises:
             ``TypeError``: raised if invalid object is passed.
         """
-        if not isinstance(new_filter, SequentialFilter):
+        if not isinstance(new_filter, (SequentialFilter, ParticleFilter)):
             msg = f"Cannot reset filter attribute with invalid type: {type(new_filter)}"
             raise TypeError(msg)
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import abstractmethod
+from enum import Flag, auto
 from typing import TYPE_CHECKING
 
 # Type Checking Imports
@@ -18,6 +19,13 @@ if TYPE_CHECKING:
     from ..physics.time.stardate import ScenarioTime
     from .integration_events import ScheduledEventType
     from .integration_events.station_keeping import StationKeeper
+
+
+class DynamicsErrorFlag(Flag):
+    """Flags to indicate which errors should halt propagation."""
+
+    COLLISION = auto()
+    """Halt on any sort of collision."""
 
 
 class Dynamics:
@@ -38,6 +46,7 @@ class Dynamics:
         initial_state: ndarray,
         station_keeping: Iterable[StationKeeper] | None = None,
         scheduled_events: Iterable[ScheduledEventType] | None = None,
+        error_flags: DynamicsErrorFlag = DynamicsErrorFlag.COLLISION,
     ) -> ndarray:
         """Abstract method for forwards propagation."""
         raise NotImplementedError

@@ -144,6 +144,12 @@ class SequentialFilterLabel(str, Enum):
     UNSCENTED_KALMAN_FILTER: str = "unscented_kalman_filter"
     """``str``: unscented Kalman filter algorithm."""
 
+    GPF: str = "gpf"
+    """``str``: genetic particle filter algorithm."""
+
+    GENETIC_PARTICLE_FILTER: str = "genetic_particle_filter"
+    """``str``: genetic particle filter algorithm."""
+
 
 class InitialOrbitDeterminationLabel(str, Enum):
     """Defines valid labels for initial orbit determination (IOD) algorithms."""

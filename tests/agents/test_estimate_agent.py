@@ -20,9 +20,9 @@ from resonaate.dynamics.two_body import TwoBody
 from resonaate.estimation.adaptive.adaptive_filter import AdaptiveFilter
 from resonaate.estimation.adaptive.gpb1 import GeneralizedPseudoBayesian1
 from resonaate.estimation.initial_orbit_determination import IODSolution
+from resonaate.estimation.kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.estimation.maneuver_detection import StandardNis
-from resonaate.estimation.sequential.sequential_filter import FilterFlag
-from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
+from resonaate.estimation.sequential_filter import FilterFlag
 from resonaate.physics.time.stardate import ScenarioTime
 from resonaate.physics.transforms.methods import eci2ecef
 from resonaate.scenario.clock import ScenarioClock

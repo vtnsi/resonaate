@@ -14,9 +14,10 @@ from .adaptive.adaptive_filter import AdaptiveFilter
 from .adaptive.gpb1 import GeneralizedPseudoBayesian1
 from .adaptive.smm import StaticMultipleModel
 from .initial_orbit_determination import LambertIOD
+from .kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from .maneuver_detection import FadingMemoryNis, ManeuverDetection, SlidingNis, StandardNis
-from .sequential.sequential_filter import SequentialFilter
-from .sequential.unscented_kalman_filter import UnscentedKalmanFilter
+from .particle.genetic_particle_filter import GeneticParticleFilter
+from .sequential_filter import EstimateSource, SequentialFilter
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -37,31 +38,34 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AdaptiveFilter",
+    "SequentialFilter",
 ]
 
-VALID_ESTIMATE_SOURCES: tuple[str] = (
-    SequentialFilter.INTERNAL_PROPAGATION_SOURCE,
-    SequentialFilter.INTERNAL_OBSERVATION_SOURCE,
+VALID_ESTIMATE_SOURCES: tuple[str, str] = (
+    EstimateSource.INTERNAL_PROPAGATION,
+    EstimateSource.INTERNAL_OBSERVATION,
 )
 """``tuple[str]``: Valid entries for :py:attr:`SequentialFilter.source` of filter measurement updates & estimates."""
 
 
-_MANEUVER_DETECTION_MAP: dict[str, ManeuverDetection] = {
+_MANEUVER_DETECTION_MAP: dict[str, type[ManeuverDetection]] = {
     ManeuverDetectionLabel.STANDARD_NIS: StandardNis,
     ManeuverDetectionLabel.SLIDING_NIS: SlidingNis,
     ManeuverDetectionLabel.FADING_MEMORY_NIS: FadingMemoryNis,
 }
 
 
-_ADAPTIVE_ESTIMATION_MAP: dict[str, AdaptiveFilter] = {
+_ADAPTIVE_ESTIMATION_MAP: dict[str, type[AdaptiveFilter]] = {
     AdaptiveEstimationLabel.GPB1: GeneralizedPseudoBayesian1,
     AdaptiveEstimationLabel.SMM: StaticMultipleModel,
 }
 
 
-_FILTER_MAP: dict[str, SequentialFilter] = {
+_SEQUENTIAL_FILTER_MAP: dict[str, type[SequentialFilter]] = {
     SequentialFilterLabel.UKF: UnscentedKalmanFilter,
     SequentialFilterLabel.UNSCENTED_KALMAN_FILTER: UnscentedKalmanFilter,
+    SequentialFilterLabel.GPF: GeneticParticleFilter,
+    SequentialFilterLabel.GENETIC_PARTICLE_FILTER: GeneticParticleFilter,
 }
 
 
@@ -89,19 +93,19 @@ def sequentialFilterFactory(
         :class:`.SequentialFilter`: constructed filter object
     """
     maneuver_detection = maneuverDetectionFactory(config.maneuver_detection)
-    return _FILTER_MAP[config.name].fromConfig(
-        config,
-        tgt_id,
-        time,
-        est_x,
-        est_p,
-        dynamics,
-        q_matrix,
-        maneuver_detection,
+    return _SEQUENTIAL_FILTER_MAP[config.name].fromConfig(
+        config=config,
+        tgt_id=tgt_id,
+        time=time,
+        est_x=est_x,
+        est_p=est_p,
+        dynamics=dynamics,
+        maneuver_detection=maneuver_detection,
+        q_matrix=q_matrix,
     )
 
 
-def maneuverDetectionFactory(config: ManeuverDetectionConfig) -> ManeuverDetection:
+def maneuverDetectionFactory(config: ManeuverDetectionConfig | None) -> ManeuverDetection | None:
     """Build a maneuver detection class for use in filtering.
 
     Args:
