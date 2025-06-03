@@ -20,6 +20,16 @@ from .noise_config import NoiseConfig
 from .observation_config import ObservationConfig
 from .perturbations_config import PerturbationsConfig
 from .propagation_config import PropagationConfig
+from .sensor_config import (
+    AdvRadarConfig,
+    ConicFieldOfViewConfig,
+    FieldOfViewConfig,
+    OpticalConfig,
+    RadarConfig,
+    RectangularFieldOfViewConfig,
+    ScheduledDowntimeConfig,
+    SensorConfig,
+)
 from .time_config import TimeConfig
 
 # Type Checking Imports
@@ -46,6 +56,14 @@ __all__ = [  # noqa: RUF022, RUF100
     "PerturbationsConfig",
     "PropagationConfig",
     "TimeConfig",
+    "ScheduledDowntimeConfig",
+    "SensorConfig",
+    "FieldOfViewConfig",
+    "ConicFieldOfViewConfig",
+    "RectangularFieldOfViewConfig",
+    "OpticalConfig",
+    "RadarConfig",
+    "AdvRadarConfig",
 ]
 
 
