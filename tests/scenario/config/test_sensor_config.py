@@ -256,3 +256,7 @@ def testMinRevisitField(base_sensor_revisit_dict: dict) -> None:
     base_sensor_revisit_dict["type"] = SensorLabel.OPTICAL
     cfg = SensorWrapper(sensor_config=base_sensor_revisit_dict)
     assert isinstance(cfg.sensor_config, OpticalConfig)
+
+    base_sensor_revisit_dict["min_revisit_time"] = -3600.0  # Test invalid
+    with pytest.raises(ValidationError):
+        _ = SensorWrapper(sensor_config=base_sensor_revisit_dict)
