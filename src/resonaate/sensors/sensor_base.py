@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from ..physics.measurements import Measurement
-    from ..scenario.config.sensor_config import SensorConfig
+    from ..scenario.config.sensor_config import ScheduledDowntimeConfig, SensorConfig
     from .field_of_view import FieldOfView
 
 DEFAULT_VIEWING_ANGLE: float = 1.0
@@ -54,6 +54,9 @@ class Sensor(ABC):
         background_observations: bool,
         minimum_range: float,
         maximum_range: float,
+        min_revisit_time: float = 0.0,
+        missed_obs_probability: float = 0.0,
+        downtimes: list[ScheduledDowntimeConfig] | None = None,
         **sensor_args: dict,
     ):
         """Construct a generic `Sensor` object.
@@ -70,6 +73,9 @@ class Sensor(ABC):
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
+            min_revisit_time (``float``): minimum time required to elapse since last observation of the same target before the sensor can go revisit it. Defaults to 0.
+            missed_obs_probability (``float``): Probability that the sensor randomly misses an observation. Defaults to 0.
+            downtimes (``list[ScheduledDowntimeConfig], None``): Sensor downtime configs. Defaults to None.
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         self._measurement = measurement
@@ -85,6 +91,10 @@ class Sensor(ABC):
         self.calculate_background = background_observations
         self.minimum_range = minimum_range
         self.maximum_range = maximum_range
+
+        self.missed_obs_probability = missed_obs_probability
+        self.min_revisit_time = min_revisit_time
+        self.downtimes = downtimes
 
         # Derived properties initialization
         self.time_last_tasked = ScenarioTime(0.0)
