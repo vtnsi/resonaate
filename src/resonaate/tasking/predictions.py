@@ -35,10 +35,17 @@ def predictObservation(
         sensing_agent.datetime_epoch,
     )
 
+    # Check if the sensor is offline
+    if sensing_agent.sensors.isOffline():
+        return None
+
+    # Check if past the minimum revisit time
+    if not sensing_agent.sensors.readyToRevisit(estimate_agent.simulation_id):
+        return None
+
     # Check if the estimated target is reachable
     if not sensing_agent.sensors.canSlew(slant_range_sez):
         return None
-
     # Check if the estimated target is observable
     visibility, _ = sensing_agent.sensors.isVisible(
         estimate_agent.eci_state,
