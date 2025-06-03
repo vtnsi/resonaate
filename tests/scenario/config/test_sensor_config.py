@@ -310,3 +310,24 @@ def testConstructSensorWithDowntime(
 
     assert len(sensor_cfg.sensor_config.downtimes) == 1
     assert sensor_cfg.sensor_config.downtimes == [downtime]
+
+
+def testMissedObsField(base_sensor_dict: dict) -> None:
+    """Tests the missed observation probability field."""
+    # Construct a simple radar with missed obs probability.
+    base_sensor_dict["type"] = SensorLabel.RADAR
+    base_sensor_dict["tx_power"] = 2.5e6
+    base_sensor_dict["tx_frequency"] = 1.5e9
+    base_sensor_dict["min_detectable_power"] = 1.4314085925969573e-14
+    base_sensor_dict["missed_obs_probability"] = 0.5
+
+    cfg = SensorWrapper(sensor_config=base_sensor_dict)
+    assert isinstance(cfg.sensor_config, RadarConfig)
+
+    # Test invalid
+    base_sensor_dict["missed_obs_probability"] = -0.5
+    with pytest.raises(ValidationError):
+        _ = SensorWrapper(sensor_config=base_sensor_dict)
+    base_sensor_dict["missed_obs_probability"] = 1.5
+    with pytest.raises(ValidationError):
+        _ = SensorWrapper(sensor_config=base_sensor_dict)

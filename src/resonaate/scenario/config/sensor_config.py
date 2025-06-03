@@ -138,6 +138,9 @@ class SensorConfigBase(BaseModel, ABC):
     downtimes_dict: Optional[list[dict]] = Field(default=[], alias="downtimes")
     R"""``list[dict], Optional`` List of all downtime configs."""
 
+    missed_obs_probability: Optional[float] = Field(default=0.0, ge=0.0, le=1.0)
+    R"""``float``: The probability that the sensor will randomly return a missed obs. Must be between 0.0 and 1.0. Defaults to 0.0."""
+
     @property
     def downtimes(self) -> list[ScheduledDowntimeConfig]:
         """``list[ScheduledDowntimeConfig]``: List of downtime config objects."""
