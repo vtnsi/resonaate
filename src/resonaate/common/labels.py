@@ -25,6 +25,7 @@ class Explanation(Enum):
     FIELD_OF_VIEW = "Field of View"
     SLEW_DISTANCE = "Slew Rate/Distance to Target"
     GALACTIC_EXCLUSION = "Galactic Exclusion Zone"
+    SENSOR_OFFLINE = "Sensor Offline"
 
 
 class StateLabel(str, Enum):

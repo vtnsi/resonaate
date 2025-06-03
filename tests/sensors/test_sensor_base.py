@@ -239,7 +239,7 @@ def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: Sensing
     agent = Mock()
     agent.eci_state = np.array((-1.0, 0.0, -1.0, 0.0, 0.0, 0.0))  # outside FOV
 
-    observation = sensor.attemptObservation(agent, pointing_sez)
+    observation = sensor._attemptObservation(agent, pointing_sez)
     assert isinstance(observation, MissedObservation)
 
     # Test target inside FOV
@@ -257,7 +257,7 @@ def testCheckTargetsInView(base_sensor_args: dict, mocked_sensing_agent: Sensing
             return_value=create_autospec(Observation, instance=True),
         ) as mock_observation_from_measurement,
     ):
-        observation = sensor.attemptObservation(agent, pointing_sez)
+        observation = sensor._attemptObservation(agent, pointing_sez)
         assert isinstance(observation, Observation)
         mock_visible_check.assert_called_once()
         mock_observation_from_measurement.assert_called_once()
@@ -601,7 +601,7 @@ def testBuildSigmaObs():
 
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector")
 @patch.multiple(Sensor, __abstractmethods__=set())
-def testAttemptObservation(
+def test_attemptObservation(
     slant_range_patch: Mock,
     base_sensor_args: dict,
     mocked_sensing_agent: SensingAgent,
@@ -620,7 +620,7 @@ def testAttemptObservation(
 
     # Test when target is outside elevation mask
     sensor.el_mask = np.deg2rad(np.array((1.0, 1.1)))
-    missed_ob = sensor.attemptObservation(
+    missed_ob = sensor._attemptObservation(
         mocked_primary_target,
         pointing_sez=np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0)),
     )
@@ -629,7 +629,7 @@ def testAttemptObservation(
 
     # Test when target is inside elevation mask
     sensor.el_mask = np.deg2rad(np.array((-90.0, 89.0)))
-    ob = sensor.attemptObservation(
+    ob = sensor._attemptObservation(
         mocked_primary_target,
         pointing_sez=np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0)),
     )
@@ -637,7 +637,7 @@ def testAttemptObservation(
 
     # Test when target is outside the field of view
     with patch.object(sensor.field_of_view, "inFieldOfView", return_value=False):
-        missed_ob = sensor.attemptObservation(
+        missed_ob = sensor._attemptObservation(
             mocked_primary_target,
             pointing_sez=np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0)),
         )
@@ -648,7 +648,7 @@ def testAttemptObservation(
     mock_explanation = MagicMock()
     mock_explanation.value = "mock_explanation"
     with patch.object(sensor, "isVisible", return_value=(False, mock_explanation)):
-        missed_ob = sensor.attemptObservation(
+        missed_ob = sensor._attemptObservation(
             mocked_primary_target,
             pointing_sez=np.array((1422, 0.0, 0.0, 0.0, 0.0, 0.0)),
         )

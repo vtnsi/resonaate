@@ -171,19 +171,19 @@ class Sensor(ABC):
             estimate_eci,
             self.host.datetime_epoch,
         )
-        if self.canSlew(pointing_sez):
-            # If the sensor can slew to the target, then it does before attempting observations
-            self.boresight = pointing_sez[:3] / norm(pointing_sez[:3])
-            self.time_last_tasked = self.host.time
-
-            # Attempt to observe primary RSO
-            observation = self.attemptObservation(target_agent, pointing_sez)
-            if observation.reason == Explanation.VISIBLE:
-                obs_list.append(observation)
-            else:
-                missed_observation_list.append(observation)
-
-        else:
+        # Go through potential cases where the sensor would be offline.
+        if self.isOffline():
+            missed_observation_list.append(
+                MissedObservation(
+                    julian_date=self.host.julian_date_epoch,
+                    sensor_type=getTypeString(self),
+                    sensor_id=self.host.simulation_id,
+                    target_id=target_agent.simulation_id,
+                    sensor_eci=self.host.eci_state,
+                    reason=Explanation.SENSOR_OFFLINE.value,
+                ),
+            )
+        elif not self.canSlew(pointing_sez):
             missed_observation_list.append(
                 MissedObservation(
                     julian_date=self.host.julian_date_epoch,
@@ -194,14 +194,23 @@ class Sensor(ABC):
                     reason=Explanation.SLEW_DISTANCE.value,
                 ),
             )
+        else:  # Nothing was stopping the sensor from going an collecting.
+            self.boresight = pointing_sez[:3] / norm(pointing_sez[:3])
+            self.time_last_tasked = self.host.time
 
+            # Attempt to observe primary RSO
+            observation = self._attemptObservation(target_agent, pointing_sez)
+            if observation.reason == Explanation.VISIBLE:
+                obs_list.append(observation)
+            else:
+                missed_observation_list.append(observation)
         # If doing Serendipitous Observations
-        if self.calculate_background:
+        if self.calculate_background and not self.isOffline():
             visible_observations = [
                 observation
                 for tgt in background_agents
                 if isinstance(
-                    observation := self.attemptObservation(tgt, pointing_sez),
+                    observation := self._attemptObservation(tgt, pointing_sez),
                     Observation,
                 )
             ]
@@ -209,7 +218,7 @@ class Sensor(ABC):
 
         return obs_list, missed_observation_list, self.boresight, self.time_last_tasked
 
-    def attemptObservation(
+    def _attemptObservation(
         self,
         target_agent: TargetAgent,
         pointing_sez: ndarray,
