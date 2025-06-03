@@ -13,7 +13,7 @@ from scipy.linalg import norm
 # Local Imports
 from ..common.exceptions import ShapeError
 from ..common.labels import Explanation
-from ..common.logger import resonaateLogInfo
+from ..common.logger import resonaateLogInfo, resonaateLogWarning
 from ..common.utilities import getTypeString
 from ..data.observation import MissedObservation, Observation
 from ..physics import constants as const
@@ -269,6 +269,10 @@ class Sensor(ABC):
             :class:`.Observation` | :class:`.MissedObservation`: constructed observation or a _missed_ observation and
                 reason it isn't visible.
         """
+        if not self.readyToRevisit(target_agent.simulation_id):
+            resonaateLogWarning(
+                f"Sensor {self.host.simulation_id} is being tasked to observe target {target_agent.simulation_id} before required revisit wait period!",
+            )
         if self.host.sensor_time_bias_event_queue:
             tgt_eci_state = self._applyTimeBias(target_agent)
         else:
