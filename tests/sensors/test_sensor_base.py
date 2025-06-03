@@ -18,7 +18,7 @@ from resonaate.data.observation import MissedObservation, Observation
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
-from resonaate.scenario.config.sensor_config import ConicFieldOfViewConfig
+from resonaate.scenario.config.sensor_config import ConicFieldOfViewConfig, ScheduledDowntimeConfig
 from resonaate.sensors.field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from resonaate.sensors.radar import Radar
 from resonaate.sensors.sensor_base import Sensor
@@ -54,6 +54,18 @@ def getBackgroundTargetAgent() -> TargetAgent:
     background_target = create_autospec(spec=TargetAgent, instance=True)
     background_target.initial_state = np.array((0.0, Earth.radius * 2 + 1, 0.0, 0.0, 0.0, 0.0))
     return background_target
+
+
+@pytest.fixture(name="mocked_downtime_cfg")
+def getMockedDowntimeCfgs() -> list[ScheduledDowntimeConfig]:
+    """Creates some mocked downtime configs for testing."""
+    return [
+        ScheduledDowntimeConfig(
+            period=0.0,
+            duration=10000,
+            offset=0.0,
+        ),
+    ]
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
@@ -402,6 +414,7 @@ def testCollectObservations(
     radar_sensor_args: dict,
     mocked_sensing_agent: SensingAgent,
     mocked_primary_target: TargetAgent,
+    mocked_downtime_cfg: list[ScheduledDowntimeConfig],
 ):
     """Test `Sensor.collectObservations`."""
     sensor = Radar(**radar_sensor_args)
@@ -442,6 +455,40 @@ def testCollectObservations(
         mocked_sensing_agent.sensors.boresight,
         slant_range_sez[:3] / np.linalg.norm(slant_range_sez[:3]),
     )
+
+    # Test Missed Obs Probability
+    mocked_sensing_agent.sensors.missed_obs_probability = 0.5
+    num_obs = 0
+    num_missed = 0
+    n = 500
+    for _i in range(n):
+        good_obs, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
+            mocked_primary_target.initial_state,
+            mocked_primary_target,
+            [mocked_primary_target],
+        )
+        num_obs += len(good_obs)
+        num_missed += len(missed_obs)
+    # Check that, statistically, about half the obs were missed.
+    assert 0.45 * n <= num_obs
+    assert num_obs <= 0.55 * n
+    assert 0.45 * n <= num_missed
+    assert num_missed <= 0.55 * n
+
+    mocked_sensing_agent.sensors.missed_obs_probability = (
+        0  # Reset this for the rest of the testing.
+    )
+
+    # Test when the sensor is offline.
+    mocked_sensing_agent.sensors.downtimes = mocked_downtime_cfg
+    good_obs, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
+        mocked_primary_target.initial_state,
+        mocked_primary_target,
+        [mocked_primary_target],
+    )
+    assert len(good_obs) == 0
+    assert len(missed_obs) == 1
+    mocked_sensing_agent.sensors.downtimes = None
 
     # Test when target is not in line of sight (Earth is blocking)
     mocked_sensing_agent.eci_state = np.array((0.0, -Earth.radius, 0.0, 0.0, 0.0, 0.0))
