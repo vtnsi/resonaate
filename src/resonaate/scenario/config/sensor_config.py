@@ -46,7 +46,7 @@ class ScheduledDowntimeConfig(BaseModel):
     period: float = Field(..., ge=0.0)
     R"""``float``: How frequently the scheduled downtime repeats, in seconds. Must be >= 0. Set to 0.0 to have the downtime occur once."""
 
-    duration: float = Field(..., ge=0.0)
+    duration: float = Field(..., gt=0.0)
     R"""``float``: Duration of the sensor downtime, in seconds. Must be >= 0."""
 
     offset: float = Field(..., ge=0.0)

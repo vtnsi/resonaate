@@ -447,3 +447,23 @@ class Sensor(ABC):
         """
         self._host = host
         self.time_last_tasked = host.time
+
+    def isOffline(self) -> bool:
+        """Checks if the sensor is offline from a scheduled downtime.
+
+        Returns:
+            bool: True if the sensor is currently offline, False if the sensor is online.
+        """
+        if self.downtimes is None:  # Feature was not set up, so sensor is always online.
+            return False
+        time_elapsed = float(self.host.time)
+        for downtime in self.downtimes:
+            if (
+                downtime.period == 0
+                and (time_elapsed >= downtime.offset)
+                and (time_elapsed <= downtime.offset + downtime.duration)
+            ):
+                return True
+            if (time_elapsed - downtime.offset) % downtime.period <= downtime.duration:
+                return True
+        return False
