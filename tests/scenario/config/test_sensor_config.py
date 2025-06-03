@@ -249,3 +249,10 @@ def testAdvRadarConfig(base_sensor_dict: dict):
     base_sensor_dict["min_detectable_power"] = 1.4314085925969573e-14
     cfg = SensorWrapper(sensor_config=base_sensor_dict)
     assert isinstance(cfg.sensor_config, AdvRadarConfig)
+
+
+def testMinRevisitField(base_sensor_revisit_dict: dict) -> None:
+    """Test creating a sensor config with min revisit time too."""
+    base_sensor_revisit_dict["type"] = SensorLabel.OPTICAL
+    cfg = SensorWrapper(sensor_config=base_sensor_revisit_dict)
+    assert isinstance(cfg.sensor_config, OpticalConfig)
