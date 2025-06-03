@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-# Standard Library Imports
-
 # Third Party Imports
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -194,6 +192,14 @@ def getSensorDict() -> dict:
         "efficiency": 0.98,
         "slew_rate": 10.0,
     }
+
+
+@pytest.fixture(name="base_sensor_revisit_dict")
+def getSensorRevisitDict(base_sensor_dict: dict) -> dict:
+    """Creates a sensor config that adds a non-zero minimum revisit time."""
+    new_dict = base_sensor_dict
+    new_dict["min_revisit_time"] = 3600.0
+    return new_dict
 
 
 @pytest.mark.parametrize("sensor_type", ["invalid", None, 10])
