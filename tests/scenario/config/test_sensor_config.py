@@ -290,3 +290,23 @@ def testConstructSensorDowntime(downtime_config: dict) -> None:
     downtime_config["offset"] = -5000
     with pytest.raises(ValidationError):
         _ = ScheduledDowntimeConfig(**downtime_config)
+
+
+def testConstructSensorWithDowntime(
+    base_sensor_dict: dict,
+    downtime_config: dict,
+) -> None:
+    """Tests constructing a sensor object with downtime configs."""
+    downtime = ScheduledDowntimeConfig(**downtime_config)
+
+    # Construct a simple radar with the downtimes.
+    base_sensor_dict["type"] = SensorLabel.RADAR
+    base_sensor_dict["tx_power"] = 2.5e6
+    base_sensor_dict["tx_frequency"] = 1.5e9
+    base_sensor_dict["min_detectable_power"] = 1.4314085925969573e-14
+    base_sensor_dict["downtimes"] = [downtime_config]
+
+    sensor_cfg = SensorWrapper(sensor_config=base_sensor_dict)
+
+    assert len(sensor_cfg.sensor_config.downtimes) == 1
+    assert sensor_cfg.sensor_config.downtimes == [downtime]
