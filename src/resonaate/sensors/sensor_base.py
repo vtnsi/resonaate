@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, cos, sin, zeros_like
+from numpy import array, cos, random, sin, zeros_like
 from scipy.linalg import norm
 
 # Local Imports
@@ -101,6 +101,7 @@ class Sensor(ABC):
         self.boresight = self._setInitialBoresight()
         self._host: SensingAgent | None = None
         self._sensor_args = sensor_args
+        self._last_obs: dict[int, ScenarioTime] = {}
 
     @classmethod
     @abstractmethod
@@ -144,6 +145,27 @@ class Sensor(ABC):
 
         return array([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
 
+    def readyToRevisit(self, target_id: int) -> bool:
+        """Checks to see if the sensor is ready to revisit a target.
+
+        Args:
+            target_id (``int``): Unique identifier of the target.
+
+        Returns:
+            ``bool``: True if the sensor is good to revisit the target. False otherwise.
+        """
+        if self.min_revisit_time == 0:
+            return True  # Always return True if the feature is disabled.
+        if target_id not in self._last_obs:  # Have we previously observed the target?
+            return True
+        return float(self.host.time - self._last_obs[target_id]) >= self.min_revisit_time
+
+    def _randomMissedOb(self) -> bool:
+        """Random assessment if we missed an observation."""
+        if self.missed_obs_probability == 0:  # Always return false if the feature is disabled.
+            return False
+        return random.random() < self.missed_obs_probability
+
     def collectObservations(
         self,
         estimate_eci: ndarray,
@@ -172,6 +194,7 @@ class Sensor(ABC):
             self.host.datetime_epoch,
         )
         # Go through potential cases where the sensor would be offline.
+        # TODO: There is alot of repeated stuff here that should go into a utility method.
         if self.isOffline():
             missed_observation_list.append(
                 MissedObservation(
@@ -194,6 +217,17 @@ class Sensor(ABC):
                     reason=Explanation.SLEW_DISTANCE.value,
                 ),
             )
+        elif self._randomMissedOb():
+            missed_observation_list.append(
+                MissedObservation(
+                    julian_date=self.host.julian_date_epoch,
+                    sensor_type=getTypeString(self),
+                    sensor_id=self.host.simulation_id,
+                    target_id=target_agent.simulation_id,
+                    sensor_eci=self.host.eci_state,
+                    reason=Explanation.RANDOM_MISSED_TRACK.value,
+                ),
+            )
         else:  # Nothing was stopping the sensor from going an collecting.
             self.boresight = pointing_sez[:3] / norm(pointing_sez[:3])
             self.time_last_tasked = self.host.time
@@ -205,7 +239,9 @@ class Sensor(ABC):
             else:
                 missed_observation_list.append(observation)
         # If doing Serendipitous Observations
-        if self.calculate_background and not self.isOffline():
+        if (
+            self.calculate_background and not self.isOffline()
+        ):  # TODO: Figure out how to do random missed track in here and if that makes sense.
             visible_observations = [
                 observation
                 for tgt in background_agents
@@ -223,7 +259,7 @@ class Sensor(ABC):
         target_agent: TargetAgent,
         pointing_sez: ndarray,
     ) -> Observation | MissedObservation:
-        """Calculate the measurement data for a single observation.
+        """Calculate the measurement data for a single observation. Should only be called internally!
 
         Args:
             target_agent (:class:`.TargetAgent`): agent that the sensor is attempting to observe
@@ -268,7 +304,7 @@ class Sensor(ABC):
                 sensor_eci=self.host.eci_state,
                 reason=reason.value,
             )
-
+        self._last_obs[target_agent.simulation_id] = self.host.time
         return Observation.fromMeasurement(
             epoch_jd=self.host.julian_date_epoch,
             target_id=target_agent.simulation_id,
