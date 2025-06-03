@@ -40,6 +40,19 @@ PosFloat = Annotated[float, Field(..., gt=0.0)]
 """Type annotation denoting a positive floating point number."""
 
 
+class ScheduledDowntimeConfig(BaseModel):
+    R"""Configuration of a periodic and scheduled downtime for a sensor."""
+
+    period: float = Field(..., ge=0.0)
+    R"""``float``: How frequently the scheduled downtime repeats, in days. Must be >= 0. Set to 0.0 to have the downtime occur once."""
+
+    duration: float = Field(..., ge=0.0)
+    R"""``float``: Duration of the sensor downtime, in days. Must be >= 0."""
+
+    offset: float = Field(..., ge=0.0)
+    R"""``float``: Time offset from scenario onset that the first downtime will occur. Must be >= 0."""
+
+
 class ConicFieldOfViewConfig(BaseModel):
     R"""Configuration for the field of view of a sensor."""
 
@@ -121,6 +134,14 @@ class SensorConfigBase(BaseModel, ABC):
 
     min_revisit_time: Optional[float] = Field(default=0.0, ge=0.0)
     R"""``float,optional``: Minimum required time, in seconds, that must have passed since the last observation before the sensor is allowed to revisit a target. Defaults to 0.0. When set to 0.0, this feature is disabled."""
+
+    downtimes_dict: Optional[list[dict]] = Field(default=[], alias="downtimes")
+    R"""``list[dict], Optional`` List of all downtime configs."""
+
+    @property
+    def downtimes(self) -> list[ScheduledDowntimeConfig]:
+        """``list[ScheduledDowntimeConfig]``: List of downtime config objects."""
+        return [ScheduledDowntimeConfig(**cfg_dict) for cfg_dict in self.downtimes_dict]
 
 
 class OpticalConfig(SensorConfigBase):
