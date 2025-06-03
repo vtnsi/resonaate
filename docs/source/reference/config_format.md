@@ -1182,8 +1182,6 @@ Defines type and parameters of `"field_of_view"` field.
 }
 ```
 
-(ref-cfg-subsec-event-object)=
-
 ##### Scheduled Downtime
 
 Defines type and parameters of `"downtime_config"` field.
@@ -1192,7 +1190,7 @@ Defines type and parameters of `"downtime_config"` field.
 ```
 
 ```{eval-rst}
-.. currentmodule:: resonaate.scenario.sensor_config
+.. currentmodule:: resonaate.scenario.config.sensor_config
 
 .. autoclass:: ScheduledDowntimeConfig
    :members:
