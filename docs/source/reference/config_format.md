@@ -1076,6 +1076,9 @@ All `SensorConfig` types share several common fields.
         "minimum_range": float,                   # Optional
         "maximum_range": float,                   # Optional
         "field_of_view": FieldOfViewConfig,       # Optional
+        "downtimes": [ScheduledDowntimeConfig], #Optional
+        "min_revisit_time", float,                # Optional
+        "missed_obs_probability", float,           # Optional
     },
     ...
 ]
@@ -1176,6 +1179,34 @@ Defines type and parameters of `"field_of_view"` field.
     "cone_angle": float,        # Optional
     "azimuth_angle": float,     # Optional
     "elevation_angle": float,   # Optional
+}
+```
+
+(ref-cfg-subsec-event-object)=
+
+##### Scheduled Downtime
+
+Defines type and parameters of `"downtime_config"` field.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.sensor_config
+
+.. autoclass:: ScheduledDowntimeConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"field_of_view": {
+    "period": float,    # Period in days. Set to 0 to only run downtime once.
+    "duration": float,  # Duration, in days.
+    "offset": float,    # Time from start of scenario that the downtime begins.
 }
 ```
 
