@@ -13,6 +13,7 @@ from resonaate.scenario.config.sensor_config import (
     OpticalConfig,
     RadarConfig,
     RectangularFieldOfViewConfig,
+    ScheduledDowntimeConfig,
     SensorConfig,
 )
 from resonaate.sensors.sensor_base import DEFAULT_VIEWING_ANGLE
@@ -181,6 +182,16 @@ class SensorWrapper(BaseModel):
     """Wrapped sensor configuration."""
 
 
+@pytest.fixture(name="downtime_config")
+def getDowntimeDict() -> dict:
+    """Generates a fixture config for sensor downtime."""
+    return {
+        "period": 86400,
+        "duration": 7200,
+        "offset": 14000,
+    }
+
+
 @pytest.fixture(name="base_sensor_dict")
 def getSensorDict() -> dict:
     """Create dict of common required sensor config fields."""
@@ -260,3 +271,22 @@ def testMinRevisitField(base_sensor_revisit_dict: dict) -> None:
     base_sensor_revisit_dict["min_revisit_time"] = -3600.0  # Test invalid
     with pytest.raises(ValidationError):
         _ = SensorWrapper(sensor_config=base_sensor_revisit_dict)
+
+
+def testConstructSensorDowntime(downtime_config: dict) -> None:
+    """Tests construction of a downtime config object."""
+    cfg = ScheduledDowntimeConfig(**downtime_config)
+    assert isinstance(cfg, ScheduledDowntimeConfig)
+
+    # Test invalid fields
+    downtime_config["period"] = -5000
+    with pytest.raises(ValidationError):
+        _ = ScheduledDowntimeConfig(**downtime_config)
+    downtime_config["period"] = 7200
+    downtime_config["duration"] = -5000
+    with pytest.raises(ValidationError):
+        _ = ScheduledDowntimeConfig(**downtime_config)
+    downtime_config["duration"] = 5000
+    downtime_config["offset"] = -5000
+    with pytest.raises(ValidationError):
+        _ = ScheduledDowntimeConfig(**downtime_config)
