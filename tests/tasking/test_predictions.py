@@ -59,6 +59,36 @@ def testPredictObservation(mocked_sensing_agent: SensingAgent, mocked_estimate: 
     mocked_sensing_agent.sensors.isOffline.reset_mock()
     mocked_sensing_agent.sensors.readyToRevisit.reset_mock()
 
+    # Test when target is visible, but the sensor is offline
+    mocked_sensing_agent.sensors.isOffline = Mock(return_value=True)
+    mocked_sensing_agent.sensors.readyToRevisit = Mock(return_value=True)
+    mocked_sensing_agent.sensors.isVisible = Mock(return_value=(True, None))
+    mocked_sensing_agent.sensors.canSlew = Mock(return_value=True)
+
+    predicted_observation = predictObservation(mocked_sensing_agent, mocked_estimate)
+    assert predicted_observation is None
+
+    # Reset mock
+    mocked_sensing_agent.sensors.canSlew.reset_mock()
+    mocked_sensing_agent.sensors.isVisible.reset_mock()
+    mocked_sensing_agent.sensors.isOffline.reset_mock()
+    mocked_sensing_agent.sensors.readyToRevisit.reset_mock()
+
+    # Test when the target is visible, but the minimum revisit time conditions aren't met.
+    mocked_sensing_agent.sensors.isOffline = Mock(return_value=False)
+    mocked_sensing_agent.sensors.readyToRevisit = Mock(return_value=False)
+    mocked_sensing_agent.sensors.isVisible = Mock(return_value=(True, None))
+    mocked_sensing_agent.sensors.canSlew = Mock(return_value=True)
+
+    predicted_observation = predictObservation(mocked_sensing_agent, mocked_estimate)
+    assert predicted_observation is None
+
+    # Reset mock
+    mocked_sensing_agent.sensors.canSlew.reset_mock()
+    mocked_sensing_agent.sensors.isVisible.reset_mock()
+    mocked_sensing_agent.sensors.isOffline.reset_mock()
+    mocked_sensing_agent.sensors.readyToRevisit.reset_mock()
+
     # Test when target is visible
     mocked_sensing_agent.sensors.isOffline = Mock(return_value=False)
     mocked_sensing_agent.sensors.readyToRevisit = Mock(return_value=True)
