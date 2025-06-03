@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC
-from typing import TYPE_CHECKING, Annotated, Literal, Union
+from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
 
 # Third Party Imports
 from numpy import inf
@@ -118,6 +118,9 @@ class SensorConfigBase(BaseModel, ABC):
 
     field_of_view: FieldOfViewConfig = Field(default_factory=RectangularFieldOfViewConfig)
     R""":class:`.FieldOfViewConfig`, optional: FOV type size to use in calculating visibility. Defaults to a rectangular FOV with default angles."""
+
+    min_revisit_time: Optional[float] = Field(default=0.0, ge=0.0)
+    R"""``float,optional``: Minimum required time, in seconds, that must have passed since the last observation before the sensor is allowed to revisit a target. Defaults to 0.0. When set to 0.0, this feature is disabled."""
 
 
 class OpticalConfig(SensorConfigBase):
