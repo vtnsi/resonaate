@@ -11,6 +11,7 @@ import ray
 from numpy import zeros
 
 # Local Imports
+from ..physics.constants import DAYS2SEC
 from ..tasking.predictions import predictObservation
 from . import JobExecutor, Registration
 
@@ -89,6 +90,22 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
     for sensor_index, sensor_agent in enumerate(sensor_list):
         # Attempt predicted observations, in order to perform sensor tasking
         # Only calculate metrics if the estimate is observable
+
+        # Check sensor network min revisit time, if enabled
+        if (
+            submission.min_revisit_time > 0
+            and estimate.simulation_id in submission.last_obs_record
+        ):
+            time_since_last_ob = (
+                float(
+                    estimate.julian_date_epoch
+                    - submission.last_obs_record[estimate.simulation_id],
+                )
+                * DAYS2SEC
+            )
+            if time_since_last_ob < submission.min_revisit_time:
+                # Don't bother predicting an observation if we can already establish that the network isn't allowed to observe it.
+                continue
         if predicted_observation := predictObservation(sensor_agent, estimate):
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
