@@ -174,3 +174,13 @@ def testMissingTargets(engine_cfg_dict: dict):
     engine_cfg_dict["targets"] = []
     with pytest.raises(ValidationError):
         EngineConfig(**engine_cfg_dict)
+
+
+def testMinRevisitField(engine_cfg_dict: dict) -> None:
+    """Test that the EngineConfig can parse a min_revisit_time."""
+    engine_cfg_dict["min_revisit_time"] = 4000
+    cfg = EngineConfig(**engine_cfg_dict)
+    assert cfg.min_revisit_time == 4000
+    engine_cfg_dict["min_revisit_time"] = -4000
+    with pytest.raises(ValidationError):
+        _ = EngineConfig(**engine_cfg_dict)
