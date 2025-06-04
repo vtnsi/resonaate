@@ -140,6 +140,7 @@ Each of those files would then have the following format:
     "decision": DecisionConfig,     # Req: algorithm used to optimize the reward matrix
     "target_file": str,             # Req: relative path to JSON file defining target agents
     "sensor_file": str,             # Req: relative path to JSON file defining sensor agents
+    "min_revisit_time": float,      # Optional: Required time since last obs of a target before any sensor is allowed to revisit, in seconds. Defaults to 0.
 }
 ```
 
