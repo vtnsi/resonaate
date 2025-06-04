@@ -17,7 +17,7 @@ from ...data.observation import Observation
 from ...data.task import Task
 from ...parallel.tasking_execution import TaskExecutionExecutor, TaskExecutionRegistration
 from ...parallel.tasking_reward_generation import TaskingRewardExecutor, TaskingRewardRegistration
-from ...physics.time.stardate import datetimeToJulianDate
+from ...physics.time.stardate import JulianDate, datetimeToJulianDate
 from .engine_base import TaskingEngine
 
 # Type Checking Imports
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
-    from ...physics.time.stardate import JulianDate
     from ..decisions import Decision
     from ..rewards import Reward
 
@@ -151,6 +150,9 @@ class CentralizedTaskingEngine(TaskingEngine):
         for cur_obs in self._observations:
             tasked_sensors.add(cur_obs.sensor_id)
             observed_targets.add(cur_obs.target_id)
+            self.last_revisits[cur_obs.target_id] = JulianDate(
+                cur_obs.julian_date,
+            )  # Update last observed time.
 
         # Log tasked sensors
         if tasked_sensors:

@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..agents.estimate_agent import EstimateAgent
     from ..agents.sensing_agent import SensingAgent
+    from ..physics.time.stardate import JulianDate
     from ..tasking.engine.engine_base import TaskingEngine
     from ..tasking.rewards import Reward
 
@@ -37,6 +38,12 @@ class RewardCalcSubmission:
 
     sensor_handle_list: list[SensingAgent]
     """List of remote handles of the :class:`.SensingAgent`'s task-able by the calling engine."""
+
+    last_obs_record: dict[int, JulianDate]
+    """``dict[int, JulianDate]``: Record of the last time a spacecraft was observed by the tasking engine. Maps target ID to last collected observation."""
+
+    min_revisit_time: float = 0
+    """``float``: Minimum revisit time of the registrant / parent tasking engine."""
 
 
 @dataclass
@@ -130,6 +137,8 @@ class TaskingRewardRegistration(Registration):
             self._estimate_handle,
             self._reward,
             self._sensor_handle_list,
+            self._registrant.last_revisits,
+            self._registrant.min_revisit_time,
         )
 
     def processResults(self, results: RewardCalcResult):

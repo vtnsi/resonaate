@@ -86,6 +86,7 @@ class TaskingEngine(metaclass=ABCMeta):
         """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
 
         self.min_revisit_time = min_revisit_time
+        self.last_revisits: dict[int, JulianDate] = {}
 
         # Sort sensors & targets - also creates index mappings
         self._sortSensors()
