@@ -41,6 +41,7 @@ class TaskingEngine(metaclass=ABCMeta):
         reward: Reward,
         decision: Decision,
         importer_db_path: str | None = None,
+        min_revisit_time: float = 0.0,
     ):
         """Initialize a tasking engine object.
 
@@ -52,6 +53,7 @@ class TaskingEngine(metaclass=ABCMeta):
             decision (:class:`.Decision`): callable decision object for optimizing tasking
             importer_db_path (``str``, optional): path to external importer database for pre-canned
                 data. Defaults to ``None``.
+            min_revisit_time (``int``, optional): Minimum required elapsed time since last observation of a target before the network is allowed to revisit the target, in seconds. Defaults to 0.
 
         Raises:
             TypeError: raised if invalid reward parameter passed
@@ -82,6 +84,8 @@ class TaskingEngine(metaclass=ABCMeta):
         """:class:`.Reward`: callable that determines tasking priority based on various metric."""
         self._decision = decision
         """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
+
+        self.min_revisit_time = min_revisit_time
 
         # Sort sensors & targets - also creates index mappings
         self._sortSensors()

@@ -48,6 +48,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         decision: Decision,
         importer_db_path: str | None,
         realtime_obs: bool,
+        min_revisit_time: float = 0.0,
     ) -> None:
         """Initialize a centralized tasking engine.
 
@@ -59,6 +60,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             decision (:class:`.Decision`): callable decision object for optimizing tasking
             importer_db_path (``str`` | ``None``): path to external importer database for pre-canned data.
             realtime_obs (``bool``): whether to execute realtime observations
+            min_revisit_time (``int``, optional): Minimum required elapsed time since last observation of a target before the network is allowed to revisit the target, in seconds. Defaults to 0.
         """
         super().__init__(
             engine_id,
@@ -67,6 +69,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             reward,
             decision,
             importer_db_path=importer_db_path,
+            min_revisit_time=min_revisit_time,
         )
 
         self._realtime_obs = realtime_obs
@@ -220,7 +223,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         observation.measurement = sensor_agent.measurement
         return observation
 
-    def getCurrentTasking(self, julian_date: JulianDate) -> Task:
+    def getCurrentTasking(self, julian_date: JulianDate) -> Task:  # type: ignore
         """Return current tasking solution.
 
         Args:

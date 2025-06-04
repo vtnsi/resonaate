@@ -112,6 +112,7 @@ class ScenarioBuilder:
                 decision,
                 importer_db_path,
                 self.config.observation.realtime_observation,
+                min_revisit_time=engine_conf.min_revisit_time,
             )
 
             tasking_engines[tasking_engine.unique_id] = tasking_engine
