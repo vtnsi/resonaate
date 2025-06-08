@@ -5,9 +5,11 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from os import environ
 from pathlib import Path
-from typing import Annotated, Optional
+from types import NoneType
+from typing import Annotated, NewType, Optional
 
 # Third Party Imports
+from dotenv import dotenv_values
 from pydantic import BaseModel, Field
 
 # Local Imports
@@ -15,6 +17,15 @@ from ..data import createAlchemyUrl
 
 # ruff: noqa: TCH001, TCH003, UP007
 
+
+_NotSet = NewType("_NotSet", NoneType)
+"""Special type to specify a field was not set in a provided configuration.
+
+Useful if a field can specifically be set to `None` by a user.
+"""
+
+NotSet = _NotSet(None)
+"""Singleton access to :class:`._NotSet` instance."""
 
 class EnvName:
     """Metadata annotation indicating how a field is expected to appear as an environment variable."""
@@ -29,6 +40,7 @@ class EnvName:
 
     @property
     def name(self) -> str:
+        """Name of the environment variable that can be used to configure a field."""
         return self._env_name
 
 
@@ -87,7 +99,10 @@ class BehavioralConfig(BaseModel):
 
 def getCommandLineParser():
     """Build command line argument parser based on :class:`.BehaviroalConfig`."""
-    parser = ArgumentParser(description="RESONAATE Command Line Interface")
+    parser = ArgumentParser(
+        description="RESONAATE Command Line Interface",
+        argument_default=NotSet,
+    )
     for field_name, field_info in BehavioralConfig.model_fields.items():
         if field_info.is_required():
             parser.add_argument(field_name, help=field_info.description)
@@ -107,13 +122,29 @@ def getCommandLineParser():
     return parser
 
 
-def buildConfig(cli_args: list[str]) -> BehavioralConfig:
+def buildConfig(cli_args: list[str], dotenv_path: Path = Path("resonaate.env")) -> BehavioralConfig:
     """Build a complete configuration."""
     config_dict = {}
-    # TODO: pull config options from environ
-    # TODO: pull config options from 'resonaate.env' file
+    resonaate_dotenv = dotenv_values(dotenv_path)
+    for field_name, field_info in BehavioralConfig.model_fields.items():
+        env_name: str = ""
+        for meta in field_info.metadata:
+            if isinstance(meta, EnvName):
+                env_name = meta.name
+                break
+        val = NotSet
+        if env_name:
+            if env_name in environ:
+                val = environ[env_name]
+            if env_name in resonaate_dotenv:
+                val = resonaate_dotenv[env_name]
+        if val is not NotSet:
+            config_dict[field_name] = val
+
     arg_parser = getCommandLineParser()
     parsed_args = arg_parser.parse_args(cli_args)
-    config_dict.update(vars(parsed_args))
+    for field_name, arg in vars(parsed_args).items():
+        if arg is not NotSet:
+            config_dict[field_name] = arg  # noqa: PERF403
 
     return BehavioralConfig(**config_dict)
