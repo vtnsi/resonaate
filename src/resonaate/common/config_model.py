@@ -174,6 +174,71 @@ class BehavioralConfig(BaseModel):
         EnvName("LOGGING_MAX_FILE_COUNT"),
     ]
 
+    parallel_worker_count: Annotated[
+        Optional[int],
+        Field(
+            description="""
+            How many worker threads to spin up.
+
+            Defaults to `None`, which will spin up as many workers as there are cores available to
+            Resonaate`.
+            """,
+        ),
+    ]
+
+    debugging_output_directory: Annotated[
+        Optional[str],
+        Field(
+            description="Relative directory that debugging output files are saved to.",
+            default="debugging",
+        ),
+        EnvName("DEBUGGING_OUTPUT_DIRECTORY"),
+        CommandLineOptions("--debugging-output-dir"),
+    ]
+
+    debugging_nearest_pd: Annotated[
+        Optional[bool],
+        Field(
+            description="""
+            When using an sequential filter that relies on Cholesky decomposition, if the
+            covariance becomes non positive definite, use `physics.math.nearestPD()` to find the
+            nearest positive definite matrix.
+
+            Cholesy decomposition can raise an uncaught exception if this value is left false,
+            resulting in a simulation hault.
+            """,
+            default=False,
+        ),
+        EnvName("DEBUGGING_NEAREST_PD"),
+        CommandLineOptions("--debugging-nearest-pd"),
+    ]
+
+    debugging_estimate_error_inflation: Annotated[
+        Optional[bool],
+        Field(
+            description="""
+            Output Filter information when an 'update' step takes place that results in greater
+            absolute error of the state estimate.
+            """,
+            default=False,
+        ),
+        EnvName("DEBUGGING_ESTIMATE_ERROR_INFLATION"),
+        CommandLineOptions("--debugging-est-err-inflation"),
+    ]
+
+    debugging_three_sigma_obs: Annotated[
+        Optional[bool],
+        Field(
+            description="""
+            Output observation information when an observation's absolute error is greater than the
+            sensor's three-sigma variance.
+            """,
+            default=False,
+        ),
+        EnvName("DEBUGGING_THREE_SIGMA_OBS"),
+        CommandLineOptions("--debugging-three-sigma-obs"),
+    ]
+
 
 def getCommandLineParser():
     """Build command line argument parser based on :class:`.BehaviroalConfig`."""
