@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 # Standard Library Imports
+import logging
 from argparse import ArgumentParser
+from enum import Enum
 from os import environ
 from pathlib import Path
 from types import NoneType
@@ -66,6 +68,35 @@ class CommandLineOptions:
         return self._options
 
 
+class LoggingLevel(str, Enum):
+    """String enumeration of each valid logging level defined by the ``logging`` module."""
+
+    DEBUG: str = "DEBUG"
+    """Detailed information, typically only of interest to a developer trying to diagnose a problem."""
+
+    INFO: str = "INFO"
+    """Confirmation that things are working as expected."""
+
+    WARNING: str = "WARNING"
+    """An indication that something unexpected happened, but the software is still working as expected."""
+
+    ERROR: str = "ERROR"
+    """Due to a more serious problem, the software has not been able to perform some function."""
+
+    CRITICAL: str = "CRITICAL"
+    """A serious error, indicating that the program itself may be unable to continue running."""
+
+    def level(self, _mapping={  # noqa: B006
+        DEBUG: logging.DEBUG,
+        INFO: logging.INFO,
+        WARNING: logging.WARNING,
+        ERROR: logging.ERROR,
+        CRITICAL: logging.CRITICAL,
+    }):
+        """Helper method to map string enumerations to logging level definitons in ``logging`` modeul."""
+        return _mapping[self]
+
+
 class BehavioralConfig(BaseModel):
     """Set of configuration options that specify the behavior of RESONAATE."""
 
@@ -94,6 +125,53 @@ class BehavioralConfig(BaseModel):
         ),
         EnvName("IMPORTER_DB_PATH"),
         CommandLineOptions("-i", "--importer-db-path"),
+    ]
+
+    logging_output_location: Annotated[
+        Optional[str],
+        Field(
+            description="Specifies where the logging module outputs logs.",
+            default="stdout",
+        ),
+        EnvName("LOGGING_OUTPUT_LOCATION"),
+        CommandLineOptions("--logging-output-location"),
+    ]
+
+    logging_level: Annotated[
+        Optional[LoggingLevel],
+        Field(
+            description="Logging level that gets output to the logs.",
+            default=LoggingLevel.DEBUG,
+        ),
+        EnvName("LOGGING_LEVEL"),
+        CommandLineOptions("--logging-level"),
+    ]
+
+    logging_max_file_size: Annotated[
+        Optional[int],
+        Field(
+            description="""
+            Maximum file size before the file rolls over.
+
+            Only applies when not using 'stdout' for "OutputLocation". Unit is bytes.
+            """,
+            default=1048576,
+        ),
+        EnvName("LOGGING_MAX_FILE_SIZE"),
+    ]
+
+    logging_max_file_count: Annotated[
+        Optional[int],
+        Field(
+            description="""
+            Maximum number of files that stay saved during runtime.
+
+            Once this limit is reached, the oldest files will be overwritten in the order that they
+            were written. Only applies when not using 'stdout' for "OutputLocation".
+            """,
+            default=50,
+        ),
+        EnvName("LOGGING_MAX_FILE_COUNT"),
     ]
 
 
