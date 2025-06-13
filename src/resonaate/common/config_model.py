@@ -3,10 +3,11 @@ from __future__ import annotations
 
 # Standard Library Imports
 import logging
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 from enum import Enum
 from os import environ
 from pathlib import Path
+from textwrap import dedent
 from types import NoneType
 from typing import Annotated, NewType, Optional
 
@@ -150,40 +151,42 @@ class BehavioralConfig(BaseModel):
     logging_max_file_size: Annotated[
         Optional[int],
         Field(
-            description="""
+            description=dedent("""\
             Maximum file size before the file rolls over.
 
-            Only applies when not using 'stdout' for "OutputLocation". Unit is bytes.
-            """,
+            Only applies when *not* using 'stdout' for "logging_output_location". Unit is bytes."""),
             default=1048576,
         ),
         EnvName("LOGGING_MAX_FILE_SIZE"),
+        CommandLineOptions("--logging-max-file-size"),
     ]
 
     logging_max_file_count: Annotated[
         Optional[int],
         Field(
-            description="""
+            description=dedent("""\
             Maximum number of files that stay saved during runtime.
 
             Once this limit is reached, the oldest files will be overwritten in the order that they
-            were written. Only applies when not using 'stdout' for "OutputLocation".
-            """,
+            were written. Only applies when *not* using 'stdout' for "logging_output_location"."""),
             default=50,
         ),
         EnvName("LOGGING_MAX_FILE_COUNT"),
+        CommandLineOptions("--logging-max-file-count"),
     ]
 
     parallel_worker_count: Annotated[
         Optional[int],
         Field(
-            description="""
+            description=dedent("""\
             How many worker threads to spin up.
 
-            Defaults to `None`, which will spin up as many workers as there are cores available to
-            Resonaate`.
-            """,
+            If left unspecified, ray will spin up as many workers as there are cores available to
+            Resonaate."""),
+            default=None,
         ),
+        EnvName("PARALLEL_WORKER_COUNT"),
+        CommandLineOptions("--parallel-worker-count"),
     ]
 
     debugging_output_directory: Annotated[
@@ -199,14 +202,13 @@ class BehavioralConfig(BaseModel):
     debugging_nearest_pd: Annotated[
         Optional[bool],
         Field(
-            description="""
+            description=dedent("""\
             When using an sequential filter that relies on Cholesky decomposition, if the
             covariance becomes non positive definite, use `physics.math.nearestPD()` to find the
             nearest positive definite matrix.
 
             Cholesy decomposition can raise an uncaught exception if this value is left false,
-            resulting in a simulation hault.
-            """,
+            resulting in a simulation hault."""),
             default=False,
         ),
         EnvName("DEBUGGING_NEAREST_PD"),
@@ -216,10 +218,9 @@ class BehavioralConfig(BaseModel):
     debugging_estimate_error_inflation: Annotated[
         Optional[bool],
         Field(
-            description="""
+            description=dedent("""\
             Output Filter information when an 'update' step takes place that results in greater
-            absolute error of the state estimate.
-            """,
+            absolute error of the state estimate."""),
             default=False,
         ),
         EnvName("DEBUGGING_ESTIMATE_ERROR_INFLATION"),
@@ -229,40 +230,47 @@ class BehavioralConfig(BaseModel):
     debugging_three_sigma_obs: Annotated[
         Optional[bool],
         Field(
-            description="""
+            description=dedent("""\
             Output observation information when an observation's absolute error is greater than the
-            sensor's three-sigma variance.
-            """,
+            sensor's three-sigma variance."""),
             default=False,
         ),
         EnvName("DEBUGGING_THREE_SIGMA_OBS"),
         CommandLineOptions("--debugging-three-sigma-obs"),
     ]
 
+    @classmethod
+    def getCommandLineParser(cls) -> ArgumentParser:
+        """Build command line argument parser based on :class:`.BehaviroalConfig`."""
+        parser = ArgumentParser(
+            description="RESONAATE Command Line Interface",
+            argument_default=NotSet,
+            formatter_class=RawTextHelpFormatter,
+        )
+        for field_name, field_info in cls.model_fields.items():
+            if field_info.is_required():
+                parser.add_argument(field_name, help=field_info.description)
+            else:
+                flags = []
+                env_name = ""
+                for meta in field_info.metadata:
+                    if isinstance(meta, CommandLineOptions):
+                        flags = meta.options
 
-def getCommandLineParser():
-    """Build command line argument parser based on :class:`.BehaviroalConfig`."""
-    parser = ArgumentParser(
-        description="RESONAATE Command Line Interface",
-        argument_default=NotSet,
-    )
-    for field_name, field_info in BehavioralConfig.model_fields.items():
-        if field_info.is_required():
-            parser.add_argument(field_name, help=field_info.description)
-        else:
-            flags = []
-            for meta in field_info.metadata:
-                if isinstance(meta, CommandLineOptions):
-                    flags = meta.options
+                    if isinstance(meta, EnvName):
+                        env_name = f"\n\nThis option can also be set via environment variable: {meta.name}."
 
-            if flags:
-                parser.add_argument(
-                    *flags,
-                    required=field_info.is_required(),
-                    help=field_info.description,
-                    dest=field_name,
-                )
-    return parser
+                if flags:
+                    default_str = f" Defaults to {field_info.get_default(call_default_factory=False)}."
+                    if field_info.default_factory:
+                        default_str = f" Defaults to value generated by '{field_info.default_factory.__name__}'."
+                    parser.add_argument(
+                        *flags,
+                        required=field_info.is_required(),
+                        help=field_info.description + default_str + env_name,
+                        dest=field_name,
+                    )
+        return parser
 
 
 def buildConfig(cli_args: list[str], dotenv_path: Path = Path("resonaate.env")) -> BehavioralConfig:
@@ -284,7 +292,7 @@ def buildConfig(cli_args: list[str], dotenv_path: Path = Path("resonaate.env")) 
         if val is not NotSet:
             config_dict[field_name] = val
 
-    arg_parser = getCommandLineParser()
+    arg_parser = BehavioralConfig.getCommandLineParser()
     parsed_args = arg_parser.parse_args(cli_args)
     for field_name, arg in vars(parsed_args).items():
         if arg is not NotSet:
