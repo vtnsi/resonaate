@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+import json
 import logging
 from argparse import ArgumentParser, RawTextHelpFormatter
 from enum import Enum
@@ -9,7 +10,7 @@ from os import environ
 from pathlib import Path
 from textwrap import dedent
 from types import NoneType
-from typing import Annotated, NewType, Optional, get_args
+from typing import Annotated, ClassVar, NewType, Optional, get_args
 
 # Third Party Imports
 from dotenv import dotenv_values
@@ -303,30 +304,52 @@ class BehavioralConfig(BaseModel):
                     )
         return parser
 
+    __instance: ClassVar[BehavioralConfig] = None
+    """Singleton."""
 
-def buildConfig(cli_args: list[str], dotenv_path: Path = Path("resonaate.env")) -> BehavioralConfig:
-    """Build a complete configuration."""
-    config_dict = {}
-    resonaate_dotenv = dotenv_values(dotenv_path)
-    for field_name, field_info in BehavioralConfig.model_fields.items():
-        env_name: str = ""
-        for meta in field_info.metadata:
-            if isinstance(meta, EnvName):
-                env_name = meta.name
-                break
-        val = NotSet
-        if env_name:
-            if env_name in environ:
-                val = environ[env_name]
-            if env_name in resonaate_dotenv:
-                val = resonaate_dotenv[env_name]
-        if val is not NotSet:
-            config_dict[field_name] = val
+    @classmethod
+    def getConfig(
+        cls,
+        cli_args: Optional[list[str]] = None,
+        dotenv_path: Path = Path("resonaate.env"),
+    ) -> BehavioralConfig:
+        """Return a reference to the singleton shared config.
 
-    arg_parser = BehavioralConfig.getCommandLineParser()
-    parsed_args = arg_parser.parse_args(cli_args)
-    for field_name, arg in vars(parsed_args).items():
-        if arg is not NotSet:
-            config_dict[field_name] = arg  # noqa: PERF403
+        Args:
+            cli_args: Command line arguments that can be parsed into a :class:`.BehavioralConfig`.
+            dotenv_path: Path to dotenv file specifying RESONAATE configuration options.
 
-    return BehavioralConfig(**config_dict)
+        Note:
+            Arguments will be ignored once singleton instance is established.
+
+        Returns:
+            Behavioral configuration parsed from specified locations.
+        """
+        if cls.__instance is None:
+            if cli_args is None:
+                cli_args = json.loads(environ.get("RESONAATE_ARGS"))
+            config_dict = {}
+            resonaate_dotenv = dotenv_values(dotenv_path)
+            for field_name, field_info in cls.model_fields.items():
+                env_name: str = ""
+                for meta in field_info.metadata:
+                    if isinstance(meta, EnvName):
+                        env_name = meta.name
+                        break
+                val = NotSet
+                if env_name:
+                    if env_name in environ:
+                        val = environ[env_name]
+                    if env_name in resonaate_dotenv:
+                        val = resonaate_dotenv[env_name]
+                if val is not NotSet:
+                    config_dict[field_name] = val
+
+            arg_parser = cls.getCommandLineParser()
+            parsed_args = arg_parser.parse_args(cli_args)
+            for field_name, arg in vars(parsed_args).items():
+                if arg is not NotSet:
+                    config_dict[field_name] = arg  # noqa: PERF403
+
+            cls.__instance = cls(**config_dict)
+        return cls.__instance
