@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 # Local Imports
 from ....common.behavioral_config import BehavioralConfig
+from ....common.labels import EOPLoaderLabel
 from .loaders import LocalDotDatEOPLoader, ModuleDotDatEOPLoader, RemoteDotDatEOPLoader
 
 if TYPE_CHECKING:
@@ -23,9 +24,9 @@ LoaderTag = namedtuple("LoaderTag", ("loader_name", "loader_location"))
 """NamedTuple: Tag used to identify different :class:`.EOPLoader`'s."""
 
 _LOADER_MAP: dict[str, EOPLoader] = {
-    "ModuleDotDatEOPLoader": ModuleDotDatEOPLoader,
-    "LocalDotDatEOPLoader": LocalDotDatEOPLoader,
-    "RemoteDotDatEOPLoader": RemoteDotDatEOPLoader,
+    EOPLoaderLabel.MODULE_DOT_DAT: ModuleDotDatEOPLoader,
+    EOPLoaderLabel.LOCAL_DOT_DAT: LocalDotDatEOPLoader,
+    EOPLoaderLabel.REMOTE_DOT_DAT: RemoteDotDatEOPLoader,
 }
 """dict[str, EOPLoader]: Maps loader class names to loader class references."""
 

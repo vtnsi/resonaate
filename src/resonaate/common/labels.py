@@ -98,6 +98,17 @@ class DynamicsLabel(str, Enum):
     SPECIAL_PERTURBATIONS: str = "special_perturbations"
     """str: special perturbations satellite propagation model."""
 
+class EOPLoaderLabel(str, Enum):
+    """Enumeration of Earth Orientation Parameter loader components."""
+
+    MODULE_DOT_DAT: str = "ModuleDotDatEOPLoader"
+    """Name of loader component that loads EOP data from a nested .dat file."""
+
+    LOCAL_DOT_DAT: str = "LocalDotDatEOPLoader"
+    """Name of loader component that loads EOP data from a local .dat file."""
+
+    REMOTE_DOT_DAT: str = "RemoteDotDatEOPLoader"
+    """Name of loader component that loads EOP data from a remotely hosted .dat file."""
 
 class GeopotentialModel(str, Enum):
     """Enumeration of geopotential models mapped to their corresponding filename."""
