@@ -233,7 +233,7 @@ class Sensor(ABC):
             self.time_last_tasked = self.host.time
 
             # Attempt to observe primary RSO
-            observation = self._attemptObservation(target_agent, pointing_sez)
+            observation = self.attemptObservation(target_agent, pointing_sez)
             if observation.reason == Explanation.VISIBLE:
                 obs_list.append(observation)
             else:
@@ -246,7 +246,7 @@ class Sensor(ABC):
                 observation
                 for tgt in background_agents
                 if isinstance(
-                    observation := self._attemptObservation(tgt, pointing_sez),
+                    observation := self.attemptObservation(tgt, pointing_sez),
                     Observation,
                 )
             ]
@@ -254,7 +254,7 @@ class Sensor(ABC):
 
         return obs_list, missed_observation_list, self.boresight, self.time_last_tasked
 
-    def _attemptObservation(
+    def attemptObservation(
         self,
         target_agent: TargetAgent,
         pointing_sez: ndarray,
