@@ -167,11 +167,16 @@ def testAssessWithObservations(
     """
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     next_datetime_epoch = datetime(2019, 1, 23, 17, 43, 23, 200000)
+    next_jd = datetimeToJulianDate(next_datetime_epoch)
     # Create obs tuples to store
     obs_1 = create_autospec(Observation, instance=True)
     obs_1.sensor_id = 100000
+    obs_1.target_id = TARGET_NUMS[0]
     obs_2 = create_autospec(Observation, instance=True)
     obs_2.sensor_id = 100001
+    obs_2.target_id = TARGET_NUMS[1]
+    obs_1.julian_date = float(next_jd)
+    obs_2.julian_date = float(next_jd)
     # centralized_tasking_engine._observations = [obs_1, obs_2]
 
     # [FIXME]: This is a hack to get the engine to store the observations
@@ -198,6 +203,17 @@ def testAssessWithObservations(
         obs_1.sensor_id: getMockedSensingAgentObject(obs_1.sensor_id),
         obs_2.sensor_id: getMockedSensingAgentObject(obs_2.sensor_id),
     }
+    centralized_tasking_engine.addSensor(
+        obs_1.sensor_id,
+    )  # NOTE: Call is required to instantiate stuff in the
+    centralized_tasking_engine.addSensor(obs_2.sensor_id)  # Last observation records.
+
+    # Ensure no prior observation record
+    assert obs_1.target_id not in centralized_tasking_engine.network_last_revisits
+    assert obs_2.target_id not in centralized_tasking_engine.network_last_revisits
+    assert len(centralized_tasking_engine.sensor_last_revisits[obs_1.sensor_id].keys()) == 0
+    assert len(centralized_tasking_engine.sensor_last_revisits[obs_2.sensor_id].keys()) == 0
+
     centralized_tasking_engine.assess(datetime_epoch, next_datetime_epoch)
     # Assert handlers are called
     assert centralized_tasking_engine._reward_executor.enqueueJob.call_count == len(
@@ -207,6 +223,12 @@ def testAssessWithObservations(
     event_handler_mock.assert_called_once()
     # Assert targets & observations are updated
     assert len(centralized_tasking_engine._observations) == 2
+
+    # Ensure that the observation was recorded.
+    assert centralized_tasking_engine.network_last_revisits[obs_1.target_id] == next_jd
+    assert centralized_tasking_engine.network_last_revisits[obs_2.target_id] == next_jd
+    assert len(centralized_tasking_engine.sensor_last_revisits[obs_1.sensor_id].keys()) == 1
+    assert len(centralized_tasking_engine.sensor_last_revisits[obs_2.sensor_id].keys()) == 1
 
 
 @patch.object(CentralizedTaskingEngine, "loadImportedObservations")
