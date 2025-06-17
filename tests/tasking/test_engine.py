@@ -587,21 +587,25 @@ def testAddingRemovingSensors(reward: Reward, decision: Decision):
     engine.addSensor(100)
     assert engine.num_sensors == 1
     assert engine.sensor_indices == {100: 0}
+    assert engine.sensor_last_revisits[100] == {}
 
     engine.addSensor(101)
     assert engine.num_sensors == 2
     assert engine.sensor_list == [100, 101]
     assert engine.sensor_indices == {100: 0, 101: 1}
+    assert engine.sensor_last_revisits[101] == {}
 
     engine.removeSensor(100)
     assert engine.num_sensors == 1
     assert engine.sensor_list == [101]
     assert engine.sensor_indices == {101: 0}
+    assert 100 not in engine.sensor_last_revisits
 
     engine.removeSensor(101)
     assert engine.num_sensors == 0
     assert not engine.sensor_list
     assert not engine.sensor_indices
+    assert 101 not in engine.sensor_last_revisits
 
     # Test sorting of sensors on add/remove
     engine.addSensor(102)
