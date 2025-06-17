@@ -39,10 +39,6 @@ def predictObservation(
     if sensing_agent.sensors.isOffline():
         return None
 
-    # Check if past the minimum revisit time
-    if not sensing_agent.sensors.readyToRevisit(estimate_agent.simulation_id):
-        return None
-
     # Check if the estimated target is reachable
     if not sensing_agent.sensors.canSlew(slant_range_sez):
         return None
