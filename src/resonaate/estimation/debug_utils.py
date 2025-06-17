@@ -114,7 +114,7 @@ def checkThreeSigmaObservation(
     dist = mahalanobis(
         true_measurements,
         observation.measurement_states,
-        inv(sensor_agent.sensors.r_matrix),
+        inv(sensor_agent.sensor.r_matrix),
     )
 
     meas_diff = norm(true_measurements - np.asarray(observation.measurement_states))
@@ -125,7 +125,7 @@ def checkThreeSigmaObservation(
     sez_from_azel_diff = np.absolute(norm(ephem_sez[0:3] - obs_sez_from_azel))
 
     # Calculate three sigma noise limit based on sensor's R matrix.
-    noise_limit = norm(sigma * sensor_agent.sensors._sqrt_noise_covar)  # noqa: SLF001
+    noise_limit = norm(sigma * sensor_agent.sensor._sqrt_noise_covar)  # noqa: SLF001
 
     output_path = None
     if sez_diff > 1e-8 or dist > sigma or meas_diff > noise_limit:

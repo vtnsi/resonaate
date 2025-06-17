@@ -99,7 +99,7 @@ def getMockedSensorObject() -> Sensor:
 def getMockedSensingAgentObject(mocked_sensor: Sensor) -> SensingAgent:
     """Create a mocked :class:`.SensingAgent` object."""
     sensing_agent = create_autospec(spec=SensingAgent, instance=True)
-    sensing_agent.sensors = mocked_sensor
+    sensing_agent.sensor = mocked_sensor
     sensing_agent.eci_state = np.ones(6)
     sensing_agent.datetime_epoch = datetime(2018, 12, 1, 12)
     return sensing_agent

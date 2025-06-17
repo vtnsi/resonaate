@@ -30,7 +30,7 @@ def _getDeltaBoresight(estimate_agent: EstimateAgent, sensor_agent: SensingAgent
         estimate_agent.eci_state,
         sensor_agent.datetime_epoch,
     )
-    return sensor_agent.sensors.deltaBoresight(slant_range_sez[:3])
+    return sensor_agent.sensor.deltaBoresight(slant_range_sez[:3])
 
 
 class SlewDistanceMaximization(SensorMetric):
@@ -100,7 +100,7 @@ class SlewTimeMinimization(SensorMetric):
             ``float``: Slew minimization metric
         """
         delta_boresight = _getDeltaBoresight(estimate_agent, sensor_agent)
-        return sensor_agent.sensors.slew_rate / delta_boresight
+        return sensor_agent.sensor.slew_rate / delta_boresight
 
 
 class SlewTimeMaximization(SensorMetric):
@@ -128,4 +128,4 @@ class SlewTimeMaximization(SensorMetric):
             ``float``: time to slew metric
         """
         delta_boresight = _getDeltaBoresight(estimate_agent, sensor_agent)
-        return delta_boresight / sensor_agent.sensors.slew_rate
+        return delta_boresight / sensor_agent.sensor.slew_rate

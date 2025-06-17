@@ -24,51 +24,51 @@ def testPredictObservation(mocked_sensing_agent: SensingAgent, mocked_estimate: 
         mocked_estimate (EstimateAgent): mocked estimate agent for testing
     """
     # Test when sensor cannot slew to the target
-    mocked_sensing_agent.sensors.canSlew = Mock(return_value=False)
-    mocked_sensing_agent.sensors.isOffline = Mock(return_value=False)
+    mocked_sensing_agent.sensor.canSlew = Mock(return_value=False)
+    mocked_sensing_agent.sensor.isOffline = Mock(return_value=False)
     predicted_observation = predictObservation(mocked_sensing_agent, mocked_estimate)
 
     assert predicted_observation is None
-    mocked_sensing_agent.sensors.isOffline.assert_called_once()
-    mocked_sensing_agent.sensors.canSlew.assert_called_once()
+    mocked_sensing_agent.sensor.isOffline.assert_called_once()
+    mocked_sensing_agent.sensor.canSlew.assert_called_once()
 
     # Reset mock
-    mocked_sensing_agent.sensors.canSlew.reset_mock()
-    mocked_sensing_agent.sensors.isOffline.reset_mock()
+    mocked_sensing_agent.sensor.canSlew.reset_mock()
+    mocked_sensing_agent.sensor.isOffline.reset_mock()
 
     # Test when the sensor can slew to the target
-    mocked_sensing_agent.sensors.canSlew = Mock(return_value=True)
-    mocked_sensing_agent.sensors.isOffline = Mock(return_value=False)
+    mocked_sensing_agent.sensor.canSlew = Mock(return_value=True)
+    mocked_sensing_agent.sensor.isOffline = Mock(return_value=False)
 
-    mocked_sensing_agent.sensors.isVisible = Mock(return_value=(False, None))
+    mocked_sensing_agent.sensor.isVisible = Mock(return_value=(False, None))
     predicted_observation = predictObservation(mocked_sensing_agent, mocked_estimate)
 
     assert predicted_observation is None
-    mocked_sensing_agent.sensors.canSlew.assert_called_once()
-    mocked_sensing_agent.sensors.isVisible.assert_called_once()
-    mocked_sensing_agent.sensors.isOffline.assert_called_once()
+    mocked_sensing_agent.sensor.canSlew.assert_called_once()
+    mocked_sensing_agent.sensor.isVisible.assert_called_once()
+    mocked_sensing_agent.sensor.isOffline.assert_called_once()
 
     # Reset mock
-    mocked_sensing_agent.sensors.canSlew.reset_mock()
-    mocked_sensing_agent.sensors.isVisible.reset_mock()
-    mocked_sensing_agent.sensors.isOffline.reset_mock()
+    mocked_sensing_agent.sensor.canSlew.reset_mock()
+    mocked_sensing_agent.sensor.isVisible.reset_mock()
+    mocked_sensing_agent.sensor.isOffline.reset_mock()
 
     # Test when target is visible, but the sensor is offline
-    mocked_sensing_agent.sensors.isOffline = Mock(return_value=True)
-    mocked_sensing_agent.sensors.isVisible = Mock(return_value=(True, None))
-    mocked_sensing_agent.sensors.canSlew = Mock(return_value=True)
+    mocked_sensing_agent.sensor.isOffline = Mock(return_value=True)
+    mocked_sensing_agent.sensor.isVisible = Mock(return_value=(True, None))
+    mocked_sensing_agent.sensor.canSlew = Mock(return_value=True)
 
     predicted_observation = predictObservation(mocked_sensing_agent, mocked_estimate)
     assert predicted_observation is None
 
     # Reset mock
-    mocked_sensing_agent.sensors.canSlew.reset_mock()
-    mocked_sensing_agent.sensors.isVisible.reset_mock()
-    mocked_sensing_agent.sensors.isOffline.reset_mock()
+    mocked_sensing_agent.sensor.canSlew.reset_mock()
+    mocked_sensing_agent.sensor.isVisible.reset_mock()
+    mocked_sensing_agent.sensor.isOffline.reset_mock()
 
     # Test when target is visible
-    mocked_sensing_agent.sensors.isOffline = Mock(return_value=False)
-    mocked_sensing_agent.sensors.isVisible = Mock(return_value=(True, None))
+    mocked_sensing_agent.sensor.isOffline = Mock(return_value=False)
+    mocked_sensing_agent.sensor.isVisible = Mock(return_value=(True, None))
 
     with patch.object(
         Observation,
@@ -78,8 +78,8 @@ def testPredictObservation(mocked_sensing_agent: SensingAgent, mocked_estimate: 
         predicted_observation = predictObservation(mocked_sensing_agent, mocked_estimate)
 
         assert isinstance(predicted_observation, Observation)
-        mocked_sensing_agent.sensors.canSlew.assert_called_once()
-        mocked_sensing_agent.sensors.isVisible.assert_called_once()
+        mocked_sensing_agent.sensor.canSlew.assert_called_once()
+        mocked_sensing_agent.sensor.isVisible.assert_called_once()
         mock_observation_from_measurement.assert_called_with(
             epoch_jd=mocked_sensing_agent.julian_date_epoch,
             target_id=mocked_estimate.simulation_id,

@@ -19,7 +19,6 @@ from .agent_base import Agent
 # Type checking
 if TYPE_CHECKING:
     # Standard Library Imports
-    from collections.abc import Collection
 
     # Third Party Imports
     from numpy import ndarray
@@ -45,7 +44,7 @@ class SensingAgent(Agent):
         agent_type: str,
         initial_state: ndarray,
         clock: ScenarioClock,
-        sensors: Sensor,
+        sensor: Sensor,
         dynamics: Dynamics,
         realtime: bool,
         visual_cross_section: float | int,
@@ -62,7 +61,7 @@ class SensingAgent(Agent):
             agent_type (``str``): name signifying the type of agent `('Spacecraft', 'GroundFacility', )`
             initial_state (``numpy.ndarray``): 6x1 ECI initial state vector
             clock (:class:`.ScenarioClock`): clock instance for retrieving proper times
-            sensors (:class:`.Sensor`): sensor object associated this SensingAgent object
+            sensor (:class:`.Sensor`): sensor object associated this SensingAgent object
             dynamics (:class:`.Dynamics`): SensingAgent's simulation dynamics
             realtime (``bool``): whether to use :attr:`dynamics` or import data for propagation
             visual_cross_section (``float, int``): constant visual cross-section of the agent
@@ -94,11 +93,11 @@ class SensingAgent(Agent):
         #     self._logger.error("Incorrect type for sensors param")
         #     raise TypeError(type(sensors))
         # for sensor in sensors:
-        if not isinstance(sensors, Sensor):
+        if not isinstance(sensor, Sensor):
             self._logger.error("Item in sensors param is not a `Sensor` object")
-            raise TypeError(type(sensors))
-        self._sensors = sensors
-        self._sensors.host = self
+            raise TypeError(type(sensor))
+        self._sensor = sensor
+        self._sensor.host = self
 
         self.min_revisit_time = min_revisit_time
 
@@ -188,8 +187,8 @@ class SensingAgent(Agent):
         Args:
             sensor_change (dict): values to change in the sensor.
         """
-        self.sensors.boresight = sensor_change["boresight"]
-        self.sensors.time_last_tasked = sensor_change["time_last_tasked"]
+        self._sensor.boresight = sensor_change["boresight"]
+        self._sensor.time_last_tasked = sensor_change["time_last_tasked"]
 
     def getCurrentEphemeris(self) -> TruthEphemeris:
         """Returns the SensingAgent's current ephemeris information.
@@ -243,6 +242,6 @@ class SensingAgent(Agent):
         return self._lla_state
 
     @property
-    def sensors(self) -> Collection[Sensor]:
-        """``collections.abc.Collection``: Returns the collection of sensors associated with this SensingAgent."""
-        return self._sensors
+    def sensor(self) -> Sensor:
+        """``Sensor``: Sensor object associated with this agent."""
+        return self._sensor

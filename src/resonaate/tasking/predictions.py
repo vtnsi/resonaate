@@ -36,14 +36,14 @@ def predictObservation(
     )
 
     # Check if the sensor is offline
-    if sensing_agent.sensors.isOffline():
+    if sensing_agent.sensor.isOffline():
         return None
 
     # Check if the estimated target is reachable
-    if not sensing_agent.sensors.canSlew(slant_range_sez):
+    if not sensing_agent.sensor.canSlew(slant_range_sez):
         return None
     # Check if the estimated target is observable
-    visibility, _ = sensing_agent.sensors.isVisible(
+    visibility, _ = sensing_agent.sensor.isVisible(
         estimate_agent.eci_state,
         estimate_agent.visual_cross_section,
         estimate_agent.reflectivity,
@@ -58,7 +58,7 @@ def predictObservation(
         tgt_eci_state=estimate_agent.eci_state,
         sensor_id=sensing_agent.simulation_id,
         sensor_eci=sensing_agent.eci_state,
-        sensor_type=getTypeString(sensing_agent.sensors),
-        measurement=sensing_agent.sensors.measurement,
+        sensor_type=getTypeString(sensing_agent.sensor),
+        measurement=sensing_agent.sensor.measurement,
         noisy=False,  # Don't add noise for prospective observations
     )

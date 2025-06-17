@@ -397,7 +397,7 @@ def getMockedSensingAgentObject(agent_id: int) -> SensingAgent:
     sensing_agent = create_autospec(SensingAgent, instance=True)
     sensing_agent._id = agent_id
 
-    sensing_agent.sensors = mocked_sensor
+    sensing_agent.sensor = mocked_sensor
     return sensing_agent
 
 

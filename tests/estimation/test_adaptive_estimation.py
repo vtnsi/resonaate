@@ -203,8 +203,8 @@ def getTestSensorAgent(earth_sensor: Sensor) -> SensingAgent:
     sensor_agent.time = 300
     sensor_agent.simulation_id = 100001
 
-    sensor_agent.sensors = earth_sensor
-    sensor_agent.sensors.host = sensor_agent
+    sensor_agent.sensor = earth_sensor
+    sensor_agent.sensor.host = sensor_agent
     return sensor_agent
 
 
@@ -243,7 +243,7 @@ def getTestRadarObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent) 
         range_km=1224.6425779127965,
         range_rate_km_p_sec=3.5594024876519974,
         sensor_eci=sensor_agent.eci_state,
-        measurement=sensor_agent.sensors.measurement,
+        measurement=sensor_agent.sensor.measurement,
     )
 
 
@@ -259,7 +259,7 @@ def getTestOpticalObservation(sensor_agent: SensingAgent, rso_agent: TargetAgent
         azimuth_rad=0.0960304210103737,
         elevation_rad=0.3522603731619839,
         sensor_eci=sensor_agent.eci_state,
-        measurement=sensor_agent.sensors.measurement,
+        measurement=sensor_agent.sensor.measurement,
     )
 
 

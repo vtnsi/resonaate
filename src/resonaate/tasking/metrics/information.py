@@ -46,7 +46,7 @@ class FisherInformation(InformationMetric):
         """
         cross_covar = estimate_agent.nominal_filter.cross_cvr
         predicted_covar = estimate_agent.nominal_filter.pred_p
-        r_matrix = sensor_agent.sensors.r_matrix
+        r_matrix = sensor_agent.sensor.r_matrix
 
         try:
             nu_var = matmul(cross_covar.T, inv(predicted_covar))

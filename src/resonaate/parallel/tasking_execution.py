@@ -82,7 +82,7 @@ def asyncExecuteTasking(submission: TaskExecutionSubmission) -> dict:
             missed_obs,
             boresight,
             time_last_tasked,
-        ) = sensing_agent.sensors.collectObservations(
+        ) = sensing_agent.sensor.collectObservations(
             estimate_agent.eci_state,
             primary_tgt,
             background_targets,
