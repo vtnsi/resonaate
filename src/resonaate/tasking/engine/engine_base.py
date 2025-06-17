@@ -86,7 +86,15 @@ class TaskingEngine(metaclass=ABCMeta):
         """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
 
         self.min_revisit_time = min_revisit_time
-        self.last_revisits: dict[int, JulianDate] = {}
+        """``float``: The minimum revisit time in seconds, for the entirity of the network."""
+
+        self.network_last_revisits: dict[int, JulianDate] = {}
+        """``dict[int, JulianDate]``: Record of when targets were last observed by the network as a whole.  \
+            Maps target identifier to the `JulianDate` of the last observation."""
+
+        self.sensor_last_revisits: dict[int, dict[int, JulianDate]] = {}
+        """``dict[int, dict[int, JulianDate]]``: Maps sensor ID to the time sensor's last observation records. \
+            The assigned dictionary maps target ID to the JulianDate that the particular sensor last saw the target."""
 
         # Sort sensors & targets - also creates index mappings
         self._sortSensors()

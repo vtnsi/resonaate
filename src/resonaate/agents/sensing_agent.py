@@ -51,6 +51,7 @@ class SensingAgent(Agent):
         visual_cross_section: float | int,
         mass: float | int,
         reflectivity: float,
+        min_revisit_time: float = 0.0,
         station_keeping: list[StationKeeper] | None = None,
     ):
         """Construct a SensingAgent object.
@@ -67,6 +68,8 @@ class SensingAgent(Agent):
             visual_cross_section (``float, int``): constant visual cross-section of the agent
             mass (``float, int``): constant mass of the agent
             reflectivity (``float``): constant reflectivity of the agent
+            min_revisit_time (``float``): Minimum revisit time of the sensor, in seconds. Time required since \
+            observation made by the sensor before it's allowed to revisit the target
             station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station
                 keeping to be performed
 
@@ -96,6 +99,8 @@ class SensingAgent(Agent):
             raise TypeError(type(sensors))
         self._sensors = sensors
         self._sensors.host = self
+
+        self.min_revisit_time = min_revisit_time
 
         # Properly initialize the SensingAgent's state types
         self._truth_state = array(initial_state, copy=True)
@@ -148,6 +153,7 @@ class SensingAgent(Agent):
             sen_cfg.platform.visual_cross_section,
             sen_cfg.platform.mass,
             sen_cfg.platform.reflectivity,
+            min_revisit_time=sen_cfg.sensor.min_revisit_time,
             station_keeping=station_keeping,
         )
 

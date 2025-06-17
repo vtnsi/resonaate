@@ -67,7 +67,6 @@ class Radar(Sensor):
         background_observations: bool,
         minimum_range: float,
         maximum_range: float,
-        min_revisit_time: float = 0.0,
         missed_obs_probability: float = 0.0,
         downtimes: list[ScheduledDowntimeConfig] | None = None,
         **sensor_args: dict,
@@ -88,8 +87,7 @@ class Radar(Sensor):
             background_observations (``bool``): whether or not to calculate serendipitous observations, default=True
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
-            min_revisit_time (``float``): minimum time required to elapse since last observation of the same target before the sensor can go revisit it. Defaults to 0.
-            missed_obs_probability (``float``): Probability that the sensor randomly misses an observation. Defaults to 0.
+            missed_obs_probability (``float``): Missed observation probability. Defaults to 0.
             downtimes (``list[ScheduledDowntimeConfig], None``): Sensor downtime configs. Defaults to None.
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
@@ -108,7 +106,6 @@ class Radar(Sensor):
             background_observations,
             minimum_range,
             maximum_range,
-            min_revisit_time=min_revisit_time,
             missed_obs_probability=missed_obs_probability,
             downtimes=downtimes,
             **sensor_args,
@@ -148,7 +145,6 @@ class Radar(Sensor):
             tx_power=sensor_config.tx_power,
             tx_frequency=sensor_config.tx_frequency,
             min_detectable_power=sensor_config.min_detectable_power,
-            min_revisit_time=sensor_config.min_revisit_time,
             missed_obs_probabilty=sensor_config.missed_obs_probability,
             downtimes=sensor_config.downtimes,
         )

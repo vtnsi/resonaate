@@ -450,12 +450,6 @@ def testCollectObservations(
         mocked_sensing_agent.sensors._last_obs[mocked_primary_target.simulation_id]
         == mocked_sensing_agent.time
     )
-    mocked_sensing_agent.sensors.min_revisit_time = 3600
-    assert not mocked_sensing_agent.sensors.readyToRevisit(mocked_primary_target.simulation_id)
-    mocked_sensing_agent.sensors.min_revisit_time = 0
-    del mocked_sensing_agent.sensors._last_obs[
-        mocked_primary_target.simulation_id
-    ]  # Clear it for sanity reasons.
 
     # Check that boresight was updated
     slant_range_sez = _dummySlantRange(

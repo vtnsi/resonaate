@@ -32,19 +32,22 @@ class RewardCalcSubmission:
     """Encapsulate arguments for `asyncCalculateReward`."""
 
     estimate_handle: EstimateAgent
-    """Remote handle of the :class:`.EstimateAgent` to calculate reward for."""
+    """``EstimateAgent``: Remote handle of the :class:`.EstimateAgent` to calculate reward for."""
 
     reward: Reward
-    """Function used to calculate a sensor/estimate pair's reward."""
+    """``Reward``: Function used to calculate a sensor/estimate pair's reward."""
 
     sensor_handle_list: list[SensingAgent]
-    """List of remote handles of the :class:`.SensingAgent`'s task-able by the calling engine."""
+    """``list[SensingAgent]``: List of remote handles of the :class:`.SensingAgent`'s task-able by the calling engine."""
 
-    last_obs_record: dict[int, JulianDate]
-    """``dict[int, JulianDate]``: Record of the last time a spacecraft was observed by the tasking engine. Maps target ID to last collected observation."""
+    engine_min_revisit_time: float
+    """``float``: The minimum revisit time, in seconds, of the tasking engine."""
 
-    min_revisit_time: float = 0
-    """``float``: Minimum revisit time of the registrant / parent tasking engine."""
+    engine_last_revisit_epoch: JulianDate
+    """``JulianDate``: The epoch of last observation, made by the tasking engine."""
+
+    sensor_last_revisits: dict[int, JulianDate]
+    """``JulianDate``: The epoch of the last observation made by the sensor in question on the given target."""
 
 
 @dataclass
@@ -86,26 +89,21 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
         dtype=float,
     )
 
-    sensor_list = ray.get(submission.sensor_handle_list)
+    sensor_list: list[SensingAgent] = ray.get(submission.sensor_handle_list)
     for sensor_index, sensor_agent in enumerate(sensor_list):
         # Attempt predicted observations, in order to perform sensor tasking
         # Only calculate metrics if the estimate is observable
 
         # Check sensor network min revisit time, if enabled
         if (
-            submission.min_revisit_time > 0
-            and estimate.simulation_id in submission.last_obs_record
-        ):
-            time_since_last_ob = (
-                float(
-                    estimate.julian_date_epoch
-                    - submission.last_obs_record[estimate.simulation_id],
-                )
-                * DAYS2SEC
-            )
-            if time_since_last_ob < submission.min_revisit_time:
-                # Don't bother predicting an observation if we can already establish that the network isn't allowed to observe it.
-                continue
+            estimate.julian_date_epoch - submission.engine_last_revisit_epoch
+        ) * DAYS2SEC < submission.engine_min_revisit_time:
+            continue
+        if (
+            estimate.julian_date_epoch
+            - submission.sensor_last_revisits[sensor_agent.simulation_id]
+        ) * DAYS2SEC < sensor_agent.min_revisit_time:
+            continue
         if predicted_observation := predictObservation(sensor_agent, estimate):
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
@@ -150,12 +148,19 @@ class TaskingRewardRegistration(Registration):
 
     def generateSubmission(self) -> RewardCalcSubmission:
         """Generate a :class:`.RewardCalcSubmission` specifying the reward being calculated."""
+        sensor_last_revisits: dict[int, JulianDate] = {
+            sensor.simulation_id: self._registrant.sensor_last_revisits[sensor.simulation_id][
+                self._estimate_handle.simulation_id
+            ]
+            for sensor in self._sensor_handle_list
+        }
         return RewardCalcSubmission(
             self._estimate_handle,
             self._reward,
             self._sensor_handle_list,
-            self._registrant.last_revisits,
-            self._registrant.min_revisit_time,
+            self._registrant.network_last_revisits[self._estimate_handle.simulation_id],
+            self._registrant.network_min_revisit_time,
+            sensor_last_revisits,
         )
 
     def processResults(self, results: RewardCalcResult):

@@ -98,6 +98,7 @@ def getAdvRadarAgentConfig(
         "tx_power": 1.0,
         "tx_frequency": 1.0,
         "min_detectable_power": 1.0,
+        "min_revisit_time": 3600.0,
     }
     return SensingAgentConfig(
         id=20000,

@@ -150,9 +150,15 @@ class CentralizedTaskingEngine(TaskingEngine):
         for cur_obs in self._observations:
             tasked_sensors.add(cur_obs.sensor_id)
             observed_targets.add(cur_obs.target_id)
-            self.last_revisits[cur_obs.target_id] = JulianDate(
-                cur_obs.julian_date,
-            )  # Update last observed time.
+            # Update last observation records.
+            epoch = JulianDate(cur_obs.julian_date)
+            self.network_last_revisits[cur_obs.target_id] = epoch
+            if (
+                cur_obs.sensor_id not in self.sensor_last_revisits
+            ):  # Initial case where the sensor_id doesn't exist in the record.
+                self.sensor_last_revisits[cur_obs.sensor_id] = {cur_obs.target: epoch}
+            else:
+                self.sensor_last_revisits[cur_obs.sensor_id][cur_obs.target_id] = epoch
 
         # Log tasked sensors
         if tasked_sensors:

@@ -13,7 +13,7 @@ from scipy.linalg import norm
 # Local Imports
 from ..common.exceptions import ShapeError
 from ..common.labels import Explanation
-from ..common.logger import resonaateLogInfo, resonaateLogWarning
+from ..common.logger import resonaateLogInfo
 from ..common.utilities import getTypeString
 from ..data.observation import MissedObservation, Observation
 from ..physics import constants as const
@@ -54,7 +54,6 @@ class Sensor(ABC):
         background_observations: bool,
         minimum_range: float,
         maximum_range: float,
-        min_revisit_time: float = 0.0,
         missed_obs_probability: float = 0.0,
         downtimes: list[ScheduledDowntimeConfig] | None = None,
         **sensor_args: dict,
@@ -73,8 +72,7 @@ class Sensor(ABC):
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
-            min_revisit_time (``float``): minimum time required to elapse since last observation of the same target before the sensor can go revisit it. Defaults to 0.
-            missed_obs_probability (``float``): Probability that the sensor randomly misses an observation. Defaults to 0.
+            missed_obs_probability (``float``): Missed observation probability. Defaults to 0.
             downtimes (``list[ScheduledDowntimeConfig], None``): Sensor downtime configs. Defaults to None.
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
@@ -93,7 +91,6 @@ class Sensor(ABC):
         self.maximum_range = maximum_range
 
         self.missed_obs_probability = missed_obs_probability
-        self.min_revisit_time = min_revisit_time
         self.downtimes = downtimes
 
         # Derived properties initialization
@@ -144,21 +141,6 @@ class Sensor(ABC):
             mid_el = self.el_mask[1] + (self.el_mask[0] - self.el_mask[1]) / 2.0
 
         return array([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
-
-    def readyToRevisit(self, target_id: int) -> bool:
-        """Checks to see if the sensor is ready to revisit a target.
-
-        Args:
-            target_id (``int``): Unique identifier of the target.
-
-        Returns:
-            ``bool``: True if the sensor is good to revisit the target. False otherwise.
-        """
-        if self.min_revisit_time == 0:
-            return True  # Always return True if the feature is disabled.
-        if target_id not in self._last_obs:  # Have we previously observed the target?
-            return True
-        return float(self.host.time - self._last_obs[target_id]) >= self.min_revisit_time
 
     def _randomMissedOb(self) -> bool:
         """Random assessment if we missed an observation."""
@@ -269,10 +251,6 @@ class Sensor(ABC):
             :class:`.Observation` | :class:`.MissedObservation`: constructed observation or a _missed_ observation and
                 reason it isn't visible.
         """
-        if not self.readyToRevisit(target_agent.simulation_id):
-            resonaateLogWarning(
-                f"Sensor {self.host.simulation_id} is being tasked to observe target {target_agent.simulation_id} before required revisit wait period!",
-            )
         if self.host.sensor_time_bias_event_queue:
             tgt_eci_state = self._applyTimeBias(target_agent)
         else:
