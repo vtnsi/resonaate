@@ -196,7 +196,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             .join(Epoch)
             .filter(Epoch.timestampISO == datetime_epoch.isoformat(timespec="microseconds"))
         )
-        imported_observation_data = self._importer_db.getData(query)
+        imported_observation_data: list[Observation] = self._importer_db.getData(query)
 
         imported_observations: list[Observation] = []
         sensor_position_set = set()
@@ -212,6 +212,34 @@ class CentralizedTaskingEngine(TaskingEngine):
             if position_key not in sensor_position_set:
                 imported_observations.append(observation)
                 sensor_position_set.add(position_key)
+
+                # Update the engine's last observation record
+                obs_epoch = JulianDate(observation.julian_date)
+                if observation.target_id not in self.network_last_revisits:
+                    self.network_last_revisits[observation.target_id] = obs_epoch
+                elif observation.julian_date > float(
+                    self.network_last_revisits[observation.target_id],
+                ):
+                    # NOTE: This might need to be a combined if statement.
+                    self.network_last_revisits[observation.target_id] = obs_epoch
+
+                # Update the sensor's last observation record
+                if observation.sensor_id not in self.sensor_last_revisits:
+                    self.sensor_last_revisits[observation.sensor_id] = (
+                        {}
+                    )  # Initialize empty dict to make things happy.
+                    # this is why it made sense just to keep things inside the sensor.
+                if observation.target_id not in self.sensor_last_revisits[observation.sensor_id]:
+                    self.sensor_last_revisits[observation.sensor_id][
+                        observation.target_id
+                    ] = obs_epoch
+                elif observation.julian_date > float(
+                    self.sensor_last_revisits[observation.sensor_id][observation.target_id],
+                ):
+                    # NOTE: This might need to be a combined if statement.
+                    self.sensor_last_revisits[observation.sensor_id][
+                        observation.target_id
+                    ] = obs_epoch
             else:
                 obs_dict = observation.makeDictionary()
                 msg = f"Dropped duplicate observation: {obs_dict.sensor_id} of {obs_dict.target_id} at {obs_dict.julian_date}"

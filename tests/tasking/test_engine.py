@@ -14,7 +14,7 @@ import pytest
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.observation import MissedObservation, Observation
-from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.time.stardate import JulianDate, datetimeToJulianDate
 from resonaate.scenario.config.decision_config import MunkresDecisionConfig
 from resonaate.scenario.config.reward_config import CostConstrainedRewardConfig
 from resonaate.sensors.sensor_base import Sensor
@@ -416,6 +416,7 @@ def testLoadImportedObservation(
     obs_1.vel_z_km_p_sec = 2
     obs_1.target_id = 1
     obs_1.sensor_id = sensing_agent_1_id
+    obs_1.julian_date = datetimeToJulianDate(datetime_epoch)
     obs_1.makeDictionary = MagicMock()
 
     sensing_agent_2_id = 1112
@@ -428,12 +429,25 @@ def testLoadImportedObservation(
     obs_2.vel_z_km_p_sec = 2
     obs_2.target_id = 1
     obs_2.sensor_id = sensing_agent_2_id
+    obs_2.julian_date = datetimeToJulianDate(datetime_epoch)
     obs_2.makeDictionary = MagicMock()
 
     # Test observations that aren't from duplicate sensors
     mocked_importer_db.getData.return_value = [obs_1, obs_2]
 
     imported_obs = centralized_tasking_engine.loadImportedObservations(datetime_epoch)
+
+    # Test observation records
+    assert centralized_tasking_engine.network_last_revisits[obs_1.target_id] == obs_1.julian_date
+    assert centralized_tasking_engine.network_last_revisits[obs_2.target_id] == obs_2.julian_date
+    assert (
+        centralized_tasking_engine.sensor_last_revisits[obs_1.sensor_id][obs_1.target_id]
+        == obs_1.julian_date
+    )
+    assert (
+        centralized_tasking_engine.sensor_last_revisits[obs_2.sensor_id][obs_2.target_id]
+        == obs_2.julian_date
+    )
 
     # Assert mock calls
     obs_1.makeDictionary.assert_not_called()
