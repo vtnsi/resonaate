@@ -304,6 +304,9 @@ class BehavioralConfig(BaseModel):
                     )
         return parser
 
+    ARGS_ENV_LOC: ClassVar[str] = "RESONAATE_ARGS"
+    """Key of environment variable to store CLI args to for child processes to consume."""
+
     __instance: ClassVar[BehavioralConfig] = None
     """Singleton."""
 
@@ -327,7 +330,7 @@ class BehavioralConfig(BaseModel):
         """
         if cls.__instance is None:
             if cli_args is None:
-                cli_args = json.loads(environ.get("RESONAATE_ARGS"))
+                cli_args = json.loads(environ.get(cls.ARGS_ENV_LOC))
             config_dict = {}
             resonaate_dotenv = dotenv_values(dotenv_path)
             for field_name, field_info in cls.model_fields.items():

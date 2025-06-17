@@ -9,48 +9,36 @@ from __future__ import annotations
 __version__ = "4.1.0"
 
 
+# Standard Library Imports
+import json
+import sys
+from os import environ
+
+# Local Imports
+from .common.config_model import BehavioralConfig
+
+
 def runResonaate(
-    init_message: str,
-    sim_time_hours: float = 3,
-    internal_db_path: str | None = None,
-    importer_db_path: str | None = None,
+    _config: BehavioralConfig,
 ) -> None:
     """Run a RESONAATE :class:`~.Scenario`.
 
     Args:
-        init_message (``str``): path to the JSON initialization message
-        sim_time_hours (``float``, optional): total hours to simulate. Defaults to 3.
-        internal_db_path (``str``, optional): if saving to database, this points
-            the :class:`.ResonaateDatabase` to the desired location. Defaults to ``None``,
-            which defaults to the config value if ``auto_db != True``.
-        importer_db_path (``str``, optional): if using input/external database to load data,
-            this points the :class:`.ImporterDatabase` to the desired location. Defaults to
-            ``None``, which then auto-generates a timestamped db file in the **db/** folder
-        debug_mode (``bool``, optional): whether to allow worker jobs to block
-            indefinitely so debugging doesn't fail
+        _config: :class:`.BehavorialConfig` object specifying how to run RESONAATE.
     """
-    # Standard Library Imports
-    from datetime import timedelta
-
     # Local Imports
-    from .physics.time.conversions import getTargetJulianDate
     from .scenario import buildScenarioFromConfigFile
 
     # Build the Scenario application from the JSON init
     app = buildScenarioFromConfigFile(
-        init_message,
-        internal_db_path=internal_db_path,
-        importer_db_path=importer_db_path,
+        _config.init_file,
+        internal_db_path=_config.db_path,
+        importer_db_path=_config.importer_db_path,
     )
-
-    # Determine final time as a Julian date
-    elapsed_time = timedelta(hours=sim_time_hours)
-
-    target_date = getTargetJulianDate(app.clock.julian_date_start, elapsed_time)
 
     try:
         # Step through simulation
-        app.propagateTo(target_date)
+        app.propagateTo(app.clock.julian_date_stop)
     except KeyboardInterrupt:
         # Notification simulation stopped via KeyboardInterrupt
         app.logger.warning("Simulation terminated")
@@ -63,21 +51,12 @@ def runResonaate(
 
 
 def main() -> None:
-    """RESONAATE simulation main entry point.
+    """RESONAATE simulation main entry point."""
+    resonaate_args = []
+    if len(sys.argv) > 1:
+        resonaate_args = sys.argv[1:]
+    # store cli args to env so child processes can access behavioral config
+    environ[BehavioralConfig.ARGS_ENV_LOC] = json.dumps(resonaate_args)
 
-    This is the function that the :command:`resonaate` command points to. See :mod:`.cli` for
-    details on what command line options are available.
-    """
-    # Local Imports
-    from .common.cli import getCommandLineParser
-
-    # Parse command line arguments and pass them to runResonaate
-    parser = getCommandLineParser()
-    cli_args = parser.parse_args()
-
-    runResonaate(
-        cli_args.init_msg,
-        sim_time_hours=cli_args.sim_time_hours,
-        internal_db_path=cli_args.db_path,
-        importer_db_path=cli_args.importer_db_path,
-    )
+    _config = BehavioralConfig.getConfig(cli_args=resonaate_args)
+    runResonaate(_config)
