@@ -6,15 +6,15 @@ from textwrap import dedent
 from typing import Annotated, Optional
 
 # Third Party Imports
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 # Local Imports
 from ..labels import EOPLoaderLabel
-from .meta import CommandLineOptions, EnvName, LoggingLevel, UserConfig
+from .meta import CommandLineOptions, EnvName, LoggingLevel
 
 # ruff: noqa: TCH001, TCH003, UP007
 
-class BehavioralConfig(UserConfig):
+class BehavioralConfig(BaseModel):
     """Set of configuration options that specify the behavior of RESONAATE."""
 
     logging_output_location: Annotated[

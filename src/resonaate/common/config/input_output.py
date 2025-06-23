@@ -7,12 +7,12 @@ from textwrap import dedent
 from typing import Annotated, Optional
 
 # Third Party Imports
-from pydantic import Field
+from pydantic import BaseModel, Field
 from sqlalchemy.engine import URL as AlchemyURL
 
 # Local Imports
 from .. import pathSafeTime
-from .meta import CommandLineOptions, EnvName, UserConfig
+from .meta import CommandLineOptions, EnvName
 
 # ruff: noqa: TCH001, TCH003, UP007
 
@@ -20,7 +20,7 @@ SQLITE_DRIVER: str = "sqlite"
 """Driver name for using SQLite."""
 
 
-class AlchemyURLSpec(UserConfig):
+class AlchemyURLSpec(BaseModel):
     """Specifies required parameters to generate an SQLAlchemy connection to a database."""
 
     def getURL(self) -> AlchemyURL:
@@ -198,23 +198,7 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     """Flag indicating whether it's ok that the specified SQLite database file already exists."""
 
 
-class ImportConfiguration(UserConfig):
-    """Configuration in relation to importing data for a RESONAATE run."""
-
-    connection_spec: ImporterDbUrlSpec
-    """Specifies how to connect to the importer database."""
-
-    import_target_ephem: bool
-    """Flag to replace `config.propagation.target_realtime_propagation` (inverse)."""
-
-    import_sensor_ephem: bool
-    """Flag to replace `config.propagation.sensor_realtime_propagation` (inverse)."""
-
-    import_obs_data: bool
-    """Flag indicating whether to import observation data from the importer database."""
-
-
-class IOConfiguration(UserConfig):
+class IOConfiguration(BaseModel):
     """Configuration section defining how RESONAATE I/O should work."""
 
     init_file: Annotated[
@@ -224,6 +208,6 @@ class IOConfiguration(UserConfig):
         ),
     ]
 
-    import_config: ImportConfiguration
+    import_config: ImporterDbUrlSpec
 
     output_db_parameters: OutputDbUrlSpec

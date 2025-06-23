@@ -4,13 +4,16 @@ from __future__ import annotations
 # Standard Library Imports
 from argparse import ArgumentParser, RawTextHelpFormatter
 
+# Third Party Imports
+from pydantic import BaseModel
+
 # Local Imports
 from .behavioral import BehavioralConfig
 from .input_output import IOConfiguration
-from .meta import NotSet, UserConfig
+from .meta import NotSet, userSpecFactory
 
 
-class RootConfig(UserConfig):
+class RootConfig(BaseModel):
 
     io_config: IOConfiguration
 
@@ -24,6 +27,6 @@ class RootConfig(UserConfig):
             argument_default=NotSet,
             formatter_class=RawTextHelpFormatter,
         )
-        user_spec = cls.buildUserSpec()
+        user_spec = userSpecFactory("root", cls)
         user_spec.addToArgParser(parser)
         return parser
