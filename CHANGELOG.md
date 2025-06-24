@@ -36,8 +36,11 @@ ______________________________________________________________________
 
 ### Added
 
-- Additional labels for missed observations in the `.common.labels.Explanation()` object for the sensor being offline, random missed obs, and minimum revisit time.
+- Additional labels for missed observations in the `.common.labels.Explanation()` object for the sensor being offline, random missed obs.
 - Created a `ScheudledDowntimeConfig()` object in `.scenario.config.sensor_config` that stores information regarding sensor downtimes.
+- Enabled configurable minimum revisit times for both sensor networks and sensor agents.
+- Added `.collectObservations()` method to `agents.sensing_agent.SensingAgent()`.
+- Added `min_revisit_time` configuration option to `scenario.config.engine_config.EngineConfig()`.
 - Added the following config options to the `.scenario.config.sensor_config.SensorConfigBase()` object:
   - `downtimes`: `ScheduledDowntimeConfig()` object.
   - `missed_obs_probability`: Probability of a random missed obs.
@@ -112,6 +115,10 @@ ______________________________________________________________________
 
 ### Changed
 
+- Moved `tasking.predictions::predictObseravtions()` to `agents.sensing_agent.SensingAgent.sensor.predictObservation()`.
+- `parallel.tasking_reward_execution::asyncCalculateReward()` now checks for the sensor networks minimum revisit time and each sensor's minimum revisit time.
+- Renamed `agents.sensing_agent.SensingAgent.sensors` and `_sensors` to `.sensor` and `._sensor`, respectively.
+- `parallel.tasking_reward_generation::asyncExecuteTasking()` now calls `agents.sensing_agent.SensingAgent.collectObservation()`.
 - replaced custom configuration code (i.e. `ConfigObject`, `ConfigObjectList`, and associated errors) with Pydantic models/validators
 - `TargetAgentConfig` now just known as `AgentConfig`
 - most `enum.Enum`s now inherit from `str` for easier Pydantic handling
@@ -139,7 +146,7 @@ ______________________________________________________________________
 
 ### Deprecated
 
-*for soon-to-be removed features*
+- `tasking.predictions::predictObseravtions()` has been marked for deprecation. Use `agents.sensing_agent.SensingAgent.sensor.predictObservation()` instead.
 
 ### Removed
 

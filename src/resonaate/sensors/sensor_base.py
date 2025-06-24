@@ -200,17 +200,6 @@ class Sensor(ABC):
                     reason=Explanation.SLEW_DISTANCE.value,
                 ),
             )
-        elif self._randomMissedOb():
-            missed_observation_list.append(
-                MissedObservation(
-                    julian_date=self.host.julian_date_epoch,
-                    sensor_type=getTypeString(self),
-                    sensor_id=self.host.simulation_id,
-                    target_id=target_agent.simulation_id,
-                    sensor_eci=self.host.eci_state,
-                    reason=Explanation.RANDOM_MISSED_TRACK.value,
-                ),
-            )
         else:  # Nothing was stopping the sensor from going an collecting.
             self.boresight = pointing_sez[:3] / norm(pointing_sez[:3])
             self.time_last_tasked = self.host.time
@@ -222,9 +211,7 @@ class Sensor(ABC):
             else:
                 missed_observation_list.append(observation)
         # If doing Serendipitous Observations
-        if (
-            self.calculate_background and not self.isOffline()
-        ):  # TODO: Figure out how to do random missed track in here and if that makes sense.
+        if self.calculate_background:
             visible_observations = [
                 observation
                 for tgt in background_agents
@@ -256,6 +243,31 @@ class Sensor(ABC):
             tgt_eci_state = self._applyTimeBias(target_agent)
         else:
             tgt_eci_state = target_agent.eci_state
+
+        if (
+            self.isOffline()
+        ):  # NOTE: This check is already made in .collectObservations(). However, for background agents,
+            return (
+                MissedObservation(  # It might be useful to include missed observations.
+                    julian_date=self.host.julian_date_epoch,
+                    sensor_type=getTypeString(self),
+                    sensor_id=self.host.simulation_id,
+                    target_id=target_agent.simulation_id,
+                    sensor_eci=self.host.eci_state,
+                    reason=Explanation.SENSOR_OFFLINE.value,
+                ),
+            )
+        if self._randomMissedOb():
+            return (
+                MissedObservation(
+                    julian_date=self.host.julian_date_epoch,
+                    sensor_type=getTypeString(self),
+                    sensor_id=self.host.simulation_id,
+                    target_id=target_agent.simulation_id,
+                    sensor_eci=self.host.eci_state,
+                    reason=Explanation.RANDOM_MISSED_TRACK.value,
+                ),
+            )
 
         slant_range_sez = getSlantRangeVector(
             self.host.eci_state,
