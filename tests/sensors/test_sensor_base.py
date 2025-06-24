@@ -416,7 +416,7 @@ def testCollectObservations(
     mocked_primary_target: TargetAgent,
     mocked_downtime_cfg: list[ScheduledDowntimeConfig],
 ):
-    """Test `Sensor.collectObservations`."""
+    """Test `Sensor.sensor.collectObservations`."""
     sensor = Radar(**radar_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.calculate_background = False

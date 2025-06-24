@@ -46,9 +46,6 @@ class RewardCalcSubmission:
     engine_last_revisit_epoch: JulianDate | None
     """``JulianDate``: The epoch of last observation, made by the tasking engine."""
 
-    sensor_last_revisits: dict[int, JulianDate]
-    """``JulianDate``: The epoch of the last observation made by the sensor in question on the given target."""
-
 
 @dataclass
 class RewardCalcResult:
@@ -102,14 +99,8 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
                 estimate.julian_date_epoch - submission.engine_last_revisit_epoch
             ) * DAYS2SEC < submission.engine_min_revisit_time:
                 continue
-        if (  # noqa: SIM102
-            sensor_agent.simulation_id in submission.sensor_last_revisits
-        ):  # Verify that the observation record exists first.
-            if (
-                estimate.julian_date_epoch
-                - submission.sensor_last_revisits[sensor_agent.simulation_id]
-            ) * DAYS2SEC < sensor_agent.min_revisit_time:
-                continue
+        if not sensor_agent.readyToRevisit(estimate.simulation_id):
+            continue
         if predicted_observation := predictObservation(sensor_agent, estimate):
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
@@ -154,13 +145,7 @@ class TaskingRewardRegistration(Registration):
 
     def generateSubmission(self) -> RewardCalcSubmission:
         """Generate a :class:`.RewardCalcSubmission` specifying the reward being calculated."""
-        sensor_last_revisits: dict[int, JulianDate] = {}
         target_id = ray.get(self._estimate_handle).simulation_id
-        for sensor in ray.get(self._sensor_handle_list):
-            if target_id in self._registrant.sensor_last_revisits[sensor.simulation_id]:
-                sensor_last_revisits[sensor.simulation_id] = self._registrant.sensor_last_revisits[
-                    sensor.simulation_id
-                ][target_id]
         engine_last_revisit_epoch: JulianDate | None = None
         if target_id in self._registrant.network_last_revisits:
             engine_last_revisit_epoch = self._registrant.network_last_revisits[target_id]
@@ -170,7 +155,6 @@ class TaskingRewardRegistration(Registration):
             self._sensor_handle_list,
             engine_last_revisit_epoch,
             self._registrant.min_revisit_time,
-            sensor_last_revisits,
         )
 
     def processResults(self, results: RewardCalcResult):

@@ -211,8 +211,6 @@ def testAssessWithObservations(
     # Ensure no prior observation record
     assert obs_1.target_id not in centralized_tasking_engine.network_last_revisits
     assert obs_2.target_id not in centralized_tasking_engine.network_last_revisits
-    assert len(centralized_tasking_engine.sensor_last_revisits[obs_1.sensor_id].keys()) == 0
-    assert len(centralized_tasking_engine.sensor_last_revisits[obs_2.sensor_id].keys()) == 0
 
     centralized_tasking_engine.assess(datetime_epoch, next_datetime_epoch)
     # Assert handlers are called
@@ -227,8 +225,6 @@ def testAssessWithObservations(
     # Ensure that the observation was recorded.
     assert centralized_tasking_engine.network_last_revisits[obs_1.target_id] == next_jd
     assert centralized_tasking_engine.network_last_revisits[obs_2.target_id] == next_jd
-    assert len(centralized_tasking_engine.sensor_last_revisits[obs_1.sensor_id].keys()) == 1
-    assert len(centralized_tasking_engine.sensor_last_revisits[obs_2.sensor_id].keys()) == 1
 
 
 @patch.object(CentralizedTaskingEngine, "loadImportedObservations")
@@ -462,14 +458,6 @@ def testLoadImportedObservation(
     # Test observation records
     assert centralized_tasking_engine.network_last_revisits[obs_1.target_id] == obs_1.julian_date
     assert centralized_tasking_engine.network_last_revisits[obs_2.target_id] == obs_2.julian_date
-    assert (
-        centralized_tasking_engine.sensor_last_revisits[obs_1.sensor_id][obs_1.target_id]
-        == obs_1.julian_date
-    )
-    assert (
-        centralized_tasking_engine.sensor_last_revisits[obs_2.sensor_id][obs_2.target_id]
-        == obs_2.julian_date
-    )
 
     # Assert mock calls
     obs_1.makeDictionary.assert_not_called()
@@ -623,25 +611,21 @@ def testAddingRemovingSensors(reward: Reward, decision: Decision):
     engine.addSensor(100)
     assert engine.num_sensors == 1
     assert engine.sensor_indices == {100: 0}
-    assert engine.sensor_last_revisits[100] == {}
 
     engine.addSensor(101)
     assert engine.num_sensors == 2
     assert engine.sensor_list == [100, 101]
     assert engine.sensor_indices == {100: 0, 101: 1}
-    assert engine.sensor_last_revisits[101] == {}
 
     engine.removeSensor(100)
     assert engine.num_sensors == 1
     assert engine.sensor_list == [101]
     assert engine.sensor_indices == {101: 0}
-    assert 100 not in engine.sensor_last_revisits
 
     engine.removeSensor(101)
     assert engine.num_sensors == 0
     assert not engine.sensor_list
     assert not engine.sensor_indices
-    assert 101 not in engine.sensor_last_revisits
 
     # Test sorting of sensors on add/remove
     engine.addSensor(102)

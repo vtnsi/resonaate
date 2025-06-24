@@ -153,7 +153,7 @@ class Sensor(ABC):
         estimate_eci: ndarray,
         target_agent: TargetAgent,
         background_agents: list[TargetAgent],
-    ) -> tuple[list[Observation], list[MissedObservation]]:
+    ) -> tuple[list[Observation], list[MissedObservation], ndarray, ScenarioTime]:
         """Collect observations on all targets within the sensor's FOV.
 
         Args:

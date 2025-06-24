@@ -92,12 +92,6 @@ class TaskingEngine(metaclass=ABCMeta):
         """``dict[int, JulianDate]``: Record of when targets were last observed by the network as a whole.  \
             Maps target identifier to the `JulianDate` of the last observation."""
 
-        self.sensor_last_revisits: dict[int, dict[int, JulianDate]] = {
-            sensor_id: {} for sensor_id in sensor_ids
-        }
-        """``dict[int, dict[int, JulianDate]]``: Maps sensor ID to the time sensor's last observation records. \
-            The assigned dictionary maps target ID to the JulianDate that the particular sensor last saw the target."""
-
         # Sort sensors & targets - also creates index mappings
         self._sortSensors()
         self._sortTargets()
@@ -184,7 +178,6 @@ class TaskingEngine(metaclass=ABCMeta):
             sensor_id (``int``): Unique identifier for the sensor being added.
         """
         self.sensor_list.append(sensor_id)
-        self.sensor_last_revisits[sensor_id] = {}
         self._sortSensors()
 
     def removeSensor(self, sensor_id: int) -> None:

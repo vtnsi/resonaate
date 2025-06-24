@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
+    from ...agents.sensing_agent import SensingAgent
     from ..decisions import Decision
     from ..rewards import Reward
 
@@ -153,12 +154,6 @@ class CentralizedTaskingEngine(TaskingEngine):
             # Update last observation records.
             epoch = JulianDate(cur_obs.julian_date)
             self.network_last_revisits[cur_obs.target_id] = epoch
-            if (
-                cur_obs.sensor_id not in self.sensor_last_revisits
-            ):  # Initial case where the sensor_id doesn't exist in the record.
-                self.sensor_last_revisits[cur_obs.sensor_id] = {cur_obs.target: epoch}
-            else:
-                self.sensor_last_revisits[cur_obs.sensor_id][cur_obs.target_id] = epoch
 
         # Log tasked sensors
         if tasked_sensors:
@@ -224,22 +219,8 @@ class CentralizedTaskingEngine(TaskingEngine):
                     self.network_last_revisits[observation.target_id] = obs_epoch
 
                 # Update the sensor's last observation record
-                if observation.sensor_id not in self.sensor_last_revisits:
-                    self.sensor_last_revisits[observation.sensor_id] = (
-                        {}
-                    )  # Initialize empty dict to make things happy.
-                    # this is why it made sense just to keep things inside the sensor.
-                if observation.target_id not in self.sensor_last_revisits[observation.sensor_id]:
-                    self.sensor_last_revisits[observation.sensor_id][
-                        observation.target_id
-                    ] = obs_epoch
-                elif observation.julian_date > float(
-                    self.sensor_last_revisits[observation.sensor_id][observation.target_id],
-                ):
-                    # NOTE: This might need to be a combined if statement.
-                    self.sensor_last_revisits[observation.sensor_id][
-                        observation.target_id
-                    ] = obs_epoch
+                sensor: SensingAgent = ray.get(self._sensor_store[observation.sensor_id])
+                sensor.updateObsRecord([observation])
             else:
                 obs_dict = observation.makeDictionary()
                 msg = f"Dropped duplicate observation: {obs_dict.sensor_id} of {obs_dict.target_id} at {obs_dict.julian_date}"

@@ -10,6 +10,7 @@ from numpy import array
 
 # Local Imports
 from ..data.ephemeris import TruthEphemeris
+from ..physics.constants import SEC2DAYS
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..sensors import sensorFactory
@@ -25,10 +26,13 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     # Local Imports
+    from ..agents.target_agent import TargetAgent
     from ..data.ephemeris import _EphemerisMixin
     from ..data.events.sensor_time_bias import SensorTimeBiasEvent
+    from ..data.observation import MissedObservation, Observation
     from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
+    from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
     from ..scenario.config import PropagationConfig
     from ..scenario.config.agent_config import SensingAgentConfig
@@ -107,6 +111,8 @@ class SensingAgent(Agent):
         self._lla_state = ecef2lla(self._ecef_state)
 
         self.sensor_time_bias_event_queue = []
+
+        self._last_obs_record: dict[int, JulianDate] = {}
 
     @classmethod
     def fromConfig(
@@ -245,3 +251,63 @@ class SensingAgent(Agent):
     def sensor(self) -> Sensor:
         """``Sensor``: Sensor object associated with this agent."""
         return self._sensor
+
+    def updateObsRecord(
+        self,
+        observations: list[Observation],
+    ) -> None:
+        """Update's the sensing agent's record of last observations of a target.
+
+        Args:
+            observations (list[Observation]): List of observations.
+        """
+        for ob in observations:
+            epoch = JulianDate(ob.julian_date)
+            if ob.target_id not in self._last_obs_record:
+                self._last_obs_record[ob.target_id] = epoch
+                continue
+            if self._last_obs_record[ob.target_id] < epoch:
+                self._last_obs_record[ob.target] = epoch
+
+    def readyToRevisit(self, target_id: int) -> bool:
+        """Checks if the sensor is ready to revisit a target under it's own revisit time constraints. Always returns `True` if  `self.min_revisit_time` is set to 0. Will return false if the time since last observation of that target is less than the configured min revisit time.
+
+        Args:
+            target_id (int): Unique identifier of the target agent.
+
+        Returns:
+            bool: True, if ready to revisit. False otherwise.
+        """
+        if self.min_revisit_time == 0 or target_id not in self._last_obs_record:
+            return True
+        return (
+            float(self._last_obs_record[target_id] - self.julian_date_epoch)
+            >= self.min_revisit_time * SEC2DAYS
+        )
+
+    def collectObservations(
+        self,
+        estimate_eci: ndarray,
+        target_agent: TargetAgent,
+        background_agents: list[TargetAgent],
+    ) -> tuple[list[Observation], list[MissedObservation], ndarray, ScenarioTime]:
+        """Collect observations on all targets within the sensor's FOV.
+
+        Args:
+            estimate_eci (``ndarray``): Estimate state vector that sensor is pointing at
+            target_agent (:class:`.TargetAgent`): Target agent that sensor is pointing at
+            background_agents (``list``): list of possible :class:`.TargetAgent` objects in FoV
+
+        Returns:
+            ``list``: :class:`.Observation` for each successful tasked observation
+            ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
+            ``ndarray``: 3x1 SEZ boresight unit vector
+            ``float``: :class:`.ScenarioTime` last time observed
+        """
+        obs, missed_obs, boresight, time_since_last_tasked = self.sensor.collectObservations(
+            estimate_eci,
+            target_agent,
+            background_agents,
+        )
+        self.updateObsRecord(obs)
+        return obs, missed_obs, boresight, time_since_last_tasked
