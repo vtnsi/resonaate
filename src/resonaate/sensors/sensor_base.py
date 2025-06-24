@@ -247,26 +247,22 @@ class Sensor(ABC):
         if (
             self.isOffline()
         ):  # NOTE: This check is already made in .collectObservations(). However, for background agents,
-            return (
-                MissedObservation(  # It might be useful to include missed observations.
-                    julian_date=self.host.julian_date_epoch,
-                    sensor_type=getTypeString(self),
-                    sensor_id=self.host.simulation_id,
-                    target_id=target_agent.simulation_id,
-                    sensor_eci=self.host.eci_state,
-                    reason=Explanation.SENSOR_OFFLINE.value,
-                ),
+            return MissedObservation(  # It might be useful to include missed observations.
+                julian_date=self.host.julian_date_epoch,
+                sensor_type=getTypeString(self),
+                sensor_id=self.host.simulation_id,
+                target_id=target_agent.simulation_id,
+                sensor_eci=self.host.eci_state,
+                reason=Explanation.SENSOR_OFFLINE.value,
             )
         if self._randomMissedOb():
-            return (
-                MissedObservation(
-                    julian_date=self.host.julian_date_epoch,
-                    sensor_type=getTypeString(self),
-                    sensor_id=self.host.simulation_id,
-                    target_id=target_agent.simulation_id,
-                    sensor_eci=self.host.eci_state,
-                    reason=Explanation.RANDOM_MISSED_TRACK.value,
-                ),
+            return MissedObservation(
+                julian_date=self.host.julian_date_epoch,
+                sensor_type=getTypeString(self),
+                sensor_id=self.host.simulation_id,
+                target_id=target_agent.simulation_id,
+                sensor_eci=self.host.eci_state,
+                reason=Explanation.RANDOM_MISSED_TRACK.value,
             )
 
         slant_range_sez = getSlantRangeVector(
