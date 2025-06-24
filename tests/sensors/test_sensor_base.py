@@ -56,13 +56,18 @@ def getBackgroundTargetAgent() -> TargetAgent:
     return background_target
 
 
-@pytest.fixture(name="mocked_downtime_cfg")
+@pytest.fixture(name="downtime_cfg")
 def getMockedDowntimeCfgs() -> list[ScheduledDowntimeConfig]:
     """Creates some mocked downtime configs for testing."""
     return [
         ScheduledDowntimeConfig(
             period=0.0,
             duration=10000,
+            offset=0.0,
+        ),
+        ScheduledDowntimeConfig(
+            period=86400,
+            duration=3600,
             offset=0.0,
         ),
     ]
@@ -414,7 +419,7 @@ def testCollectObservations(
     radar_sensor_args: dict,
     mocked_sensing_agent: SensingAgent,
     mocked_primary_target: TargetAgent,
-    mocked_downtime_cfg: list[ScheduledDowntimeConfig],
+    downtime_cfg: list[ScheduledDowntimeConfig],
 ):
     """Test `Sensor.sensor.collectObservations`."""
     sensor = Radar(**radar_sensor_args)
@@ -486,7 +491,7 @@ def testCollectObservations(
     )
 
     # Test when the sensor is offline.
-    mocked_sensing_agent.sensor.downtimes = mocked_downtime_cfg
+    mocked_sensing_agent.sensor.downtimes = downtime_cfg
     good_obs, missed_obs, _, _ = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
@@ -726,6 +731,44 @@ def testDeltaBoresight(base_sensor_args: dict):
 
     sez_position = np.array((1.0, 0.0, 0.0))
     assert sensor.deltaBoresight(sez_position) == 0.0
+
+
+@patch.multiple(Sensor, __abstractmethods__=set())
+def testIsOffline(
+    base_sensor_args: dict,
+    mocked_sensing_agent: SensingAgent,
+    downtime_cfg: list[ScheduledDowntimeConfig],
+) -> None:
+    """Tests that the sensor's offline assessment works as intended.
+
+    Args:
+        base_sensor_args (dict): Base sensor parameter.
+        mocked_sensing_agent (SensingAgent): Host sensing agent.
+        downtime_cfg(list[ScheduledDowntimeConfig]): Downtime configs.
+    """
+    sensor = Sensor(**base_sensor_args)
+    sensor.host = mocked_sensing_agent
+    sensor.host.eci_state = np.array((6378.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    sensor.host.julian_date_epoch = JulianDate(2459569.75)
+    sensor.field_of_view = ConicFoV(cone_angle=np.deg2rad(45.0))
+    mocked_sensing_agent.sensor = sensor
+
+    # Test always online when not configured.
+    assert not mocked_sensing_agent.sensor.isOffline()
+
+    # Enable downtimes and ensure sensor is offline at the correct times
+    mocked_sensing_agent.sensor.downtimes = downtime_cfg
+
+    # Time should be set to 0. At this time we should be offline
+    assert mocked_sensing_agent.sensor.isOffline()
+
+    # Bump time to 12000. Sensor should be online
+    mocked_sensing_agent.sensor.host.time += 12000
+    assert not mocked_sensing_agent.sensor.isOffline()
+
+    # Bump time to 87400. Sensor should be offline
+    mocked_sensing_agent.sensor.host.time += 75400
+    assert mocked_sensing_agent.sensor.isOffline()
 
 
 def testAttemptNoisyObservation():
