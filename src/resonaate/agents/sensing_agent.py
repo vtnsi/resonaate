@@ -304,6 +304,8 @@ class SensingAgent(Agent):
             ``ndarray``: 3x1 SEZ boresight unit vector
             ``float``: :class:`.ScenarioTime` last time observed
         """
+        if not self.readyToRevisit(target_agent.simulation_id):
+            self._logger.warning(f"Sensor {self.simulation_id} tasked when not ready to revisit.")
         obs, missed_obs, boresight, time_since_last_tasked = self.sensor.collectObservations(
             estimate_eci,
             target_agent,
