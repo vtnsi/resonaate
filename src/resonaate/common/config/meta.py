@@ -5,15 +5,21 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 from abc import ABC, abstractmethod
-from argparse import ArgumentParser
 from contextlib import suppress
 from enum import Enum
+from os import environ
 from types import NoneType
-from typing import Annotated, NewType, Optional, Union, get_args
+from typing import TYPE_CHECKING, Annotated, NewType, get_args
 
 # Third Party Imports
 from pydantic import BaseModel, Field, create_model
-from pydantic.fields import FieldInfo
+
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from argparse import ArgumentParser
+
+    # Third Party Imports
+    from pydantic.fields import FieldInfo
 
 _NotSet = NewType("_NotSet", NoneType)
 """Special type to specify a field was not set in a provided configuration.
@@ -132,6 +138,17 @@ class UserSpec(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def retrieveUserInput(self, user_input: dict, parsed_args: dict, dotenv_vals: dict):
+        """Retrieve user input for this configuration specification.
+
+        Args:
+            user_input: Mapping on which to store provided user input.
+            parsed_args: Mapping of arguments parsed from the command line.
+            dotenv_vals: Mapping of user input specified in a dotenv file.
+        """
+        raise NotImplementedError
+
 
 class UserFieldInfo(UserSpec):
     """Specify the parameters of a user configuration field."""
@@ -203,6 +220,29 @@ class UserFieldInfo(UserSpec):
             )
         return True
 
+    def retreiveUserInput(self, user_input: dict, parsed_args: dict, dotenv_vals: dict):
+        """Retrieve user input for this configuration specification.
+
+        Input will be retrieved from the followng user input sources, with each subsequent source
+        taking precedence over the previous if there are option conflicts:
+         - Environment variables.
+         - Variables set in dotenv file specified by `dotenv_vals`.
+         - Variables specified as command line arguments.
+
+        Args:
+            user_input: Mapping on which to store provided user input.
+            parsed_args: Mapping of arguments parsed from the command line.
+            dotenv_vals: Mapping of user input specified in a dotenv file.
+        """
+        this_user_input = parsed_args.get(self.title, default=_NotSet)
+
+        if self.env_name is not None and user_input is _NotSet:
+            this_user_input = environ.get(self.env_name, default=_NotSet)
+            this_user_input = dotenv_vals.get(self.env_name, default=_NotSet)
+
+        if this_user_input is not _NotSet:
+            user_input[self.title] = this_user_input
+
 
 class UserFieldCollection(UserSpec):
     """Collection of :class:`.UserSpec` instances delineated by field names."""
@@ -235,6 +275,20 @@ class UserFieldCollection(UserSpec):
         for field in self._field_collection.values():
             field.addToArgParser(arg_parser)
         return True
+
+    def retreiveUserInput(self, user_input: dict, parsed_args: dict, dotenv_vals: dict):
+        """Recursively retrieve user input for each field in this collection.
+
+        Args:
+            user_input: Mapping on which to store provided user input.
+            parsed_args: Mapping of arguments parsed from the command line.
+            dotenv_vals: Mapping of user input specified in a dotenv file.
+        """
+        this_user_input = {}
+        for spec in self._field_collection.values():
+            spec.retrieveUserInput(this_user_input, parsed_args, dotenv_vals)
+        if this_user_input:
+            user_input[self.title] = this_user_input
 
 
 def userSpecFactory(spec_title: str, spec_info: FieldInfo | BaseModel) -> UserSpec:
