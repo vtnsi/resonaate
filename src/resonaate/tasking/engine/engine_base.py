@@ -187,7 +187,6 @@ class TaskingEngine(metaclass=ABCMeta):
             sensor_id (``int``): Unique identifier for the sensor being removed.
         """
         self.sensor_list.remove(sensor_id)
-        del self.sensor_last_revisits[sensor_id]
         self._sortSensors()
 
     def saveObservations(self, observations: list[Observation]) -> None:

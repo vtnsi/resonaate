@@ -204,23 +204,20 @@ class CentralizedTaskingEngine(TaskingEngine):
                 int(observation.pos_z_km * 1000000),
                 observation.target_id,
             )
+            # Update the engine and sensor's last observation records.
+            obs_epoch = datetimeToJulianDate(datetime_epoch)
+            if (
+                observation.target_id not in self.network_last_revisits
+                or observation.julian_date
+                > float(self.network_last_revisits[observation.target_id])
+            ):
+                self.network_last_revisits[observation.target_id] = obs_epoch
+            sensor: SensingAgent = ray.get(self._sensor_store[observation.sensor_id])
+            sensor.updateObsRecord([observation])
+            self._sensor_store[observation.sensor_id] = ray.put(sensor)
             if position_key not in sensor_position_set:
                 imported_observations.append(observation)
                 sensor_position_set.add(position_key)
-
-                # Update the engine's last observation record
-                obs_epoch = JulianDate(observation.julian_date)
-                if observation.target_id not in self.network_last_revisits:
-                    self.network_last_revisits[observation.target_id] = obs_epoch
-                elif observation.julian_date > float(
-                    self.network_last_revisits[observation.target_id],
-                ):
-                    # NOTE: This might need to be a combined if statement.
-                    self.network_last_revisits[observation.target_id] = obs_epoch
-
-                # Update the sensor's last observation record
-                sensor: SensingAgent = ray.get(self._sensor_store[observation.sensor_id])
-                sensor.updateObsRecord([observation])
             else:
                 obs_dict = observation.makeDictionary()
                 msg = f"Dropped duplicate observation: {obs_dict.sensor_id} of {obs_dict.target_id} at {obs_dict.julian_date}"
