@@ -10,7 +10,7 @@ from numpy import array
 
 # Local Imports
 from ..data.ephemeris import TruthEphemeris
-from ..physics.constants import SEC2DAYS
+from ..physics.constants import DAYS2SEC
 from ..physics.time.stardate import JulianDate
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..sensors import sensorFactory
@@ -281,8 +281,8 @@ class SensingAgent(Agent):
         if self.min_revisit_time == 0 or target_id not in self._last_obs_record:
             return True
         return (
-            float(self._last_obs_record[target_id] - self.julian_date_epoch)
-            >= self.min_revisit_time * SEC2DAYS
+            float(self.julian_date_epoch - self._last_obs_record[target_id]) * DAYS2SEC
+            >= self.min_revisit_time
         )
 
     def collectObservations(
