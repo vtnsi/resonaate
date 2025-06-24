@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     # Local Imports
+    from ..agents.estimate_agent import EstimateAgent
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from ..physics.measurements import Measurement
@@ -494,3 +495,50 @@ class Sensor(ABC):
             if (time_elapsed - downtime.offset) % downtime.period <= downtime.duration:
                 return True
         return False
+
+    def predictObservation(
+        self,
+        estimate_agent: EstimateAgent,
+    ) -> Observation | None:
+        """Forecasting an observation for reward matrix purposes.
+
+        Args:
+            sensing_agent (SensingAgent): agent performing predicted observation
+            estimate_agent (EstimateAgent): agent being observed
+
+        Returns:
+            :class:`.Observation` | None : constructed observation if observable
+        """
+        slant_range_sez = getSlantRangeVector(
+            self.host.eci_state,
+            estimate_agent.eci_state,
+            self.host.datetime_epoch,
+        )
+
+        # Check if the sensor is offline
+        if self.isOffline():
+            return None
+
+        # Check if the estimated target is reachable
+        if not self.canSlew(slant_range_sez):
+            return None
+        # Check if the estimated target is observable
+        visibility, _ = self.isVisible(
+            estimate_agent.eci_state,
+            estimate_agent.visual_cross_section,
+            estimate_agent.reflectivity,
+            slant_range_sez,
+        )
+        if not visibility:
+            return None
+
+        return Observation.fromMeasurement(
+            epoch_jd=self.host.julian_date_epoch,
+            target_id=estimate_agent.simulation_id,
+            tgt_eci_state=estimate_agent.eci_state,
+            sensor_id=self.host.simulation_id,
+            sensor_eci=self.host.eci_state,
+            sensor_type=getTypeString(self),
+            measurement=self.measurement,
+            noisy=False,  # Don't add noise for prospective observations
+        )

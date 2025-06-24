@@ -102,4 +102,5 @@ def getMockedSensingAgentObject(mocked_sensor: Sensor) -> SensingAgent:
     sensing_agent.sensor = mocked_sensor
     sensing_agent.eci_state = np.ones(6)
     sensing_agent.datetime_epoch = datetime(2018, 12, 1, 12)
+    mocked_sensor.host = sensing_agent
     return sensing_agent
