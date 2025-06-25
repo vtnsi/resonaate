@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from datetime import datetime
 from unittest.mock import MagicMock, create_autospec, patch
 
 # Third Party Imports
@@ -16,6 +17,8 @@ from resonaate.parallel.tasking_reward_generation import (
     RewardCalcSubmission,
     asyncCalculateReward,
 )
+from resonaate.physics.constants import SEC2DAYS
+from resonaate.physics.time.stardate import JulianDate, datetimeToJulianDate
 from resonaate.tasking.metrics.target import TimeSinceObservation
 from resonaate.tasking.rewards.rewards import Reward, SimpleSummationReward
 
@@ -45,6 +48,10 @@ def testAsyncCalcReward(
     mocked_observation: Observation,
 ) -> None:
     """Tests async calc reward."""
+    epoch = datetimeToJulianDate(datetime(2020, 4, 20, 1, 1, 1))
+    mocked_estimate.julian_date_epoch = epoch
+    mocked_sensing_agent.julian_date_epoch = epoch
+
     # Set up mocks so that the thing should be visible
     mocked_estimate.nominal_filter.forecast = MagicMock()
     mocked_sensing_agent.readyToRevisit = MagicMock(return_value=True)
@@ -94,6 +101,28 @@ def testAsyncCalcReward(
 
         # It should not have been visible
         mocked_sensing_agent.readyToRevisit.assert_called_once()
+        mocked_sensing_agent.sensor.predictObservation.assert_not_called()
+        mocked_estimate.nominal_filter.forecast.assert_not_called()
+        assert not result.visibility[0]
+
+        # Reset mocks and this time set the engine to not be ready to revisit
+        mocked_estimate.nominal_filter.forecast.reset_mock()
+        mocked_sensing_agent.readyToRevisit.reset_mock()
+        mocked_sensing_agent.readyToRevisit = MagicMock(return_value=True)
+        mocked_sensing_agent.sensor.predictObservation.reset_mock()
+
+        last_observed_epoch = JulianDate(epoch + 1200 * SEC2DAYS)
+        submission = RewardCalcSubmission(
+            estimate_handle,
+            reward,
+            [sensing_handle],
+            3600,
+            last_observed_epoch,
+        )
+        result: RewardCalcResult = asyncCalculateReward._function(submission)
+
+        # It should not have been visible
+        mocked_sensing_agent.readyToRevisit.assert_not_called()
         mocked_sensing_agent.sensor.predictObservation.assert_not_called()
         mocked_estimate.nominal_filter.forecast.assert_not_called()
         assert not result.visibility[0]
