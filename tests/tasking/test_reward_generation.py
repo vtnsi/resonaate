@@ -52,6 +52,9 @@ def testAsyncCalcReward(
         return_value=mocked_observation,
     )
 
+    # NOTE: The below nested functions are an attempt by me to spoof
+    # ray.get and ray.put calls for purposes of testing. It is certainly hacky.
+    # It actually works way better than trying to ray.put mocks ever will though.
     store: dict = {}
 
     def fakeRayPut(instance):
@@ -63,7 +66,7 @@ def testAsyncCalcReward(
         return instance.simulation_id
 
     def fakeRayGet(handle):
-        if isinstance(handle, list):  # Hacky way to spoof ray.get
+        if isinstance(handle, list):
             return [store[item] for item in handle]
         return store.get(handle)
 
@@ -72,10 +75,25 @@ def testAsyncCalcReward(
         estimate_handle = ray.put(mocked_estimate)
 
         submission = RewardCalcSubmission(estimate_handle, reward, [sensing_handle], 0, 0)
-
         result: RewardCalcResult = asyncCalculateReward._function(submission)
 
         # It should have been visible
         mocked_sensing_agent.readyToRevisit.assert_called_once()
         mocked_sensing_agent.sensor.predictObservation.assert_called_once()
+        mocked_estimate.nominal_filter.forecast.assert_called_once()
         assert result.visibility[0]
+
+        # Reset mocks and this time set the sensor to not be ready to revisit
+        mocked_estimate.nominal_filter.forecast.reset_mock()
+        mocked_sensing_agent.readyToRevisit.reset_mock()
+        mocked_sensing_agent.readyToRevisit = MagicMock(return_value=False)
+        mocked_sensing_agent.sensor.predictObservation.reset_mock()
+
+        submission = RewardCalcSubmission(estimate_handle, reward, [sensing_handle], 0, 0)
+        result: RewardCalcResult = asyncCalculateReward._function(submission)
+
+        # It should not have been visible
+        mocked_sensing_agent.readyToRevisit.assert_called_once()
+        mocked_sensing_agent.sensor.predictObservation.assert_not_called()
+        mocked_estimate.nominal_filter.forecast.assert_not_called()
+        assert not result.visibility[0]
