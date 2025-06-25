@@ -66,7 +66,14 @@
       "efficiency": 0.98,
       "aperture_diameter": 1.016,
       "min_revisit_time": 3600,
-      "missed_obs_probability": 0.1
+      "missed_obs_probability": 0.1,
+      "downtimes": [
+        {
+          "period": 86400,
+          "duration": 7200,
+          "offset": 0
+        }
+      ]
     }
   },
   {
@@ -126,7 +133,14 @@
       "efficiency": 0.98,
       "aperture_diameter": 1.016,
       "min_revisit_time": 3600,
-      "missed_obs_probability": 0.1
+      "missed_obs_probability": 0.1,
+      "downtimes": [
+        {
+          "period": 86400,
+          "duration": 7200,
+          "offset": 0
+        }
+      ]
     }
   },
   {
@@ -166,7 +180,14 @@
       "efficiency": 0.98,
       "aperture_diameter": 1.016,
       "min_revisit_time": 3600,
-      "missed_obs_probability": 0.1
+      "missed_obs_probability": 0.1,
+      "downtimes": [
+        {
+          "period": 86400,
+          "duration": 7200,
+          "offset": 0
+        }
+      ]
     }
   },
   {
@@ -206,7 +227,14 @@
       "efficiency": 0.98,
       "aperture_diameter": 1.016,
       "min_revisit_time": 3600,
-      "missed_obs_probability": 0.1
+      "missed_obs_probability": 0.1,
+      "downtimes": [
+        {
+          "period": 86400,
+          "duration": 7200,
+          "offset": 0
+        }
+      ]
     }
   },
   {
