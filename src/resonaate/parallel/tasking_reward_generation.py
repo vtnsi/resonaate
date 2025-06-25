@@ -12,7 +12,6 @@ from numpy import zeros
 
 # Local Imports
 from ..physics.constants import DAYS2SEC
-from ..tasking.predictions import predictObservation
 from . import JobExecutor, Registration
 
 if TYPE_CHECKING:
@@ -101,7 +100,7 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
                 continue
         if not sensor_agent.readyToRevisit(estimate.simulation_id):
             continue
-        if predicted_observation := predictObservation(sensor_agent, estimate):
+        if predicted_observation := sensor_agent.sensor.predictObservation(estimate):
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
             visibility[sensor_index] = True
