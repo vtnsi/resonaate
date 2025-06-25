@@ -96,11 +96,12 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
         # Check sensor network min revisit time, if enabled
 
         # Verify that the obseravtion record exists first.
-        if submission.engine_last_revisit_epoch:  # noqa: SIM102
-            if (
-                estimate.julian_date_epoch - submission.engine_last_revisit_epoch
-            ) * DAYS2SEC < submission.engine_min_revisit_time:
-                continue
+        if (
+            submission.engine_last_revisit_epoch
+            and (estimate.julian_date_epoch - submission.engine_last_revisit_epoch) * DAYS2SEC
+            < submission.engine_min_revisit_time
+        ):
+            continue
         if submission.enable_sensor_min_revisit and not sensor_agent.readyToRevisit(
             estimate.simulation_id,
         ):
@@ -157,8 +158,8 @@ class TaskingRewardRegistration(Registration):
             self._estimate_handle,
             self._reward,
             self._sensor_handle_list,
-            engine_last_revisit_epoch,
             self._registrant.min_revisit_time,
+            engine_last_revisit_epoch,
             self._registrant.enable_sensor_min_revisit,
         )
 
