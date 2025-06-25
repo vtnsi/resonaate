@@ -105,6 +105,22 @@ def testAsyncCalcReward(
         mocked_estimate.nominal_filter.forecast.assert_not_called()
         assert not result.visibility[0]
 
+        # Reset mocks, set the sensor to not be ready to revisit, but this time
+        # disable sensor revisit time at the engine level.
+        mocked_estimate.nominal_filter.forecast.reset_mock()
+        mocked_sensing_agent.readyToRevisit.reset_mock()
+        mocked_sensing_agent.readyToRevisit = MagicMock(return_value=False)
+        mocked_sensing_agent.sensor.predictObservation.reset_mock()
+
+        submission = RewardCalcSubmission(estimate_handle, reward, [sensing_handle], 0, 0, False)
+        result: RewardCalcResult = asyncCalculateReward._function(submission)
+
+        # It should be visible
+        mocked_sensing_agent.readyToRevisit.assert_not_called()
+        mocked_sensing_agent.sensor.predictObservation.assert_called_once()
+        mocked_estimate.nominal_filter.forecast.assert_called_once()
+        assert result.visibility[0]
+
         # Reset mocks and this time set the engine to not be ready to revisit
         mocked_estimate.nominal_filter.forecast.reset_mock()
         mocked_sensing_agent.readyToRevisit.reset_mock()
