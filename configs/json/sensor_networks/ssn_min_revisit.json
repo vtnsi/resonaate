@@ -1,0 +1,232 @@
+[
+  {
+    "name": "Eglin AN/FPS-85 NE",
+    "id": 123980,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 30.57222, "longitude": -86.21444, "altitude": 0.036 },
+    "sensor": {
+      "type": "adv_radar",
+      "covariance": [
+        [7.224306727661582e-12, 0.0, 0.0, 0.0],
+        [0.0, 6.5824778241709845e-12, 0.0, 0.0],
+        [0.0, 0.0, 9e-10, 0.0],
+        [0.0, 0.0, 0.0, 1.0000000000000002e-14]
+      ],
+      "slew_rate": 180.0,
+      "azimuth_range": [119.99999999999999, 239.99999999999997],
+      "elevation_range": [1.0, 89.99999],
+      "efficiency": 0.95,
+      "aperture_diameter": 50.0,
+      "tx_power": 35000000.0,
+      "tx_frequency": 442000000.0,
+      "min_detectable_power": 1.8879589456640846e-18,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Eglin AN/FPS-85 DS",
+    "id": 123990,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 30.57222, "longitude": -86.21444, "altitude": 0.036 },
+    "sensor": {
+      "type": "adv_radar",
+      "covariance": [
+        [7.224306727661582e-12, 0.0, 0.0, 0.0],
+        [0.0, 6.5824778241709845e-12, 0.0, 0.0],
+        [0.0, 0.0, 9e-10, 0.0],
+        [0.0, 0.0, 0.0, 1.0000000000000002e-14]
+      ],
+      "slew_rate": 180.0,
+      "azimuth_range": [119.99999999999999, 239.99999999999997],
+      "elevation_range": [1.0, 89.99999],
+      "efficiency": 0.95,
+      "aperture_diameter": 50.0,
+      "tx_power": 35000000.0,
+      "tx_frequency": 442000000.0,
+      "min_detectable_power": 5.0311404977095e-19,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Socorro AN/FSD-3 1",
+    "id": 122110,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 33.81694, "longitude": -106.66, "altitude": 1.51 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Socorro AN/FSD-3 2",
+    "id": 122120,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 33.81694, "longitude": -106.66, "altitude": 1.51 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Socorro AN/FSD-3 3",
+    "id": 122130,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 33.81694, "longitude": -106.66, "altitude": 1.51 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Maui AN/FSD-3 1",
+    "id": 122310,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 20.70806, "longitude": -156.25806, "altitude": 3.0586 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Maui AN/FSD-3 2",
+    "id": 122320,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 20.70806, "longitude": -156.25806, "altitude": 3.0586 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Maui AN/FSD-3 3",
+    "id": 122330,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": 20.70806, "longitude": -156.25806, "altitude": 3.0586 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Diego Garcia AN/FSD-3 1",
+    "id": 122410,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": -7.41111, "longitude": 72.45194, "altitude": -0.0612 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Diego Garcia AN/FSD-3 2",
+    "id": 122420,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": -7.41111, "longitude": 72.45194, "altitude": -0.0612 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  },
+  {
+    "name": "Diego Garcia AN/FSD-3 3",
+    "id": 122430,
+    "platform": { "type": "ground_facility" },
+    "state": { "type": "lla", "latitude": -7.41111, "longitude": 72.45194, "altitude": -0.0612 },
+    "sensor": {
+      "type": "optical",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "aperture_diameter": 1.016,
+      "min_revisit_time": 3600,
+      "missed_obs_probability": 0.1
+    }
+  }
+]
