@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
 from ...common.labels import FoVLabel, PlatformLabel, SensorLabel
@@ -47,7 +47,7 @@ class SensorAdditionEvent(Event):
         """``int``: Unique ID for the :class:`.TaskingEngine` that this sensor should be added to."""
         return Event.__table__.c.get("tasking_engine_id", Column(Integer))
 
-    platform = Column(String(64))
+    platform: Mapped[str] = Column(String(64))
     """``str``: Label for type of platform that this sensing agent is."""
 
     @declared_attr
@@ -291,7 +291,7 @@ class SensorAdditionEvent(Event):
 
         station_keeping = ""
         if sensor_agent.platform.type == PlatformLabel.SPACECRAFT:
-            station_keeping = dumps(sensor_agent.platform.station_keeping.toJSON())
+            station_keeping = sensor_agent.platform.station_keeping.model_dump_json()
 
         custom_kwargs = {}
         if sensor.type in (SensorLabel.RADAR, SensorLabel.ADV_RADAR):

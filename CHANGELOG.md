@@ -22,7 +22,7 @@ ______________________________________________________________________
 
 **Table of Contents**
 
-\[\[_TOC_\]\]
+[[_TOC_]]
 
 <!-- markdownlint-enable MD036 -->
 
@@ -65,6 +65,106 @@ ______________________________________________________________________
 ### Development
 
 *for improving developer tools & environment*
+
+### CI
+
+*related to the continuous integration system*
+
+
+## [4.1.0][v4.1.0] - 2025-06-24
+
+### Added
+
+- `TLELoader` object into `physics.orbits.tle`.
+- `teme2ecef` conversion function into `physics.transforms.methods`.
+- `getSmaFromMeanMotion` function into `physics.orbits.utils`.
+- TEME to ECEF conversion method
+- Ability to update EOP data and select a custom source location.
+- Behavioral Config option for your default EOP data location.
+- Multiple loader objects for updating EOP data: `DotDatLoader`, `ModuleDotDatLoader`, `LocalDotDatLoader`, `RemoteDotDatLoader`.
+- Improved documentation for database schemas in `resonaate.data`.
+- Configuration option to save filter step information in `EstimationConfig`.
+- Additional columns to the `FilterStep` object.
+- `np.ndarray` to JSON string conversion utilities.
+- Ability to save `FilterStep` objects to the database.
+- `common.labels.GeopotentialModel` enum
+- `common.labels.StationKeepingRoutine` enum
+- `common.labels.DecisionLabel` enum
+- `common.labels.RewardLabel` enum
+- `common.labels.MetricLabel` enum
+- `physics.orbits.ResidentStratification` class to encapsulate orbit designation information/defaults
+- `scenario.config.state_config` orbital elements are now validated based on limits expressed in docstrings
+  - **WARNING**: *this could break existing input config files*, but I don't think it's enough of a change to warrant a version bump
+- option for multi-level caching of reduction parameters
+- `estimation.particle.particle_filter` Support for particle filters with relevant labels and configuration objects
+- `estimation.particle.genetic_particle_filter` An initial, simple particle filter implementation with relevant labels and configuration objects
+- `dynamics.dynamics_base.DynamicsErrorFlag` enum for controlling certain propagation errors
+- `physics.maths.vecResiduals` a numpy vectorized residual calculation
+- `physics.maths.vecWrapAngle2Pi` a numpy vectorized angle wrapping funciton
+- `physics.maths.vecWrapAngleNeg` a numpy vectorized angle wrapping funciton
+
+### Changed
+
+- replaced custom configuration code (i.e. `ConfigObject`, `ConfigObjectList`, and associated errors) with Pydantic models/validators
+- `TargetAgentConfig` now just known as `AgentConfig`
+- most `enum.Enum`s now inherit from `str` for easier Pydantic handling
+- `ScheduledImpulse` classes and burn methods are now mapped directly to `ThrustFrame` enum via the `impulse` and `thrust` properties respectively
+- added `ManeuverType` enum that maps maneuver types to thrust methods via `thrust` property
+- replaced `physics.sensor_utils.getFrequencyFromString()` with `.FrequencyBand` enum and `mean` property
+- `estimation` module factory method conventions rely more on config objects and mappings, rather than conditionals
+- `tasking` module factory method conventions rely more on config objects and mappings, rather than custom registries
+- refactored reduction parameters (see `pysics.transforms.reductions.ReductionParams`)
+- iteratively store `Agent`s as Ray remote objects to replace centralized `Agent` caching
+  - ~~agent caching methodology now available via `agents.agent_cache` module~~
+- incorporate `EstimateAgent` rework to remove duplicate 'update' definitions and calls
+  - implement formal `Result` hierarchy for `Filter` results
+  - reimplement `strmbrkr` `KeyValueStore` using a Ray Actor
+- refactor 'importer' paradigm into its own `dynamics` module
+- refactor `checkThreeSigmaObs()` -> `checkThreeSigmaObservation()` to reduce dependency on old agent cache implementation
+- replace `job_handlers` classes with Ray implementations that abstract away a lot of the old `Job` passing boilerplate code
+  - This resulted in lots of changes to...
+    - `Scenario` (in particular `::stepForward()`)
+    - `CentralizedEngine` (in particular `::assess()`)
+  - ...to update how parallel processing is called
+- refactor `CentralizedEngine._createLoadedObs()` -> `::_attachObsMetadata()`
+- fixed the bulk propagator in `dynamics.celestial.Celestial.propagateBulk`
+- dynamics now accept flags for certain stop conditions
+
+### Deprecated
+
+*for soon-to-be removed features*
+
+### Removed
+
+- Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` constant.
+- orbit-dependent platform constants from `agents` module (see `physics.orbits.ResidentStratification` addition)
+- reduction parameters are no longer cached due to performance of `strmbrkr` kvs
+- remove `createFilterDebugDict()` and `logFilterStep()` debug methods since we save `FilterStep` objects to the database now
+
+### Fixed
+
+*for any bug fixes*
+
+### Security
+
+*in case of vulnerabilities*
+
+### Test
+
+- Added test to ensure proper functionality of the EOP update functionality.
+- Added testing for `np.ndarray` to JSON string conversions.
+- Added testing for new `FilterStep` properties.
+- Modified existing testing for `EstimationConfig` to inlcude new configuration option.
+- tests had to be updated to accommodate pydantic migration changes
+
+### Development
+
+- suppress `sphinx` duplicate cross reference warning
+- remove `.python-version` because I wanted to use 3.11 and it was messing with my `uv` venv
+- change `.gitignore` to ignore timeline files produced by Ray, rather than old `strmbrkr` artifacts
+- update license to Apache V2
+- fix some outdated readme information
+- add project metadata to `pyproject.toml`
 
 ### CI
 
@@ -233,7 +333,7 @@ ______________________________________________________________________
 - updated EOP data included within RESONAATE (see commit 1ec535b7a)
 - moved measurement functions (like `getAzimuth()`) to `physics.measurement_utils` module
 - added `utc_date` parameter to `updateReductionParameters()` (see #49 and !80)
-- added `utc_date` parameter to `getReductionParameters()`  (see #49 and !80)
+- added `utc_date` parameter to `getReductionParameters()` (see #49 and !80)
 - `getReductionParameters()` caches results and re-calculate if `utc_date` doesn't exist or doesn't match the value in the KVS (see #49 and !80)
 - added `utc_date` parameter to coordinate frame transformations which use reductions directly or indirectly (see #49 and !80)
 - `determineTransferDirection()` checks orbital period instead of true anomaly, so only a position vector is needed (see #170 and !153)
@@ -805,6 +905,8 @@ Initial version ported to a new repository.
 [v1.5.2]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.1...v1.5.2
 [v2.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.2...v2.0.0
 [v3.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v2.0.0...v3.0.0
+[v4.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v3.0.0...v4.0.0
+[v4.1.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v4.0.0...v4.1.0
 [`black`]: https://black.readthedocs.io/en/stable/index.html
 [`isort`]: https://pycqa.github.io/isort/
 [`pre-commit`]: https://pre-commit.com/

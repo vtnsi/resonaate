@@ -5,12 +5,12 @@ from __future__ import annotations
 # Standard Library Imports
 import logging
 import sys
-from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from os import makedirs
 from os.path import exists, join
 
 # Local Imports
+from . import pathSafeTime
 from .behavioral_config import BehavioralConfig
 
 
@@ -51,10 +51,7 @@ class Logger:
                     makedirs(path)
 
                 # Set the timestamp for the file name, and construct the entire filename
-                now = datetime.now()
-                time_tup = now.timetuple()
-                timestamp = f"{time_tup[0]}{time_tup[1]}{time_tup[2]}_{time_tup[3]}{time_tup[4]}{time_tup[5]}"
-                log_name = f"{name}_{timestamp}.log"
+                log_name = f"{name}_{pathSafeTime()}.log"
                 self.filename = join(path, log_name)
 
                 # Create the file handler based on the file name

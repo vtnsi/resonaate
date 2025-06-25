@@ -2,69 +2,31 @@ from __future__ import annotations
 
 # Standard Library Imports
 import datetime
-from pickle import loads
 
 # Third Party Imports
 import numpy as np
 import pytest
-from strmbrkr import KeyValueStore
 
 # RESONAATE Imports
 import resonaate.physics.constants as const
 from resonaate.physics.time.conversions import utc2TerrestrialTime
 from resonaate.physics.time.stardate import JulianDate, julianDateToDatetime
-from resonaate.physics.transforms.eops import EarthOrientationParameter
-from resonaate.physics.transforms.reductions import (
-    REDUCTION_KEY,
-    REDUCTION_PARAMETER_LABELS,
-    _updateFK5Parameters,
-    getReductionParameters,
-    updateReductionParameters,
-)
+from resonaate.physics.transforms.eops import EarthOrientationParameter, MissingEOP
+from resonaate.physics.transforms.reductions import ReductionParams
 
 
-def _reductionsCheck(reductions: dict, other_reductions: dict) -> None:
-    for key, val in reductions.items():
-        if isinstance(val, np.ndarray):
-            assert np.array_equal(val, other_reductions[key])
-        else:
-            assert val == other_reductions[key]
-
-
-def testGetReductionParameters() -> None:
+def testReductionParamsBuild() -> None:
     """Test creation and retrieving of values in KVS."""
     utc = datetime.datetime(2022, 6, 10, 4, 12, 30)
 
     # Test no KVS started
-    new_utc = utc - datetime.timedelta(days=2)
-    reductions = getReductionParameters(new_utc)
-    assert reductions["datetime"] == new_utc.isoformat()
-    kvs_reductions = loads(KeyValueStore.getValue(REDUCTION_KEY))
-    direct_reductions = dict(
-        zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=new_utc)),
-    )
-    _reductionsCheck(reductions, kvs_reductions)
-    _reductionsCheck(reductions, direct_reductions)
+    reductions = ReductionParams.build(utc)
+    assert reductions.date_time == utc
 
-    # Insert EOPs and test base case
+    # Make sure we can build another date without error
     new_utc = utc - datetime.timedelta(days=1)
-    updateReductionParameters(new_utc)
-    reductions = getReductionParameters(new_utc)
-    assert reductions["datetime"] == new_utc.isoformat()
-    kvs_reductions = loads(KeyValueStore.getValue(REDUCTION_KEY))
-    direct_reductions = dict(
-        zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=new_utc)),
-    )
-    _reductionsCheck(reductions, kvs_reductions)
-    _reductionsCheck(reductions, direct_reductions)
-
-    # Test when UTC of current EOPs in KVS doesn't match requested
-    reductions = getReductionParameters(utc)
-    assert reductions["datetime"] == utc.isoformat()
-    kvs_reductions = loads(KeyValueStore.getValue(REDUCTION_KEY))
-    direct_reductions = dict(zip(REDUCTION_PARAMETER_LABELS, _updateFK5Parameters(utc_date=utc)))
-    _reductionsCheck(reductions, kvs_reductions)
-    _reductionsCheck(reductions, direct_reductions)
+    reductions = ReductionParams.build(new_utc)
+    assert reductions.date_time == new_utc
 
 
 def testFK5ReductionAlgorithm():
@@ -131,11 +93,10 @@ def testFK5ReductionAlgorithm():
         dat,
     )
     # (rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt, eops, gast, eq_equinox)
-    updateReductionParameters(calendar_date, eops=eops)
-    params = getReductionParameters(calendar_date)
-    rot_wt = params["rot_wt"]
-    rot_rnp = params["rot_rnp"]
-    rot_np = params["rot_pn"].T
+    params = ReductionParams.build(calendar_date, eops=eops)
+    rot_wt = params.rot_wt
+    rot_rnp = params.rot_rnp
+    rot_np = params.rot_pn.T
 
     # Implement the full rotation from terrestrial (ITRF) to celestial (GCRF)
     full_mat = np.matmul(rot_wt, rot_rnp)
@@ -144,22 +105,6 @@ def testFK5ReductionAlgorithm():
     assert np.allclose(correct_np_mat, rot_np, atol=1e-10, rtol=1e-9)
     assert np.allclose(correct_rnp_mat, rot_rnp, atol=1e-10, rtol=1e-9)
     assert np.allclose(correct_full_mat, full_mat, atol=1e-10, rtol=1e-9)
-
-
-def testValidJulianDate():
-    """Test reduction algorithm using only :class:`.JulianDate` as input."""
-    # UTC date
-    calendar_date = datetime.datetime(2018, 3, 15, 12, 55, 33, 780000)
-    # (rot_pn, rot_pnr, rot_rnp, rot_w, rot_wt, eops, gast, eq_equinox)
-    params = getReductionParameters(calendar_date)
-    rot_w = params["rot_w"]
-    rot_pn = params["rot_pn"]
-
-    # Assert that we get 3x3 numpy arrays back
-    assert isinstance(rot_pn, np.ndarray)
-    assert isinstance(rot_w, np.ndarray)
-    assert rot_pn.shape == (3, 3)
-    assert rot_w.shape == (3, 3)
 
 
 def testInvalidJulianDate():
@@ -172,13 +117,13 @@ def testInvalidJulianDate():
 
     # Less ridiculous date, but before range of EOPs
     calendar_date = datetime.datetime(2000, 1, 24, 7, 23, 56, 900000)
-    with pytest.raises(KeyError):
-        updateReductionParameters(calendar_date)
+    with pytest.raises(MissingEOP):
+        ReductionParams.build(calendar_date)
 
     # Date past range of EOPs
     calendar_date = datetime.datetime(2050, 1, 24, 7, 23, 56, 900000)
-    with pytest.raises(KeyError):
-        updateReductionParameters(calendar_date)
+    with pytest.raises(MissingEOP):
+        ReductionParams.build(calendar_date)
 
     with pytest.raises(TypeError):
-        updateReductionParameters(julian_date)
+        ReductionParams.build(julian_date)

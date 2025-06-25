@@ -6,12 +6,12 @@ import pytest
 
 # RESONAATE Imports
 from resonaate.physics.sensor_utils import (
+    FrequencyBand,
     apparentVisualMagnitude,
     calculateIncidentSolarFlux,
     calculatePhaseAngle,
     calculateSunVizFraction,
     getBodyLimbConeAngle,
-    getFrequencyFromString,
     lambertianPhaseFunction,
 )
 
@@ -62,8 +62,8 @@ def testLambertianPhaseFunction():
 def testGetFrequencyFromString():
     """Test getFrequencyFromString()."""
     frequency_string = "L"
-    frequency = getFrequencyFromString(frequency_string)
-    assert frequency == 1.5 * 1e9
+    freq_band = FrequencyBand(frequency_string)
+    assert freq_band.mean == 1.5 * 1e9
 
 
 def testBodyLimbConeAngleBadInputs():

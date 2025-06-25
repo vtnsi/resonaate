@@ -8,7 +8,7 @@ from datetime import timedelta
 # Local Imports
 from ..physics.time.stardate import julianDateToDatetime
 from ..physics.transforms.methods import ecef2eci
-from .dynamics_base import Dynamics
+from .dynamics_base import Dynamics, DynamicsErrorFlag
 
 
 class Terrestrial(Dynamics):
@@ -32,6 +32,7 @@ class Terrestrial(Dynamics):
         initial_state,
         station_keeping=None,
         scheduled_events=None,
+        error_flags: DynamicsErrorFlag = DynamicsErrorFlag.COLLISION,
     ):
         """Propagate the state from the initial time to the final time.
 
@@ -41,6 +42,7 @@ class Terrestrial(Dynamics):
             initial_state (``numpy.ndarray``): (6, ) state vector for the integration step, (km; km/sec)
             station_keeping (None): Not used.
             scheduled_events (None): Not used.
+            error_flags (:class:`.DynamicsErrorFlag`): flags marking which errors will halt propagation (Not used).
 
         Returns:
             ``numpy.ndarray``: 6x1 ECI state vector (km; km/sec)

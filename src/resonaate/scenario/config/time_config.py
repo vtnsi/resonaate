@@ -1,58 +1,46 @@
 """Submodule defining the 'time' configuration section."""
 
+# ruff: noqa: TCH003
+
 from __future__ import annotations
 
 # Standard Library Imports
-from dataclasses import dataclass
 from datetime import datetime
-from typing import ClassVar
 
-# Local Imports
-from .base import ConfigObject, ConfigValueError
+# Third Party Imports
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing_extensions import Self
 
 DEFAULT_TIME_STEP: int = 60
 """``int``: Default time step in seconds."""
 
-TIME_STAMP_FORMAT: str = "%Y-%m-%dT%H:%M:%S.%fZ"
-"""``str``: Format string for time stamps."""
 
-
-@dataclass
-class TimeConfig(ConfigObject):
+class TimeConfig(BaseModel):
     """Configuration section defining several time-based options."""
 
-    CONFIG_LABEL: ClassVar[str] = "time"
-    """``str``: Key where settings are stored in the configuration dictionary."""
-
-    start_timestamp: str | datetime
+    start_timestamp: datetime
     """``str | datetime``: epoch at which the simulation starts."""
 
-    stop_timestamp: str | datetime
+    stop_timestamp: datetime
     """``str | datetime``: epoch at which the scenario stops."""
 
-    physics_step_sec: int = DEFAULT_TIME_STEP
+    physics_step_sec: int = Field(default=DEFAULT_TIME_STEP, gt=1)
     """``int``: time step used for propagation. Defaults to 60 seconds."""
 
-    output_step_sec: int = DEFAULT_TIME_STEP
+    output_step_sec: int = Field(default=DEFAULT_TIME_STEP, gt=1)
     """``int``: time step used for outputting data. Defaults to 60 seconds."""
 
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if isinstance(self.start_timestamp, str):
-            self.start_timestamp = datetime.strptime(self.start_timestamp, TIME_STAMP_FORMAT)
+    @field_validator("start_timestamp", "stop_timestamp")
+    @classmethod
+    def ignore_tzinfo(cls, val: datetime):
+        """Remove any timezone info from datetime fields."""
+        if val.tzinfo:
+            val = val.replace(tzinfo=None)
+        return val
 
-        if isinstance(self.stop_timestamp, str):
-            self.stop_timestamp = datetime.strptime(self.stop_timestamp, TIME_STAMP_FORMAT)
-
-        if self.physics_step_sec <= 1:
-            raise ConfigValueError("physics_step_sec", self.physics_step_sec, "> 1")
-
-        if self.output_step_sec <= 1:
-            raise ConfigValueError("output_step_sec", self.output_step_sec, "> 1")
-
+    @model_validator(mode="after")
+    def stop_after_start(self) -> Self:
+        """Validate that :attr:`.start_timestamp` is before :attr:`.end_timestamp`."""
         if self.start_timestamp >= self.stop_timestamp:
-            raise ConfigValueError(
-                "start_timestamp",
-                self.start_timestamp,
-                (f"before {self.stop_timestamp}",),
-            )
+            raise ValueError("Stop timestamp must be after start timestamp")
+        return self

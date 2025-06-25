@@ -7,12 +7,12 @@ from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
+from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.data.events import EventScope, ScheduledFiniteBurnEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
-from resonaate.scenario.config.base import ConfigError, ConfigValueError
 from resonaate.scenario.config.event_configs import ScheduledFiniteBurnConfig
 
 
@@ -43,14 +43,14 @@ class TestFiniteBurnEventConfig:
         expected_err = f"{ScheduledFiniteBurnEvent} must have scope set to {ScheduledFiniteBurnEvent.INTENDED_SCOPE}"
         burn_config = deepcopy(event_config_dict)
         burn_config["scope"] = EventScope.SCENARIO_STEP.value
-        with pytest.raises(ConfigError, match=expected_err):
+        with pytest.raises(ValidationError, match=expected_err):
             ScheduledFiniteBurnConfig(**burn_config)
 
     def testInitBadThrustType(self, event_config_dict):
         """Test :class:`.ScheduledFiniteBurnEventConfig` constructor with bad ``thrust_frame`` type."""
         burn_config = deepcopy(event_config_dict)
         burn_config["thrust_frame"] = True
-        with pytest.raises(ConfigValueError):
+        with pytest.raises(ValidationError):
             ScheduledFiniteBurnConfig(**burn_config)
 
 
@@ -116,6 +116,6 @@ class TestFiniteBurnEvent:
             thrust_frame="bad",
             planned=True,
         )
-        expected_err = f"{burn_event.thrust_frame} is not a valid coordinate frame."
+        expected_err = f"'{burn_event.thrust_frame}' is not a valid ThrustFrame"
         with pytest.raises(ValueError, match=expected_err):
             burn_event.handleEvent(mocked_target)

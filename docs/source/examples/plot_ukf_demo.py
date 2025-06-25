@@ -97,7 +97,7 @@ sat1_agent = TargetAgent(
 # ---------------------------------------------
 #
 from resonaate.agents.estimate_agent import EstimateAgent
-from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
+from resonaate.estimation.kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.noise import continuousWhiteNoise, initialEstimateNoise
 from resonaate.scenario.config.estimation_config import InitialOrbitDeterminationConfig
 
@@ -247,7 +247,7 @@ sat1_estimate_agent.nominal_filter.predict(t1)
 obs = []
 truth_state = sat1_agent.eci_state  # [NOTE]: only used for debugging purposes!
 # Apply filter prediction step to estimate's state
-sat1_estimate_agent.updateEstimate(obs)
+sat1_estimate_agent.update(obs)
 
 # Magnitude of true error (true - estimate) after prediction step
 prior_error = np.linalg.norm(truth_state[:3] - sat1_estimate_agent.eci_state[:3])

@@ -13,8 +13,8 @@ from numpy import array, zeros
 from resonaate.agents.estimate_agent import EstimateAgent
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.dynamics.two_body import TwoBody
+from resonaate.estimation.kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.estimation.maneuver_detection import StandardNis
-from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.physics.time.stardate import ScenarioTime
 from resonaate.physics.transforms.methods import getSlantRangeVector
 from resonaate.scenario.clock import ScenarioClock
@@ -39,7 +39,7 @@ SENSOR_CONFIG = {
             [0.0, 0.0, 0.0, 4.0000000000000015e-12],
         ],
         "slew_rate": 5.0,
-        "azimuth_range": [0.0, 360.0],
+        "azimuth_range": [0.0, 359.9999],
         "elevation_range": [5.0, 89.9999],
         "efficiency": 0.95,
         "aperture_diameter": 26.0,
@@ -71,7 +71,7 @@ def getConicFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
     dynamics = create_autospec(TwoBody, instance=True)
 
     conic_sensor_agent = SensingAgent.fromConfig(
-        SensingAgentConfig(**SENSOR_CONFIG),
+        SensingAgentConfig(**cfg),
         clock,
         dynamics,
         prop_cfg,

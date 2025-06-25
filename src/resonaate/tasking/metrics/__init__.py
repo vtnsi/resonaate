@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Local Imports
+from ...common.labels import MetricLabel
 from .information import FisherInformation, KLDivergence, ShannonInformation
-from .metric_base import Metric
 from .sensor import (
     SlewDistanceMaximization,
     SlewDistanceMinimization,
@@ -25,36 +28,32 @@ from .uncertainty import (
     VelocityMaxEigenValue,
 )
 
-# Register each metric class to global registry
-# Information metrics
-Metric.register(FisherInformation)
-Metric.register(ShannonInformation)
-Metric.register(KLDivergence)
+if TYPE_CHECKING:
+    # Local Imports
+    from .metric_base import Metric
 
-# Uncertainty metrics
-Metric.register(PositionCovarianceTrace)
-Metric.register(VelocityCovarianceTrace)
-Metric.register(PositionCovarianceDeterminant)
-Metric.register(VelocityCovarianceDeterminant)
-Metric.register(PositionMaxEigenValue)
-Metric.register(VelocityMaxEigenValue)
-Metric.register(PositionCovarianceReduction)
-Metric.register(VelocityCovarianceReduction)
 
-# State Metrics
-Metric.register(Range)
+_METRIC_MAPPING: dict[MetricLabel, Metric] = {
+    MetricLabel.FISHER_INFO: FisherInformation,
+    MetricLabel.SHANNON_INFO: ShannonInformation,
+    MetricLabel.KL_DIVERGENCE: KLDivergence,
+    MetricLabel.POS_COV_TRACE: PositionCovarianceTrace,
+    MetricLabel.VEL_COV_TRACE: VelocityCovarianceTrace,
+    MetricLabel.POS_COV_DET: PositionCovarianceDeterminant,
+    MetricLabel.VEL_COV_DET: VelocityCovarianceDeterminant,
+    MetricLabel.POS_MAX_EIGEN: PositionMaxEigenValue,
+    MetricLabel.VEL_MAX_EIGEN: VelocityMaxEigenValue,
+    MetricLabel.POS_COV_REDUC: PositionCovarianceReduction,
+    MetricLabel.VEL_COV_REDUC: VelocityCovarianceReduction,
+    MetricLabel.RANGE: Range,
+    MetricLabel.SLEW_DIST_MIN: SlewDistanceMinimization,
+    MetricLabel.SLEW_DIST_MAX: SlewDistanceMaximization,
+    MetricLabel.SLEW_TIME_MIN: SlewTimeMinimization,
+    MetricLabel.SLEW_TIME_MAX: SlewTimeMaximization,
+    MetricLabel.TIME_SINCE_OBS: TimeSinceObservation,
+    MetricLabel.LYAPUNOV_STABILITY: LyapunovStability,
+}
+"""dict[MetricLabel, Metric]: Maps enumerated metric label to corresponding class.
 
-# Sensor Metrics
-Metric.register(SlewDistanceMinimization)
-Metric.register(SlewDistanceMaximization)
-Metric.register(SlewTimeMinimization)
-Metric.register(SlewTimeMaximization)
-
-# Target Metrics
-Metric.register(TimeSinceObservation)
-
-# Stability Metrics
-Metric.register(LyapunovStability)
-
-VALID_METRICS: list[str] = list(Metric.REGISTRY.keys())
-"""list: List of valid metric labels."""
+Used in :meth:`.resonaate.tasking.rewards.rewardsFactory()` but lives here to simplify imports.
+"""

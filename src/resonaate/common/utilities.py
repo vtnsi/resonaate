@@ -5,14 +5,81 @@ from __future__ import annotations
 # Standard Library Imports
 import json
 import os
-from datetime import datetime
+from json import JSONEncoder
 
 # Third Party Imports
 import numpy as np
 
 # Local Imports
+from . import pathSafeTime
 from .behavioral_config import BehavioralConfig
 from .logger import resonaateLogError
+
+
+class NumpyArrayEncoder(JSONEncoder):
+    """Handles serialization of a numpy array."""
+
+    def default(self, obj):
+        """Serializes a numpy array and returns it as a json.
+
+        Args:
+            obj (np.ndarray): Numpy array you wish to serialize
+
+        Returns:
+            list, Any: Serialized json.
+        """
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
+
+
+def ndArrayToString(obj: np.ndarray) -> str:
+    """Converts an instance of :class:`np.ndarray` to a json string.
+
+    Args:
+        obj (np.ndarray): The array you wish to convert.
+
+    Returns:
+        str: The array represented as a json string.
+    """
+    return json.dumps(obj, cls=NumpyArrayEncoder)
+
+
+def stringToNdarray(json_string: str) -> np.ndarray:
+    """Converts a serialized json string to a :class:`np.ndarray`.
+
+    Args:
+        json_string (str): The serialized json string you wish to convert.
+
+    Returns:
+        np.ndarray: Converted numpy array.
+    """
+    obj = json.loads(json_string)
+    return np.array(obj)
+
+
+def serializeArrayKwarg(name: str, kwargs: dict) -> dict:
+    """Checks the kwargs if a specific name is present, then converts that parameter into a json string.
+
+    It will also add a '_" prefix to the kwarg to indicate that it is supposed to be a private attribute.
+    This is used primarily for handling ndarray to json string conversions within some db classes that
+    contain array-based values.
+
+    Args:
+        name (str): The name of the keyword argument you are modifying. If it is not found in kwargs,
+        this function will just return the original kwargs table.
+        kwargs (dict): The keyword arguments.
+
+    Returns:
+        dict: The modified keyword arguments.
+    """
+    if name in kwargs:
+        private_name: str = f"_{name}"
+        arr: np.ndarray = kwargs[name]
+        kwargs.pop(name)
+        arr_str: str = ndArrayToString(arr)
+        kwargs[private_name] = arr_str
+    return kwargs
 
 
 def getTypeString(class_instance):
@@ -128,8 +195,10 @@ def saveMatrix(name, matrix, path=None):
         os.makedirs(path)
 
     # Create timestamped filename
-    now = datetime.utcnow()
-    file_name = os.path.join(os.path.realpath(path), f"{name}_{now.isoformat()}.json")
+    file_name = os.path.join(
+        os.path.realpath(path),
+        f"{name}_{pathSafeTime()}.json",
+    )
     # Save to file, convert to list if `numpy.ndarray`
     with open(file_name, "w", encoding="utf-8") as out_file:
         if isinstance(matrix, list):

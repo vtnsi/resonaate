@@ -1,75 +1,78 @@
 from __future__ import annotations
 
-# Standard Library Imports
-from copy import deepcopy
-from dataclasses import fields
-
 # Third Party Imports
 import pytest
+from pydantic import ValidationError
 
 # RESONAATE Imports
-from resonaate.scenario.config.base import ConfigValueError
-from resonaate.scenario.config.geopotential_config import (
-    DEFAULT_GRAVITY_DEGREE,
-    DEFAULT_GRAVITY_MODEL,
-    DEFAULT_GRAVITY_ORDER,
-    GeopotentialConfig,
-)
+from resonaate.scenario.config.geopotential_config import GeopotentialConfig, GeopotentialModel
 
 
-@pytest.fixture(name="geopotential_cfg_dict")
-def getGeopotentialConfig() -> dict:
-    """Generate the default GeopotentialConfig dictionary."""
-    return {
-        "model": DEFAULT_GRAVITY_MODEL,
-        "degree": DEFAULT_GRAVITY_DEGREE,
-        "order": DEFAULT_GRAVITY_ORDER,
-    }
+@pytest.fixture(name="test_model")
+def getTestModel() -> GeopotentialModel:
+    """Model used during testing."""
+    return GeopotentialModel.EGM96
 
 
-def testCreateGeopotentialConfig(geopotential_cfg_dict: dict):
+@pytest.fixture(name="test_degree")
+def getTestDegree() -> int:
+    """int: Model degree used during testing."""
+    return 4
+
+
+@pytest.fixture(name="test_order")
+def getTestOrder() -> int:
+    """int: Model order used during testing."""
+    return 4
+
+
+def testCreateGeopotentialConfig(test_model: GeopotentialModel, test_degree: int, test_order: int):
     """Test that GeopotentialConfig can be created from a dictionary."""
-    cfg = GeopotentialConfig(**geopotential_cfg_dict)
-    assert cfg.CONFIG_LABEL == "geopotential"
-    assert cfg.model == DEFAULT_GRAVITY_MODEL
-    assert cfg.degree == DEFAULT_GRAVITY_DEGREE
-    assert cfg.order == DEFAULT_GRAVITY_ORDER
+    cfg = GeopotentialConfig(model=test_model, degree=test_degree, order=test_order)
+    assert cfg.model == test_model
+    assert cfg.degree == test_degree
+    assert cfg.order == test_order
 
     # Test that this can be created from an empty dictionary
     cfg = GeopotentialConfig()
     assert cfg is not None
-    for field in fields(GeopotentialConfig):
-        assert field.name in cfg.__dict__
-        assert getattr(cfg, field.name) is not None
-
-    # Ensure the correct amount of req/opt keys
-    assert len(GeopotentialConfig.getRequiredFields()) == 0
-    assert len(GeopotentialConfig.getOptionalFields()) == 3
 
 
-def testInputsGeopotentialConfig(geopotential_cfg_dict: dict):
-    """Test bad input values to GeopotentialConfig."""
-    cfg_dict = deepcopy(geopotential_cfg_dict)
-    cfg_dict["model"] = "bad"
-    with pytest.raises(ConfigValueError):
-        GeopotentialConfig(**cfg_dict)
+def testBadModel():
+    """Test bad input for :attr:`.GeopotentialConfig.model`."""
+    with pytest.raises(ValidationError):
+        GeopotentialConfig(
+            model="bad",
+        )
 
-    cfg_dict = deepcopy(geopotential_cfg_dict)
-    cfg_dict["degree"] = -1
-    with pytest.raises(ConfigValueError):
-        GeopotentialConfig(**cfg_dict)
 
-    cfg_dict = deepcopy(geopotential_cfg_dict)
-    cfg_dict["degree"] = 1000
-    with pytest.raises(ConfigValueError):
-        GeopotentialConfig(**cfg_dict)
+def testNegativeDegree():
+    """Test negative input for :attr:`.GeopotentialConfig.degree`."""
+    with pytest.raises(ValidationError):
+        GeopotentialConfig(
+            degree=-1,
+        )
 
-    cfg_dict = deepcopy(geopotential_cfg_dict)
-    cfg_dict["order"] = -1
-    with pytest.raises(ConfigValueError):
-        GeopotentialConfig(**cfg_dict)
 
-    cfg_dict = deepcopy(geopotential_cfg_dict)
-    cfg_dict["order"] = 1000
-    with pytest.raises(ConfigValueError):
-        GeopotentialConfig(**cfg_dict)
+def testTooLargeDegree():
+    """Test input that's too large for :attr:`.GeopotentialConfig.degree`."""
+    with pytest.raises(ValidationError):
+        GeopotentialConfig(
+            degree=1000,
+        )
+
+
+def testNegativeOrder():
+    """Test negative input for :attr:`.GeopotentialConfig.order`."""
+    with pytest.raises(ValidationError):
+        GeopotentialConfig(
+            order=-1,
+        )
+
+
+def testTooLargeOrder():
+    """Test input that's too large for :attr:`.GeopotentialConfig.order`."""
+    with pytest.raises(ValidationError):
+        GeopotentialConfig(
+            order=1000,
+        )

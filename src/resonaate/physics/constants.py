@@ -35,3 +35,6 @@ KM2M = 1000.0
 SOLAR_FLUX = 1367.0  # Solar flux at Earth's orbit, (W/m^2)
 SPEED_OF_LIGHT = 2.99792458e8  # Speed of Light, (m/s)
 SOLAR_PRESSURE = SOLAR_FLUX / SPEED_OF_LIGHT  # Solar Energy Density, (N/m^2), Montenbruck Eq. 3.67
+
+SOLAR_PANEL_REFLECTIVITY: float = 0.21
+"""``float``: reflectivity of a solar panel :cite:t:`montenbruck_2012_orbits`, unit-less."""

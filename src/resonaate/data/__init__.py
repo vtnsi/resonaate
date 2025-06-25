@@ -6,34 +6,36 @@ This module holds common functions and attributes used in many data modules.
 from __future__ import annotations
 
 # Standard Library Imports
-from datetime import datetime
 from os import getcwd, makedirs
 from os.path import abspath, dirname, exists, join, normpath
 
 # Local Imports
+from ..common import pathSafeTime
 from ..common.logger import resonaateLogError
 from .agent import AgentModel
 from .db_connection import clearDBPath, getDBConnection, setDBPath
 from .detected_maneuver import DetectedManeuver
 from .ephemeris import EstimateEphemeris, TruthEphemeris
 from .epoch import Epoch
-from .filter_step import FilterStep
+from .filter_step import FilterStep, ParticleFilterStep, SequentialFilterStep
 from .observation import Observation
 from .task import Task
 
 __all__ = [
+    "AgentModel",
+    "DetectedManeuver",
+    "Epoch",
+    "EstimateEphemeris",
+    "FilterStep",
+    "Observation",
+    "ParticleFilterStep",
+    "SequentialFilterStep",
+    "Task",
+    "TruthEphemeris",
     "clearDBPath",
     "createDatabasePath",
     "getDBConnection",
     "setDBPath",
-    "AgentModel",
-    "DetectedManeuver",
-    "EstimateEphemeris",
-    "TruthEphemeris",
-    "Epoch",
-    "FilterStep",
-    "Observation",
-    "Task",
 ]
 
 
@@ -61,10 +63,9 @@ def createDatabasePath(path, importer=False):
                 makedirs(directory)
 
     else:
-        right_now = datetime.now().isoformat().replace(":", "-").replace(".", "-")
         directory = abspath(join(getcwd(), "db"))
         if not exists(directory):
             makedirs(directory)
-        db_path = f"sqlite:///{directory}/resonaate_{right_now}.sqlite3"
+        db_path = f"sqlite:///{directory}/resonaate_{pathSafeTime()}.sqlite3"
 
     return db_path

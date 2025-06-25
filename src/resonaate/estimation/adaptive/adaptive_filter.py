@@ -20,14 +20,15 @@ from ...dynamics.celestial import EarthCollisionError
 from ...physics.orbit_determination.lambert import determineTransferDirection
 from ...physics.time.stardate import JulianDate, ScenarioTime
 from ...physics.transforms.methods import radarObs2eciPosition
-from ..sequential.sequential_filter import FilterFlag, SequentialFilter
+from ..kalman.kalman_filter import KalmanFilter
+from ..results import AdaptiveForecastResult, AdaptivePredictResult, AdaptiveUpdateResult
+from ..sequential_filter import FilterFlag
 from .initialization import lambertInitializationFactory
 from .mmae_stacking_utils import stackingFactory
 
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Callable
-    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
@@ -40,14 +41,14 @@ if TYPE_CHECKING:
     from ...scenario.config.estimation_config import AdaptiveEstimationConfig
 
 
-class AdaptiveFilter(SequentialFilter):
+class AdaptiveFilter(KalmanFilter):
     r"""Describes necessary equations for state estimation using multiple model adaptive estimation.
 
     The Adaptive Filter Interface provides a standard method for integrating any adaptive
     estimation algorithm into a Scenario.
 
     See Also:
-        :class:`.SequentialFilter` for definition of common class attributes
+        :class:`.KalmanFilter` for definition of common class attributes
 
     Attributes:
         orbit_determination (``callable``): :func:`.OrbitDeterminationFunction` function by which
@@ -62,18 +63,18 @@ class AdaptiveFilter(SequentialFilter):
         prune_percentage (``float``): if a model's likelihood is above this value, the MMAE filter is assumed to have
             "converged" to this model.
         mode_probability (``ndarray``): mode probability vector
-        models (``list``): :class:`.SequentialFilter` objects representing each model
+        models (``list``): :class:`.KalmanFilter` objects representing each model
         model_likelihood (``ndarray``): likelihood of each model
         model_weights (``ndarray``): model weighting factors
         num_models (``int``): number of models
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
-        nominal_filter: SequentialFilter,
+        nominal_filter: KalmanFilter,
         timestep: ScenarioTime,
         orbit_determination: OrbitDeterminationFunction,
-        stacking_method: Callable[[list[SequentialFilter], ndarray], tuple[ndarray, ndarray]],
+        stacking_method: Callable[[list[KalmanFilter], ndarray], tuple[ndarray, ndarray]],
         previous_obs_window: int,
         model_interval: float,
         prune_threshold: float,
@@ -129,7 +130,7 @@ class AdaptiveFilter(SequentialFilter):
 
         # MMAE uninitialized attributes
         self.mode_probabilities: ndarray = array([])
-        self.models: list[SequentialFilter] = []
+        self.models: list[KalmanFilter] = []
         self.model_likelihoods: ndarray = array([])
         self.model_weights: ndarray = array([])
         self.num_models: int = 0
@@ -139,7 +140,7 @@ class AdaptiveFilter(SequentialFilter):
     def fromConfig(
         cls,
         mmae_config: AdaptiveEstimationConfig,
-        nominal_filter: SequentialFilter,
+        nominal_filter: KalmanFilter,
         timestep: ScenarioTime,
     ) -> AdaptiveFilter:
         """Create adaptive estimation filter from a config object.
@@ -162,7 +163,6 @@ class AdaptiveFilter(SequentialFilter):
             mmae_config.model_interval,
             mmae_config.prune_threshold,
             mmae_config.prune_percentage,
-            **mmae_config.parameters,
         )
 
     def initialize(
@@ -484,7 +484,7 @@ class AdaptiveFilter(SequentialFilter):
 
         return hypothesis_states
 
-    def _createModels(self, hypothesis_states: ndarray) -> list[SequentialFilter]:
+    def _createModels(self, hypothesis_states: ndarray) -> list[KalmanFilter]:
         """Create All multiple models.
 
         Args:
@@ -493,7 +493,7 @@ class AdaptiveFilter(SequentialFilter):
         Returns:
             ``list``: :class:`.SequentialFilter` objects representing each model
         """
-        models: list[SequentialFilter] = []
+        models: list[KalmanFilter] = []
         for hypothesis_state in hypothesis_states:
             new_filter = self._filter_class(
                 self.target_id,
@@ -701,42 +701,29 @@ class AdaptiveFilter(SequentialFilter):
 
         return maneuvers
 
-    def getPredictionResult(self) -> dict[str, Any]:
+    def getPredictionResult(self) -> AdaptivePredictResult:
         """Compile result message for a predict step.
 
         Returns:
-            ``dict``: message with predict information
+            Filter results from the 'predict' step.
         """
-        result = super().getPredictionResult()
-        result.update({"models": self.models, "model_weights": self.model_weights})
-        return result
+        return AdaptivePredictResult.fromFilter(self)
 
-    def getForecastResult(self) -> dict[str, Any]:
+    def getForecastResult(self) -> AdaptiveForecastResult:
         """Compile result message for a forecast step.
 
         Returns:
-            ``dict``: message with forecast information
+            Filter results from the 'forecast' step.
         """
-        result = super().getForecastResult()
-        result.update({"models": self.models, "model_weights": self.model_weights})
-        return result
+        return AdaptiveForecastResult.fromFilter(self)
 
-    def getUpdateResult(self) -> dict[str, Any]:
+    def getUpdateResult(self) -> AdaptiveUpdateResult:
         """Compile result message for an update step.
 
         Returns:
-            ``dict``: message with update information
+            Filter results from the 'update' step.
         """
-        result = super().getUpdateResult()
-        result.update(
-            {
-                "models": self.models,
-                "model_weights": self.model_weights,
-                "mean_pred_y": self.mean_pred_y,
-                "true_y": self.true_y,
-            },
-        )
-        return result
+        return AdaptiveUpdateResult.fromFilter(self)
 
     def _resumeSequentialFiltering(self):
         """The adaptive filter has converged, so create a nominal filter from the converged model."""

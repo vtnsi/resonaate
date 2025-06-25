@@ -35,7 +35,7 @@ ruff:
   extends: .check-base
   script:
     - echo "Linting with ruff"
-    - ruff $LINT_SOURCES --no-fix | tee ruff.log
+    - ruff check $LINT_SOURCES --no-fix | tee ruff.log
   artifacts:
     name: ruff
     paths:

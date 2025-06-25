@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from functools import partial
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -16,7 +17,7 @@ from scipy.integrate import solve_ivp
 from ..common.labels import IntegratorLabel
 from ..common.logger import resonaateLogError, resonaateLogWarning
 from ..physics.bodies import Earth
-from .dynamics_base import Dynamics
+from .dynamics_base import Dynamics, DynamicsErrorFlag
 from .integration_events.finite_thrust import ScheduledFiniteThrust
 
 # Type Checking Imports
@@ -142,6 +143,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         initial_state: ndarray,
         station_keeping: list[StationKeeper] | None = None,
         scheduled_events: list[ScheduledEventType] | None = None,
+        error_flags: DynamicsErrorFlag = DynamicsErrorFlag.COLLISION,
     ) -> ndarray:
         r"""Numerically integrate the state vector forward to the final time.
 
@@ -154,6 +156,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             scheduled_events (``list``, optional): scheduled events to apply during propagation which
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
+            error_flags (:class:`.DynamicsErrorFlag`): flags marking which errors will halt propagation
 
         Note:
             :math:`K` refers to the number of parallel integrations being performed
@@ -177,9 +180,10 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         )
 
         # Continue integration until we reach final_time
+        check_collision = bool(DynamicsErrorFlag.COLLISION & error_flags)
         while initial_time < final_time:
             solution = solve_ivp(
-                self._differentialEquation,
+                partial(self._differentialEquation, check_collision=check_collision),
                 (initial_time, final_time),
                 initial_state.ravel(),
                 method=self._method,
@@ -209,6 +213,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         current_state: ndarray,
         station_keeping: list[StationKeeper] | None = None,
         scheduled_events: list[ScheduledEventType] | None = None,
+        error_flags: DynamicsErrorFlag = DynamicsErrorFlag.COLLISION,
     ) -> ndarray:
         r"""Numerically integrate the state vector forward to the final time.
 
@@ -225,6 +230,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             scheduled_events (``list``, optional): scheduled events to apply during propagation which
                 can either be implemented :class:`.ContinuousStateChangeEvent` or
                 :class:`.DiscreteStateChangeEvent` objects.
+            error_flags (:class:`.DynamicsErrorFlag`): flags marking which errors will halt propagation
 
         Note:
             :math:`K` refers to the number of parallel integrations being performed
@@ -233,6 +239,8 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             ``ndarray``: (6, K, T) final state vector after numerical integration has stopped, km; km/sec.
                 Each (6, K) state vector refers to a time in the ``times`` list.
         """
+        if len(times) < 2:
+            raise ValueError("Must provide at least two times to integrate between")
         if (current_time := times[0]) > (final_time := times[-1]):
             raise ValueError("final_time must be > initial_time")
 
@@ -249,9 +257,10 @@ class Celestial(Dynamics, metaclass=ABCMeta):
         # Continue integration until we reach final_time
         num_times = 0
         atol = self.ABSOLUTE_TOL * ones_like(current_state.ravel())
+        check_collision = bool(DynamicsErrorFlag.COLLISION & error_flags)
         while current_time < final_time:
             solution = solve_ivp(
-                self._differentialEquation,
+                partial(self._differentialEquation, check_collision=check_collision),
                 (current_time, final_time),
                 current_state.ravel(),
                 method=self._method,
@@ -271,9 +280,9 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             states = solution.y
 
             # Integration completed, check if event occurred between last two `times`
-            if solution.status == 0 and times.size == 0:
+            if solution.status == 0 and len(times) == 0:
                 n_t = 1
-                states = states[::, -1]
+                states = states[..., -1]
 
             # Properly reshape states
             states = states.reshape((*state_shape, n_t)).copy()
@@ -281,7 +290,8 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             # Retrieve time when integration stopped, should auto-exit the loop if fully-integrated
             if array(solution.t_events).size == 0:
                 current_time = solution.t[-1]
-                current_state = states[::, -1].reshape(state_shape)
+                # print(states.shape, states[...,-1].shape, states[::,-1].shape)
+                current_state = states[..., -1]  # .reshape(state_shape)
             else:
                 # Retrieve the current state & update the initial state for next loop
                 current_time = np_max(solution.t_events)
@@ -295,7 +305,7 @@ class Celestial(Dynamics, metaclass=ABCMeta):
                 # Properly copies updated state back into full state vector for when
                 # an event occurs on a `times`
                 if current_time == solution.t[-1]:
-                    states[::, -1] = current_state.copy()
+                    states[..., -1] = current_state.copy()
 
             # [TODO]: This may not be needed?
             # The reshape should give a _view_ into `states`, but this is just in case
@@ -308,13 +318,13 @@ class Celestial(Dynamics, metaclass=ABCMeta):
             current_time += spacing(current_time)
 
             # Save states to output variable, checks for case where event occurs before times[1]
-            final_states[::, num_times : num_times + n_t] = states
+            final_states[..., num_times : num_times + n_t] = states
             # Update information for next loop
             times = times[n_t:]
             num_times += n_t
 
         # Return final state from the solver
-        return final_states[::, 1:]
+        return final_states[..., 1:]
 
     @abstractmethod
     def _differentialEquation(self, time: ScenarioTime | float, state: ndarray) -> ndarray:

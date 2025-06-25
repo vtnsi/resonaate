@@ -7,8 +7,8 @@ import logging
 from collections import defaultdict
 from json import dumps, loads
 
-# Third Party Imports
-from strmbrkr import KeyValueStore
+# Local Imports
+from ...parallel.key_value_store import KeyValueStore
 
 
 class EventRecord:

@@ -71,5 +71,8 @@
     "editor.wordWrap": "on",
     "gitlens.codeLens.scopes": ["document"]
   },
-  "python.testing.pytestArgs": ["tests"]
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "makefile.configureOnOpen": false
 }

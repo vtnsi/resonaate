@@ -6,7 +6,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import zeros
+import ray
+from numpy import array, where, zeros
 from sqlalchemy.orm import Query
 
 # Local Imports
@@ -14,9 +15,8 @@ from ...data.epoch import Epoch
 from ...data.events import EventScope, handleRelevantEvents
 from ...data.observation import Observation
 from ...data.task import Task
-from ...job_handlers.base import ParallelMixin
-from ...job_handlers.task_execution import TaskExecutionJobHandler
-from ...job_handlers.task_prediction import TaskPredictionJobHandler
+from ...parallel.tasking_execution import TaskExecutionExecutor, TaskExecutionRegistration
+from ...parallel.tasking_reward_generation import TaskingRewardExecutor, TaskingRewardRegistration
 from ...physics.time.stardate import datetimeToJulianDate
 from .engine_base import TaskingEngine
 
@@ -27,12 +27,11 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ...physics.time.stardate import JulianDate
-    from ...sensors.sensor_base import Sensor
     from ..decisions import Decision
     from ..rewards import Reward
 
 
-class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
+class CentralizedTaskingEngine(TaskingEngine):
     """Centralized implementation of a tasking engine.
 
     This class provides methods for centralized network tasking processes. In a centralized
@@ -73,10 +72,8 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
         self._realtime_obs = realtime_obs
         """``bool``: whether tasking engine should task observations in realtime (during the simulation)."""
 
-        self._predict_handler = TaskPredictionJobHandler()
-        self._predict_handler.registerCallback(self)
-        self._execute_handler = TaskExecutionJobHandler()
-        self._execute_handler.registerCallback(self)
+        self._reward_executor = TaskingRewardExecutor()
+        self._task_exec_executor = TaskExecutionExecutor()
 
     def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
@@ -101,7 +98,19 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         # Only task if we say so.... :P
         if self._realtime_obs:
-            self._predict_handler.executeJobs()
+            self.logger.debug("Generating tasking rewards...")
+            sensor_handle_list = [self._sensor_store[sensor_id] for sensor_id in self.sensor_list]
+            for _id in self.target_list:
+                self._reward_executor.enqueueJob(
+                    TaskingRewardRegistration(
+                        self,
+                        self._estimate_store[_id],
+                        self.reward,
+                        sensor_handle_list,
+                    ),
+                )
+            self._reward_executor.join()
+
             handleRelevantEvents(
                 self,
                 self._database,
@@ -113,7 +122,22 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
             )
             self.calculateRewards()
             self.generateTasking()
-            self._execute_handler.executeJobs(decision_matrix=self.decision_matrix)
+
+            self.logger.debug("Executing tasking strategy...")
+            sensor_num_array = array(self.sensor_list)
+            for target_id, target_index in self.target_indices.items():
+                tasked_sensor_indices = where(self.decision_matrix[target_index, :])[0]
+                if len(tasked_sensor_indices) > 0:
+                    tasked_sensor_ids = sensor_num_array[tasked_sensor_indices]
+                    self._task_exec_executor.enqueueJob(
+                        TaskExecutionRegistration(
+                            self,
+                            self._estimate_store[target_id],
+                            self._target_store,
+                            [self._sensor_store[sensor_id] for sensor_id in tasked_sensor_ids],
+                        ),
+                    )
+            self._task_exec_executor.join()
 
         # Load imported observations
         if self._importer_db:
@@ -188,14 +212,12 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
 
         # [NOTE]: Measurement metadata isn't saved to the DB. This attaches the correct Measurement metadata to
         #   imported Observations so they can be processed
-        sensor_agents = self._fetchSensorAgents()
-        return [
-            self._createLoadedObs(observation, sensor_agents[observation.sensor_id].sensors)
-            for observation in imported_observations
-        ]
+        return [self._attachObsMetadata(ob) for ob in imported_observations]
 
-    def _createLoadedObs(self, observation: Observation, sensor: Sensor) -> Observation:
-        observation.measurement = sensor.measurement
+    def _attachObsMetadata(self, observation: Observation) -> Observation:
+        """Attach measurement metadata to `observation` since it's not stored with the :class:`.Observation`."""
+        sensor_agent = ray.get(self._sensor_store[observation.sensor_id])
+        observation.measurement = sensor_agent.measurement
         return observation
 
     def getCurrentTasking(self, julian_date: JulianDate) -> Task:
@@ -217,8 +239,3 @@ class CentralizedTaskingEngine(ParallelMixin, TaskingEngine):
                     reward=self.reward_matrix[tgt_ind, sen_ind],
                     decision=self.decision_matrix[tgt_ind, sen_ind],
                 )
-
-    def shutdown(self) -> None:
-        """Perform cleanup operations for shutting down parallel processes/threads."""
-        self._predict_handler.shutdown()
-        self._execute_handler.shutdown()

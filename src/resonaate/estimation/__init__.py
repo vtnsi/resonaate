@@ -12,12 +12,12 @@ from typing import TYPE_CHECKING
 from ..common.labels import AdaptiveEstimationLabel, ManeuverDetectionLabel, SequentialFilterLabel
 from .adaptive.adaptive_filter import AdaptiveFilter
 from .adaptive.gpb1 import GeneralizedPseudoBayesian1
-from .adaptive.initialization import VALID_LAMBERT_IOD_LABELS
 from .adaptive.smm import StaticMultipleModel
 from .initial_orbit_determination import LambertIOD
+from .kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from .maneuver_detection import FadingMemoryNis, ManeuverDetection, SlidingNis, StandardNis
-from .sequential.sequential_filter import SequentialFilter
-from .sequential.unscented_kalman_filter import UnscentedKalmanFilter
+from .particle.genetic_particle_filter import GeneticParticleFilter
+from .sequential_filter import EstimateSource, SequentialFilter
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -38,44 +38,35 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AdaptiveFilter",
+    "SequentialFilter",
 ]
 
-VALID_ESTIMATE_SOURCES: tuple[str] = (
-    SequentialFilter.INTERNAL_PROPAGATION_SOURCE,
-    SequentialFilter.INTERNAL_OBSERVATION_SOURCE,
+VALID_ESTIMATE_SOURCES: tuple[str, str] = (
+    EstimateSource.INTERNAL_PROPAGATION,
+    EstimateSource.INTERNAL_OBSERVATION,
 )
 """``tuple[str]``: Valid entries for :py:attr:`SequentialFilter.source` of filter measurement updates & estimates."""
 
 
-_MANEUVER_DETECTION_MAP: dict[str, ManeuverDetection] = {
+_MANEUVER_DETECTION_MAP: dict[str, type[ManeuverDetection]] = {
     ManeuverDetectionLabel.STANDARD_NIS: StandardNis,
     ManeuverDetectionLabel.SLIDING_NIS: SlidingNis,
     ManeuverDetectionLabel.FADING_MEMORY_NIS: FadingMemoryNis,
 }
 
 
-VALID_MANEUVER_DETECTION_LABELS: tuple[str] = tuple(_MANEUVER_DETECTION_MAP.keys())
-"""``tuple[str]``: Valid entries for :py:data:`'maneuver_detection'` key in filter configuration."""
-
-
-_ADAPTIVE_ESTIMATION_MAP: dict[str, AdaptiveFilter] = {
+_ADAPTIVE_ESTIMATION_MAP: dict[str, type[AdaptiveFilter]] = {
     AdaptiveEstimationLabel.GPB1: GeneralizedPseudoBayesian1,
     AdaptiveEstimationLabel.SMM: StaticMultipleModel,
 }
 
 
-VALID_ADAPTIVE_ESTIMATION_LABELS: tuple[str] = tuple(_ADAPTIVE_ESTIMATION_MAP.keys())
-"""``tuple[str]``: Valid entries for :py:data:`'adaptive_estimation'` key in filter configuration."""
-
-
-_FILTER_MAP: dict[str, SequentialFilter] = {
+_SEQUENTIAL_FILTER_MAP: dict[str, type[SequentialFilter]] = {
     SequentialFilterLabel.UKF: UnscentedKalmanFilter,
     SequentialFilterLabel.UNSCENTED_KALMAN_FILTER: UnscentedKalmanFilter,
+    SequentialFilterLabel.GPF: GeneticParticleFilter,
+    SequentialFilterLabel.GENETIC_PARTICLE_FILTER: GeneticParticleFilter,
 }
-
-
-VALID_FILTER_LABELS: tuple[str] = tuple(_FILTER_MAP.keys())
-"""``tuple[str]``: Valid entries for the :py:data:`'name'` key in filter configuration."""
 
 
 def sequentialFilterFactory(
@@ -101,27 +92,20 @@ def sequentialFilterFactory(
     Returns:
         :class:`.SequentialFilter`: constructed filter object
     """
-    # Create the base estimation filter for nominal operation
-    if config.name in VALID_FILTER_LABELS:
-        nominal_filter = _FILTER_MAP[config.name](
-            tgt_id,
-            time,
-            est_x,
-            est_p,
-            dynamics,
-            q_matrix,
-            maneuverDetectionFactory(config.maneuver_detection),
-            config.initial_orbit_determination,
-            config.adaptive_estimation,
-            **config.parameters,
-        )
-    else:
-        raise ValueError(f"Invalid filter type: {config.name}")
-
-    return nominal_filter
+    maneuver_detection = maneuverDetectionFactory(config.maneuver_detection)
+    return _SEQUENTIAL_FILTER_MAP[config.name].fromConfig(
+        config=config,
+        tgt_id=tgt_id,
+        time=time,
+        est_x=est_x,
+        est_p=est_p,
+        dynamics=dynamics,
+        maneuver_detection=maneuver_detection,
+        q_matrix=q_matrix,
+    )
 
 
-def maneuverDetectionFactory(config: ManeuverDetectionConfig) -> ManeuverDetection:
+def maneuverDetectionFactory(config: ManeuverDetectionConfig | None) -> ManeuverDetection | None:
     """Build a maneuver detection class for use in filtering.
 
     Args:
@@ -137,12 +121,8 @@ def maneuverDetectionFactory(config: ManeuverDetectionConfig) -> ManeuverDetecti
     if not config:
         return None
 
-    if config.name in VALID_MANEUVER_DETECTION_LABELS:
-        nis_class = _MANEUVER_DETECTION_MAP[config.name]
-    else:
-        raise ValueError(f"Invalid maneuver detection type: {config.name}")
-
-    return nis_class(config.threshold, **config.parameters)
+    nis_class = _MANEUVER_DETECTION_MAP[config.name]
+    return nis_class.fromConfig(config)
 
 
 def adaptiveEstimationFactory(
@@ -167,16 +147,12 @@ def adaptiveEstimationFactory(
     # Create the base estimation filter for nominal operation
     if config is None:
         raise ValueError("Adaptive estimation turned on by sequential filter, but no config given")
-    if config.name in VALID_ADAPTIVE_ESTIMATION_LABELS:
-        adaptive_filter = _ADAPTIVE_ESTIMATION_MAP[config.name].fromConfig(
-            config,
-            nominal_filter,
-            time_step,
-        )
-    else:
-        raise ValueError(f"Invalid adaptive estimation type: {config.name}")
 
-    return adaptive_filter
+    return _ADAPTIVE_ESTIMATION_MAP[config.name].fromConfig(
+        config,
+        nominal_filter,
+        time_step,
+    )
 
 
 def initialOrbitDeterminationFactory(
@@ -201,7 +177,4 @@ def initialOrbitDeterminationFactory(
     if not config:
         return None
 
-    if config.name in VALID_LAMBERT_IOD_LABELS:
-        return LambertIOD.fromConfig(config, sat_num, julian_date_start)
-
-    raise ValueError(f"Invalid Initial Orbit Determination type: {config.name}")
+    return LambertIOD.fromConfig(config, sat_num, julian_date_start)

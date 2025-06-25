@@ -5,9 +5,9 @@ from __future__ import annotations
 # Standard Library Imports
 from typing import TYPE_CHECKING
 
-# Third Party Imports
-from strmbrkr.key_value_store import KeyValueStore
-from strmbrkr.key_value_store.transaction import Transaction
+# Local Imports
+from ..parallel.key_value_store import KeyValueStore
+from ..parallel.key_value_store.transaction import Transaction
 
 if TYPE_CHECKING:
     # Standard Library Imports

@@ -12,6 +12,7 @@ from numpy import array, dot
 from numpy.linalg import norm
 
 # RESONAATE Imports
+from resonaate.common.labels import GeopotentialModel
 from resonaate.dynamics.special_perturbations import _getRotationMatrix
 from resonaate.physics.bodies import Earth
 from resonaate.physics.bodies.gravitational_potential import (
@@ -20,7 +21,7 @@ from resonaate.physics.bodies.gravitational_potential import (
 )
 from resonaate.physics.time.stardate import datetimeToJulianDate
 from resonaate.physics.transforms.methods import eci2ecef
-from resonaate.physics.transforms.reductions import getReductionParameters
+from resonaate.physics.transforms.reductions import ReductionParams
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -52,7 +53,7 @@ GRAVITY_MODELS: list[tuple[str, bool]] = [
 @pytest.mark.parametrize(("degree", "order", "truth"), TEST_CASES)
 def testGeoPotentialFunction(degree: int, order: int, truth: ndarray):
     """Test the non-spherical geopotential acceleration function."""
-    c_nm, s_nm = loadGeopotentialCoefficients("egm96.txt")
+    c_nm, s_nm = loadGeopotentialCoefficients(GeopotentialModel("egm96.txt"))
     accelerations = nonSphericalAcceleration(
         ITRF_POSITION,
         Earth.mu,
@@ -84,9 +85,9 @@ def testNonsphericalAcceleration():
     # Full acceleration values
     eci_accel = array([2.383405021e-03, -7.611372878e-03, -4.087216625e-03])
     ecef_state = eci2ecef(eci_state, _datetime)
-    ecef2eci = _getRotationMatrix(jd, getReductionParameters(_datetime))
+    ecef2eci = _getRotationMatrix(jd, ReductionParams.build(_datetime))
 
-    c_nm, s_nm = loadGeopotentialCoefficients("egm96.txt")
+    c_nm, s_nm = loadGeopotentialCoefficients(GeopotentialModel("egm96.txt"))
 
     # Subtract Keplerian motion acceleration to retrieve nonspherical terms only.
     tb_accel = -1.0 * Earth.mu / (norm(eci_state[:3]) ** 3.0) * eci_state[:3]
@@ -105,10 +106,10 @@ def testNonsphericalAcceleration():
 def testLoadingGravityModels(model: str, is_valid: bool):
     """Testing loading valid/invalid gravity models."""
     if is_valid:
-        c_nm, s_nm = loadGeopotentialCoefficients(model)
+        c_nm, s_nm = loadGeopotentialCoefficients(GeopotentialModel(model))
         assert np_any(c_nm)
         assert np_any(s_nm)
 
     else:  # invalid
-        with pytest.raises(FileNotFoundError):
-            loadGeopotentialCoefficients(model)
+        with pytest.raises(ValueError, match=f"'{model}' is not a valid GeopotentialModel"):
+            loadGeopotentialCoefficients(GeopotentialModel(model))

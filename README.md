@@ -1,11 +1,17 @@
 # REsponsive Space ObservatioN Analysis & Autonomous Tasking Engine (RESONAATE)
 
+RESONAATE source doe was developed under contract with AFRL/RIED, and is approved for public release under Public Affairs release approval #AFRL-2025-2332.
+
+![resonaate logo](docs/source/_static/resonaate_logo.png)
+
 With the expected resident space object (RSO) population growth and improvements of satellite propulsion capabilities, it has become increasingly apparent that maintaining space domain awareness in future decades will require using human-on-the-loop autonomy as opposed to the current human-in-the-loop methods.
 RESONAATE is a decision making algorithm that creates a tasking strategy for a customizable Space Surveillance Network (SSN).
 The program presents responsive and autonomous sensor network management for tracking multiple maneuvering and non-maneuvering satellites with a diversely populated space object surveillance and identification (SOSI) network.
 The method utilizes a sub-optimal partially observed Markov decision process (POMDP) to task various ground and space-based sensors.
 The POMDP implements the largest Lyapunov exponent, the Fisher information gain, and a sensor transportability metric to assess the overall reward for tasking a specific sensor to track a particular satellite.
 The successful measurements from the tasked sensors are combined using an unscented Kalman filter to maintain viable orbit estimates for all targets.
+
+![resonaate loop](docs/source/_static/resonaate_loop.png)
 
 ______________________________________________________________________
 
@@ -38,17 +44,17 @@ ______________________________________________________________________
 
 ### Dependencies
 
-These are the software requirements for all versions of RESONAATE.
-Please see software documentation for best installation practices.
-
 - Python (PIP) Packages
   - [NumPy](https://www.numpy.org/)
   - [SciPy](https://www.scipy.org/scipylib/index.html)
   - [SQLAlchemy](https://www.sqlalchemy.org/)
-  - [matplotlib](https://matplotlib.org/index.html)
-  - [strmbrkr](https://pypi.org/project/strmbrkr/)
+  - [Pydantic](https://docs.pydantic.dev/latest/)
+  - [Ray Core](https://docs.ray.io/en/latest/ray-core/walkthrough.html)
+  - [SGP4](https://pypi.org/project/sgp4/)
 - Software
   - [Python >= 3.9](https://www.python.org)
+
+Additional optional dependancies are documented in `pyproject.toml`.
 
 ### Installation
 
@@ -63,14 +69,11 @@ Edit by uncommenting and changing the required values.
 
 ## Usage
 
-Using the RESONAATE tool is easiest when using the CLI, which is installed along with the Python package.
-The reason for this, is that RESONAATE has been designed to be highly reconfigurable between separate simulation runs.
-This is accomplished by altering the values of configuration files which makes Monte Carlo & parametric studies easier to accomplish.
-Simple instructions for the RESONAATE CLI are described below along with a short definition of the configuration schema.
+RESONAATE's modeling and simulation capabilities are accessible via its command line interface (CLI) entrypoint.
 
 ### CLI Tool
 
-- Run example, replacing `<init_file>` and `<number_of_hours>` with appropriate values
+- Run an example simulation, replacing `<init_file>` and `<number_of_hours>` with appropriate values
 
   ```bash
   resonaate <init_file> -t <number_of_hours>
@@ -101,27 +104,68 @@ Simple instructions for the RESONAATE CLI are described below along with a short
 
 ### Initialization
 
+RESONAATE allows the user to run custom scenarios which are specified in an "init message" JSON file.
+This repository includes several example "init messages" under `configs/json/`.
+
+For example, `main_init.json`:
+
+```json
+{
+  "time": {
+    "start_timestamp": "2021-03-30T16:00:00.000Z",
+    "physics_step_sec": 300,
+    "output_step_sec": 300,
+    "stop_timestamp": "2021-03-30T17:00:00.000Z"
+  },
+  "noise": {
+    "init_position_std_km": 1e-3,
+    "init_velocity_std_km_p_sec": 1e-6,
+    "filter_noise_type": "continuous_white_noise",
+    "filter_noise_magnitude": 3.0e-14,
+    "random_seed": "os"
+  },
+  "propagation": {
+    "propagation_model": "special_perturbations",
+    "integration_method": "RK45",
+    "station_keeping": true,
+    "target_realtime_propagation": true,
+    "sensor_realtime_propagation": true
+  },
+  "observation": {
+    "background": true
+  },
+  "geopotential": {
+    "model": "egm96.txt",
+    "degree": 2,
+    "order": 0
+  },
+  "perturbations": {
+    "third_bodies": ["moon"],
+    "solar_radiation_pressure": false,
+    "general_relativity": false
+  },
+  "estimation": {
+    "sequential_filter": {
+      "name": "unscented_kalman_filter",
+      "parameters": {
+        "alpha": 0.05,
+        "beta": 2.0
+      },
+      "dynamics_model": "special_perturbations",
+      "maneuver_detection": null
+    },
+    "adaptive_filter": null
+  },
+  "engines_files": ["engines/summation_ssn.json"],
+  "events": []
+}
+```
+
+The "init message" is divided into several sections, each responsible for different aspects of the specified simulation run.
+At the top level, things like the propagation and estimation models are described.
+A user also must define engine configuration file(s) which specify how to task the nested target and sensor configurations.
+
 The initialization/configuration file structure required to run RESONAATE is described in detail by the [Config Specification](./docs/source/reference/config_format.md) documentation.
-Currently, example initialization files are located under `configs/json/`.
-
-This Wiki defines the schema required by the different JSON configuration files:
-
-- Main initialization file
-  - Required to be pointed to when using `resonaate` CLI
-  - Describes the main `Scenario`-level properties of the simulation
-  - Points to files defining `Engine` objects
-  - Points to files for `TargetEvent` and `SensorEvent` objects
-- Engine configuration file(s)
-  - Defines a single `Engine` object, and all required parameters
-  - Points to file defining `Target` objects for the engine to be tasked to
-  - Points to file defining `Sensor` objects that are taskable by the engine
-- Target agent configuration file(s)
-  - Defines list of `Target` objects to track/estimate in simulation
-  - Only ID, name, and state are currently implemented
-- Sensor agent configuration file(s)
-  - Defines list of `Sensor` objects to task in simulation
-  - Fully-defined agents & their sensors
-  - Ground-based & space-based sensor agents are supported
 
 ### Database Architecture
 
@@ -163,7 +207,6 @@ scenario = buildScenarioFromConfigFile(
     init_file,  # Initialization file/scenario config
     db_path,  # Path to `ResonaateDatabase` file
     internal_db_path=None,  # No imported data
-    start_workers=True,  # Starts `WorkerManager` instance
 )
 
 # Determine final time as a Julian date
@@ -270,6 +313,7 @@ For additional information on the development of the RESONAATE Tool, see the fol
   - David Kusterer: <kdavid13@vt.edu>
   - Jon Kadan: <jkadan@vt.edu>
   - Cameron Harris: <camerondh@vt.edu>
+  - Monty Campbell: <mcampbell02@vt.edu>
 - Contributors
   - Connor Segal: <csegal@vt.edu>
   - Amit Bala: <agbala@vt.edu>

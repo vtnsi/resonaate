@@ -339,6 +339,22 @@ def getMeanMotion(sma: float, mu: float = Earth.mu) -> float:
     return sqrt(mu / sma**3)
 
 
+def getSmaFromMeanMotion(mean_motion: float, mu: float = Earth.mu) -> float:
+    r"""Get the semi-major axis from the meath motion.
+
+    References:
+        :cite:t:`vallado_2013_astro`, Eqn 2-5
+
+    Args:
+        mean_motion(``float``): Mean motion, :math:`n` (rad/s).
+        mu (``float``, optional): gravitational parameter of central body (km^3/sec^2). Defaults to :attr:`.Earth.mu`.
+
+    Returns:
+        ``float``: semi-major axis, in km.
+    """
+    return (mu / mean_motion**2) ** (1 / 3.0)
+
+
 def singularityCheck(
     ecc: float,
     inc: float,

@@ -65,6 +65,9 @@ class StaticMultipleModel(AdaptiveFilter):
         super().update(observations)
 
         if observations:
+            # [NOTE] Required to make mutable for Ray
+            self.model_likelihoods = self.model_likelihoods.copy()
+            self.model_weights = self.model_weights.copy()
             for num, model in enumerate(self.models):
                 # Nastasi, K.N. Dissertation: Section 4.5 Algorithm 4.3 eq 4.9 pg 64
                 self.model_likelihoods[num] = exp(-0.5 * model.nis) / sqrt(

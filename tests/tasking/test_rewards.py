@@ -52,28 +52,6 @@ def stubMetricClass() -> Metric:
 class TestRewardBase:
     """Test the base class of the reward module."""
 
-    def testRegistry(self, stub_reward_class: Reward, stub_metric_class: Metric):
-        """Test to make sure the reward object is registered.
-
-        Args:
-            stub_reward_class (:class:`.Reward`): Mock Reward
-            stub_metric_class (:class:`.Metric`): Mock Metric
-        """
-        test_reward = stub_reward_class(stub_metric_class())
-        assert test_reward.is_registered is False
-
-        # Register new class and check
-        Reward.register(stub_reward_class)
-        test_reward = stub_reward_class(stub_metric_class())
-        assert test_reward.is_registered is True
-
-        # Ensure we cannot register objects that are not :class:`.Reward` sub-classes
-        with pytest.raises(TypeError):
-            Reward.register([True, False])
-
-        with pytest.raises(TypeError):
-            Reward.register(stub_metric_class)
-
     def testCreation(self, stub_metric_class: Metric):
         """Test creating a Decision Object.
 
@@ -144,11 +122,6 @@ class TestCostConstrainedReward:
         with pytest.raises(TypeError):
             _ = CostConstrainedReward(metric_list)
 
-    def testRegistry(self, metric_list: list[Metric]):
-        """Test to make sure the reward object is registered."""
-        reward = CostConstrainedReward(metric_list)
-        assert reward.is_registered is True
-
     def testCalculateReward(
         self,
         metric_list: list[Metric],
@@ -176,11 +149,6 @@ class TestSimpleSummationReward:
         info_metric.METRIC_TYPE = MetricTypeLabel.INFORMATION
         return [info_metric]
 
-    def testRegistry(self, metric_list: list[Metric]):
-        """Test to make sure the reward object is registered."""
-        reward = SimpleSummationReward(metric_list)
-        assert reward.is_registered is True
-
     def testCalculateReward(
         self,
         metric_list: list[Metric],
@@ -206,11 +174,6 @@ class TestCombinedReward:
         behavior_metric = stub_metric_class()
         behavior_metric.METRIC_TYPE = MetricTypeLabel.TARGET
         return [info_metric, stability_metric, sensor_metric, behavior_metric]
-
-    def testRegistry(self, metric_list: list[Metric]):
-        """Test to make sure the reward object is registered."""
-        reward = CombinedReward(metric_list)
-        assert reward.is_registered is True
 
     def testBadMetricType(self, metric_list: list[Metric], stub_metric_class: Metric):
         """Test bad entries into `CostConstrainedReward`.

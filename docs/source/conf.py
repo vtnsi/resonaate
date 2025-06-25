@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 # -- Project information -----------------------------------------------------
 
 project = "RESONAATE"
-copyright = "2018-2024, Virginia Tech"
+copyright = "2017-2025, Virginia Tech National Security Institute"
 author = "Dylan Thomas, David Kusterer, Jon Kadan, Cameron Harris"
 
 project_ver = version(project)
@@ -59,6 +59,7 @@ extensions = [
     "sphinxcontrib.bibtex",
     "sphinxcontrib.mermaid",
     "sphinx_gallery.gen_gallery",
+    "sphinxcontrib.autodoc_pydantic",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -148,6 +149,7 @@ html_static_path = ["_static"]
 # Remove "Built with..."
 html_show_sphinx = False
 
+suppress_warnings = ["ref.python"]
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -237,6 +239,8 @@ autodoc_default_options = {
     "show-inheritance": True,
     "member-order": "groupwise",
 }
+
+autodoc_pydantic_model_show_json = False
 
 # -- Options for todo extension ----------------------------------------------
 
