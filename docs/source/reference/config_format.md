@@ -141,6 +141,7 @@ Each of those files would then have the following format:
     "target_file": str,             # Req: relative path to JSON file defining target agents
     "sensor_file": str,             # Req: relative path to JSON file defining sensor agents
     "min_revisit_time": float,      # Optional: Required time since last obs of a target before any sensor is allowed to revisit, in seconds. Defaults to 0.
+    "enable_sensor_min_revisit": bool # Optional: Toggles the per-sensor min revisit feature. Overrides any info in the sensors_file JSON. Used for easy toggling of the feature. Defaults to True.
 }
 ```
 

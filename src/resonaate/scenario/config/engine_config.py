@@ -39,6 +39,9 @@ class EngineConfig(BaseModel):
     min_revisit_time: Optional[float] = Field(default=0, ge=0.0)
     """``float``: Minimum required time since the sensor network last observed the target before the sensor network tasks another sensor to go observe."""
 
+    enable_sensor_min_revisit: Optional[bool] = Field(default=True)
+    """``bool``: Toggles allowing any configured sensor min revisit times."""
+
     @model_validator(mode="after")
     def all_viz_compatibility(self) -> Self:
         """Ensure the ``AllVisibleDecision`` algorithm is only applied to advanced radar sensors."""

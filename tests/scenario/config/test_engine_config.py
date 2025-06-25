@@ -160,6 +160,7 @@ def testCreateEngineConfig(engine_cfg_dict: dict):
     assert isinstance(cfg.decision, VALID_DECISION_CONFIGS)
     assert len(cfg.targets) == len(engine_cfg_dict["targets"])
     assert len(cfg.sensors) == len(engine_cfg_dict["sensors"])
+    assert cfg.enable_sensor_min_revisit  # Default is True
 
 
 def testMissingSensors(engine_cfg_dict: dict):
