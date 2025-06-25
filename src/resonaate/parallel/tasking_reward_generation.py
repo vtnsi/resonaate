@@ -45,6 +45,9 @@ class RewardCalcSubmission:
     engine_last_revisit_epoch: JulianDate | None
     """``JulianDate``: The epoch of last observation, made by the tasking engine."""
 
+    enable_sensor_min_revisit: bool = True
+    """``bool``: Toggle to enable / disable per-sensor min revisit constraints."""
+
 
 @dataclass
 class RewardCalcResult:
@@ -98,7 +101,9 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
                 estimate.julian_date_epoch - submission.engine_last_revisit_epoch
             ) * DAYS2SEC < submission.engine_min_revisit_time:
                 continue
-        if not sensor_agent.readyToRevisit(estimate.simulation_id):
+        if submission.enable_sensor_min_revisit and not sensor_agent.readyToRevisit(
+            estimate.simulation_id,
+        ):
             continue
         if predicted_observation := sensor_agent.sensor.predictObservation(estimate):
             # This is required to update the metrics attached to the UKF/KF for this observation
@@ -154,6 +159,7 @@ class TaskingRewardRegistration(Registration):
             self._sensor_handle_list,
             engine_last_revisit_epoch,
             self._registrant.min_revisit_time,
+            self._registrant.enable_sensor_min_revisit,
         )
 
     def processResults(self, results: RewardCalcResult):

@@ -39,7 +39,7 @@ class CentralizedTaskingEngine(TaskingEngine):
     The nodes themselves perform only a minimal amount of processing, if any at all.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         engine_id: int,
         sensor_ids: list[int],
@@ -49,6 +49,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         importer_db_path: str | None,
         realtime_obs: bool,
         min_revisit_time: float = 0.0,
+        enable_sensor_min_revisit: bool = True,
     ) -> None:
         """Initialize a centralized tasking engine.
 
@@ -61,6 +62,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             importer_db_path (``str`` | ``None``): path to external importer database for pre-canned data.
             realtime_obs (``bool``): whether to execute realtime observations
             min_revisit_time (``int``, optional): Minimum required elapsed time since last observation of a target before the network is allowed to revisit the target, in seconds. Defaults to 0.
+            enable_sensor_min_revisit (``bool``): Toggle to enable the per-sensor minimum revisit time feature. Defaults to True.
         """
         super().__init__(
             engine_id,
@@ -70,6 +72,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             decision,
             importer_db_path=importer_db_path,
             min_revisit_time=min_revisit_time,
+            enable_sensor_min_revisit=enable_sensor_min_revisit,
         )
 
         self._realtime_obs = realtime_obs

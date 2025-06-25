@@ -113,6 +113,7 @@ class ScenarioBuilder:
                 importer_db_path,
                 self.config.observation.realtime_observation,
                 min_revisit_time=engine_conf.min_revisit_time,
+                enable_sensor_min_revisit=engine_conf.enable_sensor_min_revisit,
             )
 
             tasking_engines[tasking_engine.unique_id] = tasking_engine

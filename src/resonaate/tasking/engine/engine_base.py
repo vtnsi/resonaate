@@ -42,6 +42,7 @@ class TaskingEngine(metaclass=ABCMeta):
         decision: Decision,
         importer_db_path: str | None = None,
         min_revisit_time: float = 0.0,
+        enable_sensor_min_revisit: bool = True,
     ):
         """Initialize a tasking engine object.
 
@@ -54,6 +55,7 @@ class TaskingEngine(metaclass=ABCMeta):
             importer_db_path (``str``, optional): path to external importer database for pre-canned
                 data. Defaults to ``None``.
             min_revisit_time (``int``, optional): Minimum required elapsed time since last observation of a target before the network is allowed to revisit the target, in seconds. Defaults to 0.
+            enable_sensor_min_revisit (``bool``): Toggle to enable the per-sensor minimum revisit time feature. Defaults to True.
 
         Raises:
             TypeError: raised if invalid reward parameter passed
@@ -119,6 +121,8 @@ class TaskingEngine(metaclass=ABCMeta):
         """``list``: transient :class:`.MissedObservation` tasked & saved by this engine not loaded to the DB."""
 
         self.sensor_changes = {}
+
+        self.enable_sensor_min_revisit = enable_sensor_min_revisit
 
         self._database = getDBConnection()
         """:class:`.ResonaateDatabase`: shared instance of simulation database."""
