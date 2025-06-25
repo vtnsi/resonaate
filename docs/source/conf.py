@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 # -- Project information -----------------------------------------------------
 
 project = "RESONAATE"
-copyright = "2018-2024, Virginia Tech"
+copyright = "2017-2025, Virginia Tech National Security Institute"
 author = "Dylan Thomas, David Kusterer, Jon Kadan, Cameron Harris"
 
 project_ver = version(project)

@@ -121,6 +121,11 @@ ______________________________________________________________________
 ### Development
 
 - suppress `sphinx` duplicate cross reference warning
+- remove `.python-version` because I wanted to use 3.11 and it was messing with my `uv` venv
+- change `.gitignore` to ignore timeline files produced by Ray, rather than old `strmbrkr` artifacts
+- update license to Apache V2
+- fix some outdated readme information
+- add project metadata to `pyproject.toml`
 
 ### CI
 

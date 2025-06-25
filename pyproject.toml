@@ -5,13 +5,39 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "resonaate"
 version = "4.0.0"
+authors = [
+  {name = "Dr. Kevin Schroeder", email = "kschro1@vt.edu"},
+  {name = "David Kusterer", email = "kdavid13@vt.edu"},
+  {name = "Monty Campbell", email = "mcampbell02@vt.edu"},
+  {name = "Collin Phillips", email = "ccp1024@vt.edu"},
+  {name = "Dylan Thomas", email = "dylan.thomas@vt.edu"},
+  {name = "Jon Kadan", email = "jkadan@vt.edu"},
+  {name = "Cameron Harris", email = "camerondh@vt.edu"},
+  {name = "Connor Segal", email = "csegal@vt.edu"},
+]
 description = "The Responsive Space Observation Analysis and Autonomous Tasking Engine (RESONAATE)"
-dynamic = ["readme"]
+readme = "README.md"
+license = "Apache-2.0"
+keywords = ["space", "awareness", "astrodynamics", "autonomy"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Physics",
+
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     "numpy>=1.19",
     "scipy>=1.6",
     "sqlalchemy>=1.3",
-    "matplotlib>=3.3",
     "sgp4==2.23",
     "pydantic==2.10.5",
     "ray==2.43",
@@ -40,6 +66,7 @@ dev = [
 doc = [
     "sphinx==7.4.7",
     "sphinx_rtd_theme==2.0.0",
+    "matplotlib>=3.3",
     "myst-parser==3.0.1",
     "sphinx-copybutton==0.5.1",
     "sphinxcontrib-bibtex==2.6.2",
