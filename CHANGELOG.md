@@ -22,7 +22,7 @@ ______________________________________________________________________
 
 **Table of Contents**
 
-\[\[_TOC_\]\]
+[[_TOC_]]
 
 <!-- markdownlint-enable MD036 -->
 
@@ -33,6 +33,45 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 ## [Unreleased][unreleased-diff]
+
+### Added
+
+*for new features*
+
+### Changed
+
+*for changes in existing functionality*
+
+### Deprecated
+
+*for soon-to-be removed features*
+
+### Removed
+
+*for now removed features*
+
+### Fixed
+
+*for any bug fixes*
+
+### Security
+
+*in case of vulnerabilities*
+
+### Test
+
+*for test suite specific improvements*
+
+### Development
+
+*for improving developer tools & environment*
+
+### CI
+
+*related to the continuous integration system*
+
+
+## [4.1.0][v4.1.0] - 2025-06-24
 
 ### Added
 
@@ -866,6 +905,8 @@ Initial version ported to a new repository.
 [v1.5.2]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.1...v1.5.2
 [v2.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v1.5.2...v2.0.0
 [v3.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v2.0.0...v3.0.0
+[v4.0.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v3.0.0...v4.0.0
+[v4.1.0]: https://code.vt.edu/space-research/resonaate/resonaate/-/compare/v4.0.0...v4.1.0
 [`black`]: https://black.readthedocs.io/en/stable/index.html
 [`isort`]: https://pycqa.github.io/isort/
 [`pre-commit`]: https://pre-commit.com/
