@@ -29,21 +29,6 @@ def mockedDecisionClass() -> Decision:
 class TestDecisionBase:
     """Test the base class of the decisions module."""
 
-    def testRegistry(self, mocked_decision_class: Decision):
-        """Test to make sure the decision object is registered."""
-        # Test that new implemented class isn't registered
-        test_decision = mocked_decision_class()
-        assert test_decision.is_registered is False
-
-        # Register new class and check
-        Decision.register(mocked_decision_class)
-        test_decision = mocked_decision_class()
-        assert test_decision.is_registered is True
-
-        # Ensure we cannot register objects that are not :class:`.Decision` sub-classes
-        with pytest.raises(TypeError):
-            Decision.register([2, 2])
-
     def testCreation(self):
         """Test creating a Decision Object."""
         with pytest.raises(TypeError):
@@ -61,11 +46,6 @@ class TestDecisionBase:
 
 class TestMyopicNaiveGreedyDecision:
     """Test the MyopicNaiveGreedyDecision class of the decisions module."""
-
-    def testMyopicRegistry(self):
-        """Test registering the Myopic decision is registered."""
-        myopic = MyopicNaiveGreedyDecision()
-        assert myopic.is_registered is True
 
     def testBasicDecision(self):
         """Test the call function of the MyopicNaiveGreedyDecision class."""
@@ -130,11 +110,6 @@ class TestMyopicNaiveGreedyDecision:
 class TestMunkresDecision:
     """Test the MunkresDecision class of the decisions module."""
 
-    def testMunkresRegistry(self):
-        """Test registering the munkres decision is registered."""
-        munkres = MunkresDecision()
-        assert munkres.is_registered is True
-
     def testBasicDecision(self):
         """Test the call function of the MunkresDecision class."""
         munkres_decision = MunkresDecision()
@@ -188,11 +163,6 @@ class TestMunkresDecision:
 class TestRandomDecision:
     """Test the RandomDecision class of the decisions module."""
 
-    def testMunkresRegistry(self):
-        """Test registering the munkres decision is registered."""
-        random = RandomDecision(None)
-        assert random.is_registered is True
-
     def testBasicDecision(self):
         """Test the call function of the RandomDecision class."""
         random_decision = RandomDecision(20000)
@@ -238,11 +208,6 @@ class TestRandomDecision:
 
 class TestAllVisibleDecision:
     """Test the AllVisibleDecision class of the decisions module."""
-
-    def testAllVisibleRegistry(self):
-        """Test registering the AllVisible decision is registered."""
-        all_visible = AllVisibleDecision()
-        assert all_visible.is_registered is True
 
     def testBasicDecision(self):
         """Test the call function of the AllVisibleDecision class."""

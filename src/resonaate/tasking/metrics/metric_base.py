@@ -10,8 +10,6 @@ from typing import TYPE_CHECKING
 from ...common.labels import MetricTypeLabel
 
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import ClassVar
 
     # Local Imports
     from ...agents.estimate_agent import EstimateAgent
@@ -23,29 +21,6 @@ class Metric(metaclass=ABCMeta):
 
     METRIC_TYPE: str = "base"
     """``str``: Type of metric in str format, for reward logic."""
-
-    REGISTRY: ClassVar[dict[str, Metric]] = {}
-    """``dict``: Global metric object registry."""
-
-    @classmethod
-    def register(cls, metric: Metric) -> None:
-        """Register an implemented metric class in the global registry.
-
-        Args:
-            metric (:class:`.Metric`): metric object to register
-
-        Raises:
-            TypeError: raised if not providing a valid :class:`.Metric` sub-class
-        """
-        if not issubclass(metric, Metric):
-            raise TypeError(type(metric))
-
-        cls.REGISTRY[metric.__name__] = metric
-
-    @property
-    def is_registered(self) -> bool:
-        """``bool``: return if an implemented metric class is registered."""
-        return self.__class__.__name__ in self.REGISTRY
 
     @abstractmethod
     def calculate(

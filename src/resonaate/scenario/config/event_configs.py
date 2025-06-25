@@ -1,13 +1,16 @@
 """Submodule defining the 'event' configuration objects."""
 
+# ruff: noqa: TCH001, TCH003
+
 from __future__ import annotations
 
 # Standard Library Imports
-from dataclasses import dataclass
+from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Annotated, Literal, Union
 
 # Third Party Imports
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy.orm import Query
 
 # Local Imports
@@ -17,62 +20,26 @@ from ...data.events import (
     Event,
     EventScope,
     ScheduledFiniteBurnEvent,
-    ScheduledFiniteManeuverEvent,
-    ScheduledImpulseEvent,
     SensorAdditionEvent,
     SensorTimeBiasEvent,
     TargetAdditionEvent,
     TargetTaskPriority,
 )
-from .agent_config import SensingAgentConfig, TargetAgentConfig
-from .base import ConfigError, ConfigObject, ConfigObjectList, ConfigTypeError, ConfigValueError
-from .time_config import TIME_STAMP_FORMAT
+from ...data.events.finite_maneuver import ManeuverType, ScheduledFiniteManeuverEvent
+from ...data.events.scheduled_impulse import ScheduledImpulseEvent, ThrustFrame
+from .agent_config import AgentConfig, SensingAgentConfig
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Third Party Imports
-    from numpy import ndarray
+    from typing_extensions import Self
 
     # Local Imports
     from ...data import _DataMixin
 
-VALID_EVENT_SCOPES: tuple[str] = tuple(scope.value for scope in EventScope)
-"""``tuple``: Valid event scopes."""
 
-VALID_AGENT_TYPES: tuple[str] = tuple(_type.value for _type in AgentRemovalEvent.AgentType)
-"""``tuple``: Valid agent types."""
-
-
-@dataclass
-class EventConfigList(ConfigObjectList):
-    """Allows different types of :class:`.EventConfig` to be stored."""
-
-    def __post_init__(self, config_type: type[ConfigObject]) -> None:
-        """Runs after the object is initialized."""
-        # [NOTE]: This can't call the super class `__post_init__()` because it has DIFFERENT class types
-        #   which themselves have different constructors.
-        event_classes = {
-            conf_class.EVENT_CLASS.EVENT_TYPE: conf_class
-            for conf_class in EventConfig.__subclasses__()
-        }
-
-        config_objects = []
-        for event in self._config_objects:
-            if isinstance(event, dict) and event:
-                if event["event_type"] not in event_classes:
-                    raise ConfigValueError(
-                        "event_type",
-                        event["event_type"],
-                        tuple(event_classes.keys()),
-                    )
-                config_objects.append(event_classes[event["event_type"]](**event))
-
-            elif isinstance(event, EventConfig):
-                config_objects.append(event)
-            else:
-                raise ConfigTypeError("events", event, EventConfig.__subclasses__())
-
-        self._config_objects = config_objects
+Vector3 = Annotated[list[float], Field(..., min_length=3, max_length=3)]
+"""Type annotation denoting a 3-element vector."""
 
 
 class MissingDataDependencyError(Exception):
@@ -113,60 +80,48 @@ class DataDependency:
         return self.data_type(**self.attributes)
 
 
-@dataclass
-class EventConfig(ConfigObject):
+
+class EventConfigBase(BaseModel, ABC, extra="allow"):
     """Abstract base class defining required fields of an event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = Event
-    """:class:`.Event`: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    @abstractmethod
+    def getEventClass(cls) -> Event:
+        """Return the :class:`.Event` class associated with this ``EventConfig``."""
+        raise NotImplementedError
 
-    scope: str
+    scope: EventScope
     """``str``: scope level at which this event needs to be handled."""
+
+    @field_validator("scope")
+    @classmethod
+    def check_scope(cls, v):
+        """Validate that the scope field matches the intended scope."""
+        event_class = cls.getEventClass()
+        if v != event_class.INTENDED_SCOPE.value:
+            err = f"{event_class} must have scope set to {event_class.INTENDED_SCOPE}"
+            raise ValueError(err)
+        return v
 
     scope_instance_id: int
     """``int``: unique identifier of instance that needs to handle this event."""
 
-    start_time: str | datetime
+    start_time: datetime
     """``str | datetime``: when this event needs to start being handled."""
 
-    end_time: str | datetime | None
+    end_time: Union[datetime, None] = None  # noqa: UP007
     """``str | datetime | None``: when this event is no longer active.
 
     If this attribute isn't set in the raw config, then it will default to using the value that
     :attr:`~.Event.start_time` is set to.
     """
 
-    event_type: str
-    """``str``: What type of event this config represents."""
-
-    def __post_init__(self) -> None:
-        """Runs after the constructor has finished."""
-        if self.scope not in VALID_EVENT_SCOPES:
-            raise ConfigValueError("scope", self.scope, VALID_EVENT_SCOPES)
-
-        if self.event_type not in Event.eventTypes():
-            raise ConfigValueError("event_type", self.event_type, Event.eventTypes())
-
-        if isinstance(self.start_time, str):
-            self.start_time = datetime.strptime(self.start_time, TIME_STAMP_FORMAT)
-
+    @model_validator(mode="after")
+    def default_end_time(self) -> Self:
+        """If no end time is specified, set it to start time."""
         if self.end_time is None:
             self.end_time = self.start_time
-
-        if isinstance(self.end_time, str):
-            self.end_time = datetime.strptime(self.end_time, TIME_STAMP_FORMAT)
-
-        self.validateScopeEventType()
-
-    def validateScopeEventType(self) -> None:
-        """Raise a ``ConfigError`` if :attr:`~.Event.event_type` or :attr:`~.Event.scope` aren't set correctly."""
-        if self.event_type != self.EVENT_CLASS.EVENT_TYPE:
-            err = f"{self.EVENT_CLASS} must have event_type set to {self.EVENT_CLASS.EVENT_TYPE}"
-            raise ConfigError(self.__class__.__name__, err)
-
-        if self.scope != self.EVENT_CLASS.INTENDED_SCOPE.value:
-            err = f"{self.EVENT_CLASS} must have scope set to {self.EVENT_CLASS.INTENDED_SCOPE}"
-            raise ConfigError(self.__class__.__name__, err)
+        return self
 
     def getDataDependencies(self) -> list[DataDependency]:
         """Return a list of database objects that the :attr:`.EVENT_CLASS` relates to.
@@ -184,99 +139,79 @@ class EventConfig(ConfigObject):
         return []
 
 
-@dataclass
-class ScheduledImpulseEventConfig(EventConfig):
+class ScheduledImpulseEventConfig(EventConfigBase):
     """Defines the required fields of a scheduled impulse event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = ScheduledImpulseEvent
-    """:class:`.ScheduledImpulseEvent`: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    def getEventClass(cls) -> Event:
+        """:class:`.ScheduledImpulseEvent`: Type of :class:`.Event` this config object corresponds to."""
+        return ScheduledImpulseEvent
 
-    thrust_vector: list[float] | ndarray
+    event_type: Literal["impulse"]
+    """``str``: What type of event this config represents."""
+
+    thrust_vector: Vector3
     """``list``: three-element vector defining an impulsive maneuver."""
 
-    thrust_frame: str
+    thrust_frame: ThrustFrame
     """``str``: Label for frame that thrust vector should be applied in."""
 
     planned: bool = False
     """``bool``: Label for whether or not maneuver was planned."""
 
-    def __post_init__(self) -> None:
-        """Runs after the constructor has finished."""
-        super().__post_init__()
-        if len(self.thrust_vector) != 3:
-            raise ConfigValueError("thrust_vector", self.thrust_vector, "3-element array")
 
-        if self.thrust_frame not in ScheduledImpulseEvent.VALID_THRUST_FRAMES:
-            raise ConfigValueError(
-                "thrust_frame",
-                self.thrust_frame,
-                ScheduledImpulseEvent.VALID_THRUST_FRAMES,
-            )
-
-
-@dataclass
-class ScheduledFiniteBurnConfig(EventConfig):
+class ScheduledFiniteBurnConfig(EventConfigBase):
     """Defines the required fields of a scheduled finite thrust event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = ScheduledFiniteBurnEvent
-    """ScheduledFiniteBurnEvent: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    def getEventClass(cls) -> Event:
+        """ScheduledFiniteBurnEvent: Type of :class:`.Event` this config object corresponds to."""
+        return ScheduledFiniteBurnEvent
 
-    acc_vector: list | ndarray
+    event_type: Literal["finite_burn"]
+    """``str``: What type of event this config represents."""
+
+    acc_vector: Vector3
     """``list``: three-element vector defining a continuous maneuver."""
 
-    thrust_frame: str
+    thrust_frame: ThrustFrame
     """``str``: label for frame that thrust vector should be applied in."""
 
     planned: bool = False
     """``bool``: label for whether or not maneuver was planned."""
 
-    def __post_init__(self) -> None:
-        """Runs after the constructor has finished."""
-        super().__post_init__()
-        if len(self.acc_vector) != 3:
-            raise ConfigValueError("acc_vector", self.acc_vector, "3-element array")
 
-        if self.thrust_frame not in ScheduledFiniteBurnEvent.VALID_THRUST_FRAMES:
-            raise ConfigValueError(
-                "thrust_frame",
-                self.thrust_frame,
-                ScheduledFiniteBurnEvent.VALID_THRUST_FRAMES,
-            )
-
-
-@dataclass
-class ScheduledFiniteManeuverConfig(EventConfig):
+class ScheduledFiniteManeuverConfig(EventConfigBase):
     """Defines the required fields of a scheduled finite thrust event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = ScheduledFiniteManeuverEvent
-    """:class:`.ScheduledFiniteManeuverEvent`: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    def getEventClass(cls) -> Event:
+        """:class:`.ScheduledFiniteManeuverEvent`: Type of :class:`.Event` this config object corresponds to."""
+        return ScheduledFiniteManeuverEvent
+
+    event_type: Literal["finite_maneuver"]
+    """``str``: What type of event this config represents."""
 
     maneuver_mag: float
     """``list``: scalar defining the magnitude of a finite thrust maneuver."""
 
-    maneuver_type: str
+    maneuver_type: ManeuverType
     """``str``: label for maneuver type that corresponds to the thrust."""
 
     planned: bool = False
     """``bool``: label for whether or not maneuver was planned."""
 
-    def __post_init__(self) -> None:
-        """Runs after the constructor has finished."""
-        super().__post_init__()
-        if self.maneuver_type not in ScheduledFiniteManeuverEvent.VALID_MANEUVER_TYPES:
-            raise ConfigValueError(
-                "maneuver_type",
-                self.maneuver_type,
-                ScheduledFiniteManeuverEvent.VALID_MANEUVER_TYPES,
-            )
 
-
-@dataclass
-class TargetTaskPriorityConfig(EventConfig):
+class TargetTaskPriorityConfig(EventConfigBase):
     """Defines the required fields of a target task priority event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = TargetTaskPriority
-    """:class:`.TargetTaskPriority`: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    def getEventClass(cls) -> Event:
+        """:class:`.TargetTaskPriority`: Type of :class:`.Event` this config object corresponds to."""
+        return TargetTaskPriority
+
+    event_type: Literal["task_priority"]
+    """``str``: What type of event this config represents."""
 
     target_id: int
     """``int``: Unique ID of the :class:`~.agent_base.Agent` that has increased observation priority."""
@@ -307,24 +242,22 @@ class TargetTaskPriorityConfig(EventConfig):
         return dependency_list
 
 
-@dataclass
-class TargetAdditionEventConfig(EventConfig):
+class TargetAdditionEventConfig(EventConfigBase):
     """Defines the required fields of a target addition event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = TargetAdditionEvent
-    """:class:`.TargetAdditionEvent`: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    def getEventClass(cls) -> Event:
+        """:class:`.TargetAdditionEvent`: Type of :class:`.Event` this config object corresponds to."""
+        return TargetAdditionEvent
+
+    event_type: Literal["target_addition"]
+    """``str``: What type of event this config represents."""
 
     tasking_engine_id: int
     """``int``: Unique ID for the :class:`.TaskingEngine` that this target should be added to."""
 
-    target_agent: TargetAgentConfig | dict
+    target_agent: AgentConfig
     """``dict``: Configuration object for the target that is being added."""
-
-    def __post_init__(self) -> None:
-        """Runs after the constructor has finished."""
-        super().__post_init__()
-        if isinstance(self.target_agent, dict):
-            self.target_agent = TargetAgentConfig(**self.target_agent)
 
     def getDataDependencies(self) -> list[DataDependency]:
         """Return a list of database objects that :class:`.TargetAdditionEvent` relates to.
@@ -343,24 +276,22 @@ class TargetAdditionEventConfig(EventConfig):
         return dependency_list
 
 
-@dataclass
-class SensorAdditionEventConfig(EventConfig):
+class SensorAdditionEventConfig(EventConfigBase):
     """Defines the required fields of a sensor addition event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = SensorAdditionEvent
-    """:class:`.SensorAdditionEvent`: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    def getEventClass(cls) -> Event:
+        """:class:`.SensorAdditionEvent`: Type of :class:`.Event` this config object corresponds to."""
+        return SensorAdditionEvent
+
+    event_type: Literal["sensor_addition"]
+    """``str``: What type of event this config represents."""
 
     tasking_engine_id: int
     """``int``: Unique ID for the :class:`.TaskingEngine` that this sensor should be added to."""
 
-    sensor_agent: SensingAgentConfig | dict
+    sensor_agent: SensingAgentConfig
     """``dict``: Configuration object for the sensor that is being added."""
-
-    def __post_init__(self) -> None:
-        """Runs after the constructor has finished."""
-        super().__post_init__()
-        if isinstance(self.sensor_agent, dict):
-            self.sensor_agent = SensingAgentConfig(**self.sensor_agent)
 
     def getDataDependencies(self) -> list[DataDependency]:
         """Return a list of database objects that :class:`.SensorAdditionEvent` relates to.
@@ -379,12 +310,16 @@ class SensorAdditionEventConfig(EventConfig):
         return dependency_list
 
 
-@dataclass
-class AgentRemovalEventConfig(EventConfig):
+class AgentRemovalEventConfig(EventConfigBase):
     """Defines the required fields of an agent removal event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = AgentRemovalEvent
-    """:class:`.AgentRemovalEvent`: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    def getEventClass(cls) -> Event:
+        """:class:`.AgentRemovalEvent`: Type of :class:`.Event` this config object corresponds to."""
+        return AgentRemovalEvent
+
+    event_type: Literal["agent_removal"]
+    """``str``: What type of event this config represents."""
 
     tasking_engine_id: int
     """``int``: Unique ID for the :class:`.TaskingEngine` that this agent is being removed from."""
@@ -392,14 +327,8 @@ class AgentRemovalEventConfig(EventConfig):
     agent_id: int
     """``int``: Unique ID for the agent that is being removed."""
 
-    agent_type: str
+    agent_type: AgentRemovalEvent.AgentType
     """``str``: Type of agent that is being removed."""
-
-    def __post_init__(self) -> None:
-        """Runs after the constructor has finished."""
-        super().__post_init__()
-        if self.agent_type not in VALID_AGENT_TYPES:
-            raise ConfigValueError("agent_type", self.agent_type, VALID_AGENT_TYPES)
 
     def getDataDependencies(self) -> list[DataDependency]:
         """Return a list of database objects that :class:`.AgentRemovalEvent` relates to.
@@ -417,18 +346,30 @@ class AgentRemovalEventConfig(EventConfig):
         return dependency_list
 
 
-@dataclass
-class SensorTimeBiasEventConfig(EventConfig):
+class SensorTimeBiasEventConfig(EventConfigBase):
     """Defines the required fields of an sensor time bias event configuration object."""
 
-    EVENT_CLASS: ClassVar[Event] = SensorTimeBiasEvent
-    """:class:`.SensorTimeBiasEvent`: Type of :class:`.Event` this config object corresponds to."""
+    @classmethod
+    def getEventClass(cls) -> Event:
+        """:class:`.SensorTimeBiasEvent`: Type of :class:`.Event` this config object corresponds to."""
+        return SensorTimeBiasEvent
+
+    event_type: Literal["sensor_time_bias"]
+    """``str``: What type of event this config represents."""
 
     applied_bias: float
     """``float``: time bias to be applied to the sensor."""
 
-    def __post_init__(self) -> None:
-        """Runs after the constructor has finished."""
-        super().__post_init__()
-        if not isinstance(self.applied_bias, float):
-            raise ConfigTypeError("applied_bias", self.applied_bias, (float,))
+
+EventConfig = Annotated[Union[
+        ScheduledImpulseEventConfig,
+        ScheduledFiniteBurnConfig,
+        ScheduledFiniteManeuverConfig,
+        TargetTaskPriorityConfig,
+        TargetAdditionEventConfig,
+        SensorAdditionEventConfig,
+        AgentRemovalEventConfig,
+        SensorTimeBiasEventConfig,
+    ],
+    Field(..., discriminator="event_type"),
+]

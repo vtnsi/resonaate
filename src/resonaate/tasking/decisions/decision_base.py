@@ -8,38 +8,28 @@ from typing import TYPE_CHECKING
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from typing import ClassVar
-
     # Third Party Imports
     from numpy import ndarray
+
+    # Local Imports
+    from ...scenario.config.decision_config import DecisionConfig
 
 
 class Decision(metaclass=ABCMeta):
     """Abstract base class to encapsulate behavior of general decision methods."""
 
-    REGISTRY: ClassVar[dict[str, Decision]] = {}
-    """``dict``: Global decision object registry."""
-
     @classmethod
-    def register(cls, decision: Decision) -> None:
-        """Register an implemented decision class in the global registry.
+    def fromConfig(cls, config: DecisionConfig) -> Decision:  # noqa: ARG003
+        """Construct the decision-making class specified by `config`.
 
         Args:
-            decision (:class:`.Decision`): decision object to register
+            config (:class:`.DecisionConfig`): Specify configuration parameters for this decision-
+                making class.
 
-        Raises:
-            TypeError: raised if not providing a valid :class:`.Decision` sub-class
+        Returns:
+            (:class:`.Decision`): Decision-making class specified by `config`.
         """
-        if not issubclass(decision, Decision):
-            raise TypeError(type(decision))
-
-        cls.REGISTRY[decision.__name__] = decision
-
-    @property
-    def is_registered(self) -> bool:
-        """``bool``: return if an implemented decision class is registered."""
-        return self.__class__.__name__ in self.REGISTRY
+        return cls()
 
     @abstractmethod
     def _calculate(self, reward_matrix: ndarray, visibility_matrix: ndarray) -> ndarray:

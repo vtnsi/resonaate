@@ -11,11 +11,13 @@ References:
 from __future__ import annotations
 
 # Standard Library Imports
+from dataclasses import dataclass
 from functools import wraps
 from typing import TYPE_CHECKING
 
 # Local Imports
 from .. import constants as const
+from ..bodies import Earth
 from ..maths import wrapAngle2Pi
 
 # Type Checking Imports
@@ -29,13 +31,117 @@ ECCENTRICITY_LIMIT = 1e-7
 INCLINATION_LIMIT = 1e-7 * const.DEG2RAD
 """``float``: Defines the limit between inclined & equatorial orbits  (:cite:p:`vallado_2003_aiaa_covariance`)."""
 
-# Orbital constants
-LEO_ALTITUDE_LIMIT = 12000
-"""``int``: Maximum altitude for "Low Earth Orbit" RSO designation (km)"""
-MEO_ALTITUDE_LIMIT = 30000
-"""``int``: Maximum altitude for "Medium Earth Orbit" RSO designation (km)"""
-GEO_ALTITUDE_LIMIT = 45000
-"""``int``: Maximum altitude for "Geostationary Earth Orbit" RSO designation (km)"""
+
+@dataclass
+class _StratificationSpecification:
+    """Specification of variables for a resident stratification."""
+
+    label: str
+    """str: Name associated with this resident stratification."""
+
+    max_altitude: float
+    """float: Maximum valid altitude to be considered within this resident stratification (in km)."""
+
+    default_mass: float
+    """float: Default mass of resident within this stratification (in kg)"""
+
+    default_vis_x: float
+    """float: Default visual cross section of resident within this stratification."""
+
+
+class ResidentStratification:
+    """Encapsulate variables associated with orbital regimes."""
+
+    SURFACE = _StratificationSpecification(
+        label="SURFACE",
+        max_altitude=Earth.atmosphere,
+        default_mass=10000.0,
+        default_vis_x=400.0,
+    )
+    """_StratificationSpecification: Surface resident stratification.
+
+    Attributes:
+        label (str): Name of surface resident stratification.
+        max_altitude (float): Maximum valid altitude to be considered on surface of Earth (in km).
+        default_mass (float): Default mass of non-spacecraft (kg).
+        default_vis_x (float): Default visual cross section of 20m by 20m building (m^2).
+    """
+
+    LEO = _StratificationSpecification(
+        label="LEO",
+        max_altitude=12000.0,
+        default_mass=295.0,
+        default_vis_x=10.0,
+    )
+    """_StratificationSpecification: Low Earth orbit resident stratification.
+
+    Attributes:
+        label (str): Name associated with low Earth orbit.
+        max_altitude (float): Maximum valid altitude to be considered within LEO regime (in km).
+        default_mass (float): Default mass of LEO RSO (kg)
+        default_vis_x (float): Default visual cross section of LEO RSO (m^2)
+
+    References:
+        :cite:t:`LEO_RSO_2022_stats`
+    """
+
+    MEO = _StratificationSpecification(
+        label="MEO",
+        max_altitude=30000.0,
+        default_mass=2861.0,
+        default_vis_x=37.5,
+    )
+    """_StratificationSpecification: Medium Earth orbit resident stratification.
+
+    Attributes:
+        label (str): Name associated with medium Earth orbit.
+        max_altitude (float): Maximum valid altitude to be considered within MEO regime (in km).
+        default_mass (float): Default mass of MEO RSO (kg)
+        default_vis_x (float): Default visual cross section of MEO RSO (m^2)
+
+    References:
+        :cite:t:`steigenberger_MEO_RSO_2022_stats`
+    """
+
+    GEO = _StratificationSpecification(
+        label="GEO",
+        max_altitude=45000.0,
+        default_mass=6200.0,
+        default_vis_x=90.0,
+    )
+    """_StratificationSpecification: Geosynchronous Earth orbit resident stratification.
+
+    Attributes:
+        label (str): Name associated with Geosynchronous Earth orbit.
+        max_altitude (float): Maximum valid altitude to be considered within GEO regime (in km).
+        default_mass (float): Default mass of GEO RSO (kg)
+        default_vis_x (float): Default visual cross section of GEO RSO (m^2)
+
+    References:
+        :cite:t:`GEO_RSO_2022_stats`
+    """
+
+    @classmethod
+    def getStratification(cls, altitude: float) -> _StratificationSpecification:
+        """Return the stratification that the specified `altitude` falls within.
+
+        Args:
+            altitude (float): Altitude of resident.
+
+        Returns:
+            :class:`._StratificationSpecification`: :class:`._StratificationSpecification` that specified `altitude` falls within.
+        """
+        if altitude <= cls.SURFACE.max_altitude:
+            return cls.SURFACE
+        if altitude <= cls.LEO.max_altitude:
+            return cls.LEO
+        if altitude <= cls.MEO.max_altitude:
+            return cls.MEO
+        if altitude <= cls.GEO.max_altitude:
+            return cls.GEO
+        # else
+        err = f"RSO altitude above GEO: {altitude}."
+        raise ValueError(err)
 
 
 class InclinationError(Exception):

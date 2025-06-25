@@ -14,11 +14,9 @@ import pytest
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.observation import MissedObservation, Observation
-from resonaate.job_handlers.task_execution import TaskExecutionJobHandler
-from resonaate.job_handlers.task_prediction import TaskPredictionJobHandler
 from resonaate.physics.time.stardate import JulianDate
-from resonaate.scenario.config.decision_config import DecisionConfig
-from resonaate.scenario.config.reward_config import RewardConfig
+from resonaate.scenario.config.decision_config import MunkresDecisionConfig
+from resonaate.scenario.config.reward_config import CostConstrainedRewardConfig
 from resonaate.sensors.sensor_base import Sensor
 from resonaate.tasking.decisions import decisionFactory
 from resonaate.tasking.engine.centralized_engine import CentralizedTaskingEngine
@@ -41,21 +39,19 @@ pytestmark = pytest.mark.usefixtures("database")
 @pytest.fixture(name="decision")
 def getDecision() -> Decision:
     """Returns a valid Decision object."""
-    decision_config = DecisionConfig(name="MunkresDecision", parameters={})
+    decision_config = MunkresDecisionConfig()
     return decisionFactory(decision_config)
 
 
 @pytest.fixture(name="reward")
 def getReward() -> Reward:
     """Returns a valid Reward object."""
-    reward_config = RewardConfig(
-        name="CostConstrainedReward",
+    reward_config = CostConstrainedRewardConfig(
         metrics=[
             {"name": "KLDivergence", "parameters": {}},
             {"name": "SlewDistanceMinimization", "parameters": {}},
             {"name": "LyapunovStability", "parameters": {}},
         ],
-        parameters={},
     )
     return rewardsFactory(reward_config)
 
@@ -80,38 +76,6 @@ def getCentralizedEngineClass(reward: Reward, decision: Decision) -> Centralized
         importer_db_path=None,
         realtime_obs=True,
     )
-
-
-@patch.object(TaskExecutionJobHandler, "registerCallback", autospec=True)
-@patch.object(TaskPredictionJobHandler, "registerCallback", autospec=True)
-def testCreation(
-    mocked_method_pred_handler: MagicMock,
-    mocked_method_exec_handler: MagicMock,
-    reward: Reward,
-    decision: Decision,
-):
-    """Create a tasking engine with different configurations.
-
-    Args:
-        mocked_method_pred_handler (``MagicMock``): Fake prediction handler
-        mocked_method_exec_handler (``MagicMock``): Fake execution handler
-        reward (:class:`.Reward`): Loaded reward object
-        decision (:class:`.Decision`): Loaded decision object
-    """
-    engine = CentralizedTaskingEngine(
-        engine_id=0,
-        sensor_ids=SENSOR_NUMS,
-        target_ids=TARGET_NUMS,
-        reward=reward,
-        decision=decision,
-        importer_db_path=None,
-        realtime_obs=True,
-    )
-    mocked_method_pred_handler.assert_called_once_with(engine._predict_handler, registrant=engine)
-    mocked_method_exec_handler.assert_called_once_with(engine._execute_handler, registrant=engine)
-    assert isinstance(engine._predict_handler, TaskPredictionJobHandler)
-    assert isinstance(engine._execute_handler, TaskExecutionJobHandler)
-    assert engine._realtime_obs is True
 
 
 def testGenerateTaskingNull(centralized_tasking_engine: CentralizedTaskingEngine):
@@ -180,12 +144,12 @@ def testAssessWithNoObservations(
     next_julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 43, 23.2)
     # Set realtime_obs to False to test that the engine does not attempt to handle events
     centralized_tasking_engine._realtime_obs = False
-    centralized_tasking_engine._predict_handler.executeJobs = MagicMock()
-    centralized_tasking_engine._execute_handler.executeJobs = MagicMock()
+    centralized_tasking_engine._reward_executor.enqueueJob = MagicMock()
+    centralized_tasking_engine._task_exec_executor.enqueueJob = MagicMock()
     centralized_tasking_engine.assess(julian_date, next_julian_date)
     # Assert handlers are not called
-    centralized_tasking_engine._predict_handler.executeJobs.assert_not_called()
-    centralized_tasking_engine._execute_handler.executeJobs.assert_not_called()
+    centralized_tasking_engine._reward_executor.enqueueJob.assert_not_called()
+    centralized_tasking_engine._task_exec_executor.enqueueJob.assert_not_called()
     event_handler_mock.assert_not_called()
     assert centralized_tasking_engine._observations == []
 
@@ -225,18 +189,21 @@ def testAssessWithObservations(
 
     event_handler_mock.side_effect = handleEvents
 
-    centralized_tasking_engine._predict_handler.executeJobs = MagicMock()
-    centralized_tasking_engine._execute_handler.executeJobs = MagicMock()
+    centralized_tasking_engine._reward_executor.enqueueJob = MagicMock()
+    centralized_tasking_engine._task_exec_executor.enqueueJob = MagicMock()
+    centralized_tasking_engine._estimate_store = {
+        est_id: None for est_id in centralized_tasking_engine.target_list
+    }
+    centralized_tasking_engine._sensor_store = {
+        obs_1.sensor_id: getMockedSensingAgentObject(obs_1.sensor_id),
+        obs_2.sensor_id: getMockedSensingAgentObject(obs_2.sensor_id),
+    }
     centralized_tasking_engine.assess(datetime_epoch, next_datetime_epoch)
     # Assert handlers are called
-    centralized_tasking_engine._predict_handler.executeJobs.assert_called_once_with()
-    centralized_tasking_engine._execute_handler.executeJobs.assert_called_once()
-    assert np.array_equal(
-        centralized_tasking_engine._execute_handler.executeJobs.call_args.kwargs[
-            "decision_matrix"
-        ],
-        np.zeros((3, 1), dtype=bool),
+    assert centralized_tasking_engine._reward_executor.enqueueJob.call_count == len(
+        centralized_tasking_engine.target_list,
     )
+    centralized_tasking_engine._task_exec_executor.enqueueJob.assert_not_called()
     event_handler_mock.assert_called_once()
     # Assert targets & observations are updated
     assert len(centralized_tasking_engine._observations) == 2
@@ -336,27 +303,6 @@ def testGetSaveMissedObservation(centralized_tasking_engine: CentralizedTaskingE
     assert centralized_tasking_engine._saved_missed_observations == []
 
 
-@patch.object(TaskExecutionJobHandler, "shutdown", autospec=True)
-@patch.object(TaskPredictionJobHandler, "shutdown", autospec=True)
-def testShutdown(
-    pred_shutdown_mock: MagicMock,
-    exec_shutdown_mock: MagicMock,
-    centralized_tasking_engine: CentralizedTaskingEngine,
-):
-    """Test shutdown() method calls shutdown on handler classes.
-
-    Args:
-        pred_shutdown_mock (``MagicMock``): Fake prediction shutdown
-        exec_shutdown_mock (``MagicMock``): Fake execution shutdown
-        centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
-    """
-    pred_handler = centralized_tasking_engine._predict_handler
-    exec_handler = centralized_tasking_engine._execute_handler
-    centralized_tasking_engine.shutdown()
-    pred_shutdown_mock.assert_called_once_with(pred_handler)
-    exec_shutdown_mock.assert_called_once_with(exec_handler)
-
-
 def testGetCurrentTasking(reward: Reward, decision: Decision):
     """Test getCurrentTasking() returns valid tasks.
 
@@ -433,6 +379,17 @@ def getMockedSensingAgentObject(agent_id: int) -> SensingAgent:
     return sensing_agent
 
 
+def mockedAttachObsMetadata(self, observation: Observation) -> Observation:
+    """Fake replacement for :meth:`.CentralizedEngine._attachObsMetadata()`.
+
+    Args:
+        self: Reference to the :class:`.TaskingEngine` making this call.
+        observation: The :class:`.Observation` that metadata is supposed to be attached to.
+    """
+    return observation
+
+
+@patch.object(CentralizedTaskingEngine, "_attachObsMetadata", new=mockedAttachObsMetadata)
 @patch("resonaate.tasking.engine.engine_base.ImporterDatabase", autospec=True)
 def testLoadImportedObservation(
     mocked_importer_db: MagicMock,
@@ -441,11 +398,11 @@ def testLoadImportedObservation(
     """Test loadImportedObservations().
 
     Args:
+        mocked_meta_attach: Fake metadata attachment method.
         mocked_importer_db (``MagicMock``): Fake imported database
         centralized_tasking_engine (:class:`.CentralizedTaskingEngine`): Loaded Engine
     """
     mocked_importer_db.getData = MagicMock()
-    centralized_tasking_engine._fetchSensorAgents = MagicMock()
     centralized_tasking_engine._importer_db = mocked_importer_db
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     # Create mock observations
@@ -475,19 +432,13 @@ def testLoadImportedObservation(
 
     # Test observations that aren't from duplicate sensors
     mocked_importer_db.getData.return_value = [obs_1, obs_2]
-    sensing_agent_1 = getMockedSensingAgentObject(sensing_agent_1_id)
-    sensing_agent_2 = getMockedSensingAgentObject(sensing_agent_2_id)
-    centralized_tasking_engine._fetchSensorAgents.return_value = {
-        sensing_agent_1_id: sensing_agent_1,
-        sensing_agent_2_id: sensing_agent_2,
-    }
+
     imported_obs = centralized_tasking_engine.loadImportedObservations(datetime_epoch)
 
     # Assert mock calls
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_not_called()
     mocked_importer_db.getData.assert_called_once()
-    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
         assert isinstance(imported_ob, Observation)
 
@@ -495,7 +446,6 @@ def testLoadImportedObservation(
     mocked_importer_db.getData.reset_mock()
     obs_1.makeDictionary.reset_mock()
     obs_2.makeDictionary.reset_mock()
-    centralized_tasking_engine._fetchSensorAgents.reset_mock()
 
     # Test observations that are from duplicate sensors
     obs_2.pos_x_km = 7000
@@ -511,7 +461,6 @@ def testLoadImportedObservation(
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_called_once()
     mocked_importer_db.getData.assert_called_once()
-    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
         assert isinstance(imported_ob, Observation)
 
@@ -519,7 +468,6 @@ def testLoadImportedObservation(
     mocked_importer_db.getData.reset_mock()
     obs_1.makeDictionary.reset_mock()
     obs_2.makeDictionary.reset_mock()
-    centralized_tasking_engine._fetchSensorAgents.reset_mock()
 
     # Test no imported observations
     mocked_importer_db.getData.return_value = []
@@ -527,7 +475,6 @@ def testLoadImportedObservation(
     obs_1.makeDictionary.assert_not_called()
     obs_2.makeDictionary.assert_not_called()
     mocked_importer_db.getData.assert_called_once()
-    centralized_tasking_engine._fetchSensorAgents.assert_called_once()
     for imported_ob in imported_obs:
         assert isinstance(imported_ob, Observation)
 

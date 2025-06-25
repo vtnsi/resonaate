@@ -10,6 +10,9 @@ from numpy import array, concatenate, diagflat, full, ones, sqrt, zeros
 from numpy.linalg import LinAlgError, cholesky, inv
 from scipy.linalg import block_diag
 
+# RESONAATE Imports
+from resonaate.estimation.sequential_filter import EstimateSource
+
 # Local Imports
 from ...common.behavioral_config import BehavioralConfig
 from ...physics.maths import angularMean, residuals
@@ -17,12 +20,13 @@ from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ...physics.statistics import chiSquareQuadraticForm
 from ...physics.time.stardate import JulianDate, julianDateToDatetime
 from ..debug_utils import findNearestPositiveDefiniteMatrix
-from .sequential_filter import FilterFlag, SequentialFilter
+from ..results import UKFForecastResult, UKFPredictResult, UKFUpdateResult
+from ..sequential_filter import FilterFlag, SequentialFilter
+from .kalman_filter import KalmanFilter
 
 if TYPE_CHECKING:
     # Standard Library Imports
     from collections.abc import Callable
-    from typing import Any
 
     # Third Party Imports
     from numpy import ndarray
@@ -33,10 +37,11 @@ if TYPE_CHECKING:
     from ...dynamics.integration_events import ScheduledEventType
     from ...physics.measurements import IsAngle
     from ...physics.time.stardate import ScenarioTime
+    from ...scenario.config.estimation_config import SequentialFilterConfig
     from ..maneuver_detection import ManeuverDetection
 
 
-class UnscentedKalmanFilter(SequentialFilter):
+class UnscentedKalmanFilter(KalmanFilter):
     r"""Describes necessary equations for state estimation using the Unscented Transform.
 
     The UKF class provides the framework and functionality for a basic Unscented Kalman filter,
@@ -169,6 +174,49 @@ class UnscentedKalmanFilter(SequentialFilter):
         self.sigma_x_res = array([])
         self.sigma_y_res = array([])
 
+    @classmethod
+    def fromConfig(
+        cls,
+        config: SequentialFilterConfig,
+        tgt_id: int,
+        time: ScenarioTime,
+        est_x: ndarray,
+        est_p: ndarray,
+        dynamics: Dynamics,
+        q_matrix: ndarray,
+        maneuver_detection: ManeuverDetection,
+    ) -> SequentialFilter:
+        """Build a :class:`.SequentialFilter` object for target state estimation.
+
+        Args:
+            config (:class:`.SequentialFilterConfig`): describes the filter to be built
+            tgt_id (``int``): unique ID of the associated target agent
+            time (:class:`.ScenarioTime`): initial time of scenario
+            est_x (``ndarray``): 6x1, initial state estimate
+            est_p (``ndarray``): 6x6, initial error covariance matrix
+            dynamics (:class:`.Dynamics`): dynamics object to propagate estimate
+            q_matrix (``ndarray``): process noise covariance matrix
+            maneuver_detection (.ManeuverDetection): ManeuverDetection associated with the filter
+
+        Returns:
+            :class:`.SequentialFilter`: constructed filter object
+        """
+        return cls(
+            tgt_id,
+            time,
+            est_x,
+            est_p,
+            dynamics,
+            q_matrix,
+            maneuver_detection=maneuver_detection,
+            initial_orbit_determination=config.initial_orbit_determination,
+            adaptive_estimation=config.adaptive_estimation,
+            resample=config.resample,
+            alpha=config.alpha,
+            beta=config.beta,
+            kappa=config.kappa,
+        )
+
     @property
     def num_sigmas(self):
         r"""``int``: Returns the number of sigma points to use in this UKF."""
@@ -184,7 +232,7 @@ class UnscentedKalmanFilter(SequentialFilter):
         except LinAlgError:
             if BehavioralConfig.getConfig().debugging.NearestPD:
                 msg = f"`nearestPD()` function was used on RSO {self.target_id}"
-                self._logger.warning(msg)
+                self.logger.warning(msg)
                 sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
             else:
                 raise
@@ -275,7 +323,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             observations (list): :class:`.Observation` objects associated with the UKF step
         """
         if not observations:
-            self.source = self.INTERNAL_PROPAGATION_SOURCE
+            self.source = EstimateSource.INTERNAL_PROPAGATION
 
             # Save the 0th sigma point because it is the non-sampled propagated state. This means that
             #   we don't inject any noise into the state estimate when no measurements occur.
@@ -285,7 +333,7 @@ class UnscentedKalmanFilter(SequentialFilter):
             #   covariance is stored as the updated error covariance
             self.est_p = self.pred_p
         else:
-            self.source = self.INTERNAL_OBSERVATION_SOURCE
+            self.source = EstimateSource.INTERNAL_OBSERVATION
 
             # Performs covariance portion of the update step
             self.forecast(observations)
@@ -456,32 +504,26 @@ class UnscentedKalmanFilter(SequentialFilter):
 
         return meas_mean
 
-    def getPredictionResult(self) -> dict[str, Any]:
-        r"""Compile result message for a predict step.
+    def getPredictionResult(self) -> UKFPredictResult:
+        """Compile result message for a predict step.
 
         Returns:
-            ``dict``: message with predict information
+            Filter results from the 'predict' step.
         """
-        result = super().getPredictionResult()
-        result.update(
-            {
-                "sigma_points": self.sigma_points,
-                "sigma_x_res": self.sigma_x_res,
-            },
-        )
-        return result
+        return UKFPredictResult.fromFilter(self)
 
-    def getForecastResult(self) -> dict[str, Any]:
-        r"""Compile result message for a forecast step.
+    def getForecastResult(self) -> UKFForecastResult:
+        """Compile result message for a forecast step.
 
         Returns:
-            ``dict``: message with forecast information
+            Filter results from the 'forecast' step.
         """
-        result = super().getForecastResult()
-        result.update(
-            {
-                "sigma_points": self.sigma_points,
-                "sigma_y_res": self.sigma_y_res,
-            },
-        )
-        return result
+        return UKFForecastResult.fromFilter(self)
+
+    def getUpdateResult(self) -> UKFUpdateResult:
+        """Compile result message for an update step.
+
+        Returns:
+            Filter results from the 'update' step.
+        """
+        return UKFUpdateResult.fromFilter(self)

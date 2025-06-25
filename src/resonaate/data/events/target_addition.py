@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from json import dumps, loads
+from json import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -35,12 +35,12 @@ class TargetAdditionEvent(Event):
     __mapper_args__ = {"polymorphic_identity": EVENT_TYPE}
 
     @declared_attr
-    def agent_id(self):
+    def agent_id(self) -> int:
         """``int``: Unique ID of the :class:`.AgentModel` being added to the scenario."""
         return Event.__table__.c.get("agent_id", Column(Integer, ForeignKey("agents.unique_id")))
 
     @declared_attr
-    def tasking_engine_id(self):
+    def tasking_engine_id(self) -> int:
         """``int``: Unique ID for the :class:`.TaskingEngine` that this target should be added to."""
         return Event.__table__.c.get("tasking_engine_id", Column(Integer))
 
@@ -48,37 +48,37 @@ class TargetAdditionEvent(Event):
     """:class:`~.agent.AgentModel`: The `AgentModel` object being added to the scenario."""
 
     @declared_attr
-    def pos_x_km(self):
+    def pos_x_km(self) -> float:
         """``float``: Cartesian x-coordinate for inertial satellite location in ECI frame."""
         return Event.__table__.c.get("pos_x_km", Column(Float))
 
     @declared_attr
-    def pos_y_km(self):
+    def pos_y_km(self) -> float:
         """``float``: Cartesian y-coordinate for inertial satellite location in ECI frame."""
         return Event.__table__.c.get("pos_y_km", Column(Float))
 
     @declared_attr
-    def pos_z_km(self):
+    def pos_z_km(self) -> float:
         """``float``: Cartesian z-coordinate for inertial satellite location in ECI frame."""
         return Event.__table__.c.get("pos_z_km", Column(Float))
 
     @declared_attr
-    def vel_x_km_p_sec(self):
+    def vel_x_km_p_sec(self) -> float:
         """``float``: Cartesian x-coordinate for inertial satellite velocity in ECI frame."""
         return Event.__table__.c.get("vel_x_km_p_sec", Column(Float))
 
     @declared_attr
-    def vel_y_km_p_sec(self):
+    def vel_y_km_p_sec(self) -> float:
         """``float``: Cartesian y-coordinate for inertial satellite velocity in ECI frame."""
         return Event.__table__.c.get("vel_y_km_p_sec", Column(Float))
 
     @declared_attr
-    def vel_z_km_p_sec(self):
+    def vel_z_km_p_sec(self) -> float:
         """``float``: Cartesian z-coordinate for inertial satellite velocity in ECI frame."""
         return Event.__table__.c.get("vel_z_km_p_sec", Column(Float))
 
     @declared_attr
-    def station_keeping_json(self):
+    def station_keeping_json(self) -> str:
         """``str``: JSON serialized list of station keeping key words for this target."""
         return Event.__table__.c.get("station_keeping_json", Column(String(128)))
 
@@ -97,7 +97,7 @@ class TargetAdditionEvent(Event):
 
     @property
     def eci(self) -> list[float]:
-        """``list``: returns the formatted ECI state vector."""
+        """``list``: returns the formatted ECI state vector (i.e [x, y, z, vx, vy, vz]). Position is measured in km, and velocity is in km/s."""
         return [
             self.pos_x_km,
             self.pos_y_km,
@@ -147,7 +147,7 @@ class TargetAdditionEvent(Event):
 
         station_keeping = ""
         if config.target_agent.platform.type == PlatformLabel.SPACECRAFT:
-            station_keeping = dumps(config.target_agent.platform.station_keeping.toJSON())
+            station_keeping = config.target_agent.platform.station_keeping.model_dump_json()
 
         return cls(
             scope=config.scope,

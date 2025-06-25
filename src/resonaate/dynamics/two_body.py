@@ -18,7 +18,7 @@ class TwoBody(Celestial):
     reference frame) using the Two-Body equations of motion.
     """
 
-    def _differentialEquation(self, time, state):
+    def _differentialEquation(self, time, state, check_collision: bool = True):
         """Calculate the first time derivative of the state for numerical integration.
 
         References:
@@ -31,6 +31,7 @@ class TwoBody(Celestial):
         Args:
             time (:class:`.ScenarioTime`): the current time of integration, (seconds)
             state (``numpy.ndarray``): (6 * K, ) current state vector in integration, (km, km/sec)
+            check_collision (``bool``): whether to error on collision with the primary body
 
         Returns:
             ``numpy.ndarray``: (6 * K, ) derivative of the state vector, (km/sec; km/sec^2)
@@ -44,8 +45,9 @@ class TwoBody(Celestial):
             r_vector = state[jj : jj + half : step]
             r_norm = norm(r_vector)
 
-            # Check if an RSO crashed into the Earth
-            checkEarthCollision(r_norm)
+            if check_collision:
+                # Check if an RSO crashed into the Earth
+                checkEarthCollision(r_norm)
 
             # Save state derivative for this state vector
             derivative[jj : jj + half : step] = state[jj + half :: step]

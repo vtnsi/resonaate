@@ -3,28 +3,53 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Annotated, Literal, Optional, Union
+
+# Third Party Imports
+from pydantic import BaseModel, Field
 
 # Local Imports
-from ...tasking.decisions import VALID_DECISIONS
-from .base import ConfigObject, ConfigValueError
+from ...common.labels import DecisionLabel
 
 
-@dataclass
-class DecisionConfig(ConfigObject):
-    """Configuration section defining several decision-based options."""
+class MunkresDecisionConfig(BaseModel):
+    """Configuration section defining parameters for the munkres decision making algorithm."""
 
-    CONFIG_LABEL: ClassVar[str] = "decision"
-    """``str``: Key where settings are stored in the configuration dictionary."""
+    name: Literal[DecisionLabel.MUNKRES] = DecisionLabel.MUNKRES  # type: ignore
+    """``str``: Name of this decision making algorithm."""
 
-    name: str
-    """``str``: Name of this decision function."""
 
-    parameters: dict = field(default_factory=dict)
-    """``dict``: Parameters for the decision function."""
+class MyopicNaiveGreedyDecisionConfig(BaseModel):
+    """Configuration section defining parameters for the myopic naive greedy decision making algorithm."""
 
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.name not in VALID_DECISIONS:
-            raise ConfigValueError("name", self.name, VALID_DECISIONS)
+    name: Literal[DecisionLabel.MYOPIC_NAIVE_GREEDY] = DecisionLabel.MYOPIC_NAIVE_GREEDY  # type: ignore
+    """``str``: Name of this decision making algorithm."""
+
+
+class RandomDecisionConfig(BaseModel):
+    """Configuration section defining parameters for the random decision making algorithm."""
+
+    name: Literal[DecisionLabel.RANDOM] = DecisionLabel.RANDOM  # type: ignore
+    """``str``: Name of this decision making algorithm."""
+
+    seed: Optional[int] = None  # noqa: UP007
+    """``int``: Seed for pseudo-random number generator."""
+
+
+class AllVisibleDecision(BaseModel):
+    """Configuration section defining parameters for the 'all visible' decision making algorithm."""
+
+    name: Literal[DecisionLabel.ALL_VISIBLE] = DecisionLabel.ALL_VISIBLE  # type: ignore
+    """``str``: Name of this decision making algorithm."""
+
+
+DecisionConfig = Annotated[
+    Union[
+        MunkresDecisionConfig,
+        MyopicNaiveGreedyDecisionConfig,
+        RandomDecisionConfig,
+        AllVisibleDecision,
+    ],
+    Field(..., discriminator="name"),
+]
+"""Annotated[Union]: Discriminated union defining valid decision making configurations."""

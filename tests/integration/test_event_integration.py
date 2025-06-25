@@ -12,8 +12,8 @@ from sqlalchemy.orm import Query
 # RESONAATE Imports
 from resonaate.data.agent import AgentModel
 from resonaate.physics.time.stardate import datetimeToJulianDate
-from resonaate.scenario.config import ScenarioConfig
-from resonaate.scenario.config.event_configs import EventConfig, EventConfigList
+from resonaate.scenario.config import ScenarioConfig, constructFromUnion
+from resonaate.scenario.config.event_configs import EventConfig
 from resonaate.scenario.scenario import Scenario
 from resonaate.scenario.scenario_builder import ScenarioBuilder
 
@@ -54,21 +54,16 @@ class TestEventIntegration:
         minimal_config = _getMinimalConfig(datafiles)
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "agent_propagation",
-                    "scope_instance_id": 123,
-                    "start_time": time,
-                    "end_time": time,
-                    "event_type": "impulse",
-                    "thrust_vector": [0.0, 0.0, 0.00123],
-                    "thrust_frame": "ntw",
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "agent_propagation",
+            "scope_instance_id": 123,
+            "start_time": time,
+            "end_time": time,
+            "event_type": "impulse",
+            "thrust_vector": [0.0, 0.0, 0.00123],
+            "thrust_frame": "ntw",
+        })
+        minimal_config.events.append(test_event)
         assert ScenarioBuilder(minimal_config)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
@@ -82,23 +77,18 @@ class TestEventIntegration:
         priority_agent = {"unique_id": 12345, "name": "important sat"}
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "task_reward_generation",
-                    "scope_instance_id": 123,
-                    "start_time": time,
-                    "end_time": time,
-                    "event_type": "task_priority",
-                    "target_id": priority_agent["unique_id"],
-                    "target_name": priority_agent["name"],
-                    "priority": 2.0,
-                    "is_dynamic": False,
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "task_reward_generation",
+            "scope_instance_id": 123,
+            "start_time": time,
+            "end_time": time,
+            "event_type": "task_priority",
+            "target_id": priority_agent["unique_id"],
+            "target_name": priority_agent["name"],
+            "priority": 2.0,
+            "is_dynamic": False,
+        })
+        minimal_config.events.append(test_event)
         _ = ScenarioBuilder(minimal_config)
         assert database.getData(
             Query([AgentModel]).filter(
@@ -124,22 +114,17 @@ class TestEventIntegration:
         maneuvering_target = tasking_engine.targets[0]
         time = minimal_config.time.start_timestamp + timedelta(minutes=2, seconds=seconds)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "agent_propagation",
-                    "scope_instance_id": maneuvering_target.id,
-                    "start_time": time,
-                    "end_time": time,
-                    "event_type": "impulse",
-                    "thrust_vector": [0.0, 0.0, 0.125],
-                    "thrust_frame": "ntw",
-                    "planned": False,
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "agent_propagation",
+            "scope_instance_id": maneuvering_target.id,
+            "start_time": time,
+            "end_time": time,
+            "event_type": "impulse",
+            "thrust_vector": [0.0, 0.0, 0.125],
+            "thrust_frame": "ntw",
+            "planned": False,
+        })
+        minimal_config.events.append(test_event)
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -150,7 +135,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5),
@@ -182,22 +166,17 @@ class TestEventIntegration:
         maneuvering_target = tasking_engine.targets[0]
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "agent_propagation",
-                    "scope_instance_id": maneuvering_target.id,
-                    "start_time": time,
-                    "end_time": time,
-                    "event_type": "impulse",
-                    "thrust_vector": [0.0, 0.0, 0.125],
-                    "thrust_frame": "ntw",
-                    "planned": planned,
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "agent_propagation",
+            "scope_instance_id": maneuvering_target.id,
+            "start_time": time,
+            "end_time": time,
+            "event_type": "impulse",
+            "thrust_vector": [0.0, 0.0, 0.125],
+            "thrust_frame": "ntw",
+            "planned": planned,
+        })
+        minimal_config.events.append(test_event)
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -208,7 +187,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5),
@@ -243,22 +221,17 @@ class TestEventIntegration:
         time_1 = minimal_config.time.start_timestamp + timedelta(minutes=2)
         time_2 = minimal_config.time.start_timestamp + timedelta(minutes=4)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "agent_propagation",
-                    "scope_instance_id": maneuvering_target.id,
-                    "start_time": time_1,
-                    "end_time": time_2,
-                    "event_type": "finite_burn",
-                    "acc_vector": [0.0, 0.0, 0.002],
-                    "thrust_frame": "ntw",
-                    "planned": planned,
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "agent_propagation",
+            "scope_instance_id": maneuvering_target.id,
+            "start_time": time_1,
+            "end_time": time_2,
+            "event_type": "finite_burn",
+            "acc_vector": [0.0, 0.0, 0.002],
+            "thrust_frame": "ntw",
+            "planned": planned,
+        })
+        minimal_config.events.append(test_event)
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -269,7 +242,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5),
@@ -302,23 +274,18 @@ class TestEventIntegration:
         time_1 = minimal_config.time.start_timestamp + timedelta(minutes=2)
         time_2 = minimal_config.time.start_timestamp + timedelta(minutes=4)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "task_reward_generation",
-                    "scope_instance_id": tasking_engine.unique_id,
-                    "start_time": time_1,
-                    "end_time": time_2,
-                    "event_type": "task_priority",
-                    "target_id": priority_target.id,
-                    "target_name": priority_target.name,
-                    "priority": 2.0,
-                    "is_dynamic": False,
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "task_reward_generation",
+            "scope_instance_id": tasking_engine.unique_id,
+            "start_time": time_1,
+            "end_time": time_2,
+            "event_type": "task_priority",
+            "target_id": priority_target.id,
+            "target_name": priority_target.name,
+            "priority": 2.0,
+            "is_dynamic": False,
+        })
+        minimal_config.events.append(test_event)
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -329,7 +296,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5),
@@ -379,21 +345,16 @@ class TestEventIntegration:
 
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "scenario_step",
-                    "scope_instance_id": 0,
-                    "start_time": time,
-                    "end_time": time,
-                    "event_type": "target_addition",
-                    "target_agent": target_agent,
-                    "tasking_engine_id": tasking_engine.unique_id,
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "scenario_step",
+            "scope_instance_id": 0,
+            "start_time": time,
+            "end_time": time,
+            "event_type": "target_addition",
+            "target_agent": target_agent,
+            "tasking_engine_id": tasking_engine.unique_id,
+        })
+        minimal_config.events.append(test_event)
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -404,7 +365,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         initial_target_count = len(app.target_agents)
         initial_engine_target_count = app.tasking_engines[tasking_engine.unique_id].num_targets
@@ -478,21 +438,17 @@ class TestEventIntegration:
         }
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "scenario_step",
-                    "scope_instance_id": 0,
-                    "start_time": time,
-                    "end_time": time,
-                    "event_type": "sensor_addition",
-                    "sensor_agent": sensor_agent,
-                    "tasking_engine_id": tasking_engine.unique_id,
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "scenario_step",
+            "scope_instance_id": 0,
+            "start_time": time,
+            "end_time": time,
+            "event_type": "sensor_addition",
+            "sensor_agent": sensor_agent,
+            "tasking_engine_id": tasking_engine.unique_id,
+        })
+
+        minimal_config.events.append(test_event)
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -503,7 +459,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         initial_sensor_count = len(app.sensor_agents)
         initial_engine_sensor_count = app.tasking_engines[tasking_engine.unique_id].num_sensors
@@ -541,22 +496,17 @@ class TestEventIntegration:
         removed_target = tasking_engine.targets[0]
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "scenario_step",
-                    "scope_instance_id": 0,
-                    "start_time": time,
-                    "end_time": time,
-                    "event_type": "agent_removal",
-                    "tasking_engine_id": tasking_engine.unique_id,
-                    "agent_id": removed_target.id,
-                    "agent_type": "target",
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "scenario_step",
+            "scope_instance_id": 0,
+            "start_time": time,
+            "end_time": time,
+            "event_type": "agent_removal",
+            "tasking_engine_id": tasking_engine.unique_id,
+            "agent_id": removed_target.id,
+            "agent_type": "target",
+        })
+        minimal_config.events.append(test_event)
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -567,7 +517,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         initial_target_count = len(app.target_agents)
         initial_engine_target_count = app.tasking_engines[tasking_engine.unique_id].num_targets
@@ -606,22 +555,17 @@ class TestEventIntegration:
         removed_sensor = tasking_engine.sensors[0]
         time = minimal_config.time.start_timestamp + timedelta(minutes=2)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "scenario_step",
-                    "scope_instance_id": 0,
-                    "start_time": time,
-                    "end_time": time,
-                    "event_type": "agent_removal",
-                    "tasking_engine_id": tasking_engine.unique_id,
-                    "agent_id": removed_sensor.id,
-                    "agent_type": "sensor",
-                },
-            ],
-        )
+        test_event = constructFromUnion(EventConfig, {
+            "scope": "scenario_step",
+            "scope_instance_id": 0,
+            "start_time": time,
+            "end_time": time,
+            "event_type": "agent_removal",
+            "tasking_engine_id": tasking_engine.unique_id,
+            "agent_id": removed_sensor.id,
+            "agent_type": "sensor",
+        })
+        minimal_config.events.append(test_event)
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -632,7 +576,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         initial_sensor_count = len(app.sensor_agents)
         initial_engine_sensor_count = app.tasking_engines[tasking_engine.unique_id].num_sensors
@@ -692,40 +635,35 @@ class TestEventIntegration:
         time_2 = minimal_config.time.start_timestamp + timedelta(minutes=2.5)
         time_3 = minimal_config.time.start_timestamp + timedelta(minutes=4)
 
-        minimal_config.events = EventConfigList(
-            "events",
-            EventConfig,
-            [
-                {
-                    "scope": "scenario_step",
-                    "scope_instance_id": 0,
-                    "start_time": time_1,
-                    "end_time": time_1,
-                    "event_type": "target_addition",
-                    "target_agent": target_agent,
-                    "tasking_engine_id": tasking_engine.unique_id,
-                },
-                {
-                    "scope": "agent_propagation",
-                    "scope_instance_id": addition_id,
-                    "start_time": time_2,
-                    "end_time": time_2,
-                    "event_type": "impulse",
-                    "thrust_vector": [0.0, 0.0, 0.125],
-                    "thrust_frame": "ntw",
-                },
-                {
-                    "scope": "scenario_step",
-                    "scope_instance_id": 0,
-                    "start_time": time_3,
-                    "end_time": time_3,
-                    "event_type": "agent_removal",
-                    "tasking_engine_id": tasking_engine.unique_id,
-                    "agent_id": addition_id,
-                    "agent_type": "target",
-                },
-            ],
-        )
+        test_event_1 = constructFromUnion(EventConfig, {
+            "scope": "scenario_step",
+            "scope_instance_id": 0,
+            "start_time": time_1,
+            "end_time": time_1,
+            "event_type": "target_addition",
+            "target_agent": target_agent,
+            "tasking_engine_id": tasking_engine.unique_id,
+        })
+        test_event_2 = constructFromUnion(EventConfig, {
+            "scope": "agent_propagation",
+            "scope_instance_id": addition_id,
+            "start_time": time_2,
+            "end_time": time_2,
+            "event_type": "impulse",
+            "thrust_vector": [0.0, 0.0, 0.125],
+            "thrust_frame": "ntw",
+        })
+        test_event_3 = constructFromUnion(EventConfig, {
+            "scope": "scenario_step",
+            "scope_instance_id": 0,
+            "start_time": time_3,
+            "end_time": time_3,
+            "event_type": "agent_removal",
+            "tasking_engine_id": tasking_engine.unique_id,
+            "agent_id": addition_id,
+            "agent_type": "target",
+        })
+        minimal_config.events = [test_event_1, test_event_2, test_event_3]
 
         builder = ScenarioBuilder(minimal_config)
         app = Scenario(
@@ -736,7 +674,6 @@ class TestEventIntegration:
             builder.sensor_agents,
             builder.tasking_engines,
             logger=builder.logger,
-            start_workers=False,
         )
         target_time = datetimeToJulianDate(
             minimal_config.time.start_timestamp + timedelta(minutes=5),

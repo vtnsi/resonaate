@@ -14,7 +14,7 @@ from scipy.linalg import block_diag
 from resonaate.data.observation import Observation
 from resonaate.dynamics import two_body
 from resonaate.estimation import UnscentedKalmanFilter
-from resonaate.estimation.sequential.sequential_filter import FilterFlag
+from resonaate.estimation.sequential_filter import EstimateSource, FilterFlag
 from resonaate.physics.measurements import IsAngle, Measurement
 from resonaate.physics.time.stardate import ScenarioTime
 
@@ -104,7 +104,7 @@ def createOpticalObservation() -> Observation:
     return obs
 
 
-@patch("resonaate.estimation.sequential.unscented_kalman_filter.BehavioralConfig")
+@patch("resonaate.estimation.kalman.unscented_kalman_filter.BehavioralConfig")
 def testCheckSqrtCovariance(mocked_config: MagicMock, ukf: UnscentedKalmanFilter):
     """Test method for checking covariance is positive semi-definite."""
     negative_definite = diagflat((-3, -2, -1))
@@ -226,7 +226,7 @@ def testCalculateMeasurementMatrix(ukf: UnscentedKalmanFilter):
     assert allclose(UKF_SIGMA_Y_RES, ukf.sigma_y_res, rtol=1e-4, atol=1e-7)
 
 
-@patch("resonaate.estimation.sequential.unscented_kalman_filter.julianDateToDatetime")
+@patch("resonaate.estimation.kalman.unscented_kalman_filter.julianDateToDatetime")
 def testCalcMeasurementSigmaPoints(mocked_jd2dt: MagicMock, ukf: UnscentedKalmanFilter):
     """Test calculating measurement sigma points with H matrix."""
     mocked_jd2dt.return_value = datetime.datetime(2023, 10, 20, 20, 43, 44)
@@ -249,7 +249,7 @@ def testCalcMeasurementSigmaPoints(mocked_jd2dt: MagicMock, ukf: UnscentedKalman
     assert allclose(sigma_obs, UKF_SIGMA_OBS, rtol=1e-4, atol=1e-7)
 
 
-@patch("resonaate.estimation.sequential.unscented_kalman_filter.julianDateToDatetime")
+@patch("resonaate.estimation.kalman.unscented_kalman_filter.julianDateToDatetime")
 def testCalcMeasurementMean(
     mocked_jd2dt: MagicMock,
     ukf: UnscentedKalmanFilter,
@@ -282,10 +282,10 @@ def testPredictionResult(ukf: UnscentedKalmanFilter):
     ]
 
     result = ukf.getPredictionResult()
-    assert array_equal(result["sigma_points"], UKF_SIGMA_POINTS)
-    assert array_equal(result["sigma_x_res"], UKF_SIGMA_X_RES)
+    assert array_equal(result.sigma_points, UKF_SIGMA_POINTS)
+    assert array_equal(result.sigma_x_res, UKF_SIGMA_X_RES)
     for key in expected_keys:
-        assert key in result
+        assert hasattr(result, key)
 
 
 def testForecastResult(ukf: UnscentedKalmanFilter):
@@ -307,10 +307,10 @@ def testForecastResult(ukf: UnscentedKalmanFilter):
     ]
 
     result = ukf.getForecastResult()
-    assert array_equal(result["sigma_points"], UKF_SIGMA_POINTS)
-    assert array_equal(result["sigma_y_res"], UKF_SIGMA_Y_RES)
+    assert array_equal(result.sigma_points, UKF_SIGMA_POINTS)
+    assert array_equal(result.sigma_y_res, UKF_SIGMA_Y_RES)
     for key in expected_keys:
-        assert key in result
+        assert hasattr(result, key)
 
 
 def testPredict(ukf: UnscentedKalmanFilter):
@@ -329,7 +329,7 @@ def testPredict(ukf: UnscentedKalmanFilter):
     ukf.predictStateEstimate.assert_called_once_with(final_time, scheduled_events=None)
 
 
-@patch("resonaate.estimation.sequential.unscented_kalman_filter.julianDateToDatetime")
+@patch("resonaate.estimation.kalman.unscented_kalman_filter.julianDateToDatetime")
 def testForecast(mocked_jd2dt: MagicMock, ukf: UnscentedKalmanFilter, optical_obs: Observation):
     """Test forecast() method."""
     mocked_jd2dt.return_value = datetime.datetime(2021, 10, 21, 11, 26, 13)
@@ -349,7 +349,7 @@ def testForecast(mocked_jd2dt: MagicMock, ukf: UnscentedKalmanFilter, optical_ob
     assert allclose(ukf.est_p, UKF_EST_P, rtol=1e-4, atol=1e-7)
 
 
-@patch("resonaate.estimation.sequential.unscented_kalman_filter.julianDateToDatetime")
+@patch("resonaate.estimation.kalman.unscented_kalman_filter.julianDateToDatetime")
 def testForecastResample(
     mocked_jd2dt: MagicMock,
     ukf: UnscentedKalmanFilter,
@@ -386,14 +386,14 @@ def testUpdateNoObservations(ukf: UnscentedKalmanFilter):
     ukf.forecast = MagicMock()
 
     ukf.update([])
-    assert ukf.source == ukf.INTERNAL_PROPAGATION_SOURCE
+    assert ukf.source == EstimateSource.INTERNAL_PROPAGATION
     assert array_equal(ukf.est_x, UKF_SIGMA_POINTS[:, 0])
     assert array_equal(ukf.est_p, UKF_PRED_P)
     ukf.forecast.assert_not_called()
 
 
-@patch("resonaate.estimation.sequential.unscented_kalman_filter.chiSquareQuadraticForm")
-@patch("resonaate.estimation.sequential.unscented_kalman_filter.residuals")
+@patch("resonaate.estimation.kalman.unscented_kalman_filter.chiSquareQuadraticForm")
+@patch("resonaate.estimation.kalman.unscented_kalman_filter.residuals")
 def testUpdate(
     mocked_residuals: MagicMock,
     mocked_chi_square: MagicMock,

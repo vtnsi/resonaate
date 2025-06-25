@@ -31,7 +31,7 @@ class AgentRemovalEvent(Event):
     INTENDED_SCOPE = EventScope.SCENARIO_STEP
     """:class:`.EventScope`: Scope where :class:`.AgentRemovalEvent` objects should be handled."""
 
-    class AgentType(Enum):
+    class AgentType(str, Enum):
         """Defines the valid types of agents for the :attr:`~.AgentRemovalEvent.agent_type` attribute."""
 
         TARGET = "target"

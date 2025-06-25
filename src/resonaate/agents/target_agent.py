@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
-    from ..scenario.config import PropagationConfig, TargetAgentConfig
+    from ..scenario.config import AgentConfig, PropagationConfig
 
 
 class TargetAgent(Agent):
@@ -93,7 +93,7 @@ class TargetAgent(Agent):
     @classmethod
     def fromConfig(
         cls,
-        tgt_cfg: TargetAgentConfig,
+        tgt_cfg: AgentConfig,
         clock: ScenarioClock,
         dynamics: Dynamics,
         prop_cfg: PropagationConfig,
@@ -101,7 +101,7 @@ class TargetAgent(Agent):
         """Factory to initialize `TargetAgent` objects based on given configuration.
 
         Args:
-            tgt_cfg (:class:`.TargetAgentConfig`): config from which to generate a target agent.
+            tgt_cfg (:class:`.AgentConfig`): config from which to generate a target agent.
             clock (:class:`.ScenarioClock`): common clock object for the simulation.
             dynamics (:class:`.Dynamics`): dynamics that handles state propagation.
             prop_cfg (:class:`.PropagationConfig`): various propagation simulation settings.
@@ -172,8 +172,8 @@ class TargetAgent(Agent):
         """
         self._previous_state = self._truth_state
         self._truth_state = new_state
-        self._ecef_state = eci2ecef(new_state, self.datetime_epoch)
-        self._lla_state = ecef2lla(self._ecef_state)
+        self._ecef_state = None
+        self._lla_state = None
 
     @property
     def previous_state(self) -> ndarray:
@@ -183,9 +183,13 @@ class TargetAgent(Agent):
     @property
     def ecef_state(self) -> ndarray:
         """``ndarray``: Returns the 6x1 ECEF current state vector."""
+        if self._ecef_state is None:
+            self._ecef_state = eci2ecef(self.eci_state, self.datetime_epoch)
         return self._ecef_state
 
     @property
     def lla_state(self) -> ndarray:
         """``ndarray``: Returns the 3x1 current position vector in lat, lon, & alt."""
+        if self._lla_state is None:
+            self._lla_state = ecef2lla(self.ecef_state)
         return self._lla_state

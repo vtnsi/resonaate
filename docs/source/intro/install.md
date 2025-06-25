@@ -36,7 +36,7 @@ source .venv/bin/activate
 
 If you're using Windows, use:
 
-```cmd
+```bat
 .venv\Scripts\activate.bat
 ```
 

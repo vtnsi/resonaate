@@ -28,6 +28,7 @@ from resonaate.physics.orbits.utils import (
     getPeriod,
     getRightAscension,
     getSemiMajorAxis,
+    getSmaFromMeanMotion,
     getTrueAnomaly,
     getTrueLongitude,
     getTrueLongitudePeriapsis,
@@ -104,9 +105,15 @@ def testGetEnergy(eci: ndarray, energy: float):
     assert isclose(getOrbitalEnergy(norm(eci[:3]), norm(eci[3:])), energy)
 
 
-def testGetMeanMotion():
+def testgetMeanMotion():
     """Test calculating mean motion from SMA."""
     assert isclose(getMeanMotion(42164.1696), TWOPI / 86164.0905)
+
+
+def testgetSmaFromMeanMotion():
+    """Tests calculating the SMA from mean motion."""
+    m = getMeanMotion(42164.1696)
+    assert isclose(42164.1696, getSmaFromMeanMotion(m))
 
 
 def testGetPeriod():
@@ -163,7 +170,7 @@ def testGetTrueLongPer(eci: ndarray):
     assert allclose(getTrueLongitudePeriapsis(ecc_vec), omega_true)
 
 
-def testGetRightAscension():
+def testgetRightAscension():
     """Test calculating RAAN from line of nodes vector."""
     n_vec = array([-44500.5, -49246.7, 0.0])
     n_vec = n_vec / norm(n_vec)
@@ -182,7 +189,7 @@ def testGetArgumentPerigee(eci: ndarray):
 
 
 @pytest.mark.parametrize("eci", RV_SET[1:])
-def testGetTrueAnomaly(eci: ndarray):
+def testgetTrueAnomaly(eci: ndarray):
     """Test calculating true anomaly from ECI pos & vel."""
     n_vec = array([-44500.5, -49246.7, 0.0])
     n_vec = n_vec / norm(n_vec)

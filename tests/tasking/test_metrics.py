@@ -55,20 +55,6 @@ def mockedMetricClass() -> Metric:
 class TestMetricsBase:
     """Test the base class of the metrics module."""
 
-    def testRegistry(self, mocked_metric_class: Metric):
-        """Test to make sure the Metric object is registered."""
-        test_metric = mocked_metric_class()
-        assert test_metric.is_registered is False
-
-        # Register new class and check
-        Metric.register(mocked_metric_class)
-        test_metric = mocked_metric_class()
-        assert test_metric.is_registered is True
-
-        # Ensure we cannot register objects that are not :class:`.Metric` sub-classes
-        with pytest.raises(TypeError):
-            Metric.register([2, 2])
-
     def testCreation(self):
         """Test creating a Metric Object."""
         with pytest.raises(TypeError):

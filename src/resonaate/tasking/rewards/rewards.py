@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from numpy import ndarray
 
     # Local Imports
+    from ...scenario.config.reward_config import RewardConfig
     from ..metrics.metric_base import Metric
 
 
@@ -31,7 +32,7 @@ class CostConstrainedReward(Reward):
         :cite:t:`nastasi_2018_diss`, Section 5.3.3
     """
 
-    def __init__(self, metrics: list[Metric], delta: float = 0.85, **kwargs):
+    def __init__(self, metrics: list[Metric], delta: float = 0.85):
         """Construct a cost-constrained reward function.
 
         Note:
@@ -44,14 +45,13 @@ class CostConstrainedReward(Reward):
             metrics (``list``): :class:`.Metric` instances for calculating the reward
             delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
-            kwargs (Any): variable keyword arguments
 
         Raises:
             ValueError: raised if not supplied three metric objects
             TypeError: raised if not supplied one of each metric type from:
                 [:class:`.Stability`, :class:`.Information`, :class:`.Sensor`]
         """
-        super().__init__(metrics, **kwargs)
+        super().__init__(metrics)
         self._delta = delta
         if len(metrics) != 3:
             raise ValueError("Incorrect number of metrics being passed")
@@ -66,6 +66,20 @@ class CostConstrainedReward(Reward):
 
         if not all([stability, information, sensor]):
             raise TypeError("Incorrect assignment of metrics")
+
+    @classmethod
+    def fromConfig(cls, metrics: list[Metric], config: RewardConfig) -> Reward:
+        """Construct a reward method class from the specified `config`.
+
+        Args:
+            metrics (list[:class:`.Metric`]): List of :class:`.Metric` objects to be used in this
+                reward computation.
+            config (:class:`.RewardConfig`): Configuration section defining the reward method to be used.
+
+        Returns:
+            (:class:`.Reward`): reward class to be used
+        """
+        return cls(metrics, delta=config.delta)
 
     def calculate(self, metric_matrix: ndarray) -> float:
         """Calculate the cost-constrained reward.
@@ -121,7 +135,7 @@ class CombinedReward(Reward):
     of the stability metric, and subtracting the sensor metric.
     """
 
-    def __init__(self, metrics: list[Metric], delta: float = 0.85, **kwargs):
+    def __init__(self, metrics: list[Metric], delta: float = 0.85):
         """Construct a cost-constrained reward function.
 
         Note:
@@ -135,14 +149,13 @@ class CombinedReward(Reward):
             metrics (``list``): :class:`.Metric` instances for calculating the reward
             delta (``float``, optional): ratio of information reward to sensor reward.
                 Defaults to 0.85.
-            kwargs (Any): variable keyword arguments
 
         Raises:
             ValueError: raised if not supplied three metric objects
             TypeError: raised if not supplied one of each metric type from:
                 [:class:`.Stability`, :class:`.Information`, :class:`.Sensor`, :class:`.Behavior`]
         """
-        super().__init__(metrics, **kwargs)
+        super().__init__(metrics)
         self._delta = delta
         if len(metrics) != 4:
             raise ValueError("Incorrect number of metrics being passed")
@@ -159,6 +172,20 @@ class CombinedReward(Reward):
 
         if not all([stability, information, sensor, behavior]):
             raise TypeError("Incorrect assignment of metrics")
+
+    @classmethod
+    def fromConfig(cls, metrics: list[Metric], config: RewardConfig) -> Reward:
+        """Construct a reward method class from the specified `config`.
+
+        Args:
+            metrics (list[:class:`.Metric`]): List of :class:`.Metric` objects to be used in this
+                reward computation.
+            config (:class:`.RewardConfig`): Configuration section defining the reward method to be used.
+
+        Returns:
+            (:class:`.Reward`): reward class to be used
+        """
+        return cls(metrics, delta=config.delta)
 
     def calculate(self, metric_matrix: ndarray) -> float:
         """Calculate the Combined cost-constrained staleness reward.

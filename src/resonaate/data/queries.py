@@ -275,7 +275,7 @@ def filterBySingleJulianDate(
     Returns:
         (:class:`Query`): Query object to retrieve data
     """
-    type_error_msg = "Single Julian date must be type `Julian Date`, not type {0}!"
+    type_error_msg: str = "Single Julian date must be type `Julian Date`, not type {0}!"
     if isinstance(jd, JulianDate):
         return query.filter(table.julian_date == float(jd))
 

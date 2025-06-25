@@ -369,7 +369,7 @@ class Sensor(ABC):
         Returns:
             float: angular separation between `sez_position` and sensor boresight
         """
-        return subtendedAngle(sez_position, self.boresight)
+        return subtendedAngle(sez_position, self.boresight, safe=True)
 
     @property
     def az_mask(self) -> ndarray:

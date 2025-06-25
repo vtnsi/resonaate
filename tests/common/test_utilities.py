@@ -16,6 +16,23 @@ from resonaate.common.behavioral_config import BehavioralConfig
 from .. import FIXTURE_DATA_DIR
 
 
+def testNdarraySerializer():
+    """Tests conversion between ndarrays and json strings."""
+    q_matrix = np.array([[1, 2, 3], [1, 2, 3], [4, 5, 6]])
+    q_matrix_2 = np.array([[0, 1, 0], [1, 1, 1], [2, 4, 2]])
+
+    q_mat_str: str = utils.ndArrayToString(q_matrix)
+    q_mat_from_str: np.ndarray = utils.stringToNdarray(q_mat_str)
+
+    q_mat_str_2: str = utils.ndArrayToString(q_matrix_2)
+    q_mat_from_str_2: np.ndarray = utils.stringToNdarray(q_mat_str_2)
+
+    assert np.array_equal(q_matrix, q_mat_from_str)
+    assert np.array_equal(q_matrix_2, q_mat_from_str_2)
+    assert q_mat_str != q_mat_str_2
+    assert not np.array_equal(q_mat_from_str, q_mat_from_str_2)
+
+
 def testGetTypeString():
     """Ensure proper type string is returned for parent & child classes."""
 
@@ -40,9 +57,10 @@ def testLoadJSONFile(datafiles: str):
     # Valid JSON file
     utils.loadJSONFile(os.path.join(datafiles, "json/config/engines/test_engine.json"))
     # Empty JSON file
-    error_msg = r"Empty JSON file: \/.*?\.json+"
-    with pytest.raises(IOError, match=error_msg):
+    with pytest.raises(IOError, match="Empty JSON file:") as io_exc_info:
         utils.loadJSONFile(os.path.join(datafiles, "json/empty.json"))
+    err_msg: str = io_exc_info.value.args[0]
+    assert err_msg.endswith(".json")
     # Non-existant JSON file
     with pytest.raises(FileNotFoundError):
         utils.loadJSONFile(os.path.join(datafiles, "json/nonexistant.json"))
@@ -57,16 +75,18 @@ def testLoadDatFile(datafiles: str):
     # Valid dat file
     utils.loadDatFile(os.path.join(datafiles, "dat/nut80.dat"))
     # Empty dat file
-    error_msg = r"Empty DAT file: \/.*?\.dat+"
-    with pytest.raises(IOError, match=error_msg):
+    with pytest.raises(IOError, match="Empty DAT file:") as io_exc_info:
         utils.loadDatFile(os.path.join(datafiles, "dat/empty.dat"))
+    err_msg: str = io_exc_info.value.args[0]
+    assert err_msg.endswith(".dat")
     # Non-existant dat file
     with pytest.raises(FileNotFoundError):
         utils.loadDatFile(os.path.join(datafiles, "dat/nonexistant.dat"))
     # Invalid dat file
-    error_msg = r"Parsing error reading DAT file: \/.*?\.dat+"
-    with pytest.raises(ValueError, match=error_msg):
+    with pytest.raises(ValueError, match="Parsing error reading DAT file:") as io_exc_info:
         utils.loadDatFile(os.path.join(datafiles, "dat/invalid.dat"), delim=",")
+    err_msg: str = io_exc_info.value.args[0]
+    assert err_msg.endswith(".dat")
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)

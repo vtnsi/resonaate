@@ -4,16 +4,17 @@ from __future__ import annotations
 
 # Standard Library Imports
 import os.path
-from dataclasses import dataclass, field, fields
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
+
+# Third Party Imports
+from pydantic import BaseModel, Field, create_model
 
 # Local Imports
 from ...common.utilities import loadJSONFile
-from .agent_config import SensingAgentConfig, TargetAgentConfig
-from .base import ConfigObject, ConfigObjectList
+from .agent_config import AgentConfig, SensingAgentConfig
 from .engine_config import EngineConfig
 from .estimation_config import EstimationConfig
-from .event_configs import EventConfig, EventConfigList
+from .event_configs import EventConfig
 from .geopotential_config import GeopotentialConfig
 from .noise_config import NoiseConfig
 from .observation_config import ObservationConfig
@@ -29,12 +30,12 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-__all__ = [
+__all__ = [  # noqa: RUF022, RUF100
     "ScenarioConfig",
     "ConfigObject",
     "ConfigObjectList",
     "SensingAgentConfig",
-    "TargetAgentConfig",
+    "AgentConfig",
     "EngineConfig",
     "EstimationConfig",
     "EventConfig",
@@ -48,84 +49,39 @@ __all__ = [
 ]
 
 
-@dataclass
-class ScenarioConfig(ConfigObject):
+class ScenarioConfig(BaseModel):
     """Configuration class for creating valid :class:`.Scenario` objects.
 
     This allows the extra logic for properly checking all configs to be abstracted from the
     factory methods and the :class:`.Scenario`'s constructor.
     """
 
-    time: TimeConfig | dict
+    time: TimeConfig
     """:class:`.TimeConfig`: simulation time configuration object, **required**."""
 
-    estimation: EstimationConfig | dict
+    estimation: EstimationConfig
     """:class:`.EstimationConfig`: estimation & filtering configuration object, **required**."""
 
-    engines: ConfigObjectList[EngineConfig] | list[EngineConfig | dict]
+    engines: list[EngineConfig]
     """:class:`.ConfigObjectList`: list of :class:`.EngineConfig` objects to use for tasking, **required**."""
 
-    noise: NoiseConfig | dict | None = None
+    noise: NoiseConfig = NoiseConfig()
     """:class:`.NoiseConfig`: noise types and values to in the simulation."""
 
-    propagation: PropagationConfig | dict | None = None
+    propagation: PropagationConfig = PropagationConfig()
     """:class:`.PropagationConfig`: define propagation techniques used during simulation."""
 
-    geopotential: GeopotentialConfig | dict | None = None
+    geopotential: GeopotentialConfig = GeopotentialConfig()
     """:class:`.GeopotentialConfig`: define the geopotential model of the Earth to use in the :class:`.SpecialPerturbations` propagator."""
 
-    perturbations: PerturbationsConfig | dict | None = None
+    perturbations: PerturbationsConfig = PerturbationsConfig()
     """:class:`.PerturbationsConfig`: define perturbations to include in the :class:`.SpecialPerturbations` propagator."""
 
-    observation: ObservationConfig | dict | None = None
+    observation: ObservationConfig = ObservationConfig()
     """:class:`.ObservationConfig`: configurations specific to observation behavior."""
 
-    events: EventConfigList[EventConfig] | list[EventConfig | dict] = field(default_factory=list)
-    """:class:`.EventConfigList`: list of :class:`.EventConfig` objects that occur during the simulation."""
-
-    OPTIONAL_SECTION_MAP: ClassVar[dict[str, ConfigObject]] = {
-        "noise": NoiseConfig,
-        "propagation": PropagationConfig,
-        "geopotential": GeopotentialConfig,
-        "perturbations": PerturbationsConfig,
-        "observation": ObservationConfig,
-    }
-    """``dict``: mapping that makes auto-validating optional sub-configs easier."""
-
-    def __post_init__(self) -> None:  # noqa: C901
-        """Runs after the object is initialized."""
-        # Required sections
-        if isinstance(self.time, dict):
-            self.time = TimeConfig(**self.time)
-
-        if isinstance(self.estimation, dict):
-            self.estimation = EstimationConfig(**self.estimation)
-
-        if isinstance(self.engines, list):
-            self.engines = ConfigObjectList("engines", EngineConfig, self.engines)
-
-        if isinstance(self.events, list):
-            self.events = EventConfigList("events", EventConfig, self.events, default_empty=True)
-
-        # Optional sub-config sections
-        for section in fields(self):
-            if getattr(self, section.name) is None:
-                setattr(self, section.name, self.OPTIONAL_SECTION_MAP[section.name]())
-
-        if isinstance(self.noise, dict):
-            self.noise = NoiseConfig(**self.noise)
-
-        if isinstance(self.propagation, dict):
-            self.propagation = PropagationConfig(**self.propagation)
-
-        if isinstance(self.geopotential, dict):
-            self.geopotential = GeopotentialConfig(**self.geopotential)
-
-        if isinstance(self.perturbations, dict):
-            self.perturbations = PerturbationsConfig(**self.perturbations)
-
-        if isinstance(self.observation, dict):
-            self.observation = ObservationConfig(**self.observation)
+    events: list[EventConfig] = Field(default_factory=list)
+    """list[EventConfigList]: list of :class:`.EventConfig` objects that occur during the simulation."""
 
     @classmethod
     def fromConfigFile(cls, config_file_path: str | Path) -> ScenarioConfig:
@@ -180,3 +136,20 @@ class ScenarioConfig(ConfigObject):
             configuration["engines"].append(engine_config)
 
         return configuration
+
+
+def constructFromUnion(disc_union, cfg_dict: dict) -> BaseModel:
+    """Construct a concrete pydantic model from `disc_union` specified by `cfg_dict`.
+
+    Args:
+        disc_union: An Annotated Union type definition where the first argument is a Union of the
+            discriminated pydantic models and the second argument is the FieldInfo that contains
+            the discriminator information.
+        cfg_dict: Dictionary specifying attributes of the `disc_union` being constructed.
+
+    Returns:
+        BaseModel: Concrete pydantic model chosen from discriminated union described by `disc_union`.
+    """
+    dummy_model = create_model("Dummy", inner=disc_union)
+    dumdum = dummy_model(inner=cfg_dict)
+    return dumdum.inner

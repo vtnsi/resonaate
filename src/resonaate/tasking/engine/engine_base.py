@@ -5,12 +5,10 @@ from __future__ import annotations
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
 from logging import getLogger
-from pickle import loads
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import zeros
-from strmbrkr import KeyValueStore
 
 # Local Imports
 from ...data import getDBConnection
@@ -24,7 +22,6 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
-    from ...agents.sensing_agent import SensingAgent
     from ...data.observation import MissedObservation, Observation
     from ...data.task import Task
     from ...physics.time.stardate import JulianDate
@@ -122,6 +119,29 @@ class TaskingEngine(metaclass=ABCMeta):
         if importer_db_path:
             self._importer_db = ImporterDatabase(db_path=importer_db_path)
 
+        self.resetHandles()
+
+    def resetHandles(self):
+        """Clear object store agent handles."""
+        self._target_store = {}
+        self._sensor_store = {}
+        self._estimate_store = {}
+
+    def setHandles(self, target_store: dict, sensor_store: dict, estimate_store: dict):
+        """Set the object store agent handles.
+
+        Args:
+            target_store: Dictionary mapping target identifiers to the relevant object store agent
+                handle.
+            sensor_store: Dictionary mapping sensor identifiers to the relevant object store agent
+                handle.
+            estimate_store: Dictionary mapping estimate identifiers to the relevant object store
+                agent handle.
+        """
+        self._target_store = target_store
+        self._sensor_store = sensor_store
+        self._estimate_store = estimate_store
+
     def addTarget(self, target_id: int) -> None:
         """Add a target to this :class:`.TaskingEngine`.
 
@@ -205,9 +225,6 @@ class TaskingEngine(metaclass=ABCMeta):
 
         return missed_observations
 
-    def _fetchSensorAgents(self) -> dict[int, SensingAgent]:
-        return loads(KeyValueStore.getValue("sensor_agents"))
-
     @abstractmethod
     def assess(self, prior_datetime_epoch: datetime, datetime_epoch: datetime) -> None:
         """Perform a set of analysis operations on the current simulation state.
@@ -240,11 +257,6 @@ class TaskingEngine(metaclass=ABCMeta):
         Yields:
             :class:`.Task`: tasking DB object for each target/sensor pair
         """
-        raise NotImplementedError
-
-    @abstractmethod
-    def shutdown(self) -> None:
-        """Perform cleanup operations for shutting down parallel processes/threads."""
         raise NotImplementedError
 
     def _sortTargets(self) -> None:

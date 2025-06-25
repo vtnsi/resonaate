@@ -6,24 +6,24 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ..metrics.metric_base import Metric
-from .reward_base import Reward
+from ...common.labels import RewardLabel
+from ..metrics import _METRIC_MAPPING
 from .rewards import CombinedReward, CostConstrainedReward, SimpleSummationReward
 
 # Type Checking Imports
 if TYPE_CHECKING:
     # Local Imports
     from ...scenario.config.reward_config import RewardConfig
+    from ..metrics.metric_base import Metric
+    from .reward_base import Reward
 
 
-# Register each reward class to global registry
-Reward.register(CostConstrainedReward)
-Reward.register(SimpleSummationReward)
-Reward.register(CombinedReward)
-
-
-VALID_REWARDS: list[str] = list(Reward.REGISTRY.keys())
-"""``list``: List of valid reward labels."""
+_REWARD_MAPPING: dict[RewardLabel, Reward] = {
+    RewardLabel.COST_CONSTRAINED: CostConstrainedReward,
+    RewardLabel.SIMPLE_SUM: SimpleSummationReward,
+    RewardLabel.COMBINED: CombinedReward,
+}
+"""dict[MetricLabel, Reward]: Maps enumerated reward label to corresponding class."""
 
 
 def rewardsFactory(configuration: RewardConfig) -> Reward:
@@ -37,7 +37,7 @@ def rewardsFactory(configuration: RewardConfig) -> Reward:
     """
     metrics_config = configuration.metrics
     metrics: list[Metric] = [
-        Metric.REGISTRY[metric.name](**metric.parameters) for metric in metrics_config
+        _METRIC_MAPPING[metric.name]() for metric in metrics_config
     ]
 
-    return Reward.REGISTRY[configuration.name](metrics, **configuration.parameters)
+    return _REWARD_MAPPING[configuration.name].fromConfig(metrics, configuration)

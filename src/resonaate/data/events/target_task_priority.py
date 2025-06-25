@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 # Third Party Imports
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, relationship
 
 # Local Imports
 from ...physics.time.stardate import datetimeToJulianDate
@@ -40,10 +40,10 @@ class TargetTaskPriority(Event):
     agent = relationship("AgentModel", lazy="joined", innerjoin=True)
     """:class:`~.agent.AgentModel`: The `AgentModel` that has increased observation priority."""
 
-    priority = Column(Float)
+    priority: Mapped[float] = Column(Float)
     """``float``: Scalar that indicates how important it is that this target be observed."""
 
-    is_dynamic = Column(Boolean)
+    is_dynamic: Mapped[float] = Column(Boolean)
     """``bool``: Flag indicating whether this task is pre-canned or dynamically created."""
 
     MUTABLE_COLUMN_NAMES = (*Event.MUTABLE_COLUMN_NAMES, "agent_id", "priority", "is_dynamic")

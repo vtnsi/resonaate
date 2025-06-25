@@ -3,50 +3,64 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Annotated, Literal, Union
+
+# Third Party Imports
+from pydantic import BaseModel, Field
 
 # Local Imports
-from ...tasking.metrics import VALID_METRICS
-from ...tasking.rewards import VALID_REWARDS
-from .base import ConfigObject, ConfigObjectList, ConfigValueError
+from ...common.labels import MetricLabel, RewardLabel
 
 
-@dataclass
-class MetricConfig(ConfigObject):
-    """Define a metric function config."""
+class MetricConfig(BaseModel):
+    """Define a metric function config.
 
-    name: str
+    TODO:  # noqa: D405
+        _When_ there's a metric configuration that _actually_ requires specifying further
+        parameters beyond just it's name, this configuration class will need to become a
+        discriminated union that specifies and documents said parameters.
+    """
+
+    name: MetricLabel
     """``str``: Name of this metric function."""
 
-    parameters: dict = field(default_factory=dict)
-    """``dict``: Parameters for the metric function."""
 
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.name not in VALID_METRICS:
-            raise ConfigValueError("name", self.name, VALID_METRICS)
-
-
-@dataclass
-class RewardConfig(ConfigObject):
+class RewardConfigBase(BaseModel):
     """Configuration section defining several reward-based options."""
 
-    CONFIG_LABEL: ClassVar[str] = "reward"
-    """``str``: Key where settings are stored in the configuration dictionary."""
-
-    name: str
-    """``str``: Name of this reward function."""
-
-    metrics: ConfigObjectList[MetricConfig] | list[MetricConfig | dict]
+    metrics: list[MetricConfig] = Field(..., min_length=1)
     """``list``: :class:`.MetricConfig` objects for calculating the reward."""
 
-    parameters: dict = field(default_factory=dict)
-    """``dict``: Parameters for the reward function."""
 
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.name not in VALID_REWARDS:
-            raise ConfigValueError("name", self.name, VALID_REWARDS)
+class CostConstrainedRewardConfig(RewardConfigBase):
+    """Configuration section defining options for cost-constrained reward computation."""
 
-        self.metrics = ConfigObjectList("metrics", MetricConfig, self.metrics)
+    name: Literal[RewardLabel.COST_CONSTRAINED] = RewardLabel.COST_CONSTRAINED
+    """``str``: Name of this reward function."""
+
+    delta: float = Field(default=0.85, gt=0.0, lt=0.0)
+    """``float``: ratio of information reward to sensor reward."""
+
+
+class SimpleSummationRewardConfig(RewardConfigBase):
+    """Configuration section defining options for simple summation reward computation."""
+
+    name: Literal[RewardLabel.SIMPLE_SUM] = RewardLabel.SIMPLE_SUM
+    """``str``: Name of this reward function."""
+
+
+class CombinedRewardConfig(RewardConfigBase):
+    """Configuration section defining options for combined reward computation."""
+
+    name: Literal[RewardLabel.COMBINED] = RewardLabel.COMBINED
+    """``str``: Name of this reward function."""
+
+    delta: float = Field(default=0.85, gt=0.0, lt=0.0)
+    """``float``: ratio of information reward to sensor reward."""
+
+
+RewardConfig = Annotated[
+    Union[CostConstrainedRewardConfig, SimpleSummationRewardConfig, CombinedRewardConfig],
+    Field(..., discriminator="name"),
+]
+"""Annotated[Union]: Discriminated union defining valid reward computation configurations."""

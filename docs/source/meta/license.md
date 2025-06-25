@@ -1,21 +1,4 @@
-```{include} ../../../LICENSE
----
-end-before: <!-- START TOC -->
----
-```
-
-<!-- TOC Formatted for sphinx -->
-
-```{contents} Table of Contents
----
-depth: 2
-backlinks: none
-local:
----
-```
+# License
 
 ```{include} ../../../LICENSE
----
-start-after: <!-- END TOC -->
----
 ```

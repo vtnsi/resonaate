@@ -3,24 +3,25 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Annotated, Literal, Optional, Union
+from warnings import warn
+
+# Third Party Imports
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing_extensions import Self
 
 # Local Imports
-from ...common.labels import DynamicsLabel, InitialOrbitDeterminationLabel, StackingLabel
-from ...estimation import (
-    VALID_ADAPTIVE_ESTIMATION_LABELS,
-    VALID_FILTER_LABELS,
-    VALID_MANEUVER_DETECTION_LABELS,
+from ...common.labels import (
+    AdaptiveEstimationLabel,
+    DynamicsLabel,
+    InitialOrbitDeterminationLabel,
+    ManeuverDetectionLabel,
+    SequentialFilterLabel,
+    StackingLabel,
 )
-from ...estimation.adaptive.initialization import VALID_LAMBERT_IOD_LABELS
-from ...estimation.adaptive.mmae_stacking_utils import VALID_STACKING_LABELS
-from .base import ConfigObject, ConfigValueError
 
-VALID_FILTER_DYNAMICS: tuple[str] = (
-    DynamicsLabel.TWO_BODY,
-    DynamicsLabel.SPECIAL_PERTURBATIONS,
-)
+# ruff: noqa: UP007
+
 DEFAULT_MANEUVER_DETECTION_THRESHOLD: float = 0.05
 DEFAULT_PRUNE_PERCENTAGE: float = 0.997
 DEFAULT_PRUNE_THRESHOLD: float = 1e-20
@@ -29,50 +30,54 @@ DEFAULT_MODEL_TIME_INTERVAL: int = 60
 DEFAULT_IOD_OBSERVATION_SPACING: int = 60
 
 
-@dataclass
-class EstimationConfig(ConfigObject):
+class EstimationConfig(BaseModel):
     """Configuration section defining several estimation-based options."""
 
-    CONFIG_LABEL: ClassVar[str] = "estimation"
-    """``str``: Key where settings are stored in the configuration dictionary."""
-
-    sequential_filter: SequentialFilterConfig | dict
+    sequential_filter: SequentialFilterConfig
     """:class:`.SequentialFilterConfig`: sequential technique as nested item."""
 
-    adaptive_filter: AdaptiveEstimationConfig | dict | None = None
+    adaptive_filter: Union[AdaptiveEstimationConfig, None] = None
     """:class:`.AdaptiveEstimationConfig`: adaptive estimation technique as nested item."""
 
-    initial_orbit_determination: InitialOrbitDeterminationConfig | dict | None = None
+    initial_orbit_determination: Union[InitialOrbitDeterminationConfig, None] = None
     """:class:`.InitialOrbitDeterminationConfig`: initial orbit determination technique as nested item."""
 
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if isinstance(self.sequential_filter, dict):
-            self.sequential_filter = SequentialFilterConfig(**self.sequential_filter)
+    @model_validator(mode="after")
+    def clarifyFlags(self) -> Self:
+        """Make sure flags are consistent with populated configurations."""
+        if (
+            self.sequential_filter.adaptive_estimation
+            and self.sequential_filter.initial_orbit_determination
+        ):
+            raise ValueError("IOD & MMAE cannot both be used at the same time.")
 
-        if isinstance(self.adaptive_filter, dict):
-            self.adaptive_filter = AdaptiveEstimationConfig(**self.adaptive_filter)
-
-        if isinstance(self.initial_orbit_determination, dict):
-            self.initial_orbit_determination = InitialOrbitDeterminationConfig(
-                **self.initial_orbit_determination,
+        if self.sequential_filter.adaptive_estimation:
+            if self.adaptive_filter is None:
+                raise ValueError(
+                    "Adaptive estimation flag set but no configuration specified.",
+                )
+        elif self.adaptive_filter is not None:
+            warn(
+                "Adaptive estimation flag is OFF, specified configuration will be IGNORED!",
+                stacklevel=2,
             )
 
+        if self.sequential_filter.initial_orbit_determination:
+            if self.initial_orbit_determination is None:
+                raise ValueError("IOD flag set but no configuration specified.")
+        elif self.initial_orbit_determination is not None:
+            warn("IOD flag is OFF, specified configuration will be IGNORED!", stacklevel=2)
 
-@dataclass
-class SequentialFilterConfig(ConfigObject):
+        return self
+
+
+class SequentialFilterConfigBase(BaseModel):
     """Configuration section defining several sequential filter-based options."""
 
-    CONFIG_LABEL: ClassVar[str] = "sequential_filter"
-    """``str``: Key where settings are stored in the configuration dictionary."""
-
-    name: str
-    """``str``: name of the sequential filter algorithm to use."""
-
-    dynamics_model: str = DynamicsLabel.SPECIAL_PERTURBATIONS
+    dynamics_model: DynamicsLabel = DynamicsLabel.SPECIAL_PERTURBATIONS
     """``str``: name of the dynamics to use in the filter."""
 
-    maneuver_detection: ManeuverDetectionConfig | dict | None = None
+    maneuver_detection: Union[ManeuverDetectionConfig, None] = None
     """:class:`.ManeuverDetectionConfig`: maneuver detection technique."""
 
     adaptive_estimation: bool = False
@@ -81,142 +86,225 @@ class SequentialFilterConfig(ConfigObject):
     initial_orbit_determination: bool = False
     """``bool``: Check if sequential filter should turn on initial orbit determination."""
 
-    parameters: dict = field(default_factory=dict)
-    """``dict``: extra parameters for the filter algorithm."""
-
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.name not in VALID_FILTER_LABELS:
-            raise ConfigValueError("name", self.name, VALID_FILTER_LABELS)
-
-        if self.dynamics_model not in VALID_FILTER_DYNAMICS:
-            raise ConfigValueError("dynamics_model", self.dynamics_model, VALID_FILTER_DYNAMICS)
-
-        if isinstance(self.maneuver_detection, dict):
-            self.maneuver_detection = ManeuverDetectionConfig(**self.maneuver_detection)
+    save_filter_steps: bool = False
+    """``bool``: Check if you would like to enable saving filter steps to the database. Defaults to False."""
 
 
-@dataclass
-class ManeuverDetectionConfig(ConfigObject):
+class UKFConfigBase(SequentialFilterConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    resample: bool = False
+    """``bool``: Flag indicating whether sigma points should be resampled.
+
+    See Also:
+        :class:`.resonaate.estimation.UnscentedKalmanFilter` constructor argument ``resample``.
+    """
+
+    alpha: float = Field(default=0.001, lt=1.0, gt=0.0)
+    """``float``: Sigma point spread.
+
+    See Also:
+        :class:`.resonaate.estimation.UnscentedKalmanFilter` constructor argument ``alpha``.
+    """
+
+    beta: float = 2.0
+    """``float``: Gaussian pdf parameter.
+
+    See Also:
+        :class:`.resonaate.estimation.UnscentedKalmanFilter` constructor argument ``beta``.
+    """
+
+    kappa: Optional[float] = None
+    """``float``: Scaling parameter defining knowledge of higher order moments.
+
+    See Also:
+        :class:`.resonaate.estimation.UnscentedKalmanFilter` constructor argument ``kappa``.
+    """
+
+
+class UKFConfig(UKFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.UKF] = SequentialFilterLabel.UKF
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+class UnscentedKalmanFilterConfig(UKFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.UNSCENTED_KALMAN_FILTER] = (
+        SequentialFilterLabel.UNSCENTED_KALMAN_FILTER
+    )
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+class GPFConfigBase(SequentialFilterConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    population_size: int = 100
+    """``int``: Determines the population size to evolve over time
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``population``.
+    """
+
+    num_purge: int = 10
+    """``int``: The number of bottom performers to remove
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_purge``
+    """
+
+    num_keep: int = 10
+    """``int``: The number of top performers to keep
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_keep``
+    """
+
+    num_mutate: int = 50
+    """``int``: The number of population members to mutate, excluding the top performers
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``num_mutate``
+    """
+
+    mutation_strength: Union[list[float], None] = None
+    """``list[float]``: The strength of mutations for each state vector entry
+
+    See Also:
+        :class:`.resonaate.estimation.GeneticParticleFilter` constructor argument ``mutation_strength``
+    """
+
+
+class GPFConfig(GPFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.GPF] = SequentialFilterLabel.GPF
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+class GeneticParticleFilterConfig(GPFConfigBase):
+    """Configuration section defining parameters for an Unscented Kalman Filter."""
+
+    name: Literal[SequentialFilterLabel.GENETIC_PARTICLE_FILTER] = (
+        SequentialFilterLabel.GENETIC_PARTICLE_FILTER
+    )
+    """``str``: name of the sequential filter algorithm to use."""
+
+
+SequentialFilterConfig = Annotated[
+    Union[UKFConfig, UnscentedKalmanFilterConfig, GPFConfig, GeneticParticleFilterConfig],
+    Field(..., discriminator="name"),
+]
+"""Annotated[Union]: Discriminated union defining valid sequential filter configurations."""
+
+
+class ManeuverDetectionConfigBase(BaseModel):
     """Configuration section defining maneuver detection options."""
 
-    CONFIG_LABEL: ClassVar[str] = "maneuver_detection"
-    """``str``: Key where settings are stored in the configuration dictionary."""
-
-    name: str
-    """``str``: maneuver detection technique to use."""
-
-    threshold: float = DEFAULT_MANEUVER_DETECTION_THRESHOLD
+    threshold: float = Field(DEFAULT_MANEUVER_DETECTION_THRESHOLD, gt=0.0, lt=1.0)
     R"""``float``: lower tail value for :math:`\chi^2` maneuver detection threshold."""
 
-    parameters: dict = field(default_factory=dict)
-    """``dict``: extra parameters for the maneuver detection technique."""
 
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.name not in VALID_MANEUVER_DETECTION_LABELS:
-            raise ConfigValueError("name", self.name, VALID_MANEUVER_DETECTION_LABELS)
+class StandardNISConfig(ManeuverDetectionConfigBase):
+    """Configuration section defining configuration options for standard NIS maneuver detection."""
 
-        if self.threshold <= 0.0 or self.threshold >= 1.0:
-            raise ConfigValueError("threshold", self.threshold, "between 0 and 1")
+    name: Literal[ManeuverDetectionLabel.STANDARD_NIS] = ManeuverDetectionLabel.STANDARD_NIS
+    """``str``: maneuver detection technique to use."""
 
 
-@dataclass
-class AdaptiveEstimationConfig(ConfigObject):
+class SlidingNISConfig(ManeuverDetectionConfigBase):
+    """Configuration section defining configuration options for sliding NIS maneuver detection."""
+
+    name: Literal[ManeuverDetectionLabel.SLIDING_NIS] = ManeuverDetectionLabel.SLIDING_NIS
+    """``str``: maneuver detection technique to use."""
+
+    window_size: int = 4
+    """``int``: length of the sliding window used to "average" NIS over multiple timesteps."""
+
+
+class FadingMemoryNISConfig(ManeuverDetectionConfigBase):
+    """Configuration section defining configuration options for fading-memory NIS maneuver detection."""
+
+    name: Literal[ManeuverDetectionLabel.FADING_MEMORY_NIS] = (
+        ManeuverDetectionLabel.FADING_MEMORY_NIS
+    )
+    """``str``: maneuver detection technique to use."""
+
+    delta: float = Field(default=0.8, gt=0.0, lt=1.0)
+    """``float``: scale by which previous NIS values are weighted"""
+
+
+ManeuverDetectionConfig = Annotated[
+    Union[StandardNISConfig, SlidingNISConfig, FadingMemoryNISConfig],
+    Field(..., discriminator="name"),
+]
+"""Annotated[Union]: Discriminated union defining valid maneuver detection configurations."""
+
+
+class AdaptiveEstimationConfigBase(BaseModel):
     """Configuration section defining adaptive estimation options."""
 
-    CONFIG_LABEL: ClassVar[str] = "adaptive_filter"
-    """``str``: Key where settings are stored in the configuration dictionary."""
+    model_config = ConfigDict(
+        protected_namespaces=(),
+    )
+    """ConfigDict: Configuration management for ``pydantic.BaseModel`` class.
 
-    name: str
-    """``str``: Name of adaptive estimation method to use."""
+    The ``protected_namespaces`` attribute is set to an empty tuple to avoid a warning being thrown
+    about :attr:`.model_interval`.
+    """
 
-    orbit_determination: str = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
+    orbit_determination: InitialOrbitDeterminationLabel = (
+        InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
+    )
     """``str``: orbit determination technique used to initialize the adaptive filter."""
 
-    stacking_method: str = StackingLabel.ECI_STACKING
+    stacking_method: StackingLabel = StackingLabel.ECI_STACKING
     """``str``: state vector coordinate system stacking technique."""
 
-    model_interval: int = DEFAULT_MODEL_TIME_INTERVAL
+    model_interval: int = Field(DEFAULT_MODEL_TIME_INTERVAL, gt=0)
     """``int``: time step between MMAE models in seconds."""
 
-    observation_window: int = DEFAULT_OBSERVATION_WINDOW
+    observation_window: int = Field(DEFAULT_OBSERVATION_WINDOW, gt=0)
     """``int``: number of previous observations to go back to to start adaptive estimation."""
 
-    prune_threshold: float = DEFAULT_PRUNE_THRESHOLD
+    prune_threshold: float = Field(DEFAULT_PRUNE_THRESHOLD, gt=0.0, lt=1.0)
     """``float``: likelihood that a model has to be less than to be pruned off."""
 
-    prune_percentage: float = DEFAULT_PRUNE_PERCENTAGE
+    prune_percentage: float = Field(DEFAULT_PRUNE_PERCENTAGE, gt=0.0, lt=1.0)
     """``float``: percent likelihood a model has to meet to trigger MMAE convergence."""
 
-    parameters: dict = field(default_factory=dict)
-    """``dict``: extra parameters for the adaptive estimation technique."""
 
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.name not in VALID_ADAPTIVE_ESTIMATION_LABELS:
-            raise ConfigValueError("name", self.name, VALID_ADAPTIVE_ESTIMATION_LABELS)
+class GPB1AdaptiveEstimationConfig(AdaptiveEstimationConfigBase):
+    """Configuration section defining Generalized Pseudo-Bayesian 1 adaptive estimation options."""
 
-        if self.orbit_determination not in VALID_LAMBERT_IOD_LABELS:
-            raise ConfigValueError(
-                "orbit_determination",
-                self.orbit_determination,
-                VALID_LAMBERT_IOD_LABELS,
-            )
+    name: Literal[AdaptiveEstimationLabel.GPB1] = AdaptiveEstimationLabel.GPB1
+    """``str``: Name of adaptive estimation method to use."""
 
-        if self.stacking_method not in VALID_STACKING_LABELS:
-            raise ConfigValueError("stacking_method", self.stacking_method, VALID_STACKING_LABELS)
-
-        if self.model_interval <= 0:
-            raise ConfigValueError("model_interval", self.model_interval, "must be positive")
-
-        if self.observation_window <= 0:
-            raise ConfigValueError(
-                "observation_window",
-                self.observation_window,
-                "must be positive",
-            )
-
-        if self.prune_threshold <= 0.0 or self.prune_threshold >= 1.0:
-            raise ConfigValueError(
-                "prune_threshold",
-                self.prune_threshold,
-                "must be between 0 and 1",
-            )
-
-        if self.prune_percentage <= 0.0 or self.prune_percentage >= 1.0:
-            raise ConfigValueError(
-                "prune_percentage",
-                self.prune_percentage,
-                "must be between 0 and 1",
-            )
+    mix_ratio: float = 1.5
+    """``float``: ratio of diagonal to off-diagonals in transition probability matrix"""
 
 
-@dataclass
-class InitialOrbitDeterminationConfig(ConfigObject):
+class SMMAdaptiveEstimationConfig(AdaptiveEstimationConfigBase):
+    """Configuration section defining static multiple model adaptive estimation options."""
+
+    name: Literal[AdaptiveEstimationLabel.SMM] = AdaptiveEstimationLabel.SMM
+    """``str``: Name of adaptive estimation method to use."""
+
+
+AdaptiveEstimationConfig = Annotated[
+    Union[GPB1AdaptiveEstimationConfig, SMMAdaptiveEstimationConfig],
+    Field(..., discriminator="name"),
+]
+"""Annotated[Union]: Discriminated union defining valid adaptive estimation configurations."""
+
+
+class InitialOrbitDeterminationConfig(BaseModel):
     """Configuration section defining initial orbit determination options."""
 
-    CONFIG_LABEL: ClassVar[str] = "initial_orbit_determination"
-    """``str``: Key where settings are stored in the configuration dictionary read from file."""
-
-    name: str = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
+    name: InitialOrbitDeterminationLabel = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
     """``str``: Name of initial orbit determination method to use."""
 
-    minimum_observation_spacing: int = DEFAULT_IOD_OBSERVATION_SPACING
+    minimum_observation_spacing: int = Field(DEFAULT_IOD_OBSERVATION_SPACING, gt=0)
     """``int``: Minimum amount of seconds allowed between each observation used for IOD."""
-
-    def __post_init__(self):
-        """Runs after the object is initialized."""
-        if self.name not in VALID_LAMBERT_IOD_LABELS:
-            raise ConfigValueError(
-                "name",
-                self.name,
-                VALID_LAMBERT_IOD_LABELS,
-            )
-
-        if self.minimum_observation_spacing <= 0:
-            raise ConfigValueError(
-                "minimum_observation_spacing",
-                self.minimum_observation_spacing,
-                "must be positive",
-            )

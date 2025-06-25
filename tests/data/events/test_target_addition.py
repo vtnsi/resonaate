@@ -8,12 +8,12 @@ from unittest.mock import MagicMock
 
 # Third Party Imports
 import pytest
+from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.data.data_interface import AgentModel
 from resonaate.data.events import TargetAdditionEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
-from resonaate.scenario.config.base import ConfigError
 from resonaate.scenario.config.event_configs import TargetAdditionEventConfig
 
 
@@ -80,7 +80,7 @@ class TestTargetAdditionEventConfig:
         tgt_config["state"]["position"] = bad_eci
 
         event_config_dict["target_agent"] = tgt_config
-        with pytest.raises(ConfigError):
+        with pytest.raises(ValidationError):
             _ = TargetAdditionEventConfig(**event_config_dict)
 
     def testDataDependency(self, tgt_config_eci, event_config_dict):

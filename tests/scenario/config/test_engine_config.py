@@ -1,212 +1,176 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from copy import copy, deepcopy
-from dataclasses import fields
+from itertools import combinations
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 # Third Party Imports
 import pytest
+from pydantic import TypeAdapter, ValidationError
 
 # RESONAATE Imports
-from resonaate.scenario.config.base import (
-    ConfigError,
-    ConfigMissingRequiredError,
-    ConfigObjectList,
-    ConfigValueError,
-)
-from resonaate.scenario.config.decision_config import DecisionConfig
+from resonaate.scenario.config.decision_config import DecisionConfig, DecisionLabel
 from resonaate.scenario.config.engine_config import EngineConfig
-from resonaate.scenario.config.reward_config import MetricConfig, RewardConfig
-from resonaate.scenario.config.sensor_config import SensorConfig
+from resonaate.scenario.config.reward_config import (
+    MetricConfig,
+    MetricLabel,
+    RewardConfig,
+    RewardLabel,
+)
 
 # Local Imports
-from . import EARTH_SENSORS
+from . import EARTH_SENSORS, LEO_TARGETS
 
 if TYPE_CHECKING:
     # RESONAATE Imports
-    from resonaate.scenario.config.agent_config import SensingAgentConfig, TargetAgentConfig
+    pass
 
 
-@pytest.fixture(name="engine_cfg_dict")
-@patch("resonaate.scenario.config.sensor_config.SensorConfig", autospec=True)
-@patch("resonaate.scenario.config.agent_config.SensingAgentConfig", autospec=True)
-@patch("resonaate.scenario.config.agent_config.TargetAgentConfig", autospec=True)
-@patch("resonaate.scenario.config.engine_config.DecisionConfig", autospec=True)
-@patch("resonaate.scenario.config.engine_config.RewardConfig", autospec=True)
-def getEngineConfig(
-    reward: RewardConfig,
-    decision: DecisionConfig,
-    tgt_agent: TargetAgentConfig,
-    sen_agent: SensingAgentConfig,
-    sensor: SensorConfig,
-) -> dict:
-    """Generate the default EngineConfig dictionary."""
-    sensor.type = "adv_radar"
-    decision.name = "AllVisibleDecision"
-    sen_agent.sensor = sensor
-    sen_agent.id = 11111
-    return {
-        "unique_id": 1,
-        "reward": reward,
-        "decision": decision,
-        "sensors": [sen_agent],
-        "targets": [tgt_agent, tgt_agent],
-    }
+VALID_REWARD_CONFIGS: tuple[RewardConfig] = RewardConfig.__args__[0].__args__
+"""Tuple of valid :class:`.RewardConfig` classes."""
+
+VALID_DECISION_CONFIGS: tuple[DecisionConfig] = DecisionConfig.__args__[0].__args__
+"""Tuple of valid :class:`.DecisionConfig` classes."""
 
 
-def testCreateEngineConfig(engine_cfg_dict: dict):
-    """Test that EngineConfig can be created from a dictionary."""
-    cfg = EngineConfig(**engine_cfg_dict)
-    assert isinstance(cfg.reward, RewardConfig)
-    assert isinstance(cfg.decision, DecisionConfig)
-    assert isinstance(cfg.sensors, ConfigObjectList)
-    assert isinstance(cfg.targets, ConfigObjectList)
-    assert len(cfg.sensors) == 1
-    assert len(cfg.targets) == 2
-
-    assert cfg is not None
-    for field in fields(EngineConfig):
-        assert field.name in cfg.__dict__
-        assert getattr(cfg, field.name) is not None
-
-    # Test that this can be created from an empty dictionary
-    with pytest.raises(TypeError):
-        _ = EngineConfig()
-
-    # Use sub configs as dicts
-    cfg_dict = copy(engine_cfg_dict)
-    cfg_dict["reward"] = [
-        {
-            "name": "SimpleSummationReward",
-            "metrics": {"name": "FisherInformation"},
-        },
-    ]
-    cfg_dict["decision"] = {"name": "MunkresDecision"}
-    cfg = EngineConfig(**cfg_dict)
-    assert cfg is not None
-
-    # Ensure the correct amount of req/opt keys
-    assert len(EngineConfig.getRequiredFields()) == 5
-    assert len(EngineConfig.getOptionalFields()) == 0
+MetricConfigValidator = TypeAdapter(MetricConfig)
+"""TypeAdapter: Helper class to validate :class:`.MetricConfig` specification."""
 
 
-def testInputsEngineConfig(engine_cfg_dict: dict):
-    """Test bad input values to EngineConfig."""
-    cfg_dict = copy(engine_cfg_dict)
-    cfg_dict["sensors"] = []
-    with pytest.raises(ConfigMissingRequiredError):
-        EngineConfig(**cfg_dict)
-
-    cfg_dict = copy(engine_cfg_dict)
-    cfg_dict["targets"] = []
-    with pytest.raises(ConfigMissingRequiredError):
-        EngineConfig(**cfg_dict)
-
-    cfg_dict = copy(engine_cfg_dict)
-    # [NOTE]: This should point at a SensingAgent cfg with an Optical sensor
-    cfg_dict["sensors"][0] = EARTH_SENSORS[1]
-    with pytest.raises(ConfigError):
-        EngineConfig(**cfg_dict)
+RewardConfigValidator = TypeAdapter(RewardConfig)
+"""TypeAdapter: Helper class to validate :class:`.RewardConfig` specification."""
 
 
-@pytest.fixture(name="metric_cfg_dict")
-def getMetricConfig() -> dict:
-    """Generate the default MetricConfig dictionary."""
-    return {
-        "name": "FisherInformation",
-        "parameters": {},
-    }
+DecisionConfigValidator = TypeAdapter(DecisionConfig)
+"""TypeAdapter: Helper class to validate :class:`.DecisionConfig` specification."""
 
 
-def testCreateMetricConfig(metric_cfg_dict: dict):
-    """Test that MetricConfig can be created from a dictionary."""
-    cfg = MetricConfig(**metric_cfg_dict)
-    assert isinstance(cfg, MetricConfig)
-    assert cfg is not None
-    assert cfg.name == "FisherInformation"
-    assert not cfg.parameters
-    assert cfg.parameters is not None
-
-    # Ensure the correct amount of req/opt keys
-    assert len(MetricConfig.getRequiredFields()) == 1
-    assert len(MetricConfig.getOptionalFields()) == 1
+def getMetricDict(metric_name: MetricLabel):
+    """Wrap `metric_name` in the dictionary format for a :class:`.MetricConfig`."""
+    return {"name": metric_name}
 
 
-def testBadInputsMetricConfig(metric_cfg_dict: dict):
-    """Test bad input values to RewardConfig."""
-    cfg_dict = deepcopy(metric_cfg_dict)
-    cfg_dict["name"] = "Not a metric"
-    with pytest.raises(ConfigValueError):
-        MetricConfig(**cfg_dict)
+@pytest.fixture(name="metrics_configs")
+def getMetricsConfig(request: list[MetricLabel]):
+    """Fixture that gets indirectly populated with metric configurations."""
+    return [getMetricDict(_name) for _name in request.param]
 
 
 @pytest.fixture(name="reward_cfg_dict")
-def getRewardConfig(metric_cfg_dict) -> dict:
-    """Generate the default RewardConfig dictionary."""
+def getRewardConfig() -> dict:
+    """Return a simple reward configuration dictionary."""
     return {
-        "name": "SimpleSummationReward",
-        "metrics": [metric_cfg_dict, {"name": "LyapunovStability"}],
-        "parameters": {},
+        "name": RewardLabel.SIMPLE_SUM,
+        "metrics": [
+            getMetricDict(MetricLabel.SHANNON_INFO),
+            getMetricDict(MetricLabel.TIME_SINCE_OBS),
+        ],
     }
 
 
-def testCreateRewardConfig(reward_cfg_dict: dict, metric_cfg_dict: dict):
-    """Test that RewardConfig can be created from a dictionary."""
-    cfg = RewardConfig(**reward_cfg_dict)
-    assert cfg.CONFIG_LABEL == "reward"
-    assert isinstance(cfg, RewardConfig)
-    assert cfg is not None
-    assert cfg.name == "SimpleSummationReward"
-    assert isinstance(cfg.metrics, ConfigObjectList)
-    assert len(cfg.metrics) == 2
-    assert cfg.metrics[0] == MetricConfig(**metric_cfg_dict)
-    assert cfg.metrics[1] == MetricConfig(name="LyapunovStability")
-    assert not cfg.parameters
-    assert cfg.parameters is not None
-
-    # Ensure the correct amount of req/opt keys
-    assert len(RewardConfig.getRequiredFields()) == 2
-    assert len(RewardConfig.getOptionalFields()) == 1
-
-
-def testBadInputsRewardConfig(reward_cfg_dict: dict):
-    """Test bad input values to RewardConfig."""
-    cfg_dict = deepcopy(reward_cfg_dict)
-    cfg_dict["metrics"] = []
-    with pytest.raises(ConfigMissingRequiredError):
-        RewardConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(reward_cfg_dict)
-    cfg_dict["name"] = "Not a reward"
-    with pytest.raises(ConfigValueError):
-        RewardConfig(**cfg_dict)
+def getDecisionDict(decision_name: DecisionLabel) -> dict:
+    """Wrap `decision_name` in the dictionary format for a :class:`.DecisionConfig`."""
+    return {"name": decision_name}
 
 
 @pytest.fixture(name="decision_cfg_dict")
 def getDecisionConfig() -> dict:
-    """Generate the default DecisionConfig dictionary."""
-    return {"name": "MunkresDecision"}
+    """Return a simple decision configuration dictionary."""
+    return getDecisionDict(DecisionLabel.MUNKRES)
 
 
-def testCreateDecisionConfig(decision_cfg_dict: dict):
-    """Test that DecisionConfig can be created from a dictionary."""
-    cfg = DecisionConfig(**decision_cfg_dict)
-    assert isinstance(cfg, DecisionConfig)
-    assert cfg is not None
-    assert cfg.name == "MunkresDecision"
-    assert not cfg.parameters
-    assert cfg.parameters is not None
-
-    # Ensure the correct amount of req/opt keys
-    assert len(DecisionConfig.getRequiredFields()) == 1
-    assert len(DecisionConfig.getOptionalFields()) == 1
+@pytest.fixture(name="engine_cfg_dict")
+def getEngineConfig(reward_cfg_dict: dict, decision_cfg_dict: dict) -> dict:
+    """Return a simple engine configuration dictionary."""
+    return {
+        "unique_id": 1,
+        "reward": reward_cfg_dict,
+        "decision": decision_cfg_dict,
+        "sensors": EARTH_SENSORS,
+        "targets": LEO_TARGETS,
+    }
 
 
-def testBadInputsDecisionConfig(decision_cfg_dict: dict):
-    """Test bad input values to DecisionConfig."""
-    cfg_dict = deepcopy(decision_cfg_dict)
-    cfg_dict["name"] = "Not a decision"
-    with pytest.raises(ConfigValueError):
-        DecisionConfig(**cfg_dict)
+@pytest.mark.parametrize("metric_label", list(MetricLabel))
+def testMetricConfigs(metric_label: MetricLabel):
+    """Validate that all metrics have valid configurations."""
+    MetricConfigValidator.validate_python(getMetricDict(metric_label))
+
+
+@pytest.mark.parametrize("metric_input", ["not a metric", 123, None])
+def testBadMetricInput(metric_input):
+    """Validate that various bad metric inputs throw a validation error."""
+    with pytest.raises(ValidationError):
+        MetricConfigValidator.validate_python(getMetricDict(metric_input))
+
+
+@pytest.mark.parametrize("reward_label", list(RewardLabel))
+@pytest.mark.parametrize(
+    "metrics_configs",
+    combinations(list(MetricLabel), 2),
+    indirect=True,
+)
+def testRewardConfig(reward_label, metrics_configs):
+    """Validate that many combinations of metrics within reward configurations are valid."""
+    reward_config_dict = {
+        "name": reward_label.value,
+        "metrics": metrics_configs,
+    }
+    RewardConfigValidator.validate_python(reward_config_dict)
+
+
+@pytest.mark.parametrize("reward_input", ["not a reward", 123, None])
+def testBadRewardInput(reward_cfg_dict: dict, reward_input):
+    """Validate that various bad reward inputs throw a validation error."""
+    reward_cfg_dict["name"] = reward_input
+    with pytest.raises(ValidationError):
+        RewardConfigValidator.validate_python(reward_cfg_dict)
+
+
+def testMissingMetrics(reward_cfg_dict: dict):
+    """Validate that a reward configuration that's missing metrics throws a validation error."""
+    reward_cfg_dict["metrics"] = []
+    with pytest.raises(ValidationError):
+        RewardConfigValidator.validate_python(reward_cfg_dict)
+
+
+@pytest.mark.parametrize("decision_label", list(DecisionLabel))
+def testDecisionConfigs(decision_label: DecisionLabel):
+    """Validate that all decisions have valid configurations."""
+    DecisionConfigValidator.validate_python(getDecisionDict(decision_label))
+
+
+@pytest.mark.parametrize("decision_input", ["not a decision", 123, None])
+def testBadDecisionInput(decision_input):
+    """Validate that various bad decision inputs throw a validation error."""
+    with pytest.raises(ValidationError):
+        DecisionConfigValidator.validate_python(getDecisionDict(decision_input))
+
+
+def testEmptyEngineConfig():
+    """Test that EngineConfig throws a validation error if no arguments are specified."""
+    with pytest.raises(ValidationError):
+        _ = EngineConfig()
+
+
+def testCreateEngineConfig(engine_cfg_dict: dict):
+    """Test that EngineConfig can be created from a valid dictionary."""
+    cfg = EngineConfig(**engine_cfg_dict)
+    assert isinstance(cfg.reward, VALID_REWARD_CONFIGS)
+    assert isinstance(cfg.decision, VALID_DECISION_CONFIGS)
+    assert len(cfg.targets) == len(engine_cfg_dict["targets"])
+    assert len(cfg.sensors) == len(engine_cfg_dict["sensors"])
+
+
+def testMissingSensors(engine_cfg_dict: dict):
+    """Test that EngineConfig throws a validation error if no sensors are specified."""
+    engine_cfg_dict["sensors"] = []
+    with pytest.raises(ValidationError):
+        EngineConfig(**engine_cfg_dict)
+
+
+def testMissingTargets(engine_cfg_dict: dict):
+    """Test that EngineConfig throws a validation error if no targets are specified."""
+    engine_cfg_dict["targets"] = []
+    with pytest.raises(ValidationError):
+        EngineConfig(**engine_cfg_dict)

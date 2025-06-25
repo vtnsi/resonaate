@@ -1,22 +1,25 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from copy import deepcopy
-from dataclasses import fields
-from unittest.mock import patch
+from typing import Optional
 
 # Third Party Imports
 import pytest
+from pydantic import TypeAdapter, ValidationError
 
 # RESONAATE Imports
-from resonaate.common.labels import DynamicsLabel, InitialOrbitDeterminationLabel, StackingLabel
-from resonaate.estimation import VALID_MANEUVER_DETECTION_LABELS
-from resonaate.scenario.config.base import ConfigValueError
+from resonaate.common.labels import (
+    AdaptiveEstimationLabel,
+    DynamicsLabel,
+    InitialOrbitDeterminationLabel,
+    ManeuverDetectionLabel,
+    SequentialFilterLabel,
+    StackingLabel,
+)
 from resonaate.scenario.config.estimation_config import (
     DEFAULT_IOD_OBSERVATION_SPACING,
     DEFAULT_MANEUVER_DETECTION_THRESHOLD,
     DEFAULT_MODEL_TIME_INTERVAL,
-    DEFAULT_OBSERVATION_WINDOW,
     DEFAULT_PRUNE_PERCENTAGE,
     DEFAULT_PRUNE_THRESHOLD,
     AdaptiveEstimationConfig,
@@ -26,350 +29,244 @@ from resonaate.scenario.config.estimation_config import (
     SequentialFilterConfig,
 )
 
+AdaptiveEstimationConfigValidator = TypeAdapter(AdaptiveEstimationConfig)
+"""TypeAdaptor: Helper class to validate :class:`.AdaptiveEstimationConfig` specification."""
 
-@pytest.fixture(name="estimation_cfg_dict")
-@patch("resonaate.scenario.config.estimation_config.SequentialFilterConfig", autospec=True)
-@patch("resonaate.scenario.config.estimation_config.AdaptiveEstimationConfig", autospec=True)
-@patch(
-    "resonaate.scenario.config.estimation_config.InitialOrbitDeterminationConfig",
-    autospec=True,
-)
-def getEstimationConfig(
-    initial_orbit_determination: InitialOrbitDeterminationConfig,
-    adaptive_filter: AdaptiveEstimationConfig,
-    seq_filter: SequentialFilterConfig,
+
+ManeuverDetectionConfigValidator = TypeAdapter(ManeuverDetectionConfig)
+"""TypeAdaptor: Helper class to validate :class:`.ManeuverDetectionConfig` specification."""
+
+
+SequentialFilterConfigValidator = TypeAdapter(SequentialFilterConfig)
+"""TypeAdaptor: Helper class to validate :class:`.SequentialFilterConfig` specification."""
+
+
+def getIODConfigDict(
+        name: InitialOrbitDeterminationLabel = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL,
+        minimum_observation_spacing: int = DEFAULT_IOD_OBSERVATION_SPACING,
 ) -> dict:
-    """Generate the default EstimationConfig dictionary."""
+    """Return an IOD configuration dictionary based on the specified arguments."""
     return {
-        "sequential_filter": seq_filter,
-        "adaptive_filter": adaptive_filter,
+        "name": name,
+        "minimum_observation_spacing": minimum_observation_spacing,
+    }
+
+
+def getAdaptiveConfigDict(
+        name: AdaptiveEstimationLabel = AdaptiveEstimationLabel.SMM,
+        orbit_determination: InitialOrbitDeterminationLabel = InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL,
+        stacking_method: StackingLabel = StackingLabel.ECI_STACKING,
+        model_interval: int = DEFAULT_MODEL_TIME_INTERVAL,
+        observation_window: int = DEFAULT_MODEL_TIME_INTERVAL,
+        prune_threshold: float = DEFAULT_PRUNE_THRESHOLD,
+        prune_percentage: float = DEFAULT_PRUNE_PERCENTAGE,
+) -> dict:
+    """Return an adaptive estimation configuration dictionary based on the specified arguments."""
+    return {
+        "name": name,
+        "orbit_determination": orbit_determination,
+        "stacking_method": stacking_method,
+        "model_interval": model_interval,
+        "observation_window": observation_window,
+        "prune_threshold": prune_threshold,
+        "prune_percentage": prune_percentage,
+    }
+
+
+def getManeuverDetectionDict(
+        name: ManeuverDetectionLabel = ManeuverDetectionLabel.STANDARD_NIS,
+        threshold: float = DEFAULT_MANEUVER_DETECTION_THRESHOLD,
+) -> dict:
+    """Return a maneuver detection configuration dictionary based on the specified arguments."""
+    return {
+        "name": name,
+        "threshold": threshold,
+    }
+
+
+def getSeqFilterDict(
+        name: SequentialFilterLabel = SequentialFilterLabel.UKF,
+        dynamics_model: DynamicsLabel = DynamicsLabel.SPECIAL_PERTURBATIONS,
+        maneuver_detection: Optional[ManeuverDetectionConfig] = None,  # noqa: UP007
+        adaptive_estimation: bool = False,
+        initial_orbit_determination: bool = False,
+) -> dict:
+    """Return a sequential filter configuration dictionary based on the specified arguments."""
+    return {
+        "name": name,
+        "dynamics_model": dynamics_model,
+        "maneuver_detection": maneuver_detection,
+        "adaptive_estimation": adaptive_estimation,
         "initial_orbit_determination": initial_orbit_determination,
     }
 
 
-def testCreateEstimationConfig(estimation_cfg_dict: dict):
-    """Test that EstimationConfig can be created from a dictionary."""
-    cfg = EstimationConfig(**estimation_cfg_dict)
-    assert cfg.CONFIG_LABEL == "estimation"
-    assert isinstance(cfg.sequential_filter, SequentialFilterConfig)
-    assert isinstance(cfg.adaptive_filter, AdaptiveEstimationConfig)
-    assert isinstance(cfg.initial_orbit_determination, InitialOrbitDeterminationConfig)
-
-    for field in fields(EstimationConfig):
-        assert field.name in cfg.__dict__
-        assert getattr(cfg, field.name) is not None
-
-    # Cannot be created from empty dictionary
-    with pytest.raises(TypeError):
-        _ = EstimationConfig()
-
-    # Use sub configs as dicts
-    cfg_dict = {"sequential_filter": {"name": "ukf"}}
-    cfg = EstimationConfig(**cfg_dict)
-    assert cfg is not None
-    assert isinstance(cfg.sequential_filter, SequentialFilterConfig)
-    assert cfg.adaptive_filter is None
-
-    cfg_dict["adaptive_filter"] = {"name": "smm"}
-    cfg = EstimationConfig(**cfg_dict)
-    assert cfg is not None
-    assert isinstance(cfg.adaptive_filter, AdaptiveEstimationConfig)
-
-    cfg_dict["initial_orbit_determination"] = {"name": "lambert_universal"}
-    cfg = EstimationConfig(**cfg_dict)
-    assert cfg is not None
-    assert isinstance(cfg.initial_orbit_determination, InitialOrbitDeterminationConfig)
-
-    # Ensure the correct amount of req/opt keys
-    assert len(EstimationConfig.getRequiredFields()) == 1
-    assert len(EstimationConfig.getOptionalFields()) == 2
+@pytest.mark.parametrize("iod_label", list(InitialOrbitDeterminationLabel))
+def testCreateIODConfig(iod_label: InitialOrbitDeterminationLabel):
+    """Validate that all IOD labels have a valid configuration."""
+    _ = InitialOrbitDeterminationConfig(**getIODConfigDict(name=iod_label))
 
 
-@pytest.fixture(name="sequential_filter_cfg_dict")
-def getSequentialFilterConfig() -> dict:
-    """Generate the default SequentialFilterConfig dictionary."""
-    return {
-        "name": "ukf",
-        "dynamics_model": DynamicsLabel.SPECIAL_PERTURBATIONS,
-        "maneuver_detection": None,
-        "adaptive_estimation": False,
-        "parameters": {},
+@pytest.mark.parametrize("iod_input", ["not iod", 123, None])
+def testIODConfigBadInput(iod_input):
+    """Validate that IOD config validation throws an error on invalid IOD labels."""
+    with pytest.raises(ValidationError):
+        _ = InitialOrbitDeterminationConfig(**getIODConfigDict(name=iod_input))
+
+
+@pytest.mark.parametrize("spacing", [0, -1])
+def testIODConfigBadSpacing(spacing):
+    """Validate that IOD config validation throws an error on invalid observation spacing."""
+    with pytest.raises(ValidationError):
+        _ = InitialOrbitDeterminationConfig(**getIODConfigDict(minimum_observation_spacing=spacing))
+
+
+@pytest.mark.parametrize("adaptive_label", list(AdaptiveEstimationLabel))
+def testAdaptiveCreate(adaptive_label):
+    """Validate that all adaptive estimation labels have a valid configuration."""
+    _ = AdaptiveEstimationConfigValidator.validate_python(
+        getAdaptiveConfigDict(name=adaptive_label),
+    )
+
+
+@pytest.mark.parametrize("iod_input", ["not iod", 123, None])
+def testAdaptiveBadIOD(iod_input):
+    """Validate that adaptive estimation config validation throws an error on invalid IOD labels."""
+    with pytest.raises(ValidationError):
+        _ = AdaptiveEstimationConfigValidator.validate_python(
+            getAdaptiveConfigDict(orbit_determination=iod_input),
+        )
+
+
+@pytest.mark.parametrize("stacking_input", ["not stack", 123, None])
+def testAdaptiveBadStacking(stacking_input):
+    """Validate that adaptive estimation config validation throws an error on invalid stacking labels."""
+    with pytest.raises(ValidationError):
+        _ = AdaptiveEstimationConfigValidator.validate_python(
+            getAdaptiveConfigDict(stacking_method=stacking_input),
+        )
+
+
+@pytest.mark.parametrize("gt0_field", ["model_interval", "observation_window"])
+@pytest.mark.parametrize("test_value", [-1, 0])
+def testAdaptiveBadGT0Fields(gt0_field, test_value):
+    """Validate that adaptive estimation config validation throws and error for bad field values."""
+    with pytest.raises(ValidationError):
+        _ = AdaptiveEstimationConfigValidator.validate_python(
+            getAdaptiveConfigDict(**{gt0_field: test_value}),
+        )
+
+
+@pytest.mark.parametrize("ratio_field", ["prune_threshold", "prune_percentage"])
+@pytest.mark.parametrize("test_value", [-1, 0, 1])
+def testAdaptiveBadRatioFields(ratio_field, test_value):
+    """Validate that adaptive estimation config validation throws and error for bad field values."""
+    with pytest.raises(ValidationError):
+        _ = AdaptiveEstimationConfigValidator.validate_python(
+            getAdaptiveConfigDict(**{ratio_field: test_value}),
+        )
+
+
+@pytest.mark.parametrize("detection_name", list(ManeuverDetectionLabel))
+def testManeuverDetectCreate(detection_name: ManeuverDetectionLabel):
+    """Validate that all maneuver detection labels have a valid configuration."""
+    ManeuverDetectionConfigValidator.validate_python(
+        getManeuverDetectionDict(name=detection_name),
+    )
+
+
+@pytest.mark.parametrize("detection_input", ["not detection", 123, None])
+def testManeuverDetectBadName(detection_input):
+    """Validate that maneuver detection config validation throws an error on invalid detection labels."""
+    with pytest.raises(ValidationError):
+        _ = ManeuverDetectionConfigValidator.validate_python(
+            getManeuverDetectionDict(name=detection_input),
+        )
+
+
+@pytest.mark.parametrize("threshold", [-1, 0, 1])
+def testManeuverDetectBadThreshold(threshold):
+    """Validate that maneuver detection config validation throws and error for bad threshold."""
+    with pytest.raises(ValidationError):
+        _ = ManeuverDetectionConfigValidator.validate_python(
+            getManeuverDetectionDict(threshold=threshold),
+        )
+
+
+@pytest.mark.parametrize("filter_name", list(SequentialFilterLabel))
+def testSeqFilterCreate(filter_name: SequentialFilterLabel):
+    """Validate that all sequential filter labels have a valid configuration."""
+    SequentialFilterConfigValidator.validate_python(
+        getSeqFilterDict(name=filter_name),
+    )
+
+
+@pytest.mark.parametrize("filter_input", ["not a filter", 123, None])
+def testSeqFilterBadName(filter_input):
+    """Validate that sequential filter config validation throws an error on invalid filter labels."""
+    with pytest.raises(ValidationError):
+        _ = SequentialFilterConfigValidator.validate_python(
+            getSeqFilterDict(name=filter_input),
+        )
+
+
+def testEstimationConfigCreate():
+    """Validate that a default estimation config validates properly."""
+    cfg_dict = {
+        "sequential_filter": getSeqFilterDict(),
     }
+    _ = EstimationConfig(**cfg_dict)
 
 
-def testCreateSequentialFilterConfig(sequential_filter_cfg_dict: dict):
-    """Test that SequentialFilterConfig can be created from a dictionary."""
-    cfg = SequentialFilterConfig(**sequential_filter_cfg_dict)
-    assert cfg.CONFIG_LABEL == "sequential_filter"
-    assert cfg.name == "ukf"
-    assert cfg.dynamics_model == DynamicsLabel.SPECIAL_PERTURBATIONS
-    assert cfg.maneuver_detection is None
-    assert cfg.adaptive_estimation is False
-    assert cfg.initial_orbit_determination is False
-    assert not cfg.parameters
-    assert cfg.parameters is not None
-
-    for field in fields(SequentialFilterConfig):
-        assert field.name in cfg.__dict__
-        if field.name == "maneuver_detection":
-            continue
-        assert getattr(cfg, field.name) is not None
-
-    # Cannot be created from empty dictionary
-    with pytest.raises(TypeError):
-        _ = SequentialFilterConfig()
-
-    # Use sub configs as dicts
-    cfg_dict = deepcopy(sequential_filter_cfg_dict)
-    cfg_dict["maneuver_detection"] = {"name": VALID_MANEUVER_DETECTION_LABELS[0]}
-    cfg = SequentialFilterConfig(**cfg_dict)
-    assert cfg.maneuver_detection is not None
-    assert cfg.adaptive_estimation is False
-
-    # Ensure the correct amount of req/opt keys
-    assert len(SequentialFilterConfig.getRequiredFields()) == 1
-    assert len(SequentialFilterConfig.getOptionalFields()) == 5
-
-
-def testBadInputsSequentialFilterConfig(sequential_filter_cfg_dict: dict):
-    """Test that SequentialFilterConfig cannot be created from bad inputs."""
-    cfg_dict = deepcopy(sequential_filter_cfg_dict)
-    cfg_dict["name"] = "invalid"
-    with pytest.raises(ConfigValueError):
-        _ = SequentialFilterConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(sequential_filter_cfg_dict)
-    cfg_dict["dynamics_model"] = "invalid"
-    with pytest.raises(ConfigValueError):
-        _ = SequentialFilterConfig(**cfg_dict)
-
-
-@pytest.fixture(name="maneuver_detection_cfg_dict")
-def getManeuverDetectionConfig() -> dict:
-    """Generate the default ManeuverDetectionConfig dictionary."""
-    return {
-        "name": "sliding_nis",
-        "threshold": DEFAULT_MANEUVER_DETECTION_THRESHOLD,
-        "parameters": {},
+def testEstimationAdaptMutex():
+    """Validate that estimation config validation throws error when adaptive estimation and IOD are turned on."""
+    cfg_dict = {
+        "sequential_filter": getSeqFilterDict(
+            adaptive_estimation=True,
+            initial_orbit_determination=True,
+        ),
     }
+    with pytest.raises(ValidationError):
+        _ = EstimationConfig(**cfg_dict)
 
 
-def testCreateManeuverDetectionConfig(maneuver_detection_cfg_dict: dict):
-    """Test that ManeuverDetectionConfig can be created from a dictionary."""
-    cfg = ManeuverDetectionConfig(**maneuver_detection_cfg_dict)
-    assert cfg.CONFIG_LABEL == "maneuver_detection"
-    assert cfg.name == "sliding_nis"
-    assert cfg.threshold == DEFAULT_MANEUVER_DETECTION_THRESHOLD
-    assert not cfg.parameters
-    assert cfg.parameters is not None
-
-    for field in fields(ManeuverDetectionConfig):
-        assert field.name in cfg.__dict__
-        assert getattr(cfg, field.name) is not None
-
-    # Cannot be created from empty dictionary
-    with pytest.raises(TypeError):
-        _ = ManeuverDetectionConfig()
-
-    # Ensure the correct amount of req/opt keys
-    assert len(ManeuverDetectionConfig.getRequiredFields()) == 1
-    assert len(ManeuverDetectionConfig.getOptionalFields()) == 2
-
-
-def testBadInputsManeuverDetectionConfig(maneuver_detection_cfg_dict: dict):
-    """Test that ManeuverDetectionConfig cannot be created from bad inputs."""
-    cfg_dict = deepcopy(maneuver_detection_cfg_dict)
-    cfg_dict["name"] = "invalid"
-    with pytest.raises(ConfigValueError):
-        _ = ManeuverDetectionConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(maneuver_detection_cfg_dict)
-    cfg_dict["threshold"] = -1.0
-    with pytest.raises(ConfigValueError):
-        _ = ManeuverDetectionConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(maneuver_detection_cfg_dict)
-    cfg_dict["threshold"] = 1.0
-    with pytest.raises(ConfigValueError):
-        _ = ManeuverDetectionConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(maneuver_detection_cfg_dict)
-    cfg_dict["threshold"] = 0.0
-    with pytest.raises(ConfigValueError):
-        _ = ManeuverDetectionConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(maneuver_detection_cfg_dict)
-    cfg_dict["threshold"] = 2.0
-    with pytest.raises(ConfigValueError):
-        _ = ManeuverDetectionConfig(**cfg_dict)
-
-
-@pytest.fixture(name="adaptive_estimation_cfg_dict")
-def getAdaptiveEstimationConfig() -> dict:
-    """Generate the default AdaptiveEstimationConfig dictionary."""
-    return {
-        "name": "smm",
-        "orbit_determination": InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL,
-        "stacking_method": StackingLabel.ECI_STACKING,
-        "model_interval": DEFAULT_MODEL_TIME_INTERVAL,
-        "observation_window": DEFAULT_OBSERVATION_WINDOW,
-        "prune_threshold": DEFAULT_PRUNE_THRESHOLD,
-        "prune_percentage": DEFAULT_PRUNE_PERCENTAGE,
-        "parameters": {},
+def testEstimationAdaptMissing():
+    """Validate that estimation config validation throws an error when adaptive estimation is on but no config is provided."""
+    cfg_dict = {
+        "sequential_filter": getSeqFilterDict(
+            adaptive_estimation=True,
+        ),
     }
+    with pytest.raises(ValidationError):
+        _ = EstimationConfig(**cfg_dict)
 
 
-def testCreateAdaptiveEstimationConfig(adaptive_estimation_cfg_dict: dict):
-    """Test that AdaptiveEstimationConfig can be created from a dictionary."""
-    cfg = AdaptiveEstimationConfig(**adaptive_estimation_cfg_dict)
-    assert cfg.CONFIG_LABEL == "adaptive_filter"
-    assert cfg.name == "smm"
-    assert cfg.orbit_determination == InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
-    assert cfg.stacking_method == StackingLabel.ECI_STACKING
-    assert cfg.model_interval == DEFAULT_MODEL_TIME_INTERVAL
-    assert cfg.observation_window == DEFAULT_OBSERVATION_WINDOW
-    assert cfg.prune_threshold == DEFAULT_PRUNE_THRESHOLD
-    assert cfg.prune_percentage == DEFAULT_PRUNE_PERCENTAGE
-    assert not cfg.parameters
-    assert cfg.parameters is not None
-
-    for field in fields(AdaptiveEstimationConfig):
-        assert field.name in cfg.__dict__
-        assert getattr(cfg, field.name) is not None
-
-    # Cannot be created from empty dictionary
-    with pytest.raises(TypeError):
-        _ = AdaptiveEstimationConfig()
-
-    # Ensure the correct amount of req/opt keys
-    assert len(AdaptiveEstimationConfig.getRequiredFields()) == 1
-    assert len(AdaptiveEstimationConfig.getOptionalFields()) == 7
-
-
-def testBadInputsAdaptiveEstimationConfig(adaptive_estimation_cfg_dict: dict):
-    """Test that AdaptiveEstimationConfig cannot be created from bad inputs."""
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["name"] = "invalid"
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["orbit_determination"] = "invalid"
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["stacking_method"] = "invalid"
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["model_interval"] = -1
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["model_interval"] = 0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["observation_window"] = -1
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["observation_window"] = 0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["observation_window"] = -1
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["prune_threshold"] = 0.0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["prune_threshold"] = -1.0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["prune_threshold"] = 1.0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["prune_threshold"] = 2.0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["prune_percentage"] = 0.0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["prune_percentage"] = -1.0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["prune_percentage"] = 1.0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(adaptive_estimation_cfg_dict)
-    cfg_dict["prune_percentage"] = 2.0
-    with pytest.raises(ConfigValueError):
-        _ = AdaptiveEstimationConfig(**cfg_dict)
-
-
-@pytest.fixture(name="initial_orbit_determination_cfg_dict")
-def getInitialOrbitDeterminationConfig() -> dict:
-    """Generate the default InitialOrbitDeterminationConfig dictionary."""
-    return {
-        "name": InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL,
-        "minimum_observation_spacing": DEFAULT_IOD_OBSERVATION_SPACING,
+def testEstimationAdaptConfigOff():
+    """Validate that estimation config validation throws a warning when adaptive estimation is off but a config is provided."""
+    cfg_dict = {
+        "sequential_filter": getSeqFilterDict(),
+        "adaptive_filter": getAdaptiveConfigDict(),
     }
+    with pytest.warns(UserWarning):
+        _ = EstimationConfig(**cfg_dict)
 
 
-def testCreateInitialOrbitDeterminationConfig(initial_orbit_determination_cfg_dict: dict):
-    """Test that InitialOrbitDeterminationConfig can be created from a dictionary."""
-    cfg = InitialOrbitDeterminationConfig(**initial_orbit_determination_cfg_dict)
-    assert cfg.CONFIG_LABEL == "initial_orbit_determination"
-    assert cfg.name == InitialOrbitDeterminationLabel.LAMBERT_UNIVERSAL
-    assert cfg.minimum_observation_spacing == DEFAULT_IOD_OBSERVATION_SPACING
-
-    for field in fields(InitialOrbitDeterminationConfig):
-        assert field.name in cfg.__dict__
-        assert getattr(cfg, field.name) is not None
-
-    # Can be created from empty dictionary
-    _ = InitialOrbitDeterminationConfig()
-
-    # Ensure the correct amount of req/opt keys
-    assert len(InitialOrbitDeterminationConfig.getRequiredFields()) == 0
-    assert len(InitialOrbitDeterminationConfig.getOptionalFields()) == 2
+def testEstimationIODMissing():
+    """Validate that estimation config validation throws an error when IOD is on but no config is provided."""
+    cfg_dict = {
+        "sequential_filter": getSeqFilterDict(
+            initial_orbit_determination=True,
+        ),
+    }
+    with pytest.raises(ValidationError):
+        _ = EstimationConfig(**cfg_dict)
 
 
-def testBadInputsInitialOrbitDeterminationConfig(initial_orbit_determination_cfg_dict: dict):
-    """Test that InitialOrbitDeterminationConfig cannot be created from bad inputs."""
-    cfg_dict = deepcopy(initial_orbit_determination_cfg_dict)
-    cfg_dict["name"] = "invalid"
-    with pytest.raises(ConfigValueError):
-        _ = InitialOrbitDeterminationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(initial_orbit_determination_cfg_dict)
-    cfg_dict["minimum_observation_spacing"] = -1
-    with pytest.raises(ConfigValueError):
-        _ = InitialOrbitDeterminationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(initial_orbit_determination_cfg_dict)
-    cfg_dict["minimum_observation_spacing"] = 0
-    with pytest.raises(ConfigValueError):
-        _ = InitialOrbitDeterminationConfig(**cfg_dict)
+def testEstimationIODConfigOff():
+    """Validate that estimation config validation throws a warning when IOD is off but a config is provided."""
+    cfg_dict = {
+        "sequential_filter": getSeqFilterDict(),
+        "initial_orbit_determination": getIODConfigDict(),
+    }
+    with pytest.warns(UserWarning):
+        _ = EstimationConfig(**cfg_dict)

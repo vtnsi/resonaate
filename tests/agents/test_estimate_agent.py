@@ -3,190 +3,33 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from datetime import datetime
-from typing import Any
-from unittest.mock import create_autospec
+from unittest.mock import MagicMock, create_autospec, patch
 
 # Third Party Imports
 import numpy as np
 import pytest
-from numpy import array, float64
 
 # RESONAATE Imports
 import resonaate.estimation.initial_orbit_determination
 from resonaate.agents.estimate_agent import EstimateAgent
-from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.common.exceptions import ShapeError
 from resonaate.common.utilities import getTypeString
 from resonaate.data.observation import Observation
-from resonaate.dynamics.terrestrial import Terrestrial
+from resonaate.dynamics.integration_events.station_keeping import KeepGeoEastWest
 from resonaate.dynamics.two_body import TwoBody
 from resonaate.estimation.adaptive.adaptive_filter import AdaptiveFilter
 from resonaate.estimation.adaptive.gpb1 import GeneralizedPseudoBayesian1
 from resonaate.estimation.initial_orbit_determination import IODSolution
+from resonaate.estimation.kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.estimation.maneuver_detection import StandardNis
-from resonaate.estimation.sequential.sequential_filter import FilterFlag
-from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
-from resonaate.physics.time.stardate import JulianDate, ScenarioTime
+from resonaate.estimation.sequential_filter import FilterFlag
+from resonaate.physics.time.stardate import ScenarioTime
 from resonaate.physics.transforms.methods import eci2ecef
 from resonaate.scenario.clock import ScenarioClock
-from resonaate.scenario.config.estimation_config import AdaptiveEstimationConfig
-from resonaate.sensors.advanced_radar import AdvRadar
+from resonaate.scenario.config.estimation_config import GPB1AdaptiveEstimationConfig
 
+# pylint: disable=protected-access
 pytestmark = pytest.mark.usefixtures("database")
-
-
-@pytest.fixture(name="mocked_clock")
-def getMockedScenarioClock() -> ScenarioClock:
-    """Get a mocked :class:`.ScenarioClock` object."""
-    mocked_clock = create_autospec(ScenarioClock, instance=True)
-    mocked_clock.julian_date_start = JulianDate(2459304.0666666665)
-    mocked_clock.datetime_start = datetime(2021, 3, 30, 13, 36)
-    mocked_clock.julian_date_epoch = mocked_clock.julian_date_start
-    mocked_clock.datetime_epoch = mocked_clock.datetime_start
-    mocked_clock.julian_date_stop = mocked_clock.julian_date_start + (1 / 3)
-    mocked_clock.initial_time = ScenarioTime(0.0)
-    mocked_clock.time_span = ScenarioTime(28800.0)
-    mocked_clock.time = ScenarioTime(0.0)
-    mocked_clock.dt_step = ScenarioTime(300.0)
-    return mocked_clock
-
-
-@pytest.fixture(name="earth_sensor")
-def getTestEarthSensor() -> AdvRadar:
-    """Create a custom :class:`Agent` object for a sensor."""
-    return AdvRadar(
-        az_mask=np.array([0.0, 359.99999]),
-        el_mask=np.array([1.0, 89.0]),
-        r_matrix=np.diagflat([2.38820057e-11, 3.73156339e-11, 9.00000000e-08, 3.61000000e-10]),
-        diameter=27.0,
-        efficiency=0.9,
-        field_of_view={"fov_shape": "conic"},
-        background_observations=False,
-        tx_power=120000.0,
-        tx_frequency=10000000000.0,
-        min_detectable_power=1.4314085925969573e-14,
-        slew_rate=3.0000000000000004,
-        detectable_vismag=25.0,
-        minimum_range=0.0,
-        maximum_range=99000,
-    )
-
-
-@pytest.fixture(name="sensor_agent")
-def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> SensingAgent:
-    """Create a custom :class:`Agent` object for a sensor."""
-    return SensingAgent(
-        300000,
-        "Test_sensor",
-        "GroundFacility",
-        np.array(
-            [
-                -1.55267475e03,
-                1.47362430e03,
-                5.98812597e03,
-                -1.07453539e-01,
-                -1.14109571e-01,
-                2.19474290e-04,
-            ],
-        ),
-        mocked_clock,
-        earth_sensor,
-        Terrestrial(
-            JulianDate(2459304.1666666665),
-            np.array(
-                [
-                    1.83995228e03,
-                    1.11114727e03,
-                    5.98497681e03,
-                    1.16467265e-24,
-                    -6.00704788e-24,
-                    3.01869766e-18,
-                ],
-            ),
-        ),
-        True,
-        10.0,
-        100.0,
-        0.21,
-    )
-
-
-@pytest.fixture(name="observations")
-def getObservations(sensor_agent: SensingAgent) -> Observation:
-    """Create a custom :class:`Observation` object for a sensor."""
-    radar_observation = Observation(
-        julian_date=JulianDate(2459304.267361111),
-        sensor_id=300000,
-        target_id=10001,
-        sensor_type="AdvRadar",
-        azimuth_rad=1.228134787553298,
-        elevation_rad=0.5432822498364404,
-        range_km=1953.3903221962914,
-        range_rate_km_p_sec=-6.147282606743988,
-        sensor_eci=sensor_agent.eci_state,
-        measurement=sensor_agent.sensors.measurement,
-    )
-
-    return [radar_observation]
-
-
-@pytest.fixture(name="nominal_filter")
-def getNominalFilter() -> UnscentedKalmanFilter:
-    """Create a :class:`.NominalFilter`."""
-    six_by_six_matrix = np.diagflat([1.0, 2.0, 1.0, 1, 1, 1])
-    return UnscentedKalmanFilter(
-        tgt_id=10001,
-        time=ScenarioTime(0.0),
-        est_x=np.array([10000.0, 2.0, 10.0, 0.0, 7.0, 0.0]),
-        est_p=six_by_six_matrix,
-        dynamics=TwoBody(),
-        q_matrix=3 * six_by_six_matrix,
-        maneuver_detection=StandardNis(0.01),
-        initial_orbit_determination=True,
-    )
-
-
-@pytest.fixture(name="async_result_predict")
-def getAsyncResultPredict() -> dict[str, Any]:
-    """Get async_result prediction data."""
-    return {
-        "time": ScenarioTime(300.0),
-        "est_x": np.ones(6),
-        "est_p": np.ones((6, 6)),
-        "pred_x": np.ones(6),
-        "pred_p": np.ones((6, 6)),
-        "sigma_points": np.ones((6, 13)),
-        "sigma_x_res": np.ones((6, 13)),
-    }
-
-
-@pytest.fixture(name="async_result_update")
-def getAsyncResultUpdate() -> dict[str, Any]:
-    """Get async_result update data."""
-    return {
-        "estimate_id": 20001,
-        "filter_update": {
-            "is_angular": array([], dtype=float64),
-            "mean_pred_y": array([], dtype=float64),
-            "r_matrix": array([], dtype=float64),
-            "cross_cvr": array([], dtype=float64),
-            "innov_cvr": array([], dtype=float64),
-            "kalman_gain": array([], dtype=float64),
-            "est_p": np.ones((6, 6)),
-            "sigma_points": np.ones((6, 13)),
-            "sigma_y_res": array([], dtype=float64),
-            "est_x": np.ones(6),
-            "innovation": array([], dtype=float64),
-            "nis": array([], dtype=float64),
-            "source": "Propagation",
-            "maneuver_metric": None,
-            "maneuver_detected": False,
-        },
-        "observations": [],
-        "observed": False,
-        "new_filter": None,
-    }
 
 
 @pytest.fixture(name="estimate_agent")
@@ -329,8 +172,67 @@ def testEstimateAgentBadFilterInit(mocked_clock: ScenarioClock):
         )
 
 
-def testUpdateEstimateNoObservations(estimate_agent: EstimateAgent, observations: Observation):
-    """Test updateEstimate without observations.
+@patch("resonaate.agents.agent_base.checkTypes", new=MagicMock(return_value=True))
+def testEstimateAgentStationKeeping(mocked_clock: ScenarioClock):
+    """Test EstimateAgent with station keeping."""
+    msg = r"Estimates do not perform station keeping maneuvers"
+    ukf = create_autospec(UnscentedKalmanFilter, instance=True)
+    ukf.dynamics = TwoBody()
+    with pytest.raises(ValueError, match=msg):
+        _ = EstimateAgent(
+            10001,
+            "estimate_agent",
+            "Spacecraft",
+            mocked_clock,
+            np.ones(6),
+            np.ones((6, 6)),
+            ukf,
+            None,
+            None,
+            10.0,
+            100.0,
+            0.21,
+            station_keeping=[MagicMock(spec=KeepGeoEastWest)],
+        )
+
+
+@patch.object(EstimateAgent, "__init__")
+@patch("resonaate.agents.estimate_agent.sequentialFilterFactory")
+@patch("resonaate.agents.estimate_agent.noiseCovarianceFactory")
+@patch("resonaate.agents.estimate_agent.initialEstimateNoise")
+def testFromConfig(
+    initial_noise_func: MagicMock,
+    noise_factory: MagicMock,
+    filter_factory: MagicMock,
+    patched_init: MagicMock,
+    mocked_clock: ScenarioClock,
+):
+    """Test fromConfig alt constructor."""
+    tgt_cfg = MagicMock()
+    tgt_cfg.state.toECI = MagicMock(return_value=np.array([0, 1, 2, 3, 4, 5]))
+
+    noise_cfg = MagicMock()
+    noise_cfg.random_seed = 100000
+    time_cfg = MagicMock()
+    dynamics = MagicMock()
+    est_cfg = MagicMock()
+
+    initial_noise_func.return_value = (np.array([1, 2, 3, 4, 5, 6]), np.eye(6))
+    noise_factory.return_value = np.eye(6)
+
+    # Required to ensure the call works
+    patched_init.return_value = None
+
+    EstimateAgent.fromConfig(tgt_cfg, mocked_clock, dynamics, time_cfg, noise_cfg, est_cfg)
+
+    initial_noise_func.assert_called_once()
+    noise_factory.assert_called_once()
+    filter_factory.assert_called_once()
+    patched_init.assert_called_once()
+
+
+def testUpdateNoObservations(estimate_agent: EstimateAgent, observations: Observation):
+    """Test update without observations.
 
     Args:
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
@@ -338,14 +240,14 @@ def testUpdateEstimateNoObservations(estimate_agent: EstimateAgent, observations
     """
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
     estimate_agent.nominal_filter.forecast(observations)
-    estimate_agent.updateEstimate([])
+    estimate_agent.update([])
 
     assert np.allclose(estimate_agent.state_estimate, estimate_agent.nominal_filter.est_x)
     assert np.allclose(estimate_agent.error_covariance, estimate_agent.nominal_filter.est_p)
 
 
-def testUpdateEstimateWithObservations(estimate_agent: EstimateAgent, observations: Observation):
-    """Test updateEstimate without observations.
+def testUpdateWithObservations(estimate_agent: EstimateAgent, observations: Observation):
+    """Test update without observations.
 
     Args:
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
@@ -353,46 +255,8 @@ def testUpdateEstimateWithObservations(estimate_agent: EstimateAgent, observatio
     """
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
     estimate_agent.nominal_filter.forecast(observations)
-    estimate_agent.updateEstimate(observations)
+    estimate_agent.update(observations)
 
-    assert np.allclose(estimate_agent.state_estimate, estimate_agent.nominal_filter.est_x)
-    assert np.allclose(estimate_agent.error_covariance, estimate_agent.nominal_filter.est_p)
-
-
-def testUpdateFromAsyncPredict(
-    estimate_agent: EstimateAgent,
-    observations: Observation,
-    async_result_predict: dict,
-):
-    """Test updateEstimate without observations.
-
-    Args:
-        estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
-        observations (:class:`.Observation`): Observation tuple fixture
-        async_result_predict (``dict``): Dict of IOD init async prediction
-    """
-    estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    estimate_agent.nominal_filter.forecast(observations)
-    estimate_agent.updateFromAsyncPredict(async_result_predict)
-    assert np.allclose(estimate_agent.state_estimate, estimate_agent.nominal_filter.pred_x)
-    assert np.allclose(estimate_agent.error_covariance, estimate_agent.nominal_filter.pred_p)
-
-
-def testUpdateFromAsyncUpdateEstimate(
-    estimate_agent: EstimateAgent,
-    observations: Observation,
-    async_result_update: dict,
-):
-    """Test updateEstimate without observations.
-
-    Args:
-        estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
-        observations (:class:`.Observation`): Observation tuple fixture
-        async_result_update (``dict``): Dict of IOD init async update
-    """
-    estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    estimate_agent.nominal_filter.forecast(observations)
-    estimate_agent.updateFromAsyncUpdateEstimate(async_result_update)
     assert np.allclose(estimate_agent.state_estimate, estimate_agent.nominal_filter.est_x)
     assert np.allclose(estimate_agent.error_covariance, estimate_agent.nominal_filter.est_p)
 
@@ -412,8 +276,8 @@ def testGetCurrentEphemeris(estimate_agent: EstimateAgent):
     assert ephem.covariance == estimate_agent.error_covariance.tolist()
 
 
-def testSaveDetectedManeuver(estimate_agent: EstimateAgent, observations: Observation):
-    """Test _saveDetectedManeuver.
+def testHandleDetectedManeuver(estimate_agent: EstimateAgent, observations: Observation):
+    """Test _handleManeuverDetection.
 
     Args:
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
@@ -425,7 +289,7 @@ def testSaveDetectedManeuver(estimate_agent: EstimateAgent, observations: Observ
     estimate_agent.nominal_filter.nis = nis
     estimate_agent.nominal_filter.maneuver_metric = nis
     estimate_agent.nominal_filter.maneuver_detection.metric = nis
-    estimate_agent._saveDetectedManeuver(observations)
+    estimate_agent._handleManeuverDetection(observations)
     detection = estimate_agent._detected_maneuvers[0]
 
     assert detection.julian_date == estimate_agent.julian_date_epoch
@@ -450,7 +314,7 @@ def testGetDetectedManeuvers(estimate_agent: EstimateAgent, observations: Observ
     estimate_agent.nominal_filter.nis = nis
     estimate_agent.nominal_filter.maneuver_metric = nis
     estimate_agent.nominal_filter.maneuver_detection.metric = nis
-    estimate_agent._saveDetectedManeuver(observations)
+    estimate_agent._handleManeuverDetection(observations)
     detections = estimate_agent.getDetectedManeuvers()
 
     assert len(detections) == 1
@@ -466,7 +330,7 @@ def testSaveFilterStep(estimate_agent: EstimateAgent, observations: Observation)
     """
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
     estimate_agent.nominal_filter.forecast(observations)
-    estimate_agent.updateEstimate(observations)
+    estimate_agent.update(observations)
 
     estimate_agent._saveFilterStep()
     info = estimate_agent._filter_info[0]
@@ -486,7 +350,7 @@ def testGestFilterSteps(estimate_agent: EstimateAgent, observations: Observation
     """
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
     estimate_agent.nominal_filter.forecast(observations)
-    estimate_agent.updateEstimate(observations)
+    estimate_agent.update(observations)
 
     step = estimate_agent.getFilterSteps()
 
@@ -502,12 +366,10 @@ def testUpdateNoManeuverDetected(estimate_agent: EstimateAgent, observations: Ob
         observations (:class:`.Observation`): Observation tuple fixture
     """
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    estimate_agent.nominal_filter.forecast(observations)
-    estimate_agent.nominal_filter.update(observations)
-    estimate_agent.nominal_filter.maneuver_detected = False
+    estimate_agent.nominal_filter.checkManeuverDetection = MagicMock()
 
     # Update with a maneuver detection
-    estimate_agent._update(observations)
+    estimate_agent.update(observations)
     assert len(estimate_agent._detected_maneuvers) == 0
     assert np.allclose(estimate_agent.state_estimate, estimate_agent.nominal_filter.est_x)
     assert np.allclose(estimate_agent.error_covariance, estimate_agent.nominal_filter.est_p)
@@ -521,12 +383,10 @@ def testUpdateManeuverDetected(estimate_agent: EstimateAgent, observations: Obse
         observations (:class:`.Observation`): Observation tuple fixture
     """
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    estimate_agent.nominal_filter.forecast(observations)
-    estimate_agent.nominal_filter.update(observations)
     estimate_agent.nominal_filter.maneuver_detected = True
 
     # Update with a maneuver detection
-    estimate_agent._update(observations)
+    estimate_agent.update(observations)
     assert len(estimate_agent._detected_maneuvers) == 1
     assert np.allclose(estimate_agent.state_estimate, estimate_agent.nominal_filter.est_x)
     assert np.allclose(estimate_agent.error_covariance, estimate_agent.nominal_filter.est_p)
@@ -545,12 +405,11 @@ def testUpdateSuccessfulIOD(
         monkeypatch (``:class:`.MonkeyPatch``): patch of function
     """
     iod_estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    iod_estimate_agent.nominal_filter.forecast(observations)
     iod_estimate_agent.nominal_filter.update(observations)
     iod_estimate_agent.nominal_filter.maneuver_detected = True
 
     # Patch IOD logic
-    def mockIOD(self, observations, logging):
+    def mockIOD(self, observations):
         return True, iod_estimate_agent.state_estimate
 
     monkeypatch.setattr(
@@ -579,7 +438,6 @@ def testUpdateAdaptiveFilterNoManeuverDetection(
         observations (:class:`.Observation`): Observation tuple fixture
     """
     estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    estimate_agent.nominal_filter.forecast(observations)
     estimate_agent.nominal_filter.update(observations)
     estimate_agent.nominal_filter.maneuver_detected = False
 
@@ -609,7 +467,7 @@ def testUpdateAttemptAdaptiveEstimation(
         initial_state=np.ones(6),
         initial_covariance=np.diagflat(np.ones(6)),
         _filter=nominal_filter,
-        adaptive_filter_config=AdaptiveEstimationConfig(
+        adaptive_filter_config=GPB1AdaptiveEstimationConfig(
             name="gpb1",
             orbit_determination="lambert_universal",
             stacking_method="eci_stack",
@@ -627,7 +485,6 @@ def testUpdateAttemptAdaptiveEstimation(
     mmae_estimate_agent.nominal_filter.maneuver_detected = True
 
     mmae_estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    mmae_estimate_agent.nominal_filter.forecast(observations)
     mmae_estimate_agent.nominal_filter.update(observations)
 
     # Update with a maneuver detection
@@ -660,7 +517,7 @@ def testAttemptAdaptiveEstimation(
         initial_state=np.ones(6),
         initial_covariance=np.diagflat(np.ones(6)),
         _filter=mmae_filter,
-        adaptive_filter_config=AdaptiveEstimationConfig(
+        adaptive_filter_config=GPB1AdaptiveEstimationConfig(
             name="gpb1",
             orbit_determination="lambert_universal",
             stacking_method="eci_stack",
@@ -694,52 +551,52 @@ def testAttemptAdaptiveEstimation(
     assert mmae_estimate_agent.nominal_filter != mmae_filter
 
 
-def testBeginInitialOrbitDeterminationReturn(estimate_agent: EstimateAgent):
-    """Test _beginInitialOrbitDetermination returns if no IOD set.
+def testHandleIODReturn(estimate_agent: EstimateAgent, observations: list[Observation]):
+    """Test _handleIOD returns if no IOD set.
 
     Args:
         estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture
+        observations: Observations fixture
     """
-    estimate_agent._beginInitialOrbitDetermination()
+    estimate_agent._handleIOD(observations)
 
     assert estimate_agent.iod_start_time is None
 
 
-def testBeginInitialOrbitDeterminationContinue(iod_estimate_agent: EstimateAgent):
-    """Test _beginInitialOrbitDetermination sets iod start time.
+def testHandleIODContinue(iod_estimate_agent: EstimateAgent, observations: list[Observation]):
+    """Test _handleIOD sets iod start time.
 
     Args:
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
+        observations: Observations fixture
     """
     iod_estimate_agent.nominal_filter.maneuver_detected = False
-    iod_estimate_agent._beginInitialOrbitDetermination()
+    iod_estimate_agent._handleIOD(observations)
 
     assert iod_estimate_agent.iod_start_time is None
 
 
-def testBeginInitialOrbitDeterminationSuccess(iod_estimate_agent: EstimateAgent):
-    """Test _beginInitialOrbitDetermination sets iod start time.
+def testHandleIODSuccess(iod_estimate_agent: EstimateAgent, observations: list[Observation]):
+    """Test _handleIOD sets iod start time.
 
     Args:
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
+        observations: Observations fixture
     """
-    iod_estimate_agent._beginInitialOrbitDetermination()
+    iod_estimate_agent._handleManeuverDetection(observations)
+    iod_estimate_agent._handleIOD(observations)
 
     assert iod_estimate_agent.iod_start_time == iod_estimate_agent.time
 
 
-def testBeginInitialOrbitDeterminationNoSuccess(
-    iod_estimate_agent: EstimateAgent,
-    observations: Observation,
-):
-    """Test _beginInitialOrbitDetermination sets iod start time.
+def testHandleIODNoSuccess(iod_estimate_agent: EstimateAgent, observations: list[Observation]):
+    """Test _handleIOD sets iod start time.
 
     Args:
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
         observations (:class:`.Observation`): Observation tuple fixture
     """
     iod_estimate_agent.nominal_filter.predict(ScenarioTime(60.0))
-    iod_estimate_agent.nominal_filter.forecast(observations)
     iod_estimate_agent.nominal_filter.update(observations)
     iod_estimate_agent._update(observations=observations)
 
@@ -748,7 +605,7 @@ def testBeginInitialOrbitDeterminationNoSuccess(
 
 def testNoAttemptInitialOrbitDetermination(
     estimate_agent: EstimateAgent,
-    observations: Observation,
+    observations: list[Observation],
 ):
     """Test _attemptInitialOrbitDetermination returns if no IOD set.
 
@@ -774,7 +631,7 @@ def testNoAttemptInitialOrbitDetermination(
 
 def testAttemptInitialOrbitDeterminationFail(
     iod_estimate_agent: EstimateAgent,
-    observations: Observation,
+    observations: list[Observation],
 ):
     """Test _attemptInitialOrbitDetermination with no success.
 
@@ -782,7 +639,8 @@ def testAttemptInitialOrbitDeterminationFail(
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
         observations (:class:`.Observation`): Observation tuple fixture
     """
-    iod_estimate_agent._beginInitialOrbitDetermination()
+    iod_estimate_agent._handleManeuverDetection(observations)
+    iod_estimate_agent._handleIOD(observations)
     assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
 
     # Test unsuccessful IOD
@@ -795,7 +653,7 @@ def testAttemptInitialOrbitDeterminationFail(
 
 def testAttemptInitialOrbitDeterminationBadTime(
     iod_estimate_agent: EstimateAgent,
-    observations: Observation,
+    observations: list[Observation],
 ):
     """Test _attemptInitialOrbitDetermination with a bad IOD start time.
 
@@ -803,7 +661,8 @@ def testAttemptInitialOrbitDeterminationBadTime(
         iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
         observations (:class:`.Observation`): Observation tuple fixture
     """
-    iod_estimate_agent._beginInitialOrbitDetermination()
+    iod_estimate_agent._handleManeuverDetection(observations)
+    iod_estimate_agent._handleIOD(observations)
     assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
 
     # Test unsuccessful IOD
@@ -815,7 +674,7 @@ def testAttemptInitialOrbitDeterminationBadTime(
 
 def testAttemptInitialOrbitDeterminationSuccess(
     iod_estimate_agent: EstimateAgent,
-    observations: Observation,
+    observations: list[Observation],
     monkeypatch: pytest.MonkeyPatch,
 ):
     """Test _attemptInitialOrbitDetermination with success.
@@ -825,7 +684,8 @@ def testAttemptInitialOrbitDeterminationSuccess(
         observations (:class:`.Observation`): Observation tuple fixture
         monkeypatch (``:class:`.MonkeyPatch``): patch of function
     """
-    iod_estimate_agent._beginInitialOrbitDetermination()
+    iod_estimate_agent._handleManeuverDetection(observations)
+    iod_estimate_agent._handleIOD(observations)
     assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
 
     iod_estimate_agent.time = ScenarioTime(300.0)
@@ -844,67 +704,6 @@ def testAttemptInitialOrbitDeterminationSuccess(
         determineNewEstimateStateGood,
     )
     success, iod_state = iod_estimate_agent._attemptInitialOrbitDetermination(observations)
-
-    assert success is True
-    assert isinstance(iod_state, np.ndarray)
-
-
-def testAttemptInitialOrbitDeterminationFailLogging(
-    iod_estimate_agent: EstimateAgent,
-    observations: Observation,
-):
-    """Test _attemptInitialOrbitDetermination with no success and logging on.
-
-    Args:
-        iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
-        observations (:class:`.Observation`): Observation tuple fixture
-    """
-    iod_estimate_agent._beginInitialOrbitDetermination()
-    assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
-
-    # Test unsuccessful IOD
-    iod_estimate_agent.time = ScenarioTime(300.0)
-    fail, iod_state = iod_estimate_agent._attemptInitialOrbitDetermination(observations, True)
-
-    assert fail is False
-    assert iod_state is None
-
-
-@pytest.mark.usefixtures("database")
-def testAttemptInitialOrbitDeterminationSuccessLogging(
-    iod_estimate_agent: EstimateAgent,
-    observations: Observation,
-    monkeypatch: pytest.MonkeyPatch,
-):
-    """Test _attemptInitialOrbitDetermination with success.
-
-    Args:
-        iod_estimate_agent (:class:`.EstimateAgent`): Estimate agent fixture with IOD on.
-        observations (:class:`.Observation`): Observation tuple fixture
-        monkeypatch (``:class:`.MonkeyPatch``): patch of function
-    """
-    iod_estimate_agent._beginInitialOrbitDetermination()
-    assert iod_estimate_agent.iod_start_time == ScenarioTime(0.0)
-
-    iod_estimate_agent.time = ScenarioTime(300.0)
-
-    # Patch IOD logic
-    def determineNewEstimateStateGood(self, observations, detection_time, current_time):
-        return IODSolution(
-            state_vector=iod_estimate_agent.state_estimate,
-            convergence=True,
-            message=None,
-        )
-
-    monkeypatch.setattr(
-        resonaate.estimation.initial_orbit_determination.LambertIOD,
-        "determineNewEstimateState",
-        determineNewEstimateStateGood,
-    )
-    success, iod_state = iod_estimate_agent._attemptInitialOrbitDetermination(
-        observations=observations,
-        logging=True,
-    )
 
     assert success is True
     assert isinstance(iod_state, np.ndarray)

@@ -9,8 +9,8 @@ from resonaate.dynamics.two_body import TwoBody
 from resonaate.estimation.adaptive.adaptive_filter import AdaptiveFilter
 from resonaate.estimation.adaptive.initialization import lambertInitializationFactory
 from resonaate.estimation.adaptive.mmae_stacking_utils import eciStack, stackingFactory
+from resonaate.estimation.kalman.unscented_kalman_filter import UnscentedKalmanFilter
 from resonaate.estimation.maneuver_detection import StandardNis
-from resonaate.estimation.sequential.unscented_kalman_filter import UnscentedKalmanFilter
 
 EST_X = array([6678.14, 0.0, 0.0, 0.0, 6.78953, 3.68641])
 EST_P = diagflat([1.0, 2.0, 1.0, 1, 1, 1])

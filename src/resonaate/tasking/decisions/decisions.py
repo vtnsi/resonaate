@@ -19,6 +19,9 @@ if TYPE_CHECKING:
     # Third Party Imports
     from numpy import ndarray
 
+    # Local Imports
+    from ...scenario.config.decision_config import DecisionConfig
+
 
 class MyopicNaiveGreedyDecision(Decision):
     """Optimizes for each sensor independently.
@@ -84,6 +87,19 @@ class RandomDecision(Decision):
             seed (``int`` | ``None``): RNG seed value.
         """
         self._seed = default_rng(seed)
+
+    @classmethod
+    def fromConfig(cls, config: DecisionConfig) -> Decision:
+        """Construct the decision-making class specified by `config`.
+
+        Args:
+            config (:class:`.DecisionConfig`): Specify configuration parameters for this decision-
+                making class.
+
+        Returns:
+            (:class:`.Decision`): Decision-making class specified by `config`.
+        """
+        return cls(seed=config.seed)
 
     def _calculate(self, reward_matrix: ndarray, visibility_matrix: ndarray) -> ndarray:
         """Select random tasking for each sensor.

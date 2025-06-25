@@ -1,62 +1,33 @@
 from __future__ import annotations
 
-# Standard Library Imports
-from copy import deepcopy
-from dataclasses import fields
-
 # Third Party Imports
 import pytest
+from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.common.labels import DynamicsLabel, IntegratorLabel
-from resonaate.scenario.config.base import ConfigValueError
 from resonaate.scenario.config.propagation_config import PropagationConfig
 
 
-@pytest.fixture(name="propagation_cfg_dict")
-def getPropagationConfig() -> dict:
-    """Generate the default PropagationConfig dictionary."""
-    return {
-        "propagation_model": DynamicsLabel.SPECIAL_PERTURBATIONS,
-        "integration_method": IntegratorLabel.RK45,
-        "station_keeping": False,
-        "target_realtime_propagation": True,
-        "sensor_realtime_propagation": True,
-        "truth_simulation_only": False,
-    }
+@pytest.mark.parametrize("prop_model", list(DynamicsLabel))
+@pytest.mark.parametrize("integrate_method", list(IntegratorLabel))
+def testPropagationConfigCreate(prop_model: DynamicsLabel, integrate_method: IntegratorLabel):
+    """Validate that propagation configuration passes validation with all possible dynamics models and integrator methods."""
+    assert PropagationConfig(
+        propagation_model=prop_model,
+        integration_method=integrate_method,
+    )
 
 
-def testCreatePropagationConfig(propagation_cfg_dict: dict):
-    """Test that PropagationConfig can be created from a dictionary."""
-    cfg = PropagationConfig(**propagation_cfg_dict)
-    assert cfg.CONFIG_LABEL == "propagation"
-    assert cfg.propagation_model == DynamicsLabel.SPECIAL_PERTURBATIONS
-    assert cfg.integration_method == IntegratorLabel.RK45
-    assert cfg.station_keeping is False
-    assert cfg.target_realtime_propagation is True
-    assert cfg.sensor_realtime_propagation is True
-    assert cfg.truth_simulation_only is False
-
-    # Test that this can be created from an empty dictionary
-    cfg = PropagationConfig()
-    assert cfg is not None
-    for field in fields(PropagationConfig):
-        assert field.name in cfg.__dict__
-        assert getattr(cfg, field.name) is not None
-
-    # Ensure the correct amount of req/opt keys
-    assert len(PropagationConfig.getRequiredFields()) == 0
-    assert len(PropagationConfig.getOptionalFields()) == 6
+@pytest.mark.parametrize("prop_input", ["not a prop", 123])
+def testPropagationConfigBadProp(prop_input):
+    """Validate that propagation validation throws an error if the propagation model is invalid."""
+    with pytest.raises(ValidationError):
+        _ = PropagationConfig(propagation_model=prop_input)
 
 
-def testInputsPropagationConfig(propagation_cfg_dict: dict):
-    """Test bad input values to PropagationConfig."""
-    cfg_dict = deepcopy(propagation_cfg_dict)
-    cfg_dict["propagation_model"] = "bad"
-    with pytest.raises(ConfigValueError):
-        PropagationConfig(**cfg_dict)
-
-    cfg_dict = deepcopy(propagation_cfg_dict)
-    cfg_dict["integration_method"] = "bad"
-    with pytest.raises(ConfigValueError):
-        PropagationConfig(**cfg_dict)
+@pytest.mark.parametrize("integrate_input", ["not a method", 123])
+def testPropagationConfigBadIntegrator(integrate_input):
+    """Validate that propagation validation throws an error if the integrator method is invalid."""
+    with pytest.raises(ValidationError):
+        _ = PropagationConfig(integration_method=integrate_input)

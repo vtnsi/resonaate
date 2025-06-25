@@ -11,6 +11,7 @@ import pytest
 # RESONAATE Imports
 from resonaate.physics.transforms.eops import (
     EarthOrientationParameter,
+    MissingEOP,
     getEarthOrientationParameters,
 )
 
@@ -71,11 +72,29 @@ def testEquality(eop_data: dict):
     assert eop1 != eop3
 
 
+def testRemoteData():
+    """Test loading EOP data from remote dat file."""
+    q_date = datetime.date(2024, 8, 16)
+    eops = getEarthOrientationParameters(
+        q_date,
+        loader_name="RemoteDotDatEOPLoader",
+        loader_location="https://celestrak.org/SpaceData/EOP-Last5Years.txt",
+    )
+
+    assert isinstance(eops, EarthOrientationParameter)
+    assert isinstance(eops.date, datetime.date)
+    assert eops.date == q_date
+
+
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
 def testCustomEOPFile(datafiles: str):
     """Test EOP reading from custom file."""
     eop_file = os.path.join(datafiles, "dat/eops.dat")
-    eops = getEarthOrientationParameters(datetime.date(2015, 9, 30), filename=eop_file)
+    eops = getEarthOrientationParameters(
+        datetime.date(2015, 9, 30),
+        loader_name="LocalDotDatEOPLoader",
+        loader_location=eop_file,
+    )
 
     # Assert that we get the right values from the default EOP data
     assert isinstance(eops, EarthOrientationParameter)
@@ -99,17 +118,20 @@ def testDefaultEOPFile():
 
 def testInvalidDate():
     """Test catching bad datetime.date objects."""
-    # EOP date that isn't valid type
-    eop_date = [1900, 2, 1]
-    with pytest.raises(TypeError):
-        getEarthOrientationParameters(eop_date)
-
     # valid date, but before our standard range of EOPs
     eop_date = datetime.date(1990, 1, 24)
-    with pytest.raises(KeyError):
+    with pytest.raises(MissingEOP):
         getEarthOrientationParameters(eop_date)
 
     # valid date, but after range of EOPs
     eop_date = datetime.date(2050, 1, 24)
-    with pytest.raises(KeyError):
+    with pytest.raises(MissingEOP):
         getEarthOrientationParameters(eop_date)
+
+
+def testInvalidLoader():
+    """Test catching an invalid loader name."""
+    loader_name: str = "MadeUpDotDatLoader"  # Invalid loader name
+    valid_date: datetime.date = datetime.date(2021, 4, 20)  # Valid date
+    with pytest.raises(ValueError):  # noqa: PT011
+        getEarthOrientationParameters(valid_date, loader_name=loader_name)

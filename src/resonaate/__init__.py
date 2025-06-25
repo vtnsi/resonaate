@@ -6,7 +6,7 @@ running large, parallelized SDA scenarios.
 
 from __future__ import annotations
 
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 
 
 def runResonaate(

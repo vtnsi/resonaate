@@ -7,12 +7,12 @@ from unittest.mock import create_autospec
 
 # Third Party Imports
 import pytest
+from pydantic import ValidationError
 
 # RESONAATE Imports
 from resonaate.agents.target_agent import TargetAgent
 from resonaate.data.events import EventScope, ScheduledImpulseEvent, TargetAdditionEvent
 from resonaate.physics.time.stardate import datetimeToJulianDate
-from resonaate.scenario.config.base import ConfigError, ConfigValueError
 from resonaate.scenario.config.event_configs import ScheduledImpulseEventConfig
 
 
@@ -50,15 +50,15 @@ class TestScheduledImpulseEventConfig:
         expected_err = f"{ScheduledImpulseEvent} must have scope set to {ScheduledImpulseEvent.INTENDED_SCOPE}"
         impulse_config = deepcopy(event_config_dict)
         impulse_config["scope"] = EventScope.SCENARIO_STEP.value
-        with pytest.raises(ConfigError, match=expected_err):
+        with pytest.raises(ValidationError, match=expected_err):
             ScheduledImpulseEventConfig(**impulse_config)
 
     def testInitBadEventType(self, event_config_dict):
         """Test :class:`.ScheduledImpulseEventConfig` constructor with bad ``event_type`` argument."""
-        expected_err = f"{ScheduledImpulseEvent} must have event_type set to {ScheduledImpulseEvent.EVENT_TYPE}"
+        expected_err = f"Input should be '{ScheduledImpulseEvent.EVENT_TYPE}'"
         impulse_config = deepcopy(event_config_dict)
         impulse_config["event_type"] = TargetAdditionEvent.EVENT_TYPE
-        with pytest.raises(ConfigError, match=expected_err):
+        with pytest.raises(ValidationError, match=expected_err):
             ScheduledImpulseEventConfig(**impulse_config)
 
     def testInitBadVectorSize(self, event_config_dict):
@@ -66,7 +66,7 @@ class TestScheduledImpulseEventConfig:
         bad_vector = [0.0, 0.0, 0.00123, 0.0]
         impulse_config = deepcopy(event_config_dict)
         impulse_config["thrust_vector"] = bad_vector
-        with pytest.raises(ConfigValueError):
+        with pytest.raises(ValidationError):
             ScheduledImpulseEventConfig(**impulse_config)
 
     def testDataDependency(self, event_config_dict):
@@ -138,6 +138,6 @@ class TestScheduledImpulseEvent:
             thrust_frame="bad",
             planned=True,
         )
-        expected_err = f"{impulse_event.thrust_frame} is not a valid coordinate frame."
+        expected_err = f"'{impulse_event.thrust_frame}' is not a valid ThrustFrame"
         with pytest.raises(ValueError, match=expected_err):
             impulse_event.handleEvent(mocked_target)

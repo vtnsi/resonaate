@@ -27,7 +27,7 @@ class ImporterDatabase(DataInterface):
 
     __shared_inst = None
 
-    def __init__(self, db_path, drop_tables=(), logger=None, verbose_echo=False):
+    def __init__(self, db_path: str, drop_tables=(), logger=None, verbose_echo=False):
         """Create SQLite database based on :attr:`.VALID_DATA_TYPES` .
 
         Args:
@@ -44,8 +44,9 @@ class ImporterDatabase(DataInterface):
         """
         # Force users to define db location
         if not db_path:
-            resonaateLogError("Importer database requires a valid url path")
-            raise ValueError(db_path)
+            err = f"Importer database requires a valid url path: {db_path}"
+            resonaateLogError(err)
+            raise ValueError(err)
 
         # Instantiate the data interface object
         super().__init__(db_path, drop_tables, logger, verbose_echo)
@@ -106,7 +107,13 @@ class ImporterDatabase(DataInterface):
             else:
                 self.logger.error(f"Argument is not a valid path: {path}")
 
-    def _loadJSONFile(self, name, path, start=None, stop=None):
+    def _loadJSONFile(
+        self,
+        name: str,
+        path: str,
+        start: JulianDate = None,
+        stop: JulianDate = None,
+    ) -> None:
         """Load a single JSON file.
 
         Args:
@@ -122,7 +129,7 @@ class ImporterDatabase(DataInterface):
         elif "observation" in name:
             self.loadObservationFile(path, start=start, stop=stop)
 
-    def _getJSONFilename(self, path):
+    def _getJSONFilename(self, path: str) -> str:
         """Return the filename of a JSON file without the extension.
 
         Args:
@@ -139,7 +146,12 @@ class ImporterDatabase(DataInterface):
             raise ValueError(filename)
         return filename
 
-    def loadEphemerisFile(self, filename, start=None, stop=None):
+    def loadEphemerisFile(
+        self,
+        filename,
+        start: JulianDate = None,
+        stop: JulianDate = None,
+    ) -> None:
         """Loads ephemeris data from a JSON file into DB.
 
         Args:
@@ -224,7 +236,12 @@ class ImporterDatabase(DataInterface):
             )
             self._insertData(*valid_ephemerides)
 
-    def loadObservationFile(self, filename, start=None, stop=None):
+    def loadObservationFile(
+        self,
+        filename,
+        start: JulianDate = None,
+        stop: JulianDate = None,
+    ) -> None:
         """Loads observation data from a JSON file into DB.
 
         Args:
