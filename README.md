@@ -1,6 +1,6 @@
 # REsponsive Space ObservatioN Analysis & Autonomous Tasking Engine (RESONAATE)
 
-RESONAATE source doe was developed under contract with AFRL/RIED, and is approved for public release under Public Affairs release approval #AFRL-2025-2332.
+RESONAATE source code was developed under contract with AFRL/RIED, and is approved for public release under Public Affairs release approval #AFRL-2025-2332.
 
 ![resonaate logo](docs/source/_static/resonaate_logo.png)
 
