@@ -32,7 +32,7 @@ class RootConfig(BaseModel):
 @cache
 def rootConfigSpec() -> UserSpec:
     """Build the :class:`.UserSpec` describing the :class:`.RootConfig` model."""
-    return userSpecFactory("RootConfig", RootConfig)
+    return userSpecFactory(RootConfig.__name__, RootConfig)
 
 
 _ARGS_ENV_LOC: str = "RESONAATE_ARGS"
@@ -72,7 +72,7 @@ def getCommandLineParser() -> ArgumentParser:
     return parser
 
 
-def rootConfigFactory(cli_args: list[str] | None, dotenv_path: Path = Path("resonaate.env")):
+def rootConfigFactory(cli_args: list[str] | None = None, dotenv_path: Path = Path("resonaate.env")):
     """Instantiate a :class:`.RootConfig` object based on user input.
 
     The resultant :class:`.RootConfig` object will be built from the followng user input sources,
@@ -91,7 +91,8 @@ def rootConfigFactory(cli_args: list[str] | None, dotenv_path: Path = Path("reso
     parsed_args = getCommandLineParser().parse_args(cli_args)
 
     config_dict = {}
-    rootConfigSpec().retrieveUserInput(config_dict, dir(parsed_args), resonaate_dotenv)
+    rootConfigSpec().retrieveUserInput(config_dict, vars(parsed_args), resonaate_dotenv)
+    config_dict = config_dict[RootConfig.__name__]  # need nested dict to match models
 
     return RootConfig(**config_dict)
 

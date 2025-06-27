@@ -220,7 +220,7 @@ class UserFieldInfo(UserSpec):
             )
         return True
 
-    def retreiveUserInput(self, user_input: dict, parsed_args: dict, dotenv_vals: dict):
+    def retrieveUserInput(self, user_input: dict, parsed_args: dict, dotenv_vals: dict):
         """Retrieve user input for this configuration specification.
 
         Input will be retrieved from the followng user input sources, with each subsequent source
@@ -234,11 +234,11 @@ class UserFieldInfo(UserSpec):
             parsed_args: Mapping of arguments parsed from the command line.
             dotenv_vals: Mapping of user input specified in a dotenv file.
         """
-        this_user_input = parsed_args.get(self.title, default=_NotSet)
+        this_user_input = parsed_args.get(self.title, _NotSet)
 
         if self.env_name is not None and user_input is _NotSet:
-            this_user_input = environ.get(self.env_name, default=_NotSet)
-            this_user_input = dotenv_vals.get(self.env_name, default=_NotSet)
+            this_user_input = environ.get(self.env_name, _NotSet)
+            this_user_input = dotenv_vals.get(self.env_name, _NotSet)
 
         if this_user_input is not _NotSet:
             user_input[self.title] = this_user_input
@@ -261,6 +261,23 @@ class UserFieldCollection(UserSpec):
         """
         self._field_collection[spec_title] = spec_
 
+    def getSpec(self, spec_title: str) -> UserSpec:
+        """Retrieve the specified :class:`.UserSpec` instance from this collection.
+
+        Args:
+            spec_title: Title that the desired :class:`.UserSpec` is mapped to.
+
+        Returns:
+            The :class:`.UserSpec` instance mapped to `spec_title`.
+
+        Raises:
+            AttributeError: If `spec_title` is not a valid mapping within this :class:`.UserFieldCollection`.
+        """
+        _got = self._field_collection.get(spec_title)
+        if not _got:
+            raise AttributeError
+        return _got
+
     def addToArgParser(self, arg_parser: ArgumentParser) -> bool:
         """If possible, add this :class:`.UserFieldCollection` to the specified `arg_parser`.
 
@@ -276,7 +293,7 @@ class UserFieldCollection(UserSpec):
             field.addToArgParser(arg_parser)
         return True
 
-    def retreiveUserInput(self, user_input: dict, parsed_args: dict, dotenv_vals: dict):
+    def retrieveUserInput(self, user_input: dict, parsed_args: dict, dotenv_vals: dict):
         """Recursively retrieve user input for each field in this collection.
 
         Args:
