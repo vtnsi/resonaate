@@ -30,6 +30,7 @@ Useful if a field can specifically be set to `None` by a user.
 NotSet = _NotSet(None)
 """Singleton access to :class:`._NotSet` instance."""
 
+
 class EnvName:
     """Metadata annotation indicating how a field is expected to appear as an environment variable."""
 
@@ -234,14 +235,17 @@ class UserFieldInfo(UserSpec):
             parsed_args: Mapping of arguments parsed from the command line.
             dotenv_vals: Mapping of user input specified in a dotenv file.
         """
-        this_user_input = parsed_args.get(self.title, _NotSet)
+        cli_input = parsed_args.get(self.title, NotSet)
+        env_input = NotSet
+        dotenv_input = NotSet
+        if self.env_name is not None:
+            env_input = environ.get(self.env_name.name, NotSet)
+            dotenv_input = dotenv_vals.get(self.env_name.name, NotSet)
 
-        if self.env_name is not None and user_input is _NotSet:
-            this_user_input = environ.get(self.env_name, _NotSet)
-            this_user_input = dotenv_vals.get(self.env_name, _NotSet)
-
-        if this_user_input is not _NotSet:
-            user_input[self.title] = this_user_input
+        for _input in (cli_input, dotenv_input, env_input):
+            if _input is not NotSet:
+                user_input[self.title] = _input
+                return
 
 
 class UserFieldCollection(UserSpec):
