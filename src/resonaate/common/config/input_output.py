@@ -1,4 +1,5 @@
 """Define configuration parameters pertaining to the input and output of RESONAATE."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -208,6 +209,6 @@ class IOConfiguration(BaseModel):
         ),
     ]
 
-    import_config: ImporterDbUrlSpec
+    import_config: ImporterDbUrlSpec = ImporterDbUrlSpec()
 
-    output_db_parameters: OutputDbUrlSpec
+    output_db_parameters: OutputDbUrlSpec = OutputDbUrlSpec()
