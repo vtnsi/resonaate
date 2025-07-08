@@ -15,7 +15,7 @@ from dotenv import dotenv_values
 
 # Local Imports
 from .behavioral import BehavioralConfig
-from .input_output import InputConfig, OutputConfig
+from .input_output import InputConfig, OutputDbUrlSpec
 from .meta import NotSet, UserBaseModel, UserSpec, userSpecFactory
 
 
@@ -25,7 +25,7 @@ class EntrypointConfig(UserBaseModel):
     input_config: InputConfig
     """Collection of configuration options pertaining to RESONAATE's inputs."""
 
-    output_config: OutputConfig = OutputConfig()
+    output_config: OutputDbUrlSpec = OutputDbUrlSpec()
     """Collection of configuration options pertaining to RESONAATE's outputs."""
 
     behavioral_config: BehavioralConfig = BehavioralConfig()
@@ -35,7 +35,7 @@ class EntrypointConfig(UserBaseModel):
 class LibraryConfig(UserBaseModel):
     """Configuration available when RESONAATE is utilized as a library."""
 
-    output_config: OutputConfig = OutputConfig()
+    output_config: OutputDbUrlSpec = OutputDbUrlSpec()
     """Collection of configuration options pertaining to RESONAATE's outputs."""
 
     behavioral_config: BehavioralConfig = BehavioralConfig()
