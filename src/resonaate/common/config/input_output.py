@@ -170,12 +170,18 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     """Flag indicating whether it's ok that the specified SQLite database file already exists."""
 
 
-class IOConfiguration(BaseModel):
-    """Configuration section defining how RESONAATE I/O should work."""
+class InputConfig(BaseModel):
+    """Configuration section defining how RESONAATE consumes input."""
 
     init_file: Path
     """Path to RESONAATE initialization message file."""
 
-    import_config: ImporterDbUrlSpec = ImporterDbUrlSpec()
+    importer_db_params: ImporterDbUrlSpec = ImporterDbUrlSpec()
+    """Connection parameters specifying how to connect to the importer database."""
 
-    output_db_parameters: OutputDbUrlSpec = OutputDbUrlSpec()
+
+class OutputConfig(BaseModel):
+    """Configuration section defining how RESONAATE produces output."""
+
+    output_db_params: OutputDbUrlSpec = OutputDbUrlSpec()
+    """Connection parameters specifying how to connect to the output database."""

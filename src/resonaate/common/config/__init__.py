@@ -5,34 +5,41 @@ from __future__ import annotations
 import json
 import sys
 from argparse import ArgumentParser, RawTextHelpFormatter
+from enum import Enum
 from functools import cache
 from os import environ
 from pathlib import Path
 
 # Third Party Imports
 from dotenv import dotenv_values
-from pydantic import BaseModel
 
 # Local Imports
 from .behavioral import BehavioralConfig
-from .input_output import IOConfiguration  # noqa: TCH001
-from .meta import NotSet, UserSpec, userSpecFactory
+from .input_output import InputConfig, OutputConfig
+from .meta import NotSet, UserBaseModel, UserSpec, userSpecFactory
 
 
-class RootConfig(BaseModel):
-    """Base configuration specifying how RESONAATE should behave."""
+class EntrypointConfig(UserBaseModel):
+    """Configuration that must be provided for RESONAATE when run from the command line."""
 
-    io_config: IOConfiguration
-    """Collection of configuration options pertaining to RESONAATE's inputs and outputs."""
+    input_config: InputConfig
+    """Collection of configuration options pertaining to RESONAATE's inputs."""
+
+    output_config: OutputConfig = OutputConfig()
+    """Collection of configuration options pertaining to RESONAATE's outputs."""
 
     behavioral_config: BehavioralConfig = BehavioralConfig()
     """Collection of configuration options pertaining to RESONAATE's behavior."""
 
 
-@cache
-def rootConfigSpec() -> UserSpec:
-    """Build the :class:`.UserSpec` describing the :class:`.RootConfig` model."""
-    return userSpecFactory(RootConfig.__name__, RootConfig)
+class LibraryConfig(UserBaseModel):
+    """Configuration available when RESONAATE is utilized as a library."""
+
+    output_config: OutputConfig = OutputConfig()
+    """Collection of configuration options pertaining to RESONAATE's outputs."""
+
+    behavioral_config: BehavioralConfig = BehavioralConfig()
+    """Collection of configuration options pertaining to RESONAATE's behavior."""
 
 
 _ARGS_ENV_LOC: str = "RESONAATE_ARGS"
@@ -61,43 +68,66 @@ def getResonaateArgs(env_loc: str = _ARGS_ENV_LOC) -> list[str]:
     return json.loads(environ.get(env_loc, default=no_args))
 
 
-def getCommandLineParser() -> ArgumentParser:
-    """Build command line argument parser based on :class:`.RootConfig`."""
-    parser = ArgumentParser(
-        description="RESONAATE Command Line Interface",
-        argument_default=NotSet,
-        formatter_class=RawTextHelpFormatter,
-    )
-    rootConfigSpec().addToArgParser(parser)
-    return parser
-
-
-def rootConfigFactory(cli_args: list[str] | None = None, dotenv_path: Path = Path("resonaate.env")):
-    """Instantiate a :class:`.RootConfig` object based on user input.
-
-    The resultant :class:`.RootConfig` object will be built from the followng user input sources,
-    with each subsequent source taking precedence over the previous if there are option conflicts:
-     - Environment variables.
-     - Variables set in dotenv file specified by `dotenv_path`.
-     - Variables specified as command line arguments.
-
-    Args:
-        cli_args: Command line arguments specifying user input.
-        dotenv_path: Path to dotenv file specifying user intput.
-    """
-    resonaate_dotenv = dotenv_values(dotenv_path)
-    if cli_args is None:
-        cli_args = getResonaateArgs()
-    parsed_args = getCommandLineParser().parse_args(cli_args)
-
-    config_dict = {}
-    rootConfigSpec().retrieveUserInput(config_dict, vars(parsed_args), resonaate_dotenv)
-    config_dict = config_dict[RootConfig.__name__]  # need nested dict to match models
-
-    return RootConfig(**config_dict)
+@cache
+def rootConfigSpec(root_config: EntrypointConfig | LibraryConfig) -> UserSpec:
+    """Build the :class:`.UserSpec` describing a :class:`.RootConfig` model."""
+    return userSpecFactory(root_config.__name__, root_config)
 
 
 @cache
-def getConfig() -> RootConfig:
+def getConfig(root_config: RootConfig) -> EntrypointConfig | LibraryConfig:
     """Retrieve the (possibly cached) :class:`.RootConfig` object built from default user input."""
-    return rootConfigFactory()
+    return root_config.factory()
+
+
+class RootConfig(Enum):
+    """Enumeration of root configuration structures."""
+
+    ENTRY = EntrypointConfig
+    """Configuration that must be provided for RESONAATE when run from the command line."""
+
+    LIB = LibraryConfig
+    """Configuration available when RESONAATE is utilized as a library."""
+
+    def getSpec(self):
+        """Build the :class:`.UserSpec` describing this :class:`.RootConfig` model."""
+        return rootConfigSpec(self.value)
+
+    def getCommandLineParser(self) -> ArgumentParser:
+        """Build command line argument parser based on this :class:`.RootConfig`."""
+        parser = ArgumentParser(
+            description="RESONAATE Command Line Interface",
+            argument_default=NotSet,
+            formatter_class=RawTextHelpFormatter,
+        )
+        self.getSpec().addToArgParser(parser)
+        return parser
+
+    def factory(self, cli_args: list[str] | None = None, dotenv_path: Path = Path("resonaate.env")):
+        """Instantiate a :class:`.RootConfig` object based on user input.
+
+        The resultant :class:`.RootConfig` object will be built from the followng user input sources,
+        with each subsequent source taking precedence over the previous if there are option conflicts:
+        - Environment variables.
+        - Variables set in dotenv file specified by `dotenv_path`.
+        - Variables specified as command line arguments.
+
+        Args:
+            cli_args: Command line arguments specifying user input.
+            dotenv_path: Path to dotenv file specifying user intput.
+        """
+        resonaate_dotenv = dotenv_values(dotenv_path)
+        if cli_args is None:
+            cli_args = getResonaateArgs()
+        parsed_args = self.getCommandLineParser().parse_args(cli_args)
+
+        config_dict = {}
+        self.getSpec().retrieveUserInput(config_dict, vars(parsed_args), resonaate_dotenv)
+        if self.value.__name__ in config_dict:
+            config_dict = config_dict[self.value.__name__]  # need nested dict to match models
+
+        return self.value(**config_dict)
+
+    def inst(self) -> EntrypointConfig | LibraryConfig:
+        """Retrieve the (possibly cached) :class:`.RootConfig` object built from default user input."""
+        return getConfig(self)
