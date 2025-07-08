@@ -336,12 +336,22 @@ def userSpecFactory(spec_title: str, spec_info: FieldInfo | BaseModel) -> UserSp
         wrapped_field_info = next(iter(_wrapper.model_fields.values()))
         return userSpecFactory(spec_info.__name__, wrapped_field_info)
 
-    is_annotated_model = False
+    annotated_model = None
     with suppress(TypeError, AttributeError):
-        is_annotated_model = issubclass(spec_info.annotation, BaseModel)
-    if is_annotated_model:
+        if issubclass(spec_info.annotation, BaseModel):
+            annotated_model = spec_info.annotation
+    if annotated_model is None:  # noqa: SIM102
+        if hasattr(spec_info.annotation, "__args__"):  # noqa: SIM102
+            # should be a Union (i.e. Optional)
+            if len(spec_info.annotation.__args__) == 2:  # noqa: SIM102
+                if spec_info.annotation.__args__[1] is NoneType:
+                    with suppress(TypeError, AttributeError):
+                        if issubclass(spec_info.annotation.__args__[0], BaseModel):
+                            annotated_model = spec_info.annotation.__args__[0]
+
+    if annotated_model is not None:
         collection = UserFieldCollection(spec_title, spec_info)
-        for field_name, field_info in spec_info.annotation.model_fields.items():
+        for field_name, field_info in annotated_model.model_fields.items():
             collection.addSpec(field_name, userSpecFactory(field_name, field_info))
         return collection
 
