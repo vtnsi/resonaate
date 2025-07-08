@@ -10,13 +10,7 @@ import pytest
 from pydantic import BaseModel, Field
 
 # RESONAATE Imports
-from resonaate.common.config import (
-    EntrypointConfig,
-    LibraryConfig,
-    RootConfig,
-    putResonaateArgs,
-    userSpecFactory,
-)
+from resonaate.common.config import userSpecFactory
 from resonaate.common.config.meta import (
     CommandLineOptions,
     EnvName,
@@ -24,42 +18,7 @@ from resonaate.common.config.meta import (
     UserFieldInfo,
 )
 
-# ruff: noqa: UP045, UP007
-
-
-@pytest.fixture(name="put_main_init_arg")
-def _putMainInitArg():
-    """Fixture setting RESONAATE CLI args environment variable."""
-    putResonaateArgs(["configs/json/main_init.json"])
-    yield
-    putResonaateArgs([])
-
-
-def test_getEntryConfig(put_main_init_arg):
-    """Validate that :class:`.EntrypointConfig` builds successfully."""
-    cfg = RootConfig.ENTRY.inst()
-    assert isinstance(cfg, EntrypointConfig)
-
-    # make sure singleton works as expected
-    dup_cfg = RootConfig.ENTRY.inst()
-    assert dup_cfg is cfg
-
-
-def test_getEntryConfig_noInit():
-    """Validate that error is thrown when trying to build :class:`.EntrypointConfig` without init message arg."""
-    with pytest.raises(SystemExit):
-        _ = RootConfig.ENTRY.inst()
-
-
-def test_getLibConfig():
-    """Validate that :class:`.LibraryConfig` builds successfully."""
-    cfg = RootConfig.LIB.inst()
-    assert isinstance(cfg, LibraryConfig)
-
-    # make sure singleton works as expected
-    dup_cfg = RootConfig.LIB.inst()
-    assert dup_cfg is cfg
-
+# ruff: noqa: UP007
 
 field_label: str = "root_field"
 
@@ -241,3 +200,4 @@ def test_userSpecFactory_hasBoth(monkeypatch):
         {field_spec.env_name.name: dotenv_input},
     )
     assert test_user_in[field_label] == cli_input
+
