@@ -12,7 +12,7 @@ from types import NoneType
 from typing import TYPE_CHECKING, Annotated, NewType, get_args
 
 # Third Party Imports
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 if TYPE_CHECKING:
     # Standard Library Imports
@@ -68,6 +68,12 @@ class CommandLineOptions:
     def options(self) -> list[str]:
         """List of command line options to access the configuration item being decorated."""
         return self._options
+
+
+class UserBaseModel(BaseModel):
+    """Child class of pydantic BaseModel with config set to take docstrings from attributes."""
+
+    model_config = ConfigDict(use_attribute_docstrings=True)
 
 
 class LoggingLevel(str, Enum):

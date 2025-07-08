@@ -4,7 +4,6 @@ from __future__ import annotations
 
 # Standard Library Imports
 from pathlib import Path
-from textwrap import dedent
 from typing import Annotated, Optional
 
 # Third Party Imports
@@ -13,7 +12,7 @@ from sqlalchemy.engine import URL as AlchemyURL
 
 # Local Imports
 from .. import pathSafeTime
-from .meta import CommandLineOptions, EnvName
+from .meta import CommandLineOptions, EnvName, UserBaseModel
 
 # ruff: noqa: TCH001, TCH003, UP007
 
@@ -21,7 +20,7 @@ SQLITE_DRIVER: str = "sqlite"
 """Driver name for using SQLite."""
 
 
-class AlchemyURLSpec(BaseModel):
+class AlchemyURLSpec(UserBaseModel):
     """Specifies required parameters to generate an SQLAlchemy connection to a database."""
 
     def getURL(self) -> AlchemyURL:
@@ -58,69 +57,54 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
 
     drivername: Annotated[
         Optional[str],
-        Field(
-            default=SQLITE_DRIVER,
-            description="The name of the importer database backend.",
-        ),
+        Field(default=SQLITE_DRIVER),
         EnvName("IMPORTER_DB_DRIVER"),
         CommandLineOptions("--importer-db-driver"),
     ]
+    """The name of the importer database backend."""
 
     username: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description="The user name used to connect to the importer database.",
-        ),
+        Field(default=None),
         EnvName("IMPORTER_DB_USER"),
         CommandLineOptions("--importer-db-user"),
     ]
+    """The user name used to connect to the importer database."""
 
     password: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description="The password used to connect to the importer database.",
-        ),
+        Field(default=None),
         EnvName("IMPORTER_DB_PASSWORD"),
         CommandLineOptions("--importer-db-password"),
     ]
+    """The password used to connect to the importer database."""
 
     host: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description="The host name of the importer database.",
-        ),
+        Field(default=None),
         EnvName("IMPORTER_DB_HOST"),
         CommandLineOptions("--importer-db-host"),
     ]
+    """The host name of the importer database."""
 
     port: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description="The port number that the importer database accepts connections on.",
-        ),
+        Field(default=None),
         EnvName("IMPORTER_DB_PORT"),
         CommandLineOptions("--importer-db-port"),
     ]
+    """The port number that the importer database accepts connections on."""
 
     database: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description=dedent("""\
-            The name used for the importer database.
-
-            For an SQLite database (the default used by RESONAATE), this is the path to the database
-            file. If the default SQLite driver is used and this field is left unspecified, it will
-            automatically be populated with a timestamped file in a "db" directory relative to the
-            current working directory."""),
-        ),
+        Field(default=None),
         EnvName("IMPORTER_DB_NAME"),
         CommandLineOptions("--importer-db-name"),
     ]
+    """The name used for the importer database.
+
+    For an SQLite database, this is the path to the database file.
+    """
 
     exists_ok: Optional[bool] = True
     """Flag indicating whether it's ok that the specified SQLite database file already exists."""
@@ -131,69 +115,56 @@ class OutputDbUrlSpec(AlchemyURLSpec):
 
     drivername: Annotated[
         Optional[str],
-        Field(
-            default=SQLITE_DRIVER,
-            description="The name of the output database backend.",
-        ),
+        Field(default=SQLITE_DRIVER),
         EnvName("OUTPUT_DB_DRIVER"),
         CommandLineOptions("--output-db-driver"),
     ]
+    """The name of the output database backend."""
 
     username: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description="The user name used to connect to the output database.",
-        ),
+        Field(default=None),
         EnvName("OUTPUT_DB_USER"),
         CommandLineOptions("--output-db-user"),
     ]
+    """The user name used to connect to the output database."""
 
     password: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description="The password used to connect to the output database.",
-        ),
+        Field(default=None),
         EnvName("OUTPUT_DB_PASSWORD"),
         CommandLineOptions("--output-db-password"),
     ]
+    """The password used to connect to the output database."""
 
     host: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description="The host name of the output database.",
-        ),
+        Field(default=None),
         EnvName("OUTPUT_DB_HOST"),
         CommandLineOptions("--output-db-host"),
     ]
+    """The host name of the output database."""
 
     port: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description="The port number that the output database accepts connections on.",
-        ),
+        Field(default=None),
         EnvName("OUTPUT_DB_PORT"),
         CommandLineOptions("--output-db-port"),
     ]
+    """The port number that the output database accepts connections on."""
 
     database: Annotated[
         Optional[str],
-        Field(
-            default=None,
-            description=dedent("""\
-            The name used for the output database.
-
-            For an SQLite database (the default used by RESONAATE), this is the path to the database
-            file. If the default SQLite driver is used and this field is left unspecified, it will
-            automatically be populated with a timestamped file in a "db" directory relative to the
-            current working directory."""),
-        ),
+        Field(default=None),
         EnvName("OUTPUT_DB_NAME"),
         CommandLineOptions("--output-db-name"),
     ]
+    """The name used for the output database.
+
+    For an SQLite database (the default used by RESONAATE), this is the path to the database file. If the
+    default SQLite driver is used and this field is left unspecified, it will automatically be populated with
+    a timestamped file in a "db" directory relative to the current working directory.
+    """
 
     exists_ok: Optional[bool] = False
     """Flag indicating whether it's ok that the specified SQLite database file already exists."""
@@ -202,12 +173,8 @@ class OutputDbUrlSpec(AlchemyURLSpec):
 class IOConfiguration(BaseModel):
     """Configuration section defining how RESONAATE I/O should work."""
 
-    init_file: Annotated[
-        Path,
-        Field(
-            description="Path to RESONAATE initialization message file.",
-        ),
-    ]
+    init_file: Path
+    """Path to RESONAATE initialization message file."""
 
     import_config: ImporterDbUrlSpec = ImporterDbUrlSpec()
 
