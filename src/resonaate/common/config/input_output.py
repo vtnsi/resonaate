@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Annotated, Optional
 
 # Third Party Imports
-from pydantic import BaseModel, Field
+from pydantic import Field  # noqa: TCH002
 from sqlalchemy.engine import URL as AlchemyURL
 
 # Local Imports
@@ -20,8 +21,53 @@ SQLITE_DRIVER: str = "sqlite"
 """Driver name for using SQLite."""
 
 
-class AlchemyURLSpec(UserBaseModel):
+class AlchemyURLSpec(ABC, UserBaseModel):
     """Specifies required parameters to generate an SQLAlchemy connection to a database."""
+
+    @property
+    @abstractmethod
+    def drivername(self) -> str:
+        """The name of the database backend."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def username(self) -> str:
+        """The user name used to connect to the database."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def password(self) -> str:
+        """The password used to connect to the database."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def host(self) -> str:
+        """The host name of the database."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def port(self) -> int:
+        """The port number that the database accepts connections on."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def database(self) -> str:
+        """The name used for the database.
+
+        For an SQLite database, this is the path to the database file.
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def exists_ok(self) -> bool:
+        """Flag indicating whether it's ok that the specified SQLite database file already exists."""
+        raise NotImplementedError
 
     def getURL(self) -> AlchemyURL:
         """Build the `sqlalchemy.engine.URL` connection object described by this specification."""
@@ -55,7 +101,7 @@ class AlchemyURLSpec(UserBaseModel):
 class ImporterDbUrlSpec(AlchemyURLSpec):
     """Specifies required parameters to connect to a RESONAATE Importer database via SQLAlchemy."""
 
-    drivername: Annotated[
+    importer_db_driver: Annotated[
         Optional[str],
         Field(default=SQLITE_DRIVER),
         EnvName("IMPORTER_DB_DRIVER"),
@@ -63,7 +109,7 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
     ]
     """The name of the importer database backend."""
 
-    username: Annotated[
+    importer_db_username: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("IMPORTER_DB_USER"),
@@ -71,7 +117,7 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
     ]
     """The user name used to connect to the importer database."""
 
-    password: Annotated[
+    importer_db_password: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("IMPORTER_DB_PASSWORD"),
@@ -79,7 +125,7 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
     ]
     """The password used to connect to the importer database."""
 
-    host: Annotated[
+    importer_db_host: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("IMPORTER_DB_HOST"),
@@ -87,7 +133,7 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
     ]
     """The host name of the importer database."""
 
-    port: Annotated[
+    importer_db_port: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("IMPORTER_DB_PORT"),
@@ -95,9 +141,8 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
     ]
     """The port number that the importer database accepts connections on."""
 
-    database: Annotated[
+    importer_db_name: Annotated[
         Optional[str],
-        Field(default=None),
         EnvName("IMPORTER_DB_NAME"),
         CommandLineOptions("--importer-db-name"),
     ]
@@ -106,14 +151,52 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
     For an SQLite database, this is the path to the database file.
     """
 
-    exists_ok: Optional[bool] = True
+    importer_db_exists_ok: Optional[bool] = True
     """Flag indicating whether it's ok that the specified SQLite database file already exists."""
+
+    @property
+    def drivername(self) -> str:
+        """The name of the database backend."""
+        return self.importer_db_driver
+
+    @property
+    def username(self) -> str:
+        """The user name used to connect to the database."""
+        return self.importer_db_username
+
+    @property
+    def password(self) -> str:
+        """The password used to connect to the database."""
+        return self.importer_db_password
+
+    @property
+    def host(self) -> str:
+        """The host name of the database."""
+        return self.importer_db_host
+
+    @property
+    def port(self) -> int:
+        """The port number that the database accepts connections on."""
+        return self.importer_db_port
+
+    @property
+    def database(self) -> str:
+        """The name used for the database.
+
+        For an SQLite database, this is the path to the database file.
+        """
+        return self.importer_db_name
+
+    @property
+    def exists_ok(self) -> bool:
+        """Flag indicating whether it's ok that the specified SQLite database file already exists."""
+        return self.importer_db_exists_ok
 
 
 class OutputDbUrlSpec(AlchemyURLSpec):
     """Specifies required parameters to connect to a RESONAATE output database via SQLAlchemy."""
 
-    drivername: Annotated[
+    output_db_driver: Annotated[
         Optional[str],
         Field(default=SQLITE_DRIVER),
         EnvName("OUTPUT_DB_DRIVER"),
@@ -121,7 +204,7 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     ]
     """The name of the output database backend."""
 
-    username: Annotated[
+    output_db_username: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("OUTPUT_DB_USER"),
@@ -129,7 +212,7 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     ]
     """The user name used to connect to the output database."""
 
-    password: Annotated[
+    output_db_password: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("OUTPUT_DB_PASSWORD"),
@@ -137,7 +220,7 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     ]
     """The password used to connect to the output database."""
 
-    host: Annotated[
+    output_db_host: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("OUTPUT_DB_HOST"),
@@ -145,7 +228,7 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     ]
     """The host name of the output database."""
 
-    port: Annotated[
+    output_db_port: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("OUTPUT_DB_PORT"),
@@ -153,7 +236,7 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     ]
     """The port number that the output database accepts connections on."""
 
-    database: Annotated[
+    output_db_name: Annotated[
         Optional[str],
         Field(default=None),
         EnvName("OUTPUT_DB_NAME"),
@@ -166,22 +249,53 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     a timestamped file in a "db" directory relative to the current working directory.
     """
 
-    exists_ok: Optional[bool] = False
+    output_db_exists_ok: Optional[bool] = False
     """Flag indicating whether it's ok that the specified SQLite database file already exists."""
 
+    @property
+    def drivername(self) -> str:
+        """The name of the database backend."""
+        return self.output_db_driver
 
-class InputConfig(BaseModel):
+    @property
+    def username(self) -> str:
+        """The user name used to connect to the database."""
+        return self.output_db_username
+
+    @property
+    def password(self) -> str:
+        """The password used to connect to the database."""
+        return self.output_db_password
+
+    @property
+    def host(self) -> str:
+        """The host name of the database."""
+        return self.output_db_host
+
+    @property
+    def port(self) -> int:
+        """The port number that the database accepts connections on."""
+        return self.output_db_port
+
+    @property
+    def database(self) -> str:
+        """The name used for the database.
+
+        For an SQLite database, this is the path to the database file.
+        """
+        return self.output_db_name
+
+    @property
+    def exists_ok(self) -> bool:
+        """Flag indicating whether it's ok that the specified SQLite database file already exists."""
+        return self.output_db_exists_ok
+
+
+class InputConfig(UserBaseModel):
     """Configuration section defining how RESONAATE consumes input."""
 
     init_file: Path
     """Path to RESONAATE initialization message file."""
 
-    importer_db_params: ImporterDbUrlSpec = ImporterDbUrlSpec()
+    importer_db_params: Optional[ImporterDbUrlSpec] = None
     """Connection parameters specifying how to connect to the importer database."""
-
-
-class OutputConfig(BaseModel):
-    """Configuration section defining how RESONAATE produces output."""
-
-    output_db_params: OutputDbUrlSpec = OutputDbUrlSpec()
-    """Connection parameters specifying how to connect to the output database."""
