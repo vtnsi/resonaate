@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 # Third Party Imports
-from pydantic import Field  # noqa: TCH002
-from sqlalchemy.engine import URL as AlchemyURL
+from pydantic import Field, ValidationError, field_validator
+from sqlalchemy.engine import URL as AlchemyURL  # noqa: N811
 
 # Local Imports
 from .. import pathSafeTime
@@ -143,6 +143,7 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
 
     importer_db_name: Annotated[
         Optional[str],
+        Field(default=None),
         EnvName("IMPORTER_DB_NAME"),
         CommandLineOptions("--importer-db-name"),
     ]
@@ -150,6 +151,26 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
 
     For an SQLite database, this is the path to the database file.
     """
+
+    @field_validator("importer_db_name", mode="after")
+    @classmethod
+    def validateImporterDbName(cls, value) -> str:
+        """Make sure importer database name is set.
+
+        Note:
+            While it would typically make sense to just _not_ mark the type annotation as `Optional`, it's
+            problematic in this case because :meth:`.UserSpec.addToArgParser()` will then interpret
+            :attr:`.importer_db_name` as a required positional argument. The :attr:`.importer_db_name` is
+            only required when the parent :class:`.ImporterDbUrlSpec` is specified, and so the easiest
+            implementation is to validate here in a `field_validator`.
+
+            In the future, should more required sub-attributes be added to the configuration specification,
+            perhaps the :meth:`.UserSpec.addToArgParser()` method will need to be revised.
+        """
+        if value is None:
+            err = "User provided importer database specification without a name"
+            raise ValidationError(err)
+        return value
 
     importer_db_exists_ok: Optional[bool] = True
     """Flag indicating whether it's ok that the specified SQLite database file already exists."""
