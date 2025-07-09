@@ -340,14 +340,13 @@ def userSpecFactory(spec_title: str, spec_info: FieldInfo | BaseModel) -> UserSp
     with suppress(TypeError, AttributeError):
         if issubclass(spec_info.annotation, BaseModel):
             annotated_model = spec_info.annotation
-    if annotated_model is None:  # noqa: SIM102
-        if hasattr(spec_info.annotation, "__args__"):  # noqa: SIM102
-            # should be a Union (i.e. Optional)
-            if len(spec_info.annotation.__args__) == 2:  # noqa: SIM102
-                if spec_info.annotation.__args__[1] is NoneType:
-                    with suppress(TypeError, AttributeError):
-                        if issubclass(spec_info.annotation.__args__[0], BaseModel):
-                            annotated_model = spec_info.annotation.__args__[0]
+    if annotated_model is None:
+        args = get_args(spec_info.annotation)
+        if len(args) == 2:  # noqa: SIM102
+            if args[1] is NoneType:
+                with suppress(TypeError, AttributeError):
+                    if issubclass(args[0], BaseModel):
+                        annotated_model = args[0]
 
     if annotated_model is not None:
         collection = UserFieldCollection(spec_title, spec_info)
