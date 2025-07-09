@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 # Third Party Imports
-from pydantic import Field, ValidationError, field_validator
+from pydantic import Field  # noqa: TCH002
 from sqlalchemy.engine import URL as AlchemyURL  # noqa: N811
 
 # Local Imports
@@ -142,35 +142,27 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
     """The port number that the importer database accepts connections on."""
 
     importer_db_name: Annotated[
-        Optional[str],
-        Field(default=None),
+        str,
+        Field(default=None, validate_default=True),
         EnvName("IMPORTER_DB_NAME"),
         CommandLineOptions("--importer-db-name"),
     ]
     """The name used for the importer database.
 
     For an SQLite database, this is the path to the database file.
+
+    Developer Note:
+        In the case that a field of a :class:`.UserBaseModel` points to another :class:`.UserBaseModel` with
+        attributes that don't have `default` values (i.e. required nested field(s)), but the parent field
+        itself is not required, the developer is presented with an issue. If the developer doesn't specify
+        any default behavior for the required nested field, then :meth:`.UserSpec.addToArgParser()` will
+        interpret the required nested field as a required *positional* argument. Since the
+        :class:`.UserBaseModel` that the required nested field is a memeber of is not itself required, this
+        is undesired behavior.
+
+        The workaround for this is presented here: configuring the type annotation _without_ `Optional`,
+        specifying an invalid `default` value, and configuring pydantic to validate the invalid default.
     """
-
-    @field_validator("importer_db_name", mode="after")
-    @classmethod
-    def validateImporterDbName(cls, value) -> str:
-        """Make sure importer database name is set.
-
-        Note:
-            While it would typically make sense to just _not_ mark the type annotation as `Optional`, it's
-            problematic in this case because :meth:`.UserSpec.addToArgParser()` will then interpret
-            :attr:`.importer_db_name` as a required positional argument. The :attr:`.importer_db_name` is
-            only required when the parent :class:`.ImporterDbUrlSpec` is specified, and so the easiest
-            implementation is to validate here in a `field_validator`.
-
-            In the future, should more required sub-attributes be added to the configuration specification,
-            perhaps the :meth:`.UserSpec.addToArgParser()` method will need to be revised.
-        """
-        if value is None:
-            err = "User provided importer database specification without a name"
-            raise ValidationError(err)
-        return value
 
     importer_db_exists_ok: Optional[bool] = True
     """Flag indicating whether it's ok that the specified SQLite database file already exists."""
