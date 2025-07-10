@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 # RESONAATE Imports
-from resonaate.common.config.input_output import InputConfig
+from resonaate.common.config.input_output import AlchemyURL, InputConfig, OutputDbUrlSpec
 
 
 def test_inputConfig_goodArgs():
@@ -16,3 +16,9 @@ def test_inputConfig_missingImporterDetail():
     """Validate that error is thrown if an invalid Importer database configuration is provided."""
     with pytest.raises(ValidationError):
         _ = InputConfig(init_file="path/to/init.json", importer_db_params={"importer_db_driver": "sqlite"})
+
+def test_outputDbUrl():
+    """Validate that :meth:`.OutputDbUrlSpec.getURL()` works as intended."""
+    output_spec = OutputDbUrlSpec()
+    db_url = output_spec.getURL()
+    assert isinstance(db_url, AlchemyURL)
