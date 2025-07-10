@@ -63,6 +63,16 @@ class AlchemyURLSpec(ABC, UserBaseModel):
         """
         raise NotImplementedError
 
+    @database.setter
+    @abstractmethod
+    def database(self, value: str):
+        """Set the name of the database.
+
+        Args:
+            value: New database name to use.
+        """
+        raise NotImplementedError
+
     @property
     @abstractmethod
     def exists_ok(self) -> bool:
@@ -200,6 +210,15 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
         """
         return self.importer_db_name
 
+    @database.setter
+    def database(self, value: str):
+        """Set the name of the database.
+
+        Args:
+            value: New database name to use.
+        """
+        self.importer_db_name = value
+
     @property
     def exists_ok(self) -> bool:
         """Flag indicating whether it's ok that the specified SQLite database file already exists."""
@@ -297,6 +316,15 @@ class OutputDbUrlSpec(AlchemyURLSpec):
         For an SQLite database, this is the path to the database file.
         """
         return self.output_db_name
+
+    @database.setter
+    def database(self, value: str):
+        """Set the name of the database.
+
+        Args:
+            value: New database name to use.
+        """
+        self.output_db_name = value
 
     @property
     def exists_ok(self) -> bool:
