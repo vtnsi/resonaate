@@ -15,7 +15,6 @@ from sqlalchemy.orm import Query, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Local Imports
-from ..common.behavioral_config import BehavioralConfig
 from ..common.logger import Logger
 from .agent import AgentModel
 from .detected_maneuver import DetectedManeuver
@@ -67,10 +66,7 @@ class DataInterface(metaclass=ABCMeta):  # noqa: B024
         """
         self.logger: Logger = logger
         if self.logger is None:
-            self.logger = Logger(
-                "resonaate",
-                path=BehavioralConfig.getConfig().logging.OutputLocation,
-            )
+            self.logger = Logger("resonaate")
 
         if db_path.startswith(self.SQLITE_PREFIX):
             # Squash warnings in sqlite about thread safety. The only times that sqlite will be
