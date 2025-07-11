@@ -11,7 +11,7 @@ from os.path import exists, join
 
 # Local Imports
 from . import pathSafeTime
-from .behavioral_config import BehavioralConfig
+from .config import RootConfig
 
 
 class Logger:
@@ -20,24 +20,22 @@ class Logger:
     It also creates a standard file name and log format for any log files that are saved.
     """
 
-    def __init__(self, name, level=None, path=None, allow_multiple_handlers=None):
+    def __init__(self, name, level=None, path=None):
         """Configure the logging information for this Logger instance.
 
         Args:
             name (``string``): Name of the the logger instance
             level (``logging.LOG_LEVEL``): Determines what level of log messages are published
             path (``string``): Path to where the log file will be stored
-            allow_multiple_handlers (``bool``, optional): whether multiple log handlers are permitted
         """
+        root_cfg = RootConfig.LIB.inst()
         if not level:
-            level = BehavioralConfig.getConfig().logging.Level
+            level = root_cfg.behavioral_config.logging_level.level()
         if not path:
-            path = BehavioralConfig.getConfig().logging.OutputLocation
-        if not allow_multiple_handlers:
-            allow_multiple_handlers = BehavioralConfig.getConfig().logging.AllowMultipleHandlers
+            path = root_cfg.behavioral_config.logging_output_location
         # Grab the logger
         self.logger = logging.getLogger(name)
-        if not self.logger.handlers or allow_multiple_handlers is True:
+        if not self.logger.handlers:
             # Write logs to file if path was provided, otherwise write to stdout
             if path == "stdout":
                 # Write logs to stdout
@@ -57,8 +55,8 @@ class Logger:
                 # Create the file handler based on the file name
                 handler = RotatingFileHandler(
                     self.filename,
-                    maxBytes=BehavioralConfig.getConfig().logging.MaxFileSize,
-                    backupCount=BehavioralConfig.getConfig().logging.MaxFileCount,
+                    maxBytes=root_cfg.behavioral_config.logging_max_file_size,
+                    backupCount=root_cfg.behavioral_config.logging_max_file_count,
                 )
 
             # Set the logger's formatter
