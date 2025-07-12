@@ -8,8 +8,9 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 # Third Party Imports
-from pydantic import Field  # noqa: TCH002
+from pydantic import Field, model_validator
 from sqlalchemy.engine import URL as AlchemyURL  # noqa: N811
+from typing_extensions import Self
 
 # Local Imports
 from .. import pathSafeTime
@@ -81,23 +82,6 @@ class AlchemyURLSpec(ABC, UserBaseModel):
 
     def getURL(self) -> AlchemyURL:
         """Build the `sqlalchemy.engine.URL` connection object described by this specification."""
-        if self.drivername == SQLITE_DRIVER:
-            if self.database:
-                db_path = Path(self.database)
-                if not self.exists_ok:
-                    if db_path.exists():
-                        msg = f"Cannot overwrite existing database: {db_path}"
-                        raise FileExistsError(msg)
-
-                    if not db_path.parent.exists():
-                        db_path.parent.mkdir(parents=True)
-
-            else:  # sqlite database path not provided
-                db_path = Path.cwd() / "db" / f"resonaate_{pathSafeTime()}.sqlite3"
-                if not db_path.parent.exists():
-                    db_path.parent.mkdir(parents=True)
-                self.database = str(db_path)
-
         return AlchemyURL.create(
             drivername=self.drivername,
             username=self.username,
@@ -330,6 +314,32 @@ class OutputDbUrlSpec(AlchemyURLSpec):
     def exists_ok(self) -> bool:
         """Flag indicating whether it's ok that the specified SQLite database file already exists."""
         return self.output_db_exists_ok
+
+    @model_validator(mode="after")
+    def conditional_validate_database(self) -> Self:
+        """Additional validation on the :attr:`.database` field.
+
+        Validate that a user specified SQLite database adheres to specified :attr:`.exists_ok`.
+        Generate a default path for an SQLite database, if none was provided.
+        """
+        if self.drivername == SQLITE_DRIVER:
+            if self.database:
+                db_path = Path(self.database)
+                if not self.exists_ok:
+                    if db_path.exists():
+                        msg = f"Cannot overwrite existing database: {db_path}"
+                        raise FileExistsError(msg)
+
+                    if not db_path.parent.exists():
+                        db_path.parent.mkdir(parents=True)
+
+            else:  # sqlite database path not provided
+                db_path = Path.cwd() / "db" / f"resonaate_{pathSafeTime()}.sqlite3"
+                if not db_path.parent.exists():
+                    db_path.parent.mkdir(parents=True)
+                self.database = str(db_path)
+
+        return self
 
 
 class InputConfig(UserBaseModel):
