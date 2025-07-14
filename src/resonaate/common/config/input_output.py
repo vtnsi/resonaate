@@ -344,6 +344,58 @@ class OutputDbUrlSpec(AlchemyURLSpec):
         return self
 
 
+class InMemoryDbSpec(AlchemyURLSpec):
+    """Connection parameters for an in-memory SQLite database."""
+
+    @property
+    def drivername(self) -> str:
+        """The in-memory database is based on SQLite."""
+        raise SQLITE_DRIVER
+
+    @property
+    def username(self) -> str:
+        """No username for in-memory database."""
+        return None
+
+    @property
+    def password(self) -> str:
+        """No password for in-memory database."""
+        return None
+
+    @property
+    def host(self) -> str:
+        """No host for in-memory database."""
+        return None
+
+    @property
+    def port(self) -> int:
+        """No port number for in-memory database."""
+        return None
+
+    @property
+    def database(self) -> str:
+        """No name for in-memory database."""
+        return None
+
+    @database.setter
+    def database(self, value: str):
+        """Set the name of the database.
+
+        Args:
+            value: New database name to use.
+        """
+        raise NotImplementedError
+
+    @property
+    def exists_ok(self) -> bool:
+        """Assume it's fine if in-memory database already exists."""
+        return True
+
+    def getURL(self) -> AlchemyURL:
+        """Build the `sqlalchemy.engine.URL` connection object for the in-memory database."""
+        return make_url(f"{self.drivername}//")
+
+
 class InputConfig(UserBaseModel):
     """Configuration section defining how RESONAATE consumes input."""
 
