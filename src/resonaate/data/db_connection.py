@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Local Imports
+from ..common.config import OutputDbUrlSpec
 from ..parallel.key_value_store import KeyValueStore
 from ..parallel.key_value_store.transaction import Transaction
 
@@ -17,8 +18,8 @@ if TYPE_CHECKING:
     from .resonaate_database import ResonaateDatabase
 
 
-DB_PATH_KEY = "db_path"
-"""``str``: common KVS key for """
+DB_PARAMS_KEY: str = "db_connection_params"
+"""Key used to store database connection parameters in the key value store."""
 
 
 class DBConnectionError(Exception):
@@ -52,10 +53,10 @@ class _GetDBConnection(Transaction):
         Args:
             key_value_store (``dict``): Key value store to execute the encapsulated transaction on.
         """
-        self.response_payload = key_value_store.get(DB_PATH_KEY)
+        self.response_payload = key_value_store.get(DB_PARAMS_KEY)
         if self.response_payload is None:
             self.error = DBConnectionError(
-                "setDBPath() must be called once before getDBConnection()",
+                "setDBParams() must be called once before getDBConnection()",
             )
 
     def getResponse(self) -> Any:
@@ -67,42 +68,42 @@ class _GetDBConnection(Transaction):
         Raises:
             Exception: If an error occurred while executing this transaction.
         """
-        db_path = super().getResponse()
-        if self.__cached_interfaces.get(db_path) is None:
+        params_json = super().getResponse()
+        if self.__cached_interfaces.get(params_json) is None:
             # Local Imports
             from .resonaate_database import ResonaateDatabase
+            valid_db_params = OutputDbUrlSpec.model_validate_json(params_json)
+            self.__cached_interfaces[params_json] = ResonaateDatabase(connection_params=valid_db_params)
+        return self.__cached_interfaces[params_json]
 
-            self.__cached_interfaces[db_path] = ResonaateDatabase(db_path=db_path)
-        return self.__cached_interfaces[db_path]
 
-
-def setDBPath(path: str) -> None:
+def setDBParams(connection_params: OutputDbUrlSpec) -> None:
     """Set the shared DB path in the KVS.
 
     This must be called before any DB interactions, and it should only be called once.
 
     Args:
-        path (``str``): qualified SQL database path.
+        connection_params: Collection of parameters specifying how to connect to the shared database.
     """
     try:
-        KeyValueStore.submitTransaction(ExclusiveSet(DB_PATH_KEY, path))
+        KeyValueStore.submitTransaction(ExclusiveSet(DB_PARAMS_KEY, connection_params.model_dump_json()))
     except KeyError as err:
         raise DBConnectionError(
-            "setDBPath() should only be called once per script/simulation",
+            "setDBParams() should only be called once per script/simulation",
         ) from err
 
 
-def clearDBPath() -> None:
+def clearDBParams() -> None:
     """Clear the KVS of the database connections."""
-    KeyValueStore.setValue(DB_PATH_KEY, None)
+    KeyValueStore.setValue(DB_PARAMS_KEY, None)
 
 
 def getDBConnection() -> ResonaateDatabase:
     """Retrieve the shared database instance from the KVS.
 
-    This fails if :func:`.setDBPath` is not properly called first.
+    This fails if :func:`.setDBParams` is not properly called first.
 
     Returns:
         :class:`.ResonaateDatabase`: valid instance of shared database.
     """
-    return KeyValueStore.submitTransaction(_GetDBConnection(DB_PATH_KEY))
+    return KeyValueStore.submitTransaction(_GetDBConnection(DB_PARAMS_KEY))
