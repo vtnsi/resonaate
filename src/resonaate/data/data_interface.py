@@ -15,6 +15,7 @@ from sqlalchemy.orm import Query, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Local Imports
+from ..common.config.input_output import SQLITE_DRIVER, AlchemyURLSpec
 from ..common.logger import Logger
 from .agent import AgentModel
 from .detected_maneuver import DetectedManeuver
@@ -49,36 +50,46 @@ class DataInterface(metaclass=ABCMeta):  # noqa: B024
         TruthEphemeris.__tablename__: TruthEphemeris,
     } | {T.__tablename__: T for T in filter_map.values()}
 
-    SQLITE_PREFIX = "sqlite://"
-
-    def __init__(self, db_path: str, drop_tables, logger: Logger, verbose_echo: bool) -> None:
-        """Create SQLite database based on :attr:`.VALID_DATA_TYPES` .
+    def __init__(
+            self,
+            connection_params: AlchemyURLSpec,
+            drop_tables: tuple[str] = (),
+            logger: Logger | None = None,
+            verbose_echo: bool = False,
+        ) -> None:
+        """Instantiate an interface that encapsulates common database interactions.
 
         Args:
-            db_path (``str``): SQLAlchemy-accepted string denoting what database implementation to
-                use and where the database is located.
-            drop_tables (``iterable``): Iterable of table names to be dropped at time of construction. This parameter
-                makes sense in the context of utilizing a pre-existing database that a user may not want to keep
-                data from.
-            logger (:class:`.Logger`): Previously instantiated logging object to use.
-            verbose_echo (``bool``): Flag that if set ``True``, will tell the SQLAlchemy engine to
-                output the raw SQL statements it runs.
+            connection_params: Collection of parameters specifying how to connect to the database
+                implementation underlying this :class:`.DataInterface`.
+            drop_tables: Iterable of table names to be dropped at time of construction. In a pre-existing
+                database, a user can specify which data that they don't want to keep.
+            logger: Previously instantiated logging object to use.
+            verbose_echo: Flag indicating whether SQLAlchemy engine should log the raw SQL statements that it
+                executes.
         """
         self.logger: Logger = logger
         if self.logger is None:
             self.logger = Logger("resonaate")
 
-        if db_path.startswith(self.SQLITE_PREFIX):
+        if not isinstance(connection_params, AlchemyURLSpec):
+            err = f"Cannot instantiate DataInterface with invalid connection parameters: {connection_params}"
+            self.logger.error(err)
+            raise ValueError(err)
+
+        db_url = connection_params.getURL()
+        if connection_params.drivername == SQLITE_DRIVER:
             # Squash warnings in sqlite about thread safety. The only times that sqlite will be
             # used in a multi-threaded context is read-only (and thus thread safe)
             self.engine = create_engine(
-                db_path,
+                db_url,
                 echo=verbose_echo,
                 connect_args={"check_same_thread": False},
                 poolclass=StaticPool,
             )
         else:
-            self.engine = create_engine(db_path, echo=verbose_echo)
+            self.engine = create_engine(db_url, echo=verbose_echo)
+        self.logger.debug(f"{self.__class__.__name__} database URL: {db_url!s}")
 
         self.resetData(tables=drop_tables)
         self.session_factory = sessionmaker(bind=self.engine)

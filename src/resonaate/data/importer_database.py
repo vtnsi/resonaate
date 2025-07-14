@@ -11,7 +11,6 @@ from numpy import array, concatenate
 from sqlalchemy.orm import Query
 
 # Local Imports
-from ..common.logger import resonaateLogError
 from ..common.utilities import loadJSONFile
 from ..physics.measurements import Measurement
 from ..physics.time.stardate import JulianDate
@@ -24,36 +23,6 @@ from .observation import Observation
 
 class ImporterDatabase(DataInterface):
     """Importer database object for loading external data."""
-
-    __shared_inst = None
-
-    def __init__(self, db_path: str, drop_tables=(), logger=None, verbose_echo=False):
-        """Create SQLite database based on :attr:`.VALID_DATA_TYPES` .
-
-        Args:
-            db_path (``str``): SQLAlchemy-accepted string denoting what database implementation
-                to use and where the database is located.
-            drop_tables (``iterable``, optional): Iterable of table names to be dropped at time of
-                :class:`.DataInterface` construction. This parameter makes sense in the context of
-                utilizing a pre-existing database that a user may not want to keep data from.
-                Defaults to an empty tuple, resulting in no tables being dropped.
-            logger (:class:`.Logger`, optional): Previously instantiated logging object to use. Defaults to ``None``,
-                resulting in a new :class:`.Logger` instance being instantiated.
-            verbose_echo (``bool``, optional): Flag that if set ``True``, will tell the SQLAlchemy
-                engine to output the raw SQL statements it runs. Defaults to ``False``.
-        """
-        # Force users to define db location
-        if not db_path:
-            err = f"Importer database requires a valid url path: {db_path}"
-            resonaateLogError(err)
-            raise ValueError(err)
-
-        # Instantiate the data interface object
-        super().__init__(db_path, drop_tables, logger, verbose_echo)
-
-        # [NOTE]: Log the location here so it is obvious if the intended DB path
-        #    is not being used.
-        self.logger.debug(f"Database path: {db_path}")
 
     def insertData(self, *args):
         """Override :class:`.DataInterface` implementation.
