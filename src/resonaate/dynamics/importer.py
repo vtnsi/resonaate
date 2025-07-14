@@ -1,18 +1,27 @@
 """Module implementing the bulk ephemeris importer paradigm."""
 
+from __future__ import annotations
+
 # Standard Library Imports
-from datetime import datetime
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 from sqlalchemy.orm import Query
 
 # Local Imports
-from ..agents.agent_base import Agent
 from ..common.exceptions import MissingEphemerisError
 from ..data.ephemeris import TruthEphemeris
 from ..data.epoch import Epoch
 from ..data.importer_database import ImporterDatabase
+
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from datetime import datetime
+
+    # Local Imports
+    from ..agents.agent_base import Agent
+    from ..common.config.input_output import AlchemyURLSpec
 
 
 class EphemerisImporter:
@@ -20,18 +29,18 @@ class EphemerisImporter:
 
     def __init__(
         self,
-        importer_db_path: str,
+        importer_db_params: AlchemyURLSpec | None,
     ):
         """Initialize this :class:`.EphemerisImporter`.
 
         Args:
-            importer_db_path: Path to the importer database containing ephemeris data
+            importer_db_params: Collection of parameters specifying how to connect to an importer database.
 
         Raises:
-            ValueError: If `importer_db_path` is not a valid importer database URL.
+            ValueError: If `importer_db_params` is not valid.
         """
         self._logger = getLogger("resonaate")
-        self._importer_db = ImporterDatabase(importer_db_path, logger=self._logger)
+        self._importer_db = ImporterDatabase(importer_db_params, logger=self._logger)
         self._registrants: dict[int, Agent] = {}
 
     def registerAgent(self, agent: Agent):
