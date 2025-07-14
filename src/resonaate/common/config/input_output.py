@@ -10,6 +10,7 @@ from typing import Annotated, Optional
 # Third Party Imports
 from pydantic import Field, model_validator
 from sqlalchemy.engine import URL as AlchemyURL  # noqa: N811
+from sqlalchemy.engine import make_url
 from typing_extensions import Self
 
 # Local Imports
@@ -90,6 +91,22 @@ class AlchemyURLSpec(ABC, UserBaseModel):
             port=self.port,
             database=self.database,
         )
+
+    def checkExists(self):
+        """Verify that instantiating the specified database won't overwrite an existing database.
+
+        Raises:
+            FileExistsError: If instantiating the specified database will overwrite an existing database.
+        """
+        if self.drivername == SQLITE_DRIVER and self.database is not None:
+            db_path = Path(self.database)
+            if not self.exists_ok:
+                if db_path.exists():
+                    msg = f"Cannot overwrite existing database: {db_path}"
+                    raise FileExistsError(msg)
+
+                if not db_path.parent.exists():
+                    db_path.parent.mkdir(parents=True)
 
 
 class ImporterDbUrlSpec(AlchemyURLSpec):
@@ -317,27 +334,12 @@ class OutputDbUrlSpec(AlchemyURLSpec):
 
     @model_validator(mode="after")
     def conditional_validate_database(self) -> Self:
-        """Additional validation on the :attr:`.database` field.
-
-        Validate that a user specified SQLite database adheres to specified :attr:`.exists_ok`.
-        Generate a default path for an SQLite database, if none was provided.
-        """
-        if self.drivername == SQLITE_DRIVER:
-            if self.database:
-                db_path = Path(self.database)
-                if not self.exists_ok:
-                    if db_path.exists():
-                        msg = f"Cannot overwrite existing database: {db_path}"
-                        raise FileExistsError(msg)
-
-                    if not db_path.parent.exists():
-                        db_path.parent.mkdir(parents=True)
-
-            else:  # sqlite database path not provided
-                db_path = Path.cwd() / "db" / f"resonaate_{pathSafeTime()}.sqlite3"
-                if not db_path.parent.exists():
-                    db_path.parent.mkdir(parents=True)
-                self.database = str(db_path)
+        """Generate a default path for an SQLite database, if none was provided."""
+        if self.drivername == SQLITE_DRIVER and self.database is None:
+            db_path = Path.cwd() / "db" / f"resonaate_{pathSafeTime()}.sqlite3"
+            if not db_path.parent.exists():
+                db_path.parent.mkdir(parents=True)
+            self.database = str(db_path)
 
         return self
 
