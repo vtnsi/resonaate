@@ -48,8 +48,12 @@ def test_outputDbUrl_default():
 def test_outputDbUrl_user(tmp_path: Path):
     """Validate that specifying an sqlite database works as intended."""
     db_path = tmp_path / "test_db.sqlite3"
-    assert OutputDbUrlSpec(output_db_name=str(db_path))
+    output_spec = OutputDbUrlSpec(output_db_name=str(db_path))
+    assert output_spec
+
     db_path.touch()
     with pytest.raises(FileExistsError):
-        _ = OutputDbUrlSpec(output_db_name=str(db_path))
-    assert OutputDbUrlSpec(output_db_name=str(db_path), output_db_exists_ok=True)
+        output_spec.checkExists()
+
+    output_spec = OutputDbUrlSpec(output_db_name=str(db_path), output_db_exists_ok=True)
+    output_spec.checkExists()
