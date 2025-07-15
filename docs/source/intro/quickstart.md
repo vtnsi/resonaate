@@ -154,7 +154,7 @@ target_date = getTargetJulianDate(
 ```
 
 ```{tip}
-If you are not using {func}`.buildScenarioFromConfigFile()`, you must call {func}`.setDBPath()`
+If you are not using {func}`.buildScenarioFromConfigFile()`, you must call {func}`.setDBParams()`
 before any database queries are required.
 ```
 

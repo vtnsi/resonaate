@@ -25,10 +25,8 @@ from .config.event_configs import MissingDataDependencyError
 
 # Type Checking Imports
 if TYPE_CHECKING:
-    # Standard Library Imports
-    from pathlib import Path
-
     # Local Imports
+    from ..common.config.input_output import AlchemyURLSpec
     from ..data.resonaate_database import ResonaateDatabase
     from ..tasking.engine.engine_base import TaskingEngine
     from .config import AgentConfig, EngineConfig, ScenarioConfig, SensingAgentConfig
@@ -44,14 +42,13 @@ class ScenarioBuilder:
     def __init__(
         self,
         scenario_config: ScenarioConfig,
-        importer_db_path: str | None = None,
+        importer_db_params: AlchemyURLSpec | None = None,
     ) -> None:
         """Instantiate a :class:`.ScenarioBuilder` from a config dictionary.
 
         Args:
             scenario_config (:class:`.ScenarioConfig`): config settings to make a valid :class:`.Scenario`
-            importer_db_path (``str``, optional): path to external importer database for pre-canned
-                data. Defaults to ``None``.
+            importer_db_params: Collection of parameters specifying how to connect to an importer database.
 
         Raises:
             ValueError: raised if the "engines" field is empty
@@ -67,7 +64,7 @@ class ScenarioBuilder:
         self.validated_target_configs: dict[int, AgentConfig] = {}
         self.validated_sensor_configs: dict[int, SensingAgentConfig] = {}
 
-        self.tasking_engines = self._initTaskingEngines(importer_db_path=importer_db_path)
+        self.tasking_engines = self._initTaskingEngines(importer_db_params=importer_db_params)
         self.target_agents = self._initTargets()
         self.estimate_agents = self._initEstimates()
         self.sensor_agents = self._initSensors()
@@ -77,11 +74,11 @@ class ScenarioBuilder:
         self._loadAgentsIntoDatabase(shared_database)
         self._loadEventsIntoDatabase(shared_database)
 
-    def _initTaskingEngines(self, importer_db_path: str | Path) -> dict[int, TaskingEngine]:
+    def _initTaskingEngines(self, importer_db_params: AlchemyURLSpec | None = None) -> dict[int, TaskingEngine]:
         """Initialize targets based on configs.
 
         Args:
-            importer_db_path (``str | Path``): qualified path to importer database.
+            importer_db_params: Collection of parameters specifying how to connect to an importer database.
 
         Returns:
             ``dict``: constructed :class:`.TaskingEngine` objects
@@ -110,7 +107,7 @@ class ScenarioBuilder:
                 engine_targets,
                 reward,
                 decision,
-                importer_db_path,
+                importer_db_params,
                 self.config.observation.realtime_observation,
                 min_revisit_time=engine_conf.min_revisit_time,
                 enable_sensor_min_revisit=engine_conf.enable_sensor_min_revisit,

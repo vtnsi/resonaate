@@ -28,11 +28,12 @@ from datetime import datetime
 import numpy as np
 
 # RESONAATE Imports
-from resonaate.data import setDBPath
+from resonaate.common.config.input_output import InMemoryDbSpec
+from resonaate.data import setDBParams
 
 # In-memory database.
 # [NOTE]: This must be called before any calls to getDBConnection() are made!
-setDBPath("sqlite://")
+setDBParams(InMemoryDbSpec())
 
 # RESONAATE Imports
 # %%

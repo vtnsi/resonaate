@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     # Standard Library Imports
 
     # Local Imports
+    from ..common.config.input_output import AlchemyURLSpec
     from ..data.observation import MissedObservation, Observation
     from ..physics.time.stardate import ScenarioTime
     from ..tasking.engine.engine_base import TaskingEngine
@@ -70,7 +71,7 @@ class Scenario:
         estimate_agents: dict[int, EstimateAgent],
         sensor_agents: dict[int, SensingAgent],
         tasking_engines: dict[int, TaskingEngine],
-        importer_db_path: str | None = None,
+        importer_db_params: AlchemyURLSpec | None = None,
         logger: Logger | None = None,
     ):
         """Instantiate a Scenario object.
@@ -82,9 +83,8 @@ class Scenario:
             estimate_agents (``dict``): estimate RSO objects for this :class:`.Scenario` .
             sensor_agents (``dict``): sensor network for this :class:`.Scenario` .
             tasking_engines (``dict``): dictionary of tasking engines for this :class:`.Scenario` .
-            importer_db_path (``str``, optional): path to external importer database for pre-canned
-                data. Defaults to ``None``.
-            logger (:class:`.Logger`, optional):pPreviously instantiated :class:`.Logger` instance to be used.
+            importer_db_params: Collection of parameters specifying how to connect to an importer database.
+            logger (:class:`.Logger`, optional): Previously instantiated :class:`.Logger` instance to be used.
                 Defaults to `None`, resulting in the class instantiating its own :class:`.Logger`.
         """
         # Save scenario configuration
@@ -153,14 +153,12 @@ class Scenario:
         #          thrown inside of the `numpy::solve_ivp()` method. Therefore, we don't want to raise, just print.
         seterr(all="warn")
 
-        # Init database info
-        self._importer_db_path = importer_db_path
         self._ephem_importer = None
         if not (
             config.propagation.target_realtime_propagation
             and config.propagation.sensor_realtime_propagation
         ):
-            self._ephem_importer = EphemerisImporter(self._importer_db_path)
+            self._ephem_importer = EphemerisImporter(importer_db_params)
         self.database = getDBConnection()
 
         # Initialize "truth simulation" job queue, and assign callbacks for all target/sensor agents

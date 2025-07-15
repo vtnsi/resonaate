@@ -228,7 +228,7 @@ finally:
     scenario.shutdown()
 ```
 
-> NOTE: If you are not using `buildScenarioFromConfigFile()`, you must call `setDBPath()` before any database
+> NOTE: If you are not using `buildScenarioFromConfigFile()`, you must call `setDBParams()` before any database
 > queries are required.
 
 ## Contributing

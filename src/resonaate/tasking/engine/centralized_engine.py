@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 
     # Local Imports
     from ...agents.sensing_agent import SensingAgent
+    from ...common.config.input_output import AlchemyURLSpec
+    from ...physics.time.stardate import JulianDate
     from ..decisions import Decision
     from ..rewards import Reward
 
@@ -46,7 +48,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         target_ids: list[int],
         reward: Reward,
         decision: Decision,
-        importer_db_path: str | None,
+        importer_db_params: AlchemyURLSpec | None,
         realtime_obs: bool,
         min_revisit_time: float = 0.0,
         enable_sensor_min_revisit: bool = True,
@@ -59,7 +61,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             target_ids (``list``): list of target agent ID numbers
             reward (:class:`.Reward`): callable reward object for determining tasking priority
             decision (:class:`.Decision`): callable decision object for optimizing tasking
-            importer_db_path (``str`` | ``None``): path to external importer database for pre-canned data.
+            importer_db_params: Collection of parameters specifying how to connect to an importer database.
             realtime_obs (``bool``): whether to execute realtime observations
             min_revisit_time (``int``, optional): Minimum required elapsed time since last observation of a target before the network is allowed to revisit the target, in seconds. Defaults to 0.
             enable_sensor_min_revisit (``bool``): Toggle to enable the per-sensor minimum revisit time feature. Defaults to True.
@@ -70,7 +72,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             target_ids,
             reward,
             decision,
-            importer_db_path=importer_db_path,
+            importer_db_params=importer_db_params,
             min_revisit_time=min_revisit_time,
             enable_sensor_min_revisit=enable_sensor_min_revisit,
         )

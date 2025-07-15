@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
+    from ...common.config.input_output import AlchemyURLSpec
     from ...data.observation import MissedObservation, Observation
     from ...data.task import Task
 
@@ -41,7 +42,7 @@ class TaskingEngine(metaclass=ABCMeta):
         target_ids: list[int],
         reward: Reward,
         decision: Decision,
-        importer_db_path: str | None = None,
+        importer_db_params: AlchemyURLSpec | None = None,
         min_revisit_time: float = 0.0,
         enable_sensor_min_revisit: bool = True,
     ):
@@ -53,8 +54,7 @@ class TaskingEngine(metaclass=ABCMeta):
             target_ids (``list``): list of target agent ID numbers
             reward (:class:`.Reward`): callable reward object for determining tasking priority
             decision (:class:`.Decision`): callable decision object for optimizing tasking
-            importer_db_path (``str``, optional): path to external importer database for pre-canned
-                data. Defaults to ``None``.
+            importer_db_params: Collection of parameters specifying how to connect to an importer database.
             min_revisit_time (``int``, optional): Minimum required elapsed time since last observation of a target before the network is allowed to revisit the target, in seconds. Defaults to 0.
             enable_sensor_min_revisit (``bool``): Toggle to enable the per-sensor minimum revisit time feature. Defaults to True.
 
@@ -130,8 +130,8 @@ class TaskingEngine(metaclass=ABCMeta):
 
         self._importer_db: ImporterDatabase | None = None
         """:class:`.ImporterDatabase`: Input database object for loading :class:`.Observation` objects."""
-        if importer_db_path:
-            self._importer_db = ImporterDatabase(db_path=importer_db_path)
+        if importer_db_params:
+            self._importer_db = ImporterDatabase(importer_db_params)
 
         self.resetHandles()
 
