@@ -46,11 +46,11 @@ _ARGS_ENV_LOC: str = "RESONAATE_ARGS"
 """Key of environment variable to store CLI args to for child processes to consume."""
 
 
-def putResonaateArgs(cli_args: list[str] | None, env_loc: str = _ARGS_ENV_LOC):
+def putResonaateArgs(cli_args: list[str] | None = None, env_loc: str = _ARGS_ENV_LOC):
     """Store CLI args provided to RESONAATE on the environment.
 
     Args:
-        cli_args: List of string command line arguemnts.
+        cli_args: List of string command line arguments.
         env_loc: Environment variable specifying where to store the command line arguments.
     """
     if cli_args is None:
