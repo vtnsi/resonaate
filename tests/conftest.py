@@ -10,9 +10,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 # RESONAATE Imports
-from resonaate.common.behavioral_config import BehavioralConfig
-from resonaate.data import clearDBPath, getDBConnection, setDBPath
-from resonaate.data.db_connection import DBConnectionError
+from resonaate.common.config import OutputDbUrlSpec, getConfig, rootConfigSpec
+from resonaate.data import clearDBParams, getDBConnection, setDBParams
 from resonaate.dynamics.special_perturbations import SpecialPerturbations
 from resonaate.parallel.key_value_store import KeyValueStore
 from resonaate.parallel.key_value_store.flush_transaction import FlushTransaction
@@ -20,14 +19,7 @@ from resonaate.scenario.config.geopotential_config import GeopotentialConfig
 from resonaate.scenario.config.perturbations_config import PerturbationsConfig
 
 # Local Imports
-from . import (
-    FIXTURE_DATA_DIR,
-    SHARED_DB_PATH,
-    TEST_START_JD,
-    PropagateFunc,
-    patchCreateDatabasePath,
-    propagateScenario,
-)
+from . import FIXTURE_DATA_DIR, SHARED_DB_PATH, TEST_START_JD, PropagateFunc, propagateScenario
 
 # Type Checking Imports
 if TYPE_CHECKING:
@@ -39,22 +31,13 @@ if TYPE_CHECKING:
     from resonaate.data.resonaate_database import ResonaateDatabase
 
 
+
 @pytest.fixture(autouse=True)
-def _patchMissingEnvVariables(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Automatically delete each environment variable, if set.
-
-    Args:
-        monkeypatch (:class:`pytest.MonkeyPatch`): monkeypatch obj to track changes
-
-    Note:
-        This is used so tests can assume a "blank" configuration, and it won't
-        overwrite a user's custom-set environment variables.
-    """
-    with monkeypatch.context() as m_patch:
-        m_patch.delenv("RESONAATE_BEHAVIOR_CONFIG", raising=False)
-        yield
-        # Make sure we reset the config after each test function
-        BehavioralConfig.getConfig()
+def _clearCaches():
+    """Make sure cached config info is cleared between tests."""
+    yield
+    rootConfigSpec.cache_clear()
+    getConfig.cache_clear()
 
 
 @pytest.fixture(scope="session", name="test_logger")
@@ -76,26 +59,6 @@ def _generateKeyValueStore():
     ref.submitTransaction(FlushTransaction())
 
 
-@pytest.fixture(name="custom_database")
-def _customDatabase(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Allows setting up a custom DB path, avoiding data integrity issues.
-
-    Note:
-        This fixture should typically only be used when `buildScenarioFromConfigFile()` is
-        used inside test functions.
-    """
-    with monkeypatch.context() as m:
-        m.setattr("resonaate.data.createDatabasePath", patchCreateDatabasePath)
-        yield
-
-    try:
-        db = getDBConnection()
-    except DBConnectionError:
-        pass
-    else:
-        db.resetData(tuple(db.VALID_DATA_TYPES.keys()))
-
-
 @pytest.fixture(name="database")
 def getDataInterface(tmp_path: Path) -> ResonaateDatabase:
     """Create common, non-shared DB object for all tests.
@@ -108,13 +71,14 @@ def getDataInterface(tmp_path: Path) -> ResonaateDatabase:
     tmp_db_dir = tmp_path / SHARED_DB_PATH.parent
     shutil.copytree(orig_db_dir, tmp_db_dir, dirs_exist_ok=True)
     # [NOTE]: properly set DB connection string using tmp dir
-    setDBPath(f"sqlite:///{tmp_path / SHARED_DB_PATH}")
+    db_params = OutputDbUrlSpec(output_db_name=str(tmp_path / SHARED_DB_PATH))
+    setDBParams(db_params)
     yield getDBConnection()
-    clearDBPath()
+    clearDBParams()
 
 
 @pytest.fixture(name="propagate_scenario")
-def propagateFixture(custom_database: None) -> PropagateFunc:
+def propagateFixture() -> PropagateFunc:
     """Returns function that propagates a scenario."""
     return propagateScenario
 

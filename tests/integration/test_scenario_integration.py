@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
+from resonaate.common.config.input_output import ImporterDbUrlSpec
 from resonaate.common.exceptions import MissingEphemerisError
 from resonaate.data.epoch import Epoch
 from resonaate.data.importer_database import ImporterDatabase
@@ -134,20 +135,20 @@ class TestScenarioImporter:
         """Validate that error is thrown if config.propagation.*_realtime_propagation is False and no importer db is provided."""
         init_filepath = "default_imported_est_imported_obs.json"
         elapsed_time = timedelta(minutes=5)
-        with pytest.raises(ValueError, match="Importer database requires a valid url path"):
+        with pytest.raises(ValueError, match="Cannot instantiate DataInterface with invalid connection parameters:"):
             _ = propagate_scenario(datafiles, init_filepath, elapsed_time)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testMissingTargetEphemeris(
         self,
-        datafiles: str,
+        datafiles: Path,
         propagate_scenario: PropagateFunc,
     ):
         """Validate that error is thrown if an importer target is missing ephemeris data."""
         init_filepath = "default_imported_est_imported_obs.json"
         elapsed_time = timedelta(minutes=5)
-        db_path = Path(datafiles).joinpath(IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase("sqlite:///" + str(db_path))
+        importer_db_params = ImporterDbUrlSpec(importer_db_name=str(datafiles / IMPORTER_DB_PATH))
+        importer_db = ImporterDatabase(importer_db_params)
         loadSensorTruthData(Path(datafiles), importer_db)
         with pytest.raises(
             MissingEphemerisError,
@@ -157,21 +158,21 @@ class TestScenarioImporter:
                 datafiles,
                 init_filepath,
                 elapsed_time,
-                importer_db_path=db_path,
+                importer_db_params=importer_db_params,
             )
         assert not re.search(r"6000[1-8]", exc_info.value.args[0])
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testMissingSensorEphemeris(
         self,
-        datafiles: str,
+        datafiles: Path,
         propagate_scenario: PropagateFunc,
     ):
         """Validate that error is thrown if an importer sensor is missing ephemeris data."""
         init_filepath = "default_imported_est_imported_obs.json"
         elapsed_time = timedelta(minutes=5)
-        db_path = Path(datafiles).joinpath(IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase("sqlite:///" + str(db_path))
+        importer_db_params = ImporterDbUrlSpec(importer_db_name=str(datafiles / IMPORTER_DB_PATH))
+        importer_db = ImporterDatabase(importer_db_params)
         loadTargetTruthData(Path(datafiles), importer_db)
         with pytest.raises(
             MissingEphemerisError,
@@ -181,28 +182,28 @@ class TestScenarioImporter:
                 datafiles,
                 init_filepath,
                 elapsed_time,
-                importer_db_path=db_path,
+                importer_db_params=importer_db_params,
             )
         assert not re.search(r"1111[12]", exc_info.value.args[0])
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testImportedEphemeris(
         self,
-        datafiles: str,
+        datafiles: Path,
         propagate_scenario: PropagateFunc,
     ):
         """Validate that simulation is successful if run with imported target and sensor ephemeris."""
         init_filepath = "default_imported_est_imported_obs.json"
         elapsed_time = timedelta(minutes=5)
-        db_path = Path(datafiles).joinpath(IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase("sqlite:///" + str(db_path))
+        importer_db_params = ImporterDbUrlSpec(importer_db_name=str(datafiles / IMPORTER_DB_PATH))
+        importer_db = ImporterDatabase(importer_db_params)
         loadSensorTruthData(Path(datafiles), importer_db)
         loadTargetTruthData(Path(datafiles), importer_db)
         _ = propagate_scenario(
             datafiles,
             init_filepath,
             elapsed_time,
-            importer_db_path=db_path,
+            importer_db_params=importer_db_params,
         )
 
     @pytest.mark.slow()
@@ -216,10 +217,10 @@ class TestScenarioImporter:
         """Test a small simulation using imported data. 5 day hour test."""
         init_filepath = "long_full_ssn_imported_est_imported_obs.json"
         elapsed_time = timedelta(hours=4, minutes=59)
-        db_path = Path(datafiles).joinpath(IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase("sqlite:///" + str(db_path))
-        loadTargetTruthData(Path(datafiles), importer_db)
-        loadSensorTruthData(Path(datafiles), importer_db)
-        propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_path=db_path)
+        importer_db_params = ImporterDbUrlSpec(importer_db_name=str(datafiles / IMPORTER_DB_PATH))
+        importer_db = ImporterDatabase(importer_db_params)
+        loadTargetTruthData(datafiles, importer_db)
+        loadSensorTruthData(datafiles, importer_db)
+        propagate_scenario(datafiles, init_filepath, elapsed_time, importer_db_params=importer_db_params)
 
         assertImporterDBLogWarnings(caplog, sub_string=r"1111[12]|6000[1-8]", expected=0)

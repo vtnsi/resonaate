@@ -4,15 +4,7 @@ from __future__ import annotations
 import pytest
 
 # RESONAATE Imports
-from resonaate.common.config import getConfig, putResonaateArgs, rootConfigSpec
-
-
-@pytest.fixture(autouse=True)
-def _clearCaches():
-    """Make sure cached info is cleared between tests."""
-    yield
-    rootConfigSpec.cache_clear()
-    getConfig.cache_clear()
+from resonaate.common.config import putResonaateArgs
 
 
 @pytest.fixture(name="put_main_init_arg")

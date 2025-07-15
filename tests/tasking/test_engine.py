@@ -13,6 +13,7 @@ import ray
 
 # RESONAATE Imports
 from resonaate.agents.sensing_agent import SensingAgent
+from resonaate.common.config.input_output import ImporterDbUrlSpec
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.observation import MissedObservation, Observation
 from resonaate.physics.time.stardate import JulianDate, datetimeToJulianDate
@@ -74,7 +75,7 @@ def getCentralizedEngineClass(reward: Reward, decision: Decision) -> Centralized
         target_ids=TARGET_NUMS,
         reward=reward,
         decision=decision,
-        importer_db_path=None,
+        importer_db_params=None,
         realtime_obs=True,
     )
 
@@ -339,7 +340,7 @@ def testGetCurrentTasking(reward: Reward, decision: Decision):
         target_ids=target_list,
         reward=reward,
         decision=decision,
-        importer_db_path=None,
+        importer_db_params=None,
         realtime_obs=True,
     )
     julian_date = JulianDate.getJulianDate(2019, 1, 23, 17, 42, 23.2)
@@ -565,15 +566,16 @@ def testCreateTaskingEngine(mocked_importer_db: MagicMock, reward: Reward, decis
 
     # Valid creation with importer db
     mocked_importer_db.return_value = create_autospec(ImporterDatabase, instance=True)
+    importer_db_params = ImporterDbUrlSpec(importer_db_name="test.db")
     engine = TaskingEngine(
         engine_id=0,
         sensor_ids=SENSOR_NUMS,
         target_ids=TARGET_NUMS,
         reward=reward,
         decision=decision,
-        importer_db_path="test.db",
+        importer_db_params=importer_db_params,
     )
-    mocked_importer_db.assert_called_once_with(db_path="test.db")
+    mocked_importer_db.assert_called_once_with(importer_db_params)
     assert isinstance(engine._importer_db, ImporterDatabase)
 
     # Test invalid reward/decision

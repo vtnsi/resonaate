@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 # RESONAATE Imports
+from resonaate.common.config.input_output import ImporterDbUrlSpec
 from resonaate.scenario import buildScenarioFromConfigFile
 
 # Local Imports
@@ -32,7 +33,6 @@ class TestScenarioFactory:
         "no_targets_init.json",
     ]
 
-    @pytest.mark.usefixtures("custom_database")
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testBuildFromConfig(self, datafiles: str):
         """Test building a scenario from config files."""
@@ -40,13 +40,8 @@ class TestScenarioFactory:
             JSON_INIT_PATH,
             "default_realtime_est_realtime_obs.json",
         )
-        _ = buildScenarioFromConfigFile(
-            init_filepath,
-            internal_db_path=None,
-            importer_db_path=None,
-        )
+        _ = buildScenarioFromConfigFile(init_filepath)
 
-    @pytest.mark.usefixtures("custom_database")
     @pytest.mark.parametrize("init_file", VALID_JSON_CONFIGS)
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testValidInitMessages(self, datafiles: str, init_file: str):
@@ -57,8 +52,7 @@ class TestScenarioFactory:
 
         _ = buildScenarioFromConfigFile(
             init_file_path,
-            internal_db_path=None,
-            importer_db_path=db_path if "import" in init_file else None,
+            importer_db_params=ImporterDbUrlSpec(importer_db_name=str(db_path)) if "import" in init_file else None,
         )
 
     @pytest.mark.parametrize("init_file", INVALID_JSON_CONFIGS)
@@ -70,11 +64,7 @@ class TestScenarioFactory:
 
         # Check missing target_set & sensor_set fields
         with pytest.raises(KeyError):
-            _ = buildScenarioFromConfigFile(
-                init_file_path,
-                internal_db_path=None,
-                importer_db_path=None,
-            )
+            _ = buildScenarioFromConfigFile(init_file_path)
 
     @pytest.mark.parametrize("init_file", EMPTY_JSON_ENGINE_CONFIGS)
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
@@ -85,10 +75,6 @@ class TestScenarioFactory:
 
         # Check for empty target and sensor configs
         with pytest.raises(IOError, match="Empty JSON file:") as io_err:
-            buildScenarioFromConfigFile(
-                init_file_path,
-                internal_db_path=None,
-                importer_db_path=None,
-            )
+            buildScenarioFromConfigFile(init_file_path)
         err_msg: str = io_err.value.args[0]
         assert err_msg.endswith(".json")

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Optional
 from numpy import isclose
 
 # RESONAATE Imports
+from resonaate.common.config.input_output import ImporterDbUrlSpec, OutputDbUrlSpec
 from resonaate.physics.time.conversions import getTargetJulianDate
 from resonaate.physics.time.stardate import JulianDate, datetimeToJulianDate
 from resonaate.scenario import buildScenarioFromConfigFile
@@ -44,7 +45,7 @@ def propagateScenario(
     data_directory: str,
     init_filepath: str,
     elapsed_time: timedelta,
-    importer_db_path: str | None = None,
+    importer_db_params: ImporterDbUrlSpec | None = None,
 ) -> Scenario:
     """Performs the basic operations required to step a simulation forward in time.
 
@@ -52,15 +53,15 @@ def propagateScenario(
         data_directory (str): file path for datafiles directory
         init_filepath (str): file path for Resonaate initialization file
         elapsed_time (`timedelta`): amount of time to simulate
-        importer_db_path (``str``): path to external importer database for pre-canned data.
+        importer_db_params: Connection parameters for importer database for pre-canned data.
     """
-    shared_db_path = Path(data_directory).joinpath(SHARED_DB_PATH)
+    shared_db_params = OutputDbUrlSpec(output_db_name=str(Path(data_directory) / SHARED_DB_PATH), output_db_exists_ok=True)
     init_file = Path(data_directory).joinpath(JSON_INIT_PATH, init_filepath)
 
     app = buildScenarioFromConfigFile(
         init_file,
-        internal_db_path=shared_db_path,
-        importer_db_path=importer_db_path,
+        internal_db_params=shared_db_params,
+        importer_db_params=importer_db_params,
     )
 
     # Determine target Julian date based on elapsed time
@@ -73,13 +74,3 @@ def propagateScenario(
     assert isclose(app.clock.julian_date_epoch, target_julian_date)
 
     return app
-
-
-def patchCreateDatabasePath(path: str | Path | None, importer: bool) -> str:
-    """Quick and dirty patch of createDatabasePath() so test can overwrite DB files."""
-    base = "sqlite:///"
-    if path is None:
-        return base
-
-    # else
-    return base + str(path)

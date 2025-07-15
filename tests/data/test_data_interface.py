@@ -3,6 +3,7 @@ from __future__ import annotations
 # Standard Library Imports
 from copy import deepcopy
 from os.path import abspath, exists, join
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -13,7 +14,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Query, declarative_base
 
 # RESONAATE Imports
-from resonaate.data import clearDBPath, getDBConnection, setDBPath
+from resonaate.common.config.input_output import ImporterDbUrlSpec, OutputDbUrlSpec
+from resonaate.data import clearDBParams, getDBConnection, setDBParams
 from resonaate.data.agent import AgentModel
 from resonaate.data.ephemeris import TruthEphemeris
 from resonaate.data.epoch import Epoch
@@ -114,15 +116,15 @@ class TestResonaateDatabase:
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
     def testSaveDB(
         self,
-        datafiles: str,
+        datafiles: Path,
         database: ResonaateDatabase,
         ephems: list[TruthEphemeris],
     ):
         """Test saving database to new file."""
-        db_path = join(datafiles, "db/copied.sqlite3")
+        new_db_path = datafiles / "db" / "copied.sqlite3"
         database.insertData(*ephems)
-        database.saveDatabase(database_path=db_path)
-        assert exists(abspath(db_path))
+        database.saveDatabase(new_db_params=OutputDbUrlSpec(output_db_name=str(new_db_path)))
+        assert new_db_path.exists()
 
     def testInsertDataMultiPosArg(self, database: ResonaateDatabase, ephems: list[TruthEphemeris]):
         """Insert multiple data objects."""
@@ -190,7 +192,7 @@ class TestResonaateDatabase:
         assert allclose(result.eci, eci)
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testGetDataError(self, datafiles: str, ephem: TruthEphemeris):
+    def testGetDataError(self, datafiles: Path, ephem: TruthEphemeris):
         """Test getting a data object from the DB."""
 
         # Define a new db object class
@@ -202,8 +204,8 @@ class TestResonaateDatabase:
             julian_date = Column(Float, index=True, unique=True, nullable=False)
 
         # Create DB, and insert data
-        shared_db_url = "sqlite:///" + join(datafiles, "db/deleted.sqlite3")
-        database = ResonaateDatabase(db_path=shared_db_url)
+        shared_db_params = OutputDbUrlSpec(output_db_name=str(datafiles / "db" / "deleted.sqlite3"))
+        database = ResonaateDatabase(connection_params=shared_db_params)
         database.insertData(ephem)
 
         # Query for new DB object
@@ -244,11 +246,11 @@ class TestResonaateDatabase:
         assert del_count == 3
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testSharedDataInterface(self, datafiles: str, ephems: list[TruthEphemeris]):
+    def testSharedDataInterface(self, datafiles: Path, ephems: list[TruthEphemeris]):
         """Test the shared interface version method."""
         # Create DB using API
-        shared_db_url = "sqlite:///" + join(datafiles, SHARED_DB_PATH)
-        setDBPath(shared_db_url)
+        shared_db_params = OutputDbUrlSpec(output_db_name=str(datafiles / SHARED_DB_PATH))
+        setDBParams(shared_db_params)
         database = getDBConnection()
         database.insertData(*ephems)
 
@@ -291,7 +293,7 @@ class TestResonaateDatabase:
 
         # Delete DB after finished
         database.resetData(tables=database.VALID_DATA_TYPES)
-        clearDBPath()
+        clearDBParams()
 
     def testInit(self, ephems: list[TruthEphemeris]):
         """Test the constructor."""
@@ -362,11 +364,11 @@ class TestImporterDatabase:
     EXAMPLE_TRUTH_FILES = ("11111-truth.json", "11112-truth.json")
 
     @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-    def testInitDatabaseFromJSON(self, datafiles: str):
+    def testInitDatabaseFromJSON(self, datafiles: Path):
         """Test initializing DB from JSON truth target files."""
         # Create DB using API
-        importer_db_url = "sqlite:///" + join(datafiles, IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase(importer_db_url)
+        importer_db_params = ImporterDbUrlSpec(importer_db_name=str(datafiles / IMPORTER_DB_PATH))
+        importer_db = ImporterDatabase(importer_db_params)
 
         importer_db.initDatabaseFromJSON(
             join(datafiles, JSON_RSO_TRUTH, self.EXAMPLE_TRUTH_FILES[0]),
@@ -382,8 +384,8 @@ class TestImporterDatabase:
     def testReadOnly(self, datafiles: str, ephems: list[TruthEphemeris]):
         """Test the read only methods."""
         # Create DB using API
-        importer_db_url = "sqlite:///" + join(datafiles, IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase(importer_db_url)
+        importer_db_params = ImporterDbUrlSpec(importer_db_name=str(datafiles / IMPORTER_DB_PATH))
+        importer_db = ImporterDatabase(importer_db_params)
 
         # `insertData()`
         with pytest.raises(NotImplementedError):
@@ -405,8 +407,8 @@ class TestImporterDatabase:
     def testInit(self, datafiles: str, ephems: list[TruthEphemeris]):
         """Test the constructor."""
         # Create DB using API
-        importer_db_url = "sqlite:///" + join(datafiles, IMPORTER_DB_PATH)
-        importer_db = ImporterDatabase(importer_db_url, logger=None, verbose_echo=True)
+        importer_db_params = ImporterDbUrlSpec(importer_db_name=str(datafiles / IMPORTER_DB_PATH))
+        importer_db = ImporterDatabase(importer_db_params, logger=None, verbose_echo=True)
         importer_db._insertData(*ephems)
 
         # Query on ID and Julian date
@@ -504,6 +506,7 @@ class TestDatabaseIssues:
     @pytest.fixture(name="matched_epoch_db")
     def createMatchedDB(
         self,
+        tmp_path: Path,
         epochs: list[Epoch],
         agent: AgentModel,
         matched_ephems: list[TruthEphemeris],
@@ -514,7 +517,8 @@ class TestDatabaseIssues:
             :class:`.ResonaateDatabase`: properly constructed DB object
         """
         # Create & yield instance.
-        matched_db = ResonaateDatabase(db_path=None)
+        db_params = OutputDbUrlSpec(output_db_name=str(tmp_path / "matched.sqlite3"))
+        matched_db = ResonaateDatabase(db_params)
         matched_db.insertData(deepcopy(agent))
         matched_db.bulkSave(deepcopy(epochs + matched_ephems))
         yield matched_db
@@ -523,6 +527,7 @@ class TestDatabaseIssues:
     @pytest.fixture(name="unmatched_epoch_db")
     def createUnmatchedDB(
         self,
+        tmp_path: Path,
         epochs: list[Epoch],
         agent: AgentModel,
         unmatched_ephems: list[TruthEphemeris],
@@ -533,7 +538,8 @@ class TestDatabaseIssues:
             :class:`.ResonaateDatabase`: properly constructed DB object
         """
         # Create & yield instance.
-        unmatched_db = ResonaateDatabase(db_path=None)
+        db_params = OutputDbUrlSpec(output_db_name=str(tmp_path / "unmatched.sqlite3"))
+        unmatched_db = ResonaateDatabase(db_params)
         unmatched_db.insertData(deepcopy(agent))
         unmatched_db.bulkSave(deepcopy(epochs + unmatched_ephems))
         yield unmatched_db

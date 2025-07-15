@@ -10,7 +10,8 @@ from numpy import array, eye, linspace
 from sqlalchemy.orm import Query
 
 # RESONAATE Imports
-from resonaate.data import getDBConnection, setDBPath
+from resonaate.common.config.input_output import InMemoryDbSpec
+from resonaate.data import getDBConnection, setDBParams
 from resonaate.data.agent import AgentModel
 from resonaate.data.ephemeris import EstimateEphemeris, TruthEphemeris
 from resonaate.data.epoch import Epoch
@@ -202,7 +203,7 @@ def getDataInterface(agents, epochs, ephems, estimates, observations) -> Resonaa
         :class:`.ResonaateDatabase`: properly constructed DB object
     """
     # Create & yield instance.
-    setDBPath("sqlite://")
+    setDBParams(InMemoryDbSpec())
     shared_interface = getDBConnection()
     shared_interface.bulkSave(deepcopy(agents + epochs + ephems + estimates + observations))
     yield shared_interface
