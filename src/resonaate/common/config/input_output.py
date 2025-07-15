@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -404,3 +405,22 @@ class InputConfig(UserBaseModel):
 
     importer_db_params: Optional[ImporterDbUrlSpec] = None
     """Connection parameters specifying how to connect to the importer database."""
+
+    sim_duration: Annotated[
+        Optional[float],
+        Field(default=None),
+        CommandLineOptions("-t", "--time"),
+        EnvName("SIM_DURATION"),
+    ]
+    """Optional argument specifying how long (in hours) to run the simulation.
+
+    Useful for shortening sanity check tests. If left unspecified, the simulation will adhere to the end
+    time specified in the RESONAATE init message.
+    """
+
+    @property
+    def sim_duration_timedelta(self) -> timedelta:
+        """:attr:`.sim_duration` represented as a ``datetime.timdelta`` object."""
+        if self.sim_duration is not None:
+            return timedelta(hours=self.sim_duration)
+        return None
