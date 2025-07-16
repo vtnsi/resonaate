@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from pathlib import Path
 from typing import Annotated, Optional
 
 # Third Party Imports
@@ -67,7 +68,7 @@ class BehavioralConfig(UserBaseModel):
     """
 
     debugging_output_directory: Annotated[
-        Optional[str],
+        Optional[Path],
         Field(default="debugging"),
         EnvName("DEBUGGING_OUTPUT_DIRECTORY"),
         CommandLineOptions("--debugging-output-dir"),

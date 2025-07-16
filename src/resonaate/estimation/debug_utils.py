@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 import json
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -14,19 +14,21 @@ from scipy.linalg import cholesky, inv, norm
 from scipy.spatial.distance import mahalanobis
 
 # Local Imports
-from ..common.behavioral_config import BehavioralConfig
+from ..common.config import RootConfig
 from ..physics.maths import nearestPD
 from ..physics.measurements import getAzimuth, getElevation, getRange, getRangeRate
 from ..physics.transforms.methods import ecef2sez
 
 if TYPE_CHECKING:
+    # Standard Library Imports
+
     # Local Imports
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from ..data.observation import Observation
 
 
-def debugToJSONFile(base_filename: str, debug_dir: str, json_dict: dict) -> str:
+def debugToJSONFile(base_filename: str, debug_dir: str, json_dict: dict) -> Path:
     """Write debugging information to a JSON file.
 
     Args:
@@ -38,12 +40,12 @@ def debugToJSONFile(base_filename: str, debug_dir: str, json_dict: dict) -> str:
         str: complete path and filename of the debug JSON file
     """
     # Determine and create, if necessary, the debugging directory
-    out_dir = os.path.join(BehavioralConfig.getConfig().debugging.OutputDirectory, debug_dir)
-    if not os.path.isdir(out_dir):
-        os.makedirs(out_dir)
+    out_dir = RootConfig.LIB.inst().behavioral_config.debugging_output_directory / debug_dir
+    if not out_dir.exists():
+        out_dir.mkdir(parents=True, exist_ok=True)
 
     # Determine complete filepath
-    complete_filename = os.path.abspath(f"{out_dir}/{base_filename}.json")
+    complete_filename = out_dir / base_filename
 
     # Write to debugging file & return complete filepath
     with open(complete_filename, "w", encoding="utf-8") as out_file:
@@ -51,12 +53,12 @@ def debugToJSONFile(base_filename: str, debug_dir: str, json_dict: dict) -> str:
 
     return complete_filename
 
-
 def checkThreeSigmaObservation(
     sensor_agent: SensingAgent,
     target_agent: TargetAgent,
     observation: Observation,
     sigma: int = 3,
+    output_subdir: Path = Path("three_sigma_obs"),
 ) -> str | None:
     """Check if an :class:`.Observation`'s absolute error is greater than 3 std.
 
@@ -65,6 +67,7 @@ def checkThreeSigmaObservation(
         target_agent: The :class:`.TargetAgent` that `observation` was collected on.
         observation: The :class:`.Observation` to check.
         sigma: The threshold for a detection.
+        output_subdir: Path where the output of this method is saved.
 
     Returns:
         If this check passes, returns ``None``. If this check fails, returns a string path to the
@@ -160,15 +163,13 @@ def checkThreeSigmaObservation(
 
         # Write to debug file, and add to filenames
         filename = f"bad_ob_{float(observation.julian_date)}_{target_agent.simulation_id}_{sensor_agent.simulation_id}"
-        output_path = debugToJSONFile(
-            filename,
-            BehavioralConfig.getConfig().debugging.ThreeSigmaObsDirectory,
-            description,
-        )
+        output_path = debugToJSONFile(filename, output_subdir, description)
     return output_path
 
-
-def findNearestPositiveDefiniteMatrix(covariance: np.ndarray) -> np.ndarray:
+def findNearestPositiveDefiniteMatrix(
+    covariance: np.ndarray,
+    output_subdir: Path = Path("cholesky_failure"),
+) -> np.ndarray:
     """Finds the nearest PD matrix of the given covariance.
 
     This is primarily for numerically stabilizing covariances that become poorly conditioned. This
@@ -176,6 +177,7 @@ def findNearestPositiveDefiniteMatrix(covariance: np.ndarray) -> np.ndarray:
 
     Args:
         covariance (numpy.ndarray): covariance matrix to be changed to PD
+        output_subdir: Path where the output of this method is saved.
 
     Returns:
         ``ndarray``: cholesky factorization of the nearest PD matrix
@@ -193,10 +195,6 @@ def findNearestPositiveDefiniteMatrix(covariance: np.ndarray) -> np.ndarray:
 
     # Write information to output file
     filename = f"not-pos-def_{str(uuid4().hex)[:8]}"
-    _ = debugToJSONFile(
-        filename,
-        BehavioralConfig.getConfig().debugging.NearestPDDirectory,
-        description,
-    )
+    _ = debugToJSONFile(filename, output_subdir, description)
 
     return cholesky_p
