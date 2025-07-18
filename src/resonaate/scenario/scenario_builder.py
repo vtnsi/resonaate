@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
-from ..common.behavioral_config import BehavioralConfig
 from ..common.exceptions import DuplicateEngineError, DuplicateSensorError, DuplicateTargetError
 from ..common.logger import Logger
 from ..data import getDBConnection
@@ -54,7 +53,7 @@ class ScenarioBuilder:
             ValueError: raised if the "engines" field is empty
         """
         # Create logger from configs
-        self.logger = Logger("resonaate", path=BehavioralConfig.getConfig().logging.OutputLocation)
+        self.logger = Logger("resonaate")
         # Save base config
         self._config = scenario_config
 

@@ -11,6 +11,7 @@ from numpy.linalg import LinAlgError, cholesky
 from scipy.linalg import block_diag
 
 # RESONAATE Imports
+from resonaate.common.config import RootConfig
 from resonaate.data.observation import Observation
 from resonaate.dynamics import two_body
 from resonaate.estimation import UnscentedKalmanFilter
@@ -104,8 +105,7 @@ def createOpticalObservation() -> Observation:
     return obs
 
 
-@patch("resonaate.estimation.kalman.unscented_kalman_filter.BehavioralConfig")
-def testCheckSqrtCovariance(mocked_config: MagicMock, ukf: UnscentedKalmanFilter):
+def testCheckSqrtCovariance(ukf: UnscentedKalmanFilter):
     """Test method for checking covariance is positive semi-definite."""
     negative_definite = diagflat((-3, -2, -1))
     positive_definite = diagflat((1, 2, 3))
@@ -115,12 +115,13 @@ def testCheckSqrtCovariance(mocked_config: MagicMock, ukf: UnscentedKalmanFilter
     assert allclose(sqrt_cov, diagflat(sqrt((1, 2, 3))), rtol=1e-4, atol=1e-7)
 
     # Check that non-positive definite raises error without config
-    mocked_config.getConfig().debugging.NearestPD = False
+    root_cfg = RootConfig.LIB.inst()
+    root_cfg.behavioral_config.debugging_nearest_pd = False
     with pytest.raises(LinAlgError):
         ukf._checkSqrtCovariance(negative_definite, cholesky)
 
     # Check that non-positive definite raises error with config
-    mocked_config.getConfig().debugging.NearestPD = True
+    root_cfg.behavioral_config.debugging_nearest_pd = True
     sqrt_cov = ukf._checkSqrtCovariance(negative_definite, cholesky)
     expected = array(
         [
@@ -132,7 +133,7 @@ def testCheckSqrtCovariance(mocked_config: MagicMock, ukf: UnscentedKalmanFilter
     assert allclose(sqrt_cov, expected, rtol=1e-4, atol=1e-7)
 
     # Check zero matrix condition
-    mocked_config.getConfig().debugging.NearestPD = True
+    root_cfg.behavioral_config.debugging_nearest_pd = True
     sqrt_cov = ukf._checkSqrtCovariance(zeros((3, 3)), cholesky)
     assert allclose(sqrt_cov, zeros((3, 3)), rtol=1e-7, atol=1e-12)
 

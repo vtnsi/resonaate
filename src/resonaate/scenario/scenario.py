@@ -18,7 +18,7 @@ from ..agents.estimate_agent import EstimateAgent
 from ..agents.sensing_agent import SensingAgent
 from ..agents.target_agent import TargetAgent
 from ..common import pathSafeTime
-from ..common.behavioral_config import BehavioralConfig
+from ..common.config import RootConfig
 from ..common.logger import Logger
 from ..data import getDBConnection
 from ..data.epoch import Epoch
@@ -106,10 +106,7 @@ class Scenario:
         ## Logging class used to track execution.
         self.logger = logger
         if logger is None:
-            self.logger = Logger(
-                "resonaate",
-                path=BehavioralConfig.getConfig().logging.OutputLocation,
-            )
+            self.logger = Logger("resonaate")
 
         # Log some basic information about propagation for this simulation
         pos_std = self.scenario_config.noise.init_position_std_km
@@ -376,7 +373,7 @@ class Scenario:
                         tasking_engine.sensor_changes[sensor_change],
                     )
                 for observation in tasking_engine.observations:
-                    if BehavioralConfig.getConfig().debugging.ThreeSigmaObs:
+                    if RootConfig.LIB.inst().behavioral_config.debugging_three_sigma_obs:
                         debug_output = checkThreeSigmaObservation(
                             self.sensor_agents[observation.sensor_id],
                             self.target_agents[observation.target_id],

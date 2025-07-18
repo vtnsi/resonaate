@@ -7,7 +7,7 @@ from collections import namedtuple
 from typing import TYPE_CHECKING
 
 # Local Imports
-from ....common.behavioral_config import BehavioralConfig
+from ....common.config import RootConfig
 from ....common.labels import EOPLoaderLabel
 from .loaders import LocalDotDatEOPLoader, ModuleDotDatEOPLoader, RemoteDotDatEOPLoader
 
@@ -45,12 +45,12 @@ def _loadLoader(loader_name: str | None = None, loader_location: str | None = No
     Returns:
         EOPLoader: :class:`.EOPLoader` object specified by `loader_name` and `loader_location`.
     """
-    behave_config = BehavioralConfig.getConfig()
+    behave_config = RootConfig.LIB.inst().behavioral_config
     if loader_name is None:
-        loader_name = behave_config.eop.LoaderName
+        loader_name = behave_config.eop_loader_name
 
     if loader_location is None:
-        loader_location = behave_config.eop.LoaderLocation
+        loader_location = behave_config.eop_loader_location
 
     tag = LoaderTag(loader_name, loader_location)
     loader = _EOP_LOADERS.get(tag)

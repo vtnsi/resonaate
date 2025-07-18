@@ -13,7 +13,7 @@ from numpy import array, fabs
 from scipy.linalg import norm
 
 # Local Imports
-from ..common.behavioral_config import BehavioralConfig
+from ..common.config import RootConfig
 from ..data import getDBConnection
 from ..data.queries import fetchTruthByJDEpoch
 from .results import (
@@ -326,7 +326,7 @@ class SequentialFilter(ABC):
     def _debugChecks(self, observations: list[Observation]):
         """Debugging checks if flags are set to do so."""
         # Check if error inflation is too large
-        if BehavioralConfig.getConfig().debugging.EstimateErrorInflation:
+        if RootConfig.LIB.inst().behavioral_config.debugging_estimate_error_inflation:
             database = getDBConnection()
             truth = fetchTruthByJDEpoch(database, self.target_id, observations[0].julian_date)
             tol_km = 5  # Estimate inflation error tolerance (km)

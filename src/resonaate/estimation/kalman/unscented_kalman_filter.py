@@ -14,7 +14,7 @@ from scipy.linalg import block_diag
 from resonaate.estimation.sequential_filter import EstimateSource
 
 # Local Imports
-from ...common.behavioral_config import BehavioralConfig
+from ...common.config import RootConfig
 from ...physics.maths import angularMean, residuals
 from ...physics.measurements import VALID_ANGLE_MAP, VALID_ANGULAR_MEASUREMENTS
 from ...physics.statistics import chiSquareQuadraticForm
@@ -230,7 +230,7 @@ class UnscentedKalmanFilter(KalmanFilter):
         try:
             sqrt_cov = sqrt_func(cov)
         except LinAlgError:
-            if BehavioralConfig.getConfig().debugging.NearestPD:
+            if RootConfig.LIB.inst().behavioral_config.debugging_nearest_pd:
                 msg = f"`nearestPD()` function was used on RSO {self.target_id}"
                 self.logger.warning(msg)
                 sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
