@@ -47,6 +47,11 @@ ______________________________________________________________________
   - `min_revisit_time`: Minimum required time since last obs before a sensor can be tasked to collect another observation.
 - Sensor object now assesses the new conditions (downtime, random_missed_obs, min_revisit_time) when `Sensor::collectObservations()` and `Sensor::attemptObservation()` are called.
 - `.tasking.predictions::predictObservations()` checks for downtime and minimum_revisit_time, so that the tasking engine will not task a sensor to collect obs.
+- `common.config` collection of modules which provide
+  - better documentation
+  - better validation
+  - better user accessibility (via command line arguments and environment variables)
+  - better maintainability (Pydantic is better than hacky `configparser` implementation)
 
 ### Changed
 
@@ -54,6 +59,7 @@ ______________________________________________________________________
 - `parallel.tasking_reward_execution::asyncCalculateReward()` now checks for the sensor networks minimum revisit time and each sensor's minimum revisit time.
 - Renamed `agents.sensing_agent.SensingAgent.sensors` and `_sensors` to `.sensor` and `._sensor`, respectively.
 - `parallel.tasking_reward_generation::asyncExecuteTasking()` now calls `agents.sensing_agent.SensingAgent.collectObservation()`.
+- Database connection parameters now allow for more flexibility.
 
 ### Deprecated
 
@@ -61,11 +67,11 @@ ______________________________________________________________________
 
 ### Removed
 
-*for now removed features*
+- removed `common.behavioral_config`, `common.cli`, and `common/default_behavior.config`
 
 ### Fixed
 
-*for any bug fixes*
+- RESONAATE cli no longer requires `-t` argument to run for more than 30 minutes sim time
 
 ### Security
 
