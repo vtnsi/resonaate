@@ -60,47 +60,151 @@ Additional optional dependancies are documented in `pyproject.toml`.
 
 See [Installation](./docs/source/intro/install.md#installation) for details on installing the `resonaate` Python package and its dependencies.
 
-### RESONAATE Configuration
-
-By default, RESONAATE will use the default settings defined in `src/resonaate/common/default_behavior.config`.
-These values correspond to how RESONAATE behaves with respect to logging, database, debugging, and parallelization.
-To overwrite these settings, please copy the contents of `src/resonaate/common/default_behavior.config` to a new `.config` file to save the default settings.
-Edit by uncommenting and changing the required values.
-
 ## Usage
 
 RESONAATE's modeling and simulation capabilities are accessible via its command line interface (CLI) entrypoint.
 
 ### CLI Tool
 
-- Run an example simulation, replacing `<init_file>` and `<number_of_hours>` with appropriate values
+- Run an example simulation, replacing `<init_file>` with the path to an "init message" (described in a later section)
 
   ```bash
-  resonaate <init_file> -t <number_of_hours>
+  resonaate <init_file>
   ```
 
 - Command line arguments for `resonaate` entry point:
 
-  ```bash
-  usage: resonaate [-h] [-t HOURS] [--debug] [-d DB_PATH] [-i IMPORTER_DB_PATH] INIT_FILE
+  ```
+  usage: resonaate [-h] [OPTIONS] init_file
 
   RESONAATE Command Line Interface
 
   positional arguments:
-    INIT_FILE             Path to RESONAATE initialization message file
+    init_file             Path to RESONAATE initialization message file.
 
-  optional arguments:
+  options:
     -h, --help            show this help message and exit
-    -t HOURS, --time HOURS
-                          Time in hours to simulate. DEFAULT: 1/2 hour
-    --debug               Turns on parallel debug mode
+    --importer-db-driver IMPORTER_DB_DRIVER
+                        The name of the importer database backend. Defaults to sqlite.
 
-  Database Files:
-    -d DB_PATH, --db-path DB_PATH
-                          Path to RESONAATE database
-    -i IMPORTER_DB_PATH, --importer-db-path IMPORTER_DB_PATH
-                          Path to Importer database
+                        This option can also be set via environment variable: IMPORTER_DB_DRIVER.
+    --importer-db-user IMPORTER_DB_USERNAME
+                        The user name used to connect to the importer database. Defaults to None.
+
+                        This option can also be set via environment variable: IMPORTER_DB_USER.
+    --importer-db-password IMPORTER_DB_PASSWORD
+                        The password used to connect to the importer database. Defaults to None.
+
+                        This option can also be set via environment variable: IMPORTER_DB_PASSWORD.
+    --importer-db-host IMPORTER_DB_HOST
+                        The host name of the importer database. Defaults to None.
+
+                        This option can also be set via environment variable: IMPORTER_DB_HOST.
+    --importer-db-port IMPORTER_DB_PORT
+                        The port number that the importer database accepts connections on. Defaults to None.
+
+                        This option can also be set via environment variable: IMPORTER_DB_PORT.
+    --importer-db-name IMPORTER_DB_NAME
+                        The name used for the importer database.
+
+                        For an SQLite database, this is the path to the database file. Defaults to None.
+
+                        This option can also be set via environment variable: IMPORTER_DB_NAME.
+    -t SIM_DURATION, --time SIM_DURATION
+                        Optional argument specifying how long (in hours) to run the simulation.
+
+                        Useful for shortening sanity check tests. If left unspecified, the simulation will adhere to the end
+                        time specified in the RESONAATE init message. Defaults to None.
+
+                        This option can also be set via environment variable: SIM_DURATION.
+    --output-db-driver OUTPUT_DB_DRIVER
+                        The name of the output database backend. Defaults to sqlite.
+
+                        This option can also be set via environment variable: OUTPUT_DB_DRIVER.
+    --output-db-user OUTPUT_DB_USERNAME
+                        The user name used to connect to the output database. Defaults to None.
+
+                        This option can also be set via environment variable: OUTPUT_DB_USER.
+    --output-db-password OUTPUT_DB_PASSWORD
+                        The password used to connect to the output database. Defaults to None.
+
+                        This option can also be set via environment variable: OUTPUT_DB_PASSWORD.
+    --output-db-host OUTPUT_DB_HOST
+                        The host name of the output database. Defaults to None.
+
+                        This option can also be set via environment variable: OUTPUT_DB_HOST.
+    --output-db-port OUTPUT_DB_PORT
+                        The port number that the output database accepts connections on. Defaults to None.
+
+                        This option can also be set via environment variable: OUTPUT_DB_PORT.
+    --output-db-name OUTPUT_DB_NAME
+                        The name used for the output database.
+
+                        For an SQLite database (the default used by RESONAATE), this is the path to the database file. If the
+                        default SQLite driver is used and this field is left unspecified, it will automatically be populated with
+                        a timestamped file in a "db" directory relative to the current working directory. Defaults to None.
+
+                        This option can also be set via environment variable: OUTPUT_DB_NAME.
+    --logging-output-location LOGGING_OUTPUT_LOCATION
+                        Specifies where the logging module outputs logs. Defaults to stdout.
+
+                        This option can also be set via environment variable: LOGGING_OUTPUT_LOCATION.
+    --logging-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Logging level that gets output to the logs. Defaults to LoggingLevel.DEBUG.
+
+                        This option can also be set via environment variable: LOGGING_LEVEL.
+    --logging-max-file-size LOGGING_MAX_FILE_SIZE
+                        Maximum file size before the file rolls over.
+
+                        Only applies when *not* using 'stdout' for "logging_output_location". Unit is bytes. Defaults to 1048576.
+
+                        This option can also be set via environment variable: LOGGING_MAX_FILE_SIZE.
+    --logging-max-file-count LOGGING_MAX_FILE_COUNT
+                        Maximum number of files that stay saved during runtime.
+
+                        Once this limit is reached, the oldest files will be overwritten in the order that they
+                        were written. Only applies when *not* using 'stdout' for "logging_output_location". Defaults to 50.
+
+                        This option can also be set via environment variable: LOGGING_MAX_FILE_COUNT.
+    --parallel-worker-count PARALLEL_WORKER_COUNT
+                        How many worker threads to spin up.
+
+                        If left unspecified, ray will spin up as many workers as there are cores available to Resonaate. Defaults to None.
+
+                        This option can also be set via environment variable: PARALLEL_WORKER_COUNT.
+    --debugging-output-dir DEBUGGING_OUTPUT_DIRECTORY
+                        Relative directory that debugging output files are saved to. Defaults to debugging.
+
+                        This option can also be set via environment variable: DEBUGGING_OUTPUT_DIRECTORY.
+    --debugging-nearest-pd DEBUGGING_NEAREST_PD
+                        Indication of whether to use `physics.mat.nearestPD()` if Cholesky decomposition fails.
+
+                        When using an sequential filter that relies on Cholesky decomposition, if the covariance becomes non
+                        positive definite, Cholesy decomposition can raise an uncaught exception resulting in a simulation hault.
+                        Setting this flag indicates that `physics.math.nearestPD()` should be used to find the nearest positive
+                        definite matrix to attempt to circumvent the error. Defaults to False.
+
+                        This option can also be set via environment variable: DEBUGGING_NEAREST_PD.
+    --debugging-est-err-inflation DEBUGGING_ESTIMATE_ERROR_INFLATION
+                        Output info when a 'filter update' takes place that results in greater error of the state estimate. Defaults to False.
+
+                        This option can also be set via environment variable: DEBUGGING_ESTIMATE_ERROR_INFLATION.
+    --debugging-three-sigma-obs DEBUGGING_THREE_SIGMA_OBS
+                        Output info when an observation's absolute error is greater than the sensor's three-sigma variance. Defaults to False.
+
+                        This option can also be set via environment variable: DEBUGGING_THREE_SIGMA_OBS.
+    --eop-loader-name {ModuleDotDatEOPLoader,LocalDotDatEOPLoader,RemoteDotDatEOPLoader}
+                        Name of the concrete `EOPLoader` implementation to use. Defaults to EOPLoaderLabel.MODULE_DOT_DAT.
+
+                        This option can also be set via environment variable: EOP_LOADER_NAME.
+    --eop-loader-location EOP_LOADER_LOCATION
+                        Location that the specified `EOPLoader` will load EOP data from. Defaults to EOPdata.dat.
+
+                        This option can also be set via environment variable: EOP_LOADER_LOCATION.
   ```
+
+> Any command line option that specifies that it can be set via an environment variable can either be set directly in a user's environment _or_ in a `resonaate.env` file.
+> See [`python-dotenv` documentation](https://pypi.org/project/python-dotenv/) for more information on the format of this file.
 
 ### Initialization
 
@@ -172,12 +276,12 @@ The initialization/configuration file structure required to run RESONAATE is des
 When interacting with the `resonaate` CLI, users may specify two separate types of databases: `ResonaateDatabase` (aka internal) and `ImporterDatabase` (aka external).
 
 The internal `ResonaateDatabase` defines where data _produced_ by RESONAATE is stored.
-Users may save the database to a specific database file with the `-d` or `--db-path` CLI options to `resonaate` (recommended).
-The `--db-path` option requires explicit selection of the file location.
+Users may provide database connection parameters via the `--output-db-` CLI options to specify a particular database to use.
+If no output database parameters are provided, an timestamped SQLite database file will be generated in a `./db/` directory.
 
 The external `ImporterDatabase` defines **read-only** data that RESONAATE will ingest during a simulation and mix with produced data, but is protected from being written to by RESONAATE.
 This provides utility for loading large sets of pre-computed data (truth, observations, tasks); testing fusion of external estimates or observations with internally generated estimates and observations; and stacking data from simulation runs together.
-Users can specify the `ImporterDatabase` file path with the `-i` or `--importer-db-path` CLI options to `resonaate`.
+Users can specify the `ImporterDatabase` connection parameters with the `--importer-db-` CLI options.
 
 ### Python Example
 
