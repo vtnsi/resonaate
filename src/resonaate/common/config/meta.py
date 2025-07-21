@@ -8,8 +8,7 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from enum import Enum
 from os import environ
-from types import NoneType
-from typing import TYPE_CHECKING, Annotated, NewType, get_args
+from typing import TYPE_CHECKING, Annotated, get_args
 
 # Third Party Imports
 from pydantic import BaseModel, ConfigDict, Field, create_model
@@ -21,13 +20,13 @@ if TYPE_CHECKING:
     # Third Party Imports
     from pydantic.fields import FieldInfo
 
-_NotSet = NewType("_NotSet", NoneType)
-"""Special type to specify a field was not set in a provided configuration.
+class _NotSet:
+    """Special type to specify a field was not set in a provided configuration.
 
-Useful if a field can specifically be set to `None` by a user.
-"""
+    Useful if a field can specifically be set to `None` by a user.
+    """
 
-NotSet = _NotSet(None)
+NotSet = _NotSet()
 """Singleton access to :class:`._NotSet` instance."""
 
 
@@ -55,7 +54,7 @@ class CommandLineOptions:
         """Specify set of `options` that can be used to configure a field via command line arguments.
 
         Args:
-            options: Set of command line arguemtns provided in the same manner as `ArgumentParser.add_argument()`.
+            options: Set of command line arguments provided in the same manner as `ArgumentParser.add_argument()`.
         """
         self._options = []
         for each in options:
@@ -114,7 +113,7 @@ class LoggingLevel(str, Enum):
         ERROR: logging.ERROR,
         CRITICAL: logging.CRITICAL,
     }):
-        """Helper method to map string enumerations to logging level definitons in ``logging`` modeul."""
+        """Helper method to map string enumerations to logging level definitions in ``logging`` module."""
         return _mapping[self]
 
 
@@ -356,7 +355,7 @@ def userSpecFactory(spec_title: str, spec_info: FieldInfo | BaseModel) -> UserSp
     if annotated_model is None:
         args = get_args(spec_info.annotation)
         if len(args) == 2:  # noqa: SIM102
-            if args[1] is NoneType:
+            if args[1] is type(None):
                 with suppress(TypeError, AttributeError):
                     if issubclass(args[0], BaseModel):
                         annotated_model = args[0]
