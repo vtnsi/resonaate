@@ -242,11 +242,11 @@ class UserFieldInfo(UserSpec):
     def retrieveUserInput(self, user_input: dict, parsed_args: dict, dotenv_vals: dict):
         """Retrieve user input for this configuration specification.
 
-        Input will be retrieved from the followng user input sources, with each subsequent source
+        Input will be retrieved from the following user input sources, with each subsequent source
         taking precedence over the previous if there are option conflicts:
-         - Environment variables.
-         - Variables set in dotenv file specified by `dotenv_vals`.
-         - Variables specified as command line arguments.
+        - Environment variables.
+        - Variables set in dotenv file specified by `dotenv_vals`.
+        - Variables specified as command line arguments.
 
         Args:
             user_input: Mapping on which to store provided user input.
