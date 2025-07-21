@@ -71,7 +71,20 @@ class CommandLineOptions:
 
 
 class UserBaseModel(BaseModel):
-    """Child class of pydantic BaseModel with config set to take docstrings from attributes."""
+    """Child class of pydantic BaseModel with config set to take docstrings from attributes.
+
+    Developer Note:
+        In the case that a field of a :class:`.UserBaseModel` points to another :class:`.UserBaseModel` with
+        attributes that don't have `default` values (i.e. required nested field(s)), but the parent field
+        itself is not required, the developer is presented with an issue. If the developer doesn't specify
+        any default behavior for the required nested field, then :meth:`.UserSpec.addToArgParser()` will
+        interpret the required nested field as a required *positional* argument. Since the
+        :class:`.UserBaseModel` that the required nested field is a member of is not itself required, this
+        is undesired behavior.
+
+        The workaround for this is presented here: configuring the type annotation _without_ `Optional`,
+        specifying an invalid `default` value, and configuring pydantic to validate the invalid default.
+    """
 
     model_config = ConfigDict(use_attribute_docstrings=True)
 
