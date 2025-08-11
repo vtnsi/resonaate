@@ -14,6 +14,7 @@ from numpy import zeros
 # Local Imports
 from ...data import getDBConnection
 from ...data.importer_database import ImporterDatabase
+from ...physics.time.stardate import JulianDate
 from ..decisions.decision_base import Decision
 from ..rewards.reward_base import Reward
 
@@ -25,7 +26,6 @@ if TYPE_CHECKING:
     # Local Imports
     from ...data.observation import MissedObservation, Observation
     from ...data.task import Task
-    from ...physics.time.stardate import JulianDate
 
 
 class TaskingEngine(metaclass=ABCMeta):
@@ -194,12 +194,28 @@ class TaskingEngine(metaclass=ABCMeta):
         self.sensor_list.remove(sensor_id)
         self._sortSensors()
 
+    def updateLastObsRecord(self, observations: list[Observation]) -> None:
+        """Updates the tasking engines internal last observation records.
+
+        Args:
+            observations (list[Observation]): Incoming observations.
+        """
+        for obs in observations:
+            epoch = JulianDate(obs.julian_date)
+            recorded_epoch = self.network_last_revisits[obs.target_id]
+            if recorded_epoch and epoch < recorded_epoch:
+                raise ValueError(
+                    "Cannot update an obs record with epoch prior to already recorded last revisit epoch.",
+                )
+            self.network_last_revisits[obs.target_id] = epoch
+
     def saveObservations(self, observations: list[Observation]) -> None:
         """Save set of :class:`.Observation` objects to transient lists.
 
         Args:
             observations (``list``): :class:`.Observation` to save.
         """
+        self.updateLastObsRecord(observations)
         self._observations.extend(observations)
         self._saved_observations.extend(observations)
 

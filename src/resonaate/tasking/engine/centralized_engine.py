@@ -157,9 +157,9 @@ class CentralizedTaskingEngine(TaskingEngine):
         for cur_obs in self._observations:
             tasked_sensors.add(cur_obs.sensor_id)
             observed_targets.add(cur_obs.target_id)
-            # Update last observation records.
-            epoch = JulianDate(cur_obs.julian_date)
-            self.network_last_revisits[cur_obs.target_id] = epoch
+
+        # Update observation records
+        self.updateLastObsRecord(self._observations)
 
         # Log tasked sensors
         if tasked_sensors:
@@ -210,14 +210,14 @@ class CentralizedTaskingEngine(TaskingEngine):
                 int(observation.pos_z_km * 1000000),
                 observation.target_id,
             )
-            # Update the engine and sensor's last observation records.
-            obs_epoch = datetimeToJulianDate(datetime_epoch)
-            if (
-                observation.target_id not in self.network_last_revisits
-                or observation.julian_date
-                > float(self.network_last_revisits[observation.target_id])
-            ):
-                self.network_last_revisits[observation.target_id] = obs_epoch
+            # # Update the engine and sensor's last observation records.
+            # obs_epoch = datetimeToJulianDate(datetime_epoch)
+            # if (
+            #     observation.target_id not in self.network_last_revisits
+            #     or observation.julian_date
+            #     > float(self.network_last_revisits[observation.target_id])
+            # ):
+            #     self.network_last_revisits[observation.target_id] = obs_epoch
             sensor: SensingAgent = ray.get(self._sensor_store[observation.sensor_id])
             sensor.updateObsRecord([observation])
             self._sensor_store[observation.sensor_id] = ray.put(sensor)
@@ -232,6 +232,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         if imported_observations:
             msg = f"Imported {len(imported_observations)} observations"
             self.logger.debug(msg)
+            self.saveObservations(imported_observations)
 
         # [NOTE]: Measurement metadata isn't saved to the DB. This attaches the correct Measurement metadata to
         #   imported Observations so they can be processed

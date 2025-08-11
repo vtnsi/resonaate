@@ -479,6 +479,7 @@ def testLoadImportedObservation(
     mocked_importer_db.getData.return_value = [obs_1, obs_2]
 
     imported_obs = centralized_tasking_engine.loadImportedObservations(datetime_epoch)
+    centralized_tasking_engine.saveObservations(imported_obs)
 
     assert sensor_1.simulation_id in centralized_tasking_engine._sensor_store
     assert sensor_2.simulation_id in centralized_tasking_engine._sensor_store
