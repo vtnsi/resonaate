@@ -443,7 +443,7 @@ def testCollectObservations(
     mocked_primary_target.visual_cross_section = 25.0
 
     # Test when target can be collected on
-    good_obs, _, _, _ = mocked_sensing_agent.sensor.collectObservations(
+    good_obs, _ = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_primary_target],
@@ -473,7 +473,7 @@ def testCollectObservations(
     num_missed = 0
     n = 500
     for _i in range(n):
-        good_obs, missed_obs, _, _ = mocked_sensing_agent.sensor.collectObservations(
+        good_obs, missed_obs = mocked_sensing_agent.sensor.collectObservations(
             mocked_primary_target.initial_state,
             mocked_primary_target,
             [mocked_primary_target],
@@ -492,7 +492,7 @@ def testCollectObservations(
 
     # Test when the sensor is offline.
     mocked_sensing_agent.sensor.downtimes = downtime_cfg
-    good_obs, missed_obs, _, _ = mocked_sensing_agent.sensor.collectObservations(
+    good_obs, missed_obs = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_primary_target],
@@ -506,7 +506,7 @@ def testCollectObservations(
 
     mocked_sensing_agent.sensor.boresight = mocked_sensing_agent.sensor._setInitialBoresight()
     with patch.object(mocked_sensing_agent.sensor, "canSlew", return_value=True):
-        good_obs, missed_obs, _, _ = mocked_sensing_agent.sensor.collectObservations(
+        good_obs, missed_obs = mocked_sensing_agent.sensor.collectObservations(
             mocked_primary_target.initial_state,
             mocked_primary_target,
             [mocked_primary_target],
@@ -529,7 +529,7 @@ def testCollectObservations(
 
     mocked_sensing_agent.sensor.boresight = mocked_sensing_agent.sensor._setInitialBoresight()
     with patch.object(mocked_sensing_agent.sensor, "canSlew", return_value=False):
-        good_obs, missed_obs, _, _ = mocked_sensing_agent.sensor.collectObservations(
+        good_obs, missed_obs = mocked_sensing_agent.sensor.collectObservations(
             mocked_primary_target.initial_state,
             mocked_primary_target,
             [mocked_primary_target],
@@ -579,7 +579,7 @@ def testCollectObservationsWithBackground(
 
     mocked_background_target.eci_state = mocked_background_target.initial_state
     mocked_background_target.visual_cross_section = 25.0
-    good_obs, _, _, _ = mocked_sensing_agent.sensor.collectObservations(
+    good_obs, _ = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_background_target],
@@ -612,7 +612,7 @@ def testNoMissedObservation(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
-    _, missed_obs, _, _ = mocked_sensing_agent.sensor.collectObservations(
+    _, missed_obs = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_primary_target],
@@ -645,7 +645,7 @@ def testMissedObservation(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
-    _, bad_obs, _, _ = mocked_sensing_agent.sensor.collectObservations(
+    _, bad_obs = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_primary_target],

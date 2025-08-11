@@ -60,10 +60,13 @@ def testMinRevisit(
     with patch.object(
         sensor_agent.sensor,
         "collectObservations",
-        return_value=([obs], [], None, None),
+        return_value=([obs], []),
     ):
         sensor_agent._last_obs_record = {}  # Ensure no observation record at the start.
-        _, _, _, _ = sensor_agent.collectObservations(
+        (
+            _,
+            _,
+        ) = sensor_agent.collectObservations(
             estimate_agent.eci_state,
             estimate_agent,  # NOTE: This is not a target agent, but it is close enough.
             [],

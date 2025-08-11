@@ -289,7 +289,7 @@ class SensingAgent(Agent):
         estimate_eci: ndarray,
         target_agent: TargetAgent,
         background_agents: list[TargetAgent],
-    ) -> tuple[list[Observation], list[MissedObservation], ndarray, ScenarioTime]:
+    ) -> tuple[list[Observation], list[MissedObservation]]:
         """Collect observations on all targets within the sensor's FOV.
 
         Args:
@@ -300,15 +300,13 @@ class SensingAgent(Agent):
         Returns:
             ``list``: :class:`.Observation` for each successful tasked observation
             ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
-            ``ndarray``: 3x1 SEZ boresight unit vector
-            ``float``: :class:`.ScenarioTime` last time observed
         """
         if not self.readyToRevisit(target_agent.simulation_id):
             self._logger.warning(f"Sensor {self.simulation_id} tasked when not ready to revisit.")
-        obs, missed_obs, boresight, time_since_last_tasked = self.sensor.collectObservations(
+        obs, missed_obs = self.sensor.collectObservations(
             estimate_eci,
             target_agent,
             background_agents,
         )
         self.updateObsRecord(obs)
-        return obs, missed_obs, boresight, time_since_last_tasked
+        return obs, missed_obs

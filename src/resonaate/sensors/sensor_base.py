@@ -155,7 +155,7 @@ class Sensor(ABC):
         estimate_eci: ndarray,
         target_agent: TargetAgent,
         background_agents: list[TargetAgent],
-    ) -> tuple[list[Observation], list[MissedObservation], ndarray, ScenarioTime]:
+    ) -> tuple[list[Observation], list[MissedObservation]]:
         """Collect observations on all targets within the sensor's FOV.
 
         Args:
@@ -166,8 +166,6 @@ class Sensor(ABC):
         Returns:
             ``list``: :class:`.Observation` for each successful tasked observation
             ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
-            ``ndarray``: 3x1 SEZ boresight unit vector
-            ``float``: :class:`.ScenarioTime` last time observed
         """
         obs_list = []
         missed_observation_list = []
@@ -211,19 +209,19 @@ class Sensor(ABC):
                 obs_list.append(observation)
             else:
                 missed_observation_list.append(observation)
-        # If doing Serendipitous Observations
-        if self.calculate_background:
-            visible_observations = [
-                observation
-                for tgt in background_agents
-                if isinstance(
-                    observation := self.attemptObservation(tgt, pointing_sez),
-                    Observation,
-                )
-            ]
-            obs_list.extend(visible_observations)
+            # If doing Serendipitous Observations
+            if self.calculate_background:
+                visible_observations = [
+                    observation
+                    for tgt in background_agents
+                    if isinstance(
+                        observation := self.attemptObservation(tgt, pointing_sez),
+                        Observation,
+                    )
+                ]
+                obs_list.extend(visible_observations)
 
-        return obs_list, missed_observation_list, self.boresight, self.time_last_tasked
+        return obs_list, missed_observation_list
 
     def attemptObservation(
         self,
