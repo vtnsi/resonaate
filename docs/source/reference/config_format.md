@@ -1203,10 +1203,10 @@ Defines type and parameters of `"downtime_config"` field.
 ```
 
 ```python
-"field_of_view": {
-    "period": float,    # Period in days. Set to 0 to only run downtime once.
-    "duration": float,  # Duration, in days.
-    "offset": float,    # Time from start of scenario that the downtime begins.
+"downtime_config": {
+    "period": timedelta,    # Period in days. Set to 0 to only run downtime once.
+    "duration": timedelta,  # Duration, in days.
+    "offset": timedelta,    # Time from start of scenario that the downtime begins.
 }
 ```
 

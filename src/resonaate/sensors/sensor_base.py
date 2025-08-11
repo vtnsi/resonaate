@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -485,27 +486,24 @@ class Sensor(ABC):
         self.time_last_tasked = host.time
 
     def isOffline(self) -> bool:
-        """Checks if the sensor is offline from a scheduled downtime.
+        """Checks if the sensor is offline.
 
         Returns:
-            bool: True if the sensor is currently offline, False if the sensor is online.
+            bool: True if the sensor is currently offline, False otherwise.
         """
         if self.downtimes is None:  # Feature was not set up, so sensor is always online.
             return False
-        time_elapsed = float(self.host.time)
+        time_elapsed = timedelta(seconds=float(self.host.time))
         for downtime in self.downtimes:
-            if downtime.duration == 0:  # Edge case where the user just configured no duration.
-                continue  # Skip it and pretend like it never happened.
-            # Edge case where the period is configured to be zero, so it only happens once. This needs to be separate or else it will break mod operation below.
-            if downtime.period == 0:
+            if downtime.duration == timedelta(0):
+                continue
+            if downtime.period == timedelta(0):
                 if (time_elapsed >= downtime.offset) and (
                     time_elapsed <= downtime.offset + downtime.duration
                 ):
                     return True
             elif (time_elapsed - downtime.offset) % downtime.period <= downtime.duration:
                 return True
-            # NOTE: Having the above control flow being an if then an elif prevents cases where downtime.period == 0 from entering the modulus check.
-            # Nested if-statements aren't ideal, but this works.
         return False
 
     def predictObservation(

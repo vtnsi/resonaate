@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC
+from datetime import timedelta
 from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
 
 # Third Party Imports
@@ -43,13 +44,13 @@ PosFloat = Annotated[float, Field(..., gt=0.0)]
 class ScheduledDowntimeConfig(BaseModel):
     R"""Configuration of a periodic and scheduled downtime for a sensor."""
 
-    period: float = Field(..., ge=0.0)
+    period: timedelta = Field(..., ge=timedelta(0.0))
     R"""``float``: How frequently the scheduled downtime repeats, in seconds. Must be >= 0. Set to 0.0 to have the downtime occur once."""
 
-    duration: float = Field(..., gt=0.0)
+    duration: timedelta = Field(..., gt=timedelta(0.0))
     R"""``float``: Duration of the sensor downtime, in seconds. Must be >= 0."""
 
-    offset: float = Field(..., ge=0.0)
+    offset: timedelta = Field(..., ge=timedelta(0.0))
     R"""``float``: Time offset from scenario onset that the first downtime will occur, in seconds. Must be >= 0."""
 
 
