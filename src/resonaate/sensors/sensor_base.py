@@ -495,9 +495,9 @@ class Sensor(ABC):
             return False
         time_elapsed = timedelta(seconds=float(self.host.time))
         for downtime in self.downtimes:
-            if downtime.duration == timedelta(0):
-                continue
-            if downtime.period == timedelta(0):
+            # NOTE: The above nested if-else block is disgusting, but if you try tweaking it
+            # things will break. Prevents modding by zero.
+            if downtime.period == timedelta(0):  # One-time downtime
                 if (time_elapsed >= downtime.offset) and (
                     time_elapsed <= downtime.offset + downtime.duration
                 ):
