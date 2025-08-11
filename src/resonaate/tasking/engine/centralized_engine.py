@@ -232,7 +232,6 @@ class CentralizedTaskingEngine(TaskingEngine):
         if imported_observations:
             msg = f"Imported {len(imported_observations)} observations"
             self.logger.debug(msg)
-            self.saveObservations(imported_observations)
 
         # [NOTE]: Measurement metadata isn't saved to the DB. This attaches the correct Measurement metadata to
         #   imported Observations so they can be processed
