@@ -131,6 +131,9 @@ class TaskingRewardRegistration(Registration):
         estimate_handle: EstimateAgent,
         reward: Reward,
         sensor_handle_list: list[SensingAgent],
+        engine_min_revisit: float = 0.0,
+        engine_last_obs_epoch: JulianDate | None = None,
+        sensor_min_revisit_enabled: bool = True,
     ):
         """Initialize a :class:`.TaskingRewardRegistration`.
 
@@ -142,25 +145,27 @@ class TaskingRewardRegistration(Registration):
             reward: Reward function that remote worker will use to calculate the tasking reward.
             sensor_handle_list: List of remote `ray` handles to :class:`.SensingAgent`'s that could
                 possibly observe the specified :class:`.EstimateAgent`.
+            engine_min_revisit (float, optional): The engine's minimum revisit time, in seconds. Defaults to 0.0.
+            engine_last_obs_epoch (JulianDate, None, optional): The last time the sensor network observed the target. Defaults to None.
+            sensor_min_revisit_enabled (bool, optional): Enables / disables the sensor minimum revisit feature, even if it's non-zero for the sensor.
         """
         super().__init__(registrant)
         self._estimate_handle = estimate_handle
         self._reward = reward
         self._sensor_handle_list = sensor_handle_list
+        self._engine_min_revisit = engine_min_revisit
+        self._engine_last_obs_epoch = engine_last_obs_epoch
+        self._sensor_min_revisit_enabled = sensor_min_revisit_enabled
 
     def generateSubmission(self) -> RewardCalcSubmission:
         """Generate a :class:`.RewardCalcSubmission` specifying the reward being calculated."""
-        target_id = ray.get(self._estimate_handle).simulation_id
-        engine_last_revisit_epoch: JulianDate | None = None
-        if target_id in self._registrant.network_last_revisits:
-            engine_last_revisit_epoch = self._registrant.network_last_revisits[target_id]
         return RewardCalcSubmission(
             self._estimate_handle,
             self._reward,
             self._sensor_handle_list,
-            self._registrant.min_revisit_time,
-            engine_last_revisit_epoch,
-            self._registrant.enable_sensor_min_revisit,
+            self._engine_min_revisit,
+            self._engine_last_obs_epoch,
+            self._sensor_min_revisit_enabled,
         )
 
     def processResults(self, results: RewardCalcResult):
