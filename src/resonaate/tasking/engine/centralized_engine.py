@@ -107,9 +107,6 @@ class CentralizedTaskingEngine(TaskingEngine):
             self.logger.debug("Generating tasking rewards...")
             sensor_handle_list = [self._sensor_store[sensor_id] for sensor_id in self.sensor_list]
             for _id in self.target_list:
-                engine_last_revisit_epoch: JulianDate | None = None
-                if _id in self.network_last_revisits:
-                    engine_last_revisit_epoch = self.network_last_revisits[_id]
                 self._reward_executor.enqueueJob(
                     TaskingRewardRegistration(
                         self,
@@ -117,7 +114,7 @@ class CentralizedTaskingEngine(TaskingEngine):
                         self.reward,
                         sensor_handle_list,
                         self.min_revisit_time,
-                        engine_last_revisit_epoch,
+                        self.network_last_revisits[_id],
                         self.enable_sensor_min_revisit,
                     ),
                 )

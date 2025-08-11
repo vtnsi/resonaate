@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -90,8 +91,8 @@ class TaskingEngine(metaclass=ABCMeta):
         self.min_revisit_time = min_revisit_time
         """``float``: The minimum revisit time in seconds, for the entirity of the network."""
 
-        self.network_last_revisits: dict[int, JulianDate] = {}
-        """``dict[int, JulianDate]``: Record of when targets were last observed by the network as a whole.  \
+        self.network_last_revisits: defaultdict[int, JulianDate | None] = defaultdict(lambda: None)
+        """``defaultdict[int, JulianDate | None]``: Record of when targets were last observed by the network as a whole.  \
             Maps target identifier to the `JulianDate` of the last observation."""
 
         # Sort sensors & targets - also creates index mappings
