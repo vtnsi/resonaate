@@ -4,7 +4,6 @@ from __future__ import annotations
 
 # Standard Library Imports
 from collections import defaultdict
-from functools import partial
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -115,9 +114,7 @@ class SensingAgent(Agent):
 
         self.sensor_time_bias_event_queue = []
 
-        self._last_obs_record: defaultdict[int, JulianDate] = defaultdict(
-            partial(JulianDate, self.julian_date_start),
-        )
+        self._last_obs_record: defaultdict[int, JulianDate | None] = defaultdict(lambda: None)
         self._time_since_last_tasked: ScenarioTime = ScenarioTime(0)
 
     @classmethod
@@ -279,12 +276,10 @@ class SensingAgent(Agent):
         Returns:
             bool: True, if ready to revisit. False otherwise.
         """
-        if self.min_revisit_time == 0 or target_id not in self._last_obs_record:
+        last: JulianDate | None = self._last_obs_record.get(target_id)
+        if self.min_revisit_time == 0 or not last:
             return True
-        return (
-            float(self.julian_date_epoch - self._last_obs_record[target_id]) * DAYS2SEC
-            >= self.min_revisit_time
-        )
+        return float(self.julian_date_epoch - last) * DAYS2SEC >= self.min_revisit_time
 
     def collectObservations(
         self,

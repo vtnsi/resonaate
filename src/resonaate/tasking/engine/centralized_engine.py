@@ -114,7 +114,7 @@ class CentralizedTaskingEngine(TaskingEngine):
                         self.reward,
                         sensor_handle_list,
                         self.min_revisit_time,
-                        self.network_last_revisits[_id],
+                        self.network_last_revisits.get(_id),
                         self.enable_sensor_min_revisit,
                     ),
                 )
