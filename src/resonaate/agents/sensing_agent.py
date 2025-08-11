@@ -269,7 +269,7 @@ class SensingAgent(Agent):
             self._last_obs_record[ob.target_id] = JulianDate(ob.julian_date)
 
     def readyToRevisit(self, target_id: int) -> bool:
-        """Checks if the sensor is ready to revisit a target under it's own revisit time constraints. Always returns `True` if  `self.min_revisit_time` is set to 0. Will return false if the time since last observation of that target is less than the configured min revisit time.
+        """Checks if the sensor is ready to revisit a target.
 
         Args:
             target_id (int): Unique identifier of the target agent.
