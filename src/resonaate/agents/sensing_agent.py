@@ -262,12 +262,7 @@ class SensingAgent(Agent):
             observations (list[Observation]): List of observations.
         """
         for ob in observations:
-            epoch = JulianDate(ob.julian_date)
-            if ob.target_id not in self._last_obs_record:
-                self._last_obs_record[ob.target_id] = epoch
-                continue
-            if self._last_obs_record[ob.target_id] < epoch:
-                self._last_obs_record[ob.target] = epoch
+            self._last_obs_record[ob.target_id] = JulianDate(ob.julian_date)
 
     def readyToRevisit(self, target_id: int) -> bool:
         """Checks if the sensor is ready to revisit a target under it's own revisit time constraints. Always returns `True` if  `self.min_revisit_time` is set to 0. Will return false if the time since last observation of that target is less than the configured min revisit time.
