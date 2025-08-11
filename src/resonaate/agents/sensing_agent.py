@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from collections import defaultdict
+from functools import partial
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -112,7 +114,9 @@ class SensingAgent(Agent):
 
         self.sensor_time_bias_event_queue = []
 
-        self._last_obs_record: dict[int, JulianDate] = {}
+        self._last_obs_record: defaultdict[int, JulianDate] = defaultdict(
+            partial(JulianDate, self.julian_date_start),
+        )
 
     @classmethod
     def fromConfig(
