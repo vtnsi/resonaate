@@ -13,7 +13,7 @@ from numpy import array
 # Local Imports
 from ..data.ephemeris import TruthEphemeris
 from ..physics.constants import DAYS2SEC
-from ..physics.time.stardate import JulianDate
+from ..physics.time.stardate import JulianDate, ScenarioTime
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..sensors import sensorFactory
 from ..sensors.sensor_base import Sensor
@@ -34,7 +34,6 @@ if TYPE_CHECKING:
     from ..data.observation import MissedObservation, Observation
     from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
-    from ..physics.time.stardate import ScenarioTime
     from ..scenario.clock import ScenarioClock
     from ..scenario.config import PropagationConfig
     from ..scenario.config.agent_config import SensingAgentConfig
@@ -117,6 +116,7 @@ class SensingAgent(Agent):
         self._last_obs_record: defaultdict[int, JulianDate] = defaultdict(
             partial(JulianDate, self.julian_date_start),
         )
+        self._time_since_last_tasked: ScenarioTime = ScenarioTime(0)
 
     @classmethod
     def fromConfig(

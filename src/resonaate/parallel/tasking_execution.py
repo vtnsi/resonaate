@@ -69,9 +69,9 @@ def asyncExecuteTasking(submission: TaskExecutionSubmission) -> dict:
     primary_tgt_handle = submission.target_handles[estimate_agent.simulation_id]
     del submission.target_handles[estimate_agent.simulation_id]
 
-    primary_tgt = ray.get(primary_tgt_handle)
-    background_targets = ray.get(list(submission.target_handles.values()))
-    tasked_sensors = ray.get(submission.sensor_handle_list)
+    primary_tgt: TargetAgent = ray.get(primary_tgt_handle)
+    background_targets: list[TargetAgent] = ray.get(list(submission.target_handles.values()))
+    tasked_sensors: list[SensingAgent] = ray.get(submission.sensor_handle_list)
 
     successful_obs = []
     unsuccessful_obs = []
@@ -80,8 +80,8 @@ def asyncExecuteTasking(submission: TaskExecutionSubmission) -> dict:
         (
             made_obs,
             missed_obs,
-            boresight,
-            time_last_tasked,
+            _,
+            _,
         ) = sensing_agent.collectObservations(
             estimate_agent.eci_state,
             primary_tgt,
@@ -92,8 +92,8 @@ def asyncExecuteTasking(submission: TaskExecutionSubmission) -> dict:
         sensor_info_list.append(
             {
                 "sensor_id": sensing_agent.simulation_id,
-                "boresight": boresight,
-                "time_last_tasked": time_last_tasked,
+                "boresight": sensing_agent.sensor.boresight,
+                "time_last_tasked": sensing_agent.sensor.time_last_tasked,
             },
         )
 

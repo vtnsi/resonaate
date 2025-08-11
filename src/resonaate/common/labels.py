@@ -27,6 +27,7 @@ class Explanation(Enum):
     GALACTIC_EXCLUSION = "Galactic Exclusion Zone"
     SENSOR_OFFLINE = "Sensor Offline"
     RANDOM_MISSED_TRACK = "Random Missed Track"
+    NOT_READY_TO_REVISIT = "Not Ready To Revisit"
 
 
 class StateLabel(str, Enum):
