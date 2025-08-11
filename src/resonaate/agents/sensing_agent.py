@@ -115,7 +115,6 @@ class SensingAgent(Agent):
         self.sensor_time_bias_event_queue = []
 
         self._last_obs_record: defaultdict[int, JulianDate | None] = defaultdict(lambda: None)
-        self._time_since_last_tasked: ScenarioTime = ScenarioTime(0)
 
     @classmethod
     def fromConfig(
@@ -318,3 +317,8 @@ class SensingAgent(Agent):
         )
         self.updateObsRecord(obs)
         return obs, missed_obs
+
+    @property
+    def time_last_tasked(self) -> ScenarioTime:
+        """``ScenarioTime``: Time since the sensing agent was last tasked."""
+        return self.sensor.time_last_tasked

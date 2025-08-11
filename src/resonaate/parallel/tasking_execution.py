@@ -91,7 +91,7 @@ def asyncExecuteTasking(submission: TaskExecutionSubmission) -> dict:
             {
                 "sensor_id": sensing_agent.simulation_id,
                 "boresight": sensing_agent.sensor.boresight,
-                "time_last_tasked": sensing_agent.sensor.time_last_tasked,
+                "time_last_tasked": sensing_agent.time_last_tasked,
             },
         )
 
