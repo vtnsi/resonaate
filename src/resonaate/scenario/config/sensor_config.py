@@ -136,16 +136,11 @@ class SensorConfigBase(BaseModel, ABC):
     min_revisit_time: Optional[float] = Field(default=0.0, ge=0.0)
     R"""``float,optional``: Minimum required time, in seconds, that must have passed since the last observation before the sensor is allowed to revisit a target. Defaults to 0.0. When set to 0.0, this feature is disabled."""
 
-    downtimes_dict: Optional[list[dict]] = Field(default=[], alias="downtimes")
+    downtimes: list[ScheduledDowntimeConfig] = Field(default_factory=list)
     R"""``list[dict], Optional`` List of all downtime configs."""
 
     missed_obs_probability: Optional[float] = Field(default=0.0, ge=0.0, le=1.0)
     R"""``float``: The probability that the sensor will randomly return a missed obs. Must be between 0.0 and 1.0. Defaults to 0.0."""
-
-    @property
-    def downtimes(self) -> list[ScheduledDowntimeConfig]:
-        """``list[ScheduledDowntimeConfig]``: List of downtime config objects."""
-        return [ScheduledDowntimeConfig(**cfg_dict) for cfg_dict in self.downtimes_dict]
 
 
 class OpticalConfig(SensorConfigBase):
