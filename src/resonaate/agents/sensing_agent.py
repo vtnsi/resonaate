@@ -11,7 +11,9 @@ from typing import TYPE_CHECKING
 from numpy import array
 
 # Local Imports
+from ..common.labels import Explanation
 from ..data.ephemeris import TruthEphemeris
+from ..data.observation import MissedObservation
 from ..physics.constants import DAYS2SEC
 from ..physics.time.stardate import JulianDate, ScenarioTime
 from ..physics.transforms.methods import ecef2lla, eci2ecef
@@ -31,7 +33,7 @@ if TYPE_CHECKING:
     from ..agents.target_agent import TargetAgent
     from ..data.ephemeris import _EphemerisMixin
     from ..data.events.sensor_time_bias import SensorTimeBiasEvent
-    from ..data.observation import MissedObservation, Observation
+    from ..data.observation import Observation
     from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
@@ -302,7 +304,18 @@ class SensingAgent(Agent):
             ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
         """
         if not self.readyToRevisit(target_agent.simulation_id):
-            self._logger.warning(f"Sensor {self.simulation_id} tasked when not ready to revisit.")
+            self._logger.debug(
+                f"Sensor {self.simulation_id} tasked when not ready to revisit {target_agent.simulation_id}.",
+            )
+            return [], [
+                MissedObservation(
+                    self.julian_date_epoch,
+                    self.simulation_id,
+                    target_agent.simulation_id,
+                    self.eci_state,
+                    Explanation.NOT_READY_TO_REVISIT.value,
+                ),
+            ]
         obs, missed_obs = self.sensor.collectObservations(
             estimate_eci,
             target_agent,
