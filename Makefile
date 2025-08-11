@@ -29,17 +29,6 @@ install:
 	@echo "================="
 	@echo "Developer Install"
 	@echo "================="
-	@command -v cargo >/dev/null 2>&1 || { \
-		echo "Cargo is not installed. Installing Rust (which includes Cargo)..."; \
-		curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; \
-		. $$HOME/.cargo/env; \
-		if command -v cargo >/dev/null 2>&1; then \
-			echo "Cargo has been successfully installed."; \
-		else \
-			echo "Failed to install Cargo."; \
-			exit 1; \
-		fi \
-	} && echo "Cargo is already installed or was successfully installed."
 	pip install -e ".[dev,test,doc]"
 	pre-commit install
 	@echo ""
