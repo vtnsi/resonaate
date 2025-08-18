@@ -11,7 +11,7 @@ import ray
 from numpy import zeros
 
 # Local Imports
-from ..tasking.predictions import predictObservation
+from ..physics.constants import DAYS2SEC
 from . import JobExecutor, Registration
 
 if TYPE_CHECKING:
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     # Local Imports
     from ..agents.estimate_agent import EstimateAgent
     from ..agents.sensing_agent import SensingAgent
+    from ..physics.time.stardate import JulianDate
     from ..tasking.engine.engine_base import TaskingEngine
     from ..tasking.rewards import Reward
 
@@ -30,13 +31,22 @@ class RewardCalcSubmission:
     """Encapsulate arguments for `asyncCalculateReward`."""
 
     estimate_handle: EstimateAgent
-    """Remote handle of the :class:`.EstimateAgent` to calculate reward for."""
+    """``EstimateAgent``: Remote handle of the :class:`.EstimateAgent` to calculate reward for."""
 
     reward: Reward
-    """Function used to calculate a sensor/estimate pair's reward."""
+    """``Reward``: Function used to calculate a sensor/estimate pair's reward."""
 
     sensor_handle_list: list[SensingAgent]
-    """List of remote handles of the :class:`.SensingAgent`'s task-able by the calling engine."""
+    """``list[SensingAgent]``: List of remote handles of the :class:`.SensingAgent`'s task-able by the calling engine."""
+
+    engine_min_revisit_time: float
+    """``float``: The minimum revisit time, in seconds, of the tasking engine."""
+
+    engine_last_revisit_epoch: JulianDate | None
+    """``JulianDate``: The epoch of last observation, made by the tasking engine."""
+
+    enable_sensor_min_revisit: bool = True
+    """``bool``: Toggle to enable / disable per-sensor min revisit constraints."""
 
 
 @dataclass
@@ -78,11 +88,25 @@ def asyncCalculateReward(submission: RewardCalcSubmission) -> RewardCalcResult:
         dtype=float,
     )
 
-    sensor_list = ray.get(submission.sensor_handle_list)
+    sensor_list: list[SensingAgent] = ray.get(submission.sensor_handle_list)
     for sensor_index, sensor_agent in enumerate(sensor_list):
         # Attempt predicted observations, in order to perform sensor tasking
         # Only calculate metrics if the estimate is observable
-        if predicted_observation := predictObservation(sensor_agent, estimate):
+
+        # Check sensor network min revisit time, if enabled
+
+        # Verify that the obseravtion record exists first.
+        if (
+            submission.engine_last_revisit_epoch
+            and (estimate.julian_date_epoch - submission.engine_last_revisit_epoch) * DAYS2SEC
+            < submission.engine_min_revisit_time
+        ):
+            continue
+        if submission.enable_sensor_min_revisit and not sensor_agent.readyToRevisit(
+            estimate.simulation_id,
+        ):
+            continue
+        if predicted_observation := sensor_agent.sensor.predictObservation(estimate):
             # This is required to update the metrics attached to the UKF/KF for this observation
             estimate.nominal_filter.forecast([predicted_observation])
             visibility[sensor_index] = True
@@ -107,6 +131,9 @@ class TaskingRewardRegistration(Registration):
         estimate_handle: EstimateAgent,
         reward: Reward,
         sensor_handle_list: list[SensingAgent],
+        engine_min_revisit: float = 0.0,
+        engine_last_obs_epoch: JulianDate | None = None,
+        sensor_min_revisit_enabled: bool = True,
     ):
         """Initialize a :class:`.TaskingRewardRegistration`.
 
@@ -118,11 +145,17 @@ class TaskingRewardRegistration(Registration):
             reward: Reward function that remote worker will use to calculate the tasking reward.
             sensor_handle_list: List of remote `ray` handles to :class:`.SensingAgent`'s that could
                 possibly observe the specified :class:`.EstimateAgent`.
+            engine_min_revisit (float, optional): The engine's minimum revisit time, in seconds. Defaults to 0.0.
+            engine_last_obs_epoch (JulianDate, None, optional): The last time the sensor network observed the target. Defaults to None.
+            sensor_min_revisit_enabled (bool, optional): Enables / disables the sensor minimum revisit feature, even if it's non-zero for the sensor.
         """
         super().__init__(registrant)
         self._estimate_handle = estimate_handle
         self._reward = reward
         self._sensor_handle_list = sensor_handle_list
+        self._engine_min_revisit = engine_min_revisit
+        self._engine_last_obs_epoch = engine_last_obs_epoch
+        self._sensor_min_revisit_enabled = sensor_min_revisit_enabled
 
     def generateSubmission(self) -> RewardCalcSubmission:
         """Generate a :class:`.RewardCalcSubmission` specifying the reward being calculated."""
@@ -130,6 +163,9 @@ class TaskingRewardRegistration(Registration):
             self._estimate_handle,
             self._reward,
             self._sensor_handle_list,
+            self._engine_min_revisit,
+            self._engine_last_obs_epoch,
+            self._sensor_min_revisit_enabled,
         )
 
     def processResults(self, results: RewardCalcResult):

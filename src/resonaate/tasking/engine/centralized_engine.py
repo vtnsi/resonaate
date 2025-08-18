@@ -17,7 +17,7 @@ from ...data.observation import Observation
 from ...data.task import Task
 from ...parallel.tasking_execution import TaskExecutionExecutor, TaskExecutionRegistration
 from ...parallel.tasking_reward_generation import TaskingRewardExecutor, TaskingRewardRegistration
-from ...physics.time.stardate import datetimeToJulianDate
+from ...physics.time.stardate import JulianDate, datetimeToJulianDate
 from .engine_base import TaskingEngine
 
 # Type Checking Imports
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Local Imports
-    from ...physics.time.stardate import JulianDate
+    from ...agents.sensing_agent import SensingAgent
     from ..decisions import Decision
     from ..rewards import Reward
 
@@ -39,7 +39,7 @@ class CentralizedTaskingEngine(TaskingEngine):
     The nodes themselves perform only a minimal amount of processing, if any at all.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         engine_id: int,
         sensor_ids: list[int],
@@ -48,6 +48,8 @@ class CentralizedTaskingEngine(TaskingEngine):
         decision: Decision,
         importer_db_path: str | None,
         realtime_obs: bool,
+        min_revisit_time: float = 0.0,
+        enable_sensor_min_revisit: bool = True,
     ) -> None:
         """Initialize a centralized tasking engine.
 
@@ -59,6 +61,8 @@ class CentralizedTaskingEngine(TaskingEngine):
             decision (:class:`.Decision`): callable decision object for optimizing tasking
             importer_db_path (``str`` | ``None``): path to external importer database for pre-canned data.
             realtime_obs (``bool``): whether to execute realtime observations
+            min_revisit_time (``int``, optional): Minimum required elapsed time since last observation of a target before the network is allowed to revisit the target, in seconds. Defaults to 0.
+            enable_sensor_min_revisit (``bool``): Toggle to enable the per-sensor minimum revisit time feature. Defaults to True.
         """
         super().__init__(
             engine_id,
@@ -67,6 +71,8 @@ class CentralizedTaskingEngine(TaskingEngine):
             reward,
             decision,
             importer_db_path=importer_db_path,
+            min_revisit_time=min_revisit_time,
+            enable_sensor_min_revisit=enable_sensor_min_revisit,
         )
 
         self._realtime_obs = realtime_obs
@@ -107,6 +113,9 @@ class CentralizedTaskingEngine(TaskingEngine):
                         self._estimate_store[_id],
                         self.reward,
                         sensor_handle_list,
+                        self.min_revisit_time,
+                        self.network_last_revisits.get(_id),
+                        self.enable_sensor_min_revisit,
                     ),
                 )
             self._reward_executor.join()
@@ -149,6 +158,9 @@ class CentralizedTaskingEngine(TaskingEngine):
             tasked_sensors.add(cur_obs.sensor_id)
             observed_targets.add(cur_obs.target_id)
 
+        # Update observation records
+        self.updateLastObsRecord(self._observations)
+
         # Log tasked sensors
         if tasked_sensors:
             msg = f"{self.__class__.__name__} produced {len(self._observations)} observations by tasking "
@@ -185,7 +197,7 @@ class CentralizedTaskingEngine(TaskingEngine):
             .join(Epoch)
             .filter(Epoch.timestampISO == datetime_epoch.isoformat(timespec="microseconds"))
         )
-        imported_observation_data = self._importer_db.getData(query)
+        imported_observation_data: list[Observation] = self._importer_db.getData(query)
 
         imported_observations: list[Observation] = []
         sensor_position_set = set()
@@ -198,6 +210,17 @@ class CentralizedTaskingEngine(TaskingEngine):
                 int(observation.pos_z_km * 1000000),
                 observation.target_id,
             )
+            # # Update the engine and sensor's last observation records.
+            # obs_epoch = datetimeToJulianDate(datetime_epoch)
+            # if (
+            #     observation.target_id not in self.network_last_revisits
+            #     or observation.julian_date
+            #     > float(self.network_last_revisits[observation.target_id])
+            # ):
+            #     self.network_last_revisits[observation.target_id] = obs_epoch
+            sensor: SensingAgent = ray.get(self._sensor_store[observation.sensor_id])
+            sensor.updateObsRecord([observation])
+            self._sensor_store[observation.sensor_id] = ray.put(sensor)
             if position_key not in sensor_position_set:
                 imported_observations.append(observation)
                 sensor_position_set.add(position_key)
@@ -220,7 +243,7 @@ class CentralizedTaskingEngine(TaskingEngine):
         observation.measurement = sensor_agent.measurement
         return observation
 
-    def getCurrentTasking(self, julian_date: JulianDate) -> Task:
+    def getCurrentTasking(self, julian_date: JulianDate) -> Task:  # type: ignore
         """Return current tasking solution.
 
         Args:

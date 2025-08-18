@@ -1,0 +1,21 @@
+{
+  "unique_id": 2,
+  "reward": {
+    "name": "SimpleSummationReward",
+    "metrics": [
+      {
+        "name": "TimeSinceObservation",
+        "parameters": {}
+      }
+    ],
+    "parameters": {}
+  },
+  "decision": {
+    "name": "MunkresDecision",
+    "parameters": {}
+  },
+  "targets_file": "targets/small_target_set.json",
+  "sensors_file": "sensor_networks/ssn_min_revisit.json",
+  "min_revisit_time": 3600,
+  "enable_sensor_min_revisit": true
+}

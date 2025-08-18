@@ -108,7 +108,7 @@ def getTestSensorAgent(earth_sensor: AdvRadar, mocked_clock: ScenarioClock) -> S
 
 
 @pytest.fixture(name="observations")
-def getObservations(sensor_agent: SensingAgent) -> Observation:
+def getObservations(sensor_agent: SensingAgent) -> list[Observation]:
     """Create a custom :class:`Observation` object for a sensor."""
     radar_observation = Observation(
         julian_date=JulianDate(2459304.267361111),
@@ -120,7 +120,7 @@ def getObservations(sensor_agent: SensingAgent) -> Observation:
         range_km=1953.3903221962914,
         range_rate_km_p_sec=-6.147282606743988,
         sensor_eci=sensor_agent.eci_state,
-        measurement=sensor_agent.sensors.measurement,
+        measurement=sensor_agent.sensor.measurement,
     )
 
     return [radar_observation]

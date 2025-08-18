@@ -9,12 +9,13 @@ from unittest.mock import MagicMock, create_autospec, patch
 # Third Party Imports
 import numpy as np
 import pytest
+import ray
 
 # RESONAATE Imports
 from resonaate.agents.sensing_agent import SensingAgent
 from resonaate.data.importer_database import ImporterDatabase
 from resonaate.data.observation import MissedObservation, Observation
-from resonaate.physics.time.stardate import JulianDate
+from resonaate.physics.time.stardate import JulianDate, datetimeToJulianDate
 from resonaate.scenario.config.decision_config import MunkresDecisionConfig
 from resonaate.scenario.config.reward_config import CostConstrainedRewardConfig
 from resonaate.sensors.sensor_base import Sensor
@@ -167,11 +168,16 @@ def testAssessWithObservations(
     """
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
     next_datetime_epoch = datetime(2019, 1, 23, 17, 43, 23, 200000)
+    next_jd = datetimeToJulianDate(next_datetime_epoch)
     # Create obs tuples to store
     obs_1 = create_autospec(Observation, instance=True)
     obs_1.sensor_id = 100000
+    obs_1.target_id = TARGET_NUMS[0]
     obs_2 = create_autospec(Observation, instance=True)
     obs_2.sensor_id = 100001
+    obs_2.target_id = TARGET_NUMS[1]
+    obs_1.julian_date = float(next_jd)
+    obs_2.julian_date = float(next_jd)
     # centralized_tasking_engine._observations = [obs_1, obs_2]
 
     # [FIXME]: This is a hack to get the engine to store the observations
@@ -198,6 +204,15 @@ def testAssessWithObservations(
         obs_1.sensor_id: getMockedSensingAgentObject(obs_1.sensor_id),
         obs_2.sensor_id: getMockedSensingAgentObject(obs_2.sensor_id),
     }
+    centralized_tasking_engine.addSensor(
+        obs_1.sensor_id,
+    )  # NOTE: Call is required to instantiate stuff in the
+    centralized_tasking_engine.addSensor(obs_2.sensor_id)  # Last observation records.
+
+    # Ensure no prior observation record
+    assert obs_1.target_id not in centralized_tasking_engine.network_last_revisits
+    assert obs_2.target_id not in centralized_tasking_engine.network_last_revisits
+
     centralized_tasking_engine.assess(datetime_epoch, next_datetime_epoch)
     # Assert handlers are called
     assert centralized_tasking_engine._reward_executor.enqueueJob.call_count == len(
@@ -207,6 +222,10 @@ def testAssessWithObservations(
     event_handler_mock.assert_called_once()
     # Assert targets & observations are updated
     assert len(centralized_tasking_engine._observations) == 2
+
+    # Ensure that the observation was recorded.
+    assert centralized_tasking_engine.network_last_revisits[obs_1.target_id] == next_jd
+    assert centralized_tasking_engine.network_last_revisits[obs_2.target_id] == next_jd
 
 
 @patch.object(CentralizedTaskingEngine, "loadImportedObservations")
@@ -375,7 +394,7 @@ def getMockedSensingAgentObject(agent_id: int) -> SensingAgent:
     sensing_agent = create_autospec(SensingAgent, instance=True)
     sensing_agent._id = agent_id
 
-    sensing_agent.sensors = mocked_sensor
+    sensing_agent.sensor = mocked_sensor
     return sensing_agent
 
 
@@ -405,8 +424,9 @@ def testLoadImportedObservation(
     mocked_importer_db.getData = MagicMock()
     centralized_tasking_engine._importer_db = mocked_importer_db
     datetime_epoch = datetime(2019, 1, 23, 17, 42, 23, 200000)
+
     # Create mock observations
-    obs_1 = create_autospec(Observation, instance=True)
+    obs_1 = create_autospec(Observation, instance=True, spec_set=True)
     sensing_agent_1_id = 1111
     obs_1.pos_x_km = 7000
     obs_1.pos_y_km = 0
@@ -416,10 +436,11 @@ def testLoadImportedObservation(
     obs_1.vel_z_km_p_sec = 2
     obs_1.target_id = 1
     obs_1.sensor_id = sensing_agent_1_id
+    obs_1.julian_date = datetimeToJulianDate(datetime_epoch)
     obs_1.makeDictionary = MagicMock()
 
     sensing_agent_2_id = 1112
-    obs_2 = create_autospec(Observation, instance=True)
+    obs_2 = create_autospec(Observation, instance=True, spec_set=True)
     obs_2.pos_x_km = -7000
     obs_2.pos_y_km = 0
     obs_2.pos_z_km = 0
@@ -428,12 +449,50 @@ def testLoadImportedObservation(
     obs_2.vel_z_km_p_sec = 2
     obs_2.target_id = 1
     obs_2.sensor_id = sensing_agent_2_id
+    obs_2.julian_date = datetimeToJulianDate(datetime_epoch)
     obs_2.makeDictionary = MagicMock()
+
+    # Create mocked sensing agents and put them into the ray object store.
+    # NOTE: This could be achieved with patches for ray.get and ray.put, but it's actually way more complex
+    # and annoying to do it that way.
+    class DummySensingAgent(SensingAgent):
+        """Dummy object used for dumping into ray object store."""
+
+        def __init__(self, sim_id: int):
+            self._id = sim_id
+            self._last_obs_record: dict[int, JulianDate] = {}
+
+        def updateObsRecord(self, observations: list[Observation]):
+            return super().updateObsRecord(observations)
+
+    sensor_1: SensingAgent = DummySensingAgent(sensing_agent_1_id)
+    sensor_2: SensingAgent = DummySensingAgent(sensing_agent_2_id)
+
+    centralized_tasking_engine._sensor_store = {
+        sensor_1.simulation_id: ray.put(sensor_1),
+        sensor_2.simulation_id: ray.put(sensor_2),
+    }
+    centralized_tasking_engine.addSensor(sensing_agent_1_id)
+    centralized_tasking_engine.addSensor(sensing_agent_2_id)
 
     # Test observations that aren't from duplicate sensors
     mocked_importer_db.getData.return_value = [obs_1, obs_2]
 
     imported_obs = centralized_tasking_engine.loadImportedObservations(datetime_epoch)
+    centralized_tasking_engine.saveObservations(imported_obs)
+
+    assert sensor_1.simulation_id in centralized_tasking_engine._sensor_store
+    assert sensor_2.simulation_id in centralized_tasking_engine._sensor_store
+
+    # Test observation records
+    assert centralized_tasking_engine.network_last_revisits[obs_1.target_id] == obs_1.julian_date
+    assert centralized_tasking_engine.network_last_revisits[obs_2.target_id] == obs_2.julian_date
+
+    # Assert that the sensor's update obs record happened
+    sensor_1: SensingAgent = ray.get(centralized_tasking_engine._sensor_store[sensing_agent_1_id])
+    sensor_2: SensingAgent = ray.get(centralized_tasking_engine._sensor_store[sensing_agent_2_id])
+    assert sensor_1._last_obs_record[obs_1.target_id] == obs_1.julian_date
+    assert sensor_2._last_obs_record[obs_2.target_id] == obs_2.julian_date
 
     # Assert mock calls
     obs_1.makeDictionary.assert_not_called()

@@ -140,6 +140,8 @@ Each of those files would then have the following format:
     "decision": DecisionConfig,     # Req: algorithm used to optimize the reward matrix
     "target_file": str,             # Req: relative path to JSON file defining target agents
     "sensor_file": str,             # Req: relative path to JSON file defining sensor agents
+    "min_revisit_time": float,      # Optional: Required time since last obs of a target before any sensor is allowed to revisit, in seconds. Defaults to 0.
+    "enable_sensor_min_revisit": bool # Optional: Toggles the per-sensor min revisit feature. Overrides any info in the sensors_file JSON. Used for easy toggling of the feature. Defaults to True.
 }
 ```
 
@@ -1076,6 +1078,9 @@ All `SensorConfig` types share several common fields.
         "minimum_range": float,                   # Optional
         "maximum_range": float,                   # Optional
         "field_of_view": FieldOfViewConfig,       # Optional
+        "downtimes": [ScheduledDowntimeConfig], #Optional
+        "min_revisit_time", float,                # Optional
+        "missed_obs_probability", float,           # Optional
     },
     ...
 ]
@@ -1176,6 +1181,32 @@ Defines type and parameters of `"field_of_view"` field.
     "cone_angle": float,        # Optional
     "azimuth_angle": float,     # Optional
     "elevation_angle": float,   # Optional
+}
+```
+
+##### Scheduled Downtime
+
+Defines type and parameters of `"downtime_config"` field.
+
+```{rubric} Python Definition
+```
+
+```{eval-rst}
+.. currentmodule:: resonaate.scenario.config.sensor_config
+
+.. autoclass:: ScheduledDowntimeConfig
+   :members:
+   :noindex:
+```
+
+```{rubric} JSON Definition
+```
+
+```python
+"downtime_config": {
+    "period": timedelta,    # Period in days. Set to 0 to only run downtime once.
+    "duration": timedelta,  # Duration, in days.
+    "offset": timedelta,    # Time from start of scenario that the downtime begins.
 }
 ```
 

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-# Standard Library Imports
-
 # Third Party Imports
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -15,6 +13,7 @@ from resonaate.scenario.config.sensor_config import (
     OpticalConfig,
     RadarConfig,
     RectangularFieldOfViewConfig,
+    ScheduledDowntimeConfig,
     SensorConfig,
 )
 from resonaate.sensors.sensor_base import DEFAULT_VIEWING_ANGLE
@@ -183,6 +182,16 @@ class SensorWrapper(BaseModel):
     """Wrapped sensor configuration."""
 
 
+@pytest.fixture(name="downtime_config")
+def getDowntimeDict() -> dict:
+    """Generates a fixture config for sensor downtime."""
+    return {
+        "period": 86400,
+        "duration": 7200,
+        "offset": 14000,
+    }
+
+
 @pytest.fixture(name="base_sensor_dict")
 def getSensorDict() -> dict:
     """Create dict of common required sensor config fields."""
@@ -194,6 +203,14 @@ def getSensorDict() -> dict:
         "efficiency": 0.98,
         "slew_rate": 10.0,
     }
+
+
+@pytest.fixture(name="base_sensor_revisit_dict")
+def getSensorRevisitDict(base_sensor_dict: dict) -> dict:
+    """Creates a sensor config that adds a non-zero minimum revisit time."""
+    new_dict = base_sensor_dict
+    new_dict["min_revisit_time"] = 3600.0
+    return new_dict
 
 
 @pytest.mark.parametrize("sensor_type", ["invalid", None, 10])
@@ -243,3 +260,74 @@ def testAdvRadarConfig(base_sensor_dict: dict):
     base_sensor_dict["min_detectable_power"] = 1.4314085925969573e-14
     cfg = SensorWrapper(sensor_config=base_sensor_dict)
     assert isinstance(cfg.sensor_config, AdvRadarConfig)
+
+
+def testMinRevisitField(base_sensor_revisit_dict: dict) -> None:
+    """Test creating a sensor config with min revisit time too."""
+    base_sensor_revisit_dict["type"] = SensorLabel.OPTICAL
+    cfg = SensorWrapper(sensor_config=base_sensor_revisit_dict)
+    assert isinstance(cfg.sensor_config, OpticalConfig)
+
+    base_sensor_revisit_dict["min_revisit_time"] = -3600.0  # Test invalid
+    with pytest.raises(ValidationError):
+        _ = SensorWrapper(sensor_config=base_sensor_revisit_dict)
+
+
+def testConstructSensorDowntime(downtime_config: dict) -> None:
+    """Tests construction of a downtime config object."""
+    cfg = ScheduledDowntimeConfig(**downtime_config)
+    assert isinstance(cfg, ScheduledDowntimeConfig)
+
+    # Test invalid fields
+    downtime_config["period"] = -5000
+    with pytest.raises(ValidationError):
+        _ = ScheduledDowntimeConfig(**downtime_config)
+    downtime_config["period"] = 7200
+    downtime_config["duration"] = -5000
+    with pytest.raises(ValidationError):
+        _ = ScheduledDowntimeConfig(**downtime_config)
+    downtime_config["duration"] = 5000
+    downtime_config["offset"] = -5000
+    with pytest.raises(ValidationError):
+        _ = ScheduledDowntimeConfig(**downtime_config)
+
+
+def testConstructSensorWithDowntime(
+    base_sensor_dict: dict,
+    downtime_config: dict,
+) -> None:
+    """Tests constructing a sensor object with downtime configs."""
+    downtime = ScheduledDowntimeConfig(**downtime_config)
+
+    # Construct a simple radar with the downtimes.
+    base_sensor_dict["type"] = SensorLabel.RADAR
+    base_sensor_dict["tx_power"] = 2.5e6
+    base_sensor_dict["tx_frequency"] = 1.5e9
+    base_sensor_dict["min_detectable_power"] = 1.4314085925969573e-14
+    base_sensor_dict["downtimes"] = [downtime_config]
+
+    sensor_cfg = SensorWrapper(sensor_config=base_sensor_dict)
+
+    assert len(sensor_cfg.sensor_config.downtimes) == 1
+    assert sensor_cfg.sensor_config.downtimes == [downtime]
+
+
+def testMissedObsField(base_sensor_dict: dict) -> None:
+    """Tests the missed observation probability field."""
+    # Construct a simple radar with missed obs probability.
+    base_sensor_dict["type"] = SensorLabel.RADAR
+    base_sensor_dict["tx_power"] = 2.5e6
+    base_sensor_dict["tx_frequency"] = 1.5e9
+    base_sensor_dict["min_detectable_power"] = 1.4314085925969573e-14
+    base_sensor_dict["missed_obs_probability"] = 0.5
+
+    cfg = SensorWrapper(sensor_config=base_sensor_dict)
+    assert isinstance(cfg.sensor_config, RadarConfig)
+
+    # Test invalid
+    base_sensor_dict["missed_obs_probability"] = -0.5
+    with pytest.raises(ValidationError):
+        _ = SensorWrapper(sensor_config=base_sensor_dict)
+    base_sensor_dict["missed_obs_probability"] = 1.5
+    with pytest.raises(ValidationError):
+        _ = SensorWrapper(sensor_config=base_sensor_dict)

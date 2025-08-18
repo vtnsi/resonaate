@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -13,6 +14,7 @@ from numpy import zeros
 # Local Imports
 from ...data import getDBConnection
 from ...data.importer_database import ImporterDatabase
+from ...physics.time.stardate import JulianDate
 from ..decisions.decision_base import Decision
 from ..rewards.reward_base import Reward
 
@@ -24,7 +26,6 @@ if TYPE_CHECKING:
     # Local Imports
     from ...data.observation import MissedObservation, Observation
     from ...data.task import Task
-    from ...physics.time.stardate import JulianDate
 
 
 class TaskingEngine(metaclass=ABCMeta):
@@ -41,6 +42,8 @@ class TaskingEngine(metaclass=ABCMeta):
         reward: Reward,
         decision: Decision,
         importer_db_path: str | None = None,
+        min_revisit_time: float = 0.0,
+        enable_sensor_min_revisit: bool = True,
     ):
         """Initialize a tasking engine object.
 
@@ -52,6 +55,8 @@ class TaskingEngine(metaclass=ABCMeta):
             decision (:class:`.Decision`): callable decision object for optimizing tasking
             importer_db_path (``str``, optional): path to external importer database for pre-canned
                 data. Defaults to ``None``.
+            min_revisit_time (``int``, optional): Minimum required elapsed time since last observation of a target before the network is allowed to revisit the target, in seconds. Defaults to 0.
+            enable_sensor_min_revisit (``bool``): Toggle to enable the per-sensor minimum revisit time feature. Defaults to True.
 
         Raises:
             TypeError: raised if invalid reward parameter passed
@@ -83,6 +88,13 @@ class TaskingEngine(metaclass=ABCMeta):
         self._decision = decision
         """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
 
+        self.min_revisit_time = min_revisit_time
+        """``float``: The minimum revisit time in seconds, for the entirity of the network."""
+
+        self.network_last_revisits: defaultdict[int, JulianDate | None] = defaultdict(lambda: None)
+        """``defaultdict[int, JulianDate | None]``: Record of when targets were last observed by the network as a whole.  \
+            Maps target identifier to the `JulianDate` of the last observation."""
+
         # Sort sensors & targets - also creates index mappings
         self._sortSensors()
         self._sortTargets()
@@ -110,6 +122,8 @@ class TaskingEngine(metaclass=ABCMeta):
         """``list``: transient :class:`.MissedObservation` tasked & saved by this engine not loaded to the DB."""
 
         self.sensor_changes = {}
+
+        self.enable_sensor_min_revisit = enable_sensor_min_revisit
 
         self._database = getDBConnection()
         """:class:`.ResonaateDatabase`: shared instance of simulation database."""
@@ -158,6 +172,8 @@ class TaskingEngine(metaclass=ABCMeta):
             target_id (``int``): Unique identifier for the target being removed.
         """
         self.target_list.remove(target_id)
+        if target_id in self.network_last_revisits:
+            del self.network_last_revisits[target_id]
         self._sortTargets()
 
     def addSensor(self, sensor_id: int) -> None:
@@ -178,12 +194,28 @@ class TaskingEngine(metaclass=ABCMeta):
         self.sensor_list.remove(sensor_id)
         self._sortSensors()
 
+    def updateLastObsRecord(self, observations: list[Observation]) -> None:
+        """Updates the tasking engines internal last observation records.
+
+        Args:
+            observations (list[Observation]): Incoming observations.
+        """
+        for obs in observations:
+            epoch = JulianDate(obs.julian_date)
+            recorded_epoch = self.network_last_revisits[obs.target_id]
+            if recorded_epoch and epoch < recorded_epoch:
+                raise ValueError(
+                    "Cannot update an obs record with epoch prior to already recorded last revisit epoch.",
+                )
+            self.network_last_revisits[obs.target_id] = epoch
+
     def saveObservations(self, observations: list[Observation]) -> None:
         """Save set of :class:`.Observation` objects to transient lists.
 
         Args:
             observations (``list``): :class:`.Observation` to save.
         """
+        self.updateLastObsRecord(observations)
         self._observations.extend(observations)
         self._saved_observations.extend(observations)
 

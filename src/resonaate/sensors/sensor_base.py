@@ -4,10 +4,11 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from numpy import array, cos, sin, zeros_like
+from numpy import array, cos, random, sin, zeros_like
 from scipy.linalg import norm
 
 # Local Imports
@@ -29,10 +30,11 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     # Local Imports
+    from ..agents.estimate_agent import EstimateAgent
     from ..agents.sensing_agent import SensingAgent
     from ..agents.target_agent import TargetAgent
     from ..physics.measurements import Measurement
-    from ..scenario.config.sensor_config import SensorConfig
+    from ..scenario.config.sensor_config import ScheduledDowntimeConfig, SensorConfig
     from .field_of_view import FieldOfView
 
 DEFAULT_VIEWING_ANGLE: float = 1.0
@@ -54,6 +56,8 @@ class Sensor(ABC):
         background_observations: bool,
         minimum_range: float,
         maximum_range: float,
+        missed_obs_probability: float = 0.0,
+        downtimes: list[ScheduledDowntimeConfig] | None = None,
         **sensor_args: dict,
     ):
         """Construct a generic `Sensor` object.
@@ -70,6 +74,8 @@ class Sensor(ABC):
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
+            missed_obs_probability (``float``): Missed observation probability. Defaults to 0.
+            downtimes (``list[ScheduledDowntimeConfig], None``): Sensor downtime configs. Defaults to None.
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         self._measurement = measurement
@@ -86,11 +92,15 @@ class Sensor(ABC):
         self.minimum_range = minimum_range
         self.maximum_range = maximum_range
 
+        self.missed_obs_probability = missed_obs_probability
+        self.downtimes = downtimes
+
         # Derived properties initialization
         self.time_last_tasked = ScenarioTime(0.0)
         self.boresight = self._setInitialBoresight()
         self._host: SensingAgent | None = None
         self._sensor_args = sensor_args
+        self._last_obs: dict[int, ScenarioTime] = {}
 
     @classmethod
     @abstractmethod
@@ -134,6 +144,12 @@ class Sensor(ABC):
 
         return array([cos(mid_el) * cos(mid_az), cos(mid_el) * sin(mid_az), sin(mid_el)])
 
+    def _randomMissedOb(self) -> bool:
+        """Random assessment if we missed an observation."""
+        if self.missed_obs_probability == 0:  # Always return false if the feature is disabled.
+            return False
+        return random.random() < self.missed_obs_probability
+
     def collectObservations(
         self,
         estimate_eci: ndarray,
@@ -150,8 +166,6 @@ class Sensor(ABC):
         Returns:
             ``list``: :class:`.Observation` for each successful tasked observation
             ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
-            ``ndarray``: 3x1 SEZ boresight unit vector
-            ``float``: :class:`.ScenarioTime` last time observed
         """
         obs_list = []
         missed_observation_list = []
@@ -161,20 +175,19 @@ class Sensor(ABC):
             estimate_eci,
             self.host.datetime_epoch,
         )
-        if self.canSlew(pointing_sez):
-            # If the sensor can slew to the target, then it does before attempting observations
-            self.boresight = pointing_sez[:3] / norm(pointing_sez[:3])
-            self.time_last_tasked = self.host.time
-
-            # Attempt to observe primary RSO
-            observation = self.attemptObservation(target_agent, pointing_sez)
-            if observation.reason == Explanation.VISIBLE:
-                obs_list.append(observation)
-            else:
-                missed_observation_list.append(observation)
-
-        else:
-            missed_observation_list.append(
+        if self.isOffline():
+            return [], [
+                MissedObservation(
+                    julian_date=self.host.julian_date_epoch,
+                    sensor_type=getTypeString(self),
+                    sensor_id=self.host.simulation_id,
+                    target_id=target_agent.simulation_id,
+                    sensor_eci=self.host.eci_state,
+                    reason=Explanation.SENSOR_OFFLINE.value,
+                ),
+            ]
+        if not self.canSlew(pointing_sez):
+            return [], [
                 MissedObservation(
                     julian_date=self.host.julian_date_epoch,
                     sensor_type=getTypeString(self),
@@ -183,8 +196,16 @@ class Sensor(ABC):
                     sensor_eci=self.host.eci_state,
                     reason=Explanation.SLEW_DISTANCE.value,
                 ),
-            )
+            ]
+        self.boresight = pointing_sez[:3] / norm(pointing_sez[:3])
+        self.time_last_tasked = self.host.time
 
+        # Attempt to observe primary RSO
+        observation = self.attemptObservation(target_agent, pointing_sez)
+        if observation.reason == Explanation.VISIBLE:
+            obs_list.append(observation)
+        else:
+            missed_observation_list.append(observation)
         # If doing Serendipitous Observations
         if self.calculate_background:
             visible_observations = [
@@ -196,15 +217,14 @@ class Sensor(ABC):
                 )
             ]
             obs_list.extend(visible_observations)
-
-        return obs_list, missed_observation_list, self.boresight, self.time_last_tasked
+        return obs_list, missed_observation_list
 
     def attemptObservation(
         self,
         target_agent: TargetAgent,
         pointing_sez: ndarray,
     ) -> Observation | MissedObservation:
-        """Calculate the measurement data for a single observation.
+        """Calculate the measurement data for a single observation. Should only be called internally!
 
         Args:
             target_agent (:class:`.TargetAgent`): agent that the sensor is attempting to observe
@@ -218,6 +238,27 @@ class Sensor(ABC):
             tgt_eci_state = self._applyTimeBias(target_agent)
         else:
             tgt_eci_state = target_agent.eci_state
+
+        if (
+            self.isOffline()
+        ):  # NOTE: This check is already made in .collectObservations(). However, for background agents,
+            return MissedObservation(  # It might be useful to include missed observations.
+                julian_date=self.host.julian_date_epoch,
+                sensor_type=getTypeString(self),
+                sensor_id=self.host.simulation_id,
+                target_id=target_agent.simulation_id,
+                sensor_eci=self.host.eci_state,
+                reason=Explanation.SENSOR_OFFLINE.value,
+            )
+        if self._randomMissedOb():
+            return MissedObservation(
+                julian_date=self.host.julian_date_epoch,
+                sensor_type=getTypeString(self),
+                sensor_id=self.host.simulation_id,
+                target_id=target_agent.simulation_id,
+                sensor_eci=self.host.eci_state,
+                reason=Explanation.RANDOM_MISSED_TRACK.value,
+            )
 
         slant_range_sez = getSlantRangeVector(
             self.host.eci_state,
@@ -249,7 +290,7 @@ class Sensor(ABC):
                 sensor_eci=self.host.eci_state,
                 reason=reason.value,
             )
-
+        self._last_obs[target_agent.simulation_id] = self.host.time
         return Observation.fromMeasurement(
             epoch_jd=self.host.julian_date_epoch,
             target_id=target_agent.simulation_id,
@@ -437,3 +478,71 @@ class Sensor(ABC):
         """
         self._host = host
         self.time_last_tasked = host.time
+
+    def isOffline(self) -> bool:
+        """Checks if the sensor is offline.
+
+        Returns:
+            bool: True if the sensor is currently offline, False otherwise.
+        """
+        if self.downtimes is None:  # Feature was not set up, so sensor is always online.
+            return False
+        time_elapsed = timedelta(seconds=float(self.host.time))
+        for downtime in self.downtimes:
+            # NOTE: The above nested if-else block is disgusting, but if you try tweaking it
+            # things will break. Prevents modding by zero.
+            if downtime.period == timedelta(0):  # One-time downtime
+                if (time_elapsed >= downtime.offset) and (
+                    time_elapsed <= downtime.offset + downtime.duration
+                ):
+                    return True
+            elif (time_elapsed - downtime.offset) % downtime.period <= downtime.duration:
+                return True
+        return False
+
+    def predictObservation(
+        self,
+        estimate_agent: EstimateAgent,
+    ) -> Observation | None:
+        """Forecasting an observation for reward matrix purposes.
+
+        Args:
+            sensing_agent (SensingAgent): agent performing predicted observation
+            estimate_agent (EstimateAgent): agent being observed
+
+        Returns:
+            :class:`.Observation` | None : constructed observation if observable
+        """
+        slant_range_sez = getSlantRangeVector(
+            self.host.eci_state,
+            estimate_agent.eci_state,
+            self.host.datetime_epoch,
+        )
+
+        # Check if the sensor is offline
+        if self.isOffline():
+            return None
+
+        # Check if the estimated target is reachable
+        if not self.canSlew(slant_range_sez):
+            return None
+        # Check if the estimated target is observable
+        visibility, _ = self.isVisible(
+            estimate_agent.eci_state,
+            estimate_agent.visual_cross_section,
+            estimate_agent.reflectivity,
+            slant_range_sez,
+        )
+        if not visibility:
+            return None
+
+        return Observation.fromMeasurement(
+            epoch_jd=self.host.julian_date_epoch,
+            target_id=estimate_agent.simulation_id,
+            tgt_eci_state=estimate_agent.eci_state,
+            sensor_id=self.host.simulation_id,
+            sensor_eci=self.host.eci_state,
+            sensor_type=getTypeString(self),
+            measurement=self.measurement,
+            noisy=False,  # Don't add noise for prospective observations
+        )

@@ -160,6 +160,7 @@ def testCreateEngineConfig(engine_cfg_dict: dict):
     assert isinstance(cfg.decision, VALID_DECISION_CONFIGS)
     assert len(cfg.targets) == len(engine_cfg_dict["targets"])
     assert len(cfg.sensors) == len(engine_cfg_dict["sensors"])
+    assert cfg.enable_sensor_min_revisit  # Default is True
 
 
 def testMissingSensors(engine_cfg_dict: dict):
@@ -174,3 +175,13 @@ def testMissingTargets(engine_cfg_dict: dict):
     engine_cfg_dict["targets"] = []
     with pytest.raises(ValidationError):
         EngineConfig(**engine_cfg_dict)
+
+
+def testMinRevisitField(engine_cfg_dict: dict) -> None:
+    """Test that the EngineConfig can parse a min_revisit_time."""
+    engine_cfg_dict["min_revisit_time"] = 4000
+    cfg = EngineConfig(**engine_cfg_dict)
+    assert cfg.min_revisit_time == 4000
+    engine_cfg_dict["min_revisit_time"] = -4000
+    with pytest.raises(ValidationError):
+        _ = EngineConfig(**engine_cfg_dict)

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 # Standard Library Imports
 from abc import ABC
-from typing import TYPE_CHECKING, Annotated, Literal, Union
+from datetime import timedelta
+from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
 
 # Third Party Imports
 from numpy import inf
@@ -38,6 +39,19 @@ NonNegFloat = Annotated[float, Field(..., ge=0.0)]
 
 PosFloat = Annotated[float, Field(..., gt=0.0)]
 """Type annotation denoting a positive floating point number."""
+
+
+class ScheduledDowntimeConfig(BaseModel):
+    R"""Configuration of a periodic and scheduled downtime for a sensor."""
+
+    period: timedelta = Field(..., ge=timedelta(0.0))
+    R"""``float``: How frequently the scheduled downtime repeats, in seconds. Must be >= 0. Set to 0.0 to have the downtime occur once."""
+
+    duration: timedelta = Field(..., gt=timedelta(0.0))
+    R"""``float``: Duration of the sensor downtime, in seconds. Must be >= 0."""
+
+    offset: timedelta = Field(..., ge=timedelta(0.0))
+    R"""``float``: Time offset from scenario onset that the first downtime will occur, in seconds. Must be >= 0."""
 
 
 class ConicFieldOfViewConfig(BaseModel):
@@ -118,6 +132,15 @@ class SensorConfigBase(BaseModel, ABC):
 
     field_of_view: FieldOfViewConfig = Field(default_factory=RectangularFieldOfViewConfig)
     R""":class:`.FieldOfViewConfig`, optional: FOV type size to use in calculating visibility. Defaults to a rectangular FOV with default angles."""
+
+    min_revisit_time: Optional[float] = Field(default=0.0, ge=0.0)
+    R"""``float,optional``: Minimum required time, in seconds, that must have passed since the last observation before the sensor is allowed to revisit a target. Defaults to 0.0. When set to 0.0, this feature is disabled."""
+
+    downtimes: list[ScheduledDowntimeConfig] = Field(default_factory=list)
+    R"""``list[dict], Optional`` List of all downtime configs."""
+
+    missed_obs_probability: Optional[float] = Field(default=0.0, ge=0.0, le=1.0)
+    R"""``float``: The probability that the sensor will randomly return a missed obs. Must be between 0.0 and 1.0. Defaults to 0.0."""
 
 
 class OpticalConfig(SensorConfigBase):

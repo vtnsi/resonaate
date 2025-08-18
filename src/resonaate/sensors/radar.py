@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     # Local Imports
-    from ..scenario.config.sensor_config import RadarConfig
+    from ..scenario.config.sensor_config import RadarConfig, ScheduledDowntimeConfig
     from .field_of_view import FieldOfView
 
 
@@ -67,6 +67,8 @@ class Radar(Sensor):
         background_observations: bool,
         minimum_range: float,
         maximum_range: float,
+        missed_obs_probability: float = 0.0,
+        downtimes: list[ScheduledDowntimeConfig] | None = None,
         **sensor_args: dict,
     ):
         """Construct a `Radar` sensor object.
@@ -85,6 +87,8 @@ class Radar(Sensor):
             background_observations (``bool``): whether or not to calculate serendipitous observations, default=True
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
+            missed_obs_probability (``float``): Missed observation probability. Defaults to 0.
+            downtimes (``list[ScheduledDowntimeConfig], None``): Sensor downtime configs. Defaults to None.
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         measurement = Measurement.fromMeasurementLabels(
@@ -102,6 +106,8 @@ class Radar(Sensor):
             background_observations,
             minimum_range,
             maximum_range,
+            missed_obs_probability=missed_obs_probability,
+            downtimes=downtimes,
             **sensor_args,
         )
 
@@ -139,6 +145,8 @@ class Radar(Sensor):
             tx_power=sensor_config.tx_power,
             tx_frequency=sensor_config.tx_frequency,
             min_detectable_power=sensor_config.min_detectable_power,
+            missed_obs_probabilty=sensor_config.missed_obs_probability,
+            downtimes=sensor_config.downtimes,
         )
 
     def _maximumDetectableRange(self, diameter: float, min_detect_power: float) -> float:

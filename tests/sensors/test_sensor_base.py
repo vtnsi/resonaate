@@ -18,7 +18,7 @@ from resonaate.data.observation import MissedObservation, Observation
 from resonaate.physics.bodies.earth import Earth
 from resonaate.physics.constants import RAD2DEG
 from resonaate.physics.time.stardate import JulianDate, ScenarioTime
-from resonaate.scenario.config.sensor_config import ConicFieldOfViewConfig
+from resonaate.scenario.config.sensor_config import ConicFieldOfViewConfig, ScheduledDowntimeConfig
 from resonaate.sensors.field_of_view import ConicFoV, FieldOfView, RectangularFoV
 from resonaate.sensors.radar import Radar
 from resonaate.sensors.sensor_base import Sensor
@@ -54,6 +54,23 @@ def getBackgroundTargetAgent() -> TargetAgent:
     background_target = create_autospec(spec=TargetAgent, instance=True)
     background_target.initial_state = np.array((0.0, Earth.radius * 2 + 1, 0.0, 0.0, 0.0, 0.0))
     return background_target
+
+
+@pytest.fixture(name="downtime_cfg")
+def getMockedDowntimeCfgs() -> list[ScheduledDowntimeConfig]:
+    """Creates some mocked downtime configs for testing."""
+    return [
+        ScheduledDowntimeConfig(
+            period=0.0,
+            duration=10000,
+            offset=0.0,
+        ),
+        ScheduledDowntimeConfig(
+            period=86400,
+            duration=3600,
+            offset=0.0,
+        ),
+    ]
 
 
 @patch.multiple(Sensor, __abstractmethods__=set())
@@ -402,8 +419,9 @@ def testCollectObservations(
     radar_sensor_args: dict,
     mocked_sensing_agent: SensingAgent,
     mocked_primary_target: TargetAgent,
+    downtime_cfg: list[ScheduledDowntimeConfig],
 ):
-    """Test `Sensor.collectObservations`."""
+    """Test `Sensor.sensor.collectObservations`."""
     sensor = Radar(**radar_sensor_args)
     sensor.host = mocked_sensing_agent
     sensor.calculate_background = False
@@ -413,7 +431,7 @@ def testCollectObservations(
     sensor.maximum_range = 1000000
     sensor.minimum_range = 1.0
 
-    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.sensor = sensor
     mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
     mocked_sensing_agent.eci_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
     mocked_sensing_agent.time = ScenarioTime(300)
@@ -425,12 +443,18 @@ def testCollectObservations(
     mocked_primary_target.visual_cross_section = 25.0
 
     # Test when target can be collected on
-    good_obs, _, _, _ = mocked_sensing_agent.sensors.collectObservations(
+    good_obs, _ = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_primary_target],
     )
     assert len(good_obs) == 1
+
+    # Ensure the observation was recorded, and test some of the ready to revisit features.
+    assert (
+        mocked_sensing_agent.sensor._last_obs[mocked_primary_target.simulation_id]
+        == mocked_sensing_agent.time
+    )
 
     # Check that boresight was updated
     slant_range_sez = _dummySlantRange(
@@ -439,16 +463,50 @@ def testCollectObservations(
         mocked_sensing_agent.datetime_epoch,
     )
     assert np.allclose(
-        mocked_sensing_agent.sensors.boresight,
+        mocked_sensing_agent.sensor.boresight,
         slant_range_sez[:3] / np.linalg.norm(slant_range_sez[:3]),
     )
+
+    # Test Missed Obs Probability
+    mocked_sensing_agent.sensor.missed_obs_probability = 0.5
+    num_obs = 0
+    num_missed = 0
+    n = 500
+    for _i in range(n):
+        good_obs, missed_obs = mocked_sensing_agent.sensor.collectObservations(
+            mocked_primary_target.initial_state,
+            mocked_primary_target,
+            [mocked_primary_target],
+        )
+        num_obs += len(good_obs)
+        num_missed += len(missed_obs)
+    # Check that, statistically, about half the obs were missed.
+    assert 0.45 * n <= num_obs
+    assert num_obs <= 0.55 * n
+    assert 0.45 * n <= num_missed
+    assert num_missed <= 0.55 * n
+
+    mocked_sensing_agent.sensor.missed_obs_probability = (
+        0  # Reset this for the rest of the testing.
+    )
+
+    # Test when the sensor is offline.
+    mocked_sensing_agent.sensor.downtimes = downtime_cfg
+    good_obs, missed_obs = mocked_sensing_agent.sensor.collectObservations(
+        mocked_primary_target.initial_state,
+        mocked_primary_target,
+        [mocked_primary_target],
+    )
+    assert len(good_obs) == 0
+    assert len(missed_obs) == 1
+    mocked_sensing_agent.sensor.downtimes = None
 
     # Test when target is not in line of sight (Earth is blocking)
     mocked_sensing_agent.eci_state = np.array((0.0, -Earth.radius, 0.0, 0.0, 0.0, 0.0))
 
-    mocked_sensing_agent.sensors.boresight = mocked_sensing_agent.sensors._setInitialBoresight()
-    with patch.object(mocked_sensing_agent.sensors, "canSlew", return_value=True):
-        good_obs, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
+    mocked_sensing_agent.sensor.boresight = mocked_sensing_agent.sensor._setInitialBoresight()
+    with patch.object(mocked_sensing_agent.sensor, "canSlew", return_value=True):
+        good_obs, missed_obs = mocked_sensing_agent.sensor.collectObservations(
             mocked_primary_target.initial_state,
             mocked_primary_target,
             [mocked_primary_target],
@@ -462,16 +520,16 @@ def testCollectObservations(
         mocked_sensing_agent.datetime_epoch,
     )
     assert np.allclose(
-        mocked_sensing_agent.sensors.boresight,
+        mocked_sensing_agent.sensor.boresight,
         slant_range_sez[:3] / np.linalg.norm(slant_range_sez[:3]),
     )
 
     for missed_ob in missed_obs:
         assert missed_ob.reason == Explanation.LINE_OF_SIGHT.value
 
-    mocked_sensing_agent.sensors.boresight = mocked_sensing_agent.sensors._setInitialBoresight()
-    with patch.object(mocked_sensing_agent.sensors, "canSlew", return_value=False):
-        good_obs, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
+    mocked_sensing_agent.sensor.boresight = mocked_sensing_agent.sensor._setInitialBoresight()
+    with patch.object(mocked_sensing_agent.sensor, "canSlew", return_value=False):
+        good_obs, missed_obs = mocked_sensing_agent.sensor.collectObservations(
             mocked_primary_target.initial_state,
             mocked_primary_target,
             [mocked_primary_target],
@@ -485,8 +543,8 @@ def testCollectObservations(
         mocked_sensing_agent.datetime_epoch,
     )
     assert np.allclose(
-        mocked_sensing_agent.sensors.boresight,
-        mocked_sensing_agent.sensors._setInitialBoresight(),
+        mocked_sensing_agent.sensor.boresight,
+        mocked_sensing_agent.sensor._setInitialBoresight(),
     )
     for missed_ob in missed_obs:
         assert missed_ob.reason == Explanation.SLEW_DISTANCE.value
@@ -508,7 +566,7 @@ def testCollectObservationsWithBackground(
     sensor.field_of_view.cone_angle = np.pi
     sensor.maximum_range = 100000
 
-    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.sensor = sensor
     mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
     mocked_sensing_agent.eci_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
     mocked_sensing_agent.time = ScenarioTime(300)
@@ -521,7 +579,7 @@ def testCollectObservationsWithBackground(
 
     mocked_background_target.eci_state = mocked_background_target.initial_state
     mocked_background_target.visual_cross_section = 25.0
-    good_obs, _, _, _ = mocked_sensing_agent.sensors.collectObservations(
+    good_obs, _ = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_background_target],
@@ -544,7 +602,7 @@ def testNoMissedObservation(
     sensor.field_of_view.cone_angle = np.pi
     sensor.maximum_range = 10000000
 
-    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.sensor = sensor
     mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
     mocked_sensing_agent.eci_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
     mocked_sensing_agent.time = ScenarioTime(300)
@@ -554,7 +612,7 @@ def testNoMissedObservation(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
-    _, missed_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
+    _, missed_obs = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_primary_target],
@@ -577,7 +635,7 @@ def testMissedObservation(
     sensor.field_of_view.cone_angle = np.pi
     sensor.maximum_range = 100000
 
-    mocked_sensing_agent.sensors = sensor
+    mocked_sensing_agent.sensor = sensor
     mocked_sensing_agent.ecef_state = np.array((0.0, Earth.radius, 0.0, 0.0, 0.0, 0.0))
     mocked_sensing_agent.eci_state = np.array((0.0, -Earth.radius, 0.0, 0.0, 0.0, 0.0))
     mocked_sensing_agent.time = ScenarioTime(300)
@@ -587,7 +645,7 @@ def testMissedObservation(
 
     mocked_primary_target.eci_state = mocked_primary_target.initial_state
     mocked_primary_target.visual_cross_section = 25.0
-    _, bad_obs, _, _ = mocked_sensing_agent.sensors.collectObservations(
+    _, bad_obs = mocked_sensing_agent.sensor.collectObservations(
         mocked_primary_target.initial_state,
         mocked_primary_target,
         [mocked_primary_target],
@@ -601,7 +659,7 @@ def testBuildSigmaObs():
 
 @patch("resonaate.sensors.sensor_base.getSlantRangeVector")
 @patch.multiple(Sensor, __abstractmethods__=set())
-def testAttemptObservation(
+def testattemptObservation(
     slant_range_patch: Mock,
     base_sensor_args: dict,
     mocked_sensing_agent: SensingAgent,
@@ -673,6 +731,44 @@ def testDeltaBoresight(base_sensor_args: dict):
 
     sez_position = np.array((1.0, 0.0, 0.0))
     assert sensor.deltaBoresight(sez_position) == 0.0
+
+
+@patch.multiple(Sensor, __abstractmethods__=set())
+def testIsOffline(
+    base_sensor_args: dict,
+    mocked_sensing_agent: SensingAgent,
+    downtime_cfg: list[ScheduledDowntimeConfig],
+) -> None:
+    """Tests that the sensor's offline assessment works as intended.
+
+    Args:
+        base_sensor_args (dict): Base sensor parameter.
+        mocked_sensing_agent (SensingAgent): Host sensing agent.
+        downtime_cfg(list[ScheduledDowntimeConfig]): Downtime configs.
+    """
+    sensor = Sensor(**base_sensor_args)
+    sensor.host = mocked_sensing_agent
+    sensor.host.eci_state = np.array((6378.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    sensor.host.julian_date_epoch = JulianDate(2459569.75)
+    sensor.field_of_view = ConicFoV(cone_angle=np.deg2rad(45.0))
+    mocked_sensing_agent.sensor = sensor
+
+    # Test always online when not configured.
+    assert not mocked_sensing_agent.sensor.isOffline()
+
+    # Enable downtimes and ensure sensor is offline at the correct times
+    mocked_sensing_agent.sensor.downtimes = downtime_cfg
+
+    # Time should be set to 0. At this time we should be offline
+    assert mocked_sensing_agent.sensor.isOffline()
+
+    # Bump time to 12000. Sensor should be online
+    mocked_sensing_agent.sensor.host.time += 12000
+    assert not mocked_sensing_agent.sensor.isOffline()
+
+    # Bump time to 87400. Sensor should be offline
+    mocked_sensing_agent.sensor.host.time += 75400
+    assert mocked_sensing_agent.sensor.isOffline()
 
 
 def testAttemptNoisyObservation():

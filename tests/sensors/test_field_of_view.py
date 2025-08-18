@@ -76,7 +76,7 @@ def getConicFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
         dynamics,
         prop_cfg,
     )
-    conic_sensor_agent.sensors.host.time = ScenarioTime(30)
+    conic_sensor_agent.sensor.host.time = ScenarioTime(30)
     return conic_sensor_agent
 
 
@@ -98,7 +98,7 @@ def getRectangularFOVSensingAgent(clock: ScenarioClock) -> SensingAgent:
         dynamics,
         prop_cfg,
     )
-    rectangular_sensor_agent.sensors.host.time = ScenarioTime(30)
+    rectangular_sensor_agent.sensor.host.time = ScenarioTime(30)
     return rectangular_sensor_agent
 
 
@@ -167,7 +167,7 @@ def testCanSlew(conic_sensor_agent: SensingAgent):
             2.16300407e-04,
         ],
     )
-    val = conic_sensor_agent.sensors.canSlew(good_slant)
+    val = conic_sensor_agent.sensor.canSlew(good_slant)
     assert bool(val) is True
 
 
@@ -179,7 +179,7 @@ def testCheckTargetsInView(
 ):
     """Test if multiple targets are in the Field of View."""
     pointing_sez = getSlantRangeVector(
-        conic_sensor_agent.sensors.host.eci_state,
+        conic_sensor_agent.sensor.host.eci_state,
         primary_rso.eci_state,
         clock.datetime_epoch,
     )
@@ -194,7 +194,7 @@ def testCheckTargetsInView(
         conic_sensor_agent.datetime_epoch,
     )
     agents = [
-        conic_sensor_agent.sensors.field_of_view.inFieldOfView(pointing_sez, slant_range_sez)
+        conic_sensor_agent.sensor.field_of_view.inFieldOfView(pointing_sez, slant_range_sez)
         for slant_range_sez in (primary_rso_sez, secondary_rso_sez)
     ]
     assert len(agents) == 2
@@ -207,18 +207,18 @@ def testInFieldOfView(
     rectangular_sensor_agent: SensingAgent,
 ):
     """Test observations of two RSO with a single sensor at one time."""
-    in_fov = conic_sensor_agent.sensors.field_of_view.inFieldOfView(
+    in_fov = conic_sensor_agent.sensor.field_of_view.inFieldOfView(
         primary_rso.eci_state[:3],
         secondary_rso.eci_state[:3],
     )
     assert bool(in_fov) is True
-    not_in_fov = conic_sensor_agent.sensors.field_of_view.inFieldOfView(
+    not_in_fov = conic_sensor_agent.sensor.field_of_view.inFieldOfView(
         primary_rso.eci_state[:3],
         array([0, 0.01, 0]),
     )
     assert bool(not_in_fov) is False
 
-    rectangle_in_fov = rectangular_sensor_agent.sensors.field_of_view.inFieldOfView(
+    rectangle_in_fov = rectangular_sensor_agent.sensor.field_of_view.inFieldOfView(
         primary_rso.eci_state[:3],
         secondary_rso.eci_state[:3],
     )

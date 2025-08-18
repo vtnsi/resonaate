@@ -36,15 +36,28 @@ ______________________________________________________________________
 
 ### Added
 
-*for new features*
+- Additional labels for missed observations in the `.common.labels.Explanation()` object for the sensor being offline, random missed obs.
+- Created a `ScheudledDowntimeConfig()` object in `.scenario.config.sensor_config` that stores information regarding sensor downtimes.
+- Enabled configurable minimum revisit times for both sensor networks and sensor agents.
+- Added `.collectObservations()` method to `agents.sensing_agent.SensingAgent()`.
+- Added `min_revisit_time` configuration option to `scenario.config.engine_config.EngineConfig()`.
+- Added the following config options to the `.scenario.config.sensor_config.SensorConfigBase()` object:
+  - `downtimes`: `ScheduledDowntimeConfig()` object.
+  - `missed_obs_probability`: Probability of a random missed obs.
+  - `min_revisit_time`: Minimum required time since last obs before a sensor can be tasked to collect another observation.
+- Sensor object now assesses the new conditions (downtime, random_missed_obs, min_revisit_time) when `Sensor::collectObservations()` and `Sensor::attemptObservation()` are called.
+- `.tasking.predictions::predictObservations()` checks for downtime and minimum_revisit_time, so that the tasking engine will not task a sensor to collect obs.
 
 ### Changed
 
-*for changes in existing functionality*
+- Moved `tasking.predictions::predictObseravtions()` to `agents.sensing_agent.SensingAgent.sensor.predictObservation()`.
+- `parallel.tasking_reward_execution::asyncCalculateReward()` now checks for the sensor networks minimum revisit time and each sensor's minimum revisit time.
+- Renamed `agents.sensing_agent.SensingAgent.sensors` and `_sensors` to `.sensor` and `._sensor`, respectively.
+- `parallel.tasking_reward_generation::asyncExecuteTasking()` now calls `agents.sensing_agent.SensingAgent.collectObservation()`.
 
 ### Deprecated
 
-*for soon-to-be removed features*
+- `tasking.predictions::predictObseravtions()` has been marked for deprecation. Use `agents.sensing_agent.SensingAgent.sensor.predictObservation()` instead.
 
 ### Removed
 

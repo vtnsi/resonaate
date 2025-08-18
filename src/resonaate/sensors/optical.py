@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     # Local Imports
-    from ..scenario.config.sensor_config import OpticalConfig
+    from ..scenario.config.sensor_config import OpticalConfig, ScheduledDowntimeConfig
     from .field_of_view import FieldOfView
 
 
@@ -76,6 +76,7 @@ class Optical(Sensor):
         detectable_vismag: float,
         minimum_range: float,
         maximum_range: float,
+        downtimes: list[ScheduledDowntimeConfig] | None = None,
         **sensor_args: dict,
     ):
         """Construct a `Optical` sensor object.
@@ -92,6 +93,8 @@ class Optical(Sensor):
             detectable_vismag (``float``): minimum vismag of RSO needed for visibility
             minimum_range (``float``): minimum RSO range needed for visibility
             maximum_range (``float``): maximum RSO range needed for visibility
+            missed_obs_probability (``float``): Missed observation probability. Defaults to 0.
+            downtimes (``list[ScheduledDowntimeConfig], None``): Sensor downtime configs. Defaults to None.
             sensor_args (``dict``): extra key word arguments for easy extension of the `Sensor` interface
         """
         measurement = Measurement.fromMeasurementLabels(["azimuth_rad", "elevation_rad"], r_matrix)
@@ -106,6 +109,7 @@ class Optical(Sensor):
             background_observations,
             minimum_range,
             maximum_range,
+            downtimes=downtimes,
             **sensor_args,
         )
 
@@ -134,6 +138,9 @@ class Optical(Sensor):
             minimum_range=sensor_config.minimum_range,
             maximum_range=sensor_config.maximum_range,
             detectable_vismag=sensor_config.detectable_vismag,
+            min_revisit_time=sensor_config.min_revisit_time,
+            missed_obs_probabilty=sensor_config.missed_obs_probability,
+            downtimes=sensor_config.downtimes,
         )
 
     def isVisible(  # noqa: PLR0911

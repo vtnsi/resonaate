@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array
 
 # Local Imports
+from ..common.labels import Explanation
 from ..data.ephemeris import TruthEphemeris
-from ..physics.time.stardate import JulianDate
+from ..data.observation import MissedObservation
+from ..physics.constants import DAYS2SEC
+from ..physics.time.stardate import JulianDate, ScenarioTime
 from ..physics.transforms.methods import ecef2lla, eci2ecef
 from ..sensors import sensorFactory
 from ..sensors.sensor_base import Sensor
@@ -19,15 +23,16 @@ from .agent_base import Agent
 # Type checking
 if TYPE_CHECKING:
     # Standard Library Imports
-    from collections.abc import Collection
 
     # Third Party Imports
     from numpy import ndarray
     from typing_extensions import Self
 
     # Local Imports
+    from ..agents.target_agent import TargetAgent
     from ..data.ephemeris import _EphemerisMixin
     from ..data.events.sensor_time_bias import SensorTimeBiasEvent
+    from ..data.observation import Observation
     from ..dynamics.dynamics_base import Dynamics
     from ..dynamics.integration_events.station_keeping import StationKeeper
     from ..scenario.clock import ScenarioClock
@@ -45,12 +50,13 @@ class SensingAgent(Agent):
         agent_type: str,
         initial_state: ndarray,
         clock: ScenarioClock,
-        sensors: Sensor,
+        sensor: Sensor,
         dynamics: Dynamics,
         realtime: bool,
         visual_cross_section: float | int,
         mass: float | int,
         reflectivity: float,
+        min_revisit_time: float = 0.0,
         station_keeping: list[StationKeeper] | None = None,
     ):
         """Construct a SensingAgent object.
@@ -61,12 +67,14 @@ class SensingAgent(Agent):
             agent_type (``str``): name signifying the type of agent `('Spacecraft', 'GroundFacility', )`
             initial_state (``numpy.ndarray``): 6x1 ECI initial state vector
             clock (:class:`.ScenarioClock`): clock instance for retrieving proper times
-            sensors (:class:`.Sensor`): sensor object associated this SensingAgent object
+            sensor (:class:`.Sensor`): sensor object associated this SensingAgent object
             dynamics (:class:`.Dynamics`): SensingAgent's simulation dynamics
             realtime (``bool``): whether to use :attr:`dynamics` or import data for propagation
             visual_cross_section (``float, int``): constant visual cross-section of the agent
             mass (``float, int``): constant mass of the agent
             reflectivity (``float``): constant reflectivity of the agent
+            min_revisit_time (``float``): Minimum revisit time of the sensor, in seconds. Time required since \
+            observation made by the sensor before it's allowed to revisit the target
             station_keeping (list, optional): list of :class:`.StationKeeper` objects describing the station
                 keeping to be performed
 
@@ -91,11 +99,13 @@ class SensingAgent(Agent):
         #     self._logger.error("Incorrect type for sensors param")
         #     raise TypeError(type(sensors))
         # for sensor in sensors:
-        if not isinstance(sensors, Sensor):
+        if not isinstance(sensor, Sensor):
             self._logger.error("Item in sensors param is not a `Sensor` object")
-            raise TypeError(type(sensors))
-        self._sensors = sensors
-        self._sensors.host = self
+            raise TypeError(type(sensor))
+        self._sensor = sensor
+        self._sensor.host = self
+
+        self.min_revisit_time = min_revisit_time
 
         # Properly initialize the SensingAgent's state types
         self._truth_state = array(initial_state, copy=True)
@@ -103,6 +113,8 @@ class SensingAgent(Agent):
         self._lla_state = ecef2lla(self._ecef_state)
 
         self.sensor_time_bias_event_queue = []
+
+        self._last_obs_record: defaultdict[int, JulianDate | None] = defaultdict(lambda: None)
 
     @classmethod
     def fromConfig(
@@ -148,6 +160,7 @@ class SensingAgent(Agent):
             sen_cfg.platform.visual_cross_section,
             sen_cfg.platform.mass,
             sen_cfg.platform.reflectivity,
+            min_revisit_time=sen_cfg.sensor.min_revisit_time,
             station_keeping=station_keeping,
         )
 
@@ -182,8 +195,8 @@ class SensingAgent(Agent):
         Args:
             sensor_change (dict): values to change in the sensor.
         """
-        self.sensors.boresight = sensor_change["boresight"]
-        self.sensors.time_last_tasked = sensor_change["time_last_tasked"]
+        self._sensor.boresight = sensor_change["boresight"]
+        self._sensor.time_last_tasked = sensor_change["time_last_tasked"]
 
     def getCurrentEphemeris(self) -> TruthEphemeris:
         """Returns the SensingAgent's current ephemeris information.
@@ -237,6 +250,75 @@ class SensingAgent(Agent):
         return self._lla_state
 
     @property
-    def sensors(self) -> Collection[Sensor]:
-        """``collections.abc.Collection``: Returns the collection of sensors associated with this SensingAgent."""
-        return self._sensors
+    def sensor(self) -> Sensor:
+        """``Sensor``: Sensor object associated with this agent."""
+        return self._sensor
+
+    def updateObsRecord(
+        self,
+        observations: list[Observation],
+    ) -> None:
+        """Update's the sensing agent's record of last observations of a target.
+
+        Args:
+            observations (list[Observation]): List of observations.
+        """
+        for ob in observations:
+            self._last_obs_record[ob.target_id] = JulianDate(ob.julian_date)
+
+    def readyToRevisit(self, target_id: int) -> bool:
+        """Checks if the sensor is ready to revisit a target.
+
+        Args:
+            target_id (int): Unique identifier of the target agent.
+
+        Returns:
+            bool: True, if ready to revisit. False otherwise.
+        """
+        last: JulianDate | None = self._last_obs_record.get(target_id)
+        if self.min_revisit_time == 0 or not last:
+            return True
+        return float(self.julian_date_epoch - last) * DAYS2SEC >= self.min_revisit_time
+
+    def collectObservations(
+        self,
+        estimate_eci: ndarray,
+        target_agent: TargetAgent,
+        background_agents: list[TargetAgent],
+    ) -> tuple[list[Observation], list[MissedObservation]]:
+        """Collect observations on all targets within the sensor's FOV.
+
+        Args:
+            estimate_eci (``ndarray``): Estimate state vector that sensor is pointing at
+            target_agent (:class:`.TargetAgent`): Target agent that sensor is pointing at
+            background_agents (``list``): list of possible :class:`.TargetAgent` objects in FoV
+
+        Returns:
+            ``list``: :class:`.Observation` for each successful tasked observation
+            ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
+        """
+        if not self.readyToRevisit(target_agent.simulation_id):
+            self._logger.debug(
+                f"Sensor {self.simulation_id} tasked when not ready to revisit {target_agent.simulation_id}.",
+            )
+            return [], [
+                MissedObservation(
+                    self.julian_date_epoch,
+                    self.simulation_id,
+                    target_agent.simulation_id,
+                    self.eci_state,
+                    Explanation.NOT_READY_TO_REVISIT.value,
+                ),
+            ]
+        obs, missed_obs = self.sensor.collectObservations(
+            estimate_eci,
+            target_agent,
+            background_agents,
+        )
+        self.updateObsRecord(obs)
+        return obs, missed_obs
+
+    @property
+    def time_last_tasked(self) -> ScenarioTime:
+        """``ScenarioTime``: Time since the sensing agent was last tasked."""
+        return self.sensor.time_last_tasked
