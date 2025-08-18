@@ -50,11 +50,14 @@ ______________________________________________________________________
 
 ### Changed
 
-*for changes in existing functionality*
+- Moved `tasking.predictions::predictObseravtions()` to `agents.sensing_agent.SensingAgent.sensor.predictObservation()`.
+- `parallel.tasking_reward_execution::asyncCalculateReward()` now checks for the sensor networks minimum revisit time and each sensor's minimum revisit time.
+- Renamed `agents.sensing_agent.SensingAgent.sensors` and `_sensors` to `.sensor` and `._sensor`, respectively.
+- `parallel.tasking_reward_generation::asyncExecuteTasking()` now calls `agents.sensing_agent.SensingAgent.collectObservation()`.
 
 ### Deprecated
 
-*for soon-to-be removed features*
+- `tasking.predictions::predictObseravtions()` has been marked for deprecation. Use `agents.sensing_agent.SensingAgent.sensor.predictObservation()` instead.
 
 ### Removed
 
@@ -115,10 +118,6 @@ ______________________________________________________________________
 
 ### Changed
 
-- Moved `tasking.predictions::predictObseravtions()` to `agents.sensing_agent.SensingAgent.sensor.predictObservation()`.
-- `parallel.tasking_reward_execution::asyncCalculateReward()` now checks for the sensor networks minimum revisit time and each sensor's minimum revisit time.
-- Renamed `agents.sensing_agent.SensingAgent.sensors` and `_sensors` to `.sensor` and `._sensor`, respectively.
-- `parallel.tasking_reward_generation::asyncExecuteTasking()` now calls `agents.sensing_agent.SensingAgent.collectObservation()`.
 - replaced custom configuration code (i.e. `ConfigObject`, `ConfigObjectList`, and associated errors) with Pydantic models/validators
 - `TargetAgentConfig` now just known as `AgentConfig`
 - most `enum.Enum`s now inherit from `str` for easier Pydantic handling
@@ -146,7 +145,7 @@ ______________________________________________________________________
 
 ### Deprecated
 
-- `tasking.predictions::predictObseravtions()` has been marked for deprecation. Use `agents.sensing_agent.SensingAgent.sensor.predictObservation()` instead.
+*for soon-to-be removed features*
 
 ### Removed
 
