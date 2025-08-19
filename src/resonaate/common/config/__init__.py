@@ -119,7 +119,7 @@ class RootConfig(Enum):
         resonaate_dotenv = dotenv_values(dotenv_path)
         if cli_args is None:
             cli_args = getResonaateArgs()
-        parsed_args = self.getCommandLineParser().parse_args(cli_args)
+        parsed_args, _ = self.getCommandLineParser().parse_known_args(cli_args)
 
         config_dict = {}
         self.getSpec().retrieveUserInput(config_dict, vars(parsed_args), resonaate_dotenv)

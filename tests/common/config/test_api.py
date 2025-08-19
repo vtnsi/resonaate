@@ -31,3 +31,13 @@ def test_getLibConfig():
     # make sure singleton works as expected
     dup_cfg = RootConfig.LIB.inst()
     assert dup_cfg is cfg
+
+
+def test_getLibConfig_withInit(put_main_init_arg):
+    """Validate that :class:`.LibraryConfig` builds successfully even when an init arg is provided."""
+    cfg = RootConfig.LIB.inst()
+    assert isinstance(cfg, LibraryConfig)
+
+    # make sure singleton works as expected
+    dup_cfg = RootConfig.LIB.inst()
+    assert dup_cfg is cfg
