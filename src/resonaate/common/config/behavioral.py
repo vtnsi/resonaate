@@ -1,4 +1,5 @@
 """Define configuration parameters pertaining to the inherent behavior of RESONAATE."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -6,13 +7,14 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 # Third Party Imports
-from pydantic import Field  # noqa: TCH002
+from pydantic import Field
 
 # Local Imports
 from ..labels import EOPLoaderLabel
 from .meta import CommandLineOptions, EnvName, LoggingLevel, UserBaseModel
 
 # ruff: noqa: TCH001, TCH003, UP007
+
 
 class BehavioralConfig(UserBaseModel):
     """Set of configuration options that specify the behavior of RESONAATE."""
@@ -88,6 +90,18 @@ class BehavioralConfig(UserBaseModel):
     Setting this flag indicates that `physics.math.nearestPD()` should be used to find the nearest positive
     definite matrix to attempt to circumvent the error.
     """
+
+    filter_reinitialize: Annotated[
+        Optional[bool],
+        Field(default=False),
+        EnvName("FILTER_REINITIALIZE"),
+        CommandLineOptions("--filter-reinitialize"),
+    ]
+    """Indication of whether or not to completely reset the a filter if cholesky decomposition fails.
+
+    If `debugging_nearest_pd` is set to True, the filter will only reinitialize if a nearest PD matrix cannot
+    be located. Otherwise, the filter will completely reset with the initial covariance that it had at the start
+    of the scenario."""
 
     debugging_estimate_error_inflation: Annotated[
         Optional[bool],

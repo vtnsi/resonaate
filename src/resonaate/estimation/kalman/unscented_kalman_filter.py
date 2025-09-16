@@ -174,6 +174,8 @@ class UnscentedKalmanFilter(KalmanFilter):
         self.sigma_x_res = array([])
         self.sigma_y_res = array([])
 
+        self._init_est_p = est_p
+
     @classmethod
     def fromConfig(
         cls,
@@ -222,6 +224,11 @@ class UnscentedKalmanFilter(KalmanFilter):
         r"""``int``: Returns the number of sigma points to use in this UKF."""
         return 2 * self.x_dim + 1
 
+    def _resetCovariance(self) -> None:
+        """Resets the covariance to the initial value."""
+        self.pred_p = self._init_est_p
+        self.est_p = self._init_est_p
+
     def _checkSqrtCovariance(
         self,
         cov: ndarray,
@@ -233,10 +240,19 @@ class UnscentedKalmanFilter(KalmanFilter):
             if RootConfig.LIB.inst().behavioral_config.debugging_nearest_pd:
                 msg = f"`nearestPD()` function was used on RSO {self.target_id}"
                 self.logger.warning(msg)
-                sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
+                try:
+                    sqrt_cov = findNearestPositiveDefiniteMatrix(cov)
+                except LinAlgError:
+                    self.logger.warning("Failed to find nearest pd matrix!")
+                    if not RootConfig.LIB.inst().behavioral_config.filter_reinitialize:
+                        raise
+                    self.logger.warning(f"Resetting covariance for target {self.target_id}")
+                    sqrt_cov = sqrt_func(self.pred_p)
             else:
-                raise
-
+                if not RootConfig.LIB.inst().behavioral_config.filter_reinitialize:
+                    raise
+                self.logger.warning(f"Resetting covariance for target {self.target_id}")
+                sqrt_cov = sqrt_func(self.pred_p)
         return sqrt_cov
 
     def generateSigmaPoints(
