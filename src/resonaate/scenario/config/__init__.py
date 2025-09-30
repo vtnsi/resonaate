@@ -99,7 +99,7 @@ class ScenarioConfig(BaseModel):
     observation: ObservationConfig = ObservationConfig()
     """:class:`.ObservationConfig`: configurations specific to observation behavior."""
 
-    events_raw: list[dict | str] = Field(default_factory=list)
+    events_raw: list[dict | str] = Field(default_factory=list, alias="events")
     """list[dict[str,Any] | str]: list of event config JSON that occur during the simulation, or paths to files that contain
     lists of them."""
 
@@ -128,8 +128,8 @@ class ScenarioConfig(BaseModel):
                 raw: list[dict[str, Any]] = loadJSONFile(item)
                 configs = [EventConfig(**cfg_item) for cfg_item in raw]
                 total.extend(configs)
-            else:
-                raise ValueError(f"Cannot load event from invalid type {type(item)}")
+                continue
+            raise ValueError(f"Cannot load event from invalid type {type(item)}")
         return total
 
     @staticmethod
