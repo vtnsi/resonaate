@@ -83,6 +83,7 @@ The main JSON configuration file must be defined as follows (see {ref}`ref-cfg-s
     "perturbations": PerturbationsConfig,   # Opt: orbital perturbations
     "observation": ObservationConfig,       # Opt: observation details
     "events": [EventConfig, ...],           # Opt: discrete events that occur during the scenario
+    "event_files": [str, ...],              # Opt: list of addtional event files containing discrete events.
 }
 ```
 
@@ -203,6 +204,18 @@ The corresponding sensor set configuration file will have the following format:
 [
     SensingAgentConfig,  # Req: object(s) defining sensor agents
     ...,
+]
+```
+
+### Additional Events Config File
+
+These are additional files that can be included if you wish to not bloat your main initialization file with alot
+of events. This can become incredibly useful if you have a large number of events you need to configure. These are essentially
+just lists of \{class}.`EventConfig`.
+
+```python
+[
+    EventConfig, # Req: object(s) defining events.
 ]
 ```
 
