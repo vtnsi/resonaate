@@ -155,10 +155,19 @@ class ScenarioConfig(BaseModel):
 
         # Load in any optional event files.
         if "event_files" in configuration:  # I love magic string literals.
+            if "events" not in configuration:
+                configuration["events"] = (
+                    []
+                )  # Assign if it's not there cause this aint a DefaultDict.
             event_files = configuration.pop("event_files")
             for event_file in event_files:
                 configuration["events"].extend(
-                    [EventConfig(**item) for item in loadJSONFile(event_file)],
+                    [
+                        EventConfig(**item)
+                        for item in loadJSONFile(
+                            os.path.join(config_directory, event_file),
+                        )
+                    ],
                 )
 
         return configuration

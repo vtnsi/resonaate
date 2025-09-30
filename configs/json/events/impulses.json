@@ -1,0 +1,20 @@
+[
+    {
+      "scope": "agent_propagation",
+      "scope_instance_id": 20001,
+      "start_time": "2021-03-30T18:00:00.000Z",
+      "end_time": "2021-03-30T18:00:00.000Z",
+      "event_type": "impulse",
+      "thrust_vector": [0.0, 5.0e-3, 0.0],
+      "thrust_frame": "ntw"
+    },
+    {
+      "scope": "agent_propagation",
+      "scope_instance_id": 20001,
+      "start_time": "2021-03-30T19:00:00.000Z",
+      "end_time": "2021-03-30T19:00:00.000Z",
+      "event_type": "impulse",
+      "thrust_vector": [0.0, 5.0e-3, 0.0],
+      "thrust_frame": "ntw"
+    }
+]
