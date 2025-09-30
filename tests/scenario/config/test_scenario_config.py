@@ -2,16 +2,22 @@ from __future__ import annotations
 
 # Standard Library Imports
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 # Third Party Imports
 import pytest
 from pydantic import ValidationError
 
 # RESONAATE Imports
+from resonaate.common.utilities import loadJSONFile
 from resonaate.scenario.config import ScenarioConfig
 
 # Local Imports
 from ... import FIXTURE_DATA_DIR, JSON_INIT_PATH
+
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from typing import Any
 
 
 def testEmptyConfig():
@@ -25,6 +31,9 @@ def testParseConfigFile(datafiles: str):
     """Test parsing a valid config file."""
     # Pass a valid config file, ensure no errors are raised
     test_init_file = Path(str(datafiles)) / JSON_INIT_PATH / "test_init.json"
+    loaded: dict[str, Any] = loadJSONFile(test_init_file)  # Original, unmutated JSON
+    external_events: bool = "event_files" in loaded
+    internal_events = len(loaded["events"])
     scenario_cfg_dict = ScenarioConfig.parseConfigFile(test_init_file)
     assert isinstance(scenario_cfg_dict, dict)
     assert "engines_files" not in scenario_cfg_dict
@@ -34,6 +43,9 @@ def testParseConfigFile(datafiles: str):
         assert "sensors_file" not in engine_cfg_dict
         assert isinstance(engine_cfg_dict.get("targets"), list)
         assert isinstance(engine_cfg_dict.get("sensors"), list)
+    assert "event_files" not in scenario_cfg_dict
+    if external_events:  # Check if extra internal events got loaded in.
+        assert len(scenario_cfg_dict["events"]) > internal_events
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
@@ -67,7 +79,10 @@ def testRequiredSection(datafiles: str, remove: str):
 
 
 @pytest.mark.datafiles(FIXTURE_DATA_DIR)
-@pytest.mark.parametrize("remove", ["noise", "propagation", "geopotential", "perturbations", "observation", "events"])
+@pytest.mark.parametrize(
+    "remove",
+    ["noise", "propagation", "geopotential", "perturbations", "observation", "events"],
+)
 def testOptionalSection(datafiles: str, remove: str):
     """Test removing each optional sections in config."""
     test_init_file = Path(str(datafiles)) / JSON_INIT_PATH / "test_init.json"

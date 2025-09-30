@@ -7,7 +7,7 @@ import os.path
 from typing import TYPE_CHECKING
 
 # Third Party Imports
-from pydantic import BaseModel, Field, TypeAdapter, create_model
+from pydantic import BaseModel, Field, create_model
 
 # Local Imports
 from ...common.utilities import loadJSONFile
@@ -155,7 +155,6 @@ class ScenarioConfig(BaseModel):
 
         # Load in any optional event files.
         if "event_files" in configuration:  # I love magic string literals.
-            adapter = TypeAdapter(EventConfig)
             if "events" not in configuration:
                 configuration["events"] = (
                     []
@@ -163,12 +162,7 @@ class ScenarioConfig(BaseModel):
             event_files = configuration.pop("event_files")
             for event_file in event_files:
                 configuration["events"].extend(
-                    [
-                        adapter.validate_python(item)
-                        for item in loadJSONFile(
-                            os.path.join(config_directory, event_file),
-                        )
-                    ],
+                    loadJSONFile(os.path.join(config_directory, event_file)),
                 )
 
         return configuration
