@@ -22,7 +22,7 @@ ______________________________________________________________________
 
 **Table of Contents**
 
-[[_TOC_]]
+\[\[_TOC_\]\]
 
 <!-- markdownlint-enable MD036 -->
 
@@ -36,6 +36,8 @@ ______________________________________________________________________
 
 ### Added
 
+- Added optional `event_files` section to main initialization messages.
+- Added optional flag `FILTER_REINITIALIZE` for covariance recovery.
 - Additional labels for missed observations in the `.common.labels.Explanation()` object for the sensor being offline, random missed obs.
 - Created a `ScheudledDowntimeConfig()` object in `.scenario.config.sensor_config` that stores information regarding sensor downtimes.
 - Enabled configurable minimum revisit times for both sensor networks and sensor agents.
@@ -88,7 +90,6 @@ ______________________________________________________________________
 ### CI
 
 *related to the continuous integration system*
-
 
 ## [4.1.0][v4.1.0] - 2025-06-24
 
