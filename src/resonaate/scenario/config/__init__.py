@@ -4,7 +4,6 @@ from __future__ import annotations
 
 # Standard Library Imports
 import os.path
-from functools import cached_property
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -99,9 +98,8 @@ class ScenarioConfig(BaseModel):
     observation: ObservationConfig = ObservationConfig()
     """:class:`.ObservationConfig`: configurations specific to observation behavior."""
 
-    events_raw: list[dict | str] = Field(default_factory=list, alias="events")
-    """list[dict[str,Any] | str]: list of event config JSON that occur during the simulation, or paths to files that contain
-    lists of them."""
+    events: list[EventConfig] = Field(default_factory=list)
+    """`list[EventConfig]`: List of :class:`EventConfig` configured in the scenario."""
 
     @classmethod
     def fromConfigFile(cls, config_file_path: str | Path) -> ScenarioConfig:
@@ -115,22 +113,6 @@ class ScenarioConfig(BaseModel):
         """
         config_dict = cls.parseConfigFile(config_file_path)
         return cls(**config_dict)
-
-    @cached_property
-    def events(self) -> list[EventConfig]:
-        """``list[EventConfig]``. List of all :class:`.EventConfig` associated with the scenario."""
-        total: list[EventConfig] = []
-        for item in self.events_raw:
-            if isinstance(item, dict):
-                total.append(EventConfig(**item))
-                continue
-            if isinstance(item, str):  # Check if item is a path to an events file.
-                raw: list[dict[str, Any]] = loadJSONFile(item)
-                configs = [EventConfig(**cfg_item) for cfg_item in raw]
-                total.extend(configs)
-                continue
-            raise ValueError(f"Cannot load event from invalid type {type(item)}")
-        return total
 
     @staticmethod
     def parseConfigFile(
@@ -170,6 +152,14 @@ class ScenarioConfig(BaseModel):
 
             engine_config.update({"targets": targets, "sensors": sensors})
             configuration["engines"].append(engine_config)
+
+        # Load in any optional event files.
+        if "event_files" in configuration:  # I love magic string literals.
+            event_files = configuration.pop("event_files")
+            for event_file in event_files:
+                configuration["events"].extend(
+                    [EventConfig(**item) for item in loadJSONFile(event_file)],
+                )
 
         return configuration
 
