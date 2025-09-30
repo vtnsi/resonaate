@@ -122,9 +122,8 @@ def testCheckSqrtCovariance(ukf: UnscentedKalmanFilter):
 
     # Check that non-positive definite gets reset if filter recovery is on
     root_cfg.behavioral_config.filter_reinitialize = True
-    with pytest.raises(LinAlgError):  # noqa: PT012
-        val = ukf._checkSqrtCovariance(negative_definite, cholesky)
-        assert allclose(val, cholesky(ukf._init_est_p), rtol=1e-7, atol=1e-12)
+    val = ukf._checkSqrtCovariance(negative_definite, cholesky)
+    assert allclose(val, cholesky(ukf._init_p), rtol=1e-7, atol=1e-12)
 
     root_cfg.behavioral_config.filter_reinitialize = False
 
