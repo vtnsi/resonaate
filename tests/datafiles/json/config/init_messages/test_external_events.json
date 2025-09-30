@@ -55,6 +55,6 @@
       "prune_percentage": 0.997
     }
   },
-  "engines_files": ["engines/single_target_single_sensor.json"],
-  "event_files": ["events/impulses.json"]
+  "engines_files": ["../engines/single_target_single_sensor.json"],
+  "event_files": ["../event_sets/impulses.json"]
 }
