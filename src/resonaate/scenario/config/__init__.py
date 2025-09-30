@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 import os.path
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 # Third Party Imports
@@ -98,8 +99,9 @@ class ScenarioConfig(BaseModel):
     observation: ObservationConfig = ObservationConfig()
     """:class:`.ObservationConfig`: configurations specific to observation behavior."""
 
-    events: list[EventConfig] = Field(default_factory=list)
-    """list[EventConfigList]: list of :class:`.EventConfig` objects that occur during the simulation."""
+    events_raw: list[dict | str] = Field(default_factory=list)
+    """list[dict[str,Any] | str]: list of event config JSON that occur during the simulation, or paths to files that contain
+    lists of them."""
 
     @classmethod
     def fromConfigFile(cls, config_file_path: str | Path) -> ScenarioConfig:
@@ -113,6 +115,22 @@ class ScenarioConfig(BaseModel):
         """
         config_dict = cls.parseConfigFile(config_file_path)
         return cls(**config_dict)
+
+    @cached_property
+    def events(self) -> list[EventConfig]:
+        """``list[EventConfig]``. List of all :class:`.EventConfig` associated with the scenario."""
+        total: list[EventConfig] = []
+        for item in self.events_raw:
+            if isinstance(item, dict):
+                total.append(EventConfig(**item))
+                continue
+            if isinstance(item, str):  # Check if item is a path to an events file.
+                raw: list[dict[str, Any]] = loadJSONFile(item)
+                configs = [EventConfig(**cfg_item) for cfg_item in raw]
+                total.extend(configs)
+            else:
+                raise ValueError(f"Cannot load event from invalid type {type(item)}")
+        return total
 
     @staticmethod
     def parseConfigFile(
