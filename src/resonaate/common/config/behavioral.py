@@ -13,7 +13,7 @@ from pydantic import Field
 from ..labels import EOPLoaderLabel
 from .meta import CommandLineOptions, EnvName, LoggingLevel, UserBaseModel
 
-# ruff: noqa: TCH001, TCH003, UP007
+# ruff: noqa: TCH001, TCH002, TCH003, UP007
 
 
 class BehavioralConfig(UserBaseModel):
