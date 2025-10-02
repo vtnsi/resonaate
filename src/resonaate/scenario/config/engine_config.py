@@ -17,6 +17,12 @@ from .agent_config import AgentConfig, SensingAgentConfig
 from .decision_config import DecisionConfig
 from .reward_config import RewardConfig
 
+TARGET_FIELD_ALIAS: str = "targets"
+"""``str``: Alias of the targets field in the raw config."""
+
+SENSOR_FIELD_ALIAS: str = "sensors"
+"""``str``: Alias of the sensors field in the raw config."""
+
 
 class EngineConfig(BaseModel):
     """Defines the structure for an object defined in the 'engines' configuration section."""
@@ -30,10 +36,10 @@ class EngineConfig(BaseModel):
     decision: DecisionConfig
     """:class:`.DecisionConfig`: Decision configuration section for the defined engine."""
 
-    sensors: list[SensingAgentConfig] = Field(..., min_length=1)
+    sensors: list[SensingAgentConfig] = Field(..., min_length=1, alias=SENSOR_FIELD_ALIAS)
     """``list``: :class:`.SensingAgentConfig` objects that this engine can task."""
 
-    targets: list[AgentConfig] = Field(..., min_length=1)
+    targets: list[AgentConfig] = Field(..., min_length=1, alias=TARGET_FIELD_ALIAS)
     """``list``: :class:`.AgentConfig` objects that this engine can be task against."""
 
     min_revisit_time: Optional[float] = Field(default=0, ge=0.0)

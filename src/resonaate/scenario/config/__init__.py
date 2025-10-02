@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, create_model
 # Local Imports
 from ...common.utilities import loadJSONFile
 from .agent_config import AgentConfig, SensingAgentConfig
-from .engine_config import EngineConfig
+from .engine_config import SENSOR_FIELD_ALIAS, TARGET_FIELD_ALIAS, EngineConfig
 from .estimation_config import EstimationConfig
 from .event_configs import EventConfig
 from .geopotential_config import GeopotentialConfig
@@ -66,6 +66,28 @@ __all__ = [  # noqa: RUF022, RUF100
     "AdvRadarConfig",
 ]
 
+# Some constants that define various mutated fields in the config that get parsed, popped, then processed.
+# They're not actually in the ScenarioConfig object, but they're defined here so it's not magic string literals
+
+ENGINES_FILES_FIELD: str = "engines_files"
+"""``str``: Name of the main init config field where the user provides a list of engine config files."""
+
+TARGETS_FILE_FIELD: str = "targets_file"
+"""``str``: Name of the engine init file config field where the user specifies the path to the targets file."""
+
+SENSORS_FILE_FIELD: str = "sensors_file"
+"""``str``: Name of the engine init file config field where the user specifies the path to the sensors file."""
+
+EVENT_FILES_FIELD: str = "event_files"
+"""``str``: Name of the main initi config field where the user provides a list of event files. Note that this \
+extends the list of events as configured under the existing `events` field, theses events are appended to the total list."""
+
+ENGINE_LIST_ALIAS: str = "engines"
+"""``str``: Name of the engine list. Should be aliased to match the field in :class:`.ScenarioConfig`'s `engines` field."""
+
+EVENT_LIST_ALIAS: str = "events"
+"""``str``: Name of the events list. Should be aliased to match the field in :class:`.ScenarioCOnfig`'s `events` field."""
+
 
 class ScenarioConfig(BaseModel):
     """Configuration class for creating valid :class:`.Scenario` objects.
@@ -79,8 +101,11 @@ class ScenarioConfig(BaseModel):
 
     estimation: EstimationConfig
     """:class:`.EstimationConfig`: estimation & filtering configuration object, **required**."""
-
-    engines: list[EngineConfig]
+    # NOTE: This is aliased because the field name string key is referenced directly in config parsing.
+    engines: list[EngineConfig] = Field(
+        ...,
+        alias=ENGINE_LIST_ALIAS,
+    )  # NOTE: This is aliased because the field name string key is referenced directly in config parsing.
     """:class:`.ConfigObjectList`: list of :class:`.EngineConfig` objects to use for tasking, **required**."""
 
     noise: NoiseConfig = NoiseConfig()
@@ -98,7 +123,10 @@ class ScenarioConfig(BaseModel):
     observation: ObservationConfig = ObservationConfig()
     """:class:`.ObservationConfig`: configurations specific to observation behavior."""
 
-    events: list[EventConfig] = Field(default_factory=list)
+    events: list[EventConfig] = Field(
+        default_factory=list,
+        alias=EVENT_LIST_ALIAS,
+    )  # NOTE: This is aliased because the field name string key is referenced directly in config parsing.
     """`list[EventConfig]`: List of :class:`EventConfig` configured in the scenario."""
 
     @classmethod
@@ -119,7 +147,7 @@ class ScenarioConfig(BaseModel):
         path: str | Path,
         file_loader: Callable[[str | Path], Any] = loadJSONFile,
     ) -> dict[str, Any]:
-        """Parse out configuration from a given filepath.
+        """Parse out configuration from a given filepath. Mutates the config and parses pathing to external files.
 
         Args:
             path (``str``): path to main config file
@@ -135,33 +163,36 @@ class ScenarioConfig(BaseModel):
         configuration = file_loader(config_file_path)
 
         # Load the Tasking Engines
-        engine_files = configuration.pop("engines_files")
-        configuration["engines"] = []
+        engine_files = configuration.pop(ENGINES_FILES_FIELD)
+        configuration[ENGINE_LIST_ALIAS] = (
+            []
+        )  # This magic string literal is at least a little ok cause it's directly associated with this
+        # classes' .engines attribute.
         for engine_file in engine_files:
             engine_config = file_loader(os.path.join(config_directory, engine_file))
 
             # Load the RSO target set
             targets = file_loader(
-                os.path.join(config_directory, engine_config.pop("targets_file")),
+                os.path.join(config_directory, engine_config.pop(TARGETS_FILE_FIELD)),
             )
 
             # Load the sensor set
             sensors = file_loader(
-                os.path.join(config_directory, engine_config.pop("sensors_file")),
+                os.path.join(config_directory, engine_config.pop(SENSORS_FILE_FIELD)),
             )
 
-            engine_config.update({"targets": targets, "sensors": sensors})
-            configuration["engines"].append(engine_config)
+            engine_config.update({TARGET_FIELD_ALIAS: targets, SENSOR_FIELD_ALIAS: sensors})
+            configuration[ENGINE_LIST_ALIAS].append(engine_config)
 
         # Load in any optional event files.
-        if "event_files" in configuration:  # I love magic string literals.
-            if "events" not in configuration:
-                configuration["events"] = (
+        if EVENT_FILES_FIELD in configuration:
+            if EVENT_LIST_ALIAS not in configuration:  # populate if not present
+                configuration[EVENT_LIST_ALIAS] = (
                     []
                 )  # Assign if it's not there cause this aint a DefaultDict.
-            event_files = configuration.pop("event_files")
+            event_files: list[str] = configuration.pop(EVENT_FILES_FIELD)
             for event_file in event_files:
-                configuration["events"].extend(
+                configuration[EVENT_LIST_ALIAS].extend(
                     loadJSONFile(os.path.join(config_directory, event_file)),
                 )
 
