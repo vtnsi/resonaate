@@ -56,16 +56,16 @@ Please ensure these steps are completed before being approved:
 The HTML documentation for more details on this procedure, see [Contributing](https://code.vt.edu/space-research/resonaate/resonaate/-/blob/develop/CONTRIBUTING.md) for details.
 
 - [ ] Ensure this isn't a duplicate MR
-- [ ] Update the changelog below with entries from the __\[Unreleased\]__ section of `CHANGELOG.md`
+- [ ] Update the changelog below with entries from the __[Unreleased]__ section of `CHANGELOG.md`
   - Remove unnecessary subsections
   - Organize and combine items
   - Add links to relevant issues and MRs (see bottom of the of `CHANGELOG.md`)
   - Refer to [Keep A Changelog] for guidelines
-- [ ] Move changelog entries from the __\[Unreleased\]__ section of `CHANGELOG.md` to a new section, titled for this release.
-  - Leave a blank __\[Unreleased\]__ section at the top.
+- [ ] Move changelog entries from the __[Unreleased]__ section of `CHANGELOG.md` to a new section, titled for this release.
+  - Leave a blank __[Unreleased]__ section at the top.
   - Update the links at the bottom of `CHANGELOG.md`:
     - The latest release should be compared to the previous release
-    - Adjust the __\[Unreleased\]__ link to this release to `HEAD`
+    - Adjust the __[Unreleased]__ link to this release to `HEAD`
     - See the bottom of `CHANGELOG.md` for examples
   - The new section should be titled as follows:
     - `#\[M.m.p\]\[vM.m.p\] - YYYY-MM-DD`

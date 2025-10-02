@@ -27,7 +27,7 @@ x(k+1) &= f\left[k, x(k), u(k)\right] + v(k) \\
 x&\in\mathbb{R}^n \\
 ```
 
-where $f[\cdot]$ defines a possibly nonlinear function, $k$ is the discrete time step, $x(k)\in \mathcal{R}^n$ is the state vector, $u(k)$ is the **known** (typically  zero in our usage) control input, and $v(k)$ is the process noise.
+where $f[\cdot]$ defines a possibly nonlinear function, $k$ is the discrete time step, $x(k)\in \mathcal{R}^n$ is the state vector, $u(k)$ is the **known** (typically zero in our usage) control input, and $v(k)$ is the process noise.
 The additive, zero-mean, and white noise properties are defined as follows:
 
 ```{math}

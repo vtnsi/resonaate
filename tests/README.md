@@ -21,8 +21,8 @@ ______________________________________________________________________
 
 Running unit tests is required before merging into protected branches.
 
-The `pytest` package has _excellent_ \[documentation\]\[pytest-docs\], so please refer to their \[Getting Started\]\[pytest-tutorial\] page first.
-There is also a helpful tutorial on `pytest` located \[here\]\[pytest-realpython\].
+The `pytest` package has _excellent_ [documentation][pytest-docs], so please refer to their [Getting Started][pytest-tutorial] page first.
+There is also a helpful tutorial on `pytest` located [here][pytest-realpython].
 
 Running the full test suite is easy:
 

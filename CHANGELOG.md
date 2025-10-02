@@ -1,9 +1,9 @@
-# Release History
+# Release History<a name="release-history"></a>
 
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Versioning
+## Versioning<a name="versioning"></a>
 
 This project is currently under *rapid development*, and so our versioning does not necessarily follow Semantic Versioning.
 We use a Major, Minor, Patch versioning scheme, but only patch version updates are not supposed to break backwards compatibility.
@@ -12,29 +12,135 @@ Major version updates are reserved for changes such as complete redesigns of key
 
 ______________________________________________________________________
 
-<!-- START TOC -->
+<!-- mdformat-toc start --slug=github --maxlevel=6 --minlevel=1 -->
 
-<!-- TOC Formatted for GitLab -->
+- [Release History](#release-history)
+  - [Versioning](#versioning)
+  - [Unreleased](#unreleased)
+    - [Added](#added)
+    - [Changed](#changed)
+    - [Deprecated](#deprecated)
+    - [Removed](#removed)
+    - [Fixed](#fixed)
+    - [Security](#security)
+    - [Test](#test)
+    - [Development](#development)
+    - [CI](#ci)
+  - [4.1.0 - 2025-06-24](#410---2025-06-24)
+    - [Added](#added-1)
+    - [Changed](#changed-1)
+    - [Deprecated](#deprecated-1)
+    - [Removed](#removed-1)
+    - [Fixed](#fixed-1)
+    - [Security](#security-1)
+    - [Test](#test-1)
+    - [Development](#development-1)
+    - [CI](#ci-1)
+  - [4.0.0 - 2024-05-08](#400---2024-05-08)
+    - [Added](#added-2)
+    - [Changed](#changed-2)
+    - [Deprecated](#deprecated-2)
+    - [Removed](#removed-2)
+    - [Fixed](#fixed-2)
+    - [Security](#security-2)
+    - [Test](#test-2)
+    - [Development](#development-2)
+    - [CI](#ci-2)
+  - [3.0.0 - 2023-04-07](#300---2023-04-07)
+    - [Breaking Changes](#breaking-changes)
+    - [Fixed](#fixed-3)
+    - [Added](#added-3)
+      - [`resonaate.common` package](#resonaatecommon-package)
+      - [`resonaate.data` package](#resonaatedata-package)
+      - [`resonaate.physics` package](#resonaatephysics-package)
+      - [`resonaate.scenario` package](#resonaatescenario-package)
+      - [`resonaate.sensors` package](#resonaatesensors-package)
+      - [`resonaate.tasking` package](#resonaatetasking-package)
+    - [Changed](#changed-3)
+      - [Dependencies](#dependencies)
+      - [JSON Configs](#json-configs)
+      - [`resonaate.data` package](#resonaatedata-package-1)
+      - [`resonaate.dynamics` package](#resonaatedynamics-package)
+      - [`resonaate.job_handler` package](#resonaatejob_handler-package)
+      - [`resonaate.physics` package](#resonaatephysics-package-1)
+      - [`resonaate.scenario` package](#resonaatescenario-package-1)
+      - [`resonaate.sensors` package](#resonaatesensors-package-1)
+      - [`resonaate.tasking` package](#resonaatetasking-package-1)
+    - [Deprecated](#deprecated-3)
+    - [Removed](#removed-3)
+    - [Test](#test-3)
+    - [Development](#development-3)
+    - [CI](#ci-3)
+  - [2.0.0 - 2022-09-06](#200---2022-09-06)
+    - [Added](#added-4)
+    - [Changed](#changed-4)
+    - [Removed](#removed-4)
+    - [Fixed](#fixed-4)
+    - [Development](#development-4)
+    - [CI](#ci-4)
+  - [1.5.2 - 2022-08-26](#152---2022-08-26)
+    - [CI](#ci-5)
+  - [1.5.1 - 2022-08-26](#151---2022-08-26)
+    - [Fixed](#fixed-5)
+  - [1.5.0 - 2022-08-24](#150---2022-08-24)
+    - [Added](#added-5)
+    - [Changed](#changed-5)
+    - [Deprecated](#deprecated-4)
+    - [Removed](#removed-5)
+    - [Fixed](#fixed-6)
+    - [Security](#security-3)
+    - [Test](#test-4)
+    - [Development](#development-5)
+    - [CI](#ci-6)
+  - [1.4.0 - 2022-06-06](#140---2022-06-06)
+    - [Added](#added-6)
+    - [Changed](#changed-6)
+    - [Removed](#removed-6)
+    - [Fixed](#fixed-7)
+  - [1.3.0 - 2022-03-04](#130---2022-03-04)
+    - [Added](#added-7)
+    - [Changed](#changed-7)
+    - [Deprecated](#deprecated-5)
+    - [Removed](#removed-7)
+    - [Fixed](#fixed-8)
+  - [1.2.0 - 2021-06-14](#120---2021-06-14)
+    - [Added](#added-8)
+    - [Changed](#changed-8)
+    - [Removed](#removed-8)
+    - [Fixed](#fixed-9)
+  - [1.1.1 - 2021-03-25](#111---2021-03-25)
+    - [Changed](#changed-9)
+    - [Security](#security-4)
+  - [1.1.0 - 2021-03-24](#110---2021-03-24)
+    - [Added](#added-9)
+    - [Changed](#changed-10)
+    - [Removed](#removed-9)
+  - [1.0.1 - 2021-01-21](#101---2021-01-21)
+    - [Added](#added-10)
+    - [Changed](#changed-11)
+    - [Fixed](#fixed-10)
+  - [1.0.0 - 2021-01-14](#100---2021-01-14)
+    - [Added](#added-11)
+    - [Changed](#changed-12)
+    - [Removed](#removed-10)
+    - [Fixed](#fixed-11)
+  - [0.9.0 - 2020-10-20](#090---2020-10-20)
+    - [Added](#added-12)
+    - [Changed](#changed-13)
+    - [Fixed](#fixed-12)
+  - [0.0.0 - 2020-05-08](#000---2020-05-08)
+    - [Added](#added-13)
+    - [Changed](#changed-14)
+    - [Removed](#removed-11)
+    - [Fixed](#fixed-13)
 
-<!-- markdownlint-disable MD036 -->
-
-<!-- markdownlint-disable MD049 -->
-
-**Table of Contents**
-
-\[\[_TOC_\]\]
-
-<!-- markdownlint-enable MD036 -->
-
-<!-- markdownlint-enable MD049 -->
-
-<!-- END TOC -->
+<!-- mdformat-toc end -->
 
 ______________________________________________________________________
 
-## [Unreleased][unreleased-diff]
+## [Unreleased][unreleased-diff]<a name="unreleased"></a>
 
-### Added
+### Added<a name="added"></a>
 
 - Added optional `event_files` section to main initialization messages.
 - Added optional flag `FILTER_REINITIALIZE` for covariance recovery.
@@ -55,7 +161,7 @@ ______________________________________________________________________
   - better user accessibility (via command line arguments and environment variables)
   - better maintainability (Pydantic is better than hacky `configparser` implementation)
 
-### Changed
+### Changed<a name="changed"></a>
 
 - Moved `tasking.predictions::predictObseravtions()` to `agents.sensing_agent.SensingAgent.sensor.predictObservation()`.
 - `parallel.tasking_reward_execution::asyncCalculateReward()` now checks for the sensor networks minimum revisit time and each sensor's minimum revisit time.
@@ -63,37 +169,37 @@ ______________________________________________________________________
 - `parallel.tasking_reward_generation::asyncExecuteTasking()` now calls `agents.sensing_agent.SensingAgent.collectObservation()`.
 - Database connection parameters now allow for more flexibility.
 
-### Deprecated
+### Deprecated<a name="deprecated"></a>
 
 - `tasking.predictions::predictObseravtions()` has been marked for deprecation. Use `agents.sensing_agent.SensingAgent.sensor.predictObservation()` instead.
 
-### Removed
+### Removed<a name="removed"></a>
 
 - removed `common.behavioral_config`, `common.cli`, and `common/default_behavior.config`
 
-### Fixed
+### Fixed<a name="fixed"></a>
 
 - RESONAATE cli no longer requires `-t` argument to run for more than 30 minutes sim time
 
-### Security
+### Security<a name="security"></a>
 
 *in case of vulnerabilities*
 
-### Test
+### Test<a name="test"></a>
 
 *for test suite specific improvements*
 
-### Development
+### Development<a name="development"></a>
 
 *for improving developer tools & environment*
 
-### CI
+### CI<a name="ci"></a>
 
 *related to the continuous integration system*
 
-## [4.1.0][v4.1.0] - 2025-06-24
+## [4.1.0][v4.1.0] - 2025-06-24<a name="410---2025-06-24"></a>
 
-### Added
+### Added<a name="added-1"></a>
 
 - `TLELoader` object into `physics.orbits.tle`.
 - `teme2ecef` conversion function into `physics.transforms.methods`.
@@ -123,7 +229,7 @@ ______________________________________________________________________
 - `physics.maths.vecWrapAngle2Pi` a numpy vectorized angle wrapping funciton
 - `physics.maths.vecWrapAngleNeg` a numpy vectorized angle wrapping funciton
 
-### Changed
+### Changed<a name="changed-1"></a>
 
 - replaced custom configuration code (i.e. `ConfigObject`, `ConfigObjectList`, and associated errors) with Pydantic models/validators
 - `TargetAgentConfig` now just known as `AgentConfig`
@@ -150,26 +256,26 @@ ______________________________________________________________________
 - fixed the bulk propagator in `dynamics.celestial.Celestial.propagateBulk`
 - dynamics now accept flags for certain stop conditions
 
-### Deprecated
+### Deprecated<a name="deprecated-1"></a>
 
 *for soon-to-be removed features*
 
-### Removed
+### Removed<a name="removed-1"></a>
 
 - Removed `resonaate.physics.transforms.eops.DEFAULT_EOP_DATA` constant.
 - orbit-dependent platform constants from `agents` module (see `physics.orbits.ResidentStratification` addition)
 - reduction parameters are no longer cached due to performance of `strmbrkr` kvs
 - remove `createFilterDebugDict()` and `logFilterStep()` debug methods since we save `FilterStep` objects to the database now
 
-### Fixed
+### Fixed<a name="fixed-1"></a>
 
 *for any bug fixes*
 
-### Security
+### Security<a name="security-1"></a>
 
 *in case of vulnerabilities*
 
-### Test
+### Test<a name="test-1"></a>
 
 - Added test to ensure proper functionality of the EOP update functionality.
 - Added testing for `np.ndarray` to JSON string conversions.
@@ -177,7 +283,7 @@ ______________________________________________________________________
 - Modified existing testing for `EstimationConfig` to inlcude new configuration option.
 - tests had to be updated to accommodate pydantic migration changes
 
-### Development
+### Development<a name="development-1"></a>
 
 - suppress `sphinx` duplicate cross reference warning
 - remove `.python-version` because I wanted to use 3.11 and it was messing with my `uv` venv
@@ -186,17 +292,17 @@ ______________________________________________________________________
 - fix some outdated readme information
 - add project metadata to `pyproject.toml`
 
-### CI
+### CI<a name="ci-1"></a>
 
 *related to the continuous integration system*
 
-## [4.0.0][v4.0.0] - 2024-05-08
+## [4.0.0][v4.0.0] - 2024-05-08<a name="400---2024-05-08"></a>
 
-### Added
+### Added<a name="added-2"></a>
 
 - add `residual()` and `residuals()` function to `resonaate.maths` (see !245)
 
-### Changed
+### Changed<a name="changed-2"></a>
 
 - EstimateAgent.\_update() logic split into sub-functions (see !164)
 - Several logic improvements for MMAE & IOD start and convergence handling (see !164)
@@ -207,15 +313,15 @@ ______________________________________________________________________
 - a few names of variables and exceptions to adhere to pep8-naming (see !302)
 - refactored `mjolnir` references to `strmbrkr`
 
-### Deprecated
+### Deprecated<a name="deprecated-2"></a>
 
 *for soon-to-be removed features*
 
-### Removed
+### Removed<a name="removed-2"></a>
 
 *for now removed features*
 
-### Fixed
+### Fixed<a name="fixed-2"></a>
 
 - SRP perturbation would not work without setting "sun" third body (see #184)
 - `AllVisibleDecision` config sensor type check (see #187)
@@ -226,16 +332,16 @@ ______________________________________________________________________
 - Sensor boresight and time_last_tasked were not being updated (see #203)
 - Properly point RESONAATE at valid `mjolnir` version (see #207 & !299)
 
-### Security
+### Security<a name="security-2"></a>
 
 *in case of vulnerabilities*
 
-### Test
+### Test<a name="test-2"></a>
 
 - Add tests to cover `EstimateAgent` (see !164)
 - Add tests to cover `UnscentedKalmanFilter` (see !245)
 
-### Development
+### Development<a name="development-2"></a>
 
 - Migrated to usage of `ruff` for linting, removing `flake8` and all plugins completely as well as most of `pylint` (see #194 & !239)
 - Apply various fixes for new linting rules from `ruff` (see !239)
@@ -245,14 +351,14 @@ ______________________________________________________________________
 - Remove `pylint` as a dev tool (see #208)
 - Add several new ruff rules and apply (see !302)
 
-### CI
+### CI<a name="ci-2"></a>
 
 - Added 3.12 nightly test job (see !299)
 - Allow nightly test jobs to fail once and retry (see !299)
 
-## [3.0.0][v3.0.0] - 2023-04-07
+## [3.0.0][v3.0.0] - 2023-04-07<a name="300---2023-04-07"></a>
 
-### Breaking Changes
+### Breaking Changes<a name="breaking-changes"></a>
 
 - upgraded the minimum supported Python to 3.9, dropping support for 3.7 and 3.8 (see #148 and !191)
   - switch our custom `methdispatch()` to `singledispatchmethod()`
@@ -263,7 +369,7 @@ ______________________________________________________________________
 - moved responsibility for managing the shared DB connection from `DateInterface.getSharedInterface()` to `setDBPath()` and `getDBConnection()` (see #179 and !199)
 - split `AgentConfig` into several smaller classes and adjust config specification (see #37 and !163)
 
-### Fixed
+### Fixed<a name="fixed-3"></a>
 
 - infinite loop catch in `lambertUniversal()` (see commit fe802bd2dd)
 - rounding of seconds when converting from `datetime.datetime` to `JulianDate` (see commit 58d032bd)
@@ -283,54 +389,54 @@ ______________________________________________________________________
 - obscure SQLAlchemy bug when creating the database before importing `AgentModel` (see #183 and !212)
 - tests hanging when using TCP protocol (see #171 and !217)
 
-### Added
+### Added<a name="added-3"></a>
 
-#### `resonaate.common` package
+#### `resonaate.common` package<a name="resonaatecommon-package"></a>
 
 - `labels.py` module for storing options (see !163)
 
-#### `resonaate.data` package
+#### `resonaate.data` package<a name="resonaatedata-package"></a>
 
 - tracking missed observations via `MissedObservation` table (see #125)
 - `Observation` contains sensor ECI state vector columns and `sensor_eci` property (see #46 and !127).
 - `db_connection.py` module for handling the shared database interface with `setDBPath()`, `getDBConnection()`, and `clearDBPath()` (see #179 and !199)
 
-#### `resonaate.physics` package
+#### `resonaate.physics` package<a name="resonaatephysics-package"></a>
 
 - `eci2lla()`, `eci2rsw()`, `eci2radec()` coordinate frame transformations
 - `checkGalacticExclusionZone()` conditional check
 - `lambertGauss()` orbit determination algorithm (see !157)
 
-#### `resonaate.scenario` package
+#### `resonaate.scenario` package<a name="resonaatescenario-package"></a>
 
 - `SensorConfig`, `RadarConfig`, `AdvRadarConfig`, and `OpticalConfig` for handling sensor-specific configuration options (see #36 and !163)
 - `PlatformConfig`, `SpacecraftConfig`, and `GroundFacilityConfig` for handling agent 'vehicle' configuration options (see #37 and !163)
 - `StateConfig`, `ECIStateConfig`, `LLAStateConfig`, `COEStateConfig`, and `EQEStateConfig` for handling agent's initial state information (see #35 and !163)
 
-#### `resonaate.sensors` package
+#### `resonaate.sensors` package<a name="resonaatesensors-package"></a>
 
 - `FieldOfView` class for generalizing field of view definitions and constraints (see !92)
 - `Measurement` and `MeasurementType` classes to decouple sensor and measurement logic (see #146 and !130)
 
-#### `resonaate.tasking` package
+#### `resonaate.tasking` package<a name="resonaatetasking-package"></a>
 
 - tasking metric normalization via `calculateRewards()` and `normalizeMetrics()` (see #15)
 - `UncertaintyMetric` and `StateMetric` base classes and implementations for covariance/state focused metrics, (see #153 and !136)
 
-### Changed
+### Changed<a name="changed-3"></a>
 
-#### Dependencies
+#### Dependencies<a name="dependencies"></a>
 
 - bump `mjolnir` version to 1.3.1
 - removed `concurrent-log-handler` dependency
 
-#### JSON Configs
+#### JSON Configs<a name="json-configs"></a>
 
 - default engines use `SimpleSummationReward` and `TimeSinceObservation`
 - renamed `cost_constrained_ssn.json` to `summation_ssn.json` and `cost_constrained_space.json` to `summation_space.json`
 - all JSON configs with `AgentConfig` objects were converted to support the refactor for #37 and !163
 
-#### `resonaate.data` package
+#### `resonaate.data` package<a name="resonaatedata-package-1"></a>
 
 - queries of imported observations and ephemerides use `Epoch.timestampISO` instead of `julian_date`
 - added `Measurement` to `Observation` (see #156 and !141)
@@ -338,16 +444,16 @@ ______________________________________________________________________
 - renamed `SensorAdditionEvent.host_type` to `platform`
 - `SensorAdditionEvent`, `TargetAdditionEvent` attributes `sensor` and `target` renamed to `sensor_agent` and `target_agent` respectively (see !163)
 
-#### `resonaate.dynamics` package
+#### `resonaate.dynamics` package<a name="resonaatedynamics-package"></a>
 
 - finite burn and maneuvers take `agent_id` so they can properly log to the `EventStack` (see !191)
 
-#### `resonaate.job_handler` package
+#### `resonaate.job_handler` package<a name="resonaatejob_handler-package"></a>
 
 - added a `missed_observation` key to the `dict` returned by `asyncExecuteTasking()`
 - `asyncCalculateReward()` calculates individual metrics instead of reward to support metric normalization (see !131)
 
-#### `resonaate.physics` package
+#### `resonaate.physics` package<a name="resonaatephysics-package-1"></a>
 
 - `subtendedAngle()` accepts `safe` arg for using `safeArccos()` instead of `np.arccos()`
 - updated EOP data included within RESONAATE (see commit 1ec535b7a)
@@ -359,7 +465,7 @@ ______________________________________________________________________
 - `determineTransferDirection()` checks orbital period instead of true anomaly, so only a position vector is needed (see #170 and !153)
 - renamed `getWavelengthFromString()` to `getFrequencyFromString()`
 
-#### `resonaate.scenario` package
+#### `resonaate.scenario` package<a name="resonaatescenario-package-1"></a>
 
 - `Scenario.saveDatabaseOutput()` inserts times into `Epoch` database table if it does not already exist
 - moved `PropagationConfig.realtime_observation` to `ObservationConfig` and renamed `ObservationConfig.field_of_view` to `background` (see !83)
@@ -372,7 +478,7 @@ ______________________________________________________________________
 - `RadarConfig.min_detectable_power` is required
 - `SensorConfig.field_of_view` defaults to `RectangularFoV` (see !163)
 
-#### `resonaate.sensors` package
+#### `resonaate.sensors` package<a name="resonaatesensors-package-1"></a>
 
 - `collectObservations()` takes `estimate_eci` state vector instead of `EstimateAgent` object
 - `Sensor.isVisible()` returns a `bool` for visibility and an `Explanation` for why the RSO was not visible
@@ -384,7 +490,7 @@ ______________________________________________________________________
 - refactored `fieldOfViewFactory()` and most of `sensorFactory()` into respective `fromConfig()` class methods (see #176 and !186)
 - `Sensor.collectObservations()` slews sensor boresight to target before attempting observations (see !198)
 
-#### `resonaate.tasking` package
+#### `resonaate.tasking` package<a name="resonaatetasking-package-1"></a>
 
 - `Decision.calculate()` logically `ANDs` decision and visibility matrices (see #154 and !147)
 - `TaskingEngine.assess()` takes `datetime` bounds instead of `JulianDate` bounds
@@ -393,18 +499,18 @@ ______________________________________________________________________
 - `Decision.calculate()` takes the visibility matrix as a parameter (see #154 and !147)
 - rewards no longer must be positive (see #154 and !147)
 
-### Deprecated
+### Deprecated<a name="deprecated-3"></a>
 
 - `ImporterDatabase.loadObservationFile()` fails unless the sensor `r_matrix` is passed as an argument
 
-### Removed
+### Removed<a name="removed-3"></a>
 
 - `NoiseConfig.dynamics_noise_magnitude`, `NoiseConfig.dynamics_noise_type`, `TargetAgent.process_noise` because they aren't used (see commit 58f72522)
 - `Sensor.exemplar` and corresponding config field for better minimum/maximum range calculations
 - `ObservationTuple` and `Sensor.buildSigmaObs()` because logic moved into `Measurement` class (see #156 and !141)
 - `DataInterface.getSharedInterface()` the shared connection is managed in `db_connection` module (see #179, !192, and !199)
 
-### Test
+### Test<a name="test-3"></a>
 
 - added regression test of the number of obs generated by the `main_init.json` on the first timestep
 - added `pytest-cov` as a testing dependency to better manage coverage results
@@ -418,7 +524,7 @@ ______________________________________________________________________
 - moved integration and regression tests into their own test modules (see !192)
 - `ImporterDatabase` tests now actually run and check themselves (see !192)
 
-### Development
+### Development<a name="development-3"></a>
 
 - added several small documentation clarifications
 - attempted to fix `pylint` false positives of `invalid-name` in tests (see #129)
@@ -427,58 +533,58 @@ ______________________________________________________________________
 - added top-level `Makefile` for easily making docs and cleaning files up
 - added more `make` targets for common developer commands (see !197)
 
-### CI
+### CI<a name="ci-3"></a>
 
 - test jobs run against a *properly* installed RESONAATE package, see #32
 - only the unit tests are included in coverage statistics
 - added scheduled job config for testing against multiple Python versions, see #33
 - standard jobs skipped during scheduled jobs
 
-## [2.0.0][v2.0.0] - 2022-09-06
+## [2.0.0][v2.0.0] - 2022-09-06<a name="200---2022-09-06"></a>
 
-### Added
+### Added<a name="added-4"></a>
 
 - Initial state vectors (at the initial `Epoch`) are saved to the DB, see #114
 
-### Changed
+### Changed<a name="changed-4"></a>
 
 - all references to Redis throughout the code have been refactored to use the `mjolnir` package, see #52
 - all references to Redis throughout the documentation have been removed, see #52
 - stop overuse of `ABC` when no abstract methods declared
 - `WorkerManager` instantiation in `Scenario` object now adheres to `debugging.ParallelDebugMode` config option
 
-### Removed
+### Removed<a name="removed-4"></a>
 
 - RESONAATE no longer requires Redis to be running in the background to work, see #52
 
-### Fixed
+### Fixed<a name="fixed-4"></a>
 
 - null `Observation` objects produced during tasking when not using FoV feature, see !69
 
-### Development
+### Development<a name="development-4"></a>
 
 - pylance "unreachable code" false-positive caused by `np.cross()`
 
-### CI
+### CI<a name="ci-4"></a>
 
 - Changed removed `cobertura` field for `junit` to produce XML test data
 
-## [1.5.2][v1.5.2] - 2022-08-26
+## [1.5.2][v1.5.2] - 2022-08-26<a name="152---2022-08-26"></a>
 
-### CI
+### CI<a name="ci-5"></a>
 
 - Fix release notes format for `release-notes` CI job
 - Make `publish-pkg` job wait until release stage is complete before running
 
-## [1.5.1][v1.5.1] - 2022-08-26
+## [1.5.1][v1.5.1] - 2022-08-26<a name="151---2022-08-26"></a>
 
-### Fixed
+### Fixed<a name="fixed-5"></a>
 
 - Updated `release-notes` job to use an Ubuntu image instead to fix #112
 
-## [1.5.0][v1.5.0] - 2022-08-24
+## [1.5.0][v1.5.0] - 2022-08-24<a name="150---2022-08-24"></a>
 
-### Added
+### Added<a name="added-5"></a>
 
 - `getStandardDeviation()` and `getConfidenceRegion()` functions in `physics.statistics`
 - EOPs from 06-10-2021 to 17-03-2022
@@ -504,7 +610,7 @@ ______________________________________________________________________
 - README in `tests` and `.gitlab` folders
 - Documentation on the CI system, developer workflows, GitLab labels, style guide & release procedure (see #58 and #59)
 
-### Changed
+### Changed<a name="changed-5"></a>
 
 - `asyncExecuteTasking()` now calls `collectObservations()` instead of `makeNoisyObservation()`
 - chi-square test functions now accept `ndarray` as inputs
@@ -514,9 +620,9 @@ ______________________________________________________________________
 - `ConfigObject` classes are now `dataclasses`, reducing boilerplate code (#27 & !31)
 - Renamed `data.agent.Agent` to `AgentModel` to reduce doc conflicts
 
-### Deprecated
+### Deprecated<a name="deprecated-4"></a>
 
-### Removed
+### Removed<a name="removed-5"></a>
 
 - `DEFAULT_VIZ_X_SECTION` and all references to it
 - `services` sub-package as well as all corresponding tests, documentation, & references
@@ -524,16 +630,16 @@ ______________________________________________________________________
 - all (for real this time) `__del__()` (see !39)
 - `lambertMinEnergy()` and `lambertGauss()` orbit determination methods (see !1)
 
-### Fixed
+### Fixed<a name="fixed-6"></a>
 
 - Incorrect `Sensor.maximum_range` check, fixes #40 along with other small errors
 - `Decision`, `Reward`, & `Metric` subclasses register themselves with their own class name, directly (see !39)
 - `TaskingEngine` now auto-sorts the sensors/targets to prevent undefined behavior on insertion/deletion (see !39)
 - Testing bug (#64) where `ScenarioClock` created a DB and didn't reset the tables
 
-### Security
+### Security<a name="security-3"></a>
 
-### Test
+### Test<a name="test-4"></a>
 
 - FOV tests now reliably pass, properly call `updateReductionParameters()`
 - Unit tests for `sensor_utils.py`
@@ -545,18 +651,18 @@ ______________________________________________________________________
 - Reduce usage of global mocking fixtures (see !39)
 - Add type annotation support to test modules (see !39)
 
-### Development
+### Development<a name="development-5"></a>
 
 - Updated merge request & issue templates with better instructions/auto-labels (see #58)
 
-### CI
+### CI<a name="ci-6"></a>
 
 - Automated release job for creating release notes and publishing a release on GitLab (see #24)
 - Improved CI pipeline/job organization into more reuseable portions
 
-## [1.4.0][v1.4.0] - 2022-06-06
+## [1.4.0][v1.4.0] - 2022-06-06<a name="140---2022-06-06"></a>
 
-### Added
+### Added<a name="added-6"></a>
 
 - `.vscode/settings.json` for auto-formatting rules
 - configurations for [`black`], [`isort`], [`prettier`], & [`pre-commit`]
@@ -572,7 +678,7 @@ ______________________________________________________________________
 - `Jupiter`, `Venus`, and `Saturn` objects to `third_body.py`
 - `planned` attribute to "Scheduled" maneuver events, so that the filter does not flag them as a detection
 
-### Changed
+### Changed<a name="changed-6"></a>
 
 - Debugging logic for filters now handled by `EstimateAgent`
 - Renamed `filters` sub-package to `estimation`
@@ -593,20 +699,20 @@ ______________________________________________________________________
 - Modified event handling to occur between time steps
 - Add `"station_keeping"` field to `TargetConfig`
 
-### Removed
+### Removed<a name="removed-6"></a>
 
 - Official support for YAML config files, dropped `pyyaml` dep. See [`resp3ct`] library for converter tool
 - `SingularMatrix` filter debugging
 - `Epoch` data dependency from base class `EventConfig`
 - `filters` sub-package
 
-### Fixed
+### Fixed<a name="fixed-7"></a>
 
 - Small bug with how `calcMeasurementMean()` corrected for different angular domains
 
-## [1.3.0][v1.3.0] - 2022-03-04
+## [1.3.0][v1.3.0] - 2022-03-04<a name="130---2022-03-04"></a>
 
-### Added
+### Added<a name="added-7"></a>
 
 - `physics.orbits` sub-package with new `OrbitalElement` class interface
 - Valid limits on eccentricity & inclination to properly define singular cases
@@ -638,7 +744,7 @@ ______________________________________________________________________
 - Maneuver detection logic in `UnscentedKalmanFilter.update()`
 - `data.queries` module for easily generating common DB queries
 
-### Changed
+### Changed<a name="changed-7"></a>
 
 - Update installation and tutorial documentation
 - Use MyST as the main documentation parser, allowing Markdown rather than reStructuredText
@@ -662,11 +768,11 @@ ______________________________________________________________________
 - Replace type `assert` statements with `TypeError` exceptions
 - `physics.math.normalizeAngle()`, replaced with `normalizeAngleNegPiPi()` and `normalizeAngle2Pi()`
 
-### Deprecated
+### Deprecated<a name="deprecated-5"></a>
 
 - In-memory database functionality for `ResonaateDatabase`: will be removed completely when we move to PostgreSQL
 
-### Removed
+### Removed<a name="removed-7"></a>
 
 - `"initial_error_magnitude"` key in the `"noise"` config object
 - `"init_estimate_error"` key in `Estimate.fromConfig()` argument `dict`
@@ -680,14 +786,14 @@ ______________________________________________________________________
 - `tests/networks` directory
 - `"realtime_propagation"` JSON config option
 
-### Fixed
+### Fixed<a name="fixed-8"></a>
 
 - `JobTimeoutError` bug ([#103][old - #103]) introduced by [!47][old - !47], fixed by [!56][old - !56]
 - Empty `np.ndarray` check in `Celestial.propagate()`
 
-## [1.2.0][v1.2.0] - 2021-06-14
+## [1.2.0][v1.2.0] - 2021-06-14<a name="120---2021-06-14"></a>
 
-### Added
+### Added<a name="added-8"></a>
 
 - Sensor network config for dedicated SSN sensors
 - `angularMean()` function for calculating the circular mean with and without weights
@@ -705,7 +811,7 @@ ______________________________________________________________________
 - `dynamics.integration_events` which includes station-keeping and impulsive maneuvers
 - `Celestial` class to `dynamics` for common interface shared between space dynamics models
 
-### Changed
+### Changed<a name="changed-8"></a>
 
 - `Agent.setCallback()` is abstract, and defined in concrete classes
 - Split database architecture into `ResonaateDatabase` and `ImporterDatabase`
@@ -728,7 +834,7 @@ ______________________________________________________________________
 - Earth orientation parameters are no longer kept in the databases, but are loaded from disk and cached
 - JSON/YAML config to fit new `ScenarioConfig` class
 
-### Removed
+### Removed<a name="removed-8"></a>
 
 - `EarthOrientationParams` & `NutationParams` are no longer a valid DB table, can be cached
 - Options `PhysicsModelDataPath` and `EphemerisPreLoaded` for behavioral config file
@@ -738,7 +844,7 @@ ______________________________________________________________________
 - `ImporterDatabase` initialization from `ScenarioBuilder` constructor
 - `events` module
 
-### Fixed
+### Fixed<a name="fixed-9"></a>
 
 - Properly call `WorkerManager.stopWorkers()` at the end of simulation
 - North-facing sensors' azimuth mask was not handled properly causing `isVisible()` to always return false ([#78][old - #78])
@@ -750,23 +856,23 @@ ______________________________________________________________________
 - DB table equality operator
 - `JulianDate` subtraction & comparison operators
 
-## [1.1.1][v1.1.1] - 2021-03-25
+## [1.1.1][v1.1.1] - 2021-03-25<a name="111---2021-03-25"></a>
 
 Fix environment variable reading security issue and change Git workflow docs.
 
-### Changed
+### Changed<a name="changed-9"></a>
 
 - Documentation on release process and Git workflow
 
-### Security
+### Security<a name="security-4"></a>
 
 - Feature to read environment variable pointing to config file (see [#62][old - #62])
 
-## [1.1.0][v1.1.0] - 2021-03-24
+## [1.1.0][v1.1.0] - 2021-03-24<a name="110---2021-03-24"></a>
 
 Update that includes multiple sensor networks.
 
-### Added
+### Added<a name="added-9"></a>
 
 - `EngineConfig` object
 - Large & medium target config sets
@@ -774,41 +880,41 @@ Update that includes multiple sensor networks.
 - `asyncUpdateEstimate()` for separately applying observations _a posteriori_
 - `AllVisibleDecision` class for high-volume sensors like large phased array radars
 
-### Changed
+### Changed<a name="changed-10"></a>
 
 - Split `EstimateAgent` update and `executeTasking()` parallelization into separate files
 - `sensor_list` passed to `asyncCalculateReward()` for down-selecting this engine's sensors
 - `target_num` passed to `asyncExecuteTasking()` for down-selecting this engine's targets
 - moved parallelization of executing tasks and applying observations to `Scenario`
 
-### Removed
+### Removed<a name="removed-9"></a>
 
 - `networks` sub-package
 - debugging logic in `metrics` sub-package
 
-## [1.0.1][v1.0.1] - 2021-01-21
+## [1.0.1][v1.0.1] - 2021-01-21<a name="101---2021-01-21"></a>
 
 Added new `Scenario` factor methods. Also updated documentation for new formats.
 
-### Added
+### Added<a name="added-10"></a>
 
 - `Scenario.parseConfigFile()` for automatically parsing main the scenario configuration file
 - `Scenario.fromConfigFile()` for creating `Scenario` from a given file path
 
-### Changed
+### Changed<a name="changed-11"></a>
 
 - `Scenario.fromConfig()` factory method accepts only proper JSON objects/dictionaries
 - `scenario` unit tests fixed for new factory methods
 
-### Fixed
+### Fixed<a name="fixed-10"></a>
 
 - Outdated scenario configuration documentation in `initialization.md`
 
-## [1.0.0][v1.0.0] - 2021-01-14
+## [1.0.0][v1.0.0] - 2021-01-14<a name="100---2021-01-14"></a>
 
 Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard stop where main architectural changes and major features were completed and introduced bugs were fixed.
 
-### Added
+### Added<a name="added-11"></a>
 
 - CI/CD integration for automated testing/linting
 - Support for YAML scenario configuration files
@@ -820,7 +926,7 @@ Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard st
 - `Reward` type combining cost-constrained & staleness metric
 - Redis password is retrievable via an environment variable `REDIS_PASSWORD`, or `None`
 
-### Changed
+### Changed<a name="changed-12"></a>
 
 - Updated `requirements.txt`, and split out development tool requirements
 - Moved factory methods into their respective class definitions
@@ -831,41 +937,41 @@ Large update to a "Version 1.0" of the RESONAATE tool. This is to make a hard st
 - Streamlined the `Scenario` factory pattern & `Sensor` class
 - `Decision` callable interface no longer accepts `visibility_matrix` as an argument
 
-### Removed
+### Removed<a name="removed-10"></a>
 
 - `TaskingEngine` being an attribute of `Network` objects
 - Duplicate `sensors.observation.Observation` class because it can be handled by the DB table class
 - `observation_factory.py` module
 
-### Fixed
+### Fixed<a name="fixed-11"></a>
 
 - `safeArcCos()` now properly checks for non-rounding cases when called
 - Small corner-case sign errors in reference frame rotations
 - Incorrect lighting conditions
 
-## 0.9.0 - 2020-10-20
+## 0.9.0 - 2020-10-20<a name="090---2020-10-20"></a>
 
 Mostly config/refactoring updates since the initial port.
 
-### Added
+### Added<a name="added-12"></a>
 
 - Empty db files for testing
 
-### Changed
+### Changed<a name="changed-13"></a>
 
 - `SpecialPerturbations` and `TwoBody` propagate multiple ODE at once, reflected in `UKF` as well
 - Renamed source code folder to `resonaate`.
 
-### Fixed
+### Fixed<a name="fixed-12"></a>
 
 - `KLDivergence` hotfix
 - `UKF` bugs
 
-## 0.0.0 - 2020-05-08
+## 0.0.0 - 2020-05-08<a name="000---2020-05-08"></a>
 
 Initial version ported to a new repository.
 
-### Added
+### Added<a name="added-13"></a>
 
 - Multiple reward & decision `callable` classes for tasking
 - `TimeSinceObservation` metric for considering observation frequency
@@ -874,7 +980,7 @@ Initial version ported to a new repository.
 - Database interface for outputting data, rather than writing to JSON files
 - New DB table `Task` for storing tasking information
 
-### Changed
+### Changed<a name="changed-14"></a>
 
 - Moved `metrics`, `rewards`, `core`, `decisions` packages into a combined `tasking` sub-package
 - `tasking` package is now modular, and can be customized from a JSON configuration file
@@ -885,14 +991,14 @@ Initial version ported to a new repository.
 - Renamed `Config` to `BehavioralConfig` to separate from `ScenarioConfig`
 - `Agent` API by creating `TargetAgent`, `SensingAgent`, and `EstimateAgent` classes
 
-### Removed
+### Removed<a name="removed-11"></a>
 
 - Old JSON config file format no longer works
 - `central_core_30.py` and `central_core_40.py` modules
 - `user_interface.py` module
 - `copyable.py` module
 
-### Fixed
+### Fixed<a name="fixed-13"></a>
 
 - Streamlined visibility calculations
 

@@ -58,6 +58,7 @@ dev = [
     "isort[colors]==5.13.2",
     "mdformat==0.7.17",
     "mdformat-gfm==0.3.6",
+    "mdformat-toc==0.3.0",
     # Pre-commit stuff
     "pre-commit==3.8.0",
     # Misc.
