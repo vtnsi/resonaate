@@ -14,7 +14,6 @@ from .base import Event, EventScope
 
 # Type Checking Imports
 if TYPE_CHECKING:
-
     # Local Imports
     from ...agents.agent_base import Agent
     from ...scenario.config.event_configs import SensorTimeBiasEventConfig

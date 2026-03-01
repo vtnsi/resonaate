@@ -33,7 +33,9 @@ def runResonaate(
 
     sim_end = app.clock.julian_date_stop
     if entry_config.input_config.sim_duration is not None:
-        sim_end = getTargetJulianDate(app.clock.julian_date_start, entry_config.input_config.sim_duration_timedelta)
+        sim_end = getTargetJulianDate(
+            app.clock.julian_date_start, entry_config.input_config.sim_duration_timedelta
+        )
 
     try:
         # Step through simulation

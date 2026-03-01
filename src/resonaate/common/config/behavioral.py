@@ -1,18 +1,26 @@
 """Define configuration parameters pertaining to the inherent behavior of RESONAATE."""
+
+# ruff: noqa: UP007
+
 from __future__ import annotations
 
 # Standard Library Imports
-from pathlib import Path
-from typing import Annotated, Optional
-
-# Third Party Imports
-from pydantic import Field  # noqa: TCH002
+from typing import TYPE_CHECKING, Annotated, Optional
 
 # Local Imports
-from ..labels import EOPLoaderLabel
 from .meta import CommandLineOptions, EnvName, LoggingLevel, UserBaseModel
 
-# ruff: noqa: TCH001, TCH003, UP007
+# Type Checking Import
+if TYPE_CHECKING:
+    # Standard Library Imports
+    from pathlib import Path
+
+    # Third Party Imports
+    from pydantic import Field
+
+    # Local Imports
+    from ..labels import EOPLoaderLabel
+
 
 class BehavioralConfig(UserBaseModel):
     """Set of configuration options that specify the behavior of RESONAATE."""
@@ -84,7 +92,7 @@ class BehavioralConfig(UserBaseModel):
     """Indication of whether to use `physics.mat.nearestPD()` if Cholesky decomposition fails.
 
     When using an sequential filter that relies on Cholesky decomposition, if the covariance becomes non
-    positive definite, Cholesy decomposition can raise an uncaught exception resulting in a simulation hault.
+    positive definite, Cholesky decomposition can raise an uncaught exception resulting in a simulation halt.
     Setting this flag indicates that `physics.math.nearestPD()` should be used to find the nearest positive
     definite matrix to attempt to circumvent the error.
     """

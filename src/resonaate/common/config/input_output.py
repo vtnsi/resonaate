@@ -1,5 +1,7 @@
 """Define configuration parameters pertaining to the input and output of RESONAATE."""
 
+# ruff: noqa: UP007
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -17,8 +19,6 @@ from typing_extensions import Self
 # Local Imports
 from .. import pathSafeTime
 from .meta import CommandLineOptions, EnvName, UserBaseModel
-
-# ruff: noqa: TCH001, TCH003, UP007
 
 SQLITE_DRIVER: str = "sqlite"
 """Driver name for using SQLite."""
@@ -114,7 +114,7 @@ class ImporterDbUrlSpec(AlchemyURLSpec):
     """Specifies required parameters to connect to a RESONAATE Importer database via SQLAlchemy."""
 
     importer_db_driver: Annotated[
-        Optional[str],
+        str | None,
         Field(default=SQLITE_DRIVER),
         EnvName("IMPORTER_DB_DRIVER"),
         CommandLineOptions("--importer-db-driver"),
@@ -408,7 +408,7 @@ class InputConfig(UserBaseModel):
 
     @property
     def sim_duration_timedelta(self) -> timedelta:
-        """:attr:`.sim_duration` represented as a ``datetime.timdelta`` object."""
+        """:attr:`.sim_duration` represented as a ``datetime.timedelta`` object."""
         if self.sim_duration is not None:
             return timedelta(hours=self.sim_duration)
         return None

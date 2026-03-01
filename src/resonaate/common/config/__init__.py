@@ -1,4 +1,5 @@
 """Module defining common configuration formats."""
+
 from __future__ import annotations
 
 # Standard Library Imports
@@ -103,10 +104,12 @@ class RootConfig(Enum):
         self.getSpec().addToArgParser(parser)
         return parser
 
-    def factory(self, cli_args: list[str] | None = None, dotenv_path: Path = Path("resonaate.env")):
+    def factory(
+        self, cli_args: list[str] | None = None, dotenv_path: Path = Path("resonaate.env")
+    ):
         """Instantiate a :class:`.RootConfig` object based on user input.
 
-        The resultant :class:`.RootConfig` object will be built from the followng user input sources,
+        The resultant :class:`.RootConfig` object will be built from the following user input sources,
         with each subsequent source taking precedence over the previous if there are option conflicts:
         - Environment variables.
         - Variables set in dotenv file specified by `dotenv_path`.
@@ -114,7 +117,7 @@ class RootConfig(Enum):
 
         Args:
             cli_args: Command line arguments specifying user input.
-            dotenv_path: Path to dotenv file specifying user intput.
+            dotenv_path: Path to dotenv file specifying user input.
         """
         resonaate_dotenv = dotenv_values(dotenv_path)
         if cli_args is None:

@@ -73,7 +73,9 @@ class ScenarioBuilder:
         self._loadAgentsIntoDatabase(shared_database)
         self._loadEventsIntoDatabase(shared_database)
 
-    def _initTaskingEngines(self, importer_db_params: AlchemyURLSpec | None = None) -> dict[int, TaskingEngine]:
+    def _initTaskingEngines(
+        self, importer_db_params: AlchemyURLSpec | None = None
+    ) -> dict[int, TaskingEngine]:
         """Initialize targets based on configs.
 
         Args:

@@ -40,10 +40,13 @@ class ManeuverType(str, Enum):
     """``str``: String designation of plane change maneuver."""
 
     @property
-    def thrust(self, _mapping={  # noqa: PLR0206, B006
-        SPIRAL: spiralThrust,
-        PLANE_CHANGE: planeChangeThrust,
-    }) -> Callable:
+    def thrust(  # noqa: PLR0206
+        self,
+        _mapping={  # noqa: B006
+            SPIRAL: spiralThrust,
+            PLANE_CHANGE: planeChangeThrust,
+        },
+    ) -> Callable:
         """Callable: Maneuver method associated with this :class:`.ManeuverType`."""
         return _mapping[self.value]
 
@@ -88,7 +91,9 @@ class ScheduledFiniteManeuverEvent(Event):
         start_sim_time = start_jd.convertToScenarioTime(scope_instance.julian_date_start)
         end_sim_time = end_jd.convertToScenarioTime(scope_instance.julian_date_start)
 
-        maneuver_type = ManeuverType(self.maneuver_type)  # raises `ValueError` if not a valid maneuver type
+        maneuver_type = ManeuverType(
+            self.maneuver_type
+        )  # raises `ValueError` if not a valid maneuver type
         thrust_func = partial(maneuver_type.thrust, magnitude=self.maneuver_mag)
         finite_maneuver = ScheduledFiniteManeuver(
             start_sim_time,

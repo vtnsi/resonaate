@@ -16,6 +16,7 @@ from ...physics.orbits import ResidentStratification, _StratificationSpecificati
 
 # ruff: noqa: UP007
 
+
 class StationKeepingConfig(BaseModel):
     R"""Configuration for station keeping routines."""
 

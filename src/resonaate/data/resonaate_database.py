@@ -19,12 +19,12 @@ class ResonaateDatabase(DataInterface):
     """Main generic data interface that is DB agnostic."""
 
     def __init__(
-            self,
-            connection_params: AlchemyURLSpec | None = None,
-            drop_tables: tuple[str] = (),
-            logger: Logger | None = None,
-            verbose_echo: bool = False,
-        ) -> None:
+        self,
+        connection_params: AlchemyURLSpec | None = None,
+        drop_tables: tuple[str] = (),
+        logger: Logger | None = None,
+        verbose_echo: bool = False,
+    ) -> None:
         """Instantiate an interface that encapsulates common RESONAATE database interactions.
 
         Args:

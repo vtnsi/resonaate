@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 from ...common.labels import MetricTypeLabel
 
 if TYPE_CHECKING:
-
     # Local Imports
     from ...agents.estimate_agent import EstimateAgent
     from ...agents.sensing_agent import SensingAgent

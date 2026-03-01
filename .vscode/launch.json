@@ -6,59 +6,55 @@
     "configurations": [
         {
             "name": "Resonaate Run",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
             "args": [
                 "configs/json/main_init.json",
                 "-t",
-                "1",
-                "--debug"
+                "1"
             ]
         },
         {
             "name": "Test Run",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
             "args": [
                 "configs/json/test_init.json",
                 "-t",
-                "1",
-                "--debug"
+                "1"
             ],
         },
         {
             "name": "MMAE Run",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
             "args": [
                 "configs/json/mmae_init.json",
                 "-t",
-                "8",
-                "--debug"
+                "8"
             ],
         },
         {
             "name": "IOD Run",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "resonaate",
             "console": "integratedTerminal",
             "args": [
                 "configs/json/iod_init.json",
                 "-t",
-                "8",
-                "--debug"
+                "8"
             ],
         },
         {
             "name": "Python Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"

@@ -80,7 +80,6 @@ class DataDependency:
         return self.data_type(**self.attributes)
 
 
-
 class EventConfigBase(BaseModel, ABC, extra="allow"):
     """Abstract base class defining required fields of an event configuration object."""
 
@@ -361,7 +360,8 @@ class SensorTimeBiasEventConfig(EventConfigBase):
     """``float``: time bias to be applied to the sensor."""
 
 
-EventConfig = Annotated[Union[
+EventConfig = Annotated[
+    Union[
         ScheduledImpulseEventConfig,
         ScheduledFiniteBurnConfig,
         ScheduledFiniteManeuverConfig,

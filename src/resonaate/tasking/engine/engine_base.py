@@ -89,7 +89,7 @@ class TaskingEngine(metaclass=ABCMeta):
         """:class:`.Decision`: callable that optimizes tasking based on :attr:`.reward_matrix`."""
 
         self.min_revisit_time = min_revisit_time
-        """``float``: The minimum revisit time in seconds, for the entirity of the network."""
+        """``float``: The minimum revisit time in seconds, for the entirety of the network."""
 
         self.network_last_revisits: defaultdict[int, JulianDate | None] = defaultdict(lambda: None)
         """``defaultdict[int, JulianDate | None]``: Record of when targets were last observed by the network as a whole.  \

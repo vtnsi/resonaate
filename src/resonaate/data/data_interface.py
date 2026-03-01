@@ -51,12 +51,12 @@ class DataInterface(metaclass=ABCMeta):  # noqa: B024
     } | {T.__tablename__: T for T in filter_map.values()}
 
     def __init__(
-            self,
-            connection_params: AlchemyURLSpec,
-            drop_tables: tuple[str] = (),
-            logger: Logger | None = None,
-            verbose_echo: bool = False,
-        ) -> None:
+        self,
+        connection_params: AlchemyURLSpec,
+        drop_tables: tuple[str] = (),
+        logger: Logger | None = None,
+        verbose_echo: bool = False,
+    ) -> None:
         """Instantiate an interface that encapsulates common database interactions.
 
         Args:

@@ -231,7 +231,7 @@ def solveKeplerProblemUniversal(
         ``ndarray``: 6x1 ECI state vector after propagating through the time of flight (km; km/sec).
     """
     r0, v0 = array(init_state[:3], copy=True), array(init_state[3:], copy=True)
-    alpha = -norm(v0) ** 2 / mu + 2.0 / norm(r0)
+    alpha = -(norm(v0) ** 2) / mu + 2.0 / norm(r0)
     sqrt_mu = sqrt(mu)
     if alpha > 1e-6:
         chi = sqrt_mu * tof * alpha

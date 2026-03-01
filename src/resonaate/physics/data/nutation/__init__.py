@@ -1,1 +1,1 @@
-""""RESONAATE-provided nutation coefficients."""
+"""RESONAATE-provided nutation coefficients."""

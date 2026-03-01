@@ -72,8 +72,11 @@ class _GetDBConnection(Transaction):
         if self.__cached_interfaces.get(params_json) is None:
             # Local Imports
             from .resonaate_database import ResonaateDatabase
+
             valid_db_params = OutputDbUrlSpec.model_validate_json(params_json)
-            self.__cached_interfaces[params_json] = ResonaateDatabase(connection_params=valid_db_params)
+            self.__cached_interfaces[params_json] = ResonaateDatabase(
+                connection_params=valid_db_params
+            )
         return self.__cached_interfaces[params_json]
 
 
@@ -86,7 +89,9 @@ def setDBParams(connection_params: OutputDbUrlSpec) -> None:
         connection_params: Collection of parameters specifying how to connect to the shared database.
     """
     try:
-        KeyValueStore.submitTransaction(ExclusiveSet(DB_PARAMS_KEY, connection_params.model_dump_json()))
+        KeyValueStore.submitTransaction(
+            ExclusiveSet(DB_PARAMS_KEY, connection_params.model_dump_json())
+        )
     except KeyError as err:
         raise DBConnectionError(
             "setDBParams() should only be called once per script/simulation",

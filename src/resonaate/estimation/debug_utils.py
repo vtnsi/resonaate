@@ -53,6 +53,7 @@ def debugToJSONFile(base_filename: str, debug_dir: str, json_dict: dict) -> Path
 
     return complete_filename
 
+
 def checkThreeSigmaObservation(
     sensor_agent: SensingAgent,
     target_agent: TargetAgent,
@@ -165,6 +166,7 @@ def checkThreeSigmaObservation(
         filename = f"bad_ob_{float(observation.julian_date)}_{target_agent.simulation_id}_{sensor_agent.simulation_id}"
         output_path = debugToJSONFile(filename, output_subdir, description)
     return output_path
+
 
 def findNearestPositiveDefiniteMatrix(
     covariance: np.ndarray,

@@ -22,8 +22,10 @@ lint.ignore = [
     "ARG002",  # Unused method argument
     "ERA001",  # Commented out code - lots of false positives
     "NPY002",  # Deprecated numpy.random usage. FIXME: remove this ignore when working on Issue #103
-    "N802",    # Don't compain about our mixedCase funcs/meths, see Issue #209
+    "N802",    # Don't complain about our mixedCase funcs/meths, see Issue #209
     "PT023",   # Parens on pytest marks with no params
+    "ISC001",
+    "COM812",
 ]
 
 # On top of the default `select` (`E`, `F`), enable:
@@ -84,7 +86,7 @@ lint.extend-select = [
 # "LOG",        # flake8-logging
 # "EM",         # flake8-errmsg
 
-# Don't auto-fix rules (can be overidden with --fix argument)
+# Don't auto-fix rules (can be overridden with --fix argument)
 fix = false
 
 # Line length to enforce
@@ -126,7 +128,7 @@ target-version = "py39"
 # Suppress fixes for *args & **kwargs types
 allow-star-arg-any = true
 
-# Suprress rules for untyped code - useful for gradually typing
+# Suppress rules for untyped code - useful for gradually typing
 ignore-fully-untyped = true
 
 # Ignore no return type for __init__()

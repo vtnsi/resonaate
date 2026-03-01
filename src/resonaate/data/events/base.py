@@ -88,18 +88,24 @@ class ThrustFrame(str, Enum):
     """``str``: The event will be applied in the NTW frame."""
 
     @property
-    def impulse(self, _mapping={  # noqa: PLR0206, B006
-        ECI: ScheduledECIImpulse,
-        NTW: ScheduledNTWImpulse,
-    }) -> ScheduledImpulse:
+    def impulse(  # noqa: PLR0206
+        self,
+        _mapping={  # noqa: B006
+            ECI: ScheduledECIImpulse,
+            NTW: ScheduledNTWImpulse,
+        },
+    ) -> ScheduledImpulse:
         """ScheduledImpulse: Class associated with this :class:`.ThrustFrame`."""
         return _mapping[self.value]
 
     @property
-    def thrust(self, _mapping={  # noqa: PLR0206, B006
-        ECI: eciBurn,
-        NTW: ntwBurn,
-    }) -> Callable[[ndarray, ndarray], ndarray]:
+    def thrust(  # noqa: PLR0206
+        self,
+        _mapping={  # noqa: B006
+            ECI: eciBurn,
+            NTW: ntwBurn,
+        },
+    ) -> Callable[[ndarray, ndarray], ndarray]:
         """Callable: Burn method associated with this :class:`.ThrustFrame`."""
         return _mapping[self.value]
 

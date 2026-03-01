@@ -175,12 +175,14 @@ class COEStateConfig(StateConfigBase):
     R"""``float``: true longitude, :math:`\lambda_{true}\approx\Omega + \omega + \nu\in[0,360)`, degrees."""
 
     _inclined: bool = PrivateAttr(default=False)
+
     @property
     def inclined(self) -> bool:
         """bool: Indicates whether this orbit is considered inclined."""
         return self._inclined
 
     _eccentric: bool = PrivateAttr(default=False)
+
     @property
     def eccentric(self) -> bool:
         """bool: Indicates whether this orbit is considered eccentric."""
@@ -211,7 +213,9 @@ class COEStateConfig(StateConfigBase):
             self._inclined = False
 
         else:
-            raise ValueError("Invalid definition of classical orbital elements, refer to ClassicalElements for details.")
+            raise ValueError(
+                "Invalid definition of classical orbital elements, refer to ClassicalElements for details."
+            )
         return self
 
     def toECI(self, utc_datetime: datetime) -> ndarray:

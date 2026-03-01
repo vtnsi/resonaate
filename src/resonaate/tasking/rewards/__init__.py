@@ -36,8 +36,6 @@ def rewardsFactory(configuration: RewardConfig) -> Reward:
         :class:`.Reward`: constructed reward object
     """
     metrics_config = configuration.metrics
-    metrics: list[Metric] = [
-        _METRIC_MAPPING[metric.name]() for metric in metrics_config
-    ]
+    metrics: list[Metric] = [_METRIC_MAPPING[metric.name]() for metric in metrics_config]
 
     return _REWARD_MAPPING[configuration.name].fromConfig(metrics, configuration)
