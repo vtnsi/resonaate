@@ -201,6 +201,22 @@ class AdvRadarConfig(RadarConfig):
     R"""``str``: type of sensor being defined."""
 
 
+class InterferometerConfig(SensorConfigBase):
+    R"""Configuration object for a :class:`.Interferometer`."""
+
+    type: Literal[SensorLabel.INTERFEROMETER] = SensorLabel.INTERFEROMETER  # type: ignore
+    R"""``str``: type of sensor being defined."""
+
+    @field_validator("minimum_range")
+    @classmethod
+    def default_min_range(cls, v):
+        """Interferometer minimum range defaults to 0.0 km."""
+        if v is None:
+            return 0.0
+        # else
+        return v
+
+
 SensorConfig = Annotated[
     Union[OpticalConfig, RadarConfig, AdvRadarConfig],
     Field(..., discriminator="type"),
