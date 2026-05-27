@@ -145,7 +145,7 @@ class Radar(Sensor):
             tx_power=sensor_config.tx_power,
             tx_frequency=sensor_config.tx_frequency,
             min_detectable_power=sensor_config.min_detectable_power,
-            missed_obs_probabilty=sensor_config.missed_obs_probability,
+            missed_obs_probability=sensor_config.missed_obs_probability,
             downtimes=sensor_config.downtimes,
         )
 

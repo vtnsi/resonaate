@@ -13,9 +13,8 @@ from ..physics.measurements import Measurement
 from .sensor_base import Sensor
 
 INTERFEROMETER_DEFAULT_FOV: dict[str, Any] = {
-    "fov_shape": "rectangular",
-    "azimuth_angle": 1.0,
-    "elevation_angle": 1.0,
+    "fov_shape": "conic", # i'm assuming that at geo distances with SBI, the combined FOV of the 3 antennas pointed nearly at the same target is approximately a singular cone
+    "cone_angle": 1.0,
 }
 
 
@@ -57,7 +56,7 @@ class Interferometer(Sensor):
 
     @classmethod
     def fromConfig(cls, sensor_config, field_of_view):
-        """Alternative cosntructor using a config."""
+        """Alternative constructor using a config."""
         return cls(
             az_mask=array(sensor_config.azimuth_range),
             el_mask=array(sensor_config.elevation_range),
@@ -70,6 +69,6 @@ class Interferometer(Sensor):
             minimum_range=sensor_config.minimum_range,
             maximum_range=sensor_config.maximum_range,
             min_revisit_time=sensor_config.min_revisit_time,
-            missed_obs_probabilty=sensor_config.missed_obs_probability, #TODO probability is spelled wrong 
+            missed_obs_probability=sensor_config.missed_obs_probability, 
             downtimes=sensor_config.downtimes,
         )
