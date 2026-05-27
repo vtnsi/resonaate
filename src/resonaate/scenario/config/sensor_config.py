@@ -218,6 +218,6 @@ class InterferometerConfig(SensorConfigBase):
 
 
 SensorConfig = Annotated[
-    Union[OpticalConfig, RadarConfig, AdvRadarConfig],
+    Union[OpticalConfig, RadarConfig, AdvRadarConfig, InterferometerConfig],
     Field(..., discriminator="type"),
 ]

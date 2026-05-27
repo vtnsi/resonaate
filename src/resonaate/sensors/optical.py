@@ -139,7 +139,7 @@ class Optical(Sensor):
             maximum_range=sensor_config.maximum_range,
             detectable_vismag=sensor_config.detectable_vismag,
             min_revisit_time=sensor_config.min_revisit_time,
-            missed_obs_probabilty=sensor_config.missed_obs_probability,
+            missed_obs_probabilty=sensor_config.missed_obs_probability, #TODO probability is spelled wrong 
             downtimes=sensor_config.downtimes,
         )
 

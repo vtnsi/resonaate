@@ -69,4 +69,7 @@ class Interferometer(Sensor):
             background_observations=sensor_config.background_observations,
             minimum_range=sensor_config.minimum_range,
             maximum_range=sensor_config.maximum_range,
+            min_revisit_time=sensor_config.min_revisit_time,
+            missed_obs_probabilty=sensor_config.missed_obs_probability, #TODO probability is spelled wrong 
+            downtimes=sensor_config.downtimes,
         )
