@@ -12,7 +12,6 @@ from numpy import ndarray, array
 from ..common.labels import Explanation
 from ..physics.measurements import Measurement
 from .sensor_base import Sensor
-from ..scenario.config.sensor_config import ScheduledDowntimeConfig, InterferometerConfig
 
 INTERFEROMETER_DEFAULT_FOV: dict[str, Any] = {
     "fov_shape": "conic", # i'm assuming that at geo distances with SBI, the combined FOV of the 3 antennas pointed nearly at the same target is approximately a singular cone
@@ -36,7 +35,7 @@ class Interferometer(Sensor):
         minimum_range,
         maximum_range,
         missed_obs_probability: float = 0.0, #not defining this in the config for now since it's not clear how to parameterize it for an interferometer, but leaving it here in case we want to add it later
-        downtimes: list[ScheduledDowntimeConfig] | None = None, #same for downtimes, not sure how to parameterize for an interferometer but leaving it here for future use
+        downtimes = None, #same for downtimes, not sure how to parameterize for an interferometer but leaving it here for future use
         **sensor_args,
     ):
         """Construct an 'Interferometer' sensor object."""
