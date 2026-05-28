@@ -63,3 +63,11 @@ def getRadarSensorArgs(base_sensor_args: dict) -> dict:
     )
     del radar_sensor_args["measurement"]
     return radar_sensor_args
+
+
+@pytest.fixture(name="interferometer_sensor_args")
+def getInterferometerSensorArgs(base_sensor_args: dict) -> dict:
+    """Create dictionary of valid arguments to Interferometer Init."""
+    interferometer_sensor_args = deepcopy(base_sensor_args)
+    del interferometer_sensor_args["measurement"]
+    return interferometer_sensor_args
