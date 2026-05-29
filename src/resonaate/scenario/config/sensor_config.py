@@ -202,7 +202,11 @@ class AdvRadarConfig(RadarConfig):
 
 
 class InterferometerConfig(SensorConfigBase):
-    R"""Configuration object for a :class:`.Interferometer`."""
+    R"""Configuration object for a :class:`.Interferometer`.
+    
+    Quick note. apeture_diameter, inherited from SensorConfigBase, is currently fileld with placehodelr values. This could be the diameter of a singe antenna, or it could be the "effective" diameter of the array, which is a function of the physical layout of the array and the wavelength being used. We may want to update this field in the future to be more specific about what it represents for an interferometer, or make architecture changes farther up.
+    
+    """
 
     type: Literal[SensorLabel.INTERFEROMETER] = SensorLabel.INTERFEROMETER  # type: ignore
     R"""``str``: type of sensor being defined."""
