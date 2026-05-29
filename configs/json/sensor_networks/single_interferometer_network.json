@@ -20,7 +20,7 @@
       "elevation_range": [0.0, 89.99999],
       "efficiency": 0.98,
       "aperture_diameter": 1.016,
-      "field_of_view": { "fov_shape": "conic", "conic_angle": 2.0 }
+      "field_of_view": { "fov_shape": "conic", "cone_angle": 2.0 }
     }
   }
 ]
