@@ -23,7 +23,6 @@ def getSensorArgs() -> dict:
         "az_mask": np.array((0.0, 360.0)),
         "el_mask": np.array((0.0, 90.0)),
         "r_matrix": r_matrix,
-        "diameter": 10,
         "efficiency": 0.95,
         "slew_rate": 1.0,
         "field_of_view": {"fov_shape": "conic"},
@@ -55,6 +54,7 @@ def getOpticalSensorArgs() -> dict:
 def getRadarSensorArgs(base_sensor_args: dict) -> dict:
     """Create dictionary of valid arguments to Radar init."""
     radar_sensor_args = deepcopy(base_sensor_args)
+    radar_sensor_args["diameter"] = 10.0
     radar_sensor_args["tx_power"] = 2.5e6
     radar_sensor_args["tx_frequency"] = 1.5e9
     radar_sensor_args["min_detectable_power"] = 1.0e-15

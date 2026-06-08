@@ -112,9 +112,6 @@ class SensorConfigBase(BaseModel, ABC):
     where :math:`R \succ 0`.
     """
 
-    aperture_diameter: float
-    R"""``float``: effective aperture diameter of the sensor, :math:`\textrm{m}`."""
-
     efficiency: float
     R"""``float``: sensor measurement efficiency, unit-less."""
 
@@ -152,6 +149,9 @@ class OpticalConfig(SensorConfigBase):
     detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG
     R"""``float``, optional: minimum detectable visual magnitude value, used for visibility constraints, unit-less. Defaults to :data:`.OPTICAL_DETECTABLE_VISMAG`."""
 
+    aperture_diameter: float
+    R"""``float``: effective aperture diameter of the sensor, :math:`\textrm{m}`."""
+
     @field_validator("minimum_range")
     @classmethod
     def default_min_range(cls, v):
@@ -176,6 +176,9 @@ class RadarConfig(SensorConfigBase):
 
     min_detectable_power: float = Field(..., gt=0.0)
     R"""``float``: The smallest received power that can be detected by the radar, W."""
+
+    aperture_diameter: float
+    R"""``float``: effective aperture diameter of the sensor, :math:`\textrm{m}`."""
 
     @field_validator("tx_frequency")
     @classmethod
@@ -203,9 +206,9 @@ class AdvRadarConfig(RadarConfig):
 
 class InterferometerConfig(SensorConfigBase):
     R"""Configuration object for a :class:`.Interferometer`.
-    
+
     Quick note. apeture_diameter, inherited from SensorConfigBase, is currently fileld with placehodelr values. This could be the diameter of a singe antenna, or it could be the "effective" diameter of the array, which is a function of the physical layout of the array and the wavelength being used. We may want to update this field in the future to be more specific about what it represents for an interferometer, or make architecture changes farther up.
-    
+
     """
 
     type: Literal[SensorLabel.INTERFEROMETER] = SensorLabel.INTERFEROMETER  # type: ignore

@@ -11,6 +11,7 @@ from scipy.linalg import norm
 
 # Local Imports
 from ..common.labels import Explanation, PlatformLabel
+from ..physics import constants as const
 from ..physics.bodies import Sun
 from ..physics.measurements import Measurement
 from ..physics.sensor_utils import (
@@ -102,7 +103,6 @@ class Optical(Sensor):
             measurement,
             az_mask,
             el_mask,
-            diameter,
             efficiency,
             slew_rate,
             field_of_view,
@@ -112,7 +112,8 @@ class Optical(Sensor):
             downtimes=downtimes,
             **sensor_args,
         )
-
+        self.aperture_diameter = diameter
+        self.effective_aperture_area = const.PI * ((diameter / 2.0) ** 2)
         self.detectable_vismag = detectable_vismag
 
     @classmethod
@@ -139,7 +140,7 @@ class Optical(Sensor):
             maximum_range=sensor_config.maximum_range,
             detectable_vismag=sensor_config.detectable_vismag,
             min_revisit_time=sensor_config.min_revisit_time,
-            missed_obs_probability=sensor_config.missed_obs_probability, 
+            missed_obs_probability=sensor_config.missed_obs_probability,
             downtimes=sensor_config.downtimes,
         )
 
