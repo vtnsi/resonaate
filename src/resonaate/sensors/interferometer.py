@@ -108,5 +108,6 @@ class Interferometer(Sensor):
         if not visible:
             return visible, explanation
 
-        # TODO add interferometer-specific visibility checks here in the future, such as checking if the target is within the interferometer's resolution limits based on its baseline and the target's range, or checking if the target's signal would be strong enough to be detected by the interferometer based on its sensitivity and the target's radar cross section. For now, we are just assuming that if the target is in the field of view and within range, it is visible to the interferometer.
+        # TODO
+        # Assume targets ar always transmitting for now. Later we may need to add a transmitting frequency, minimum signal strength and on/off state to the target and add checks for those here. We may also want to add a check for whether the target is in the combined FOV of the 3 antennas, but for now we are assuming that the combined FOV is approximately a singular cone pointed at the target so we can skip that check.
         return True, explanation

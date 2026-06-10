@@ -204,6 +204,22 @@ class AdvRadarConfig(RadarConfig):
     R"""``str``: type of sensor being defined."""
 
 
+class NodeConfig(BaseModel):
+    R"""Configuration object for a secondary node (i.e a secondary antenna in an interferometery array)."""
+
+    name: str
+    R"""``str``: name of the node, used for reference in the scenario definition."""
+
+    latitude: float
+    R"""``float``: latitude of the node, degrees."""
+
+    longitude: float
+    R"""``float``: longitude of the node, degrees."""
+
+    altitude: float
+    R"""``float``: altitude of the node, km."""
+
+
 class InterferometerConfig(SensorConfigBase):
     R"""Configuration object for a :class:`.Interferometer`.
 
@@ -213,6 +229,13 @@ class InterferometerConfig(SensorConfigBase):
 
     type: Literal[SensorLabel.INTERFEROMETER] = SensorLabel.INTERFEROMETER  # type: ignore
     R"""``str``: type of sensor being defined."""
+
+    azimuth_baseline_node: NodeConfig
+    R"""``NodeConfig``: the node that defines the azimuth baseline for the interferometer."""
+
+    elevation_baseline_node: NodeConfig
+    R"""``NodeConfig``: the node that defines the elevation baseline for
+    the interferometer."""
 
     @field_validator("minimum_range")
     @classmethod
