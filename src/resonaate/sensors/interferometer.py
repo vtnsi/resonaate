@@ -35,6 +35,8 @@ class Interferometer(Sensor):
         background_observations,
         minimum_range,
         maximum_range,
+        azimuth_baseline_node=None,
+        elevation_baseline_node=None,
         missed_obs_probability: float = 0.0,  # not defining this in the config for now since it's not clear how to parameterize it for an interferometer, but leaving it here in case we want to add it later
         downtimes=None,  # same for downtimes, not sure how to parameterize for an interferometer but leaving it here for future use
         **sensor_args,
@@ -44,7 +46,8 @@ class Interferometer(Sensor):
             ["azimuth_rad", "elevation_rad"],
             r_matrix,
         )
-
+        self.azimuth_baseline_node = azimuth_baseline_node
+        self.elevation_baseline_node = elevation_baseline_node
         super().__init__(
             measurement,
             az_mask,
@@ -71,6 +74,8 @@ class Interferometer(Sensor):
             background_observations=sensor_config.background_observations,
             minimum_range=sensor_config.minimum_range,
             maximum_range=sensor_config.maximum_range,
+            azimuth_baseline_node=sensor_config.azimuth_baseline_node,
+            elevation_baseline_node=sensor_config.elevation_baseline_node,
             min_revisit_time=sensor_config.min_revisit_time,
             missed_obs_probability=sensor_config.missed_obs_probability,
             downtimes=sensor_config.downtimes,
