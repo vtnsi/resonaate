@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 # Third Party Imports
 from numpy import array, ndarray
 
-if TYPE_CHECKING:
-    from ..common.labels import Explanation
-
 # Local Imports
+from ..common.labels import Explanation
+from ..physics.constants import DEG2RAD
 from ..physics.measurements import Measurement
+from ..physics.transforms.methods import ecef2eci, getSlantRangeVector, lla2ecef
 from .sensor_base import Sensor
 
 INTERFEROMETER_DEFAULT_FOV: dict[str, Any] = {
@@ -113,6 +113,32 @@ class Interferometer(Sensor):
         if not visible:
             return visible, explanation
 
+        if self.azimuth_baseline_node is not None and self.elevation_baseline_node is not None:
+            utc_datetime = self.host.datetime_epoch
+            for node in (self.azimuth_baseline_node, self.elevation_baseline_node):
+                node_eci = self.antennaECI(node, utc_datetime)
+                antenna_slant_range_sez = getSlantRangeVector(
+                    node_eci,
+                    tgt_eci_state,
+                    utc_datetime,
+                )
+                if not self.field_of_view.inFieldOfView(slant_range_sez, antenna_slant_range_sez):
+                    return False, Explanation.FIELD_OF_VIEW
+
         # TODO
-        # Assume targets ar always transmitting for now. Later we may need to add a transmitting frequency, minimum signal strength and on/off state to the target and add checks for those here. We may also want to add a check for whether the target is in the combined FOV of the 3 antennas, but for now we are assuming that the combined FOV is approximately a singular cone pointed at the target so we can skip that check.
+        # Assume targets ar always transmitting for now. Later we may need to add a transmitting frequency, minimum signal strength and on/off state to the target and add checks for those here.
         return True, explanation
+
+    def antennaECI(self, node, utc_datetime):
+        """Compute the ECI position of a NodeConfig antenna (secondary) at a given time.
+
+        Args:
+            node (``NodeConfig``): NodeConfig of the antenna for which to compute the ECI position
+            utc_datetime (``datetime``): UTC datetime at which to compute the ECI position
+
+        Returns:
+            ``ndarray``: 3x1 ECI position vector of the antenna (km)
+        """
+        lla_rad = array([node.latitude * DEG2RAD, node.longitude * DEG2RAD, node.altitude])
+
+        return ecef2eci(lla2ecef(lla_rad), utc_datetime)
