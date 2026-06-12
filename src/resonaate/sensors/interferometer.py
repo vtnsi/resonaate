@@ -16,7 +16,7 @@ from ..physics.transforms.methods import ecef2eci, getSlantRangeVector, lla2ecef
 from .sensor_base import Sensor
 
 INTERFEROMETER_DEFAULT_FOV: dict[str, Any] = {
-    "fov_shape": "conic",  # i'm assuming that at geo distances with SBI, the combined FOV of the 3 antennas pointed nearly at the same target is approximately a singular cone
+    "fov_shape": "conic",
     "cone_angle": 2.0,
 }
 

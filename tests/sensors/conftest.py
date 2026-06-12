@@ -8,7 +8,10 @@ import numpy as np
 import pytest
 
 # RESONAATE Imports
+from resonaate.physics.constants import DEG2RAD
 from resonaate.physics.measurements import Measurement
+from resonaate.scenario.config.sensor_config import NodeConfig
+from resonaate.sensors.field_of_view import ConicFoV
 
 
 @pytest.fixture(name="base_sensor_args")
@@ -70,4 +73,17 @@ def getInterferometerSensorArgs(base_sensor_args: dict) -> dict:
     """Create dictionary of valid arguments to Interferometer Init."""
     interferometer_sensor_args = deepcopy(base_sensor_args)
     del interferometer_sensor_args["measurement"]
+    interferometer_sensor_args["field_of_view"] = ConicFoV(cone_angle=2.0 * DEG2RAD)
+    interferometer_sensor_args["azimuth_baseline_node"] = NodeConfig(
+        name="az",
+        latitude=0.0,
+        longitude=0.0,
+        altitude=0.0,
+    )
+    interferometer_sensor_args["elevation_baseline_node"] = NodeConfig(
+        name="el",
+        latitude=0.0,
+        longitude=0.0,
+        altitude=0.0,
+    )
     return interferometer_sensor_args

@@ -5,9 +5,9 @@
     "platform": { "type": "ground_facility" },
     "state": {
       "type": "lla",
-      "latitude": 5.729577951308233,
-      "longitude": 63.02535746439056,
-      "altitude": 1.0
+      "latitude": 37.2059,
+      "longitude": -80.4145,
+      "altitude": 0.6382
     },
     "sensor": {
       "type": "interferometer",
@@ -22,14 +22,14 @@
       "field_of_view": { "fov_shape": "conic", "cone_angle": 2.0 },
       "azimuth_baseline_node": {
         "name": "RB1311",
-        "latitude": 37.2068600,
-        "longitude": -80.4191690,
+        "latitude": 37.2068,
+        "longitude": -80.4191,
         "altitude": 0.6454
       },
       "elevation_baseline_node": {
         "name": "NISTS",
-        "latitude": 37.2040263278263,
-        "longitude": -80.41454036458144,
+        "latitude": 37.2040,
+        "longitude": -80.4145,
         "altitude": 0.6323
       }
     }
