@@ -29,13 +29,13 @@ def testArrayFovRejectsDistantAntenna(interferometer_sensor_args):
     utc = julianDateToDatetime(JulianDate(2459486.09964))
 
     interferometer_sensor_args["field_of_view"] = ConicFoV(cone_angle=2.0 * DEG2RAD)
-    interferometer_sensor_args["azimuth_baseline_node"] = NodeConfig(
+    interferometer_sensor_args["a_baseline_node"] = NodeConfig(
         name="NEAR",
         latitude=37.2,
         longitude=-80.41,
         altitude=0.6,
     )
-    interferometer_sensor_args["elevation_baseline_node"] = NodeConfig(
+    interferometer_sensor_args["c_baseline_node"] = NodeConfig(
         name="FAR",
         latitude=37.2,
         longitude=-70.41,

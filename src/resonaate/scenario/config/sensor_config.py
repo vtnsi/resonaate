@@ -226,11 +226,11 @@ class InterferometerConfig(SensorConfigBase):
     type: Literal[SensorLabel.INTERFEROMETER] = SensorLabel.INTERFEROMETER  # type: ignore
     R"""``str``: type of sensor being defined."""
 
-    azimuth_baseline_node: NodeConfig
-    R"""``NodeConfig``: the node that defines the azimuth baseline for the interferometer."""
+    a_baseline_node: NodeConfig
+    R"""``NodeConfig``: the node that defines the a baseline for the interferometer."""
 
-    elevation_baseline_node: NodeConfig
-    R"""``NodeConfig``: the node that defines the elevation baseline for
+    c_baseline_node: NodeConfig
+    R"""``NodeConfig``: the node that defines the c baseline for
     the interferometer."""
 
     @field_validator("minimum_range")

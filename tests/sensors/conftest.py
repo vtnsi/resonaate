@@ -74,13 +74,13 @@ def getInterferometerSensorArgs(base_sensor_args: dict) -> dict:
     interferometer_sensor_args = deepcopy(base_sensor_args)
     del interferometer_sensor_args["measurement"]
     interferometer_sensor_args["field_of_view"] = ConicFoV(cone_angle=2.0 * DEG2RAD)
-    interferometer_sensor_args["azimuth_baseline_node"] = NodeConfig(
+    interferometer_sensor_args["a_baseline_node"] = NodeConfig(
         name="az",
         latitude=0.0,
         longitude=0.0,
         altitude=0.0,
     )
-    interferometer_sensor_args["elevation_baseline_node"] = NodeConfig(
+    interferometer_sensor_args["c_baseline_node"] = NodeConfig(
         name="el",
         latitude=0.0,
         longitude=0.0,
