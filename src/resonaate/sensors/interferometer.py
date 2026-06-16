@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-# Standard Library Imports
-from typing import Any
-
 # Third Party Imports
 from numpy import array, ndarray
 
@@ -15,14 +12,9 @@ from ..physics.measurements import Measurement
 from ..physics.transforms.methods import ecef2eci, getSlantRangeVector, lla2ecef
 from .sensor_base import Sensor
 
-INTERFEROMETER_DEFAULT_FOV: dict[str, Any] = {
-    "fov_shape": "conic",
-    "cone_angle": 2.0,
-}
-
 
 class Interferometer(Sensor):
-    """Interferometer sensor class (placeholder)."""
+    """Interferometer sensor class."""
 
     def __init__(  # noqa: PLR0913
         self,
@@ -35,8 +27,8 @@ class Interferometer(Sensor):
         background_observations,
         minimum_range,
         maximum_range,
-        azimuth_baseline_node=None,
-        elevation_baseline_node=None,
+        azimuth_baseline_node,
+        elevation_baseline_node,
         missed_obs_probability: float = 0.0,  # not defining this in the config for now since it's not clear how to parameterize it for an interferometer, but leaving it here in case we want to add it later
         downtimes=None,  # same for downtimes, not sure how to parameterize for an interferometer but leaving it here for future use
         **sensor_args,
@@ -113,17 +105,16 @@ class Interferometer(Sensor):
         if not visible:
             return visible, explanation
 
-        if self.azimuth_baseline_node is not None and self.elevation_baseline_node is not None:
-            utc_datetime = self.host.datetime_epoch
-            for node in (self.azimuth_baseline_node, self.elevation_baseline_node):
-                node_eci = self.antennaECI(node, utc_datetime)
-                antenna_slant_range_sez = getSlantRangeVector(
-                    node_eci,
-                    tgt_eci_state,
-                    utc_datetime,
-                )
-                if not self.field_of_view.inFieldOfView(slant_range_sez, antenna_slant_range_sez):
-                    return False, Explanation.FIELD_OF_VIEW
+        utc_datetime = self.host.datetime_epoch
+        for node in (self.azimuth_baseline_node, self.elevation_baseline_node):
+            node_eci = self.antennaECI(node, utc_datetime)
+            antenna_slant_range_sez = getSlantRangeVector(
+                node_eci,
+                tgt_eci_state,
+                utc_datetime,
+            )
+            if not self.field_of_view.inFieldOfView(slant_range_sez, antenna_slant_range_sez):
+                return False, Explanation.FIELD_OF_VIEW
 
         # TODO
         # Assume targets ar always transmitting for now. Later we may need to add a transmitting frequency, minimum signal strength and on/off state to the target and add checks for those here.
@@ -137,7 +128,7 @@ class Interferometer(Sensor):
             utc_datetime (``datetime``): UTC datetime at which to compute the ECI position
 
         Returns:
-            ``ndarray``: 3x1 ECI position vector of the antenna (km)
+            ``ndarray``: 6x1 ECI position vector of the antenna (km)
         """
         lla_rad = array([node.latitude * DEG2RAD, node.longitude * DEG2RAD, node.altitude])
 
