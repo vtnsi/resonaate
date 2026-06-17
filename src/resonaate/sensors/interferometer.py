@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+# Standard Library Imports
+from typing import TYPE_CHECKING
+
 # Third Party Imports
 from numpy import array, ndarray
+
+if TYPE_CHECKING:
+    from resonaate.scenario.config.sensor_config import NodeConfig
+    from resonaate.sensors.field_of_view import FieldOfView
 
 # Local Imports
 from ..common.labels import Explanation
@@ -17,20 +24,20 @@ class Interferometer(Sensor):
 
     def __init__(  # noqa: PLR0913
         self,
-        az_mask,
-        el_mask,
-        r_matrix,
-        efficiency,
-        slew_rate,
-        field_of_view,
-        background_observations,
-        minimum_range,
-        maximum_range,
-        a_baseline_node,
-        c_baseline_node,
+        az_mask: ndarray,
+        el_mask: ndarray,
+        r_matrix: ndarray,
+        efficiency: float,
+        slew_rate: float,
+        field_of_view: FieldOfView,
+        background_observations: bool,
+        minimum_range: float,
+        maximum_range: float,
+        a_baseline_node: NodeConfig,
+        c_baseline_node: NodeConfig,
         missed_obs_probability: float = 0.0,  # not defining this in the config for now since it's not clear how to parameterize it for an interferometer, but leaving it here in case we want to add it later
         downtimes=None,  # same for downtimes, not sure how to parameterize for an interferometer but leaving it here for future use
-        **sensor_args,
+        **sensor_args: dict,
     ):
         """Construct an 'Interferometer' sensor object."""
         measurement = Measurement.fromMeasurementLabels(
