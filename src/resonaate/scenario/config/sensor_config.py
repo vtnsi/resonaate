@@ -5,7 +5,7 @@ from __future__ import annotations
 # Standard Library Imports
 from abc import ABC
 from datetime import timedelta
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 
 # Third Party Imports
 from numpy import inf
@@ -218,6 +218,9 @@ class NodeConfig(BaseModel):
 
     altitude: float
     R"""``float``: altitude of the node, km."""
+
+    ecef: Any = None
+    R"""``ndarray``: 3x1 ecef position vector of the node, km. This is computed from the lat/lon/alt and stored here for easy access by the interferometer sensor model. Helps sidestep a constant DEG2RAD and lla2ecef computation every time step in the 'isVisible' method of the interferometer sensor model."""
 
 
 class InterferometerConfig(SensorConfigBase):

@@ -40,6 +40,18 @@ class Interferometer(Sensor):
         )
         self.a_baseline_node = a_baseline_node
         self.c_baseline_node = c_baseline_node
+        # save each antenna ECEF position so DEG2RAD doesn't have to be called every time step in 'isVisible' through the method 'antennaECI'
+        for node in (self.a_baseline_node, self.c_baseline_node):
+            node.ecef = lla2ecef(
+                array(
+                    [
+                        node.latitude * DEG2RAD,
+                        node.longitude * DEG2RAD,
+                        node.altitude,
+                    ],
+                ),
+            )
+
         super().__init__(
             measurement,
             az_mask,
@@ -124,12 +136,10 @@ class Interferometer(Sensor):
         """Compute the ECI position of a NodeConfig antenna (secondary) at a given time.
 
         Args:
-            node (``NodeConfig``): NodeConfig of the antenna for which to compute the ECI position
+            node (``NodeConfig``): The node for which to compute the ECI position
             utc_datetime (``datetime``): UTC datetime at which to compute the ECI position
 
         Returns:
             ``ndarray``: 6x1 ECI position vector of the antenna (km)
         """
-        lla_rad = array([node.latitude * DEG2RAD, node.longitude * DEG2RAD, node.altitude])
-
-        return ecef2eci(lla2ecef(lla_rad), utc_datetime)
+        return ecef2eci(node.ecef, utc_datetime)
