@@ -7,9 +7,8 @@ from numpy import array, ndarray
 
 # Local Imports
 from ..common.labels import Explanation
-from ..physics.constants import DEG2RAD
 from ..physics.measurements import Measurement
-from ..physics.transforms.methods import ecef2eci, getSlantRangeVector, lla2ecef
+from ..physics.transforms.methods import ecef2eci, getSlantRangeVector
 from .sensor_base import Sensor
 
 
@@ -40,17 +39,6 @@ class Interferometer(Sensor):
         )
         self.a_baseline_node = a_baseline_node
         self.c_baseline_node = c_baseline_node
-        # save each antenna ECEF position so DEG2RAD doesn't have to be called every time step in 'isVisible' through the method 'antennaECI'
-        for node in (self.a_baseline_node, self.c_baseline_node):
-            node.ecef = lla2ecef(
-                array(
-                    [
-                        node.latitude * DEG2RAD,
-                        node.longitude * DEG2RAD,
-                        node.altitude,
-                    ],
-                ),
-            )
 
         super().__init__(
             measurement,

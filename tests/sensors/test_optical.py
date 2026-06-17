@@ -49,6 +49,11 @@ def testSensorInit(optical_sensor_args: dict):
         optical_sensor_args (``dict``):  dictionary of valid arguments to Sensor init
     """
     optical_sensor = Optical(**optical_sensor_args)
+    assert np.isclose(
+        optical_sensor.effective_aperture_area,
+        np.pi * (optical_sensor_args["diameter"] * 0.5) ** 2,
+    )
+    assert np.isclose(optical_sensor.aperture_diameter, optical_sensor_args["diameter"])
     assert optical_sensor
     assert optical_sensor.detectable_vismag == optical_sensor_args["detectable_vismag"]
 
