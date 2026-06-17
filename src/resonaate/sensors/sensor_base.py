@@ -397,6 +397,18 @@ class Sensor(ABC):
         # [TODO]: We are artificially increasing a sensor's slewing ability if it is not tasked at every timestep.
         return self.slew_rate * (self.host.time - self.time_last_tasked) >= delta_boresight
 
+    @staticmethod
+    def _effectiveApertureArea(diameter: float) -> float:
+        """Calculate the effective aperture area of a circular sensor.
+
+        Args:
+            diameter (``float``): diameter of the sensor, m
+
+        Returns:
+            ``float``: effective aperture area of the sensor, m^2
+        """
+        return const.PI * (diameter / 2) ** 2
+
     def deltaBoresight(self, sez_position: ndarray):
         """Return the angular separation between a position vector and the sensor's current boresight.
 

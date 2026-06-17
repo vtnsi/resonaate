@@ -10,7 +10,6 @@ from numpy import array
 
 # Local Imports
 from ..common.labels import Explanation, FoVLabel
-from ..physics import constants as const
 from ..physics.constants import M2KM, PI, SPEED_OF_LIGHT
 from ..physics.measurements import Measurement, getRange
 from ..physics.sensor_utils import calculateRadarCrossSection
@@ -113,7 +112,7 @@ class Radar(Sensor):
 
         # Save extra class variables
         self.aperture_diameter = diameter
-        self.effective_aperture_area = const.PI * ((diameter / 2.0) ** 2)
+        self.effective_aperture_area = self._effectiveApertureArea(diameter)
         self.tx_power = tx_power
         self.tx_frequency = tx_frequency
         self.min_detectable_power = min_detectable_power

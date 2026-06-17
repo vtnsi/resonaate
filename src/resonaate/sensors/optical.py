@@ -11,7 +11,6 @@ from scipy.linalg import norm
 
 # Local Imports
 from ..common.labels import Explanation, PlatformLabel
-from ..physics import constants as const
 from ..physics.bodies import Sun
 from ..physics.measurements import Measurement
 from ..physics.sensor_utils import (
@@ -113,7 +112,7 @@ class Optical(Sensor):
             **sensor_args,
         )
         self.aperture_diameter = diameter
-        self.effective_aperture_area = const.PI * ((diameter / 2.0) ** 2)
+        self.effective_aperture_area = self._effectiveApertureArea(diameter)
         self.detectable_vismag = detectable_vismag
 
     @classmethod
