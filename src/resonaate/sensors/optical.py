@@ -102,7 +102,6 @@ class Optical(Sensor):
             measurement,
             az_mask,
             el_mask,
-            diameter,
             efficiency,
             slew_rate,
             field_of_view,
@@ -112,7 +111,8 @@ class Optical(Sensor):
             downtimes=downtimes,
             **sensor_args,
         )
-
+        self.aperture_diameter = diameter
+        self.effective_aperture_area = self._effectiveApertureArea(diameter)
         self.detectable_vismag = detectable_vismag
 
     @classmethod
@@ -139,7 +139,7 @@ class Optical(Sensor):
             maximum_range=sensor_config.maximum_range,
             detectable_vismag=sensor_config.detectable_vismag,
             min_revisit_time=sensor_config.min_revisit_time,
-            missed_obs_probabilty=sensor_config.missed_obs_probability,
+            missed_obs_probability=sensor_config.missed_obs_probability,
             downtimes=sensor_config.downtimes,
         )
 

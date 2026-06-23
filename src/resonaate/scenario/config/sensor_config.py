@@ -5,11 +5,16 @@ from __future__ import annotations
 # Standard Library Imports
 from abc import ABC
 from datetime import timedelta
+from functools import cached_property
 from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
 
 # Third Party Imports
-from numpy import inf
+from numpy import array, inf, ndarray
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+# RESONAATE Imports
+from resonaate.physics.constants import DEG2RAD
+from resonaate.physics.transforms.methods import lla2ecef
 
 # Local Imports
 from ...common.labels import FoVLabel, SensorLabel
@@ -112,9 +117,6 @@ class SensorConfigBase(BaseModel, ABC):
     where :math:`R \succ 0`.
     """
 
-    aperture_diameter: float
-    R"""``float``: effective aperture diameter of the sensor, :math:`\textrm{m}`."""
-
     efficiency: float
     R"""``float``: sensor measurement efficiency, unit-less."""
 
@@ -152,6 +154,9 @@ class OpticalConfig(SensorConfigBase):
     detectable_vismag: float = OPTICAL_DETECTABLE_VISMAG
     R"""``float``, optional: minimum detectable visual magnitude value, used for visibility constraints, unit-less. Defaults to :data:`.OPTICAL_DETECTABLE_VISMAG`."""
 
+    aperture_diameter: float
+    R"""``float``: effective aperture diameter of the sensor, :math:`\textrm{m}`."""
+
     @field_validator("minimum_range")
     @classmethod
     def default_min_range(cls, v):
@@ -177,6 +182,9 @@ class RadarConfig(SensorConfigBase):
     min_detectable_power: float = Field(..., gt=0.0)
     R"""``float``: The smallest received power that can be detected by the radar, W."""
 
+    aperture_diameter: float
+    R"""``float``: effective aperture diameter of the sensor, :math:`\textrm{m}`."""
+
     @field_validator("tx_frequency")
     @classmethod
     def parse_band(cls, v) -> float:
@@ -201,7 +209,59 @@ class AdvRadarConfig(RadarConfig):
     R"""``str``: type of sensor being defined."""
 
 
+class NodeConfig(BaseModel):
+    R"""Configuration object for a secondary node (i.e a secondary antenna in an interferometery array)."""
+
+    name: str
+    R"""``str``: name of the node, used for reference in the scenario definition."""
+
+    latitude: float
+    R"""``float``: latitude of the node, degrees."""
+
+    longitude: float
+    R"""``float``: longitude of the node, degrees."""
+
+    altitude: float
+    R"""``float``: altitude of the node, km."""
+
+    @cached_property
+    def ecef(self) -> ndarray:
+        R"""``ndarray``: ECEF position of the node, km."""
+        return lla2ecef(
+            array(
+                [
+                    self.latitude * DEG2RAD,
+                    self.longitude * DEG2RAD,
+                    self.altitude,
+                ],
+            ),
+        )
+
+
+class InterferometerConfig(SensorConfigBase):
+    R"""Configuration object for a :class:`.Interferometer`."""
+
+    type: Literal[SensorLabel.INTERFEROMETER] = SensorLabel.INTERFEROMETER  # type: ignore
+    R"""``str``: type of sensor being defined."""
+
+    a_baseline_node: NodeConfig
+    R"""``NodeConfig``: the node that defines the a baseline for the interferometer."""
+
+    c_baseline_node: NodeConfig
+    R"""``NodeConfig``: the node that defines the c baseline for
+    the interferometer."""
+
+    @field_validator("minimum_range")
+    @classmethod
+    def default_min_range(cls, v):
+        """Interferometer minimum range defaults to 0.0 km."""
+        if v is None:
+            return 0.0
+        # else
+        return v
+
+
 SensorConfig = Annotated[
-    Union[OpticalConfig, RadarConfig, AdvRadarConfig],
+    Union[OpticalConfig, RadarConfig, AdvRadarConfig, InterferometerConfig],
     Field(..., discriminator="type"),
 ]

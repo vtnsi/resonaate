@@ -49,7 +49,6 @@ class Sensor(ABC):
         measurement: Measurement,
         az_mask: ndarray,
         el_mask: ndarray,
-        diameter: float,
         efficiency: float,
         slew_rate: float,
         field_of_view: FieldOfView,
@@ -66,7 +65,6 @@ class Sensor(ABC):
             measurement (:class:`.Measurement`): defines the measurement data produced by this sensor
             az_mask (``ndarray``): azimuth mask for visibility conditions
             el_mask (``ndarray``): elevation mask for visibility conditions
-            diameter (``float``): diameter of sensor dish (m)
             efficiency (``float``): efficiency percentage of the sensor
             slew_rate (``float``): maximum rotational speed of the sensor (deg/sec)
             field_of_view (:class:`.FieldOfView`): field of view of sensor
@@ -83,8 +81,6 @@ class Sensor(ABC):
         self._el_mask = zeros_like(el_mask)
         self.az_mask = const.DEG2RAD * az_mask
         self.el_mask = const.DEG2RAD * el_mask
-        self.aperture_diameter = diameter
-        self.effective_aperture_area = const.PI * ((diameter / 2.0) ** 2)
         self.efficiency = efficiency
         self.slew_rate = const.DEG2RAD * slew_rate
         self.field_of_view = field_of_view
@@ -400,6 +396,18 @@ class Sensor(ABC):
         # Boolean if you are able to slew to the new target
         # [TODO]: We are artificially increasing a sensor's slewing ability if it is not tasked at every timestep.
         return self.slew_rate * (self.host.time - self.time_last_tasked) >= delta_boresight
+
+    @staticmethod
+    def _effectiveApertureArea(diameter: float) -> float:
+        """Calculate the effective aperture area of a circular sensor.
+
+        Args:
+            diameter (``float``): diameter of the sensor, m
+
+        Returns:
+            ``float``: effective aperture area of the sensor, m^2
+        """
+        return const.PI * (diameter / 2) ** 2
 
     def deltaBoresight(self, sez_position: ndarray):
         """Return the angular separation between a position vector and the sensor's current boresight.

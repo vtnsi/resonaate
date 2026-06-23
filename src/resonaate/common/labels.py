@@ -68,6 +68,9 @@ class SensorLabel(str, Enum):
     ADV_RADAR: str = "adv_radar"
     """``str``: advanced radar sensor type."""
 
+    INTERFEROMETER: str = "interferometer"
+    """``str``: interferometer sensor type."""
+
 
 class FoVLabel(str, Enum):
     """Defines valid labels for Field of View types."""
@@ -98,6 +101,7 @@ class DynamicsLabel(str, Enum):
     SPECIAL_PERTURBATIONS: str = "special_perturbations"
     """str: special perturbations satellite propagation model."""
 
+
 class EOPLoaderLabel(str, Enum):
     """Enumeration of Earth Orientation Parameter loader components."""
 
@@ -109,6 +113,7 @@ class EOPLoaderLabel(str, Enum):
 
     REMOTE_DOT_DAT: str = "RemoteDotDatEOPLoader"
     """Name of loader component that loads EOP data from a remotely hosted .dat file."""
+
 
 class GeopotentialModel(str, Enum):
     """Enumeration of geopotential models mapped to their corresponding filename."""

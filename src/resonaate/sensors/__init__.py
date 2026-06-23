@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from ..common.labels import SensorLabel
 from .advanced_radar import AdvRadar
 from .field_of_view import FieldOfView
+from .interferometer import Interferometer
 from .optical import Optical
 from .radar import Radar
 
@@ -37,6 +38,8 @@ def sensorFactory(sensor_config: SensorConfig) -> Sensor:
         sensor = Radar.fromConfig(sensor_config, fov)
     elif sensor_config.type == SensorLabel.ADV_RADAR:
         sensor = AdvRadar.fromConfig(sensor_config, fov)
+    elif sensor_config.type == SensorLabel.INTERFEROMETER:
+        sensor = Interferometer.fromConfig(sensor_config, fov)
     else:
         raise ValueError(f"Invalid sensor type provided to config: {sensor_config.type}")
 

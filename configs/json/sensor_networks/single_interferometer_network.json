@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Test Interferometer",
+    "id": 100002,
+    "platform": { "type": "ground_facility" },
+    "state": {
+      "type": "lla",
+      "latitude": 37.2059,
+      "longitude": -80.4145,
+      "altitude": 0.6382
+    },
+    "sensor": {
+      "type": "interferometer",
+      "covariance": [
+        [2.388200571127795e-11, 0.0],
+        [0.0, 2.388200571127795e-11]
+      ],
+      "slew_rate": 14.999999999999998,
+      "azimuth_range": [0.0, 359.99999],
+      "elevation_range": [0.0, 89.99999],
+      "efficiency": 0.98,
+      "field_of_view": { "fov_shape": "conic", "cone_angle": 2.0 },
+      "a_baseline_node": {
+        "name": "RB1311",
+        "latitude": 37.2068,
+        "longitude": -80.4191,
+        "altitude": 0.6454
+      },
+      "c_baseline_node": {
+        "name": "NISTS",
+        "latitude": 37.2040,
+        "longitude": -80.4145,
+        "altitude": 0.6323
+      }
+    }
+  }
+]

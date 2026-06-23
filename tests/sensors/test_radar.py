@@ -48,6 +48,11 @@ def testSensorInit(radar_sensor_args: dict):
         radar_sensor_args (``dict``):  dictionary of valid arguments to Sensor init
     """
     radar_sensor = Radar(**radar_sensor_args)
+    assert np.isclose(
+        radar_sensor.effective_aperture_area,
+        np.pi * (radar_sensor_args["diameter"] * 0.5) ** 2,
+    )
+    assert np.isclose(radar_sensor.aperture_diameter, radar_sensor_args["diameter"])
     assert radar_sensor
     assert radar_sensor.tx_power == radar_sensor_args["tx_power"]
 
