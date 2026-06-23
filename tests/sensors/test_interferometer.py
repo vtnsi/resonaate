@@ -64,3 +64,41 @@ def testArrayFovRejectsDistantAntenna(interferometer_sensor_args):
 
     assert not visible
     assert reason == Explanation.FIELD_OF_VIEW
+
+
+def testArrayFovAcceptsNearbyAntenna(interferometer_sensor_args):
+    """Antennas nearby the host can see an overhead target, so the array FOV check returns visible."""
+    utc = julianDateToDatetime(JulianDate(2459486.09964))
+    interferometer_sensor_args["field_of_view"] = ConicFoV(cone_angle=2.0 * DEG2RAD)
+    interferometer_sensor_args["a_baseline_node"] = NodeConfig(
+        name="A",
+        latitude=37.211,
+        longitude=-80.411,
+        altitude=0.6,
+    )
+    interferometer_sensor_args["c_baseline_node"] = NodeConfig(
+        name="B",
+        latitude=37.212,
+        longitude=-80.412,
+        altitude=0.6,
+    )
+    interferometer = Interferometer(**interferometer_sensor_args)
+    lla = np.array([37.2 * DEG2RAD, -80.41 * DEG2RAD, 0.6])
+    host_ecef = lla2ecef(lla)
+    host_eci = ecef2eci(host_ecef, utc)
+
+    host = create_autospec(spec=SensingAgent, instance=True)
+    host.agent_type = PlatformLabel.GROUND_FACILITY
+    host.julian_date_epoch = JulianDate(2459486.09964)
+    host.datetime_epoch = utc
+    host.eci_state = host_eci
+    host.ecef_state = host_ecef
+    interferometer.host = host
+
+    radial = host_eci[:3] / np.linalg.norm(host_eci[:3])
+    target = np.concatenate([host_eci[:3] + 1000.0 * radial, np.zeros(3)])
+    slant = getSlantRangeVector(host_eci, target, utc)
+
+    visible = interferometer.isVisible(target, 0.0, 0.0, slant)
+
+    assert visible
