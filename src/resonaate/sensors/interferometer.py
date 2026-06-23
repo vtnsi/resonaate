@@ -7,15 +7,19 @@ from typing import TYPE_CHECKING
 
 # Third Party Imports
 from numpy import array, ndarray
+from numpy.linalg import norm
 
 if TYPE_CHECKING:
     from resonaate.scenario.config.sensor_config import NodeConfig
     from resonaate.sensors.field_of_view import FieldOfView
+    from resonaate.agents.target_agent import TargetAgent
+# RESONAATE Imports
+from resonaate.physics.maths import subtendedAngle
 
 # Local Imports
 from ..common.labels import Explanation
 from ..physics.measurements import Measurement
-from ..physics.transforms.methods import ecef2eci, getSlantRangeVector
+from ..physics.transforms.methods import ecef2eci, getSlantRangeVector, sez2eci
 from .sensor_base import Sensor
 
 
@@ -59,6 +63,7 @@ class Interferometer(Sensor):
             maximum_range,
             **sensor_args,
         )
+        self.node_boresights = [self.boresight.copy(), self.boresight.copy()]
 
     @classmethod
     def fromConfig(cls, sensor_config, field_of_view):
@@ -126,6 +131,71 @@ class Interferometer(Sensor):
         # TODO
         # Assume targets ar always transmitting for now. Later we may need to add a transmitting frequency, minimum signal strength and on/off state to the target and add checks for those here.
         return True, explanation
+
+    def collectObservations(
+        self,
+        estimate_eci: ndarray,
+        target_agent: TargetAgent,
+        background_agents: list[TargetAgent],
+    ):
+        """Collect observations on all targets within the sensor's FOV. Overrides the base class method to add additional checks for the interferometer's baseline nodes.
+
+        Args:
+            estimate_eci (``ndarray``): Estimate state vector that sensor is pointing at
+            target_agent (:class:`.TargetAgent`): Target agent that sensor is pointing at
+            background_agents (``list``): list of possible :class:`.TargetAgent` objects in FoV
+
+        Returns:
+            ``list``: :class:`.Observation` for each successful tasked observation
+            ``list``: :class:`.MissedObservation` for each unsuccessful tasked observation
+        """
+        if not self.isOffline():
+            utc_datetime = self.host.datetime_epoch
+            primary_sez = getSlantRangeVector(self.host.eci_state, estimate_eci, utc_datetime)
+            if self.canSlew(primary_sez):
+                for i, node in enumerate((self.a_baseline_node, self.c_baseline_node)):
+                    node_sez = getSlantRangeVector(
+                        self.antennaECI(node, utc_datetime),
+                        estimate_eci,
+                        utc_datetime,
+                    )
+                    self.node_boresights[i] = node_sez[:3] / (norm(node_sez[:3]))
+
+        return super().collectObservations(estimate_eci, target_agent, background_agents)
+
+    def canSlew(self, slant_range_sez: ndarray) -> bool:
+        """Determine if the sensor (entire array of antennas) can slew to a given slant range vector.
+
+        Args:
+            slant_range_sez (``ndarray``): 6x1 SEZ slant range vector from sensor to target (km; km/sec)
+
+        Returns:
+            ``bool``: True if sensor can slew to the given slant range vector; False otherwise
+        """
+        if not super().canSlew(slant_range_sez):
+            return False
+
+        utc_datetime = self.host.datetime_epoch
+        slew_range = self.slew_rate * (self.host.time - self.time_last_tasked)
+        target_eci = self.host.eci_state + sez2eci(
+            slant_range_sez,
+            self.host.lla_state[0],
+            self.host.lla_state[1],
+            utc_datetime,
+        )
+
+        for node, node_boresight in zip(
+            (self.a_baseline_node, self.c_baseline_node),
+            self.node_boresights,
+        ):
+            node_sez = getSlantRangeVector(
+                self.antennaECI(node, utc_datetime),
+                target_eci,
+                utc_datetime,
+            )
+            if slew_range < subtendedAngle(node_boresight, node_sez[:3], safe=True):
+                return False
+        return True
 
     def antennaECI(self, node, utc_datetime):
         """Compute the ECI position of a NodeConfig antenna (secondary) at a given time.
